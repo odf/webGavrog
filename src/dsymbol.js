@@ -131,48 +131,99 @@ var fromString = function fromString(str) {
 };
 
 
-var toString = function toString(ds) {
-  var d = ds.indices().size - 1;
-  var n = ds.elements().size;
+var dimension = function dimension(ds) {
+  return ds.indices().size - 1;
+};
 
+
+var size = function size(ds) {
+  return ds.elements().size - 1;
+};
+
+
+var orbitReps = function orbitReps(ds, idcs) {
+  idcs = I.List(idcs);
+
+  switch (idcs.size) {
+  case 0: return ds.elements();
+  case 1: return orbitReps1(ds, idcs.get(0));
+  case 2: return orbitReps2(ds, idcs.get(0), idcs.get(1));
+  default: throw new Error('not yet implemented');
+  }
+};
+
+
+var orbitReps1 = function orbitReps1(ds, i, D) {
+  return ds.elements().filter(function(D) {
+    return ds.s(i, D) >= D;
+  });
+};
+
+
+var orbitReps2 = function orbitReps2(ds, i, j, D) {
+  var seen = new Array(ds.elements().size + 1);
+  var result = [];
+
+  ds.elements().forEach(function(D) {
+    if (!seen[D]) {
+      var E = D;
+
+      do {
+        E = ds.s(i, E) || E;
+        seen[E] = true;
+        E = ds.s(i+1, E) || E;
+        seen[E] = true;
+      }
+      while (E != D);
+
+      result.push(D);
+    }
+  });
+
+  return I.List(result);
+};
+
+
+var r = function r(ds, i, j, D) {
+  var k = 0;
+  var E = D;
+
+  do {
+    E = ds.s(i, E) || E;
+    E = ds.s(i+1, E) || E;
+    ++k;
+  }
+  while (E != D);
+
+  return k;
+};
+
+
+var m = function m(ds, i, j, D) {
+  return ds.v(i, j, D) * r(ds, i, j, D);
+};
+
+
+var toString = function toString(ds) {
   var sDefs = ds.indices()
     .map(function(i) {
-      var seen = new Array(n);
-      var imgs = [];
-      ds.elements().forEach(function(D) {
-        if (!seen[D]) {
-          var E = ds.s(i, D);
-          seen[E] = seen[D] = true;
-          imgs.push(E);
-        }
-      });
-      return imgs;
+      return orbitReps(ds, [i])
+        .map(function(D) { return ds.s(i, D); })
+        .join(' ');
     })
-    .map(function(a) { return a.join(' '); }).join(',');
+    .join(',');
 
   var mDefs = ds.indices()
     .filter(function(i) { return ds.isIndex(i+1); })
     .map(function(i) {
-      var seen = new Array(n);
-      var vals = [];
-      ds.elements().forEach(function(D) {
-        if (!seen[D]) {
-          var r = 0;
-          var E = D;
-          do {
-            E = ds.s(i, E) || E;
-            seen[E] = true;
-            E = ds.s(i+1, E) || E;
-            seen[E] = true;
-            r++;
-          }
-          while (E != D);
-          vals.push(r * ds.v(i, i+1, D));
-        }
-      });
-      return vals;
+      return orbitReps(ds, [i, i+1])
+        .map(function(D) { return m(ds, i, i+1, D); })
+        .join(' ');
     })
-    .map(function(a) { return a.join(' '); }).join(',');
+    .join(',');
+
+  var n = size(ds);
+  var d = dimension(ds);
 
   return '<1.1:'+n+(d == 2 ? '' : ' '+d)+':'+sDefs+':'+mDefs+'>';
 };
