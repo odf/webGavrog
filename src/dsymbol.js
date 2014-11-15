@@ -42,7 +42,7 @@ var v = function v(dsImpl, i, j, D) {
 };
 
 
-var dsymbol = function dsymbol(dim, sData, vData) {
+var fromData = function fromData(dim, sData, vData) {
   var _s = I.List(sData);
   var _v = I.List(vData);
 
@@ -59,11 +59,83 @@ var dsymbol = function dsymbol(dim, sData, vData) {
     isIndex  : function(i)       { return isIndex(_ds, i); },
     indices  : function()        { return indices(_ds); },
     s        : function(i, D)    { return s(_ds, i, D); },
-    v        : function(i, j, D) { return v(_ds, i, j, D); }
+    v        : function(i, j, D) { return v(_ds, i, j, D); },
+    toString : function() { return 'dsymbol('+dim+', '+_ds.s+', '+_ds.v+')'; }
   }
 };
 
 
-module.exports = {
-  dsymbol: dsymbol
+var parseInts = function parseNumbers(str) {
+  return str.trim().split(/\s+/).map(function(s) { return parseInt(s); });
 };
+
+
+var fromString = function fromString(str) {
+  var parts = str.trim().replace(/^</, '').replace(/>$/, '').split(/:/);
+  if (parts[0].match(/\d+\.\d+/))
+    parts.shift();
+
+  var dims = parseInts(parts[0]);
+  var size = dims[0];
+  var dim  = dims[1] || 2;
+
+  var gluings = parts[1].split(/,/).map(parseInts);
+  var degrees = parts[2].split(/,/).map(parseInts);
+
+  var s = new Array((dim+1) * size);
+  var v = new Array(dim * size);
+
+  var get = function get(a, i, D) { return a[i * size + D - 1]; };
+  var set = function get(a, i, D, x) { a[i * size + D - 1] = x; };
+
+  for (var i = 0; i <= dim; ++i) {
+    var k = -1;
+    for (var D = 1; D <= size; ++D) {
+      if (!get(s, i, D)) {
+        var E = gluings[i][++k];
+        set(s, i, D, E);
+        set(s, i, E, D);
+      }
+    }
+  }
+
+  for (var i = 0; i < dim; ++i) {
+    var k = -1;
+    for (var D = 1; D <= size; ++D) {
+      if (!get(v, i, D)) {
+        var m = degrees[i][++k];
+        var E = D;
+        var r = 0;
+
+        do {
+          E = get(s, i, E) || E;
+          E = get(s, i+1, E) || E;
+          ++r;
+        }
+        while (E != D);
+
+        var b = m / r;
+
+        do {
+          E = get(s, i, E) || E;
+          set(v, i, E, b);
+          E = get(s, i+1, E) || E;
+          set(v, i, E, b);
+        }
+        while (E != D);
+      }
+    }
+  }
+
+  return fromData(dim, s, v);
+};
+
+
+module.exports = {
+  fromData  : fromData,
+  fromString: fromString
+};
+
+
+if (require.main == module)
+  console.log('' + fromString('<1.1:3:1 2 3,1 3,2 3:4 8,3 >'));
