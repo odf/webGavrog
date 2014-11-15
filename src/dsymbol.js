@@ -60,7 +60,7 @@ var fromData = function fromData(dim, sData, vData) {
     indices  : function()        { return indices(_ds); },
     s        : function(i, D)    { return s(_ds, i, D); },
     v        : function(i, j, D) { return v(_ds, i, j, D); },
-    toString : function() { return 'dsymbol('+dim+', '+_ds.s+', '+_ds.v+')'; }
+    toString : function()        { return toString(this); }
   }
 };
 
@@ -131,6 +131,53 @@ var fromString = function fromString(str) {
 };
 
 
+var toString = function toString(ds) {
+  var d = ds.indices().size - 1;
+  var n = ds.elements().size;
+
+  var sDefs = ds.indices()
+    .map(function(i) {
+      var seen = new Array(n);
+      var imgs = [];
+      ds.elements().forEach(function(D) {
+        if (!seen[D]) {
+          var E = ds.s(i, D);
+          seen[E] = seen[D] = true;
+          imgs.push(E);
+        }
+      });
+      return imgs;
+    })
+    .map(function(a) { return a.join(' '); }).join(',');
+
+  var mDefs = ds.indices()
+    .filter(function(i) { return ds.isIndex(i+1); })
+    .map(function(i) {
+      var seen = new Array(n);
+      var vals = [];
+      ds.elements().forEach(function(D) {
+        if (!seen[D]) {
+          var r = 0;
+          var E = D;
+          do {
+            E = ds.s(i, E) || E;
+            seen[E] = true;
+            E = ds.s(i+1, E) || E;
+            seen[E] = true;
+            r++;
+          }
+          while (E != D);
+          vals.push(r * ds.v(i, i+1, D));
+        }
+      });
+      return vals;
+    })
+    .map(function(a) { return a.join(' '); }).join(',');
+
+  return '<1.1:'+n+(d == 2 ? '' : ' '+d)+':'+sDefs+':'+mDefs+'>';
+};
+
+
 module.exports = {
   fromData  : fromData,
   fromString: fromString
@@ -138,4 +185,4 @@ module.exports = {
 
 
 if (require.main == module)
-  console.log('' + fromString('<1.1:3:1 2 3,1 3,2 3:4 8,3 >'));
+  console.log('' + fromString('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
