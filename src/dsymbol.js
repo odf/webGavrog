@@ -19,22 +19,22 @@ var indices = function indices(dsImpl) {
   return I.Range(0, dsImpl.dim+1);
 };
 
-var offset = function offset(dsImpl, i, D) {
-  return i * dsImpl.size + D - 1;
+var get = function offset(dsImpl, list, i, D) {
+  return list.get(i * dsImpl.size + D - 1);
 };
 
 var s = function s(dsImpl, i, D) {
   if (isElement(dsImpl, D) && isIndex(dsImpl, i))
-    return dsImpl.s.get(offset(dsImpl, i, D));
+    return get(dsImpl, dsImpl.s, i, D);
 };
 
 var v = function v(dsImpl, i, j, D) {
   if (isElement(dsImpl, D) && isIndex(dsImpl, i) && isIndex(dsImpl, j)) {
     if (j == i+1)
-      return dsImpl.v.get(offset(dsImpl, i, D));
+      return get(dsImpl, dsImpl.v, i, D);
     else if (j == i-1)
-      return dsImpl.v.get(offset(dsImpl, j, D));
-    else if (s(dsImpl, i, D) == s(dsImpl, j, D))
+      return get(dsImpl, dsImpl.v, j, D);
+    else if (get(dsImpl, dsImpl.s, i, D) == get(dsImpl, dsImpl.s, j, D))
       return 2;
     else
       return 1;
@@ -50,7 +50,7 @@ var dsymbol = function dsymbol(dim, sData, vData) {
     s   : _s,
     v   : _v,
     dim : dim,
-    size: _v.count() / dim
+    size: _v.size / dim
   };
 
   return {
