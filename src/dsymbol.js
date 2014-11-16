@@ -137,7 +137,7 @@ var dimension = function dimension(ds) {
 
 
 var size = function size(ds) {
-  return ds.elements().size - 1;
+  return ds.elements().size;
 };
 
 
@@ -231,7 +231,20 @@ var toString = function toString(ds) {
 
 module.exports = {
   fromData  : fromData,
-  fromString: fromString
+  fromString: fromString,
+
+  isElement : function(ds, D)       { return ds.isElement(D); },
+  elements  : function(ds)          { return ds.elements(); },
+  isIndex   : function(ds, i)       { return ds.isIndex(i); },
+  indices   : function(ds)          { return ds.indices(); },
+  s         : function(ds, i, D)    { return ds.s(i, D); },
+  v         : function(ds, i, j, D) { return ds.v(i, j, D); },
+
+  dimension : dimension,
+  size      : size,
+  orbitReps : orbitReps,
+  r         : r,
+  m         : m
 };
 
 
