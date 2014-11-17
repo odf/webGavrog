@@ -12,9 +12,10 @@ var seq = function seq(value, thunk) {
   };
 
   return {
-    first:    function () { return _first; },
-    rest :    function () { return _rest(); },
-    toString: function () { return toString(this); }
+    first   : function () { return _first; },
+    rest    : function () { return _rest(); },
+    toString: function () { return toString(this); },
+    toJSON  : function () { return asArray(this); }
   };
 };
 

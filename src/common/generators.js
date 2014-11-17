@@ -1,6 +1,7 @@
 'use strict';
 
 var I = require('immutable');
+var seq = require('./lazyseq');
 
 
 var backtracker = function backtracker(spec, stack) {
@@ -52,18 +53,16 @@ var backtracker = function backtracker(spec, stack) {
 
 var results = function results(gen, pred) {
   var g = gen;
-  var r = I.List();
-
   while (g) {
     if (!pred || pred(g.current())) {
       if (g.result() !== undefined)
-        r = r.push(g.result());
-      g = g.step();
+        return seq.seq(g.result(),
+                       function() { return results(g.step(), pred); });
+      else
+        g = g.step();
     } else
       g = g.skip();
   }
-
-  return r;
 };
 
 
