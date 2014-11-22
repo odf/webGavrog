@@ -98,22 +98,24 @@ if (require.main == module) {
   var n = parseInt(process.argv[2]);
 
   var gen = backtracker({
-    root    : [[], 0, 1],
+    root    : {
+      xs: [],
+      sz: 0,
+      mx: 1
+    },
     extract : function(node) {
-      var xs = node[0];
-      var sz = node[1];
-
-      if (sz == n)
-        return xs;
+      if (node.sz == n)
+        return node.xs;
     },
     children: function(node) {
-      var xs = node[0];
-      var sz = node[1];
-      var mx = node[2];
       var ch = [];
 
-      for (var i = mx; i < n - sz + 1; ++i)
-        ch.push([xs.concat(i), sz + i, Math.max(mx, i)]);
+      for (var i = node.mx; i < n - node.sz + 1; ++i)
+        ch.push({
+          xs: node.xs.concat(i),
+          sz: node.sz + i,
+          mx: Math.max(node.mx, i)
+        });
 
       return ch;
     }
