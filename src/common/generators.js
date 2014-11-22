@@ -4,50 +4,52 @@ var I = require('immutable');
 var seq = require('./lazyseq');
 
 
-var backtracker = function backtracker(spec, stack) {
-  var _spec     = I.Map(spec);
-  var _root     = _spec.get('root');
-  var _extract  = _spec.get('extract');
-  var _children = _spec.get('children');
+var current = function current(spec, stack) {
+  return stack.last().first();
+};
 
-  if (stack === undefined)
-    return backtracker(spec, I.List([I.List([_root, I.List([]), 0])]));
+var result = function result(spec, stack) {
+  return spec.extract(current(spec, stack));
+};
+
+var step = function step(spec, stack) {
+  var children = I.List(spec.children(current(spec, stack)));
+
+  if (children.size > 0)
+    return backtracker(spec, stack.push(I.List([
+      children.first(), children.rest(), 0
+    ])));
   else
+    return skip(spec, stack);
+};
+
+var skip = function skip(spec, stack) {
+  var s = stack;
+  while(s.last() && s.last().get(1).size == 0)
+    s = s.pop();
+
+  if (s.size > 0) {
+    var siblingsLeft = s.last().get(1);
+    var branchNr     = s.last().get(2);
+
+    return backtracker(spec, s.pop().push(I.List([
+      siblingsLeft.first(), siblingsLeft.rest(), branchNr + 1
+    ])));
+  }
+};
+
+
+var backtracker = function backtracker(spec, stack) {
+  if (stack === undefined)
+    return backtracker(spec, I.List([I.List([spec.root, I.List([]), 0])]));
+  else {
     return {
-      current: function current() {
-        return stack.last().first();
-      },
-
-      result: function result() {
-        return _extract(this.current());
-      },
-
-      step: function step() {
-        var children = I.List(_children(this.current()));
-
-        if (children.size > 0)
-          return backtracker(spec, stack.push(I.List([
-            children.first(), children.rest(), 0
-          ])));
-        else
-          return this.skip();
-      },
-
-      skip: function skip() {
-        var s = stack;
-        while(s.last() && s.last().get(1).size == 0)
-          s = s.pop();
-
-        if (s.size > 0) {
-          var siblingsLeft = s.last().get(1);
-          var branchNr     = s.last().get(2);
-
-          return backtracker(spec, s.pop().push(I.List([
-            siblingsLeft.first(), siblingsLeft.rest(), branchNr + 1
-          ])));
-        }
-      }
+      current: function() { return current(spec, stack); },
+      result : function() { return result(spec, stack); },
+      step   : function() { return step(spec, stack); },
+      skip   : function() { return skip(spec, stack); }
     };
+  }
 };
 
 
