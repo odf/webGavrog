@@ -4,7 +4,7 @@
 var I = require('immutable');
 
 
-var find = function find(impl, x) {
+var get = function get(impl, x) {
   var root = x;
   var p, z, t;
 
@@ -24,8 +24,8 @@ var find = function find(impl, x) {
 
 
 var union = function union(impl, x, y) {
-  var x0 = find(impl, x);
-  var y0 = find(impl, y);
+  var x0 = get(impl, x);
+  var y0 = get(impl, y);
 
   if (I.is(x0, y0))
     return impl;
@@ -50,15 +50,16 @@ var pmake = function pmake(rank, parent) {
   };
 
   return {
-    find : function(x) { return find(_impl, x); },
-    union: function(x, y) { return union(_impl, x, y); }
+    get  : function(x) { return get(_impl, x); },
+    union: function(x, y) { return union(_impl, x, y); },
+    toString: function() { return 'partition('+_impl.parent+')'; }
   };
 };
 
 
 var partition = function partition(pairs) {
   var p = pmake(I.Map(), I.Map());
-  pairs.forEach(function(pair) {
+  (pairs || []).forEach(function(pair) {
     p = p.union(pair[0], pair[1]);
   });
   return p;
@@ -72,5 +73,5 @@ if (require.main == module) {
   var p = partition([[1,2],[3,4],[5,6],[7,8],[2,3],[1,6]]);
 
   for (var i = 0; i < 10; ++i)
-    console.log('p.find('+i+') = '+p.find(i));
+    console.log('p.get('+i+') = '+p.get(i));
 }
