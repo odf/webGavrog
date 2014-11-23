@@ -25,12 +25,15 @@ var mergeRows = function mergeRows(table, part, queue, a, b) {
 
 
 var identify = function identify(table, part, a, b) {
-  var queue = I.List([a, b]);
+  var queue = I.List([[a, b]]);
   var a, b, merged;
+
+  console.log('    identify');
 
   while (queue.size > 0) {
     a = part.get(queue.first()[0]);
     b = part.get(queue.first()[1]);
+    console.log('    a: '+a+', b: '+b);
     queue = queue.shift();
 
     if (a != b) {
@@ -77,9 +80,12 @@ var scanAndIdentify = function scanAndIdentify(table, part, w, start) {
   var head = t.row;
   var i = t.index;
 
-  t = scan(table, w, start, -n+1, -i);
+  t = scan(table, fw.inverse(w), start, 0, n - i);
   var tail = t.row;
-  var j = -t.index;
+  var j = n - t.index;
+
+  console.log('  w: '+w+', start: '+start+
+              ', head: '+head+', tail: '+tail+', i: '+i+', j: '+j);
 
   if (j == i+1)
     return {
@@ -109,7 +115,7 @@ var scanRelations = function scanRelations(rels, subgens, table, part, start) {
   );
 
   return subgens.reduce(
-    function(c, w) { return scanAndIdentify(c.table, c.part, w, part[0]); },
+    function(c, w) { return scanAndIdentify(c.table, c.part, w, part.get(0)); },
     current
   );
 };
@@ -134,8 +140,18 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
   };
 
   var i = 0, j = 0;
+  console.log('gens: '+gens);
+  console.log('rels: '+rels);
+  console.log('subgens: '+subgens);
+  console.log();
 
   while (true) {
+    console.log('i: '+i+', j: '+j);
+    console.log('table: '+current.table);
+    console.log('partition: '+current.part);
+    if (current.table.size > 10)
+      return;
+
     if (i >= current.table.size) {
       return current;
     } else if (j >= gens.size || i != current.part.get(i)) {
@@ -147,13 +163,16 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
       var g = gens.get(j);
       var n = current.table.size;
       var table = current.table.setIn([i, g], n).setIn([n, -g], i);
+      console.log('  table -> '+table);
       current = scanRelations(rels, subgens, table, current.part, n);
       ++j;
     }
+
+    console.log();
   }
 };
 
 
 if (require.main == module) {
-  console.log(cosetTable(1, [[1,1]], [[1]]));
+  console.log(cosetTable(1, [[1,1,1,1]], [[]]));
 }
