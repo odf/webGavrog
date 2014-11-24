@@ -28,12 +28,9 @@ var identify = function identify(table, part, a, b) {
   var queue = I.List([[a, b]]);
   var a, b, merged;
 
-  console.log('    identify');
-
   while (queue.size > 0) {
     a = part.get(queue.first()[0]);
     b = part.get(queue.first()[1]);
-    console.log('    a: '+a+', b: '+b);
     queue = queue.shift();
 
     if (a != b) {
@@ -84,9 +81,6 @@ var scanAndIdentify = function scanAndIdentify(table, part, w, start) {
   var tail = t.row;
   var j = n - t.index;
 
-  console.log('  w: '+w+', start: '+start+
-              ', head: '+head+', tail: '+tail+', i: '+i+', j: '+j);
-
   if (j == i+1)
     return {
       table: table.setIn([head, w.get(i)], tail).setIn([tail, -w.get(i)], head),
@@ -110,14 +104,31 @@ var scanRelations = function scanRelations(rels, subgens, table, part, start) {
   };
 
   current = rels.reduce(
-    function(c, w) { return scanAndIdentify(c.table, c.part, w, start); },
+    function(c, w) {
+      return scanAndIdentify(c.table, c.part, w, start);
+    },
     current
   );
 
   return subgens.reduce(
-    function(c, w) { return scanAndIdentify(c.table, c.part, w, part.get(0)); },
+    function(c, w) {
+      return scanAndIdentify(c.table, c.part, w, c.part.get(0));
+    },
     current
   );
+};
+
+
+var compressed = function(table, part) {
+  var toIdx = table.toMap().flip().toList()
+    .filter(function(k) { return part.get(k) == k; })
+    .sort().toMap().flip();
+  var canon = function(a) { return toIdx.get(part.get(a)); };
+
+  return table.toMap()
+    .filter(function(r, k) { return toIdx.get(k) != undefined; })
+    .mapKeys(canon)
+    .map(function(row) { return row.map(canon); });
 };
 
 
@@ -140,20 +151,13 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
   };
 
   var i = 0, j = 0;
-  console.log('gens: '+gens);
-  console.log('rels: '+rels);
-  console.log('subgens: '+subgens);
-  console.log();
 
   while (true) {
-    console.log('i: '+i+', j: '+j);
-    console.log('table: '+current.table);
-    console.log('partition: '+current.part);
-    if (current.table.size > 10)
+    if (current.table.size > 10000)
       return;
 
     if (i >= current.table.size) {
-      return current;
+      return compressed(current.table, current.part);
     } else if (j >= gens.size || i != current.part.get(i)) {
       ++i;
       j = 0;
@@ -163,16 +167,18 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
       var g = gens.get(j);
       var n = current.table.size;
       var table = current.table.setIn([i, g], n).setIn([n, -g], i);
-      console.log('  table -> '+table);
       current = scanRelations(rels, subgens, table, current.part, n);
       ++j;
     }
-
-    console.log();
   }
 };
 
 
 if (require.main == module) {
-  console.log(cosetTable(1, [[1,1,1,1]], [[]]));
+  var t = cosetTable(3,
+                     [[1,1], [2,2], [3,3],
+                      [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(5, [2,3])],
+                     [[1,2]]);
+
+  console.log(t, t.size);
 }
