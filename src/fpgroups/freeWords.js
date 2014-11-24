@@ -63,13 +63,13 @@ var inverse = function inverse(w) {
 };
 
 
-var raisedTo = function raisedTo(w, m) {
+var raisedTo = function raisedTo(m, w) {
   w = word(w);
 
   if (m == 0)
     return empty;
   else if (m < 0)
-    return raisedTo(inverse(w), -m);
+    return raisedTo(-m, inverse(w));
   else {
     var n = w.size;
     var k = _overlap(w, w);
@@ -117,6 +117,6 @@ module.exports = {
 
 if (require.main == module) {
   console.log(product([[1,2,3], [-3,-2,4]]));
-  console.log(raisedTo([1,2,3,4,5,-2,-1], 3));
+  console.log(raisedTo(3, [1,2,3,4,5,-2,-1]));
   console.log(commutator([1,2], [3,2]));
 }
