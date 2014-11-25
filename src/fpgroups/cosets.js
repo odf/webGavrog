@@ -165,7 +165,7 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
 
   while (true) {
     if (current.table.size > 10000)
-      return;
+      throw new Error('maximum coset table size reached');
 
     if (i >= current.table.size) {
       return compressed(current.table, current.part);
