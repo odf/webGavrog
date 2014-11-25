@@ -120,9 +120,10 @@ var scanRelations = function scanRelations(rels, subgens, table, part, start) {
 
 
 var compressed = function(table, part) {
-  var toIdx = table.toMap().flip().toList()
+  var toIdx = table.map(function(_,k) { return k; })
     .filter(function(k) { return part.get(k) == k; })
-    .sort().toMap().flip();
+    .toMap().flip();
+
   var canon = function(a) { return toIdx.get(part.get(a)); };
 
   return table.toMap()
@@ -177,8 +178,8 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
 if (require.main == module) {
   var t = cosetTable(3,
                      [[1,1], [2,2], [3,3],
-                      [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(5, [2,3])],
-                     [[1,2]]);
+                      [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
+                     [[1]]);
 
   console.log(t, t.size);
 }
