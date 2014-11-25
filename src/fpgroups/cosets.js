@@ -186,11 +186,30 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
 };
 
 
-if (require.main == module) {
-  var t = cosetTable(3,
-                     [[1,1], [2,2], [3,3],
-                      [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
-                     [[1]]);
+var cosetRepresentatives = function(table) {
+  var queue = I.List([0]);
+  var reps = I.Map([[0, fw.empty]]);
 
-  console.log(t, t.size);
+  while (queue.size > 0) {
+    var i = queue.first();
+    var row = table.get(i);
+    var free = row.filter(function(v) { return reps.get(v) === undefined; });
+    reps = reps.merge(free.entrySeq().map(function(e) {
+      return [e[1], fw.product([reps.get(i), [e[0]]])];
+    }));
+    queue = queue.shift().concat(free.toList());
+  }
+
+  return reps;
+};
+
+
+if (require.main == module) {
+  var t = cosetRepresentatives(
+    cosetTable(
+      3,
+      [[1,1], [2,2], [3,3], [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
+      [[1,2]]));
+
+  console.log(t.toList(), t.size);
 }
