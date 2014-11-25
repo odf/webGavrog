@@ -133,6 +133,16 @@ var compressed = function(table, part) {
 };
 
 
+var maybeCompressed = function(c, factor) {
+  var invalid = (c.table.filter(function(k) { return c.part.get(k) != k; }).size
+                 / c.table.size);
+  if (invalid > factor)
+    return { table: compressed(c.table, c.part), part: partition };
+  else
+    return c;
+};
+
+
 var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
   var withInverses = function(words) {
     return I.Set(words).merge(words.map(fw.inverse));
@@ -168,7 +178,8 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
       var g = gens.get(j);
       var n = current.table.size;
       var table = current.table.setIn([i, g], n).setIn([n, -g], i);
-      current = scanRelations(rels, subgens, table, current.part, n);
+      current = maybeCompressed(
+        scanRelations(rels, subgens, table, current.part, n));
       ++j;
     }
   }
