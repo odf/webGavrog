@@ -86,7 +86,7 @@ var fromString = function fromString(str) {
   var v = new Array(dim * size);
 
   var get = function get(a, i, D) { return a[i * size + D - 1]; };
-  var set = function get(a, i, D, x) { a[i * size + D - 1] = x; };
+  var set = function set(a, i, D, x) { a[i * size + D - 1] = x; };
 
   for (var i = 0; i <= dim; ++i) {
     var k = -1;
