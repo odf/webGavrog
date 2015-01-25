@@ -70,7 +70,7 @@ var _parseInts = function _parseInts(str) {
 };
 
 
-var fromString = function fromString(str) {
+var parse = function parse(str) {
   var parts = str.trim().replace(/^</, '').replace(/>$/, '').split(/:/);
   if (parts[0].match(/\d+\.\d+/))
     parts.shift();
@@ -208,20 +208,19 @@ var m = function m(ds, i, j, D) {
 
 
 module.exports = {
-  fromData  : fromData,
-  fromString: fromString,
+  isElement: function(ds, D)       { return ds.isElement(D); },
+  elements : function(ds)          { return ds.elements(); },
+  isIndex  : function(ds, i)       { return ds.isIndex(i); },
+  indices  : function(ds)          { return ds.indices(); },
+  s        : function(ds, i, D)    { return ds.s(i, D); },
+  v        : function(ds, i, j, D) { return ds.v(i, j, D); },
 
-  isElement : function(ds, D)       { return ds.isElement(D); },
-  elements  : function(ds)          { return ds.elements(); },
-  isIndex   : function(ds, i)       { return ds.isIndex(i); },
-  indices   : function(ds)          { return ds.indices(); },
-  s         : function(ds, i, D)    { return ds.s(i, D); },
-  v         : function(ds, i, j, D) { return ds.v(i, j, D); },
+  r        : r,
+  m        : m,
 
-  r         : r,
-  m         : m
+  parse    : parse
 };
 
 
 if (require.main == module)
-  console.log('' + fromString('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
+  console.log('' + parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
