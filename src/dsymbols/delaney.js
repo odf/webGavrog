@@ -360,7 +360,15 @@ module.exports = {
 
   blank    : blank,
   parse    : parse,
-  stringify: stringify
+  stringify: stringify,
+
+  withPairings: function(ds, i, pairings) {
+    return ds.withPairings(i, pairings);
+  },
+
+  withBranchings: function(ds, i, branchings) {
+    return ds.withBranchings(i, branchings);
+  }
 };
 
 
