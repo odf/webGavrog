@@ -338,6 +338,13 @@ var m = function m(ds, i, j, D) {
 };
 
 
+var blank = function blank(dim, size) {
+  var s = I.List().setSize((dim+1) * size);
+  var v = I.List().setSize(dim * size);
+  return _fromData(dim, s, v);
+};
+
+
 module.exports = {
   isElement: function(ds, D)       { return ds.isElement(D); },
   elements : function(ds)          { return ds.elements(); },
@@ -348,7 +355,10 @@ module.exports = {
 
   r        : r,
   m        : m,
+  dim      : function(ds) { return ds.indices().size - 1; },
+  size     : function(ds) { return ds.elements().size; },
 
+  blank    : blank,
   parse    : parse,
   stringify: stringify
 };
@@ -360,6 +370,6 @@ if (require.main == module) {
   console.log(stringify(ds));
   console.log('' + ds);
 
-  console.log('' + ds.withPairings(1, I.fromJS([[2,1]])));
-  console.log('' + ds.withBranchings(0, I.fromJS([[2,3],[1,5]])));
+  console.log('' + ds.withPairings(1, [[2,1]]));
+  console.log('' + ds.withBranchings(0, [[2,3],[1,5]]));
 }
