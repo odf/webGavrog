@@ -3,6 +3,12 @@
 var I = require('immutable');
 
 
+var _assert = function(condition, message) {
+  if (!condition)
+    throw new Error(message || 'assertion error');
+};
+
+
 var _isElement = function _isElement(dsImpl, D) {
   return typeof D == 'number' && D >= 1 && D <= dsImpl.size;
 };
@@ -19,8 +25,16 @@ var _indices = function _indices(dsImpl) {
   return I.Range(0, dsImpl.dim+1);
 };
 
+var _index = function offset(dsImpl, i, D) {
+  return i * dsImpl.size + D - 1;
+};
+
 var _get = function offset(dsImpl, list, i, D) {
-  return list.get(i * dsImpl.size + D - 1);
+  return list.get(_index(dsImpl, i, D));
+};
+
+var _set = function offset(dsImpl, list, i, D, x) {
+  return list.set(_index(dsImpl, i, D), x);
 };
 
 var _s = function _s(dsImpl, i, D) {
@@ -42,7 +56,117 @@ var _v = function _v(dsImpl, i, j, D) {
 };
 
 
-var fromData = function fromData(dim, sData, vData) {
+var _merge = function _merge(a, b) {
+  return a.withMutations(function(list) {
+    b.forEach(function(x, i) {
+      if (x !== undefined)
+        list.set(i, x);
+    });
+  });
+};
+
+
+var _precheckPairings = function _checkPairings(specs, size) {
+  specs.forEach(function(p) {
+    _assert(p.size == 1 || p.size == 2,
+            'expected pair or singleton, got '+p);
+
+    var D = p.get(0);
+    var E = p.size > 1 ? p.get(1) : p.get(0);
+
+    _assert(typeof D == 'number' && D % 1 == 0 && D > 0,
+            'expected a positive integer, got '+D);
+    _assert(D <= size,
+            'expected at most '+size+', got '+D);
+
+    _assert(typeof E == 'number' && E % 1 == 0 && E >= 0,
+            'expected a non-negative integer, got '+E);
+    _assert(E <= size,
+            'expected at most '+size+', got '+E);
+  });
+};
+
+
+var _withPairings = function _withPairings(dsImpl, i, inputs) {
+  var specs = I.fromJS(inputs);
+  _precheckPairings(specs, dsImpl.size);
+
+  _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim,
+          'expected an integer between 0 and '+dsImpl.dim+', got i');
+
+  var sNew = I.List().withMutations(function(list) {
+    specs.forEach(function(p) {
+      var D = p.get(0);
+      var E = p.size > 1 ? p.get(1) : p.get(0);
+      var Di = _get(dsImpl, list, i, D);
+      var Ei = _get(dsImpl, list, i, E);
+
+      _assert(Di === undefined || Di == E,
+              'conflicting partners '+Di+' and '+E+' for '+D);
+      _assert(Ei === undefined || Ei == D,
+              'conflicting partners '+Ei+' and '+D+' for '+E);
+
+      _set(dsImpl, list, i, _get(dsImpl, dsImpl.s, i, D), 0),
+      _set(dsImpl, list, i, _get(dsImpl, dsImpl.s, i, E), 0),
+      _set(dsImpl, list, i, D, E);
+      _set(dsImpl, list, i, E, D);
+    });
+  });
+
+  return _fromData(dsImpl.dim, _merge(dsImpl.s, sNew), dsImpl.v);
+};
+
+
+var _precheckBranchings = function _checkBranchings(specs, size) {
+  specs.forEach(function(p) {
+    _assert(p.size == 2, 'expected pair, got '+p);
+
+    var D = p.get(0);
+    var v = p.get(1);
+
+    _assert(typeof D == 'number' && D % 1 == 0 && D > 0,
+            'expected a positive integer, got '+D);
+    _assert(D <= size,
+            'expected at most '+size+', got '+D);
+
+    _assert(typeof v == 'number' && v % 1 == 0 && v >= 0,
+            'expected a non-negative integer, got '+v);
+  });
+};
+
+
+var _withBranchings = function _withBranchings(dsImpl, i, inputs) {
+  var specs = I.fromJS(inputs);
+  _precheckBranchings(specs, dsImpl.size);
+
+  _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim-1,
+          'expected integer between 0 and '+dsImpl.dim-1+', got i');
+
+  var vNew = I.List().withMutations(function(list) {
+    specs.forEach(function(p) {
+      var D = p.get(0);
+      var v = p.get(1);
+      var vD = _get(dsImpl, list, i, D);
+
+      _assert(vD === undefined || vD == v,
+              'conflicting values '+vD+' and '+v+' for '+D);
+
+      var E = D;
+      do {
+        E = _get(dsImpl, dsImpl.s, i, E) || E;
+        _set(dsImpl, list, i, E, v);
+        E = _get(dsImpl, dsImpl.s, i+1, E) || E;
+        _set(dsImpl, list, i, E, v);
+      }
+      while (E != D);
+    });
+  });
+
+  return _fromData(dsImpl.dim, dsImpl.s, _merge(dsImpl.v, vNew));
+};
+
+
+var _fromData = function _fromData(dim, sData, vData) {
   var s = I.List(sData);
   var v = I.List(vData);
 
@@ -60,7 +184,14 @@ var fromData = function fromData(dim, sData, vData) {
     indices  : function()        { return _indices(_ds); },
     s        : function(i, D)    { return _s(_ds, i, D); },
     v        : function(i, j, D) { return _v(_ds, i, j, D); },
-    toString : function()        { return toString(this); }
+    toString : function()        { return stringify(this); },
+
+    withPairings  : function(i, inputs) {
+      return _withPairings(_ds, i, inputs);
+    },
+    withBranchings: function(i, inputs) {
+      return _withBranchings(_ds, i, inputs);
+    }
   }
 };
 
@@ -127,13 +258,13 @@ var parse = function parse(str) {
     }
   }
 
-  return fromData(dim, s, v);
+  return _fromData(dim, s, v);
 };
 
 
 var _orbitReps1 = function _orbitReps1(ds, i) {
   return ds.elements().filter(function(D) {
-    return ds.s(i, D) >= D;
+    return (ds.s(i, D) || D) >= D;
   });
 };
 
@@ -162,11 +293,11 @@ var _orbitReps2 = function _orbitReps2(ds, i, j) {
 };
 
 
-var toString = function toString(ds) {
+var stringify = function stringify(ds) {
   var sDefs = ds.indices()
     .map(function(i) {
       return _orbitReps1(ds, i)
-        .map(function(D) { return ds.s(i, D); })
+        .map(function(D) { return ds.s(i, D) || 0; })
         .join(' ');
     })
     .join(',');
@@ -175,7 +306,7 @@ var toString = function toString(ds) {
     .filter(function(i) { return ds.isIndex(i+1); })
     .map(function(i) {
       return _orbitReps2(ds, i, i+1)
-        .map(function(D) { return m(ds, i, i+1, D); })
+        .map(function(D) { return m(ds, i, i+1, D) || 0; })
         .join(' ');
     })
     .join(',');
@@ -218,9 +349,17 @@ module.exports = {
   r        : r,
   m        : m,
 
-  parse    : parse
+  parse    : parse,
+  stringify: stringify
 };
 
 
-if (require.main == module)
-  console.log('' + parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
+if (require.main == module) {
+  var ds = parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>');
+
+  console.log(stringify(ds));
+  console.log('' + ds);
+
+  console.log('' + ds.withPairings(1, I.fromJS([[2,1]])));
+  console.log('' + ds.withBranchings(0, I.fromJS([[2,3],[1,5]])));
+}
