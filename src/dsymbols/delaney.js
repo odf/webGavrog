@@ -3,38 +3,38 @@
 var I = require('immutable');
 
 
-var isElement = function isElement(dsImpl, D) {
+var _isElement = function _isElement(dsImpl, D) {
   return typeof D == 'number' && D >= 1 && D <= dsImpl.size;
 };
 
-var elements = function elements(dsImpl) {
+var _elements = function _elements(dsImpl) {
   return I.Range(1, dsImpl.size+1);
 };
 
-var isIndex = function isIndex(dsImpl, i) {
+var _isIndex = function _isIndex(dsImpl, i) {
   return typeof i == 'number' && i >= 0 && i <= dsImpl.dim;
 };
 
-var indices = function indices(dsImpl) {
+var _indices = function _indices(dsImpl) {
   return I.Range(0, dsImpl.dim+1);
 };
 
-var get = function offset(dsImpl, list, i, D) {
+var _get = function offset(dsImpl, list, i, D) {
   return list.get(i * dsImpl.size + D - 1);
 };
 
-var s = function s(dsImpl, i, D) {
-  if (isElement(dsImpl, D) && isIndex(dsImpl, i))
-    return get(dsImpl, dsImpl.s, i, D);
+var _s = function _s(dsImpl, i, D) {
+  if (_isElement(dsImpl, D) && _isIndex(dsImpl, i))
+    return _get(dsImpl, dsImpl.s, i, D);
 };
 
-var v = function v(dsImpl, i, j, D) {
-  if (isElement(dsImpl, D) && isIndex(dsImpl, i) && isIndex(dsImpl, j)) {
+var _v = function _v(dsImpl, i, j, D) {
+  if (_isElement(dsImpl, D) && _isIndex(dsImpl, i) && _isIndex(dsImpl, j)) {
     if (j == i+1)
-      return get(dsImpl, dsImpl.v, i, D);
+      return _get(dsImpl, dsImpl.v, i, D);
     else if (j == i-1)
-      return get(dsImpl, dsImpl.v, j, D);
-    else if (get(dsImpl, dsImpl.s, i, D) == get(dsImpl, dsImpl.s, j, D))
+      return _get(dsImpl, dsImpl.v, j, D);
+    else if (_get(dsImpl, dsImpl.s, i, D) == _get(dsImpl, dsImpl.s, j, D))
       return 2;
     else
       return 1;
@@ -43,29 +43,29 @@ var v = function v(dsImpl, i, j, D) {
 
 
 var fromData = function fromData(dim, sData, vData) {
-  var _s = I.List(sData);
-  var _v = I.List(vData);
+  var s = I.List(sData);
+  var v = I.List(vData);
 
   var _ds = {
-    s   : _s,
-    v   : _v,
+    s   : s,
+    v   : v,
     dim : dim,
-    size: _v.size / dim
+    size: v.size / dim
   };
 
   return {
-    isElement: function(D)       { return isElement(_ds, D); },
-    elements : function()        { return elements(_ds); },
-    isIndex  : function(i)       { return isIndex(_ds, i); },
-    indices  : function()        { return indices(_ds); },
-    s        : function(i, D)    { return s(_ds, i, D); },
-    v        : function(i, j, D) { return v(_ds, i, j, D); },
+    isElement: function(D)       { return _isElement(_ds, D); },
+    elements : function()        { return _elements(_ds); },
+    isIndex  : function(i)       { return _isIndex(_ds, i); },
+    indices  : function()        { return _indices(_ds); },
+    s        : function(i, D)    { return _s(_ds, i, D); },
+    v        : function(i, j, D) { return _v(_ds, i, j, D); },
     toString : function()        { return toString(this); }
   }
 };
 
 
-var parseInts = function parseNumbers(str) {
+var _parseInts = function _parseInts(str) {
   return str.trim().split(/\s+/).map(function(s) { return parseInt(s); });
 };
 
@@ -75,12 +75,12 @@ var fromString = function fromString(str) {
   if (parts[0].match(/\d+\.\d+/))
     parts.shift();
 
-  var dims = parseInts(parts[0]);
+  var dims = _parseInts(parts[0]);
   var size = dims[0];
   var dim  = dims[1] || 2;
 
-  var gluings = parts[1].split(/,/).map(parseInts);
-  var degrees = parts[2].split(/,/).map(parseInts);
+  var gluings = parts[1].split(/,/).map(_parseInts);
+  var degrees = parts[2].split(/,/).map(_parseInts);
 
   var s = new Array((dim+1) * size);
   var v = new Array(dim * size);
@@ -131,36 +131,14 @@ var fromString = function fromString(str) {
 };
 
 
-var dimension = function dimension(ds) {
-  return ds.indices().size - 1;
-};
-
-
-var size = function size(ds) {
-  return ds.elements().size;
-};
-
-
-var orbitReps = function orbitReps(ds, idcs) {
-  idcs = I.List(idcs);
-
-  switch (idcs.size) {
-  case 0: return ds.elements();
-  case 1: return orbitReps1(ds, idcs.get(0));
-  case 2: return orbitReps2(ds, idcs.get(0), idcs.get(1));
-  default: throw new Error('not yet implemented');
-  }
-};
-
-
-var orbitReps1 = function orbitReps1(ds, i, D) {
+var _orbitReps1 = function _orbitReps1(ds, i) {
   return ds.elements().filter(function(D) {
     return ds.s(i, D) >= D;
   });
 };
 
 
-var orbitReps2 = function orbitReps2(ds, i, j, D) {
+var _orbitReps2 = function _orbitReps2(ds, i, j) {
   var seen = new Array(ds.elements().size + 1);
   var result = [];
 
@@ -184,6 +162,31 @@ var orbitReps2 = function orbitReps2(ds, i, j, D) {
 };
 
 
+var toString = function toString(ds) {
+  var sDefs = ds.indices()
+    .map(function(i) {
+      return _orbitReps1(ds, i)
+        .map(function(D) { return ds.s(i, D); })
+        .join(' ');
+    })
+    .join(',');
+
+  var mDefs = ds.indices()
+    .filter(function(i) { return ds.isIndex(i+1); })
+    .map(function(i) {
+      return _orbitReps2(ds, i, i+1)
+        .map(function(D) { return m(ds, i, i+1, D); })
+        .join(' ');
+    })
+    .join(',');
+
+  var n = ds.elements().size;
+  var d = ds.indices().size - 1;
+
+  return '<1.1:'+n+(d == 2 ? '' : ' '+d)+':'+sDefs+':'+mDefs+'>';
+};
+
+
 var r = function r(ds, i, j, D) {
   var k = 0;
   var E = D;
@@ -204,31 +207,6 @@ var m = function m(ds, i, j, D) {
 };
 
 
-var toString = function toString(ds) {
-  var sDefs = ds.indices()
-    .map(function(i) {
-      return orbitReps(ds, [i])
-        .map(function(D) { return ds.s(i, D); })
-        .join(' ');
-    })
-    .join(',');
-
-  var mDefs = ds.indices()
-    .filter(function(i) { return ds.isIndex(i+1); })
-    .map(function(i) {
-      return orbitReps(ds, [i, i+1])
-        .map(function(D) { return m(ds, i, i+1, D); })
-        .join(' ');
-    })
-    .join(',');
-
-  var n = size(ds);
-  var d = dimension(ds);
-
-  return '<1.1:'+n+(d == 2 ? '' : ' '+d)+':'+sDefs+':'+mDefs+'>';
-};
-
-
 module.exports = {
   fromData  : fromData,
   fromString: fromString,
@@ -240,9 +218,6 @@ module.exports = {
   s         : function(ds, i, D)    { return ds.s(i, D); },
   v         : function(ds, i, j, D) { return ds.v(i, j, D); },
 
-  dimension : dimension,
-  size      : size,
-  orbitReps : orbitReps,
   r         : r,
   m         : m
 };
