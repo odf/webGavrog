@@ -89,6 +89,12 @@ var typePartition = function typePartition(ds) {
 };
 
 
+module.exports = {
+  isMinimal: isMinimal,
+  typePartition: typePartition
+};
+
+
 if (require.main == module) {
   var ds = DS.parse('<1.1:3:1 2 3,1 3,2 3:4 4,3>');
   var tm = _typeMap(ds);
