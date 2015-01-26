@@ -95,6 +95,8 @@ var _withPairings = function _withPairings(dsImpl, i, inputs) {
           'expected an integer between 0 and '+dsImpl.dim+', got i');
 
   var sNew = I.List().withMutations(function(list) {
+    var dangling = [];
+
     specs.forEach(function(p) {
       var D = p.get(0);
       var E = p.size > 1 ? p.get(1) : p.get(0);
@@ -106,10 +108,16 @@ var _withPairings = function _withPairings(dsImpl, i, inputs) {
       _assert(Ei === undefined || Ei == D,
               'conflicting partners '+Ei+' and '+D+' for '+E);
 
-      _set(dsImpl, list, i, _get(dsImpl, dsImpl.s, i, D), 0),
-      _set(dsImpl, list, i, _get(dsImpl, dsImpl.s, i, E), 0),
+      dangling.push(_get(dsImpl, dsImpl.s, i, D));
+      dangling.push(_get(dsImpl, dsImpl.s, i, E));
+
       _set(dsImpl, list, i, D, E);
       _set(dsImpl, list, i, E, D);
+    });
+
+    dangling.forEach(function(D) {
+      if (_get(dsImpl, list, i, D) === undefined)
+        _set(dsImpl, list, i, D, 0);
     });
   });
 
@@ -262,14 +270,14 @@ var parse = function parse(str) {
 };
 
 
-var _orbitReps1 = function _orbitReps1(ds, i) {
+var orbitReps1 = function orbitReps1(ds, i) {
   return ds.elements().filter(function(D) {
     return (ds.s(i, D) || D) >= D;
   });
 };
 
 
-var _orbitReps2 = function _orbitReps2(ds, i, j) {
+var orbitReps2 = function orbitReps2(ds, i, j) {
   var seen = new Array(ds.elements().size + 1);
   var result = [];
 
@@ -296,7 +304,7 @@ var _orbitReps2 = function _orbitReps2(ds, i, j) {
 var stringify = function stringify(ds) {
   var sDefs = ds.indices()
     .map(function(i) {
-      return _orbitReps1(ds, i)
+      return orbitReps1(ds, i)
         .map(function(D) { return ds.s(i, D) || 0; })
         .join(' ');
     })
@@ -305,7 +313,7 @@ var stringify = function stringify(ds) {
   var mDefs = ds.indices()
     .filter(function(i) { return ds.isIndex(i+1); })
     .map(function(i) {
-      return _orbitReps2(ds, i, i+1)
+      return orbitReps2(ds, i, i+1)
         .map(function(D) { return m(ds, i, i+1, D) || 0; })
         .join(' ');
     })
@@ -361,6 +369,9 @@ module.exports = {
   blank    : blank,
   parse    : parse,
   stringify: stringify,
+
+  orbitReps1: orbitReps1,
+  orbitReps2: orbitReps2,
 
   withPairings: function(ds, i, pairings) {
     return ds.withPairings(i, pairings);
