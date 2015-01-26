@@ -298,6 +298,20 @@ var orbitReps1 = function orbitReps1(ds, i) {
 };
 
 
+var orbit2 = function orbit2(ds, i, j, D) {
+  return I.Set().withMutations(function(set) {
+    var E = D;
+    do {
+      E = ds.s(i, E) || E;
+      set.add(E);
+      E = ds.s(j, E) || E;
+      set.add(E);
+    }
+    while (E != D);
+  });
+};
+
+
 var orbitReps2 = function orbitReps2(ds, i, j) {
   var seen = new Array(ds.elements().size + 1);
   var result = [];
@@ -385,6 +399,7 @@ module.exports = {
   stringify: stringify,
 
   orbitReps1: orbitReps1,
+  orbit2    : orbit2,
   orbitReps2: orbitReps2,
 
   withPairings: function(ds, i, pairings) {
