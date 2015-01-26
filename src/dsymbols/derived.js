@@ -11,12 +11,12 @@ var dual = function dual(ds) {
     d, DS.size(ds),
     function(_, i) {
       return ds.elements().map(function(D) {
-        return I.List([D, ds.s(d - i, D)]);
+        return [D, ds.s(d - i, D)];
       });
     },
     function(tmp, i) {
       return ds.elements().map(function(D) {
-        return I.List([D, ds.v(d-i-1, d-i, D)]);
+        return [D, ds.v(d-i-1, d-i, D)];
       });
     }
   );
@@ -31,10 +31,7 @@ var cover = function cover(ds, nrSheets, transferFn) {
     function(_, i) {
       return ds.elements().flatMap(function(D) {
         return I.Range(0, nrSheets).map(function(k) {
-          return I.List([
-            k * n + D,
-            transferFn(k, i, D) * n + ds.s(i, D)
-          ]);
+          return [k * n + D, transferFn(k, i, D) * n + ds.s(i, D)];
         });
       });
     },
@@ -43,7 +40,7 @@ var cover = function cover(ds, nrSheets, transferFn) {
       return DS.orbitReps2(tmp, i, j).map(function(D) {
         var D0 = (D - 1) % n + 1;
         var v = (DS.m(ds, i, j, D0) || 0) / DS.r(tmp, i, j, D);
-        return I.List([D, v]);
+        return [D, v];
       });
     }
   );

@@ -88,7 +88,7 @@ var _precheckPairings = function _checkPairings(specs, size) {
 
 
 var _withPairings = function _withPairings(dsImpl, i, inputs) {
-  var specs = I.fromJS(inputs);
+  var specs = I.List(inputs).map(I.List);
   _precheckPairings(specs, dsImpl.size);
 
   _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim,
@@ -144,7 +144,7 @@ var _precheckBranchings = function _checkBranchings(specs, size) {
 
 
 var _withBranchings = function _withBranchings(dsImpl, i, inputs) {
-  var specs = I.fromJS(inputs);
+  var specs = I.List(inputs).map(I.List);
   _precheckBranchings(specs, dsImpl.size);
 
   _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim-1,
