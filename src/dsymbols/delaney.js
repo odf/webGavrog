@@ -204,6 +204,27 @@ var _fromData = function _fromData(dim, sData, vData) {
 };
 
 
+var build = function build(dim, size, pairingsFn, branchingsFn) {
+  var s = I.List().setSize((dim+1) * size);
+  var v = I.List().setSize(dim * size);
+  var ds0 = _fromData(dim, s, v);
+
+  var ds1 = I.Range(0, dim+1).reduce(
+    function(tmp, i) {
+      return tmp.withPairings(i, pairingsFn(ds0, i));
+    },
+    ds0);
+
+  var ds2 = I.Range(0, dim).reduce(
+    function(tmp, i) {
+      return tmp.withBranchings(i, branchingsFn(ds1, i));
+    },
+    ds1);
+
+  return ds2;
+};
+
+
 var _parseInts = function _parseInts(str) {
   return str.trim().split(/\s+/).map(function(s) { return parseInt(s); });
 };
@@ -346,13 +367,6 @@ var m = function m(ds, i, j, D) {
 };
 
 
-var blank = function blank(dim, size) {
-  var s = I.List().setSize((dim+1) * size);
-  var v = I.List().setSize(dim * size);
-  return _fromData(dim, s, v);
-};
-
-
 module.exports = {
   isElement: function(ds, D)       { return ds.isElement(D); },
   elements : function(ds)          { return ds.elements(); },
@@ -366,7 +380,7 @@ module.exports = {
   dim      : function(ds) { return ds.indices().size - 1; },
   size     : function(ds) { return ds.elements().size; },
 
-  blank    : blank,
+  build    : build,
   parse    : parse,
   stringify: stringify,
 
