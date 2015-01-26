@@ -116,7 +116,7 @@ var _withPairings = function _withPairings(dsImpl, i, inputs) {
     });
 
     dangling.forEach(function(D) {
-      if (_get(dsImpl, list, i, D) === undefined)
+      if (D && _get(dsImpl, list, i, D) === undefined)
         _set(dsImpl, list, i, D, 0);
     });
   });
