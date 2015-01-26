@@ -3,6 +3,7 @@
 var I = require('immutable');
 var DS = require('./delaney');
 var properties = require('./properties');
+var permutations = require('../common/permutations');
 
 
 var dual = function dual(ds) {
@@ -54,8 +55,8 @@ var minimal = function minimal(ds) {
   else {
     var p = properties.typePartition(ds);
     var reps = ds.elements().filter(function(D) { return p.get(D) == D; });
-    var emap = I.Map(reps.zip(I.Range(1, reps.count() + 1)));
-    var imap = I.Map(I.Range(0, DS.dim(ds) + 1).zip(ds.indices()));
+    var emap = I.Map(reps.zip(I.Range(1)));
+    var imap = I.Map(I.Range().zip(ds.indices()));
 
     return DS.build(
       DS.dim(ds), reps.count(),
@@ -78,6 +79,44 @@ var minimal = function minimal(ds) {
 };
 
 
+var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
+  if (splitDim == 0)
+    return ds;
+  else {
+    var dim = DS.dim(ds);
+    var perms = I.List(permutations(splitDim + 1)).map(I.List);
+    var pidx = I.Map(I.List(perms).zip(I.Range()));
+    var n = DS.size(ds);
+    var m = perms.size;
+
+    return DS.build(
+      DS.dim(ds), n * m,
+      function(_, i) {
+        if (i < splitDim) {
+          var t = ds.elements().flatMap(function(D) {
+            return I.Range(0, m).map(function(j) {
+              var p = perms.get(j);
+              var pi = p.set(i, p.get(i+1)).set(i+1, p.get(i));
+              var k = pidx.get(pi);
+              return [n * j + D, n * k + D];
+            });
+          });
+          return t;
+        } else {
+          return [];
+        }
+      },
+      function(tmp, i) {
+        if (i < splitDim-1) {
+        } else {
+        }
+        return [];
+      }
+    );
+  }
+};
+
+
 if (require.main == module) {
   var ds = DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>');
 
@@ -94,4 +133,7 @@ if (require.main == module) {
       '16 3 5 7 9 11 13 15 24 19 21 23,' +
       '10 9 20 19 14 13 22 21 24 23 18 17:' +
       '8 4,3 3 3 3>')));
+
+  var ds1 = barycentricSubdivision(ds, 2);
+  console.log('' + ds1);
 }
