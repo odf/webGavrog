@@ -79,6 +79,14 @@ var minimal = function minimal(ds) {
 };
 
 
+var _apply = function _apply(p, i) {
+  if (i < 0 || i >= p.size)
+    return i;
+  else
+    return p.get(i) - 1;
+};
+
+
 var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
   if (splitDim == 0)
     return ds;
@@ -92,25 +100,32 @@ var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
     return DS.build(
       DS.dim(ds), n * m,
       function(_, i) {
-        if (i < splitDim) {
-          var t = ds.elements().flatMap(function(D) {
-            return I.Range(0, m).map(function(j) {
-              var p = perms.get(j);
+        return ds.elements().flatMap(function(D) {
+          return I.Range(0, m).map(function(j) {
+            var p = perms.get(j);
+            if (i < splitDim) {
               var pi = p.set(i, p.get(i+1)).set(i+1, p.get(i));
               var k = pidx.get(pi);
               return [n * j + D, n * k + D];
-            });
+            } else {
+              var E = ds.s(_apply(p, i), D);
+              return [n * j + D, n * j + E];
+            }
           });
-          return t;
-        } else {
-          return [];
-        }
+        });
       },
       function(tmp, i) {
-        if (i < splitDim-1) {
-        } else {
-        }
-        return [];
+        return ds.elements().flatMap(function(D) {
+          return I.Range(0, m).map(function(j) {
+            var p = perms.get(j);
+            var v;
+            if (i < splitDim - 1)
+              v = 1;
+            else
+              v = ds.v(_apply(p, i), _apply(p, i+1), D);
+            return [n * j + D, v];
+          });
+        });
       }
     );
   }
@@ -134,6 +149,7 @@ if (require.main == module) {
       '10 9 20 19 14 13 22 21 24 23 18 17:' +
       '8 4,3 3 3 3>')));
 
-  var ds1 = barycentricSubdivision(ds, 2);
-  console.log('' + ds1);
+  console.log('' + barycentricSubdivision(ds, 0));
+  console.log('' + barycentricSubdivision(ds, 1));
+  console.log('' + barycentricSubdivision(ds, 2));
 }
