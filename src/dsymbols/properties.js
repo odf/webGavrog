@@ -3,6 +3,7 @@
 var I = require('immutable');
 var DS = require('./delaney');
 var Partition = require('../common/partition');
+var seq = require('../common/lazyseq');
 
 
 var _fold = function _fold(partition, a, b, matchP, spreadFn) {
@@ -89,9 +90,57 @@ var typePartition = function typePartition(ds) {
 };
 
 
+var traversal = function traversal(ds, indices, seeds) {
+  var root;
+  var todo = I.List(indices)
+    .map(function(i) { return [i, I.List()]; })
+    .push([root, I.List(seeds)]);
+  var seen = I.Set();
+
+  var trim = function trim(entry, seen) {
+    return [
+      entry[0],
+      entry[1].skipWhile(function(x) {
+        return seen.contains(I.List([x, entry[0]]));
+      })
+    ];
+  };
+
+  var extend = function extend(entry, D) {
+    return [
+      entry[0],
+      (entry[0] == root) ? entry[1] : entry[1].push(D)
+    ];
+  };
+
+  var step = function step(todo, seen) {
+    var remaining = todo.map(function(entry) { return trim(entry, seen); });
+    var next = remaining.filter(function(entry) {
+      return !entry[1].isEmpty();
+    }).first();
+
+    if (next) {
+      var i = next[0];
+      var D = next[1].first();
+      var Di = (i == root) ? D : ds.s(i, D);
+
+      var t = (D
+               ? remaining.map(function(entry) { return extend(entry, Di); })
+               : remaining);
+      var s = seen.concat([I.List([Di,root]), I.List([D,i]), I.List([Di,i])]);
+
+      return seq.seq([D, i, Di], function() { return step(t, s); });
+    } 
+  };
+
+  return step(todo, seen);
+};
+
+
 module.exports = {
-  isMinimal: isMinimal,
-  typePartition: typePartition
+  isMinimal    : isMinimal,
+  typePartition: typePartition,
+  traversal    : traversal
 };
 
 
@@ -124,4 +173,6 @@ if (require.main == module) {
       '16 3 5 7 9 11 13 15 24 19 21 23,' +
       '10 9 20 19 14 13 22 21 24 23 18 17:' +
       '8 4,3 3 3 3>'));
+
+  console.log('' + traversal(ds, ds.indices(), ds.elements()));
 }
