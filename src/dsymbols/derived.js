@@ -152,4 +152,7 @@ if (require.main == module) {
   console.log('' + barycentricSubdivision(ds, 0));
   console.log('' + barycentricSubdivision(ds, 1));
   console.log('' + barycentricSubdivision(ds, 2));
+
+  var dia = DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
+  console.log('' + minimal(dual(barycentricSubdivision(dia, 3))));
 }
