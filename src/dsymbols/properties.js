@@ -107,10 +107,10 @@ var traversal = function traversal(ds, indices, seeds) {
   };
 
   var extend = function extend(entry, D) {
-    return [
-      entry[0],
-      (entry[0] == root) ? entry[1] : entry[1].push(D)
-    ];
+    var i = entry[0];
+    var a = entry[1];
+
+    return [ i, i == root ? a : i < 2 ? a.unshift(D) : a.push(D) ];
   };
 
   var step = function step(todo, seen) {
@@ -146,6 +146,13 @@ module.exports = {
 
 if (require.main == module) {
   var ds = DS.parse('<1.1:3:1 2 3,1 3,2 3:4 4,3>');
+  var cov = DS.parse(
+    '<1.1:24:' +
+      '2 4 6 8 10 12 14 16 18 20 22 24,' +
+      '16 3 5 7 9 11 13 15 24 19 21 23,' +
+      '10 9 20 19 14 13 22 21 24 23 18 17:' +
+      '8 4,3 3 3 3>')
+
   var tm = _typeMap(ds);
 
   console.log(tm);
@@ -167,12 +174,8 @@ if (require.main == module) {
 
   test(ds);
   test(DS.withBranchings(ds, 0, [[2, 4]]));
-  test(DS.parse(
-    '<1.1:24:' +
-      '2 4 6 8 10 12 14 16 18 20 22 24,' +
-      '16 3 5 7 9 11 13 15 24 19 21 23,' +
-      '10 9 20 19 14 13 22 21 24 23 18 17:' +
-      '8 4,3 3 3 3>'));
+  test(cov);
 
   console.log('' + traversal(ds, ds.indices(), ds.elements()));
+  console.log(JSON.stringify(traversal(cov, cov.indices(), cov.elements())));
 }
