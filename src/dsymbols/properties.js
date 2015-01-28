@@ -97,36 +97,26 @@ var traversal = function traversal(ds, indices, seeds) {
     .push([root, I.List(seeds)]);
   var seen = I.Set();
 
-  var trim = function trim(entry, seen) {
-    return [
-      entry[0],
-      entry[1].skipWhile(function(x) {
-        return seen.contains(I.List([x, entry[0]]));
-      })
-    ];
+  var trim = function trim(a, i, seen) {
+    return a.skipWhile(function(x) { return seen.contains(I.List([x, i])); });
   };
 
-  var extend = function extend(entry, D) {
-    var i = entry[0];
-    var a = entry[1];
-
-    return [ i, i == root ? a : i < 2 ? a.unshift(D) : a.push(D) ];
+  var push = function push(a, i, D) {
+    return i == root ? a : i < 2 ? a.unshift(D) : a.push(D);
   };
 
   var step = function step(todo, seen) {
-    var remaining = todo.map(function(entry) { return trim(entry, seen); });
-    var next = remaining.filter(function(entry) {
-      return !entry[1].isEmpty();
-    }).first();
+    var rest = todo.map(function(e) { return [e[0], trim(e[1], e[0], seen)]; });
+    var next = rest
+      .filter(function(entry) { return !entry[1].isEmpty(); })
+      .first();
 
     if (next) {
       var i = next[0];
       var D = next[1].first();
       var Di = (i == root) ? D : ds.s(i, D);
 
-      var t = (D
-               ? remaining.map(function(entry) { return extend(entry, Di); })
-               : remaining);
+      var t = rest.map(function(e) { return [e[0], push(e[1], e[0], Di)]; });
       var s = seen.concat([I.List([Di,root]), I.List([D,i]), I.List([Di,i])]);
 
       return seq.seq([D, i, Di], function() { return step(t, s); });
