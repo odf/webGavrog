@@ -148,41 +148,22 @@ module.exports = {
 
 
 if (require.main == module) {
-  var ds = DS.parse('<1.1:3:1 2 3,1 3,2 3:4 4,3>');
-  var cov = DS.parse(
+  var ds = DS.parse(
     '<1.1:24:' +
       '2 4 6 8 10 12 14 16 18 20 22 24,' +
       '16 3 5 7 9 11 13 15 24 19 21 23,' +
       '10 9 20 19 14 13 22 21 24 23 18 17:' +
       '8 4,3 3 3 3>')
 
-  var tm = _typeMap(ds);
+  console.log('ds = '+ds);
+  console.log();
 
-  console.log(tm);
-  console.log('' +
-              _fold(Partition(), 1, 2,
-                    function(D, E) {
-                      return tm.get(D).equals(tm.get(E));
-                    },
-                    function(D, E) {
-                      return ds.indices().map(function(i) {
-                        return [ds.s(i, D), ds.s(i, E)];
-                      });
-                    }));
+  console.log('    symbol is '+(isMinimal(ds) ? '' : 'not ')+'minimal.');
+  console.log('    type partition: '+typePartition(ds));
+  console.log('    traversal: ' + traversal(ds, ds.indices(), ds.elements()));
+  console.log();
 
-  var test = function(ds) {
-    console.log(ds+' is '+(isMinimal(ds) ? '' : 'not ')+'minimal.');
-    console.log('    '+typePartition(ds));
-  };
-
-  test(ds);
-  test(DS.withBranchings(ds, 0, [[2, 4]]));
-  test(cov);
-
-  console.log('' + traversal(ds, ds.indices(), ds.elements()));
-  console.log(JSON.stringify(traversal(cov, cov.indices(), cov.elements())));
-
-  console.log('0,1 orbit reps: '+orbitReps(cov, [0, 1]));
-  console.log('1,2 orbit reps: '+orbitReps(cov, [1, 2]));
-  console.log('0,2 orbit reps: '+orbitReps(cov, [0, 2]));
+  console.log('    0,1 orbit reps: '+orbitReps(ds, [0, 1]));
+  console.log('    1,2 orbit reps: '+orbitReps(ds, [1, 2]));
+  console.log('    0,2 orbit reps: '+orbitReps(ds, [0, 2]));
 }
