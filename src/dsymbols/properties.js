@@ -90,8 +90,10 @@ var typePartition = function typePartition(ds) {
 };
 
 
+var root;
+
+
 var traversal = function traversal(ds, indices, seeds) {
-  var root;
   var todo = I.List(indices)
     .map(function(i) { return [i, I.List()]; })
     .push([root, I.List(seeds)]);
@@ -124,6 +126,17 @@ var traversal = function traversal(ds, indices, seeds) {
   };
 
   return step(todo, seen);
+};
+
+
+var orbitReps = function orbitReps(ds, indices, seeds) {
+  var reps = seq.map(
+    function(e) { return e[2]; },
+    seq.filter(
+      function(e) { return e[1] == root; },
+      traversal(ds, indices, seeds || ds.elements())));
+
+  return I.List(seq.asArray(reps));
 };
 
 
@@ -168,4 +181,8 @@ if (require.main == module) {
 
   console.log('' + traversal(ds, ds.indices(), ds.elements()));
   console.log(JSON.stringify(traversal(cov, cov.indices(), cov.elements())));
+
+  console.log('0,1 orbit reps: '+orbitReps(cov, [0, 1]));
+  console.log('1,2 orbit reps: '+orbitReps(cov, [1, 2]));
+  console.log('0,2 orbit reps: '+orbitReps(cov, [0, 2]));
 }
