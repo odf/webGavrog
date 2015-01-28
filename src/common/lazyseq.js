@@ -15,7 +15,9 @@ var seq = function seq(value, thunk) {
     first   : function () { return _first; },
     rest    : function () { return _rest(); },
     toString: function () { return toString(this); },
-    toJSON  : function () { return asArray(this); }
+    toJSON  : function () { return asArray(this); },
+
+    forEach : function(fn) { return forEach(fn, this); }
   };
 };
 
@@ -24,6 +26,12 @@ var size = function size(s) {
   for (var i = 0, r = s; r; ++i, r = r.rest())
     ;
   return i;
+};
+
+
+var forEach = function forEach(fn, s) {
+  for (var r = s; r; r = r.rest())
+    fn(r.first());
 };
 
 
@@ -99,6 +107,7 @@ var range = function range(start, limit) {
 module.exports = {
   seq      : seq,
   size     : size,
+  forEach  : forEach,
   asArray  : asArray,
   toString : toString,
   take     : take,
