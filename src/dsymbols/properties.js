@@ -177,7 +177,7 @@ var partialOrientation = function partialOrientation(ds) {
 };
 
 
-var isLoopless = function isOriented(ds) {
+var isLoopless = function isLoopless(ds) {
   return ds.elements().every(function(D) {
     return ds.indices().every(function(i) {
       return D != ds.s(i, D);
@@ -197,7 +197,7 @@ var isOriented = function isOriented(ds) {
 };
 
 
-var isWeaklyOriented = function isOriented(ds) {
+var isWeaklyOriented = function isWeaklyOriented(ds) {
   var ori = partialOrientation(ds);
 
   return ds.elements().every(function(D) {
@@ -210,9 +210,16 @@ var isWeaklyOriented = function isOriented(ds) {
 
 
 module.exports = {
-  isMinimal    : isMinimal,
-  typePartition: typePartition,
-  traversal    : traversal
+  isMinimal         : isMinimal,
+  typePartition     : typePartition,
+  traversal         : traversal,
+  orbitReps         : orbitReps,
+  isConnected       : isConnected,
+  orbit             : orbit,
+  partialOrientation: partialOrientation,
+  isLoopless        : isLoopless,
+  isOriented        : isOriented,
+  isWeaklyOriented  : isWeaklyOriented
 };
 
 
@@ -244,7 +251,7 @@ if (require.main == module) {
     console.log('    partial orientation: '+partialOrientation(ds));
     console.log();
     console.log();
-  }
+  };
 
   test(DS.parse(
     '<1.1:24:' +
@@ -254,4 +261,5 @@ if (require.main == module) {
       '8 4,3 3 3 3>'));
 
   test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
+  test(DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
 }
