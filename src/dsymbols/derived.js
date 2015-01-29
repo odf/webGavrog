@@ -49,6 +49,19 @@ var cover = function cover(ds, nrSheets, transferFn) {
 };
 
 
+var orientedCover = function orientedCover(ds) {
+  if (properties.isOriented(ds))
+    return ds;
+  else {
+    var ori = properties.partialOrientation(ds);
+
+    return cover(ds, 2, function(k, i, D) {
+      return ori.get(D) == ori.get(ds.s(i, D)) ? 1 - k : k;
+    });
+  }
+};
+
+
 var minimal = function minimal(ds) {
   if (properties.isMinimal(ds))
     return ds;
@@ -133,26 +146,29 @@ var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
 
 
 if (require.main == module) {
-  var ds = DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>');
+  var test = function(ds) {
+    console.log('ds = '+ds);
+    console.log();
 
-  console.log('' + ds);
-  console.log('' + dual(ds));
+    console.log('    dual          : '+dual(ds));
+    console.log('    minimal image : ' + minimal(ds));
+    console.log('    oriented cover: ' + orientedCover(ds));
+    console.log();
 
-  console.log('' + cover(ds, 2, function(k, i, D) {
-    return ds.s(i, D) == D ? 1 - k : k;
-  }));
+    ds.indices().forEach(function(i) {
+      console.log('    '+i+'-subdivision : '+barycentricSubdivision(ds, i));
+    });
+    console.log();
+    console.log();
+  };
 
-  console.log('' + minimal(DS.parse(
+  test(DS.parse(
     '<1.1:24:' +
       '2 4 6 8 10 12 14 16 18 20 22 24,' +
       '16 3 5 7 9 11 13 15 24 19 21 23,' +
       '10 9 20 19 14 13 22 21 24 23 18 17:' +
-      '8 4,3 3 3 3>')));
+      '8 4,3 3 3 3>'));
 
-  console.log('' + barycentricSubdivision(ds, 0));
-  console.log('' + barycentricSubdivision(ds, 1));
-  console.log('' + barycentricSubdivision(ds, 2));
-
-  var dia = DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
-  console.log('' + minimal(dual(barycentricSubdivision(dia, 3))));
+  test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
+  test(DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
 }
