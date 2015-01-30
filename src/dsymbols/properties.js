@@ -90,9 +90,6 @@ var typePartition = function typePartition(ds) {
 };
 
 
-var root;
-
-
 var traversal = function traversal(ds, indices, seeds) {
   var todo = I.List(indices)
     .map(function(i) { return [i, I.List()]; })
@@ -127,6 +124,9 @@ var traversal = function traversal(ds, indices, seeds) {
 
   return step(todo, seen);
 };
+
+
+var root = traversal.root = null;
 
 
 var orbitReps = function orbitReps(ds, indices, seeds) {
