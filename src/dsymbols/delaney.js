@@ -367,7 +367,7 @@ var r = function r(ds, i, j, D) {
 
   do {
     E = ds.s(i, E) || E;
-    E = ds.s(i+1, E) || E;
+    E = ds.s(j, E) || E;
     ++k;
   }
   while (E != D);
