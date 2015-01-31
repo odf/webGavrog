@@ -24,7 +24,7 @@ var _glue = function _glue(ds, bnd, D, i) {
       .forEach(function(j) {
         var oppD = bnd.getIn([D, i, j]);
         var oppE = bnd.getIn([E, i, j]);
-        var count = oppD.count + oppE.count;
+        var count = D == E ? oppD.count : oppD.count + oppE.count;
         map.setIn([oppD.chamber, oppD.index, _other(i, j, oppD.index)],
                   { chamber: oppE.chamber, index: oppE.index, count: count });
         map.setIn([oppE.chamber, oppE.index, _other(i, j, oppE.index)],
@@ -36,14 +36,20 @@ var _glue = function _glue(ds, bnd, D, i) {
 
 
 var _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
-  return ds.indices()
-    .filter(function(j) {
-      return j != i && bnd.getIn([D, i, j]);
-    })
-    .map(function(j) {
+  var onMirror = ds.s(i, D) == D;
+
+  return I.List().withMutations(function(list) {
+    ds.indices().forEach(function(j) {
       var opp = bnd.getIn([D, i, j]);
-      return I.List([opp.chamber, opp.index, _other(i, j, opp.index)]);
+
+      if (opp) {
+        var E = opp.chamber;
+        var k = opp.index;
+        if (onMirror || ds.s(k, E) != E)
+          list.push(I.List([E, k, _other(i, j, k)]));
+      }
     });
+  });
 };
 
 
@@ -59,11 +65,11 @@ var _glueRecursively = function _glueRecursively(ds, bnd, facets) {
     var D = next.get(0);
     var i = next.get(1);
     var j = next.get(2);
-    var m = DS.m(ds, i, j, D);
+    var m = DS.m(ds, i, j, D) * (ds.s(i, D) == D ? 1 : 2);
 
     var opp = boundary.getIn(next);
 
-    if (opp && D != ds.s(i, D) && (j == null || (opp.count == 2 * m))) {
+    if (opp && (j == null || opp.count == m)) {
       todo = todo.concat(_todoAfterGluing(ds, boundary, D, i));
       boundary = _glue(ds, boundary, D, i);
       glued = glued.push(next);
