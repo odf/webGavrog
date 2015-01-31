@@ -45,7 +45,7 @@ var _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
       if (opp) {
         var E = opp.chamber;
         var k = opp.index;
-        if (onMirror || ds.s(k, E) != E)
+        if (onMirror == (ds.s(k, E) == E))
           list.push(I.List([E, k, _other(i, j, k)]));
       }
     });
