@@ -131,6 +131,25 @@ var _traceWord = function _traceWord(ds, edge2word, i, j, D) {
 };
 
 
+var _updatedWordMap = function _updatedWordMap(ds, edge2word, D, i, gen, glued) {
+  return edge2word.withMutations(function(e2w) {
+    e2w.setIn([D, i], freeWords.word([gen]));
+    e2w.setIn([ds.s(i, D), i], freeWords.inverse([gen]));
+    glued.rest().forEach(function(e) {
+      var D = e.get(0);
+      var i = e.get(1);
+      var j = e.get(2);
+      var w = _traceWord(ds, e2w, i, j, D);
+
+      if (!freeWords.empty.equals(w)) {
+        e2w.setIn([D, i], freeWords.inverse(w));
+        e2w.setIn([ds.s(i, D), i], w);
+      }
+    });
+  });
+};
+
+
 var _findGenerators = function _findGenerators(ds) {
   var boundary = _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
     .get('boundary');
@@ -146,22 +165,7 @@ var _findGenerators = function _findGenerators(ds) {
 
         boundary = tmp.get('boundary');
         gen2edge = gen2edge.set(gen, I.Map({ chamber: D, index: i }));
-
-        edge2word = edge2word.withMutations(function(e2w) {
-          e2w.setIn([D, i], freeWords.word([gen]));
-          e2w.setIn([ds.s(i, D), i], freeWords.inverse([gen]));
-          glued.rest().forEach(function(e) {
-            var D = e.get(0);
-            var i = e.get(1);
-            var j = e.get(2);
-            var w = _traceWord(ds, e2w, i, j, D);
-
-            if (!freeWords.empty.equals(w)) {
-              e2w.setIn([D, i], freeWords.inverse(w));
-              e2w.setIn([ds.s(i, D), i], w);
-            }
-          });
-        });
+        edge2word = _updatedWordMap(ds, edge2word, D, i, gen, glued);
       }
     })
   });
