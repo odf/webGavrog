@@ -17,7 +17,6 @@ var _glue = function _glue(ds, bnd, D, i) {
   var E = ds.s(i, D);
 
   return bnd.withMutations(function(map) {
-    map.deleteIn([D, i]).deleteIn([E, i]);
     ds.indices()
       .filter(function(j) {
         return j != i && bnd.getIn([D, i, j]);
@@ -31,6 +30,7 @@ var _glue = function _glue(ds, bnd, D, i) {
         map.setIn([oppE.chamber, oppE.index, _other(i, j, oppE.index)],
                   { chamber: oppD.chamber, index: oppD.index, count: count });
       });
+    map.deleteIn([D, i]).deleteIn([E, i]);
   });
 };
 
@@ -117,12 +117,11 @@ var innerEdges = function innerEdges(ds) {
 var _traceWord = function _traceWord(ds, edge2word, i, j, D) {
   var traversal = I.List(seq.asArray(properties.traversal(ds, [i, j], [D])));
 
-  return freeWords.product(
-    traversal
-      .skip(2)
-      .map(function(e) {
-        return edge2word.getIn(e.slice(0, 2)) || freeWords.empty;
-      }));
+  var factors = traversal.skip(2).map(function(e) {
+    return edge2word.getIn(e.slice(0, 2)) || freeWords.empty;
+  });
+
+  return freeWords.product(factors);
 };
 
 
@@ -132,30 +131,29 @@ var _findGenerators = function _findGenerators(ds) {
   var edge2word = I.Map();
   var gen2edge = I.Map();
 
-  console.log(boundary);
-
   ds.elements().forEach(function(D) {
     ds.indices().forEach(function(i) {
       if (boundary.getIn([D, i])) {
         var tmp = _glueRecursively(ds, boundary, [[D, i]]);
         var glued = tmp.get('glued');
-        var gen = gen2edge.size;
-
-        if (ds.s(i, D) != D && tmp.get('boundary') == boundary)
-          console.log('oops!');
+        var gen = gen2edge.size+1;
 
         boundary = tmp.get('boundary');
         gen2edge = gen2edge.set(gen, I.Map({ chamber: D, index: i }));
 
         edge2word = edge2word.withMutations(function(e2w) {
           e2w.setIn([D, i], freeWords.word([gen]));
+          e2w.setIn([ds.s(i, D), i], freeWords.inverse([gen]));
           glued.rest().forEach(function(e) {
             var D = e.get(0);
             var i = e.get(1);
             var j = e.get(2);
             var w = _traceWord(ds, e2w, i, j, D);
-            e2w.setIn([D, i], freeWords.inverse(w));
-            e2w.setIn([ds.s(i, D), i], w);
+
+            if (!freeWords.empty.equals(w)) {
+              e2w.setIn([D, i], freeWords.inverse(w));
+              e2w.setIn([ds.s(i, D), i], w);
+            }
           });
         });
       }
@@ -175,7 +173,12 @@ if (require.main == module) {
     console.log('    inner edges: '+JSON.stringify(innerEdges(ds)));
     console.log();
 
-    console.log('    generators: '+_findGenerators(ds));
+    var gens = _findGenerators(ds);
+
+    console.log('    generators: '+gens.get('gen2edge'));
+    console.log();
+
+    console.log('    edge words: '+gens.get('edge2word'));
     console.log();
     console.log();
   };
