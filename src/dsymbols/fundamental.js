@@ -2,9 +2,10 @@
 
 var I = require('immutable');
 
+var seq        = require('../common/lazyseq');
+var freeWords  = require('../fpgroups/freeWords');
 var DS         = require('./delaney');
 var properties = require('./properties');
-var freeWords  = require('../fpgroups/freeWords');
 
 
 var _other = function _other(a, b, c) {
@@ -17,7 +18,10 @@ var _glue = function _glue(ds, bnd, D, i) {
 
   return bnd.withMutations(function(map) {
     map.deleteIn([D, i]).deleteIn([E, i]);
-    ds.indices().filter(function(j) { return j != i; })
+    ds.indices()
+      .filter(function(j) {
+        return j != i && bnd.getIn([D, i, j]);
+      })
       .forEach(function(j) {
         var oppD = bnd.getIn([D, i, j]);
         var oppE = bnd.getIn([E, i, j]);
@@ -32,7 +36,10 @@ var _glue = function _glue(ds, bnd, D, i) {
 
 
 var _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
-  return ds.indices().filter(function(j) { return j != i; })
+  return ds.indices()
+    .filter(function(j) {
+      return j != i && bnd.getIn([D, i, j]);
+    })
     .map(function(j) {
       var opp = bnd.getIn([D, i, j]);
       return I.List([opp.chamber, opp.index, _other(i, j, opp.index)]);
@@ -42,7 +49,7 @@ var _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
 
 var _glueRecursively = function _glueRecursively(ds, bnd, facets) {
   var boundary = bnd;
-  var todo = I.List().concat(facets);
+  var todo = I.List(facets).map(I.List);
   var glued = I.List();
 
   while (!todo.isEmpty()) {
@@ -59,7 +66,7 @@ var _glueRecursively = function _glueRecursively(ds, bnd, facets) {
     if (opp && D != ds.s(i, D) && (j == null || (opp.count == 2 * m))) {
       todo = todo.concat(_todoAfterGluing(ds, boundary, D, i));
       boundary = _glue(ds, boundary, D, i);
-      glued = glued.push(next.slice(0, 2));
+      glued = glued.push(next);
     }
   }
 
@@ -102,7 +109,60 @@ var _initialBoundary = function _initialBoundary(ds) {
 
 var innerEdges = function innerEdges(ds) {
   return _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
-    .get('glued');
+    .get('glued')
+    .map(function(a) { return a.slice(0, 2); });
+};
+
+
+var _traceWord = function _traceWord(ds, edge2word, i, j, D) {
+  var traversal = I.List(seq.asArray(properties.traversal(ds, [i, j], [D])));
+
+  return freeWords.product(
+    traversal
+      .skip(2)
+      .map(function(e) {
+        return edge2word.getIn(e.slice(0, 2)) || freeWords.empty;
+      }));
+};
+
+
+var _findGenerators = function _findGenerators(ds) {
+  var boundary = _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
+    .get('boundary');
+  var edge2word = I.Map();
+  var gen2edge = I.Map();
+
+  console.log(boundary);
+
+  ds.elements().forEach(function(D) {
+    ds.indices().forEach(function(i) {
+      if (boundary.getIn([D, i])) {
+        var tmp = _glueRecursively(ds, boundary, [[D, i]]);
+        var glued = tmp.get('glued');
+        var gen = gen2edge.size;
+
+        if (ds.s(i, D) != D && tmp.get('boundary') == boundary)
+          console.log('oops!');
+
+        boundary = tmp.get('boundary');
+        gen2edge = gen2edge.set(gen, I.Map({ chamber: D, index: i }));
+
+        edge2word = edge2word.withMutations(function(e2w) {
+          e2w.setIn([D, i], freeWords.word([gen]));
+          glued.rest().forEach(function(e) {
+            var D = e.get(0);
+            var i = e.get(1);
+            var j = e.get(2);
+            var w = _traceWord(ds, e2w, i, j, D);
+            e2w.setIn([D, i], freeWords.inverse(w));
+            e2w.setIn([ds.s(i, D), i], w);
+          });
+        });
+      }
+    })
+  });
+
+  return I.Map({ edge2word: edge2word, gen2edge: gen2edge });
 };
 
 
@@ -113,6 +173,9 @@ if (require.main == module) {
 
     console.log('    spanning tree: '+JSON.stringify(_spanningTree(ds)));
     console.log('    inner edges: '+JSON.stringify(innerEdges(ds)));
+    console.log();
+
+    console.log('    generators: '+_findGenerators(ds));
     console.log();
     console.log();
   };
