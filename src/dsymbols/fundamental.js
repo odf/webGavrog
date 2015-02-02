@@ -121,11 +121,18 @@ var innerEdges = function innerEdges(ds) {
 
 
 var _traceWord = function _traceWord(ds, edge2word, i, j, D) {
-  var traversal = I.List(seq.asArray(properties.traversal(ds, [i, j], [D])));
+  var E = ds.s(i, D);
+  var k = j;
+  var factors = [];
 
-  var factors = traversal.skip(2).map(function(e) {
-    return edge2word.getIn(e.slice(0, 2)) || freeWords.empty;
-  });
+  while(true) {
+    factors.push(edge2word.getIn([E, k]) || freeWords.empty);
+    if (E == D && k ==i)
+      break;
+
+    E = ds.s(k, E) || E;
+    k = _other(i, j, k);
+  }
 
   return freeWords.product(factors);
 };
@@ -174,6 +181,40 @@ var _findGenerators = function _findGenerators(ds) {
 };
 
 
+var fundamentalGroup = function fundamentalGroup(ds) {
+  var tmp = _findGenerators(ds);
+  var edge2word = tmp.get('edge2word');
+  var gen2edge = tmp.get('gen2edge');
+  var orbits = ds.indices().flatMap(function(i) {
+    return ds.indices().flatMap(function(j) {
+      if (j > i)
+        return properties.orbitReps(ds, [i, j]).flatMap(function(D) {
+          var w = _traceWord(ds, edge2word, i, j, D);
+          var v = ds.v(i, j, D);
+          if (v && w.size > 0)
+            return [[D, i, j, w, v]];
+        });
+    });
+  });
+
+  var relators = orbits
+    .map(function(orb) { return freeWords.raisedTo(orb[4], orb[3]); })
+    .sort();
+  var cones = orbits
+    .filter(function(orb) { return orb[4] > 1; })
+    .map(function(orb) { return orb.slice(3); })
+    .sort();
+
+  return I.Map({
+    nrGenerators: gen2edge.size,
+    relators : relators,
+    cones: cones,
+    gen2edge: gen2edge,
+    edge2word: edge2word
+  });
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
@@ -189,6 +230,14 @@ if (require.main == module) {
     console.log();
 
     console.log('    edge words: '+gens.get('edge2word'));
+    console.log();
+
+    var group = fundamentalGroup(ds);
+
+    console.log('    relators: '+group.get('relators'));
+    console.log();
+
+    console.log('    cones: '+group.get('cones'));
     console.log();
     console.log();
   };
