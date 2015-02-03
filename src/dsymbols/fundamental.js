@@ -2,6 +2,7 @@
 
 var I = require('immutable');
 
+var util       = require('../common/util');
 var seq        = require('../common/lazyseq');
 var freeWords  = require('../fpgroups/freeWords');
 var DS         = require('./delaney');
@@ -185,7 +186,7 @@ var _relatorRep = function(w) {
   return I.Range(0, w.size).flatMap(function(i) {
     var wx = freeWords.product([w.slice(i), w.slice(0, i)]);
     return [wx, freeWords.inverse(wx)];
-  }).min();
+  }).min(util.cmpLex(function(a, b) { return a * b * (a - b); }));
 };
 
 
@@ -226,7 +227,7 @@ var fundamentalGroup = function fundamentalGroup(ds) {
 
   return I.Map({
     nrGenerators: gen2edge.size,
-    relators : I.Set(orbitRelators.concat(mirrors).map(_relatorRep)),
+    relators : I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort(),
     cones: cones,
     gen2edge: gen2edge,
     edge2word: edge2word
