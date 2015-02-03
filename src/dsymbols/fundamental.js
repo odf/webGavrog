@@ -181,10 +181,19 @@ var _findGenerators = function _findGenerators(ds) {
 };
 
 
+var _relatorRep = function(w) {
+  return I.Range(0, w.size).flatMap(function(i) {
+    var wx = freeWords.product([w.slice(i), w.slice(0, i)]);
+    return [wx, freeWords.inverse(wx)];
+  }).min();
+};
+
+
 var fundamentalGroup = function fundamentalGroup(ds) {
   var tmp = _findGenerators(ds);
   var edge2word = tmp.get('edge2word');
   var gen2edge = tmp.get('gen2edge');
+
   var orbits = ds.indices().flatMap(function(i) {
     return ds.indices().flatMap(function(j) {
       if (j > i)
@@ -197,9 +206,19 @@ var fundamentalGroup = function fundamentalGroup(ds) {
     });
   });
 
-  var relators = orbits
-    .map(function(orb) { return freeWords.raisedTo(orb[4], orb[3]); })
-    .sort();
+  var orbitRelators = orbits
+    .map(function(orb) { return freeWords.raisedTo(orb[4], orb[3]); });
+
+  var mirrors = gen2edge.entrySeq()
+    .filter(function(e) {
+      var D = e[1].get('chamber');
+      var i = e[1].get('index');
+      return ds.s(i, D) == D;
+    })
+    .map(function(e) {
+      return freeWords.word([e[0], e[0]]);
+    });
+
   var cones = orbits
     .filter(function(orb) { return orb[4] > 1; })
     .map(function(orb) { return orb.slice(3); })
@@ -207,7 +226,7 @@ var fundamentalGroup = function fundamentalGroup(ds) {
 
   return I.Map({
     nrGenerators: gen2edge.size,
-    relators : relators,
+    relators : I.Set(orbitRelators.concat(mirrors).map(_relatorRep)),
     cones: cones,
     gen2edge: gen2edge,
     edge2word: edge2word
