@@ -205,6 +205,52 @@ var cosetRepresentatives = function(table) {
 };
 
 
+var _expandGenerators = function _expandGenerators(nrGens) {
+  return I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
+};
+
+
+var _expandRelators = function _expandRelators(relators) {
+  return I.Set(I.List(relators).map(I.List).flatMap(function(w) {
+    return I.Range(0, w.size).flatMap(function(i) {
+      var wx = fw.product([w.slice(i), w.slice(0, i)]);
+      return [wx, fw.inverse(wx)];
+    });
+  }));
+};
+
+
+var _freeInTable = function _freeInTable(table, gens) {
+  return I.Range(0, table.size).flatMap(function(k) {
+    var row = table.get(k);
+    return gens.map(function(g) {
+      if (row.get(g) == null)
+        return I.List([k, g]);
+    });
+  });
+};
+
+
+var tables = function tables(nrGens, relators, maxCosets) {
+  var gens = _expandGenerators(nrGens);
+  var rels = _expandRelators(relators);
+  var free = function free(t) { return _freeInTable(t, gens); };
+
+  return backtracker({
+    root: I.List([I.Map()]),
+    extract: function(table) {
+      return free(table).isEmpty() ? table : null;
+    },
+    children: function(table) {
+      return _potentialChildren(table, gens, rels, maxCosets)
+        .filter(function(t) {
+          return !t.isEmpty() && _isCanonical(t, gens);
+        });
+    }
+  });
+};
+
+
 if (require.main == module) {
   var t = cosetRepresentatives(
     cosetTable(
@@ -213,4 +259,7 @@ if (require.main == module) {
       [[1,2]]));
 
   console.log(t.toList(), t.size);
+
+  console.log(_expandGenerators(4));
+  console.log(_expandRelators([[1,2,-3]]));
 }
