@@ -143,11 +143,12 @@ var maybeCompressed = function(c, factor) {
 };
 
 
-var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
-  var withInverses = function(words) {
-    return I.Set(words).merge(words.map(fw.inverse));
-  };
+var withInverses = function(words) {
+  return I.Set(words).merge(words.map(fw.inverse));
+};
 
+
+var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
   var gens = I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
   var rels = withInverses(I.List(relators).map(fw.word).flatMap(function(r) {
     return I.Range(0, r.size).map(function(i) {
