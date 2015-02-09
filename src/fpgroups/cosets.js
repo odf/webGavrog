@@ -225,9 +225,59 @@ var _freeInTable = function _freeInTable(table, gens) {
     var row = table.get(k);
     return gens.map(function(g) {
       if (row.get(g) == null)
-        return I.List([k, g]);
+        return { index: k, generator: g };
     });
   });
+};
+
+
+var _scanRecursively = function _scanRecursively(rels, table, index) {
+  var q = I.List();
+  var k = index;
+  var t = tables;
+  var rs = rels;
+
+  while (!rs.isEmpty() || !q.isEmpty()) {
+    if (!rs.isEmpty) {
+      var out = scanAndIdentify(t, partition(), rs.first(), k);
+      if (!out.part.isTrivial())
+        return;
+
+      t = out.table;
+      if (out.next)
+        q = q.push(next);
+      rs = rs.rest();
+    } else {
+      k = q.first();
+      q = q.rest();
+    }
+  }
+
+  return t;
+};
+
+
+var _potentialChildren = function _potentialChildren(
+  table, gens, rels, maxCosets
+) {
+  var free = _freeInTable(table, gens);
+  if (!free.isEmpty()) {
+    var k = free.first().index;
+    var g = free.first().generator;
+    var ginv = -g;
+    var n = table.size;
+    var matches = I.Range(k, n).filter(function(k) {
+      return table.getIn([k, ginv]) == null;
+    });
+    var candidates = n < maxCosets ? matches.push(n) : matches;
+
+    return candidates
+      .map(function(pos) {
+        var t = t.setIn([k, g], pos).setIn([pos, ginv], k);
+        return _scanRecursively(rels, table, k);
+      })
+      .filter(function(t) { return t != null; })
+  }
 };
 
 
