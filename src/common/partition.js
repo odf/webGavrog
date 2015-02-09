@@ -52,6 +52,7 @@ var pmake = function pmake(rank, parent) {
   return {
     get  : function(x) { return get(_impl, x); },
     union: function(x, y) { return union(_impl, x, y); },
+    isTrivial: function() { return _impl.rank.size == 0; },
     toString: function() { return 'partition('+_impl.parent+')'; }
   };
 };
