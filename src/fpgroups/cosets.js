@@ -3,6 +3,7 @@
 var I = require('immutable');
 var fw = require('./freeWords');
 var partition = require('../common/partition');
+var generators = require('../common/generators');
 
 
 var mergeRows = function mergeRows(table, part, queue, a, b) {
@@ -226,7 +227,7 @@ var _freeInTable = function _freeInTable(table, gens) {
     return gens.map(function(g) {
       if (row.get(g) == null)
         return { index: k, generator: g };
-    });
+    }).filter(function(x) { return x != null });
   });
 };
 
@@ -234,18 +235,18 @@ var _freeInTable = function _freeInTable(table, gens) {
 var _scanRecursively = function _scanRecursively(rels, table, index) {
   var q = I.List();
   var k = index;
-  var t = tables;
+  var t = table;
   var rs = rels;
 
   while (!rs.isEmpty() || !q.isEmpty()) {
-    if (!rs.isEmpty) {
+    if (!rs.isEmpty()) {
       var out = scanAndIdentify(t, partition(), rs.first(), k);
       if (!out.part.isTrivial())
         return;
 
       t = out.table;
       if (out.next)
-        q = q.push(next);
+        q = q.push(out.next);
       rs = rs.rest();
     } else {
       k = q.first();
@@ -261,6 +262,7 @@ var _potentialChildren = function _potentialChildren(
   table, gens, rels, maxCosets
 ) {
   var free = _freeInTable(table, gens);
+
   if (!free.isEmpty()) {
     var k = free.first().index;
     var g = free.first().generator;
@@ -269,15 +271,21 @@ var _potentialChildren = function _potentialChildren(
     var matches = I.Range(k, n).filter(function(k) {
       return table.getIn([k, ginv]) == null;
     });
-    var candidates = n < maxCosets ? matches.push(n) : matches;
+    var candidates = n < maxCosets ? I.List(matches).push(n) : matches;
 
     return candidates
       .map(function(pos) {
-        var t = t.setIn([k, g], pos).setIn([pos, ginv], k);
-        return _scanRecursively(rels, table, k);
+        var t = table.setIn([k, g], pos).setIn([pos, ginv], k);
+        return _scanRecursively(rels, t, k);
       })
       .filter(function(t) { return t != null; })
-  }
+  } else
+    return I.List();
+};
+
+
+var _isCanonical = function _isCanonical(t, gens) {
+  return true; //TODO real implementation
 };
 
 
@@ -286,10 +294,10 @@ var tables = function tables(nrGens, relators, maxCosets) {
   var rels = _expandRelators(relators);
   var free = function free(t) { return _freeInTable(t, gens); };
 
-  return backtracker({
+  return generators.backtracker({
     root: I.List([I.Map()]),
     extract: function(table) {
-      return free(table).isEmpty() ? table : null;
+      return free(table).isEmpty() ? table : undefined;
     },
     children: function(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
@@ -312,4 +320,7 @@ if (require.main == module) {
 
   console.log(_expandGenerators(4));
   console.log(_expandRelators([[1,2,-3]]));
+
+  console.log(JSON.stringify(
+    generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 4))));
 }
