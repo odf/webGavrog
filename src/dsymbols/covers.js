@@ -17,9 +17,10 @@ var coverForTable = function coverForTable(ds, table, edgeToWord) {
 
 var subgroupCover = function subgroupCover(ds, subgroupGens) {
   var fun = fundamental.fundamentalGroup(ds);
-  var table = cosets.cosetTable(fun.nrGenerators, fun.relators, subgroupGens);
+  var table = cosets.cosetTable(
+    fun.get('nrGenerators'), fun.get('relators'), subgroupGens);
 
-  return coverForTable(ds, table, fun.edgeToWord);
+  return coverForTable(ds, table, fun.get('edge2word'));
 };
 
 
@@ -30,14 +31,15 @@ var finiteUniversalCover = function finiteUniversalCover(ds) {
 
 var covers = function covers(ds, maxDegree) {
   var fun = fundamental.fundamentalGroup(ds);
-  var tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDegree);
+  var tableGenerator = cosets.tables(
+    fun.get('nrGenerators'), fun.get('relators'), maxDegree);
 
   return generators.results(tableGenerator).map(function(table) {
-    return coverForTable(ds, table, fun.edgeToWord);
+    return coverForTable(ds, table, fun.get('edge2word'));
   });
 };
 
 
 if (require.main == module) {
-  console.log(finiteUniversalCover(DS.parse('<1.1:1:1,1,1:4,3>')));
+  console.log('' + finiteUniversalCover(DS.parse('<1.1:1:1,1,1:4,3>')));
 }
