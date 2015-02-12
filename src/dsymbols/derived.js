@@ -145,6 +145,15 @@ var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
 };
 
 
+module.exports = {
+  dual                  : dual,
+  cover                 : cover,
+  orientedCover         : orientedCover,
+  minimal               : minimal,
+  barycentricSubdivision: barycentricSubdivision
+};
+
+
 if (require.main == module) {
   var test = function(ds) {
     console.log('ds = '+ds);

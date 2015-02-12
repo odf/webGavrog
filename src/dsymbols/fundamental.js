@@ -235,6 +235,12 @@ var fundamentalGroup = function fundamentalGroup(ds) {
 };
 
 
+module.exports = {
+  fundamentalGroup: fundamentalGroup,
+  innerEdges      : innerEdges
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);

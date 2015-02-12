@@ -348,6 +348,13 @@ var tables = function tables(nrGens, relators, maxCosets) {
 };
 
 
+module.exports = {
+  cosetRepresentatives: cosetRepresentatives,
+  cosetTable          : cosetTable,
+  tables              : tables
+};
+
+
 if (require.main == module) {
   var t = cosetRepresentatives(
     cosetTable(
