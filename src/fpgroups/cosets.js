@@ -284,8 +284,47 @@ var _potentialChildren = function _potentialChildren(
 };
 
 
-var _isCanonical = function _isCanonical(t, gens) {
-  return true; //TODO real implementation
+var _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
+  var o2n = I.Map({ start: 0 });
+  var n2o = I.Map({ 0: start });
+  var row = 0;
+  var col = 0;
+
+  while (true) {
+    if (row >= o2n.size && row < table.size)
+      throw new Error("coset table is not transitive");
+
+    if (row >= table.size)
+      return 0;
+    else if (col >= gens.size) {
+      ++row;
+      col = 0;
+    } else {
+      var oval = table.getIn([row, gens.get(col)]);
+      var nval = table.getIn([n2o.get(row), gens.get(col)]);
+      if (nval != null && o2n.get(nval) == 0) {
+        n2o = n2o.set(o2n.size, nval);
+        o2n = o2n.set(nval, o2n.size);
+      }
+      nval = o2n.get(nval);
+
+      if (oval == nval)
+        ++col;
+      else if (oval == null)
+        return -1;
+      else if (nval == null)
+        return 1;
+      else
+        return nval - oval;
+    }
+  }
+};
+
+
+var _isCanonical = function _isCanonical(table, gens) {
+  return I.Range(1, table.size).every(function(start) {
+    return _compareRenumberedFom(table, gens, start) >= 0; 
+  });
 };
 
 
@@ -321,6 +360,7 @@ if (require.main == module) {
   console.log(_expandGenerators(4));
   console.log(_expandRelators([[1,2,-3]]));
 
-  console.log(JSON.stringify(
-    generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 4))));
+  generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8)).forEach(function(x) {
+    console.log(JSON.stringify(x));
+  });
 }
