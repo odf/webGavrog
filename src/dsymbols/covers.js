@@ -3,6 +3,7 @@
 var DS          = require('./delaney');
 var fundamental = require('./fundamental');
 var derived     = require('./derived');
+var seq         = require('../common/lazyseq');
 var generators  = require('../common/generators');
 var cosets      = require('../fpgroups/cosets');
 
@@ -34,12 +35,16 @@ var covers = function covers(ds, maxDegree) {
   var tableGenerator = cosets.tables(
     fun.get('nrGenerators'), fun.get('relators'), maxDegree);
 
-  return generators.results(tableGenerator).map(function(table) {
-    return coverForTable(ds, table, fun.get('edge2word'));
-  });
+  return seq.map(
+    function(table) { return coverForTable(ds, table, fun.get('edge2word')); },
+    generators.results(tableGenerator))
 };
 
 
 if (require.main == module) {
-  console.log('' + finiteUniversalCover(DS.parse('<1.1:1:1,1,1:4,3>')));
+  var ds = DS.parse('<1.1:1:1,1,1:4,3>');
+  var n = parseInt(process.argv[2]) || 2;
+
+  covers(ds, n).forEach(function(ds) { console.log('' + ds); });
+  console.log('' + finiteUniversalCover(ds));
 }
