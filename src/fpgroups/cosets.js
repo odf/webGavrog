@@ -245,12 +245,13 @@ var _scanRecursively = function _scanRecursively(rels, table, index) {
         return;
 
       t = out.table;
-      if (out.next)
+      if (out.next != null)
         q = q.push(out.next);
       rs = rs.rest();
     } else {
       k = q.first();
       q = q.rest();
+      rs = rels;
     }
   }
 
