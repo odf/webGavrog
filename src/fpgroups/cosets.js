@@ -285,8 +285,8 @@ var _potentialChildren = function _potentialChildren(
 
 
 var _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
-  var o2n = I.Map({ start: 0 });
-  var n2o = I.Map({ 0: start });
+  var o2n = I.Map([[start, 0]]);
+  var n2o = I.Map([[0, start]]);
   var row = 0;
   var col = 0;
 
@@ -302,7 +302,7 @@ var _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
     } else {
       var oval = table.getIn([row, gens.get(col)]);
       var nval = table.getIn([n2o.get(row), gens.get(col)]);
-      if (nval != null && o2n.get(nval) == 0) {
+      if (nval != null && o2n.get(nval) == null) {
         n2o = n2o.set(o2n.size, nval);
         o2n = o2n.set(nval, o2n.size);
       }
