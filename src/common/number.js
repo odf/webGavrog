@@ -59,23 +59,29 @@ num.parse = function(n) {
     return _makeCheckedInt(parseInt(n));
   else {
     var a = m.length % _BASE_LENGTH;
-    var b = m.length / _BASE_LENGTH;
-    var sections = I.List(I.Range(0, b-1).map(function(i) {
-      return [a + i * _BASE_LENGTH, a + (i+1) * _BASE_LENGTH];
+    var b = (m.length - a) / _BASE_LENGTH;
+    var sections = I.List(I.Range(b, 0).map(function(i) {
+      return [a + (i-1) * _BASE_LENGTH, a + i * _BASE_LENGTH];
     }));
     if (a > 0)
-      sections = sections.unshift([0, a]);
+      sections = sections.push([0, a]);
 
-    return _makeLongInt(s, sections.map(function(r) {
+    return LongInt.make(s, sections.map(function(r) {
       return parseInt(m.slice(r[0], r[1]));
     }));
   }
 };
 
 
-var _makeLongInt = function(s, a) {
-  console.log(s, a);
+var LongInt = {
+  make: function(s, a) {
+    return {
+      type  : LongInt,
+      sign  : a ? s : 0,
+      digits: a
+    };
+  }
 };
 
 
-num.parse("1234567890123456789012345678901234567890123456789012");
+console.log(num.parse("12345678912345678912345678912345678912345678912345"));
