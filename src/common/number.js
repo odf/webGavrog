@@ -15,18 +15,18 @@ var _BASE = Math.pow(10, _BASE_LENGTH);
 var _HALFBASE = Math.sqrt(_BASE);
 
 
-var _asNum = function(n) {
+var _asNum = function _asNum(n) {
   return Math.abs(n) < _BASE ? _makeCheckedInt(n) : _longIntFromNative(n);
 };
 
 
-var num = function(n) {
+var num = function num(n) {
   if (n == null)
-    return num.fromNative(0);
+    return _numFromNative(0);
   else if (typeof n == "number")
-    return num.fromNative(n);
+    return _numFromNative(n);
   else if (typeof n == "string")
-    return num.parse(n);
+    return _parseNum(n);
   else {
     if (n instanceof NumberBase)
       return n;
@@ -36,14 +36,14 @@ var num = function(n) {
 };
 
 
-num.fromNative = function(n) {
+var _numFromNative = function _numFromNative(n) {
   if (n % 1)
     throw new Error("expected an integer, got "+n);
   return _asNum(n);
 };
 
 
-num.parse = function(n) {
+var _parseNum = function _parseNum(n) {
   if (!n.match(/^[+-]?\d+$/))
     throw new Error("expected an integer literal, got "+n);
 
@@ -84,4 +84,4 @@ var LongInt = {
 };
 
 
-console.log(num.parse("12345678912345678912345678912345678912345678912345"));
+console.log(num("12345678912345678912345678912345678912345678912345"));
