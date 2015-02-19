@@ -21,7 +21,7 @@ var LongInt = function LongInt() {};
 var make = function make(sign, digits) {
   return {
     type  : LongInt,
-    sign  : digits ? sign : 0,
+    sign  : sign,
     digits: digits
   };
 };
