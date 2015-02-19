@@ -46,25 +46,25 @@ var parse = function parse(literal) {
   if (!literal.match(/^[+-]?\d+$/))
     throw new Error("expected an integer literal, got "+literal);
 
-  var s = 1, m = literal;
-  if (m[0] == "+")
-    m = m.slice(1);
-  else if (m[0] == "-") {
-    s = -1;
-    m = m.slice(1);
-  }
+  var sign = literal[0] == '-' ? -1 : 1;
 
-  var a = m.length % BASE_LENGTH;
-  var b = (m.length - a) / BASE_LENGTH;
-  var sections = I.List(I.Range(b, 0).map(function(i) {
-    return [a + (i-1) * BASE_LENGTH, a + i * BASE_LENGTH];
-  }));
-  if (a > 0)
-    sections = sections.push([0, a]);
+  var digits = I.List().withMutations(function(list) {
+    var n = literal.length;
+    while (n > 0) {
+      var m = Math.max(n - BASE_LENGTH, 0);
+      var start = (m == 0 && literal.match(/^[+-]/)) ? 1 : m;
+      list.push(parseInt(literal.slice(start, n)));
+      n = m;
+    }
 
-  return make(s, sections.map(function(r) {
-    return parseInt(m.slice(r[0], r[1]));
-  }));
+    while (list.size > 0 && list.last() == 0)
+      list.pop();
+  });
+
+  if (digits.size == 0)
+    sign = 0;
+
+  return make(sign, digits);
 };
 
 
