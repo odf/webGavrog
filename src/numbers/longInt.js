@@ -2,7 +2,6 @@
 
 var I = require('immutable');
 
-
 var BASE_LENGTH = I.Range(1)
   .filter(function(n) {
     if (n % 2)
@@ -10,6 +9,9 @@ var BASE_LENGTH = I.Range(1)
     var b = Math.pow(10, n);
     return 2 * b - 2 == 2 * b - 1 || -2 * b + 2 == -2 * b + 1;
   }).first() - 1;
+
+if (require.main == module)
+  BASE_LENGTH = 4;
 
 var BASE = Math.pow(10, BASE_LENGTH);
 var HALFBASE = Math.sqrt(BASE);
@@ -79,14 +81,132 @@ var abs = function abs(n) {
 
 
 var sgn = function sgn(n) {
+  return n.sign;
 };
+
+
+var isPositive = function isPositive(n) {
+  return n.sign > 0;
+};
+
+
+var isNegative = function isNegative(n) {
+  return n.sign < 0;
+};
+
+
+var isZero = function isZero(n) {
+  return n.sign == 0;
+};
+
+
+var isEven = function isEven(n) {
+  return isZero(n) || n.digits.first() % 2 == 0;
+};
+
+
+var isOdd = function isOdd(n) {
+  return !isEven(n);
+};
+
+
+var _cmp = function _cmp(r, s) {
+  if (r.size != s.size)
+    return r.size - s.size;
+
+  return I.Range(0, r.size)
+    .map(function(i) { return r.get(i) - s.get(i); })
+    .filter(function(x) { return x != 0 })
+    .first() || 0;
+};
+
+
+var _plus = function _plus(r, s) {
+  return I.List().withMutations(function(result) {
+    var carry = 0;
+    var i = 0;
+    while (i < r.size || i < s.size || carry) {
+      var digit = (r.get(i) || 0) + (s.get(i) || 0) + carry;
+      carry = digit >= BASE;
+      result.push(digit % BASE);
+      ++i;
+    }
+  });
+};
+
+
+var _minus = function _minus(r, s) {
+  return I.List().withMutations(function(result) {
+    var borrow = 0;
+    var i = 0;
+    while (i < r.size || i < s.size) {
+      var digit = (r.get(i) || 0) - (s.get(i) || 0) - borrow;
+      borrow = digit < 0;
+      result.push((digit + BASE) % BASE);
+      ++i;
+    }
+    if (borrow)
+      throw new Error("panic: internal function called with bad arguments");
+
+    while (result.last() == 0)
+      result.pop();
+  });
+};
+
+
+var plus = function plus(a, b) {
+  if (isZero(a))
+    return b;
+  else if (isZero(b))
+    return a;
+  else if (a.sign != b.sign)
+    return minus(a, negative(b));
+  else
+    return make(a.sign, _plus(a.digits, b.digits));
+};
+
+
+var minus = function minus(a, b) {
+  if (isZero(a))
+    return negative(b);
+  else if (isZero(b))
+    return a;
+  else if (a.sign != b.sign)
+    return plus(a, negative(b));
+  else {
+    var d = _cmp(a.digits, b.digits);
+    if (d == 0)
+      return promote(0);
+    else if (d < 0)
+      return make(-a.sign, _minus(b.digits, a.digits));
+    else
+      return make(a.sign, _minus(a.digits, b.digits));
+  }
+}
 
 
 module.exports = {
-  type    : LongInt,
-  promote : promote,
-  parse   : parse,
-  negative: negative,
-  abs     : abs,
-  sgn     : sgn
+  type      : LongInt,
+  promote   : promote,
+  parse     : parse,
+  negative  : negative,
+  abs       : abs,
+  sgn       : sgn,
+  isPositive: isPositive,
+  isNegative: isNegative,
+  isZero    : isZero,
+  isEven    : isEven,
+  isOdd     : isOdd,
+  plus      : plus,
+  minus     : minus
 };
+
+
+if (require.main == module) {
+  console.log(promote(-123456789000000));
+  console.log(plus(promote(123456789), promote(876543211)));
+  console.log(minus(promote(123456789), promote(123450000)));
+  console.log(minus(promote(123456789), promote(123456790)));
+  console.log(minus(promote(123456789), promote(123456789)));
+  console.log(plus(promote(123456789), promote(-123450000)));
+}
