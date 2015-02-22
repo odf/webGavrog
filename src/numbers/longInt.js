@@ -16,6 +16,8 @@ if (require.main == module)
 var BASE = Math.pow(10, BASE_LENGTH);
 var HALFBASE = Math.sqrt(BASE);
 
+var ZEROES = ('' + BASE).slice(1);
+
 
 var LongInt = function LongInt() {};
 
@@ -67,6 +69,24 @@ var parse = function parse(literal) {
     sign = 0;
 
   return make(sign, digits);
+};
+
+
+var _toString = function _toString(r) {
+  return r.reverse()
+    .map(function(d, i) {
+      var s = '' + d;
+      return (i == 0 ? '' : ZEROES.slice(s.length)) + s;
+    })
+    .join('');
+};
+
+
+var toString = function toString(n) {
+  if (isZero(n))
+    return '0';
+  else
+    return (isNegative(n) ? '-' : '') + _toString(n.digits);
 };
 
 
