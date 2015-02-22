@@ -217,6 +217,71 @@ var minus = function minus(a, b) {
 }
 
 
+var _lo = function _lo(d) {
+  return d % HALFBASE;
+};
+
+
+var _hi = function _hi(d) {
+  return Math.floor(d / HALFBASE);
+};
+
+
+var _digitByDigit = function _digitByDigit(a, b) {
+  if (b < BASE / a)
+    return [a*b, 0];
+  else {
+    var alo = _lo(a);
+    var ahi = _hi(a);
+    var blo = _lo(b);
+    var bhi = _hi(b);
+
+    var m = alo * bhi + blo * ahi;
+    var lo = alo * blo + _lo(m) * HALFBASE;
+
+    return [lo % BASE, ahi * bhi + _hi(m) + (lo >= BASE)];
+  }
+};
+
+
+var _seqByDigit = function _seqByDigit(s, d) {
+  return I.List().withMutations(function(result) {
+    var carry = 0;
+    for (var i = 0; i < s.size; ++i) {
+      var t = _digitByDigit(d, s.get(i));
+      result.push(t[0] + carry);
+      carry = t[1];
+    }
+    if (carry)
+      result.push(carry);
+  });
+};
+
+
+var _times = function _times(r, s) {
+  return I.List().withMutations(function(result) {
+    var tmp = I.List([]);
+    for (var i = 0; i < r.size; ++i) {
+      tmp = _plus(tmp, _seqByDigit(s, r.get(i)));
+      result.push(tmp.first());
+      tmp = tmp.rest();
+    }
+    for (var i = 0; i < tmp.size; ++i)
+      result.push(tmp.get(i));
+  });
+};
+
+
+var times = function times(a, b) {
+  if (isZero(a))
+    return a;
+  else if (isZero(b))
+    return b;
+  else
+    return make(a.sign * b.sign, _times(a.digits, b.digits));
+};
+
+
 module.exports = {
   type      : LongInt,
   promote   : promote,
@@ -265,4 +330,9 @@ if (require.main == module) {
   console.log(isOdd(promote(0)));
   console.log(isOdd(promote(-12345)));
   console.log(isOdd(promote(12345678)));
+  console.log();
+
+  show(times(promote(12345), promote(100001)));
+  show(times(promote(11111), promote(9)));
+  show(times(promote(12345679), promote(9)));
 }
