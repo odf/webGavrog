@@ -209,6 +209,7 @@ module.exports = {
   type      : LongInt,
   promote   : promote,
   parse     : parse,
+  toString  : toString,
   negative  : negative,
   abs       : abs,
   sgn       : sgn,
