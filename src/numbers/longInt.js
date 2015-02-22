@@ -174,6 +174,18 @@ var _minus = function _minus(r, s) {
 };
 
 
+var cmp = function cmp(a, b) {
+  if (isZero(a))
+    return -b.sign;
+  else if (isZero(b))
+    return a.sign;
+  else if (a.sign != b.sign)
+    return a.sign;
+  else
+    return a.sign * _cmp(a.digits, b.digits);
+};
+
+
 var plus = function plus(a, b) {
   if (isZero(a))
     return b;
@@ -218,6 +230,7 @@ module.exports = {
   isZero    : isZero,
   isEven    : isEven,
   isOdd     : isOdd,
+  cmp       : cmp,
   plus      : plus,
   minus     : minus
 };
