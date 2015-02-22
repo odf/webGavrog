@@ -253,4 +253,16 @@ if (require.main == module) {
   show(minus(promote(123456789), promote(123456790)));
   show(minus(promote(123456789), promote(123456789)));
   show(plus(promote(123456789), promote(-123450000)));
+  console.log();
+
+  show(abs(promote(-12345)));
+  console.log(isZero(promote(1)));
+  console.log(isZero(promote(123456)));
+  console.log(isZero(promote(0)));
+  console.log(isNegative(promote(0)));
+  console.log(isNegative(promote(-45)));
+  console.log(isNegative(promote(-12345)));
+  console.log(isOdd(promote(0)));
+  console.log(isOdd(promote(-12345)));
+  console.log(isOdd(promote(12345678)));
 }
