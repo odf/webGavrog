@@ -49,13 +49,13 @@ var parse = function parse(literal) {
     throw new Error("expected an integer literal, got "+literal);
 
   var sign = literal[0] == '-' ? -1 : 1;
+  var start = literal.match(/^[+-]/) ? 1 : 0;
 
   var digits = I.List().withMutations(function(list) {
     var n = literal.length;
-    while (n > 0) {
-      var m = Math.max(n - BASE_LENGTH, 0);
-      var start = (m == 0 && literal.match(/^[+-]/)) ? 1 : m;
-      list.push(parseInt(literal.slice(start, n)));
+    while (n > start) {
+      var m = Math.max(n - BASE_LENGTH, start);
+      list.push(parseInt(literal.slice(m, n)));
       n = m;
     }
 
