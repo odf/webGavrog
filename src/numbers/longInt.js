@@ -223,10 +223,20 @@ module.exports = {
 
 
 if (require.main == module) {
-  console.log(promote(-123456789000000));
-  console.log(plus(promote(123456789), promote(876543211)));
-  console.log(minus(promote(123456789), promote(123450000)));
-  console.log(minus(promote(123456789), promote(123456790)));
-  console.log(minus(promote(123456789), promote(123456789)));
-  console.log(plus(promote(123456789), promote(-123450000)));
+  var show = function(n) {
+    console.log(toString(n));
+  };
+
+  show(promote(-123456789000000));
+  show(parse('1234'));
+  show(parse('+1234'));
+  show(parse('-1234'));
+  show(parse('-123456789000000'));
+  console.log();
+
+  show(plus(promote(123456789), promote(876543211)));
+  show(minus(promote(123456789), promote(123450000)));
+  show(minus(promote(123456789), promote(123456790)));
+  show(minus(promote(123456789), promote(123456789)));
+  show(plus(promote(123456789), promote(-123450000)));
 }
