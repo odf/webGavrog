@@ -137,7 +137,7 @@ var _cmp = function _cmp(r, s) {
   return I.Range(0, r.size)
     .map(function(i) { return r.get(i) - s.get(i); })
     .filter(function(x) { return x != 0 })
-    .first() || 0;
+    .last() || 0;
 };
 
 
