@@ -282,6 +282,54 @@ var times = function times(a, b) {
 };
 
 
+var _idiv = function _idivmod(r, s) {
+  var scale = Math.floor(BASE / (s.last() + 1));
+  var rs = _seqByDigit(r, scale);
+  var ss = _seqByDigit(s, scale);
+  var m = ss.size;
+  var d = ss.last() + 1;
+
+  var q = I.List();
+  var h = I.List();
+  var t = rs;
+
+  var f, n;
+
+  while (true) {
+    while (q.last() == 0)
+      q = q.pop();
+
+    if (_cmp(h, ss) >= 0) {
+      n = h.last() * (h.size > m ? BASE : 1);
+      f = Math.floor(n / d) || 1;
+      q = _plus(q, I.List([f]));
+      h = _minus(h, _seqByDigit(ss, f));
+    } else if (!t.isEmpty()) {
+      q = q.unshift(0);
+      h = h.unshift(t.last());
+      t = t.pop();
+    } else
+      return q;
+  }
+};
+
+
+var idiv = function idiv(a, b) {
+  var d = _cmp(a.digits, b.digits);
+  if (d < 0)
+    return promote(0);
+  else if (d == 0)
+    return promote(a.sign * b.sign);
+  else
+    return make(a.sign * b.sign, _idiv(a.digits, b.digits));
+};
+
+
+var mod = function mod(a, b) {
+  return minus(a, times(idiv(a, b), b));
+};
+
+
 module.exports = {
   type      : LongInt,
   promote   : promote,
@@ -311,15 +359,15 @@ if (require.main == module) {
   show(parse('+1234'));
   show(parse('-1234'));
   show(parse('-123456789000000'));
-  console.log();
 
+  console.log();
   show(plus(promote(123456789), promote(876543211)));
   show(minus(promote(123456789), promote(123450000)));
   show(minus(promote(123456789), promote(123456790)));
   show(minus(promote(123456789), promote(123456789)));
   show(plus(promote(123456789), promote(-123450000)));
-  console.log();
 
+  console.log();
   show(abs(promote(-12345)));
   console.log(isZero(promote(1)));
   console.log(isZero(promote(123456)));
@@ -330,9 +378,19 @@ if (require.main == module) {
   console.log(isOdd(promote(0)));
   console.log(isOdd(promote(-12345)));
   console.log(isOdd(promote(12345678)));
-  console.log();
 
+  console.log();
   show(times(promote(12345), promote(100001)));
   show(times(promote(11111), promote(9)));
   show(times(promote(12345679), promote(9)));
+  show(idiv(promote(111111), promote(37)));
+  show(idiv(promote(111111111), promote(37)));
+  show(idiv(promote(111111111), promote(12345679)));
+  show(idiv(promote(99980001), promote(49990001)));
+  show(idiv(promote(20001), promote(10001)));
+
+  console.log();
+  show(mod(promote(111), promote(37)));
+  show(mod(promote(111112), promote(37)));
+  show(mod(promote(111111111), promote(12345679)));
 }
