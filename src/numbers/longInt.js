@@ -345,7 +345,10 @@ module.exports = {
   isOdd     : isOdd,
   cmp       : cmp,
   plus      : plus,
-  minus     : minus
+  minus     : minus,
+  times     : times,
+  idiv      : idiv,
+  mod       : mod
 };
 
 
@@ -388,6 +391,7 @@ if (require.main == module) {
   show(idiv(promote(111111111), promote(12345679)));
   show(idiv(promote(99980001), promote(49990001)));
   show(idiv(promote(20001), promote(10001)));
+  show(idiv(promote(99999999), promote(9999)));
 
   console.log();
   show(mod(promote(111), promote(37)));
