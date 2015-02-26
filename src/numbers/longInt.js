@@ -83,10 +83,10 @@ var _toString = function _toString(r) {
 
 
 var toString = function toString(n) {
-  if (isZero(n))
+  if (_isZero(n))
     return '0';
   else
-    return (isNegative(n) ? '-' : '') + _toString(n.digits);
+    return (n.sign < 0 ? '-' : '') + _toString(n.digits);
 };
 
 
@@ -105,28 +105,13 @@ var sgn = function sgn(n) {
 };
 
 
-var isPositive = function isPositive(n) {
-  return n.sign > 0;
-};
-
-
-var isNegative = function isNegative(n) {
-  return n.sign < 0;
-};
-
-
-var isZero = function isZero(n) {
+var _isZero = function _isZero(n) {
   return n.sign == 0;
 };
 
 
 var isEven = function isEven(n) {
-  return isZero(n) || n.digits.first() % 2 == 0;
-};
-
-
-var isOdd = function isOdd(n) {
-  return !isEven(n);
+  return _isZero(n) || n.digits.first() % 2 == 0;
 };
 
 
@@ -175,9 +160,9 @@ var _minus = function _minus(r, s) {
 
 
 var cmp = function cmp(a, b) {
-  if (isZero(a))
+  if (_isZero(a))
     return -b.sign;
-  else if (isZero(b))
+  else if (_isZero(b))
     return a.sign;
   else if (a.sign != b.sign)
     return a.sign;
@@ -187,9 +172,9 @@ var cmp = function cmp(a, b) {
 
 
 var plus = function plus(a, b) {
-  if (isZero(a))
+  if (_isZero(a))
     return b;
-  else if (isZero(b))
+  else if (_isZero(b))
     return a;
   else if (a.sign != b.sign)
     return minus(a, negative(b));
@@ -199,9 +184,9 @@ var plus = function plus(a, b) {
 
 
 var minus = function minus(a, b) {
-  if (isZero(a))
+  if (_isZero(a))
     return negative(b);
-  else if (isZero(b))
+  else if (_isZero(b))
     return a;
   else if (a.sign != b.sign)
     return plus(a, negative(b));
@@ -273,9 +258,9 @@ var _times = function _times(r, s) {
 
 
 var times = function times(a, b) {
-  if (isZero(a))
+  if (_isZero(a))
     return a;
-  else if (isZero(b))
+  else if (_isZero(b))
     return b;
   else
     return make(a.sign * b.sign, _times(a.digits, b.digits));
@@ -338,11 +323,7 @@ module.exports = {
   negative  : negative,
   abs       : abs,
   sgn       : sgn,
-  isPositive: isPositive,
-  isNegative: isNegative,
-  isZero    : isZero,
   isEven    : isEven,
-  isOdd     : isOdd,
   cmp       : cmp,
   plus      : plus,
   minus     : minus,
@@ -372,15 +353,15 @@ if (require.main == module) {
 
   console.log();
   show(abs(promote(-12345)));
-  console.log(isZero(promote(1)));
-  console.log(isZero(promote(123456)));
-  console.log(isZero(promote(0)));
-  console.log(isNegative(promote(0)));
-  console.log(isNegative(promote(-45)));
-  console.log(isNegative(promote(-12345)));
-  console.log(isOdd(promote(0)));
-  console.log(isOdd(promote(-12345)));
-  console.log(isOdd(promote(12345678)));
+  console.log(sgn(promote(1)));
+  console.log(sgn(promote(123456)));
+  console.log(sgn(promote(0)));
+  console.log(sgn(promote(0)));
+  console.log(sgn(promote(-45)));
+  console.log(sgn(promote(-12345)));
+  console.log(isEven(promote(0)));
+  console.log(isEven(promote(-12345)));
+  console.log(isEven(promote(12345678)));
 
   console.log();
   show(times(promote(12345), promote(100001)));
