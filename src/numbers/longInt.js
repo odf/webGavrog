@@ -22,6 +22,11 @@ var ZEROES = ('' + BASE).slice(1);
 var LongInt = function LongInt() {};
 
 
+var shouldPromote = function shouldPromote(n) {
+  return Math.abs(x) >= BASE;
+};
+
+
 var make = function make(sign, digits) {
   return {
     type  : LongInt,
@@ -316,6 +321,7 @@ var mod = function mod(a, b) {
 
 
 module.exports = {
+  shouldPromote: shouldPromote,
   type      : LongInt,
   promote   : promote,
   parse     : parse,
