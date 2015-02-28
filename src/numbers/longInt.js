@@ -4,7 +4,7 @@ var I = require('immutable');
 var longInt = function longInt(baseLength) {
   'use strict';
 
-  var BASE_LENGTH = baseLength ||
+  var BASE_LENGTH = (baseLength & ~1) ||
     I.Range(1)
     .filter(function(n) {
       if (n % 2)
@@ -12,7 +12,7 @@ var longInt = function longInt(baseLength) {
       var b = Math.pow(10, n);
       return 2 * b - 2 == 2 * b - 1 || -2 * b + 2 == -2 * b + 1;
     })
-    .first() - 1;
+    .first() - 2;
 
   var BASE = Math.pow(10, BASE_LENGTH);
   var HALFBASE = Math.sqrt(BASE);
@@ -24,7 +24,7 @@ var longInt = function longInt(baseLength) {
 
 
   var shouldPromote = function shouldPromote(n) {
-    return Math.abs(x) >= BASE;
+    return Math.abs(n) >= BASE;
   };
 
 
@@ -234,7 +234,6 @@ var longInt = function longInt(baseLength) {
     }
   };
 
-
   var _seqByDigit = function _seqByDigit(s, d) {
     return I.List().withMutations(function(result) {
       var carry = 0;
@@ -382,6 +381,7 @@ if (require.main == module) {
     console.log(isEven(promote(12345678)));
 
     console.log();
+    show(times(promote(123), promote(1001)));
     show(times(promote(12345), promote(100001)));
     show(times(promote(11111), promote(9)));
     show(times(promote(12345679), promote(9)));
@@ -396,5 +396,11 @@ if (require.main == module) {
     show(mod(promote(111), promote(37)));
     show(mod(promote(111112), promote(37)));
     show(mod(promote(111111111), promote(12345679)));
+  }
+
+  with(module.exports) {
+    'use strict';
+
+    console.log(times(promote(12345678), promote(100000001)));
   }
 }
