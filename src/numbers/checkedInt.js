@@ -96,3 +96,53 @@ module.exports = {
   idiv      : idiv,
   mod       : mod
 };
+
+
+if (require.main == module) {
+  var show = function(n) {
+    console.log(toString(n));
+  };
+
+  show(promote(-1234));
+  console.log(promote(-1234));
+  show(promote(-12345));
+  console.log(promote(-12345));
+  console.log(promote(-1234567890));
+  console.log(promote(10000000001));
+  console.log(times(promote(-1234567890), promote(10000000001)));
+
+  console.log();
+  show(plus(promote(123456789), promote(876543211)));
+  show(minus(promote(123456789), promote(123450000)));
+  show(minus(promote(123456789), promote(123456790)));
+  show(minus(promote(123456789), promote(123456789)));
+  show(plus(promote(123456789), promote(-123450000)));
+
+  console.log();
+  show(abs(promote(-12345)));
+  console.log(sgn(promote(1)));
+  console.log(sgn(promote(123456)));
+  console.log(sgn(promote(0)));
+  console.log(sgn(promote(0)));
+  console.log(sgn(promote(-45)));
+  console.log(sgn(promote(-12345)));
+  console.log(isEven(promote(0)));
+  console.log(isEven(promote(-12345)));
+  console.log(isEven(promote(12345678)));
+
+  console.log();
+  show(times(promote(12345), promote(100001)));
+  show(times(promote(11111), promote(9)));
+  show(times(promote(12345679), promote(9)));
+  show(idiv(promote(111111), promote(37)));
+  show(idiv(promote(111111111), promote(37)));
+  show(idiv(promote(111111111), promote(12345679)));
+  show(idiv(promote(99980001), promote(49990001)));
+  show(idiv(promote(20001), promote(10001)));
+  show(idiv(promote(99999999), promote(9999)));
+
+  console.log();
+  show(mod(promote(111), promote(37)));
+  show(mod(promote(111112), promote(37)));
+  show(mod(promote(111111111), promote(12345679)));
+}
