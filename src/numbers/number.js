@@ -8,8 +8,75 @@ var _apply = function _apply(x, f) {
 };
 
 
-var _pathPairs = function _pathPairs(s, t, eOut, eIn) {
-  return I.fromJS([[], []]);
+var _joiningPathPair = function _joiningPathPair(s, t, eOut, eIn) {
+  if (s == t)
+    return I.fromJS([[],[]]);
+
+  var qs = I.List([s]);
+  var qt = I.List([t]);
+  var seenFrom = I.Map([[s, s], [t, t]]);
+  var backEdge = I.Map();
+
+  var _step = function _step(queue, thisStart, otherStart) {
+    var v = queue.first();
+    queue = queue.rest();
+
+    var next = eOut.get(v);
+
+    if (next) {
+      var e = next.find(function(e) {
+        return seenFrom.get(e.get(1)) == otherStart;
+      });
+
+      if (e)
+        return { bridge: e };
+      else
+        next
+        .filter(function(e) { return !seenFrom.get(e.get(1)); })
+        .forEach(function(e) {
+          var v = e.get(1);
+          queue = queue.push(v);
+          seenFrom = seenFrom.set(v, thisStart);
+          backEdge = backEdge.set(v, e);
+        });
+    }
+
+    return { queue: queue };
+  };
+
+  var _trace = function _trace(v) {
+    return I.List().withMutations(function(list) {
+      while (backEdge.get(v)) {
+        var e = backEdge.get(v);
+        list.unshift(e.get(2));
+        v = e.get(0);
+      }
+    });
+  };
+
+  var _tracePaths = function _tracePaths(bridge) {
+    return I.List([_trace(bridge.get(0)).push(bridge.get(2)),
+                   _trace(bridge.get(1))]);
+  };
+
+  var tmp;
+
+  while (!(qs.isEmpty() && qt.isEmpty())) {
+    if (!qs.isEmpty()) {
+      tmp = _step(qs, s, t);
+      if (tmp.bridge)
+        return _tracePaths(tmp.bridge);
+      else
+        qs = tmp.queue;
+    }
+    if (!qt.isEmpty()) {
+      tmp = _step(qt, t, s);
+      if (tmp.bridge)
+        return _tracePaths(tmp.bridge).reverse();
+      else
+        qt = tmp.queue;
+    }
+  }
 };
 
 
@@ -20,7 +87,7 @@ var _coercionPathPairs = function _coercionPathPairs(upcasts) {
 
   return I.Map(_types.map(function(s) {
     return [s, I.Map(_types.map(function(t) {
-      return [t, _pathPairs(s, t, _outEdges, _inEdges)];
+      return [t, _joiningPathPair(s, t, _outEdges, _inEdges)];
     }))];
   }));
 };
@@ -108,7 +175,7 @@ if (require.main == module) {
   number(
     function() {}, // promote
     [], // types
-    [[1,2,'a'],[1,3,'b'],[2,3,'c']], //upcasts
+    [[1,2,'1-2'],[3,4,'3-4'],[2,4,'2-4']], //upcasts
     [] // downcasts
   );
 }
