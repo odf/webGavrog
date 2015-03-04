@@ -94,13 +94,11 @@ var _coercionPathPairs = function _coercionPathPairs(upcasts) {
 
 
 var number = function number(promote, types, upcasts, downcasts) {
-  var _methods = I.Map(I.fromJS(types).map(function(t) {
-    return [t.get('type'), t];
+  var _methods = I.Map(types.map(function(t) {
+    return [t.type, t];
   }));
   var _coercionMatrix = _coercionPathPairs(I.fromJS(upcasts));
   var _downcasts = I.Map(I.fromJS(downcasts));
-
-  console.log(_coercionMatrix);
 
   var _num = function _num(n) {
     if (!!n && n.type)
@@ -117,7 +115,7 @@ var number = function number(promote, types, upcasts, downcasts) {
       return [a, b];
     else {
       var paths = _coercionMatrix.getIn([a.type, b.type]);
-      return [paths[0].reduce(_apply, a), paths[1].reduce(_apply, b)];
+      return [paths.get(0).reduce(_apply, a), paths.get(1).reduce(_apply, b)];
     }
   };
 
@@ -168,14 +166,69 @@ var number = function number(promote, types, upcasts, downcasts) {
   var times    = _binary('times');
   var idiv     = _binary('idiv');
   var mod      = _binary('mod');
+
+  return {
+    toString: toString,
+    sgn     : sgn,
+    isEven  : isEven,
+    negative: negative,
+    abs     : abs,
+    cmp     : cmp,
+    plus    : plus,
+    minus   : minus,
+    times   : times,
+    idiv    : idiv,
+    mod     : mod
+  };
 };
 
 
 if (require.main == module) {
-  number(
-    function() {}, // promote
-    [], // types
-    [[1,2,'1-2'],[3,4,'3-4'],[2,4,'2-4']], //upcasts
+  var makeType = function(name) {
+    var out = {
+      make: function(val) { return { type: name, value: val }; },
+      type: name
+    };
+
+    [
+      'toString', 'sgn', 'isEven', 'negative', 'abs',
+      'cmp', 'plus', 'minus', 'times', 'idiv', 'mod'
+    ]
+      .forEach(function(s) {
+        out[s] = function() {
+          return ''+s+'('+
+            [].slice.apply(arguments).map(JSON.stringify).join(', ')+')';
+        };
+      });
+
+    return out;
+  }
+
+  var AtoB = function AtoB(x) {
+    return B.make(x);
+  };
+
+  var BtoD = function BtoD(x) {
+    return D.make(x);
+  };
+
+  var CtoD = function CtoD(x) {
+    return D.make(x);
+  };
+
+  var A = makeType('A');
+  var B = makeType('B');
+  var C = makeType('C');
+  var D = makeType('D');
+
+  var num = number(
+    null, // promote
+    [A, B, C, D], // types
+    [[A.type, B.type, AtoB],
+     [C.type, D.type, CtoD],
+     [B.type, D.type, BtoD]], //upcasts
     [] // downcasts
   );
+
+  console.log(num.plus(A.make(5), C.make(2)));
 }
