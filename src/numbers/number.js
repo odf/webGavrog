@@ -121,7 +121,12 @@ var number = function number(promote, types, upcasts, downcasts) {
 
   var _downcast = function _downcast(n) {
     var f = _downcasts.get(n.type);
-    return f ? f(n) : n;
+    if (!f)
+      return n;
+    else {
+      var val = f(n);
+      return val.type == n.type ? val : _downcast(val);
+    }
   };
 
   var _property = function _property(name) {
