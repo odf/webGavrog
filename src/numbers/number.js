@@ -255,11 +255,11 @@ if (require.main == module) {
     }]]
   );
 
-  var t = checkedInt.promote(1);
+  var t = 1;
   for (var i = 1; i < 50; ++i)
-    t = num.times(t, checkedInt.promote(i));
+    t = num.times(t, i);
   console.log(num.toString(t));
   for (var i = 1; i < 50; ++i)
-    t = num.idiv(t, checkedInt.promote(i));
+    t = num.idiv(t, i);
   console.log(t);
 }
