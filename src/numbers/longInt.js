@@ -37,6 +37,12 @@ var longInt = function longInt(baseLength) {
   };
 
 
+  var asJSNumber = function asJSNumber(n) {
+    if (n.digits.size <= 1)
+      return n.sign * n.digits.get(0);
+  };
+
+
   var promote = function promote(n) {
     var sign = (n > 0) - (n < 0);
     n = Math.abs(n);
@@ -326,6 +332,7 @@ var longInt = function longInt(baseLength) {
     digitSize : BASE,
     promote   : promote,
     parse     : parse,
+    asJSNumber: asJSNumber,
     toString  : toString,
     negative  : negative,
     abs       : abs,

@@ -83,7 +83,7 @@ var _joiningPathPair = function _joiningPathPair(s, t, eOut, eIn) {
 var _coercionPathPairs = function _coercionPathPairs(upcasts) {
   var _outEdges = upcasts.groupBy(function(e) { return e.get(0); });
   var _inEdges = upcasts.groupBy(function(e) { return e.get(1); });
-  var _types = I.Set(_outEdges.keys());
+  var _types = I.Set(_outEdges.keySeq().concat(_inEdges.keySeq()));
 
   return I.Map(_types.map(function(s) {
     return [s, I.Map(_types.map(function(t) {
@@ -98,7 +98,7 @@ var number = function number(promote, types, upcasts, downcasts) {
     return [t.type, t];
   }));
   var _coercionMatrix = _coercionPathPairs(I.fromJS(upcasts));
-  var _downcasts = I.Map(I.fromJS(downcasts));
+  var _downcasts = I.Map(I.fromJS(downcasts).toJS());
 
   var _num = function _num(n) {
     if (!!n && n.type)
@@ -231,4 +231,30 @@ if (require.main == module) {
   );
 
   console.log(num.plus(A.make(5), C.make(2)));
+
+  var longInt = require('./longInt');
+  var checkedInt = require('./checkedInt');
+
+  num = number(
+    checkedInt.promote,
+    [checkedInt, longInt],
+    [[checkedInt.type, longInt.type, function(n) {
+      return longInt.promote(checkedInt.asJSNumber(n));
+    }]],
+    [[longInt.type, function(n) {
+      var val = longInt.asJSNumber(n);
+      if (val !== undefined)
+        return checkedInt.promote(val);
+      else
+        return n;
+    }]]
+  );
+
+  var t = checkedInt.promote(1);
+  for (var i = 1; i < 50; ++i)
+    t = num.times(t, checkedInt.promote(i));
+  console.log(num.toString(t));
+  for (var i = 1; i < 50; ++i)
+    t = num.idiv(t, checkedInt.promote(i));
+  console.log(t);
 }

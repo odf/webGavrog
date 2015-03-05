@@ -14,6 +14,11 @@ var make = function make(n) {
 };
 
 
+var asJSNumber = function asJSNumber(n) {
+  return n.value;
+};
+
+
 var promote = function promote(n) {
   if (longInt.shouldPromote(n))
     return longInt.promote(n);
@@ -85,6 +90,7 @@ module.exports = {
   type      : CheckedInt,
   promote   : promote,
   toString  : toString,
+  asJSNumber: asJSNumber,
   negative  : negative,
   abs       : abs,
   sgn       : sgn,
