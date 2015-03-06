@@ -188,6 +188,39 @@ var number = function number(spec) {
 };
 
 
+var longInt = require('./longInt');
+var checkedInt = require('./checkedInt');
+
+module.exports = number({
+  promote: function(n) {
+    if (typeof n == 'string')
+      return longInt.parse(n);
+    else if (typeof n == 'number' && n % 1 == 0)
+      return checkedInt.promote(n);
+    else
+      throw new Error('value '+n+' cannot be cast to a number');
+  },
+
+  types: [checkedInt, longInt],
+
+  upcasts: [
+    [checkedInt.type, longInt.type, function(n) {
+      return longInt.promote(checkedInt.asJSNumber(n));
+    }]
+  ],
+
+  downcasts: [
+    [longInt.type, function(n) {
+      var val = longInt.asJSNumber(n);
+      if (val !== undefined)
+        return checkedInt.promote(val);
+      else
+        return n;
+    }]
+  ]
+});
+
+
 if (require.main == module) {
   var makeType = function(name) {
     var out = {
@@ -237,25 +270,7 @@ if (require.main == module) {
 
   console.log(num.plus(A.make(5), C.make(2)));
 
-  var longInt = require('./longInt');
-  var checkedInt = require('./checkedInt');
-
-  num = number({
-    promote  : checkedInt.promote,
-    types    : [checkedInt, longInt],
-    upcasts  : [[checkedInt.type, longInt.type,
-                 function(n) {
-                   return longInt.promote(checkedInt.asJSNumber(n));
-                 }]],
-    downcasts: [[longInt.type,
-                 function(n) {
-                   var val = longInt.asJSNumber(n);
-                   if (val !== undefined)
-                     return checkedInt.promote(val);
-                   else
-                     return n;
-                 }]]
-  });
+  num = module.exports;
 
   var t = 1;
   for (var i = 1; i < 50; ++i)
@@ -264,4 +279,5 @@ if (require.main == module) {
   for (var i = 1; i < 50; ++i)
     t = num.idiv(t, i);
   console.log(t);
+  console.log(num.toString(num.idiv('111111111', '12345679')));
 }
