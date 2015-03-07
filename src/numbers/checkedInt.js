@@ -1,7 +1,7 @@
 var checkedInt = function checkedInt(longInt) {
   'use strict';
 
-  var CheckedInt = function CheckedInt() {};
+  var CheckedInt = "__CheckedInt__";
 
 
   var make = function make(n) {

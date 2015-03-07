@@ -20,7 +20,7 @@ var longInt = function longInt(baseLength) {
   var ZEROES = ('' + BASE).slice(1);
 
 
-  var LongInt = function LongInt() {};
+  var LongInt = "__LongInt__";
 
 
   var shouldPromote = function shouldPromote(n) {
