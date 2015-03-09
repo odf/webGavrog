@@ -1,4 +1,4 @@
-var fraction = function fraction(intType) {
+var fraction = function fraction(intType, promoteToInt) {
   'use strict';
 
   var Fraction = "__Fraction__";
@@ -14,7 +14,7 @@ var fraction = function fraction(intType) {
 
 
   var promote = function promote(n) {
-    return make(n, intType.promote(1));
+    return make(n, promoteToInt(1));
   };
 
 
@@ -47,7 +47,7 @@ var fraction = function fraction(intType) {
 
 
   var asInteger = function asInteger(q) {
-    if (intType.cmp(q.denom, intType.promote(1)) == 0)
+    if (intType.cmp(q.denom, promoteToInt(1)) == 0)
       return q.numer;
   };
 

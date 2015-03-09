@@ -163,12 +163,14 @@ var number = function number(spec) {
 
   var negative = _unary('negative');
   var abs      = _unary('abs');
+  var inverse  = _unary('inverse');
 
   var cmp      = _relation('cmp');
 
   var plus     = _binary('plus');
   var minus    = _binary('minus');
   var times    = _binary('times');
+  var div      = _binary('div');
   var idiv     = _binary('idiv');
   var mod      = _binary('mod');
 
@@ -178,28 +180,33 @@ var number = function number(spec) {
     isEven  : isEven,
     negative: negative,
     abs     : abs,
+    inverse : inverse,
     cmp     : cmp,
     plus    : plus,
     minus   : minus,
     times   : times,
+    div     : div,
     idiv    : idiv,
     mod     : mod
   };
 };
 
 
-var longInt = require('./longInt');
+var longInt    = require('./longInt');
 var checkedInt = require('./checkedInt');
 
-module.exports = number({
-  promote: function(n) {
-    if (typeof n == 'string')
-      return longInt.parse(n);
-    else if (typeof n == 'number' && n % 1 == 0)
-      return checkedInt.promote(n);
-    else
-      throw new Error('value '+n+' cannot be cast to a number');
-  },
+var promoteToInt = function(n) {
+  if (typeof n == 'string')
+    return longInt.parse(n);
+  else if (typeof n == 'number' && n % 1 == 0)
+    return checkedInt.promote(n);
+  else
+    throw new Error('value '+n+' cannot be cast to a number');
+};
+
+
+var integer = number({
+  promote: promoteToInt,
 
   types: [checkedInt, longInt],
 
@@ -219,6 +226,48 @@ module.exports = number({
     }]
   ]
 });
+
+
+var fraction = require('./fraction')(integer, promoteToInt);
+
+
+var rational = number({
+  promote: promoteToInt,
+
+  types: [checkedInt, longInt, fraction],
+
+  upcasts: [
+    [checkedInt.type, longInt.type, function(n) {
+      return longInt.promote(checkedInt.asJSNumber(n));
+    }],
+    [checkedInt.type, fraction.type, function(n) {
+      return fraction.promote(n);
+    }],
+    [longInt.type, fraction.type, function(n) {
+      return fraction.promote(n);
+    }]
+  ],
+
+  downcasts: [
+    [longInt.type, function(n) {
+      var val = longInt.asJSNumber(n);
+      if (val !== undefined)
+        return checkedInt.promote(val);
+      else
+        return n;
+    }],
+    [fraction.type, function(q) {
+      var n = fraction.asInteger(q);
+      if (n !== undefined)
+        return n;
+      else
+        return q;
+    }]
+  ]
+});
+
+
+module.exports = rational;
 
 
 if (require.main == module) {
@@ -280,4 +329,13 @@ if (require.main == module) {
     t = num.idiv(t, i);
   console.log(t);
   console.log(num.toString(num.idiv('111111111', '12345679')));
+
+  var t = 0;
+  var q = fraction.promote(1);
+  for (var i = 0; i < 128; ++i) {
+    q = num.div(q, 2);
+    t = num.plus(t, q);
+  }
+  console.log(t);
+  console.log(num.plus(t, q));
 }
