@@ -331,7 +331,7 @@ if (require.main == module) {
   console.log(num.toString(num.idiv('111111111', '12345679')));
 
   var t = 0;
-  var q = fraction.promote(1);
+  var q = fraction.promote(1); //TODO make the explicit promote unnecessary
   for (var i = 0; i < 128; ++i) {
     q = num.div(q, 2);
     t = num.plus(t, q);
