@@ -174,7 +174,15 @@ if (require.main == module) {
     };
 
     show(q(-1234));
+    show(q(2, 3));
     show(q(-1234, -26));
     show(q(111111, 185));
+    show(times(q(9, 10), q(5, 21)));
+    show(minus(q(3, 5), q(7, 11)));
+    show(div(q(111111111), q(2 * 12345679)));
+    show(plus(q(1, 2), q(1, 2)));
+    show(plus(q(2, 3), q(4, 3)));
+    show(plus(q(2, 3), q(1)));
+    show(div(q(2, 3), q(2)));
   }
 }
