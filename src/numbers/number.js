@@ -8,6 +8,67 @@ var _apply = function _apply(x, f) {
 };
 
 
+var _operationPath = function _operationPath(t, op, eOut, methods) {
+  if (methods.get(t)[op])
+    return;
+
+  var q = I.List([t]);
+  var backEdge = I.Map();
+
+  while (!q.isEmpty()) {
+    var v = q.first();
+    q = q.rest();
+
+    var next = eOut.get(v);
+
+    if (next) {
+      var e = next.find(function(e) {
+        return !!methods.get(e.get(1))[op];
+      });
+
+      if (e) {
+        return I.List([e.get(2)]).withMutations(function(list) {
+          while (backEdge.get(v)) {
+            var e = backEdge.get(v);
+            list.unshift(e.get(2));
+            v = e.get(0);
+          }
+        }).reverse();
+      } else {
+        next
+          .filter(function(e) {
+            return !backEdge.get(e.get(1));
+          })
+          .forEach(function(e) {
+            var w = e.get(1);
+            q = q.push(w);
+            backEdge = backEdge.set(w, e);
+          });
+      }
+    }
+  };
+};
+
+
+var _operationUpcastPaths = function _coercionPathPairs(upcasts, methods) {
+  var _outEdges = upcasts.groupBy(function(e) { return e.get(0); });
+  var _inEdges = upcasts.groupBy(function(e) { return e.get(1); });
+  var _types = I.Set(_outEdges.keySeq().concat(_inEdges.keySeq()));
+
+  var _ops = methods.reduce(
+    function(s, ops) {
+      return s.union(Object.keys(ops));
+    },
+    I.Set());
+
+  return I.Map(_types.map(function(t) {
+    return [t, I.Map(_ops.map(function(op) {
+      return [op, _operationPath(t, op, _outEdges, methods) || []];
+    }))];
+  }));
+};
+
+
 var _joiningPathPair = function _joiningPathPair(s, t, eOut, eIn) {
   if (s == t)
     return I.fromJS([[],[]]);
@@ -99,6 +160,7 @@ var number = function number(spec) {
   }));
   var _coercionMatrix = _coercionPathPairs(I.fromJS(spec.upcasts));
   var _downcasts = I.Map(I.fromJS(spec.downcasts).toJS());
+  var _upcastPaths = _operationUpcastPaths(I.fromJS(spec.upcasts), _methods);
 
   var _num = function _num(n) {
     if (!!n && n.type)
