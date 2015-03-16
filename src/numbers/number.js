@@ -181,6 +181,11 @@ var number = function number(spec) {
     }
   };
 
+  var _upcast = function _upcast(n, op) {
+    n = _num(n);
+    return _upcastPaths.getIn([n.type, op]).reduce(_apply, n);
+  };
+
   var _downcast = function _downcast(n) {
     var f = _downcasts.get(n.type);
     if (!f)
@@ -193,7 +198,7 @@ var number = function number(spec) {
 
   var _property = function _property(name) {
     return function f(n) {
-      n = _num(n);
+      n = _upcast(n, name);
       return _methods.get(n.type)[name](n);
     };
   };
@@ -208,7 +213,9 @@ var number = function number(spec) {
   var _relation = function _unary(name) {
     return function f(a, b) {
       var t = _coerce(a, b);
-      return _methods.get(t[0].type)[name](t[0], t[1]);
+      var a = _upcast(t[0], name);
+      var b = _upcast(t[1], name);
+      return _methods.get(a.type)[name](a, b);
     };
   };
 
@@ -302,12 +309,8 @@ var rational = number({
     [checkedInt.type, longInt.type, function(n) {
       return longInt.promote(checkedInt.asJSNumber(n));
     }],
-    [checkedInt.type, fraction.type, function(n) {
-      return fraction.promote(n);
-    }],
-    [longInt.type, fraction.type, function(n) {
-      return fraction.promote(n);
-    }]
+    [checkedInt.type, fraction.type, fraction.promote],
+    [longInt.type, fraction.type, fraction.promote]
   ],
 
   downcasts: [
@@ -393,7 +396,7 @@ if (require.main == module) {
   console.log(num.toString(num.idiv('111111111', '12345679')));
 
   var t = 0;
-  var q = fraction.promote(1); //TODO make the explicit promote unnecessary
+  var q = 1;
   for (var i = 0; i < 128; ++i) {
     q = num.div(q, 2);
     t = num.plus(t, q);
