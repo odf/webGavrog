@@ -10,7 +10,7 @@ var cosets      = require('../fpgroups/cosets');
 
 var coverForTable = function coverForTable(ds, table, edgeToWord) {
   return derived.cover(ds, table.size, function(k, i, D) {
-    return edgeToWord.getIn([D, i])
+    return (edgeToWord.getIn([D, i]) || [])
       .reduce(function(k, g) { return table.getIn([k, g]); }, k);
   });
 };
@@ -38,6 +38,13 @@ var covers = function covers(ds, maxDegree) {
   return seq.map(
     function(table) { return coverForTable(ds, table, fun.get('edge2word')); },
     generators.results(tableGenerator))
+};
+
+
+module.exports = {
+  coverForTable: coverForTable,
+  subgroupCover: subgroupCover,
+  covers       : covers
 };
 
 
