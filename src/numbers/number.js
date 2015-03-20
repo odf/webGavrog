@@ -227,6 +227,7 @@ var number = function number(spec) {
   };
 
   var toString = _property('toString');
+  var asJSNumber = _property('asJSNumber');
   var sgn      = _property('sgn');
   var isEven   = _property('isEven');
 
@@ -245,6 +246,7 @@ var number = function number(spec) {
 
   return {
     toString: toString,
+    asJSNumber: asJSNumber,
     sgn     : sgn,
     isEven  : isEven,
     negative: negative,
