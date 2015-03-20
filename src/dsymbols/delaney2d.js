@@ -96,7 +96,7 @@ var orbifoldSymbol = function orbifoldSymbol(ds) {
     (p.isWeaklyOriented(ds) ? I.Repeat('o', cost/2) : I.Repeat('x', cost))
   ).join('');
 
-  if (sym == 'x' || sym == 'o' || sym == '')
+  if (sym == 'x' || sym == '*' || sym == '')
     return '1'+sym;
   else
     return sym;
