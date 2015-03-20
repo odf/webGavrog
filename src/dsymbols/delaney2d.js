@@ -9,7 +9,7 @@ var Q  = require('../numbers/number');
 var sq = require('../common/lazyseq');
 
 
-var _assert = function(condition, message) {
+var _assert = function _assert(condition, message) {
   if (!condition)
     throw new Error(message || 'assertion error');
 };
@@ -27,10 +27,20 @@ var _map1dOrbits = function _map1dOrbits(fn, ds) {
 };
 
 
-var _loopless = function(ds, i, j, D) {
+var _loopless = function _loopless(ds, i, j, D) {
   return p.orbit(ds, [i, j], D).every(function(E) {
     return ds.s(i, E) != E && ds.s(j, E) != E;
   });
+};
+
+
+var _unbranched = function _unbranched(ds) {
+  return _map1dOrbits(ds.v, ds).every(function(v) { return v == 1; });
+};
+
+
+var _sum = function _sum(numbers) {
+  return numbers.reduce(Q.plus, 0);
 };
 
 
@@ -42,8 +52,7 @@ var curvature = function curvature(ds) {
     return Q.div((_loopless(ds, i, j, D) ? 2 : 1), ds.v(i, j, D));
   };
 
-  return _map1dOrbits(orbitContribution, ds)
-    .reduce(function(a, b) { return Q.plus(a, b); }, -DS.size(ds));
+  return Q.minus(_sum(_map1dOrbits(orbitContribution, ds)), DS.size(ds));
 };
 
 
@@ -84,12 +93,12 @@ var orbifoldSymbol = function orbifoldSymbol(ds) {
   var cones   = types.filter(isCone).map(v);
   var corners = types.filter(isCorner).map(v);
 
-  var cost = Q.toJS(Q.minus(2, [
+  var cost = Q.toJS(Q.minus(2, _sum([
     Q.div(curvature(ds), 2),
-    cones.map(function(v) { return Q.div(v - 1, v); }).reduce(Q.plus, 0),
-    corners.map(function(v) { return Q.div(v - 1, 2*v); }).reduce(Q.plus, 0),
+    _sum(cones.map(function(v) { return Q.div(v - 1, v); })),
+    _sum(corners.map(function(v) { return Q.div(v - 1, 2*v); })),
     (p.isLoopless(ds) ? 0 : 1)
-  ].reduce(Q.plus, 0)));
+  ])));
 
   var sym = I.List().concat(
     cones.sort().reverse(),
@@ -110,14 +119,8 @@ var toroidalCover = function toroidalCover(ds) {
 
   var dso = d.orientedCover(ds);
   var degree = _map1dOrbits(dso.v, dso).max();
-  var covers = cv.covers(dso, degree);
 
-  return sq.filter(
-    function(ds) {
-      return _map1dOrbits(ds.v, ds).every(function(v) { return v == 1; });
-    },
-    covers)
-    .first();
+  return sq.filter(_unbranched, cv.covers(dso, degree)).first();
 };
 
 
