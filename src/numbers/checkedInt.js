@@ -12,7 +12,7 @@ var checkedInt = function checkedInt(longInt) {
   };
 
 
-  var asJSNumber = function asJSNumber(n) {
+  var toJS = function toJS(n) {
     return n.value;
   };
 
@@ -85,20 +85,20 @@ var checkedInt = function checkedInt(longInt) {
 
 
   return {
-    type      : CheckedInt,
-    promote   : promote,
-    toString  : toString,
-    asJSNumber: asJSNumber,
-    negative  : negative,
-    abs       : abs,
-    sgn       : sgn,
-    isEven    : isEven,
-    cmp       : cmp,
-    plus      : plus,
-    minus     : minus,
-    times     : times,
-    idiv      : idiv,
-    mod       : mod
+    type    : CheckedInt,
+    promote : promote,
+    toString: toString,
+    toJS    : toJS,
+    negative: negative,
+    abs     : abs,
+    sgn     : sgn,
+    isEven  : isEven,
+    cmp     : cmp,
+    plus    : plus,
+    minus   : minus,
+    times   : times,
+    idiv    : idiv,
+    mod     : mod
   };
 };
 

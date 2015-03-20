@@ -82,7 +82,7 @@ var orbifoldSymbol = function orbifoldSymbol(ds) {
   var cones   = types.filter(isCone).map(v);
   var corners = types.filter(isCorner).map(v);
 
-  var cost = Q.asJSNumber(Q.minus(2, [
+  var cost = Q.toJS(Q.minus(2, [
     Q.div(curvature(ds), 2),
     cones.map(function(v) { return Q.div(v - 1, v); }).reduce(Q.plus, 0),
     corners.map(function(v) { return Q.div(v - 1, 2*v); }).reduce(Q.plus, 0),

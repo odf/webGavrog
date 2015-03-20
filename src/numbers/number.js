@@ -227,7 +227,7 @@ var number = function number(spec) {
   };
 
   var toString = _property('toString');
-  var asJSNumber = _property('asJSNumber');
+  var toJS     = _property('toJS');
   var sgn      = _property('sgn');
   var isEven   = _property('isEven');
 
@@ -246,7 +246,7 @@ var number = function number(spec) {
 
   return {
     toString: toString,
-    asJSNumber: asJSNumber,
+    toJS    : toJS,
     sgn     : sgn,
     isEven  : isEven,
     negative: negative,
@@ -283,13 +283,13 @@ var integer = number({
 
   upcasts: [
     [checkedInt.type, longInt.type, function(n) {
-      return longInt.promote(checkedInt.asJSNumber(n));
+      return longInt.promote(checkedInt.toJS(n));
     }]
   ],
 
   downcasts: [
     [longInt.type, function(n) {
-      var val = longInt.asJSNumber(n);
+      var val = longInt.toJS(n);
       if (val !== undefined)
         return checkedInt.promote(val);
       else
@@ -309,7 +309,7 @@ var rational = number({
 
   upcasts: [
     [checkedInt.type, longInt.type, function(n) {
-      return longInt.promote(checkedInt.asJSNumber(n));
+      return longInt.promote(checkedInt.toJS(n));
     }],
     [checkedInt.type, fraction.type, fraction.promote],
     [longInt.type, fraction.type, fraction.promote]
@@ -317,7 +317,7 @@ var rational = number({
 
   downcasts: [
     [longInt.type, function(n) {
-      var val = longInt.asJSNumber(n);
+      var val = longInt.toJS(n);
       if (val !== undefined)
         return checkedInt.promote(val);
       else

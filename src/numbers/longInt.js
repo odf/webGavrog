@@ -37,7 +37,7 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var asJSNumber = function asJSNumber(n) {
+  var toJS = function toJS(n) {
     if (n.digits.size <= 1)
       return n.sign * n.digits.get(0);
   };
@@ -332,7 +332,7 @@ var longInt = function longInt(baseLength) {
     digitSize : BASE,
     promote   : promote,
     parse     : parse,
-    asJSNumber: asJSNumber,
+    toJS      : toJS,
     toString  : toString,
     negative  : negative,
     abs       : abs,
