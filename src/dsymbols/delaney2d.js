@@ -4,7 +4,9 @@ var I  = require('immutable');
 var DS = require('./delaney');
 var p  = require('./properties');
 var d  = require('./derived');
+var cv = require('./covers');
 var Q  = require('../numbers/number');
+var sq = require('../common/lazyseq');
 
 
 var _assert = function(condition, message) {
@@ -103,6 +105,22 @@ var orbifoldSymbol = function orbifoldSymbol(ds) {
 };
 
 
+var toroidalCover = function toroidalCover(ds) {
+  _assert(isEuclidean(ds), 'must be euclidean');
+
+  var dso = d.orientedCover(ds);
+  var degree = _map1dOrbits(dso.v, dso).max();
+  var covers = cv.covers(dso, degree);
+
+  return sq.filter(
+    function(ds) {
+      return _map1dOrbits(ds.v, ds).every(function(v) { return v == 1; });
+    },
+    covers)
+    .first();
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
@@ -111,6 +129,19 @@ if (require.main == module) {
     console.log('  symbol is '+(isHyperbolic(ds) ? '' : 'not ')+'hyperbolic');
     console.log('  symbol is '+(isSpherical(ds) ? '' : 'not ')+'spherical');
     console.log('  orbifold symbol = '+orbifoldSymbol(ds));
+    if (isEuclidean(ds)) {
+      var dst = toroidalCover(ds);
+      var curv = curvature(dst);
+      var orbs = orbifoldSymbol(dst);
+
+      console.log('  toroidal cover = '+dst);
+
+      if (Q.cmp(curv, 0) == 0 && orbs == 'o')
+        console.log('    (curvature and orbifold symbol okay)');
+      else
+        console.error('    !!!! curvature '+Q.toString(curvature(dst))+
+                      ', orbifold symbol '+orbifoldSymbol(dst));
+    }
     console.log();
   };
 
