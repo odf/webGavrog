@@ -25,15 +25,19 @@ var _map1dOrbits = function _map1dOrbits(fn, ds) {
 };
 
 
+var _loopless = function(ds, i, j, D) {
+  return p.orbit(ds, [i, j], D).every(function(E) {
+    return ds.s(i, E) != E && ds.s(j, E) != E;
+  });
+};
+
+
 var curvature = function curvature(ds) {
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
   _assert(p.isConnected(ds), 'must be connected');
 
   var orbitContribution = function orbitContribution(i, j, D) {
-    var loopless = p.orbit(ds, [i, j], D).every(function(E) {
-      return ds.s(i, E) != E && ds.s(j, E) != E;
-    });
-    return Q.div((loopless ? 2 : 1), ds.v(i, j, D));
+    return Q.div((_loopless(ds, i, j, D) ? 2 : 1), ds.v(i, j, D));
   };
 
   return _map1dOrbits(orbitContribution, ds)
@@ -65,6 +69,40 @@ var isSpherical = function isSpherical(ds) {
 };
 
 
+var orbifoldSymbol = function orbifoldSymbol(ds) {
+  var orbitType = function(i, j, D) {
+    return { v: ds.v(i, j, D), c: _loopless(ds, i, j, D) };
+  };
+
+  var v        = function(o) { return o.v; };
+  var isCone   = function(o) { return o.v > 1 && o.c; };
+  var isCorner = function(o) { return o.v > 1 && !o.c; };
+
+  var types   = _map1dOrbits(orbitType, ds);
+  var cones   = types.filter(isCone).map(v);
+  var corners = types.filter(isCorner).map(v);
+
+  var cost = Q.asJSNumber(Q.minus(2, [
+    Q.div(curvature(ds), 2),
+    cones.map(function(v) { return Q.div(v - 1, v); }).reduce(Q.plus, 0),
+    corners.map(function(v) { return Q.div(v - 1, 2*v); }).reduce(Q.plus, 0),
+    (p.isLoopless(ds) ? 0 : 1)
+  ].reduce(Q.plus, 0)));
+
+  var sym = I.List().concat(
+    cones.sort().reverse(),
+    (p.isLoopless(ds) ? [] : ['*']),
+    corners.sort().reverse(),
+    (p.isWeaklyOriented(ds) ? I.Repeat('o', cost/2) : I.Repeat('x', cost))
+  ).join('');
+
+  if (sym == 'x' || sym == 'o' || sym == '')
+    return '1'+sym;
+  else
+    return sym;
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
@@ -72,6 +110,7 @@ if (require.main == module) {
     console.log('  symbol is '+(isEuclidean(ds) ? '' : 'not ')+'euclidean');
     console.log('  symbol is '+(isHyperbolic(ds) ? '' : 'not ')+'hyperbolic');
     console.log('  symbol is '+(isSpherical(ds) ? '' : 'not ')+'spherical');
+    console.log('  orbifold symbol = '+orbifoldSymbol(ds));
     console.log();
   };
 
