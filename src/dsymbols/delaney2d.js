@@ -5,7 +5,7 @@ var DS = require('./delaney');
 var p  = require('./properties');
 var d  = require('./derived');
 var cv = require('./covers');
-var Q  = require('../numbers/number');
+var Q  = require('../arithmetic/number');
 var sq = require('../common/lazyseq');
 
 
