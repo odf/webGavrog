@@ -226,7 +226,6 @@ var number = function number(spec) {
     };
   };
 
-  var toString = _property('toString');
   var toJS     = _property('toJS');
   var sgn      = _property('sgn');
   var isEven   = _property('isEven');
@@ -245,7 +244,6 @@ var number = function number(spec) {
   var mod      = _binary('mod');
 
   return {
-    toString: toString,
     toJS    : toJS,
     sgn     : sgn,
     isEven  : isEven,
@@ -345,8 +343,8 @@ if (require.main == module) {
     };
 
     [
-      'toString', 'sgn', 'isEven', 'negative', 'abs',
-      'cmp', 'plus', 'minus', 'times', 'idiv', 'mod'
+      'sgn', 'isEven', 'negative', 'abs', 'cmp',
+      'plus', 'minus', 'times', 'idiv', 'mod'
     ]
       .forEach(function(s) {
         out[s] = function() {
@@ -391,11 +389,11 @@ if (require.main == module) {
   var t = 1;
   for (var i = 1; i < 50; ++i)
     t = num.times(t, i);
-  console.log(num.toString(t));
+  console.log(t);
   for (var i = 1; i < 50; ++i)
     t = num.idiv(t, i);
   console.log(t);
-  console.log(num.toString(num.idiv('111111111', '12345679')));
+  console.log(num.idiv('111111111', '12345679'));
 
   var t = 0;
   var q = 1;

@@ -336,7 +336,6 @@ var longInt = function longInt(baseLength) {
     promote   : promote,
     parse     : parse,
     toJS      : toJS,
-    toString  : toString,
     negative  : negative,
     abs       : abs,
     sgn       : sgn,

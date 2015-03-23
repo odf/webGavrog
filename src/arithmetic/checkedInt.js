@@ -31,11 +31,6 @@ var checkedInt = function checkedInt(longInt) {
   };
 
 
-  var toString = function toString(n) {
-    return '' + n.value;
-  };
-
-
   var negative = function negative(n) {
     return make(-n.value);
   };
@@ -93,7 +88,6 @@ var checkedInt = function checkedInt(longInt) {
   return {
     type    : CheckedInt,
     promote : promote,
-    toString: toString,
     toJS    : toJS,
     negative: negative,
     abs     : abs,
