@@ -20,8 +20,29 @@ var longInt = function longInt(baseLength) {
   var ZEROES = ('' + BASE).slice(1);
 
 
-  var LongInt = "__LongInt__";
+  var LongInt = I.Record({
+    type  : undefined,
+    sign  : undefined,
+    digits: undefined
+  });
 
+
+  var _toString = function _toString(r) {
+    return r.reverse()
+      .map(function(d, i) {
+        var s = '' + d;
+        return (i == 0 ? '' : ZEROES.slice(s.length)) + s;
+      })
+      .join('');
+  };
+
+
+  LongInt.prototype.toString = function() {
+    if (_isZero(this))
+      return '0';
+    else
+      return (this.sign < 0 ? '-' : '') + _toString(this.digits);
+  };
 
   var shouldPromote = function shouldPromote(n) {
     return Math.abs(n) >= BASE;
@@ -29,11 +50,11 @@ var longInt = function longInt(baseLength) {
 
 
   var make = function make(sign, digits) {
-    return {
+    return new LongInt({
       type  : LongInt,
       sign  : sign,
       digits: digits
-    };
+    });
   };
 
 
@@ -81,24 +102,6 @@ var longInt = function longInt(baseLength) {
       sign = 0;
 
     return make(sign, digits);
-  };
-
-
-  var _toString = function _toString(r) {
-    return r.reverse()
-      .map(function(d, i) {
-        var s = '' + d;
-        return (i == 0 ? '' : ZEROES.slice(s.length)) + s;
-      })
-      .join('');
-  };
-
-
-  var toString = function toString(n) {
-    if (_isZero(n))
-      return '0';
-    else
-      return (n.sign < 0 ? '-' : '') + _toString(n.digits);
   };
 
 
@@ -357,26 +360,22 @@ if (require.main == module) {
   with(module.exports.custom(4)) {
     'use strict';
 
-    var show = function(n) {
-      console.log(toString(n));
-    };
-
-    show(promote(-123456789000000));
-    show(parse('1234'));
-    show(parse('+1234'));
-    show(parse('-1234'));
-    show(parse('-123456789000000'));
+    console.log(promote(-123456789000000));
+    console.log(parse('1234'));
+    console.log(parse('+1234'));
+    console.log(parse('-1234'));
+    console.log(parse('-123456789000000'));
     console.log(parse('-123456789000000'));
 
     console.log();
-    show(plus(promote(123456789), promote(876543211)));
-    show(minus(promote(123456789), promote(123450000)));
-    show(minus(promote(123456789), promote(123456790)));
-    show(minus(promote(123456789), promote(123456789)));
-    show(plus(promote(123456789), promote(-123450000)));
+    console.log(plus(promote(123456789), promote(876543211)));
+    console.log(minus(promote(123456789), promote(123450000)));
+    console.log(minus(promote(123456789), promote(123456790)));
+    console.log(minus(promote(123456789), promote(123456789)));
+    console.log(plus(promote(123456789), promote(-123450000)));
 
     console.log();
-    show(abs(promote(-12345)));
+    console.log(abs(promote(-12345)));
     console.log(sgn(promote(1)));
     console.log(sgn(promote(123456)));
     console.log(sgn(promote(0)));
@@ -388,21 +387,21 @@ if (require.main == module) {
     console.log(isEven(promote(12345678)));
 
     console.log();
-    show(times(promote(123), promote(1001)));
-    show(times(promote(12345), promote(100001)));
-    show(times(promote(11111), promote(9)));
-    show(times(promote(12345679), promote(9)));
-    show(idiv(promote(111111), promote(37)));
-    show(idiv(promote(111111111), promote(37)));
-    show(idiv(promote(111111111), promote(12345679)));
-    show(idiv(promote(99980001), promote(49990001)));
-    show(idiv(promote(20001), promote(10001)));
-    show(idiv(promote(99999999), promote(9999)));
+    console.log(times(promote(123), promote(1001)));
+    console.log(times(promote(12345), promote(100001)));
+    console.log(times(promote(11111), promote(9)));
+    console.log(times(promote(12345679), promote(9)));
+    console.log(idiv(promote(111111), promote(37)));
+    console.log(idiv(promote(111111111), promote(37)));
+    console.log(idiv(promote(111111111), promote(12345679)));
+    console.log(idiv(promote(99980001), promote(49990001)));
+    console.log(idiv(promote(20001), promote(10001)));
+    console.log(idiv(promote(99999999), promote(9999)));
 
     console.log();
-    show(mod(promote(111), promote(37)));
-    show(mod(promote(111112), promote(37)));
-    show(mod(promote(111111111), promote(12345679)));
+    console.log(mod(promote(111), promote(37)));
+    console.log(mod(promote(111112), promote(37)));
+    console.log(mod(promote(111111111), promote(12345679)));
   }
 
   with(module.exports) {
