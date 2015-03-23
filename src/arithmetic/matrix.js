@@ -20,6 +20,9 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
   var _make = function _make(data) {
+    if (data.size == 0 || data.first().size == 0)
+      throw new Error('both dimensions must be positive');
+
     return new Matrix({
       nrows: data.size,
       ncols: data.first().size,
@@ -57,6 +60,20 @@ var matrix = function matrix(scalar, zero, one) {
     return _make(A.data.setIn([i, j], x));
   };
 
+  var times = function times(A, B) {
+    if (A.ncols != B.nrows)
+      throw new Error('shapes do not match');
+
+    return _make(I.Range(0, A.nrows).map(function(i) {
+      return I.Range(0, B.ncols).map(function(j) {
+        return I.Range(0, A.ncols)
+          .map(function(k) { return scalar.times(get(A, i, k), get(B, k, j)); })
+          .reduce(scalar.plus, zero);
+      });
+    }));
+  };
+
+
   var _findPivot = function _findPivot(A, row, col, overField) {
     var best = row;
     for (var i = row; i < A.nrows; ++i) {
@@ -80,8 +97,7 @@ var matrix = function matrix(scalar, zero, one) {
 
   var _adjustRow = function _swapRows(A, i, j, f) {
     return _make(A.data.set(i, I.Range(0, A.ncols).map(function(k) {
-      return scalar.toJS(scalar.plus(get(A, i, k),
-                                     scalar.times(get(A, j, k), f)));
+      return scalar.plus(get(A, i, k), scalar.times(get(A, j, k), f));
     })));
   };
 
@@ -155,6 +171,7 @@ var matrix = function matrix(scalar, zero, one) {
     transposed   : transposed,
     set          : set,
     get          : get,
+    times        : times,
     triangulation: triangulation
   };
 };
@@ -171,5 +188,13 @@ if (require.main == module) {
   console.log(M.transposed(M.constant(3, 4, 5)));
   console.log(M.set(M.identity(3), 0, 1, 4));
   console.log(M.transposed(M.set(M.identity(3), 0, 1, 4)));
-  console.log(M.triangulation(M.make([[1,2,3],[6,5,4],[7,8,9]])));
+  console.log();
+
+  var A = M.make([[1,2,3],[6,5,4],[7,8,9]]);
+  var t = M.triangulation(A);
+  console.log('A = '+A);
+  console.log('t.U = '+t.U);
+  console.log('t.R = '+t.R);
+  console.log('t.sign = '+t.sign);
+  console.log('t.U * A = '+M.times(t.U, A));
 }
