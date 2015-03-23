@@ -164,6 +164,29 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
+  var rank = function rank(A) {
+    var R = triangulation(A, true).R;
+    var row = 0;
+    for (var col = 0; col < R.ncols; ++col)
+      if (row < R.nrows && scalar.sgn(get(R, row, col)) != 0)
+        ++row;
+    return row;
+  };
+
+
+  var determinant = function determinant(A) {
+    if (A.nrows != A.ncols)
+      throw new Error('must be a square matrix');
+
+    var t = triangulation(A, true);
+    var R = t.R;
+
+    return I.Range(0, R.nrows)
+      .map(function(i) { return get(R, i, i); })
+      .reduce(scalar.times, t.sign);
+  };
+
+
   return {
     make         : make,
     constant     : constant,
@@ -172,7 +195,9 @@ var matrix = function matrix(scalar, zero, one) {
     set          : set,
     get          : get,
     times        : times,
-    triangulation: triangulation
+    triangulation: triangulation,
+    rank         : rank,
+    determinant  : determinant
   };
 };
 
@@ -181,7 +206,6 @@ if (require.main == module) {
   var Q = require('./number');
   var M = matrix(Q, 0, 1);
 
-  console.log(M.make([[1],[2,3],[4,5,6]]));
   console.log(M.constant(3, 4));
   console.log(M.constant(3, 4, 5));
   console.log(M.identity(3));
@@ -190,11 +214,18 @@ if (require.main == module) {
   console.log(M.transposed(M.set(M.identity(3), 0, 1, 4)));
   console.log();
 
-  var A = M.make([[1,2,3],[6,5,4],[7,8,9]]);
-  var t = M.triangulation(A);
-  console.log('A = '+A);
-  console.log('t.U = '+t.U);
-  console.log('t.R = '+t.R);
-  console.log('t.sign = '+t.sign);
-  console.log('t.U * A = '+M.times(t.U, A));
+  var test = function test(A) {
+    var t = M.triangulation(A);
+    console.log('A = '+A);
+    console.log('t.U = '+t.U);
+    console.log('t.R = '+t.R);
+    console.log('t.sign = '+t.sign);
+    console.log('t.U * A = '+M.times(t.U, A));
+    console.log('rk(A) = '+M.rank(A));
+    console.log('det(A) = '+M.determinant(A));
+    console.log();
+  };
+
+  test(M.make([[1,2,3],[6,5,4],[7,8,9]]));
+  test(M.make([[1],[2,3],[4,5,6]]));
 }
