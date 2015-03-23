@@ -27,6 +27,14 @@ var matrix = function matrix(scalar, zero, one) {
     });
   };
 
+  var make = function make(data) {
+    var tmp = I.List(data.map(I.List));
+    var m = tmp.map(function(row) { return row.size; }).max();
+    return _make(tmp.map(function(row) {
+      return row.concat(I.Repeat(zero, m - row.size));
+    }));
+  };
+
   var constant = function constant(nrows, ncols, value) {
     var x = value === undefined ? zero : value;
     return _make(I.List(I.Repeat(I.List(I.Repeat(x, ncols)), nrows)));
@@ -141,6 +149,7 @@ var matrix = function matrix(scalar, zero, one) {
 
 
   return {
+    make         : make,
     constant     : constant,
     identity     : identity,
     transposed   : transposed,
@@ -155,6 +164,7 @@ if (require.main == module) {
   var Q = require('./number');
   var M = matrix(Q, 0, 1);
 
+  console.log(M.make([[1],[2,3],[4,5,6]]));
   console.log(M.constant(3, 4));
   console.log(M.constant(3, 4, 5));
   console.log(M.identity(3));
