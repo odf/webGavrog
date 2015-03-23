@@ -118,24 +118,20 @@ if (require.main == module) {
   with(module.exports.custom(require('./longInt').custom(4))) {
     'use strict';
 
-    var show = function(n) {
-      console.log(toString(n));
-    };
-
-    show(promote(-1234));
+    console.log(promote(-1234));
     console.log(promote(-1234));
     console.log(promote(-12345));
     console.log(promote(-1234567890));
 
     console.log();
-    show(plus(promote(1234), promote(8765)));
+    console.log(plus(promote(1234), promote(8765)));
     console.log(plus(promote(1234), promote(8766)));
-    show(minus(promote(1234), promote(1234)));
-    show(minus(promote(1234), promote(1230)));
-    show(plus(promote(1234), promote(-1234)));
+    console.log(minus(promote(1234), promote(1234)));
+    console.log(minus(promote(1234), promote(1230)));
+    console.log(plus(promote(1234), promote(-1234)));
 
     console.log();
-    show(abs(promote(-1234)));
+    console.log(abs(promote(-1234)));
     console.log(sgn(promote(1)));
     console.log(sgn(promote(1234)));
     console.log(sgn(promote(0)));
@@ -148,16 +144,16 @@ if (require.main == module) {
 
     console.log();
     console.log(times(promote(123), promote(1001)));
-    show(times(promote(1111), promote(9)));
+    console.log(times(promote(1111), promote(9)));
     console.log(times(promote(1235), promote(9)));
-    show(idiv(promote(111), promote(37)));
-    show(idiv(promote(111), promote(3)));
-    show(idiv(promote(9998), promote(4999)));
-    show(idiv(promote(2001), promote(1001)));
-    show(idiv(promote(9999), promote(99)));
+    console.log(idiv(promote(111), promote(37)));
+    console.log(idiv(promote(111), promote(3)));
+    console.log(idiv(promote(9998), promote(4999)));
+    console.log(idiv(promote(2001), promote(1001)));
+    console.log(idiv(promote(9999), promote(99)));
 
     console.log();
-    show(mod(promote(111), promote(37)));
-    show(mod(promote(112), promote(37)));
+    console.log(mod(promote(111), promote(37)));
+    console.log(mod(promote(112), promote(37)));
   }
 }
