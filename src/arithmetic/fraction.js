@@ -1,15 +1,31 @@
+var I = require('immutable');
+
+
 var fraction = function fraction(intType, promoteToInt) {
   'use strict';
 
-  var Fraction = "__Fraction__";
+  var Fraction = I.Record({
+    type : undefined,
+    numer: undefined,
+    denom: undefined
+  });
+
+
+  Fraction.prototype.toString = function toString() {
+    var n = asInteger(this);
+    if (n !== undefined)
+      return n.toString();
+    else
+      return this.numer.toString() + '/' + this.denom.toString();
+  };
 
 
   var make = function make(num, den) {
-    return {
+    return new Fraction({
       type: Fraction,
       numer: num,
       denom: den
-    };
+    });
   };
 
 
@@ -49,15 +65,6 @@ var fraction = function fraction(intType, promoteToInt) {
   var asInteger = function asInteger(q) {
     if (intType.cmp(q.denom, promoteToInt(1)) == 0)
       return q.numer;
-  };
-
-
-  var toString = function toString(q) {
-    var n = asInteger(q);
-    if (n !== undefined)
-      return intType.toString(n);
-    else
-      return intType.toString(q.numer) + '/' + intType.toString(q.denom);
   };
 
 
@@ -139,7 +146,6 @@ var fraction = function fraction(intType, promoteToInt) {
     type    : Fraction,
     promote : promote,
     asInteger: asInteger,
-    toString: toString,
     negative: negative,
     abs     : abs,
     sgn     : sgn,
@@ -162,27 +168,23 @@ module.exports = fraction;
 if (require.main == module) {
   var longInt = require('./longInt').custom(4);
 
-  with(module.exports(longInt)) {
+  with(module.exports(longInt, longInt.promote)) {
     'use strict';
-
-    var show = function(q) {
-      console.log(toString(q));
-    }
 
     var q = function(n, d) {
       return div(promote(longInt.promote(n)), promote(longInt.promote(d || 1)));
     };
 
-    show(q(-1234));
-    show(q(2, 3));
-    show(q(-1234, -26));
-    show(q(111111, 185));
-    show(times(q(9, 10), q(5, 21)));
-    show(minus(q(3, 5), q(7, 11)));
-    show(div(q(111111111), q(2 * 12345679)));
-    show(plus(q(1, 2), q(1, 2)));
-    show(plus(q(2, 3), q(4, 3)));
-    show(plus(q(2, 3), q(1)));
-    show(div(q(2, 3), q(2)));
+    console.log(q(-1234));
+    console.log(q(2, 3));
+    console.log(q(-1234, -26));
+    console.log(q(111111, 185));
+    console.log(times(q(9, 10), q(5, 21)));
+    console.log(minus(q(3, 5), q(7, 11)));
+    console.log(div(q(111111111), q(2 * 12345679)));
+    console.log(plus(q(1, 2), q(1, 2)));
+    console.log(plus(q(2, 3), q(4, 3)));
+    console.log(plus(q(2, 3), q(1)));
+    console.log(div(q(2, 3), q(2)));
   }
 }
