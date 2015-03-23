@@ -171,5 +171,5 @@ if (require.main == module) {
   console.log(M.transposed(M.constant(3, 4, 5)));
   console.log(M.set(M.identity(3), 0, 1, 4));
   console.log(M.transposed(M.set(M.identity(3), 0, 1, 4)));
-  console.log(M.triangulation(M.set(M.identity(3), 1, 0, 4)));
+  console.log(M.triangulation(M.make([[1,2,3],[6,5,4],[7,8,9]])));
 }
