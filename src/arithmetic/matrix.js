@@ -60,9 +60,9 @@ var matrix = function matrix(scalar, zero, one) {
   var _findPivot = function _findPivot(A, row, col, overField) {
     var best = row;
     for (var i = row; i < A.nrows; ++i) {
-      var x = get(A, i, col);
+      var x = scalar.abs(get(A, i, col));
       if (scalar.sgn(x) != 0) {
-        var d = scalar.cmp(x, get(A, best, col));
+        var d = scalar.cmp(x, scalar.abs(get(A, best, col)));
         if (overField ? d > 0 : d < 0)
           best = i;
       }
@@ -103,7 +103,7 @@ var matrix = function matrix(scalar, zero, one) {
       var cleared = false;
 
       while (!cleared && col < R.ncols) {
-        var pivotRow = _findPivot(A, row, col, overField);
+        var pivotRow = _findPivot(R, row, col, overField);
         var pivot = get(R, pivotRow, col);
 
         if (scalar.sgn(pivot) == 0) {
