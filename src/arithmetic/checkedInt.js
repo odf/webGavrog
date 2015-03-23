@@ -1,14 +1,20 @@
+var I = require('immutable');
+
 var checkedInt = function checkedInt(longInt) {
   'use strict';
 
-  var CheckedInt = "__CheckedInt__";
+  var CheckedInt = I.Record({
+    type : undefined,
+    value: undefined
+  });
+
+  CheckedInt.prototype.toString = function() {
+    return ''+this.value;
+  };
 
 
   var make = function make(n) {
-    return {
-      type : CheckedInt,
-      value: n
-    };
+    return new CheckedInt({ type: CheckedInt, value: n });
   };
 
 
