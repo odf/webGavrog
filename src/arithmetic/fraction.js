@@ -5,7 +5,6 @@ var fraction = function fraction(intType, promoteToInt) {
   'use strict';
 
   var Fraction = I.Record({
-    type : undefined,
     numer: undefined,
     denom: undefined
   });
@@ -22,7 +21,6 @@ var fraction = function fraction(intType, promoteToInt) {
 
   var make = function make(num, den) {
     return new Fraction({
-      type: Fraction,
       numer: num,
       denom: den
     });

@@ -21,7 +21,6 @@ var longInt = function longInt(baseLength) {
 
 
   var LongInt = I.Record({
-    type  : undefined,
     sign  : undefined,
     digits: undefined
   });
@@ -51,7 +50,6 @@ var longInt = function longInt(baseLength) {
 
   var make = function make(sign, digits) {
     return new LongInt({
-      type  : LongInt,
       sign  : sign,
       digits: digits
     });

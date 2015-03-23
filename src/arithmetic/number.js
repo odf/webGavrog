@@ -162,8 +162,13 @@ var number = function number(spec) {
   var _downcasts = I.Map(I.fromJS(spec.downcasts).toJS());
   var _upcastPaths = _operationUpcastPaths(I.fromJS(spec.upcasts), _methods);
 
+  var _type = function _type(n) {
+    if (n != null && _methods.get(n.constructor))
+      return n.constructor;
+  };
+
   var _num = function _num(n) {
-    if (!!n && n.type)
+    if (_type(n))
       return n;
     else
       return spec.promote(n);
@@ -173,33 +178,33 @@ var number = function number(spec) {
     a = _num(a);
     b = _num(b);
 
-    if (a.type == b.type)
+    if (_type(a) == _type(b))
       return [a, b];
     else {
-      var paths = _coercionMatrix.getIn([a.type, b.type]);
+      var paths = _coercionMatrix.getIn([_type(a), _type(b)]);
       return [paths.get(0).reduce(_apply, a), paths.get(1).reduce(_apply, b)];
     }
   };
 
   var _upcast = function _upcast(n, op) {
     n = _num(n);
-    return _upcastPaths.getIn([n.type, op]).reduce(_apply, n);
+    return _upcastPaths.getIn([_type(n), op]).reduce(_apply, n);
   };
 
   var _downcast = function _downcast(n) {
-    var f = _downcasts.get(n.type);
+    var f = _downcasts.get(_type(n));
     if (!f)
       return n;
     else {
       var val = f(n);
-      return val.type == n.type ? val : _downcast(val);
+      return _type(val) == _type(n) ? val : _downcast(val);
     }
   };
 
   var _property = function _property(name) {
     return function f(n) {
       n = _upcast(n, name);
-      return _methods.get(n.type)[name](n);
+      return _methods.get(_type(n))[name](n);
     };
   };
 
@@ -215,7 +220,7 @@ var number = function number(spec) {
       var t = _coerce(a, b);
       var a = _upcast(t[0], name);
       var b = _upcast(t[1], name);
-      return _methods.get(a.type)[name](a, b);
+      return _methods.get(_type(a))[name](a, b);
     };
   };
 
@@ -336,55 +341,7 @@ module.exports = rational;
 
 
 if (require.main == module) {
-  var makeType = function(name) {
-    var out = {
-      make: function(val) { return { type: name, value: val }; },
-      type: name
-    };
-
-    [
-      'sgn', 'isEven', 'negative', 'abs', 'cmp',
-      'plus', 'minus', 'times', 'idiv', 'mod'
-    ]
-      .forEach(function(s) {
-        out[s] = function() {
-          return ''+s+'('+
-            [].slice.apply(arguments).map(JSON.stringify).join(', ')+')';
-        };
-      });
-
-    return out;
-  }
-
-  var AtoB = function AtoB(x) {
-    return B.make(x);
-  };
-
-  var BtoD = function BtoD(x) {
-    return D.make(x);
-  };
-
-  var CtoD = function CtoD(x) {
-    return D.make(x);
-  };
-
-  var A = makeType('A');
-  var B = makeType('B');
-  var C = makeType('C');
-  var D = makeType('D');
-
-  var num = number({
-    promote  : null,
-    types    : [A, B, C, D],
-    upcasts  : [[A.type, B.type, AtoB],
-                [C.type, D.type, CtoD],
-                [B.type, D.type, BtoD]],
-    downcasts: []
-  });
-
-  console.log(num.plus(A.make(5), C.make(2)));
-
-  num = module.exports;
+  var num = module.exports;
 
   var t = 1;
   for (var i = 1; i < 50; ++i)

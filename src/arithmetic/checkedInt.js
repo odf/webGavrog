@@ -4,7 +4,6 @@ var checkedInt = function checkedInt(longInt) {
   'use strict';
 
   var CheckedInt = I.Record({
-    type : undefined,
     value: undefined
   });
 
@@ -14,7 +13,7 @@ var checkedInt = function checkedInt(longInt) {
 
 
   var make = function make(n) {
-    return new CheckedInt({ type: CheckedInt, value: n });
+    return new CheckedInt({ value: n });
   };
 
 
