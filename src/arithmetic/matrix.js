@@ -187,6 +187,41 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
+  var solve = function solve(A, b) {
+    if (A.nrows != b.nrows)
+      throw new Error('matrix shapes must match');
+
+    var n = A.nrows;
+    var m = A.ncols;
+    var k = b.ncols;
+
+    var t = triangulation(A, true);
+    var R = t.R;
+    var v = times(t.U, b);
+
+    var X = constant(m, k);
+    var top = Math.min(n, m);
+
+    for (var j = 0; j < k; ++j) {
+      for (var i = top-1; i >= 0; --i) {
+        var x = I.Range(i+1, top).map(function(nu) {
+          return scalar.times(get(R, i, nu), get(X, nu, j));
+        }).reduce(scalar.plus, zero);
+        var right = scalar.minus(get(v, i, j), x);
+
+        if (scalar.sgn(right) == 0)
+          X = set(X, i, j, right);
+        else if (scalar.sgn(get(R, i, i)) == 0)
+          return null;
+        else
+          X = set(X, i, j, scalar.div(right, get(R, i, i)));
+      }
+    }
+
+    return X;
+  };
+
+
   return {
     make         : make,
     constant     : constant,
@@ -197,7 +232,8 @@ var matrix = function matrix(scalar, zero, one) {
     times        : times,
     triangulation: triangulation,
     rank         : rank,
-    determinant  : determinant
+    determinant  : determinant,
+    solve        : solve
   };
 };
 
@@ -214,7 +250,7 @@ if (require.main == module) {
   console.log(M.transposed(M.set(M.identity(3), 0, 1, 4)));
   console.log();
 
-  var test = function test(A) {
+  var testTriangulation = function testTriangulation(A) {
     var t = M.triangulation(A);
     console.log('A = '+A);
     console.log('t.U = '+t.U);
@@ -226,6 +262,20 @@ if (require.main == module) {
     console.log();
   };
 
-  test(M.make([[1,2,3],[6,5,4],[7,8,9]]));
-  test(M.make([[1],[2,3],[4,5,6]]));
+  testTriangulation(M.make([[1,2,3],[6,5,4],[7,8,9]]));
+  testTriangulation(M.make([[1],[2,3],[4,5,6]]));
+
+  var testSolve = function testSolve(A, b) {
+    var x = M.solve(A, b);
+    console.log('A = '+A);
+    console.log('b = '+b);
+    console.log('x = '+x);
+    console.log('A * x = '+M.times(A, x));
+    console.log();
+ };
+
+  testSolve(M.make([[1,2,3],[0,4,5],[0,0,6]]),
+            M.make([[1],[1],[1]]));
+  testSolve(M.make([[1,2,3],[0,4,5],[0,0,6]]),
+            M.make([[1,0,0],[0,1,0],[0,0,1]]));
 }
