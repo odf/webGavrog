@@ -222,6 +222,14 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
+  var inverse = function inverse(A) {
+    if (A.nrows != A.ncols)
+      throw new Error('must be a square matrix');
+
+    return solve(A, identity(A.nrows));
+  };
+
+
   return {
     make         : make,
     constant     : constant,
@@ -233,7 +241,8 @@ var matrix = function matrix(scalar, zero, one) {
     triangulation: triangulation,
     rank         : rank,
     determinant  : determinant,
-    solve        : solve
+    solve        : solve,
+    inverse      : inverse
   };
 };
 
@@ -272,10 +281,21 @@ if (require.main == module) {
     console.log('x = '+x);
     console.log('A * x = '+M.times(A, x));
     console.log();
- };
+  };
 
   testSolve(M.make([[1,2,3],[0,4,5],[0,0,6]]),
             M.make([[1],[1],[1]]));
   testSolve(M.make([[1,2,3],[0,4,5],[0,0,6]]),
-            M.make([[1,0,0],[0,1,0],[0,0,1]]));
+            M.make([[1],[2,3],[4,5,6]]));
+
+  var testInverse = function testInverse(A) {
+    var B = M.inverse(A);
+    console.log('A = '+A);
+    console.log('A^-1 = '+B);
+    console.log('A * A^-1 = '+M.times(A, B));
+    console.log();
+  };
+
+  testInverse(M.make([[1],[2,3],[4,5,6]]));
+  testInverse(M.make([[1,2,3],[0,4,5],[0,0,6]]));
 }
