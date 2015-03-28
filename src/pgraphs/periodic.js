@@ -90,7 +90,7 @@ var adjacencies = function adjacencies(graph) {
 };
 
 
-var cseq = function cseq(graph, start, dist) {
+var coordinationSeq = function coordinationSeq(graph, start, dist) {
   var adj  = adjacencies(graph);
   var zero = I.List(I.Repeat(0, graph.dim));
   var add  = function(s, t) {
@@ -123,9 +123,9 @@ var cseq = function cseq(graph, start, dist) {
 
 
 module.exports = {
-  make       : make,
-  adjacencies: adjacencies,
-  cseq       : cseq
+  make           : make,
+  adjacencies    : adjacencies,
+  coordinationSeq: coordinationSeq
 };
 
 
@@ -133,5 +133,5 @@ if (require.main == module) {
   var g = make([[1,1,[1,0,0]], [1,1,[0,-1,0]], [1,1,[0,0,1]]]);
   console.log(g);
   console.log(adjacencies(g));
-  console.log(cseq(g, 1, 10));
+  console.log(coordinationSeq(g, 1, 10));
 }
