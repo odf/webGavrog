@@ -234,6 +234,27 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
+  var nullSpace = function nullSpace(A) {
+    var R = triangulation(A).R;
+    var n = R.nrows;
+    var m = R.ncols;
+    var r = rank(R);
+    var d = n - r;
+
+    if (d == 0)
+      return null;
+
+    var B = make(I.Range(0, r).map(function(i) {
+      return I.Range(0, d).map(function(j) {
+        return (j + r >= n) ? 0 : -M.get(R, i, j + r);
+      });
+    }));
+
+    var S = solve(make(R.data.slice(0,r)), B);
+    return make(S.data.slice(0, r).concat(M.identity(d).data));
+  };
+
+
   return {
     make         : make,
     constant     : constant,
@@ -247,7 +268,8 @@ var matrix = function matrix(scalar, zero, one) {
     rank         : rank,
     determinant  : determinant,
     solve        : solve,
-    inverse      : inverse
+    inverse      : inverse,
+    nullSpace    : nullSpace
   };
 };
 
@@ -299,11 +321,16 @@ if (require.main == module) {
   var testInverse = function testInverse(A) {
     var B = M.inverse(A);
     console.log('A = '+A);
-    console.log('A^-1 = '+B);
-    console.log('A * A^-1 = '+M.times(A, B));
+    if (B) {
+      console.log('A^-1 = '+B);
+      console.log('A * A^-1 = '+M.times(A, B));
+    }
+    console.log('null space: '+M.nullSpace(A));
     console.log();
   };
 
   testInverse(M.make([[1],[2,3],[4,5,6]]));
   testInverse(M.make([[1,2,3],[0,4,5],[0,0,6]]));
+  testInverse(M.make([[1,2,3],[4,5,6],[7,8,9]]));
+  testInverse(M.make([[1,2,3],[2,4,6],[3,6,9]]));
 }
