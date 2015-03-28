@@ -325,7 +325,7 @@ if (require.main == module) {
       console.log('A^-1 = '+B);
       console.log('A * A^-1 = '+M.times(A, B));
     }
-    console.log('null space: '+M.nullSpace(A));
+    console.log('nullspace: '+M.nullSpace(A));
     console.log();
   };
 
