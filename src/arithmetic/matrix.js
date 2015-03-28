@@ -247,6 +247,9 @@ var matrix = function matrix(scalar, zero, one) {
 };
 
 
+module.exports = matrix;
+
+
 if (require.main == module) {
   var Q = require('./number');
   var M = matrix(Q, 0, 1);
