@@ -109,7 +109,7 @@ var matrix = function matrix(scalar, zero, one) {
 
   var triangulation = function triangulation(A, overField) {
     var R = A;
-    var U = identity(R.ncols);
+    var U = identity(R.nrows);
     var col = 0;
     var sign = 1;
     var overField = !!overField;
