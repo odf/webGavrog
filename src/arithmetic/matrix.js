@@ -60,6 +60,10 @@ var matrix = function matrix(scalar, zero, one) {
     return _make(A.data.setIn([i, j], x));
   };
 
+  var update = function set(A, i, j, fn) {
+    return _make(A.data.updateIn([i, j], fn));
+  };
+
   var times = function times(A, B) {
     if (A.ncols != B.nrows)
       throw new Error('shapes do not match');
@@ -236,6 +240,7 @@ var matrix = function matrix(scalar, zero, one) {
     identity     : identity,
     transposed   : transposed,
     set          : set,
+    update       : update,
     get          : get,
     times        : times,
     triangulation: triangulation,
