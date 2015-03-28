@@ -183,7 +183,7 @@ var barycentricPlacement = function barycentricPlacement(graph) {
   verts.forEach(function(v, i) {
     adj.get(v).forEach(function(c) {
       if (c.v != v) {
-        var j = vIdcs.get(t.v);
+        var j = vIdcs.get(c.v);
         A = M.update(A, i, j, _inc);
         A = M.update(A, i, i, _dec);
         t = _addToRow(t, i, c.s);
