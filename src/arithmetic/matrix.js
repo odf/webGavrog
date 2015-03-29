@@ -251,6 +251,8 @@ var matrix = function matrix(scalar, zero, one) {
 
     if (d == 0)
       return null;
+    else if (d == n)
+      return identity(n);
 
     var B = make(I.Range(0, r).map(function(i) {
       return I.Range(0, d).map(function(j) {
