@@ -190,12 +190,30 @@ var _relatorRep = function(w) {
 };
 
 
+var _sgn = function _sgn(x) { return (x > 0) - (x < 0); };
+var _sum = function(a) {
+  return a.reduce(function(x, y) { return x + y; }, 0);
+};
+
+var _relatorMatrix = function _relatorMatrix(nrgens, rels) {
+  return rels.map(function(rel) {
+    var counts = rel.groupBy(Math.abs).map(function(a) {
+      return _sum(a.map(_sgn));
+    });
+    return I.List(I.Range(0, nrgens+1).map(function(i) {
+      return counts.get(i) || 0;
+    }));
+  });
+};
+
+
 var FundamentalGroup = I.Record({
-  nrGenerators: undefined,
-  relators    : undefined,
-  cones       : undefined,
-  gen2edge    : undefined,
-  edge2word   : undefined
+  nrGenerators : undefined,
+  relators     : undefined,
+  cones        : undefined,
+  gen2edge     : undefined,
+  edge2word    : undefined,
+  relatorMatrix: undefined
 });
 
 
@@ -234,12 +252,16 @@ var fundamentalGroup = function fundamentalGroup(ds) {
     .map(function(orb) { return orb.slice(3); })
     .sort();
 
+  var nrGens = gen2edge.size;
+  var rels   = I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort();
+
   return FundamentalGroup({
-    nrGenerators: gen2edge.size,
-    relators : I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort(),
-    cones: cones,
-    gen2edge: gen2edge,
-    edge2word: edge2word
+    nrGenerators : nrGens,
+    relators     : rels,
+    cones        : cones,
+    gen2edge     : gen2edge,
+    edge2word    : edge2word,
+    relatorMatrix: _relatorMatrix(nrGens, rels)
   });
 };
 
@@ -270,6 +292,7 @@ if (require.main == module) {
     var group = fundamentalGroup(ds);
 
     console.log('    relators: '+group.relators);
+    console.log('    relator matrix: '+group.relatorMatrix);
     console.log();
 
     console.log('    cones: '+group.cones);
