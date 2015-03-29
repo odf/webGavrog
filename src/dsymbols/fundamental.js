@@ -200,7 +200,7 @@ var _relatorMatrix = function _relatorMatrix(nrgens, rels) {
     var counts = rel.groupBy(Math.abs).map(function(a) {
       return _sum(a.map(_sgn));
     });
-    return I.List(I.Range(0, nrgens+1).map(function(i) {
+    return I.List(I.Range(1, nrgens+1).map(function(i) {
       return counts.get(i) || 0;
     }));
   });
