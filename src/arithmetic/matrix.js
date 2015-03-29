@@ -247,12 +247,12 @@ var matrix = function matrix(scalar, zero, one) {
     var n = R.nrows;
     var m = R.ncols;
     var r = _rank(R);
-    var d = n - r;
+    var d = m - r;
 
     if (d == 0)
       return null;
-    else if (d == n)
-      return identity(n);
+    else if (r == 0)
+      return identity(m);
 
     var B = make(I.Range(0, r).map(function(i) {
       return I.Range(0, d).map(function(j) {
