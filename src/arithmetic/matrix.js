@@ -15,7 +15,7 @@ var matrix = function matrix(scalar, zero, one) {
     return '<'+this.nrows+'x'+this.ncols+' matrix: '+this.data+'>'
   };
 
-  var get = function set(A, i, j) {
+  var get = function get(A, i, j) {
     return A.data.getIn([i, j]);
   };
 
@@ -60,7 +60,7 @@ var matrix = function matrix(scalar, zero, one) {
     return _make(A.data.setIn([i, j], x));
   };
 
-  var update = function set(A, i, j, fn) {
+  var update = function update(A, i, j, fn) {
     return _make(A.data.updateIn([i, j], fn));
   };
 
@@ -95,11 +95,11 @@ var matrix = function matrix(scalar, zero, one) {
     return _make(A.data.set(i, A.data.get(j)).set(j, A.data.get(i)));
   };
 
-  var _negateRow = function _swapRows(A, i) {
+  var _negateRow = function _negateRow(A, i) {
     return _make(A.data.set(i, A.data.get(i).map(scalar.negative)));
   };
 
-  var _adjustRow = function _swapRows(A, i, j, f) {
+  var _adjustRow = function _adjustRow(A, i, j, f) {
     return _make(A.data.set(i, I.Range(0, A.ncols).map(function(k) {
       return scalar.plus(get(A, i, k), scalar.times(get(A, j, k), f));
     })));
@@ -168,8 +168,7 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
-  var rank = function rank(A) {
-    var R = triangulation(A, true).R;
+  var _rank = function _rank(R) {
     var row = 0;
     for (var col = 0; col < R.ncols; ++col)
       if (row < R.nrows && scalar.sgn(get(R, row, col)) != 0)
@@ -178,30 +177,30 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
-  var determinant = function determinant(A) {
-    if (A.nrows != A.ncols)
-      throw new Error('must be a square matrix');
+  var rank = function rank(A) {
+    return _rank(triangulation(A, true).R);
+  };
 
-    var t = triangulation(A, true);
-    var R = t.R;
 
-    return I.Range(0, R.nrows)
-      .map(function(i) { return get(R, i, i); })
+  var _determinant = function _determinant(t) {
+    return I.Range(0, t.R.nrows)
+      .map(function(i) { return get(t.R, i, i); })
       .reduce(scalar.times, t.sign);
   };
 
 
-  var solve = function solve(A, b) {
-    if (A.nrows != b.nrows)
-      throw new Error('matrix shapes must match');
+  var determinant = function determinant(A) {
+    if (A.nrows != A.ncols)
+      throw new Error('must be a square matrix');
 
-    var n = A.nrows;
-    var m = A.ncols;
-    var k = b.ncols;
+    return _determinant(triangulation(A, true));
+  };
 
-    var t = triangulation(A, true);
-    var R = t.R;
-    var v = times(t.U, b);
+
+  var _solve = function _solve(R, v) {
+    var n = R.nrows;
+    var m = R.ncols;
+    var k = v.ncols;
 
     var X = constant(m, k);
     var top = Math.min(n, m);
@@ -226,6 +225,16 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
+  var solve = function solve(A, b) {
+    if (A.nrows != b.nrows)
+      throw new Error('matrix shapes must match');
+
+    var t = triangulation(A, true);
+
+    return _solve(t.R, times(t.U, b));
+  };
+
+
   var inverse = function inverse(A) {
     if (A.nrows != A.ncols)
       throw new Error('must be a square matrix');
@@ -234,11 +243,10 @@ var matrix = function matrix(scalar, zero, one) {
   };
 
 
-  var nullSpace = function nullSpace(A) {
-    var R = triangulation(A).R;
+  var _nullSpace = function _nullSpace(R) {
     var n = R.nrows;
     var m = R.ncols;
-    var r = rank(R);
+    var r = _rank(R);
     var d = n - r;
 
     if (d == 0)
@@ -250,8 +258,13 @@ var matrix = function matrix(scalar, zero, one) {
       });
     }));
 
-    var S = solve(make(R.data.slice(0,r)), B);
+    var S = _solve(make(R.data.slice(0,r)), B);
     return make(S.data.slice(0, r).concat(M.identity(d).data));
+  };
+
+
+  var nullSpace = function nullSpace(A) {
+    return _nullSpace(triangulation(A).R);
   };
 
 
