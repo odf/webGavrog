@@ -190,6 +190,15 @@ var _relatorRep = function(w) {
 };
 
 
+var FundamentalGroup = I.Record({
+  nrGenerators: undefined,
+  relators    : undefined,
+  cones       : undefined,
+  gen2edge    : undefined,
+  edge2word   : undefined
+});
+
+
 var fundamentalGroup = function fundamentalGroup(ds) {
   var tmp = _findGenerators(ds);
   var edge2word = tmp.get('edge2word');
@@ -225,7 +234,7 @@ var fundamentalGroup = function fundamentalGroup(ds) {
     .map(function(orb) { return orb.slice(3); })
     .sort();
 
-  return I.Map({
+  return FundamentalGroup({
     nrGenerators: gen2edge.size,
     relators : I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort(),
     cones: cones,
@@ -260,10 +269,10 @@ if (require.main == module) {
 
     var group = fundamentalGroup(ds);
 
-    console.log('    relators: '+group.get('relators'));
+    console.log('    relators: '+group.relators);
     console.log();
 
-    console.log('    cones: '+group.get('cones'));
+    console.log('    cones: '+group.cones);
     console.log();
     console.log();
   };
