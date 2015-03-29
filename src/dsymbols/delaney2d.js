@@ -124,6 +124,16 @@ var toroidalCover = function toroidalCover(ds) {
 };
 
 
+module.exports = {
+  curvature     : curvature,
+  isEuclidean   : isEuclidean,
+  isSpherical   : isSpherical,
+  isHyperbolic  : isHyperbolic,
+  orbifoldSymbol: orbifoldSymbol,
+  toroidalCover : toroidalCover
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
