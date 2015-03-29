@@ -195,15 +195,14 @@ var _sum = function(a) {
   return a.reduce(function(x, y) { return x + y; }, 0);
 };
 
-var _relatorMatrix = function _relatorMatrix(nrgens, rels) {
-  return rels.map(function(rel) {
-    var counts = rel.groupBy(Math.abs).map(function(a) {
-      return _sum(a.map(_sgn));
-    });
-    return I.List(I.Range(1, nrgens+1).map(function(i) {
-      return counts.get(i) || 0;
-    }));
+
+var relatorAsVector = function relatorAsVector(rel, nrgens) {
+  var counts = rel.groupBy(Math.abs).map(function(a) {
+    return _sum(a.map(_sgn));
   });
+  return I.List(I.Range(1, nrgens+1).map(function(i) {
+    return counts.get(i) || 0;
+  }));
 };
 
 
@@ -252,23 +251,25 @@ var fundamentalGroup = function fundamentalGroup(ds) {
     .map(function(orb) { return orb.slice(3); })
     .sort();
 
-  var nrGens = gen2edge.size;
-  var rels   = I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort();
+  var nGens = gen2edge.size;
+  var rels  = I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort();
+  var mat   = rels.map(function(rel) { return relatorAsVector(rel, nGens); });
 
   return FundamentalGroup({
-    nrGenerators : nrGens,
+    nrGenerators : nGens,
     relators     : rels,
     cones        : cones,
     gen2edge     : gen2edge,
     edge2word    : edge2word,
-    relatorMatrix: _relatorMatrix(nrGens, rels)
+    relatorMatrix: mat
   });
 };
 
 
 module.exports = {
   fundamentalGroup: fundamentalGroup,
-  innerEdges      : innerEdges
+  innerEdges      : innerEdges,
+  relatorAsVector : relatorAsVector
 };
 
 
