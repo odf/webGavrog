@@ -64,6 +64,28 @@ var matrix = function matrix(scalar, zero, one) {
     return _make(A.data.updateIn([i, j], fn));
   };
 
+  var plus = function plus(A, B) {
+    if (A.nrows != B.nrows || A.ncols != B.ncols)
+      throw new Error('shapes do not match');
+
+    return _make(I.Range(0, A.nrows).map(function(i) {
+      return I.Range(0, A.ncols).map(function(j) {
+        return scalar.plus(get(A, i, j), get(B, i, j));
+      });
+    }));
+  };
+
+  var minus = function plus(A, B) {
+    if (A.nrows != B.nrows || A.ncols != B.ncols)
+      throw new Error('shapes do not match');
+
+    return _make(I.Range(0, A.nrows).map(function(i) {
+      return I.Range(0, A.ncols).map(function(j) {
+        return scalar.minus(get(A, i, j), get(B, i, j));
+      });
+    }));
+  };
+
   var times = function times(A, B) {
     if (A.ncols != B.nrows)
       throw new Error('shapes do not match');
@@ -278,6 +300,8 @@ var matrix = function matrix(scalar, zero, one) {
     set          : set,
     update       : update,
     get          : get,
+    plus         : plus,
+    minus        : minus,
     times        : times,
     triangulation: triangulation,
     rank         : rank,
