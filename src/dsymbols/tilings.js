@@ -5,6 +5,7 @@ var Q = require('../arithmetic/number');
 var M = require('../arithmetic/matrix')(Q, 0, 1);
 
 var delaney     = require('./delaney');
+var properties  = require('./properties');
 var delaney2d   = require('./delaney2d');
 var fundamental = require('./fundamental');
 var covers      = require('./covers');
@@ -24,6 +25,29 @@ var _edgeTranslations = function _edgeTranslations(cov) {
 };
 
 
+var _cornerShifts = function _cornerShifts(cov, e2t) {
+  var dim = delaney.dim(cov);
+  var zero = M.constant(1, dim);
+
+  return I.Map().withMutations(function(m) {
+    cov.indices().forEach(function(i) {
+      var idcs = cov.indices().filter(function(j) { return j != i; });
+
+      properties.traversal(cov, idcs, cov.elements()).forEach(function(e) {
+        var Dk = e[0];
+        var k  = e[1];
+        var D  = e[2];
+
+        if (k == properties.traversal.root)
+          m.setIn([D, i], zero);
+        else
+          m.setIn([D, i], M.minus(m.getIn([Dk, i]), e2t.getIn([Dk, k]) || zero));
+      });
+    });
+  });
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
@@ -32,7 +56,10 @@ if (require.main == module) {
     console.log();
     console.log('edges relators: '+fundamental.fundamentalGroup(dst).edge2word);
     console.log();
-    console.log('edges translations: '+_edgeTranslations(dst));
+    var e2t = _edgeTranslations(dst);
+    console.log('edges translations: '+e2t);
+    console.log();
+    console.log('corner shifts: '+_cornerShifts(dst, e2t));
     console.log();
   }
 
