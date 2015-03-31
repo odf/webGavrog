@@ -9,6 +9,12 @@ var properties  = require('./properties');
 var delaney2d   = require('./delaney2d');
 var fundamental = require('./fundamental');
 var covers      = require('./covers');
+var periodic    = require('../pgraphs/periodic');
+
+
+var _remainingIndices = function _remainingIndices(ds, i) {
+  return ds.indices().filter(function(j) { return j != i; });
+};
 
 
 var _edgeTranslations = function _edgeTranslations(cov) {
@@ -31,7 +37,7 @@ var _cornerShifts = function _cornerShifts(cov, e2t) {
 
   return I.Map().withMutations(function(m) {
     cov.indices().forEach(function(i) {
-      var idcs = cov.indices().filter(function(j) { return j != i; });
+      var idcs = _remainingIndices(cov, i);
 
       properties.traversal(cov, idcs, cov.elements()).forEach(function(e) {
         var Dk = e[0];
@@ -48,6 +54,34 @@ var _cornerShifts = function _cornerShifts(cov, e2t) {
 };
 
 
+var _skeleton = function _skeleton(cov, e2t, c2s) {
+  var dim = delaney.dim(cov);
+  var zero = M.constant(1, dim);
+  var chambers = cov.elements();
+  var idcs0 = _remainingIndices(cov, 0);
+  var nodeReps = properties.orbitReps(cov, idcs0, chambers);
+  var node2chamber = I.Map(I.Range().zip(nodeReps));
+  var chamber2node = I.Map(nodeReps.zip(I.Range()).flatMap(function(p) {
+    return properties.orbit(cov, idcs0, p[0]).zip(I.Repeat(p[1]));
+  }));
+
+  var edges = properties.orbitReps(cov, _remainingIndices(cov, 1), chambers)
+    .map(function(D) {
+      var E = cov.s(0, D);
+      var v = chamber2node.get(D);
+      var w = chamber2node.get(E);
+      var t = e2t.getIn([D, 0]) || zero;
+      var sD = c2s.getIn([D, 0]);
+      var sE = c2s.getIn([E, 0]);
+      var s = M.minus(M.plus(t, sE), sD);
+
+      return [v, w, s.data.get(0).map(Q.toJS)];
+    });
+
+  return periodic.make(edges);
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
@@ -59,7 +93,13 @@ if (require.main == module) {
     var e2t = _edgeTranslations(dst);
     console.log('edges translations: '+e2t);
     console.log();
-    console.log('corner shifts: '+_cornerShifts(dst, e2t));
+    var c2s = _cornerShifts(dst, e2t);
+    console.log('corner shifts: '+c2s);
+    console.log();
+    var skel = _skeleton(dst, e2t, c2s);
+    console.log('skeleton: '+skel);
+    console.log('skeleton placement: '+periodic.barycentricPlacement(skel));
+    console.log();
     console.log();
   }
 
