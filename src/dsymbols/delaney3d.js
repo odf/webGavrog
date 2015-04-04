@@ -1,6 +1,8 @@
 'use strict';
 
 var I = require('immutable');
+var Q = require('../arithmetic/number');
+var M = require('../arithmetic/matrix')(Q, 0, 1);
 
 var generators  = require('../common/generators');
 var seq         = require('../common/lazyseq');
@@ -47,9 +49,58 @@ var _flattensAll = function _flattensAll(ct, cones) {
   });
 };
 
+var _isDiagonal = function _isDiagonal(mat) {
+  return I.Range(0, mat.nrows).every(function(i) {
+    return I.Range(0, mat.ncols).every(function(j) {
+      return i == j || Q.sgn(M.get(mat, i, j)) == 0;
+    });
+  });
+};
+
+var _gcd = function _gcd(a, b) {
+  a = Q.abs(a);
+  b = Q.abs(b);
+
+  while (Q.sgn(b) > 0) {
+    var t = b;
+    b = Q.mod(a, b);
+    a = t;
+  }
+
+  return a;
+};
+
+var _factors = function _factors(xs) {
+  return I.List(xs).withMutations(function(xs) {
+    I.Range(0, xs.size).forEach(function(i) {
+      var a = xs.get(i);
+      I.Range(i+1, xs.size).forEach(function(j) {
+        var b = xs.get(j);
+        var g = _gcd(a, b);
+        xs.set(j, Q.sqn(g) == 0 ? 0 : Q.times(Q.idiv(a, g), b));
+        a = g;
+      });
+      xs.set(i, a);
+    });
+  });
+};
+
 var _invariants = function _invariants(ds) {
   var fg = fundamental.fundamentalGroup(ds);
-  return cosets.abelianInvariants(fg.nrGenerators, fg.relators);
+  var mat = M.make(cosets.relatorMatrix(fg.nrGenerators, fg.relators));
+
+  while (!_isDiagonal(mat)) {
+    mat = M.transposed(M.triangulation(mat).R);
+    mat = M.transposed(M.triangulation(mat).R);
+  }
+
+  var d = Math.min(mat.nrows, mat.ncols);
+  var diag = I.Range(0, d).map(function(i) { return M.get(mat, i, i); });
+  var factors = _factors(diag)
+    .filter(function(x) { return Q.cmp(x, 1) != 0; })
+    .sort();
+
+  return I.Repeat(0, fg.nrGenerators - d).concat(factors);
 };
 
 var pseudoToroidalCover = function pseudoToroidalCover(ds) {
