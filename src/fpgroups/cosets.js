@@ -349,20 +349,68 @@ var tables = function tables(nrGens, relators, maxCosets) {
 };
 
 
+var _inducedTable = function _inducedTable(gens, img, img0) {
+  var table = I.List([I.Map()]);
+  var o2n = I.Map([[img0, 0]]);
+  var n2o = I.Map([[0, img0]]);
+  var i = 0;
+
+  while (i < table.size) {
+    gens.forEach(function(g) {
+      var k = img(n2o.get(i), g);
+      var n = o2n.has(k) ? o2n.get(k) : table.size;
+      o2n = o2n.set(k, n);
+      n2o = n2o.set(n, k);
+      table = table.setIn([i, g], n).setIn([n, -g], i);
+    });
+    ++i;
+  }
+
+  return table;
+};
+
+
+var intersectionTable = function intersectionTable(tableA, tableB) {
+  return _inducedTable(
+    (tableA.first() || I.Map()).keySeq(),
+    function(es, g) {
+      return [tableA.getIn([es[0], g]), tableB.getIn([es[1], g])];
+    },
+    I.List([0, 0])
+  );
+};
+
+
+var coreTable = function coreTable(base) {
+  return _inducedTable(
+    (base.first() || I.Map()).keySeq(),
+    function(es, g) {
+      return es.map(function(e) { return base.getIn([e, g]); });
+    },
+    base.keySeq()
+  );
+};
+
+
 module.exports = {
   cosetRepresentatives: cosetRepresentatives,
   cosetTable          : cosetTable,
-  tables              : tables
+  tables              : tables,
+  intersectionTable   : intersectionTable,
+  coreTable           : coreTable
 };
 
 
 if (require.main == module) {
-  var t = cosetRepresentatives(
-    cosetTable(
-      3,
-      [[1,1], [2,2], [3,3], [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
-      [[1,2]]));
+  var base = cosetTable(
+    3,
+    [[1,1], [2,2], [3,3], [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
+    [[1,2]]);
 
+  var t = cosetRepresentatives(base);
+  console.log(t.toList(), t.size);
+
+  t = cosetRepresentatives(coreTable(base));
   console.log(t.toList(), t.size);
 
   console.log(_expandGenerators(4));
