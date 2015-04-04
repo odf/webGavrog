@@ -98,7 +98,7 @@ var _invariants = function _invariants(ds) {
   var diag = I.Range(0, d).map(function(i) { return M.get(mat, i, i); });
   var factors = _factors(diag)
     .filter(function(x) { return Q.cmp(x, 1) != 0; })
-    .sort();
+    .sort(Q.cmp);
 
   return I.Repeat(0, fg.nrGenerators - d).concat(factors);
 };
