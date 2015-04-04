@@ -374,7 +374,8 @@ var intersectionTable = function intersectionTable(tableA, tableB) {
   return _inducedTable(
     (tableA.first() || I.Map()).keySeq(),
     function(es, g) {
-      return [tableA.getIn([es[0], g]), tableB.getIn([es[1], g])];
+      return I.List([tableA.getIn([es.get(0), g]),
+                     tableB.getIn([es.get(1), g])]);
     },
     I.List([0, 0])
   );
