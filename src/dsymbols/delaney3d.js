@@ -7,6 +7,7 @@ var seq         = require('../common/lazyseq');
 var cosets      = require('../fpgroups/cosets');
 var fundamental = require('./fundamental');
 var derived     = require('./derived');
+var covers      = require('./covers');
 
 
 var _coreType = {
@@ -28,12 +29,12 @@ var _fullyInvolutive = function _fullyInvolutive(ct) {
 };
 
 var _traceWord = function _traceWord(ct, k, word) {
-  return word.reduce(function(k, g) { return ct.getIn(k, g); }, k);
+  return word.reduce(function(k, g) { return ct.getIn([k, g]); }, k);
 };
 
 var _degree = function _degree(ct, word) {
   var k = 0;
-  for (var i = 0; ; ++i) {
+  for (var i = 1; ; ++i) {
     k = _traceWord(ct, k, word);
     if (k == 0)
       return i;
@@ -63,28 +64,34 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
 
   var cones2 = cones.filter(function(c) { return c[1] == 2; });
   var cones3 = cones.filter(function(c) { return c[1] == 3; });
+
   var sub4 = generators.results(cosets.tables(fg.nrGenerators, fg.relators, 4));
-  var base = sub4.map(cosets.coreTable);
+  var base = I.List(seq.asArray(sub4)).map(cosets.coreTable);
+
   var cores = base.filter(function(ct) { return _flattensAll(ct, cones); })
     .map(function(ct) {
       if (ct.size == 4)
         return _fullyInvolutive(ct) ? ['v4', ct] : ['z4', ct];
       else
-        return [_coreType(ct.size), ct];
+        return [_coreType[ct.size], ct];
     });
 
   var z2a = base.filter(function(ct) {
     return ct.size == 2 && _flattensAll(ct, cones2);
   });
+
   var z2b = base.filter(function(ct) {
     return ct.size == 2 && !_flattensAll(ct, cones2);
   });
+
   var z3a = base.filter(function(ct) {
-    return ct.size == 3 && !_flattensAll(ct, cones3);
+    return ct.size == 3 && _flattensAll(ct, cones3);
   });
+
   var s3a = base.filter(function(ct) {
-    return ct.size == 6 && !_flattensAll(ct, cones3);
+    return ct.size == 6 && _flattensAll(ct, cones3);
   });
+
   var z6 = z3a.flatMap(function(a) {
     return z2a
       .map(function(b) { return cosets.intersectionTable(a, b); })
@@ -93,6 +100,7 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
       })
       .map(function(ct) { return ['z6', ct]; });
   });
+
   var d6 = s3a.flatMap(function(a) {
     return z2b
       .map(function(b) { return cosets.intersectionTable(a, b); })
@@ -107,7 +115,7 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
   });
   var candidates = I.List('z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' '))
     .flatMap(function(type) {
-      return categorized.get(type).map(function(entry) {
+      return (categorized.get(type) || I.List()).map(function(entry) {
         return covers.coverForTable(ds, entry[1], fg.edge2word);
       });
     });
@@ -116,3 +124,17 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
     return _invariants(cov).equals(I.List([0,0,0]));
   }).first();
 };
+
+
+if (require.main == module) {
+  var delaney = require('./delaney');
+
+  var test = function test(ds) {
+    console.log('ds = '+ds);
+    var cov = pseudoToroidalCover(ds);
+    console.log('cov = '+cov);
+    console.log();
+  }
+
+  test(delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>'));
+}
