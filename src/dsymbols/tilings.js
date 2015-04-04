@@ -4,6 +4,7 @@ var I = require('immutable');
 var Q = require('../arithmetic/number');
 var M = require('../arithmetic/matrix')(Q, 0, 1);
 
+var cosets      = require('../fpgroups/cosets');
 var delaney     = require('./delaney');
 var properties  = require('./properties');
 var delaney2d   = require('./delaney2d');
@@ -19,12 +20,12 @@ var _remainingIndices = function _remainingIndices(ds, i) {
 
 var _edgeTranslations = function _edgeTranslations(cov) {
   var fg  = fundamental.fundamentalGroup(cov);
-  var nul = M.nullSpace(M.make(fg.relatorMatrix));
   var n   = fg.nrGenerators;
+  var nul = M.nullSpace(M.make(cosets.relatorMatrix(n, fg.relators)));
 
   return fg.edge2word.map(function(a) {
     return a.map(function(b) {
-      var v = M.make([fundamental.relatorAsVector(b, n)]);
+      var v = M.make([cosets.relatorAsVector(b, n)]);
       return M.times(v, nul);
     });
   });

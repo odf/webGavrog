@@ -49,8 +49,7 @@ var _flattensAll = function _flattensAll(ct, cones) {
 
 var _invariants = function _invariants(ds) {
   var fg = fundamental.fundamentalGroup(ds);
-  var mat = fg.relatorMatrix;
-  return abelianInvariants(mat);
+  return cosets.abelianInvariants(fg.nrGenerators, fg.relators);
 };
 
 var pseudoToroidalCover = function pseudoToroidalCover(ds) {
