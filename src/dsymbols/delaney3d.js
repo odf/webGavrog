@@ -77,7 +77,7 @@ var _factors = function _factors(xs) {
       I.Range(i+1, xs.size).forEach(function(j) {
         var b = xs.get(j);
         var g = _gcd(a, b);
-        xs.set(j, Q.sqn(g) == 0 ? 0 : Q.times(Q.idiv(a, g), b));
+        xs.set(j, Q.sgn(g) == 0 ? 0 : Q.times(Q.idiv(a, g), b));
         a = g;
       });
       xs.set(i, a);
