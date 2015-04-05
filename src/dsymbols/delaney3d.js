@@ -171,7 +171,7 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
     });
 
   return candidates.filter(function(cov) {
-    return _invariants(cov).equals(I.List([0,0,0]));
+    return _invariants(cov).map(Q.sgn).equals(I.List([0,0,0]));
   }).first();
 };
 
