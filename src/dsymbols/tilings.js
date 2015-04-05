@@ -8,6 +8,7 @@ var cosets      = require('../fpgroups/cosets');
 var delaney     = require('./delaney');
 var properties  = require('./properties');
 var delaney2d   = require('./delaney2d');
+var delaney3d   = require('./delaney3d');
 var fundamental = require('./fundamental');
 var covers      = require('./covers');
 var periodic    = require('../pgraphs/periodic');
@@ -86,21 +87,15 @@ var _skeleton = function _skeleton(cov, e2t, c2s) {
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
-    var dst = delaney2d.toroidalCover(ds);
-    console.log('dst = '+dst);
-    console.log();
-    console.log('edges relators: '+fundamental.fundamentalGroup(dst).edge2word);
-    console.log();
-    var e2t = _edgeTranslations(dst);
-    console.log('edges translations: '+e2t);
-    console.log();
-    var c2s = _cornerShifts(dst, e2t);
-    console.log('corner shifts: '+c2s);
-    console.log();
-    var skel = _skeleton(dst, e2t, c2s);
+    var cov = (delaney.dim(ds) == 3 ?
+               delaney3d.pseudoToroidalCover(ds) :
+               delaney2d.toroidalCover(ds));
+    console.log('cov = '+cov);
+    var e2t = _edgeTranslations(cov);
+    var c2s = _cornerShifts(cov, e2t);
+    var skel = _skeleton(cov, e2t, c2s);
     console.log('skeleton: '+skel);
     console.log('skeleton placement: '+periodic.barycentricPlacement(skel));
-    console.log();
     console.log();
   }
 
@@ -108,4 +103,7 @@ if (require.main == module) {
   test(delaney.parse('<1.1:1:1,1,1:6,3>'));
   test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
   test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
+  test(delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>'));
+  test(delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
+  test(delaney.parse('<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>'));
 }

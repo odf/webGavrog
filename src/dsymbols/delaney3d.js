@@ -176,6 +176,11 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
 };
 
 
+module.exports = {
+  pseudoToroidalCover: pseudoToroidalCover
+};
+
+
 if (require.main == module) {
   var delaney = require('./delaney');
 
