@@ -104,3 +104,6 @@ var vector = function vector(scalar, zero) {
     normalized: normalized
   };
 };
+
+
+module.exports = vector;

@@ -57,22 +57,22 @@ var CameraParameters = I.Record({
 
 
 var updateCameraParameters = function(params, dx, dy, button, wheel, pos) {
-  var m = params.matrix;
+  var m = params.matrix.data;
   var d = params.distance;
   var t = params.target;
 
   if (pos) {
     return params.update({
-      distance: vec.norm(vec.minus(pos, vec.plus(t, vec.times(m[2], d)))),
+      distance: vec.norm(vec.minus(pos, vec.plus(t, vec.scaled(d, m[2])))),
       target  : pos
     });
   } else if (wheel) {
     return params.set('distance', d * Math.pow(0.9, -wheel))
   } else if (button == MODE.PAN) {
     return params.set('target',
-      vec.plus(t, vec.times(vec.plus(vec.times(m[0], dx), vec.times(m[1], dy)),
-                            -0.2 * d))
-    );
+                      vec.plus(t, vec.scaled(-0.2 * d,
+                                             vec.plus(vec.scaled(dx, m[0]),
+                                                      vec.scaled(dy, m[1])))));
   } else {
     return params.set('matrix', rotate(m, -dx, -dy, button == MODE.TILT));
   }
@@ -80,7 +80,6 @@ var updateCameraParameters = function(params, dx, dy, button, wheel, pos) {
 
 
 var DisplayState = I.Record({
-  projector        : new THREE.Projector(),
   mouseDown        : false,
   mouseButton      : null,
   ndcX             : 0,
@@ -127,8 +126,8 @@ var Display3d = React.createClass({
       this.state.value.centeringPosition
     );
 
-    var m = params.matrix;
-    var e = vec.add(params.target, vec.mul(m[2], params.distance));
+    var m = params.matrix.data;
+    var e = vec.add(params.target, vec.scaled(params.distance, m[2]));
 
     this.props.camera.position.x = e[0];
     this.props.camera.position.y = e[1];
@@ -151,23 +150,12 @@ var Display3d = React.createClass({
   },
 
   render3d: function() {
-    if (!this.isMounted())
+    if (!this.state.value.renderer)
       return;
 
     if (this.state.old == null || this.state.value != this.state.old) {
       this.updateCamera();
       this.state.value.renderer.render(this.props.scene, this.props.camera);
-
-      if (this.props.pick) {
-        var p = new THREE.Vector3(this.state.value.ndcX,
-                                  this.state.value.ndcY, 0);
-        var raycaster =
-          this.state.value.projector.pickingRay(p, this.props.camera);
-        this.mergeState({
-          pickedPosition: this.props.pick(raycaster.ray)
-        });
-      }
-
       this.setState({ old: this.state.value });
     }
 
@@ -175,6 +163,9 @@ var Display3d = React.createClass({
   },
 
   update: function(props) {
+    if (!this.state.value.renderer)
+      return;
+
     if (!this.state.value.cameraParameters ||
         props.camera != this.props.camera)
     {
@@ -204,7 +195,7 @@ var Display3d = React.createClass({
       renderer: renderer,
     });
 
-    this.update(this.props);
+    this.update(this.props, renderer);
 
     requestAnimationFrame(this.render3d);
   },

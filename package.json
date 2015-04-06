@@ -9,6 +9,11 @@
   "author": "",
   "license": "Apache 2.0",
   "dependencies": {
-    "immutable": "~3.6.2"
+    "immutable": "~3.6.2",
+    "three": "~0.70.0",
+    "react": "~0.13.1"
+  },
+  "devDependencies": {
+    "webpack": "~1.7.3"
   }
 }
