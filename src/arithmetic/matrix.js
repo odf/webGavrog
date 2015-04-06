@@ -121,10 +121,26 @@ var matrix = function matrix(scalar, zero, one) {
     return _make(A.data.set(i, A.data.get(i).map(scalar.negative)));
   };
 
+  var _truncate = function _truncate(x, a) {
+    var d = scalar.times(a, scalar.epsilon);
+    if (scalar.cmp(scalar.abs(x), scalar.abs(d)) < 0)
+      return zero;
+    else
+      return x;
+  };
+
   var _adjustRow = function _adjustRow(A, i, j, f) {
-    return _make(A.data.set(i, I.Range(0, A.ncols).map(function(k) {
+    var _val = function(k) {
       return scalar.plus(get(A, i, k), scalar.times(get(A, j, k), f));
-    })));
+    };
+    var val;
+
+    if (scalar.epsilon)
+      val = function(k) { return _truncate(_val(k), get(A, i, k)); };
+    else
+      val = _val;
+
+    return _make(A.data.set(i, I.Range(0, A.ncols).map(val)));
   };
 
   var _Triangulation = I.Record({
@@ -278,7 +294,7 @@ var matrix = function matrix(scalar, zero, one) {
 
     var B = make(I.Range(0, r).map(function(i) {
       return I.Range(0, d).map(function(j) {
-        return (j + r >= n) ? 0 : -M.get(R, i, j + r);
+        return (j + r >= n) ? 0 : scalar.negative(M.get(R, i, j + r));
       });
     }));
 
@@ -288,7 +304,31 @@ var matrix = function matrix(scalar, zero, one) {
 
 
   var nullSpace = function nullSpace(A) {
-    return _nullSpace(triangulation(A).R);
+    return _nullSpace(triangulation(A, true).R);
+  };
+
+
+  var _rowProduct = function _rowProduct(A, i, j) {
+    return I.Range(0, A.ncols)
+      .map(function(k) { return scalar.times(get(A, i, k), get(A, j, k)); })
+      .reduce(scalar.plus, zero);
+  };
+
+  var _normalizeRow = function _normalizeRow(A, i) {
+    var norm = Math.sqrt(scalar.toJS(_rowProduct(A, i, i)));
+    return _make(A.data.set(i, A.data.get(i).map(function(x) {
+      return scalar.div(x, norm);
+    })));
+  };
+
+  var orthonormalized = function orthonormalized(A) {
+    I.Range(0, A.nrows).forEach(function(i) {
+      I.Range(0, i).forEach(function(j) {
+        A = _adjustRow(A, i, j, scalar.negative(_rowProduct(A, i, j)));
+      });
+      A = _normalizeRow(A, i);
+    });
+    return A;
   };
 
 
@@ -308,7 +348,8 @@ var matrix = function matrix(scalar, zero, one) {
     determinant  : determinant,
     solve        : solve,
     inverse      : inverse,
-    nullSpace    : nullSpace
+    nullSpace    : nullSpace,
+    orthonormalized: orthonormalized
   };
 };
 
@@ -317,8 +358,7 @@ module.exports = matrix;
 
 
 if (require.main == module) {
-  var Q = require('./number');
-  var M = matrix(Q, 0, 1);
+  var M = matrix(require('./number'), 0, 1);
 
   console.log(M.constant(3, 4));
   console.log(M.constant(3, 4, 5));
@@ -360,6 +400,7 @@ if (require.main == module) {
   var testInverse = function testInverse(A) {
     var B = M.inverse(A);
     console.log('A = '+A);
+    console.log('R = '+M.triangulation(A, true).R);
     if (B) {
       console.log('A^-1 = '+B);
       console.log('A * A^-1 = '+M.times(A, B));
@@ -372,4 +413,23 @@ if (require.main == module) {
   testInverse(M.make([[1,2,3],[0,4,5],[0,0,6]]));
   testInverse(M.make([[1,2,3],[4,5,6],[7,8,9]]));
   testInverse(M.make([[1,2,3],[2,4,6],[3,6,9]]));
+
+
+  M = matrix(require('./float'), 0, 1);
+
+  testInverse(M.make([[1],[2,3],[4,5,6]]));
+  testInverse(M.make([[1,2,3],[0,4,5],[0,0,6]]));
+  testInverse(M.make([[1,2,3],[4,5,6],[7,8,9]]));
+  testInverse(M.make([[1,2,3],[2,4,6],[3,6,9]]));
+
+  var testOrthonormalize = function testOrthonormalize(A) {
+    console.log('A = '+A);
+    var O = M.orthonormalized(A);
+    console.log('O = '+O);
+    console.log('O * O^t = '+M.times(O, M.transposed(O)));
+    console.log();
+  };
+
+  testOrthonormalize(M.make([[1],[2,3],[4,5,6]]));
+  testOrthonormalize(M.make([[1,2,3],[0,4,5],[0,0,6]]));
 }

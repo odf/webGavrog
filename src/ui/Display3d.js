@@ -3,9 +3,10 @@
 var THREE = require('three');
 var React = require('react');
 var I     = require('immutable');
-var Q     = require('../arithmetic/number');
-var M     = require('../arithmetic/matrix')(Q, 0, 1);
-var vec   = require('../arithmetic/vector')(Q, 0);
+
+var R     = require('../arithmetic/float');
+var M     = require('../arithmetic/matrix')(R, 0, 1);
+var vec   = require('../arithmetic/vector')(R, 0);
 
 
 var rotate = function(m, xrot, yrot, aboutZ) {
@@ -37,18 +38,7 @@ var rotate = function(m, xrot, yrot, aboutZ) {
                  [           s*vy,         -s*vx,    c ] ]);
   }
 
-  b = M.times(a, m);
-
-  b = [0, 1, 2].map(function(i) { return vec.make(b.data.get(i)); });
-
-  b[0] = vec.normalized(b[0]);
-  b[1] = vec.normalized(
-    vec.minus(b[1], vec.times(b[0], vec.dotProduct(b[1], b[0])));
-  b[2] = vec.normalized(
-    vec.minus(b[2], vec.plus(vec.times(b[0], vec.dotProduct(b[2], b[0])),
-                             vec.times(b[1], vec.dotProduct(b[2], b[1])))));
-
-  return b;
+  return M.orthonormalized(M.times(a, m));
 };
 
 
