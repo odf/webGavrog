@@ -4,8 +4,6 @@ var THREE = require('three');
 var React = require('react');
 var $     = React.DOM;
 
-var R         = require('../arithmetic/float');
-var vec       = require('../arithmetic/vector')(R, 0);
 var Display3d = require('./Display3d');
 
 
