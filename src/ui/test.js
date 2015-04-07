@@ -35,8 +35,8 @@ var makeCamera = function(model) {
 var makeScene = function(model, camera) {
   var scene  = new THREE.Scene();
 
-  if (model) {
-    var geometry = new THREE.SphereGeometry(shortRadius, 32, 32);
+  if (!model) {
+    var geometry = new THREE.SphereGeometry(1, 32, 32);
     var material = new THREE.MeshPhongMaterial({
       color    : 0xff0000,
       shininess: 50
@@ -60,11 +60,7 @@ var App = React.createClass({
   getInitialState: function() {
     return {
       scene: makeScene(),
-      cameraParameters: {
-        matrix  : [[1,0,0],[0,1,0],[0,0,1]],
-        distance: 4.5,
-        target  : [0,0,0]
-      }
+      cameraParameters: { distance: 4.5 }
     };
   },
 
@@ -85,7 +81,7 @@ var App = React.createClass({
   },
 
   render: function() {
-    var scene  = this.state.scene;
+    var scene = this.state.scene;
 
     return $.div(
       null,

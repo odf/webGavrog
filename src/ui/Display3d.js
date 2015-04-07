@@ -50,31 +50,34 @@ var MODE = {
 
 
 var CameraParameters = I.Record({
-  matrix  : undefined,
+  matrix  : M.identity(3),
   distance: undefined,
-  target  : undefined
+  target  : vec.constant(3)
 });
 
 
 var updateCameraParameters = function(params, dx, dy, button, wheel, pos) {
-  var m = params.matrix.data;
+  var m = params.matrix.data.map(vec.make);
   var d = params.distance;
   var t = params.target;
 
   if (pos) {
     return params.update({
-      distance: vec.norm(vec.minus(pos, vec.plus(t, vec.scaled(d, m[2])))),
-      target  : pos
+      distance: vec.norm(vec.minus(pos, vec.plus(t, vec.scaled(d, m.get(2))))),
+      target  : vec.make(pos)
     });
   } else if (wheel) {
     return params.set('distance', d * Math.pow(0.9, -wheel))
   } else if (button == MODE.PAN) {
-    return params.set('target',
-                      vec.plus(t, vec.scaled(-0.2 * d,
-                                             vec.plus(vec.scaled(dx, m[0]),
-                                                      vec.scaled(dy, m[1])))));
+    return params.set(
+      'target',
+      vec.plus(t, vec.scaled(-0.2 * d,
+                             vec.plus(vec.scaled(dx, m.get(0)),
+                                      vec.scaled(dy, m.get(1))))));
   } else {
-    return params.set('matrix', rotate(m, -dx, -dy, button == MODE.TILT));
+    return params.set(
+      'matrix',
+      rotate(params.matrix, -dx, -dy, button == MODE.TILT));
   }
 };
 
@@ -103,80 +106,43 @@ var Display3d = React.createClass({
     };
   },
 
-  mergeState: function(mods) {
-    this.setState({
-      value: (this.state.value || new DisplayState()).merge(mods)
+  updateCamera: function(mods) {
+    this.setState(function(state, props) {
+      var value = state.value.merge(mods);
+      if (!value.cameraParameters)
+        value = value.set(
+          'cameraParameters',
+          new CameraParameters(props.cameraParameters));
+
+      var params = updateCameraParameters(
+        value.cameraParameters,
+        value.ndcX - value.ndcOldX,
+        value.ndcY - value.ndcOldY,
+        value.mouseButton,
+        value.wheel,
+        value.centeringPosition
+      );
+
+      return {
+        value: value.merge({
+          ndcOldX: value.mouseDown ? value.ndcX : null,
+          ndcOldY: value.mouseDown ? value.ndcY : null,
+          wheel: 0,
+          centeringPosition: null,
+          cameraParameters: params
+        })
+      };
     });
-  },
-
-  updateCamera: function() {
-    if (this.state.value.ndcOldX == null &&
-        this.state.value.wheel == 0 &&
-        this.state.value.centeringPosition == null)
-    {
-      return;
-    }
-
-    var params = updateCameraParameters(
-      this.state.value.cameraParameters,
-      this.state.value.ndcX - this.state.value.ndcOldX,
-      this.state.value.ndcY - this.state.value.ndcOldY,
-      this.state.value.mouseButton,
-      this.state.value.wheel,
-      this.state.value.centeringPosition
-    );
-
-    var m = params.matrix.data;
-    var e = vec.add(params.target, vec.scaled(params.distance, m[2]));
-
-    this.props.camera.position.x = e[0];
-    this.props.camera.position.y = e[1];
-    this.props.camera.position.z = e[2];
-
-    this.props.camera.quaternion.setFromRotationMatrix(new THREE.Matrix4(
-      m[0][0], m[1][0], m[2][0], 0,
-      m[0][1], m[1][1], m[2][1], 0,
-      m[0][2], m[1][2], m[2][2], 0,
-            0,       0,       0, 1
-    ));
-
-    this.mergeState({
-      ndcOldX: this.state.value.mouseDown ? this.state.value.ndcX : null,
-      ndcOldY: this.state.value.mouseDown ? this.state.value.ndcY : null,
-      wheel: 0,
-      centeringPosition: null,
-      cameraParameters: params
-    });
-  },
-
-  render3d: function() {
-    if (!this.state.value.renderer)
-      return;
-
-    if (this.state.old == null || this.state.value != this.state.old) {
-      this.updateCamera();
-      this.state.value.renderer.render(this.props.scene, this.props.camera);
-      this.setState({ old: this.state.value });
-    }
-
-    requestAnimationFrame(this.render3d);
   },
 
   update: function(props) {
-    if (!this.state.value.renderer)
-      return;
-
     if (!this.state.value.cameraParameters ||
         props.camera != this.props.camera)
     {
-      this.mergeState({
+      this.updateCamera({
         cameraParameters: new CameraParameters(props.cameraParameters)
       });
     }
-
-    this.state.value.renderer.setSize(props.width, props.height);
-    props.camera.aspect = props.width / props.height;
-    props.camera.updateProjectionMatrix();
   },
 
   componentWillReceiveProps: function(props) {
@@ -191,13 +157,11 @@ var Display3d = React.createClass({
       event.preventDefault();
     });
 
-    this.mergeState({
+    this.updateCamera({
       renderer: renderer,
     });
 
     this.update(this.props, renderer);
-
-    requestAnimationFrame(this.render3d);
   },
 
   handleMouseDown: function(event) {
@@ -207,7 +171,7 @@ var Display3d = React.createClass({
     document.addEventListener('mousemove', this.handleMouseMove, false);
     document.addEventListener('mouseup', this.handleMouseUp, false);
 
-    this.mergeState({
+    this.updateCamera({
       mouseDown  : true,
       mouseButton: event.button,
       ndcOldX    : 2 * (event.clientX / this.props.width) - 1,
@@ -219,7 +183,7 @@ var Display3d = React.createClass({
     event.preventDefault();
     event.stopPropagation();
 
-    this.mergeState({
+    this.updateCamera({
       ndcX: 2 * (event.clientX / this.props.width) - 1,
       ndcY: 1 - 2 * (event.clientY / this.props.height)
     });
@@ -232,7 +196,7 @@ var Display3d = React.createClass({
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
 
-    this.mergeState({
+    this.updateCamera({
       mouseDown: false
     });
   },
@@ -245,7 +209,7 @@ var Display3d = React.createClass({
     var d = event.deltaY;
     d = (d > 0) - (d < 0);
 
-    this.mergeState({
+    this.updateCamera({
       wheel: this.state.value.wheel + d
     });
   },
@@ -257,7 +221,7 @@ var Display3d = React.createClass({
     var key = String.fromCharCode(event.keyCode).toLowerCase();
 
     if (key == 'c') {
-      this.mergeState({
+      this.updateCamera({
         centeringPosition: this.state.value.pickedPosition || [0,0,0]
       });
     } else {
@@ -267,7 +231,41 @@ var Display3d = React.createClass({
     }
   },
 
+  render3d: function() {
+    var renderer = this.state.value.renderer;
+
+    if (renderer) {
+      var params = this.state.value.cameraParameters;
+      var m = params.matrix.data.toJS();
+      var e = vec.plus(
+        params.target,
+        vec.scaled(params.distance, vec.make(m[2])));
+
+      this.props.camera.position.x = vec.get(e, 0);
+      this.props.camera.position.y = vec.get(e, 1);
+      this.props.camera.position.z = vec.get(e, 2);
+
+      var mat = new THREE.Matrix4();
+      mat.set(
+        m[0][0], m[1][0], m[2][0], 0,
+        m[0][1], m[1][1], m[2][1], 0,
+        m[0][2], m[1][2], m[2][2], 0,
+        0,       0,       0, 1
+      );
+
+      this.props.camera.quaternion.setFromRotationMatrix(mat);
+
+      renderer.setSize(this.props.width, this.props.height);
+      this.props.camera.aspect = this.props.width / this.props.height;
+      this.props.camera.updateProjectionMatrix();
+
+      renderer.render(this.props.scene, this.props.camera);
+    }
+  },
+
   render: function() {
+    this.render3d();
+
     return React.DOM.div({
       className   : this.props.className,
       ref         : 'container',
