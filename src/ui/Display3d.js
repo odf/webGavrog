@@ -116,8 +116,8 @@ var Display3d = React.createClass({
 
       var params = updateCameraParameters(
         value.cameraParameters,
-        value.ndcX - value.ndcOldX,
-        value.ndcY - value.ndcOldY,
+        value.ndcOldX == null ? 0 : value.ndcX - value.ndcOldX,
+        value.ndcOldY == null ? 0 : value.ndcY - value.ndcOldY,
         value.mouseButton,
         value.wheel,
         value.centeringPosition
