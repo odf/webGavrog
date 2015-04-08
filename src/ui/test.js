@@ -21,10 +21,10 @@ var makeCamera = function(model) {
   var r = model ? model.geometry.boundingSphere.radius : 1;
 
   camera.name = 'camera';
-  camera.position.z = 4.5 * r;
+  camera.position.z = 5*r;
 
-  camera.add(light(0xffffff, 3.0 * r, 4.5 * r, r));
-  camera.add(light(0x666666, -4.5 * r, -4.5 * r, r));
+  camera.add(light(0xffffff, 3*r, 5*r, r));
+  camera.add(light(0x666666, -5*r, -5*r, r));
 
   return camera;
 };
@@ -56,9 +56,12 @@ var App = React.createClass({
   displayName: 'App',
 
   getInitialState: function() {
+    var scene = makeScene();
+    var camera = scene.getObjectByName('camera');
     return {
-      scene: makeScene(),
-      cameraParameters: { distance: 4.5 }
+      scene: scene,
+      camera: camera,
+      cameraParameters: { distance: camera.position.z }
     };
   },
 
@@ -79,16 +82,14 @@ var App = React.createClass({
   },
 
   render: function() {
-    var scene = this.state.scene;
-
     return $.div(
       null,
       React.createElement(Display3d, {
-        scene           : scene,
-        camera          : scene.getObjectByName('camera'),
+        scene           : this.state.scene,
+        camera          : this.state.camera,
         cameraParameters: this.state.cameraParameters,
-        width           : this.state.width - 10,
-        height          : this.state.height - 40
+        width           : this.state.width - 20,
+        height          : this.state.height - 20
       }));
   }
 });
