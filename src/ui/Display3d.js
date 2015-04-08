@@ -56,15 +56,16 @@ var CameraParameters = I.Record({
 });
 
 
-var updateCameraParameters = function(params, dx, dy, button, wheel, pos) {
+var newCameraParameters = function(params, dx, dy, button, wheel, pos) {
   var m = params.matrix.data.map(vec.make);
   var d = params.distance;
   var t = params.target;
 
   if (pos) {
-    return params.update({
+    pos = vec.make(pos);
+    return params.merge({
       distance: vec.norm(vec.minus(pos, vec.plus(t, vec.scaled(d, m.get(2))))),
-      target  : vec.make(pos)
+      target  : pos
     });
   } else if (wheel) {
     return params.set('distance', d * Math.pow(0.9, -wheel))
@@ -106,16 +107,12 @@ var Display3d = React.createClass({
     };
   },
 
-  updateCamera: function(mods) {
+  update: function(mods) {
     this.setState(function(state, props) {
       var value = state.value.merge(mods);
-      if (!value.cameraParameters)
-        value = value.set(
-          'cameraParameters',
-          new CameraParameters(props.cameraParameters));
 
-      var params = updateCameraParameters(
-        value.cameraParameters,
+      var params = newCameraParameters(
+        value.cameraParameters || new CameraParameters(props.cameraParameters),
         value.ndcOldX == null ? 0 : value.ndcX - value.ndcOldX,
         value.ndcOldY == null ? 0 : value.ndcY - value.ndcOldY,
         value.mouseButton,
@@ -135,33 +132,23 @@ var Display3d = React.createClass({
     });
   },
 
-  update: function(props) {
-    if (!this.state.value.cameraParameters ||
-        props.camera != this.props.camera)
-    {
-      this.updateCamera({
-        cameraParameters: new CameraParameters(props.cameraParameters)
-      });
-    }
-  },
-
-  componentWillReceiveProps: function(props) {
-    this.update(props);
+  preventDefault: function(event) {
+    event.preventDefault();
   },
 
   componentDidMount: function() {
     var renderer = new THREE.WebGLRenderer({ antialias: true });
     this.getDOMNode().appendChild(renderer.domElement);
 
-    renderer.domElement.addEventListener('contextmenu', function (event) {
-      event.preventDefault();
-    });
+    renderer.domElement.addEventListener('contextmenu', this.preventDefault);
 
-    this.updateCamera({
+    this.update({
       renderer: renderer,
     });
+  },
 
-    this.update(this.props, renderer);
+  componentWillUnmount: function() {
+    renderer.domElement.removeEventListener('contextmenu', this.preventDefault);
   },
 
   handleMouseDown: function(event) {
@@ -171,7 +158,7 @@ var Display3d = React.createClass({
     document.addEventListener('mousemove', this.handleMouseMove, false);
     document.addEventListener('mouseup', this.handleMouseUp, false);
 
-    this.updateCamera({
+    this.update({
       mouseDown  : true,
       mouseButton: event.button,
       ndcOldX    : 2 * (event.clientX / this.props.width) - 1,
@@ -183,7 +170,7 @@ var Display3d = React.createClass({
     event.preventDefault();
     event.stopPropagation();
 
-    this.updateCamera({
+    this.update({
       ndcX: 2 * (event.clientX / this.props.width) - 1,
       ndcY: 1 - 2 * (event.clientY / this.props.height)
     });
@@ -196,7 +183,7 @@ var Display3d = React.createClass({
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
 
-    this.updateCamera({
+    this.update({
       mouseDown: false
     });
   },
@@ -209,7 +196,7 @@ var Display3d = React.createClass({
     var d = event.deltaY;
     d = (d > 0) - (d < 0);
 
-    this.updateCamera({
+    this.update({
       wheel: this.state.value.wheel + d
     });
   },
@@ -221,7 +208,7 @@ var Display3d = React.createClass({
     var key = String.fromCharCode(event.keyCode).toLowerCase();
 
     if (key == 'c') {
-      this.updateCamera({
+      this.update({
         centeringPosition: this.state.value.pickedPosition || [0,0,0]
       });
     } else {
