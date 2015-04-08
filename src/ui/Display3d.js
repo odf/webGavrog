@@ -9,36 +9,35 @@ var M     = require('../arithmetic/matrix')(R, 0, 1);
 var vec   = require('../arithmetic/vector')(R, 0);
 
 
-var rotate = function(m, xrot, yrot, aboutZ) {
-  var phi, s, c, t, n, vx, vy, vxx, vyy, vxy, a, b;
+var rotation = function(dx, dy, aboutZ) {
+  var phi, s, c, vx, vy, vxx, vyy, vxy;
 
-  if (aboutZ) {
-    phi = (Math.abs(xrot) > Math.abs(yrot)) ? -xrot : yrot;
+  if (dx == 0 && dy == 0) {
+    return [ [ 1, 0, 0 ],
+             [ 0, 1, 0 ],
+             [ 0, 0, 1 ] ];
+  } else if (aboutZ) {
+    phi = (Math.abs(dx) > Math.abs(dy)) ? -dx : dy;
     s = Math.sin(phi);
     c = Math.cos(phi);
-    a = M.make([ [  c,  s,  0 ],
-                 [ -s,  c,  0 ],
-                 [  0,  0,  1 ] ]);
+    return [ [  c,  s,  0 ],
+             [ -s,  c,  0 ],
+             [  0,  0,  1 ] ];
   } else {
-    phi = Math.sqrt(xrot * xrot + yrot * yrot);
-    if (phi == 0)
-      return m;
-
+    phi = Math.sqrt(dx * dx + dy * dy);
     s = Math.sin(phi);
     c = Math.cos(phi);
 
-    vx = -xrot / phi;
-    vy = -yrot / phi;
+    vx = -dx / phi;
+    vy = -dy / phi;
     vxx = vx * vx;
     vxy = vx * vy;
     vyy = vy * vy;
 
-    a = M.make([ [    vyy + c*vxx, vxy * (c-1.0), s*vx ],
-                 [ -vxy * (c-1.0),   vxx + c*vyy, s*vy ],
-                 [           s*vy,         -s*vx,    c ] ]);
+    return [ [    vyy + c*vxx, vxy * (c-1.0), s*vx ],
+             [ -vxy * (c-1.0),   vxx + c*vyy, s*vy ],
+             [           s*vy,         -s*vx,    c ] ];
   }
-
-  return M.orthonormalized(M.times(a, m));
 };
 
 
@@ -72,13 +71,11 @@ var newCameraParameters = function(params, dx, dy, button, wheel, pos) {
   } else if (button == MODE.PAN) {
     return params.set(
       'target',
-      vec.plus(t, vec.scaled(-0.2 * d,
-                             vec.plus(vec.scaled(dx, m.get(0)),
-                                      vec.scaled(dy, m.get(1))))));
+      vec.plus(t, vec.plus(vec.scaled(-0.2 * d * dx, m.get(0)),
+                           vec.scaled(-0.2 * d * dy, m.get(1)))));
   } else {
-    return params.set(
-      'matrix',
-      rotate(params.matrix, -dx, -dy, button == MODE.TILT));
+    var rot = M.make(rotation(-dx, -dy, button == MODE.TILT));
+    return params.set('matrix', M.orthonormalized(M.times(rot, params.matrix)));
   }
 };
 
