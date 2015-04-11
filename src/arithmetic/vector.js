@@ -19,12 +19,13 @@ var vector = function vector(scalar, zero) {
   };
 
   var make = function make(data) {
-    if (data.size == 0)
+    var tmp = I.List(data);
+    if (tmp.size == 0)
       throw new Error('must have positive size');
 
     return new Vector({
-      size: data.size,
-      data: I.List(data)
+      size: tmp.size,
+      data: tmp
     });
   };
 
@@ -50,7 +51,7 @@ var vector = function vector(scalar, zero) {
     }));
   };
 
-  var minus = function plus(v, w) {
+  var minus = function minus(v, w) {
     if (v.size != w.size)
       throw new Error('shapes do not match');
 
