@@ -82,6 +82,20 @@ var vector = function vector(scalar, zero) {
       .reduce(scalar.plus, zero);
   };
 
+  var crossProduct = function crossProduct(v, w) {
+    if (v.size != 3 || w.size != 3)
+      throw new Error('both vector must be three-dimensional');
+
+    return make([
+      scalar.minus(scalar.times(get(v, 1), get(w, 2)),
+                   scalar.times(get(v, 2), get(w, 1))),
+      scalar.minus(scalar.times(get(v, 2), get(w, 0)),
+                   scalar.times(get(v, 0), get(w, 2))),
+      scalar.minus(scalar.times(get(v, 0), get(w, 1)),
+                   scalar.times(get(v, 1), get(w, 0)))
+    ]);
+  };
+
   var norm = function norm(v) {
     return Math.sqrt(scalar.toJS(dotProduct(v, v)));
   };
@@ -101,6 +115,7 @@ var vector = function vector(scalar, zero) {
     scaled    : scaled,
     cmp       : cmp,
     dotProduct: dotProduct,
+    crossProduct: crossProduct,
     norm      : norm,
     normalized: normalized
   };
