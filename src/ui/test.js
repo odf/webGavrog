@@ -16,15 +16,13 @@ var light = function(color, x, y, z) {
 };
 
 
-var makeCamera = function(model) {
+var makeCamera = function(distance) {
   var camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
-  var r = model ? model.geometry.boundingSphere.radius : 1;
-
   camera.name = 'camera';
-  camera.position.z = 5*r;
+  camera.position.z = 5*distance;
 
-  camera.add(light(0xffffff, 3*r, 5*r, r));
-  camera.add(light(0x666666, -5*r, -5*r, r));
+  camera.add(light(0xffffff,  3*distance,  5*distance, distance));
+  camera.add(light(0x666666, -5*distance, -5*distance, distance));
 
   return camera;
 };
@@ -34,16 +32,30 @@ var makeScene = function(model, camera) {
   var scene  = new THREE.Scene();
 
   if (!model) {
-    var geometry = new THREE.SphereGeometry(1, 32, 32);
-    var material = new THREE.MeshPhongMaterial({
+    var sphere = new THREE.SphereGeometry(1, 12, 6);
+    var sphereMat = new THREE.MeshPhongMaterial({
       color    : 0xff0000,
       shininess: 50
     });
-    model = new THREE.Mesh(geometry, material);
+    var rod = new THREE.CylinderGeometry(0.5, 0.5, 4, 6);
+    var rodMat = new THREE.MeshPhongMaterial({
+      color    : 0x0000ff,
+      shininess: 50
+    });
+    model = new THREE.Object3D();
+    var s1 = new THREE.Mesh(sphere, sphereMat);
+    s1.position.x = -2;
+    model.add(s1);
+    var s2 = new THREE.Mesh(sphere, sphereMat);
+    s2.position.x = 2;
+    model.add(s2);
+    var t = new THREE.Mesh(rod, rodMat);
+    t.rotation.z = 1.5707;
+    model.add(t);
   }
 
   if (!camera)
-    camera = makeCamera(model);
+    camera = makeCamera(3);
 
   scene.add(model);
   scene.add(camera);
