@@ -11,27 +11,6 @@ var vec   = require('../arithmetic/vector')(R, 0);
 var Display3d = require('./Display3d');
 
 
-var light = function(color, x, y, z) {
-  var light = new THREE.PointLight(color);
-
-  light.position.set(x, y, z);
-
-  return light;
-};
-
-
-var makeCamera = function(distance) {
-  var camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
-  camera.name = 'camera';
-  camera.position.z = 5*distance;
-
-  camera.add(light(0xffffff,  3*distance,  5*distance, distance));
-  camera.add(light(0x666666, -5*distance, -5*distance, distance));
-
-  return camera;
-};
-
-
 var geometry = function geometry(vertices, faces) {
   var geom = new THREE.Geometry();
 
@@ -106,32 +85,46 @@ var ballAndStick = function ballAndStick(
 };
 
 
+var light = function(color, x, y, z) {
+  var light = new THREE.PointLight(color);
+
+  light.position.set(x, y, z);
+
+  return light;
+};
+
+
 var makeScene = function(model, camera) {
   var scene  = new THREE.Scene();
 
-  if (!model) {
-    var ballMaterial = new THREE.MeshPhongMaterial({
-      color    : 0xff0000,
-      shininess: 50
-    });
-    var stickMaterial = new THREE.MeshPhongMaterial({
-      color    : 0x0000ff,
-      shininess: 50
-    });
-    model = ballAndStick(
-      'cube',
-      [[-10,-10,-10], [-10,-10, 10], [-10, 10,-10], [-10, 10, 10],
-       [ 10,-10,-10], [ 10,-10, 10], [ 10, 10,-10], [ 10, 10, 10]],
-      [[0,1], [2,3], [4,5], [6,7],
-       [0,2], [1,3], [4,6], [5,7],
-       [0,4], [1,5], [2,6], [3,7]],
-      ballMaterial,
-      stickMaterial
-    );
-  }
+  var ballMaterial = new THREE.MeshPhongMaterial({
+    color    : 0xff0000,
+    shininess: 50
+  });
 
-  if (!camera)
-    camera = makeCamera(18);
+  var stickMaterial = new THREE.MeshPhongMaterial({
+    color    : 0x0000ff,
+    shininess: 50
+  });
+
+  var model = ballAndStick(
+    'cube',
+    [[-10,-10,-10], [-10,-10, 10], [-10, 10,-10], [-10, 10, 10],
+     [ 10,-10,-10], [ 10,-10, 10], [ 10, 10,-10], [ 10, 10, 10]],
+    [[0,1], [2,3], [4,5], [6,7],
+     [0,2], [1,3], [4,6], [5,7],
+     [0,4], [1,5], [2,6], [3,7]],
+    ballMaterial,
+    stickMaterial
+  );
+
+  var distance = 18;
+  var camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
+  camera.name = 'camera';
+  camera.position.z = 5*distance;
+
+  camera.add(light(0xffffff,  3*distance,  5*distance, distance));
+  camera.add(light(0x666666, -5*distance, -5*distance, distance));
 
   scene.add(model);
   scene.add(camera);
