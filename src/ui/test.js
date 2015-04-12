@@ -5,10 +5,49 @@ var THREE = require('three');
 var React = require('react');
 var $     = React.DOM;
 
-var R     = require('../arithmetic/float');
-var vec   = require('../arithmetic/vector')(R, 0);
+var R         = require('../arithmetic/float');
+var vec       = require('../arithmetic/vector')(R, 0);
+var delaney   = require('../dsymbols/delaney');
+var tilings   = require('../dsymbols/tilings');
+var periodic  = require('../pgraphs/periodic');
 
 var Display3d = require('./Display3d');
+
+
+var CoverVertex = I.Record({
+  v: undefined,
+  s: undefined
+});
+
+
+var graphPortion = function graphPortion(graph, start, dist) {
+  var adj  = periodic.adjacencies(graph);
+
+  var v0 = new CoverVertex({ v: start, s: vec.constant(graph.dim) });
+  var vertices = I.Set([v0]);
+  var edges = I.Set();
+  var thisShell = I.List([v0]);
+
+  I.Range(1, dist+1).forEach(function(i) {
+    var nextShell = I.Set();
+    thisShell.forEach(function(v) {
+      adj.get(v.v).forEach(function(t) {
+        var w = new CoverVertex({ v: t.v, s: vec.plus(v.s, vec.make(t.s)) });
+        if (!edges.contains(I.List([v, w])) && !edges.contains(I.List([w, v])))
+          edges = edges.add(I.List([v, w]));
+        if (!vertices.contains(w)) {
+          console.log('adding vertex '+w);
+          vertices = vertices.add(w);
+          nextShell = nextShell.add(w);
+        }
+      });
+    });
+
+    thisShell = nextShell;
+  });
+
+  return { vertices: vertices, edges: edges };
+};
 
 
 var geometry = function geometry(vertices, faces) {
@@ -106,6 +145,11 @@ var makeScene = function(model, camera) {
     color    : 0x0000ff,
     shininess: 50
   });
+
+  var ds = delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
+  var g = graphPortion(tilings.net(ds), 0, 2);
+  console.log(''+g.vertices);
+  console.log(''+g.edges);
 
   var model = ballAndStick(
     'cube',
