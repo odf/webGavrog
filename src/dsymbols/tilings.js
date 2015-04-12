@@ -84,6 +84,22 @@ var _skeleton = function _skeleton(cov, e2t, c2s) {
 };
 
 
+var net = function net(ds) {
+  var cov = (delaney.dim(ds) == 3 ?
+             delaney3d.pseudoToroidalCover(ds) :
+             delaney2d.toroidalCover(ds));
+  var e2t = _edgeTranslations(cov);
+  var c2s = _cornerShifts(cov, e2t);
+
+  return _skeleton(cov, e2t, c2s);
+};
+
+
+module.exports = {
+  net: net
+};
+
+
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
