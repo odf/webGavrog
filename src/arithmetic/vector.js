@@ -14,6 +14,10 @@ var vector = function vector(scalar, zero) {
     return '<vector: '+this.data+'>'
   };
 
+  Vector.prototype.equals = function(other) {
+    return this.size == other.size && this.data.equals(other.data);
+  };
+
   var get = function get(v, i) {
     return v.data.get(i);
   };
