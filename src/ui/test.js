@@ -19,34 +19,46 @@ var CoverVertex = I.Record({
   s: undefined
 });
 
-
 var graphPortion = function graphPortion(graph, start, dist) {
   var adj  = periodic.adjacencies(graph);
 
   var v0 = new CoverVertex({ v: start, s: vec.constant(graph.dim) });
-  var vertices = I.Set([v0]);
+  var vertices = I.Map([[v0, 0]]);
   var edges = I.Set();
   var thisShell = I.List([v0]);
 
   I.Range(1, dist+1).forEach(function(i) {
     var nextShell = I.Set();
     thisShell.forEach(function(v) {
+      var i = vertices.get(v);
+
       adj.get(v.v).forEach(function(t) {
         var w = new CoverVertex({ v: t.v, s: vec.plus(v.s, vec.make(t.s)) });
-        if (!edges.contains(I.List([v, w])) && !edges.contains(I.List([w, v])))
-          edges = edges.add(I.List([v, w]));
-        if (!vertices.contains(w)) {
-          console.log('adding vertex '+w);
-          vertices = vertices.add(w);
+
+        if (vertices.get(w) == null) {
+          vertices = vertices.set(w, vertices.size);
           nextShell = nextShell.add(w);
         }
+
+        var j = vertices.get(w);
+
+        if (!edges.contains(I.List([i, j])) && !edges.contains(I.List([j, i])))
+          edges = edges.add(I.List([i, j]));
       });
     });
 
     thisShell = nextShell;
   });
 
-  return { vertices: vertices, edges: edges };
+  var verts = I.List();
+  vertices.keySeq().forEach(function(v) {
+    verts = verts.set(vertices.get(v), v);
+  });
+
+  return {
+    vertices: verts,
+    edges   : edges.map(function(e) { return e.toArray(); })
+  };
 };
 
 
