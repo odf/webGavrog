@@ -184,8 +184,8 @@ var barycentricPlacement = function barycentricPlacement(graph) {
     adj.get(v).forEach(function(c) {
       if (c.v != v) {
         var j = vIdcs.get(c.v);
-        A = M.update(A, i, j, _inc);
-        A = M.update(A, i, i, _dec);
+        A = M.update(A, i, j, _dec);
+        A = M.update(A, i, i, _inc);
         t = _addToRow(t, i, c.s);
       }
     });
@@ -228,6 +228,10 @@ if (require.main == module) {
   test(make([ [ 1, 1, [ -1,  0,  0 ] ],
               [ 1, 1, [  0, -1,  0 ] ],
               [ 1, 1, [  0,  0, -1 ] ] ]));
+
+  test(make([ [ 1, 2, [ 0, 0 ] ],
+              [ 1, 2, [ 1, 0 ] ],
+              [ 1, 2, [ 0, 1 ] ] ]));
 
   test(make([ [ 1, 2, [ 0, 0, 0 ] ],
               [ 1, 2, [ 1, 0, 0 ] ],
