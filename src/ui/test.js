@@ -111,10 +111,10 @@ var stick = function stick(p, q, radius, segments) {
 
 
 var ballAndStick = function ballAndStick(
-  name, positions, edges, ballMaterial, stickMaterial)
+  name, positions, edges, ballRadius, stickRadius, ballMaterial, stickMaterial)
 {
   var model = new THREE.Object3D();
-  var ball  = new THREE.SphereGeometry(2, 16, 8);
+  var ball  = new THREE.SphereGeometry(ballRadius, 16, 8);
 
   positions.forEach(function(p) {
     var s = new THREE.Mesh(ball, ballMaterial);
@@ -125,9 +125,9 @@ var ballAndStick = function ballAndStick(
   });
 
   edges.forEach(function(e) {
-    var u = e[0];
-    var v = e[1];
-    var s = stick(vec.make(positions[e[0]]), vec.make(positions[e[1]]), 1, 8);
+    var u = vec.make(positions[e[0]]);
+    var v = vec.make(positions[e[1]]);
+    var s = stick(u, v, stickRadius, 8);
     s.computeVertexNormals();
     model.add(new THREE.Mesh(s, stickMaterial));
   });
@@ -158,18 +158,27 @@ var makeScene = function(model, camera) {
     shininess: 50
   });
 
-  var ds = delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
-  var g = graphPortion(tilings.net(ds), 0, 2);
-  console.log(''+g.vertices);
-  console.log(''+g.edges);
+  var ds  = delaney.parse('<1.1:1:1,1,1:6,3>');
+  var net = tilings.net(ds);
+  var g   = graphPortion(net, 0, 2);
+  var pos = periodic.barycentricPlacementAsFloat(net);
+  var verts = g.vertices.map(function(v) {
+    return vec.plus(vec.make(pos.get(v.v)), v.s).data.toJS();
+  }).toArray();
+  if (delaney.dim(ds) == 2)
+    verts = verts.map(function(p) {
+      return [p[0], p[1], 0];
+    });
+
+  console.log('' + verts);
+  console.log('' + g.edges);
 
   var model = ballAndStick(
     'cube',
-    [[-10,-10,-10], [-10,-10, 10], [-10, 10,-10], [-10, 10, 10],
-     [ 10,-10,-10], [ 10,-10, 10], [ 10, 10,-10], [ 10, 10, 10]],
-    [[0,1], [2,3], [4,5], [6,7],
-     [0,2], [1,3], [4,6], [5,7],
-     [0,4], [1,5], [2,6], [3,7]],
+    verts,
+    g.edges,
+    0.1,
+    0.05,
     ballMaterial,
     stickMaterial
   );
