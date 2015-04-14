@@ -32,6 +32,11 @@ var fraction = function fraction(intType, promoteToInt) {
   };
 
 
+  var toJS = function toJS(n) {
+    return intType.toJS(n.numer) / intType.toJS(n.denom);
+  };
+
+
   var gcd = function gcd(a, b) {
     a = intType.abs(a);
     b = intType.abs(b);
@@ -143,6 +148,7 @@ var fraction = function fraction(intType, promoteToInt) {
   return {
     type    : Fraction,
     promote : promote,
+    toJS    : toJS,
     asInteger: asInteger,
     negative: negative,
     abs     : abs,
