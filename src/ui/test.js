@@ -158,9 +158,9 @@ var makeScene = function(model, camera) {
     shininess: 50
   });
 
-  var ds  = delaney.parse('<1.1:1:1,1,1:6,3>');
+  var ds  = delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
   var net = tilings.net(ds);
-  var g   = graphPortion(net, 0, 2);
+  var g   = graphPortion(net, 0, 3);
   var pos = periodic.barycentricPlacementAsFloat(net);
   var verts = g.vertices.map(function(v) {
     return vec.plus(vec.make(pos.get(v.v)), v.s).data.toJS();
@@ -169,9 +169,6 @@ var makeScene = function(model, camera) {
     verts = verts.map(function(p) {
       return [p[0], p[1], 0];
     });
-
-  console.log('' + verts);
-  console.log('' + g.edges);
 
   var model = ballAndStick(
     'cube',
