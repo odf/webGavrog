@@ -111,7 +111,8 @@ if (require.main == module) {
     var c2s = _cornerShifts(cov, e2t);
     var skel = _skeleton(cov, e2t, c2s);
     console.log('skeleton: '+skel);
-    console.log('skeleton placement: '+periodic.barycentricPlacement(skel));
+    console.log('placement: '+periodic.barycentricPlacement(skel));
+    console.log('         = '+periodic.barycentricPlacementAsFloat(skel));
     console.log();
   }
 

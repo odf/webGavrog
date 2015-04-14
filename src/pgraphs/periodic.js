@@ -200,11 +200,19 @@ var barycentricPlacement = function barycentricPlacement(graph) {
 };
 
 
+var barycentricPlacementAsFloat = function barycentricPlacementAsFloat(graph) {
+  return barycentricPlacement(graph).map(function(p) {
+    return p.map(Q.toJS);
+  });
+};
+
+
 module.exports = {
   make                : make,
   adjacencies         : adjacencies,
   coordinationSeq     : coordinationSeq,
-  barycentricPlacement: barycentricPlacement
+  barycentricPlacement: barycentricPlacement,
+  barycentricPlacementAsFloat: barycentricPlacementAsFloat
 };
 
 
@@ -213,6 +221,7 @@ if (require.main == module) {
     console.log('g = '+g);
     console.log('  cs  = '+coordinationSeq(g, 1, 10));
     console.log('  pos = '+barycentricPlacement(g));
+    console.log('      = '+barycentricPlacementAsFloat(g));
     console.log();
   };
 
