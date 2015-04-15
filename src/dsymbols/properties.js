@@ -97,7 +97,9 @@ var traversal = function traversal(ds, indices, seeds) {
   var seen = I.Set();
 
   var trim = function trim(a, i, seen) {
-    return a.skipWhile(function(x) { return seen.contains(I.List([x, i])); });
+    while (!a.isEmpty() && seen.contains(I.List([a.first(), i])))
+      a = a.shift();
+    return a;
   };
 
   var push = function push(a, i, D) {
@@ -116,7 +118,10 @@ var traversal = function traversal(ds, indices, seeds) {
       var Di = (i == root) ? D : ds.s(i, D);
 
       var t = rest.map(function(e) { return [e[0], push(e[1], e[0], Di)]; });
-      var s = seen.concat([I.List([Di,root]), I.List([D,i]), I.List([Di,i])]);
+      var s = seen
+        .add(I.List([Di,root]))
+        .add(I.List([D,i]))
+        .add(I.List([Di,i]));
 
       return seq.seq([D, i, Di], function() { return step(t, s); });
     } 
