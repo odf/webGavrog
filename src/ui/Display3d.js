@@ -95,6 +95,56 @@ var DisplayState = I.Record({
 });
 
 
+var render3d = (function makeRender() {
+  var _value;
+  var _props;
+  var _scheduled;
+
+  var doRender = function doRender() {
+    if (_value.renderer) {
+      var params = _value.cameraParameters;
+      var m = params.matrix.data.toJS();
+      var e = vec.plus(
+        params.target,
+        vec.scaled(params.distance, vec.make(m[2])));
+
+      _props.camera.position.x = vec.get(e, 0);
+      _props.camera.position.y = vec.get(e, 1);
+      _props.camera.position.z = vec.get(e, 2);
+
+      var mat = new THREE.Matrix4();
+      mat.set(
+        m[0][0], m[1][0], m[2][0], 0,
+        m[0][1], m[1][1], m[2][1], 0,
+        m[0][2], m[1][2], m[2][2], 0,
+        0,       0,       0, 1
+      );
+
+      _props.camera.quaternion.setFromRotationMatrix(mat);
+
+      _value.renderer.setSize(_props.width, _props.height);
+      _props.camera.aspect = _props.width / _props.height;
+      _props.camera.updateProjectionMatrix();
+
+      _value.renderer.render(_props.scene, _props.camera);
+      _scheduled = false;
+    }
+  };
+
+  requestAnimationFrame(doRender);
+
+  return function update(value, props) {
+    _value = value;
+    _props = props;
+
+    if (!_scheduled)
+      requestAnimationFrame(doRender);
+
+    _scheduled = true;
+  };
+})();
+
+
 var Display3d = React.createClass({
   displayName: 'Display3d',
 
@@ -215,40 +265,8 @@ var Display3d = React.createClass({
     }
   },
 
-  render3d: function() {
-    var renderer = this.state.value.renderer;
-
-    if (renderer) {
-      var params = this.state.value.cameraParameters;
-      var m = params.matrix.data.toJS();
-      var e = vec.plus(
-        params.target,
-        vec.scaled(params.distance, vec.make(m[2])));
-
-      this.props.camera.position.x = vec.get(e, 0);
-      this.props.camera.position.y = vec.get(e, 1);
-      this.props.camera.position.z = vec.get(e, 2);
-
-      var mat = new THREE.Matrix4();
-      mat.set(
-        m[0][0], m[1][0], m[2][0], 0,
-        m[0][1], m[1][1], m[2][1], 0,
-        m[0][2], m[1][2], m[2][2], 0,
-        0,       0,       0, 1
-      );
-
-      this.props.camera.quaternion.setFromRotationMatrix(mat);
-
-      renderer.setSize(this.props.width, this.props.height);
-      this.props.camera.aspect = this.props.width / this.props.height;
-      this.props.camera.updateProjectionMatrix();
-
-      renderer.render(this.props.scene, this.props.camera);
-    }
-  },
-
   render: function() {
-    this.render3d();
+    render3d(this.state.value, this.props);
 
     return React.DOM.div({
       className   : this.props.className,
