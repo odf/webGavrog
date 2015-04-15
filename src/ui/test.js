@@ -87,8 +87,8 @@ var stick = function stick(p, q, radius, segments) {
   var ex = vec.make([1,0,0]);
   var ey = vec.make([0,1,0]);
   var t = vec.dotProduct(d, ex) > 0.9 ? ey : ex;
-  var u = vec.crossProduct(d, t);
-  var v = vec.crossProduct(d, u);
+  var u = vec.normalized(vec.crossProduct(d, t));
+  var v = vec.normalized(vec.crossProduct(d, u));
   var a = Math.PI * 2 / n;
 
   var section = I.Range(0, n).map(function(i) {
