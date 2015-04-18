@@ -3,7 +3,6 @@
 var I = require('immutable');
 var DS = require('./delaney');
 var Partition = require('../common/partition');
-var seq = require('../common/lazyseq');
 
 
 var _fold = function _fold(partition, a, b, matchP, spreadFn) {
@@ -91,43 +90,43 @@ var typePartition = function typePartition(ds) {
 
 
 var traversal = function traversal(ds, indices, seeds) {
-  var todo = I.List(indices)
-    .map(function(i) { return [i, I.List()]; })
-    .push([root, I.List(seeds)]);
+  var todo = I.OrderedMap(I.List(indices).zip(I.Repeat(I.List())))
+    .set(root, I.List(seeds));
   var seen = I.Set();
+  var result = I.List();
 
-  var trim = function trim(a, i, seen) {
-    while (!a.isEmpty() && seen.contains(I.List([a.first(), i])))
-      a = a.shift();
-    return a;
-  };
-
-  var push = function push(a, i, D) {
-    return i == root ? a : i < 2 ? a.unshift(D) : a.push(D);
-  };
-
-  var step = function step(todo, seen) {
-    var rest = todo.map(function(e) { return [e[0], trim(e[1], e[0], seen)]; });
-    var next = rest
-      .filter(function(entry) { return !entry[1].isEmpty(); })
+  while (true) {
+    var e = todo.entrySeq()
+      .filter(function(e) { return !e[1].isEmpty(); })
       .first();
+    if (e == null)
+      break;
 
-    if (next) {
-      var i = next[0];
-      var D = next[1].first();
+    var i = e[0];
+    var a = e[1];
+    var D = a.first();
+    todo = todo.set(i, a.rest());
+
+    if (!seen.contains(I.List([D, i]))) {
       var Di = (i == root) ? D : ds.s(i, D);
 
-      var t = rest.map(function(e) { return [e[0], push(e[1], e[0], Di)]; });
-      var s = seen
+      todo = todo.map(function(a, i) {
+        if (i == root || seen.contains(I.List([Di, i])))
+          return a;
+        else
+          return i < 2 ? a.unshift(Di) : a.push(Di);
+      });
+
+      seen = seen
         .add(I.List([Di,root]))
         .add(I.List([D,i]))
         .add(I.List([Di,i]));
 
-      return seq.seq([D, i, Di], function() { return step(t, s); });
-    } 
-  };
+      result = result.push([D, i, Di]);
+    }
+  }
 
-  return step(todo, seen);
+  return result;
 };
 
 
@@ -135,18 +134,14 @@ var root = traversal.root = null;
 
 
 var orbitReps = function orbitReps(ds, indices, seeds) {
-  var reps = seq.map(
-    function(e) { return e[2]; },
-    seq.filter(
-      function(e) { return e[1] == root; },
-      traversal(ds, indices, seeds || ds.elements())));
-
-  return I.List(seq.asArray(reps));
+  return traversal(ds, indices, seeds || ds.elements())
+    .filter(function(e) { return e[1] == root; })
+    .map(function(e) { return e[2]; });
 };
 
 
 var isConnected = function isConnected(ds) {
-  return seq.size(traversal(ds, ds.indices())) < 2;
+  return orbitReps(ds, ds.indices()).size < 2;
 };
 
 
