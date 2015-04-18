@@ -1,8 +1,8 @@
 'use strict';
 
 var I = require('immutable');
-var Q = require('../arithmetic/number');
-var M = require('../arithmetic/matrix')(Q, 0, 1);
+var F = require('../arithmetic/float');
+var M = require('../arithmetic/matrix')(F, 0, 1);
 
 var cosets      = require('../fpgroups/cosets');
 var delaney     = require('./delaney');
@@ -77,7 +77,7 @@ var _skeleton = function _skeleton(cov, e2t, c2s) {
       var sE = c2s.getIn([E, 0]);
       var s = M.minus(M.plus(t, sE), sD);
 
-      return [v, w, s.data.get(0).map(Q.toJS)];
+      return [v, w, s.data.get(0)];
     });
 
   return periodic.make(edges);
