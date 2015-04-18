@@ -110,11 +110,11 @@ var traversal = function traversal(ds, indices, seeds) {
     if (!seen.contains(I.List([D, i]))) {
       var Di = (i == root) ? D : ds.s(i, D);
 
-      todo = todo.map(function(a, i) {
-        if (i == root || seen.contains(I.List([Di, i])))
-          return a;
-        else
-          return i < 2 ? a.unshift(Di) : a.push(Di);
+      indices.forEach(function(i) {
+        if (!seen.contains(I.List([Di, i])))
+          todo = todo.update(i, function(a) {
+            return i < 2 ? a.unshift(Di) : a.push(Di);
+          });
       });
 
       seen = seen
