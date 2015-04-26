@@ -49,7 +49,7 @@ var _closeRelations = function _closeRelations(
         var next = new Edge({ point: x, gen: h });
         if (edge2word.get(next) == null)
           cuts = cuts.push([i, next]);
-        x = action.getIn([x, h]);
+        x = action(x, h);
       });
       console.log('  cuts = '+cuts);
 
@@ -59,7 +59,7 @@ var _closeRelations = function _closeRelations(
         var x = cut.point;
         var g = cut.gen;
         var rcut = new Edge({
-          point: action.getIn([x, g]),
+          point: action(x, g),
           gen  : fw.inverse([g]).first()
         });
         var wx = fw.inverse(fw.product([r.slice(i), r.slice(0, i)]));
@@ -68,7 +68,7 @@ var _closeRelations = function _closeRelations(
         wx.forEach(function(h) {
           var t = edge2word.get(new Edge({ point: x, gen: h }));
           trace = fw.product(trace, t);
-          x = action.getIn([x, h]);
+          x = action(x, h);
         });
 
         edge2word = edge2word
@@ -92,12 +92,16 @@ if (require.main == module) {
 
   relsByGen = _relatorsByStartGen([[1,1],[2,2],[1,2,1,2]]);
   var start = new Edge({ point: 'a', gen: 1 });
-  var action = I.Map({
+  var actionAsMap = I.Map({
     a: I.Map([[1, 'b'], [2, 'c'], [-1, 'b'], [-2, 'c']]),
     b: I.Map([[1, 'a'], [2, 'd'], [-1, 'a'], [-2, 'd']]),
     c: I.Map([[1, 'd'], [2, 'a'], [-1, 'd'], [-2, 'a']]),
     d: I.Map([[1, 'c'], [2, 'b'], [-1, 'c'], [-2, 'b']]),
   });
+
+  var action = function action(point, gen) {
+    return actionAsMap.getIn([point, gen]);
+  };
 
   var edge2word = I.Map([
     [new Edge({ point: 'a', gen:  1 }), fw.empty],
