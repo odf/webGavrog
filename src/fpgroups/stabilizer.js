@@ -33,7 +33,7 @@ var _closeRelations = function _closeRelations(
 
   while (!queue.isEmpty()) {
     var next = queue.first();
-    queue = queue.shift();
+    queue = queue.rest();
 
     console.log('next = '+next);
 
@@ -84,6 +84,30 @@ var _closeRelations = function _closeRelations(
 };
 
 
+var _spanningTree = function _spanningTree(basePoint, nrGens, action) {
+  var queue = I.List([basePoint]);
+  var seen = I.Set([basePoint]);
+  var gens = I.Range(1, nrGens+1).flatMap(function(i) { return [i, -i]; });
+  var edges = I.List();
+
+  while (!queue.isEmpty()) {
+    var point = queue.first();
+    queue = queue.rest();
+
+    gens.forEach(function(g) {
+      var p = action(point, g);
+      if (!seen.contains(p)) {
+        queue = queue.push(p);
+        seen = seen.add(p);
+        edges = edges.push(new Edge({ point: point, gen: g }));
+      }
+    });
+  }
+
+  return edges;
+};
+
+
 if (require.main == module) {
   var rels = [[1,1], [2,2], [3,3],
               [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])];
@@ -102,6 +126,8 @@ if (require.main == module) {
   var action = function action(point, gen) {
     return actionAsMap.getIn([point, gen]);
   };
+
+  console.log(_spanningTree('a', 2, action));
 
   var edge2word = I.Map([
     [new Edge({ point: 'a', gen:  1 }), fw.empty],
