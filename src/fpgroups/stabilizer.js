@@ -114,14 +114,19 @@ var stabilizer = function stabilizer(
   var tree = _spanningTree(basePoint, nrGens, action);
   var id = fw.empty;
 
+  var point2word = I.Map([[basePoint, id]]);
   var edge2word = I.Map();
 
   tree.forEach(function(edge) {
     edge2word = edge2word.set(edge, id).set(_reverseEdge(edge, action), id);
     edge2word = _closeRelations(edge, edge2word, relsByGen, action);
+    point2word = point2word.set(
+      action(edge.point, edge.gen),
+      fw.product([point2word.get(edge.point), [edge.gen]]));
   });
 
-  console.log(edge2word);
+  console.log('edge2word = '+edge2word);
+  console.log('point2word = '+point2word);
 };
 
 
