@@ -43,14 +43,10 @@ var _closeRelations = function _closeRelations(
     var next = queue.first();
     queue = queue.rest();
 
-    console.log('next = '+next);
-
     var p = next.point;
     var g = next.gen;
 
     relsByGen.get(g).forEach(function(r) {
-      console.log('  r = '+r);
-
       var x = p;
       var cuts = I.List();
       r.forEach(function(h, i) {
@@ -59,7 +55,6 @@ var _closeRelations = function _closeRelations(
           cuts = cuts.push([i, next]);
         x = action(x, h);
       });
-      console.log('  cuts = '+cuts);
 
       if (cuts.size == 1) {
         var i = cuts.first()[0];
