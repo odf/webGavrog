@@ -23,7 +23,7 @@ var Edge = I.Record({
 });
 
 
-var _inverseEdge = function _inverseEdge(edge, action) {
+var _reverseEdge = function _reverseEdge(edge, action) {
   return new Edge({
     point: action(edge.point, edge.gen),
     gen  : fw.inverse([edge.gen]).first()
@@ -77,7 +77,7 @@ var _closeRelations = function _closeRelations(
 
         edge2word = edge2word
           .set(cut, trace)
-          .set(_inverseEdge(cut, action), fw.inverse(trace));
+          .set(_reverseEdge(cut, action), fw.inverse(trace));
 
         queue = queue.push(cut);
       }
