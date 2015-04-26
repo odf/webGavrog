@@ -112,14 +112,31 @@ var _spanningTree = function _spanningTree(basePoint, nrGens, action) {
 };
 
 
+var stabilizer = function stabilizer(
+  basePoint, nrGens, relators, domain, action
+) {
+  var relsByGen = _relatorsByStartGen(relators);
+  var tree = _spanningTree(basePoint, nrGens, action);
+  var id = fw.empty;
+
+  var edge2word = I.Map();
+
+  tree.forEach(function(edge) {
+    edge2word = edge2word.set(edge, id).set(_reverseEdge(edge, action), id);
+    edge2word = _closeRelations(edge, edge2word, relsByGen, action);
+  });
+
+  console.log(edge2word);
+};
+
+
 if (require.main == module) {
   var rels = [[1,1], [2,2], [3,3],
               [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])];
   var relsByGen = _relatorsByStartGen(rels);
   console.log(relsByGen);
 
-  relsByGen = _relatorsByStartGen([[1,1],[2,2],[1,2,1,2]]);
-  var start = new Edge({ point: 'a', gen: 1 });
+  rels = [[1,1],[2,2],[1,2,1,2]];
   var actionAsMap = I.Map({
     a: I.Map([[1, 'b'], [2, 'c'], [-1, 'b'], [-2, 'c']]),
     b: I.Map([[1, 'a'], [2, 'd'], [-1, 'a'], [-2, 'd']]),
@@ -131,15 +148,5 @@ if (require.main == module) {
     return actionAsMap.getIn([point, gen]);
   };
 
-  console.log(_spanningTree('a', 2, action));
-
-  var edge2word = I.Map([
-    [new Edge({ point: 'a', gen:  1 }), fw.empty],
-    [new Edge({ point: 'b', gen: -1 }), fw.empty],
-    [new Edge({ point: 'b', gen:  2 }), fw.empty],
-    [new Edge({ point: 'd', gen: -2 }), fw.empty],
-    [new Edge({ point: 'd', gen:  1 }), fw.empty],
-    [new Edge({ point: 'c', gen: -1 }), fw.empty]
-  ]);
-  console.log(_closeRelations(start, edge2word, relsByGen, action));
+  stabilizer('a', 2, rels, ['a', 'b', 'c', 'd'], action);
 }
