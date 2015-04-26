@@ -61,12 +61,12 @@ var _closeRelations = function _closeRelations(
         var cut = cuts.first()[1];
         var x = cut.point;
         var g = cut.gen;
-        var wx = fw.inverse(fw.product([r.slice(i), r.slice(0, i)]));
+        var wx = fw.inverse(fw.product([r.slice(i+1), r.slice(0, i)]));
 
         var trace = fw.empty;
         wx.forEach(function(h) {
           var t = edge2word.get(new Edge({ point: x, gen: h }));
-          trace = fw.product(trace, t);
+          trace = fw.product([trace, t]);
           x = action(x, h);
         });
 
