@@ -158,6 +158,7 @@ var stabilizer = function stabilizer(
   });
 
   console.log('edge2word = '+edge2word);
+  console.log();
 };
 
 
@@ -178,6 +179,17 @@ if (require.main == module) {
       b: I.Map([[1, 'a'], [2, 'd'], [-1, 'a'], [-2, 'd']]),
       c: I.Map([[1, 'd'], [2, 'a'], [-1, 'd'], [-2, 'a']]),
       d: I.Map([[1, 'c'], [2, 'b'], [-1, 'c'], [-2, 'b']]),
+    }))
+  );
+
+  stabilizer(
+    'a',
+    3,
+    [[1,2,-1,-2],[1,3,-1,-3],[2,3,-2,-3]],
+    ['a', 'b'],
+    mapFn(I.Map({
+      a: I.Map([[1, 'b'], [-1, 'b'], [2, 'a'], [-2, 'a'], [3, 'a'], [-3, 'a']]),
+      b: I.Map([[1, 'a'], [-1, 'a'], [2, 'b'], [-2, 'b'], [3, 'b'], [-3, 'b']])
     }))
   );
 }
