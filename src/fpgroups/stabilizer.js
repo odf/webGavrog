@@ -135,7 +135,6 @@ var stabilizer = function stabilizer(
   console.log('edge2word = '+edge2word);
 
   var lastGen = 0;
-  var subgroupGens = I.List();
 
   domain.forEach(function(px) {
     var wx = point2word.get(px);
@@ -151,8 +150,6 @@ var stabilizer = function stabilizer(
           .set(redge, fw.inverse([h]));
         edge2word = _closeRelations(edge, edge2word, relsByGen, action);
         edge2word = _closeRelations(redge, edge2word, relsByGen, action);
-
-        subgroupGens = subgroupGens.push(fw.product(wx, [g], fw.inverse(wy)));
       }
     });
   });
