@@ -147,8 +147,8 @@ var stabilizer = function stabilizer(
         var h = ++lastGen;
         var redge = _reverseEdge(edge, action);
         edge2word = edge2word
-          .set(edge, h)
-          .set(redge, _inverseGen(h));
+          .set(edge, fw.word([h]))
+          .set(redge, fw.inverse([h]));
         edge2word = _closeRelations(edge, edge2word, relsByGen, action);
         edge2word = _closeRelations(redge, edge2word, relsByGen, action);
 
