@@ -23,10 +23,15 @@ var Edge = I.Record({
 });
 
 
+var _inverseGen = function _inverseGen(g) {
+  return fw.inverse([g]).first();
+};
+
+
 var _reverseEdge = function _reverseEdge(edge, action) {
   return new Edge({
     point: action(edge.point, edge.gen),
-    gen  : fw.inverse([edge.gen]).first()
+    gen  : _inverseGen(edge.gen)
   });
 };
 
@@ -112,6 +117,7 @@ var stabilizer = function stabilizer(
 ) {
   var relsByGen = _relatorsByStartGen(relators);
   var tree = _spanningTree(basePoint, nrGens, action);
+  var gens = I.Range(1, nrGens+1).flatMap(function(i) { return [i, -i]; });
   var id = fw.empty;
 
   var point2word = I.Map([[basePoint, id]]);
@@ -125,28 +131,53 @@ var stabilizer = function stabilizer(
       fw.product([point2word.get(edge.point), [edge.gen]]));
   });
 
-  console.log('edge2word = '+edge2word);
   console.log('point2word = '+point2word);
+  console.log('edge2word = '+edge2word);
+
+  var lastGen = 0;
+  var subgroupGens = I.List();
+
+  domain.forEach(function(px) {
+    var wx = point2word.get(px);
+    gens.forEach(function(g) {
+      var edge = new Edge({ point: px, gen: g });
+      if (edge2word.get(edge) == null) {
+        var py = action(px, g);
+        var wy = point2word.get(py);
+        var h = ++lastGen;
+        var redge = _reverseEdge(edge, action);
+        edge2word = edge2word
+          .set(edge, h)
+          .set(redge, _inverseGen(h));
+        edge2word = _closeRelations(edge, edge2word, relsByGen, action);
+        edge2word = _closeRelations(redge, edge2word, relsByGen, action);
+
+        subgroupGens = subgroupGens.push(fw.product(wx, [g], fw.inverse(wy)));
+      }
+    });
+  });
+
+  console.log('edge2word = '+edge2word);
 };
 
 
 if (require.main == module) {
-  var rels = [[1,1], [2,2], [3,3],
-              [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])];
-  var relsByGen = _relatorsByStartGen(rels);
-  console.log(relsByGen);
-
-  rels = [[1,1],[2,2],[1,2,1,2]];
-  var actionAsMap = I.Map({
-    a: I.Map([[1, 'b'], [2, 'c'], [-1, 'b'], [-2, 'c']]),
-    b: I.Map([[1, 'a'], [2, 'd'], [-1, 'a'], [-2, 'd']]),
-    c: I.Map([[1, 'd'], [2, 'a'], [-1, 'd'], [-2, 'a']]),
-    d: I.Map([[1, 'c'], [2, 'b'], [-1, 'c'], [-2, 'b']]),
-  });
-
-  var action = function action(point, gen) {
-    return actionAsMap.getIn([point, gen]);
+  var mapFn = function(map) {
+    return function() {
+      return map.getIn([].slice.apply(arguments));
+    };
   };
 
-  stabilizer('a', 2, rels, ['a', 'b', 'c', 'd'], action);
+  stabilizer(
+    'a',
+    2,
+    [[1,1],[2,2],[1,2,1,2]],
+    ['a', 'b', 'c', 'd'],
+    mapFn(I.Map({
+      a: I.Map([[1, 'b'], [2, 'c'], [-1, 'b'], [-2, 'c']]),
+      b: I.Map([[1, 'a'], [2, 'd'], [-1, 'a'], [-2, 'd']]),
+      c: I.Map([[1, 'd'], [2, 'a'], [-1, 'd'], [-2, 'a']]),
+      d: I.Map([[1, 'c'], [2, 'b'], [-1, 'c'], [-2, 'b']]),
+    }))
+  );
 }
