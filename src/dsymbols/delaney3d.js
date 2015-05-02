@@ -7,6 +7,7 @@ var M = require('../arithmetic/matrix')(Q, 0, 1);
 var generators  = require('../common/generators');
 var seq         = require('../common/lazyseq');
 var cosets      = require('../fpgroups/cosets');
+var stabilizer  = require('../fpgroups/stabilizer');
 var fundamental = require('./fundamental');
 var derived     = require('./derived');
 var covers      = require('./covers');
@@ -167,10 +168,23 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
       return categorized.get(type) || [];
     });
 
+  var mapFn = function(map) {
+    return function() {
+      return map.getIn([].slice.apply(arguments));
+    };
+  };
+
   var good = candidates.find(function(entry) {
-    var cov   = covers.coverForTable(ds, entry[1], fg.edge2word);
-    var fgcov = fundamental.fundamentalGroup(cov);
-    var inv   = _invariants(fgcov.nrGenerators, fgcov.relators);
+    var table = entry[1];
+    var domain = table.keySeq();
+    var stab = stabilizer(
+      domain.first(),
+      fg.nrGenerators,
+      fg.relators,
+      domain,
+      mapFn(table)
+    );
+    var inv = _invariants(stab.generators.size, stab.relators);
     return inv.map(Q.sgn).equals(I.List([0,0,0]));
   });
 

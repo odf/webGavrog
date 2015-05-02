@@ -201,6 +201,9 @@ var stabilizer = function stabilizer(
 };
 
 
+module.exports = stabilizer;
+
+
 if (require.main == module) {
   var mapFn = function(map) {
     return function() {
