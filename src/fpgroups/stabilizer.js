@@ -4,16 +4,45 @@ var I = require('immutable');
 var fw = require('./freeWords');
 
 
+var _relatorPermutations = function _relatorPermutations(w) {
+  return I.Range(0, w.size).flatMap(function(i) {
+    var wx = fw.product([w.slice(i), w.slice(0, i)]);
+    return [wx, fw.inverse(wx)];
+  });
+};
+
+
 var _relatorsByStartGen = function _relatorsByStartGen(relators) {
   return I.List(relators).map(I.List)
-    .flatMap(function(w) {
-      return I.Range(0, w.size).flatMap(function(i) {
-        var wx = fw.product([w.slice(i), w.slice(0, i)]);
-        return [wx, fw.inverse(wx)];
-      });
-    })
+    .flatMap(_relatorPermutations)
     .groupBy(function(rel) { return rel.get(0); })
     .map(I.Set);
+};
+
+
+var _sgn = function _sgn(x) { return (x > 0) - (x < 0); };
+
+var _cmpGens = function _cmpGens(a, b) {
+  if (_sgn(a) != _sgn(b))
+    return _sgn(b) - _sgn(a);
+  else
+    return Math.abs(a) - Math.abs(b);
+};
+
+
+var _cmpWords = function _cmpWords(a, b) {
+  var n = Math.min(a.size, b.size);
+  for (var i = 0; i < n; ++i) {
+    var d = _cmpGens(a.get(i), b.get(i));
+    if (d)
+      return d;
+  }
+  if (a.size > n)
+    return 1;
+  else if (b.size > n)
+    return -1;
+  else
+    return 0;
 };
 
 
@@ -158,11 +187,15 @@ var stabilizer = function stabilizer(
     });
   });
 
-  var subrels = I.Set(domain).flatMap(function(p) {
-    return relators.map(function(w) {
-      return _traceWord(p, w, edge2word, action);
-    });
-  });
+  var subrels = I.Set(domain)
+    .flatMap(function(p) {
+      return relators.map(function(w) {
+        var trace = _traceWord(p, w, edge2word, action);
+        return _relatorPermutations(trace).min(_cmpWords);
+      });
+    })
+    .filter(function(w) { return w && w.size > 0; })
+    .sort(_cmpWords);
 
   return { generators: generators, relators: subrels };
 };
