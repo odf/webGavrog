@@ -36,6 +36,19 @@ var _reverseEdge = function _reverseEdge(edge, action) {
 };
 
 
+var _traceWord = function _traceWord(point, w, edge2word, action) {
+  var p = point;
+  var trace = fw.empty;
+  w.forEach(function(g) {
+    var t = edge2word.get(new Edge({ point: p, gen: g }));
+    trace = fw.product([trace, t]);
+    p = action(p, g);
+  });
+
+  return trace;
+};
+
+
 var _closeRelations = function _closeRelations(
   startEdge,
   edge2word,
@@ -64,16 +77,8 @@ var _closeRelations = function _closeRelations(
       if (cuts.size == 1) {
         var i = cuts.first()[0];
         var cut = cuts.first()[1];
-        var x = cut.point;
-        var g = cut.gen;
-        var wx = fw.inverse(fw.product([r.slice(i+1), r.slice(0, i)]));
-
-        var trace = fw.empty;
-        wx.forEach(function(h) {
-          var t = edge2word.get(new Edge({ point: x, gen: h }));
-          trace = fw.product([trace, t]);
-          x = action(x, h);
-        });
+        var w = fw.inverse(fw.product([r.slice(i+1), r.slice(0, i)]));
+        var trace = _traceWord(cut.point, w, edge2word, action);
 
         edge2word = edge2word
           .set(cut, trace)
