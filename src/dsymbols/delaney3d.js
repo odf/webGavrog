@@ -85,9 +85,8 @@ var _factors = function _factors(xs) {
   });
 };
 
-var _invariants = function _invariants(ds) {
-  var fg = fundamental.fundamentalGroup(ds);
-  var mat = M.make(cosets.relatorMatrix(fg.nrGenerators, fg.relators));
+var _invariants = function _invariants(nrGens, rels) {
+  var mat = M.make(cosets.relatorMatrix(nrGens, rels));
 
   while (!_isDiagonal(mat)) {
     mat = M.transposed(M.triangulation(mat).R);
@@ -100,7 +99,7 @@ var _invariants = function _invariants(ds) {
     .filter(function(x) { return Q.cmp(x, 1) != 0; })
     .sort(Q.cmp);
 
-  return I.Repeat(0, fg.nrGenerators - d).concat(factors);
+  return I.Repeat(0, nrGens - d).concat(factors);
 };
 
 var pseudoToroidalCover = function pseudoToroidalCover(ds) {
@@ -165,14 +164,17 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
   });
   var candidates = I.List('z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' '))
     .flatMap(function(type) {
-      return (categorized.get(type) || I.List()).map(function(entry) {
-        return covers.coverForTable(ds, entry[1], fg.edge2word);
-      });
+      return categorized.get(type) || [];
     });
 
-  return candidates.filter(function(cov) {
-    return _invariants(cov).map(Q.sgn).equals(I.List([0,0,0]));
-  }).first();
+  var good = candidates.find(function(entry) {
+    var cov   = covers.coverForTable(ds, entry[1], fg.edge2word);
+    var fgcov = fundamental.fundamentalGroup(cov);
+    var inv   = _invariants(fgcov.nrGenerators, fgcov.relators);
+    return inv.map(Q.sgn).equals(I.List([0,0,0]));
+  });
+
+  return good && covers.coverForTable(ds, good[1], fg.edge2word);
 };
 
 
