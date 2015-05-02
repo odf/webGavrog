@@ -140,6 +140,7 @@ var stabilizer = function stabilizer(
   console.log('edge2word = '+edge2word);
 
   var lastGen = 0;
+  var generators = I.List();
 
   domain.forEach(function(px) {
     var wx = point2word.get(px);
@@ -155,12 +156,23 @@ var stabilizer = function stabilizer(
           .set(redge, fw.inverse([h]));
         edge2word = _closeRelations(edge, edge2word, relsByGen, action);
         edge2word = _closeRelations(redge, edge2word, relsByGen, action);
+        generators = generators.push(fw.product([wx, [g], fw.inverse(wy)]));
       }
     });
   });
 
   console.log('edge2word = '+edge2word);
+
+  var subrels = I.Set(domain).flatMap(function(p) {
+    return relators.map(function(w) {
+      return _traceWord(p, w, edge2word, action);
+    });
+  });
+
+  console.log('subgroup relators = '+subrels);
   console.log();
+
+  return { generators: generators, relators: subrels };
 };
 
 
@@ -171,7 +183,7 @@ if (require.main == module) {
     };
   };
 
-  stabilizer(
+  console.log(stabilizer(
     'a',
     2,
     [[1,1],[2,2],[1,2,1,2]],
@@ -182,9 +194,9 @@ if (require.main == module) {
       c: I.Map([[1, 'd'], [2, 'a'], [-1, 'd'], [-2, 'a']]),
       d: I.Map([[1, 'c'], [2, 'b'], [-1, 'c'], [-2, 'b']]),
     }))
-  );
+  ));
 
-  stabilizer(
+  console.log(stabilizer(
     'a',
     3,
     [[1,2,-1,-2],[1,3,-1,-3],[2,3,-2,-3]],
@@ -193,5 +205,5 @@ if (require.main == module) {
       a: I.Map([[1, 'b'], [-1, 'b'], [2, 'a'], [-2, 'a'], [3, 'a'], [-3, 'a']]),
       b: I.Map([[1, 'a'], [-1, 'a'], [2, 'b'], [-2, 'b'], [3, 'b'], [-3, 'b']])
     }))
-  );
+  ));
 }
