@@ -136,9 +136,6 @@ var stabilizer = function stabilizer(
       fw.product([point2word.get(edge.point), [edge.gen]]));
   });
 
-  console.log('point2word = '+point2word);
-  console.log('edge2word = '+edge2word);
-
   var lastGen = 0;
   var generators = I.List();
 
@@ -161,16 +158,11 @@ var stabilizer = function stabilizer(
     });
   });
 
-  console.log('edge2word = '+edge2word);
-
   var subrels = I.Set(domain).flatMap(function(p) {
     return relators.map(function(w) {
       return _traceWord(p, w, edge2word, action);
     });
   });
-
-  console.log('subgroup relators = '+subrels);
-  console.log();
 
   return { generators: generators, relators: subrels };
 };
