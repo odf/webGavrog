@@ -12,6 +12,9 @@ var vec   = require('../arithmetic/vector')(R, 0);
 var rotation = function(dx, dy, aboutZ) {
   var phi, s, c, vx, vy, vxx, vyy, vxy;
 
+  dx = Math.PI / 2 * dx;
+  dy = Math.PI / 2 * dy;
+
   if (dx == 0 && dy == 0) {
     return [ [ 1, 0, 0 ],
              [ 0, 1, 0 ],
