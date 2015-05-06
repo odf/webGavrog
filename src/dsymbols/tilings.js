@@ -80,7 +80,11 @@ var _skeleton = function _skeleton(cov, e2t, c2s) {
       return [v, w, s.data.get(0)];
     });
 
-  return periodic.make(edges);
+  return {
+    graph: periodic.make(edges),
+    node2chamber: node2chamber,
+    chamber2node: chamber2node
+  };
 };
 
 
@@ -91,7 +95,7 @@ var net = function net(ds) {
   var e2t = _edgeTranslations(cov);
   var c2s = _cornerShifts(cov, e2t);
 
-  return _skeleton(cov, e2t, c2s);
+  return _skeleton(cov, e2t, c2s).graph;
 };
 
 
@@ -103,13 +107,7 @@ module.exports = {
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
-    var cov = (delaney.dim(ds) == 3 ?
-               delaney3d.pseudoToroidalCover(ds) :
-               delaney2d.toroidalCover(ds));
-    console.log('cov = '+cov);
-    var e2t = _edgeTranslations(cov);
-    var c2s = _cornerShifts(cov, e2t);
-    var skel = _skeleton(cov, e2t, c2s);
+    var skel = net(ds)
     console.log('skeleton: '+skel);
     console.log('placement: '+periodic.barycentricPlacement(skel));
     console.log('         = '+periodic.barycentricPlacementAsFloat(skel));
