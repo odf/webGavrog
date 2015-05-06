@@ -88,14 +88,46 @@ var _skeleton = function _skeleton(cov, e2t, c2s) {
 };
 
 
+var _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
+  var dim = delaney.dim(cov);
+  var result = I.Map();
+
+  cov.elements().forEach(function(D) {
+    var p = pos.get(skel.chamber2node.get(D));
+    var t = c2s.getIn([D, 0]);
+    result = result.setIn([D, 0], M.plus(M.make(I.List([p])), t));
+  });
+
+  I.Range(1, dim+1).forEach(function(i) {
+    var idcs = I.Range(0, i);
+    properties.orbitReps(cov, idcs, cov.elements()).forEach(function(D) {
+      var orb = properties.orbit(cov, idcs, D);
+      var s = M.constant(1, dim);
+      orb.forEach(function(E) {
+        var p = result.getIn([E, 0]);
+        var t = c2s.getIn([E, i]);
+        s = M.plus(s, M.minus(p, t));
+      });
+      s = M.times(s, orb.size);
+    });
+  });
+
+  return result;
+};
+
+
 var net = function net(ds) {
   var cov = (delaney.dim(ds) == 3 ?
              delaney3d.pseudoToroidalCover(ds) :
              delaney2d.toroidalCover(ds));
   var e2t = _edgeTranslations(cov);
   var c2s = _cornerShifts(cov, e2t);
+  var skel = _skeleton(cov, e2t, c2s);
+  var pos = periodic.barycentricPlacementAsFloat(skel.graph);
 
-  return _skeleton(cov, e2t, c2s).graph;
+  console.log(_chamberPositions(cov, e2t, c2s, skel, pos));
+
+  return skel.graph;
 };
 
 
