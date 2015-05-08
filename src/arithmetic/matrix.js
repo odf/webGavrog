@@ -86,6 +86,14 @@ var matrix = function matrix(scalar, zero, one) {
     }));
   };
 
+  var scaled = function scaled(f, A) {
+    return _make(A.data.map(function(row) {
+      return row.map(function(x) {
+        return scalar.times(f, x);
+      });
+    }));
+  };
+
   var times = function times(A, B) {
     if (A.ncols != B.nrows)
       throw new Error('shapes do not match');
@@ -342,6 +350,7 @@ var matrix = function matrix(scalar, zero, one) {
     get          : get,
     plus         : plus,
     minus        : minus,
+    scaled       : scaled,
     times        : times,
     triangulation: triangulation,
     rank         : rank,
