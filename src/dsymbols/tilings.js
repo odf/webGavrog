@@ -120,7 +120,7 @@ var _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
 };
 
 
-var net = function net(ds) {
+module.exports = function net(ds) {
   var cov = (delaney.dim(ds) == 3 ?
              delaney3d.pseudoToroidalCover(ds) :
              delaney2d.toroidalCover(ds));
@@ -129,24 +129,20 @@ var net = function net(ds) {
   var skel = _skeleton(cov, e2t, c2s);
   var pos = periodic.barycentricPlacementAsFloat(skel.graph);
 
-  console.log(_chamberPositions(cov, e2t, c2s, skel, pos));
-
-  return skel.graph;
-};
-
-
-module.exports = {
-  net: net
+  return {
+    cover       : cov,
+    graph       : skel.graph,
+    node2chamber: skel.node2chamber,
+    chamber2node: skel.chamber2node,
+    positions   : _chamberPositions(cov, e2t, c2s, skel, pos)
+  };
 };
 
 
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
-    var skel = net(ds)
-    console.log('skeleton: '+skel);
-    console.log('placement: '+periodic.barycentricPlacement(skel));
-    console.log('         = '+periodic.barycentricPlacementAsFloat(skel));
+    console.log(module.exports(ds));
     console.log();
   }
 

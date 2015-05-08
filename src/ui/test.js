@@ -8,7 +8,7 @@ var $     = React.DOM;
 var R         = require('../arithmetic/float');
 var vec       = require('../arithmetic/vector')(R, 0);
 var delaney   = require('../dsymbols/delaney');
-var tilings   = require('../dsymbols/tilings');
+var tiling    = require('../dsymbols/tilings');
 var periodic  = require('../pgraphs/periodic');
 
 var Display3d = require('./Display3d');
@@ -159,7 +159,7 @@ var makeScene = function(model, camera) {
   });
 
   var ds  = delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
-  var net = tilings.net(ds);
+  var net = tiling(ds).graph;
   var g   = graphPortion(net, 0, 3);
   var pos = periodic.barycentricPlacementAsFloat(net);
   var verts = g.vertices.map(function(v) {
