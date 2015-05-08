@@ -108,8 +108,12 @@ var _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
         var t = c2s.getIn([E, i]);
         s = M.plus(s, M.minus(p, t));
       });
-      s = M.times(s, orb.size);
-    });
+      s = M.scaled(1 / orb.size, s);
+      orb.forEach(function(E) {
+        var t = c2s.getIn([E, i]);
+        result = result.setIn([E, i], M.plus(s, t));
+      });
+   });
   });
 
   return result;
