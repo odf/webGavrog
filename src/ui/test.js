@@ -107,7 +107,22 @@ var stick = function stick(p, q, radius, segments) {
       return [i, j, j+n, i+n];
     })
   );
-}
+};
+
+
+var tetrahedra = function tetrahedron(vertexLists, material) {
+  var extract = function(v) { return v.data.first().toJS(); };
+  var model = new THREE.Object3D();
+
+  vertexLists.forEach(function(vs) {
+    var geom = geometry(vs.map(extract),
+                        [[0,1,2],[1,0,3],[2,1,3],[0,2,3],
+                         [0,2,1],[1,3,0],[2,3,1],[0,3,2]]);
+    model.add(new THREE.Mesh(geom, material));
+  });
+
+  return model;
+};
 
 
 var ballAndStick = function ballAndStick(
@@ -159,7 +174,8 @@ var makeScene = function(model, camera) {
   });
 
   var ds  = delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
-  var net = tiling(ds).graph;
+  var t   = tiling(ds);
+  var net = t.graph;
   var g   = graphPortion(net, 0, 3);
   var pos = periodic.barycentricPlacementAsFloat(net);
   var verts = g.vertices.map(function(v) {
@@ -180,6 +196,12 @@ var makeScene = function(model, camera) {
     stickMaterial
   );
 
+  var chambers = tetrahedra(
+    t.cover.elements().map(function(D) {
+      return t.positions.get(D).valueSeq();
+    }),
+    ballMaterial);
+
   var distance = 18;
   var camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
   camera.name = 'camera';
@@ -189,6 +211,7 @@ var makeScene = function(model, camera) {
   camera.add(light(0x666666, -5*distance, -5*distance, distance));
 
   scene.add(model);
+  scene.add(chambers);
   scene.add(camera);
 
   return scene;
