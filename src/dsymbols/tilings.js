@@ -122,20 +122,21 @@ var _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
 
 
 module.exports = function net(ds) {
-  var cov = (delaney.dim(ds) == 3 ?
-             delaney3d.pseudoToroidalCover(ds) :
-             delaney2d.toroidalCover(ds));
-  var e2t = _edgeTranslations(cov);
-  var c2s = _cornerShifts(cov, e2t);
+  var cov  = (delaney.dim(ds) == 3 ?
+              delaney3d.pseudoToroidalCover(ds) :
+              delaney2d.toroidalCover(ds));
+  var e2t  = _edgeTranslations(cov);
+  var c2s  = _cornerShifts(cov, e2t);
   var skel = _skeleton(cov, e2t, c2s);
-  var pos = periodic.barycentricPlacementAsFloat(skel.graph);
+  var vpos = periodic.barycentricPlacementAsFloat(skel.graph);
+  var pos  = _chamberPositions(cov, e2t, c2s, skel, vpos);
 
   return {
     cover       : cov,
     graph       : skel.graph,
     node2chamber: skel.node2chamber,
     chamber2node: skel.chamber2node,
-    positions   : _chamberPositions(cov, e2t, c2s, skel, pos)
+    positions   : pos
   };
 };
 
