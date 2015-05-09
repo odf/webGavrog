@@ -3,6 +3,7 @@
 var I = require('immutable');
 var F = require('../arithmetic/float');
 var M = require('../arithmetic/matrix')(F, 0, 1);
+var V = require('../arithmetic/vector')(F, 0);
 
 var cosets      = require('../fpgroups/cosets');
 var delaney     = require('./delaney');
@@ -27,7 +28,7 @@ var _edgeTranslations = function _edgeTranslations(cov) {
   return fg.edge2word.map(function(a) {
     return a.map(function(b) {
       var v = M.make([cosets.relatorAsVector(b, n)]);
-      return M.times(v, nul);
+      return V.make(M.times(v, nul).data.first());
     });
   });
 };
@@ -35,7 +36,7 @@ var _edgeTranslations = function _edgeTranslations(cov) {
 
 var _cornerShifts = function _cornerShifts(cov, e2t) {
   var dim = delaney.dim(cov);
-  var zero = M.constant(1, dim);
+  var zero = V.constant(dim);
 
   return I.Map().withMutations(function(m) {
     cov.indices().forEach(function(i) {
@@ -49,7 +50,7 @@ var _cornerShifts = function _cornerShifts(cov, e2t) {
         if (k == properties.traversal.root)
           m.setIn([D, i], zero);
         else
-          m.setIn([D, i], M.minus(m.getIn([Dk, i]), e2t.getIn([Dk, k]) || zero));
+          m.setIn([D, i], V.minus(m.getIn([Dk, i]), e2t.getIn([Dk, k]) || zero));
       });
     });
   });
@@ -58,7 +59,7 @@ var _cornerShifts = function _cornerShifts(cov, e2t) {
 
 var _skeleton = function _skeleton(cov, e2t, c2s) {
   var dim = delaney.dim(cov);
-  var zero = M.constant(1, dim);
+  var zero = V.constant(dim);
   var chambers = cov.elements();
   var idcs0 = _remainingIndices(cov, 0);
   var nodeReps = properties.orbitReps(cov, idcs0, chambers);
@@ -75,9 +76,9 @@ var _skeleton = function _skeleton(cov, e2t, c2s) {
       var t = e2t.getIn([D, 0]) || zero;
       var sD = c2s.getIn([D, 0]);
       var sE = c2s.getIn([E, 0]);
-      var s = M.minus(M.plus(t, sE), sD);
+      var s = V.minus(V.plus(t, sE), sD);
 
-      return [v, w, s.data.get(0)];
+      return [v, w, s.data];
     });
 
   return {
@@ -95,23 +96,23 @@ var _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
   cov.elements().forEach(function(D) {
     var p = pos.get(skel.chamber2node.get(D));
     var t = c2s.getIn([D, 0]);
-    result = result.setIn([D, 0], M.plus(M.make(I.List([p])), t));
+    result = result.setIn([D, 0], V.plus(V.make(p), t));
   });
 
   I.Range(1, dim+1).forEach(function(i) {
     var idcs = I.Range(0, i);
     properties.orbitReps(cov, idcs, cov.elements()).forEach(function(D) {
       var orb = properties.orbit(cov, idcs, D);
-      var s = M.constant(1, dim);
+      var s = V.constant(dim);
       orb.forEach(function(E) {
         var p = result.getIn([E, 0]);
         var t = c2s.getIn([E, i]);
-        s = M.plus(s, M.minus(p, t));
+        s = V.plus(s, V.minus(p, t));
       });
-      s = M.scaled(1 / orb.size, s);
+      s = V.scaled(1 / orb.size, s);
       orb.forEach(function(E) {
         var t = c2s.getIn([E, i]);
-        result = result.setIn([E, i], M.plus(s, t));
+        result = result.setIn([E, i], V.plus(s, t));
       });
    });
   });

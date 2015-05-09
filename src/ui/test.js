@@ -111,7 +111,7 @@ var stick = function stick(p, q, radius, segments) {
 
 
 var tetrahedra = function tetrahedron(vertexLists, material) {
-  var extract = function(v) { return v.data.first().toJS(); };
+  var extract = function(v) { return v.data.toJS(); };
   var model = new THREE.Object3D();
 
   vertexLists.forEach(function(vs) {
