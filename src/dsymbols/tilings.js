@@ -121,6 +121,29 @@ var _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
 };
 
 
+var _chamberBasis = function _chamberBasis(pos, D) {
+  var t = pos.get(D).valueSeq();
+  return M.make(I.Range(1, t.size).map(function(i) {
+    return V.minus(t.get(i), t.get(0)).data;
+  }));
+};
+
+
+var _symmetries = function _symmetries(ds, cov, pos) {
+  var n = delaney.size(ds);
+  var m = delaney.size(cov) / n;
+
+  var D = ds.elements().find(function(D) {
+    return F.sgn(M.determinant(_chamberBasis(pos, D))) != 0;
+  });
+  var A = M.inverse(_chamberBasis(pos, D));
+
+  return I.Range(1, m).map(function(i) {
+    return M.times(A, _chamberBasis(pos, D + i*n));
+  });
+};
+
+
 module.exports = function net(ds) {
   var cov  = (delaney.dim(ds) == 3 ?
               delaney3d.pseudoToroidalCover(ds) :
@@ -136,7 +159,8 @@ module.exports = function net(ds) {
     graph       : skel.graph,
     node2chamber: skel.node2chamber,
     chamber2node: skel.chamber2node,
-    positions   : pos
+    positions   : pos,
+    symmetries  : _symmetries(ds, cov, pos)
   };
 };
 
