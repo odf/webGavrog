@@ -144,7 +144,7 @@ var _symmetries = function _symmetries(ds, cov, pos) {
 };
 
 
-var _resymmetrized = function _resymmetrized(G, syms) {
+var _resymmetrizedGramMatrix = function _resymmetrizedGramMatrix(G, syms) {
   var A = M.scaled(0, G);
 
   syms.forEach(function(S) {
@@ -154,6 +154,32 @@ var _resymmetrized = function _resymmetrized(G, syms) {
   A = M.scaled(1/syms.size, A);
 
   return A;
+};
+
+
+var _scalarProduct = function _scalarProduct(v, w, G) {
+  var A = M.times(M.make([v.data]), M.times(G, M.transposed(M.make([w.data]))));
+  return M.get(A, 0, 0);
+};
+
+
+var _orthonormalBasis = function _orthonormalBasis(G) {
+  var n = G.data.size;
+  var e = M.identity(n).data.map(V.make);
+
+  I.Range(0, n).forEach(function(i) {
+    var v = e.get(i);
+    I.Range(0, i).forEach(function(j) {
+      var w = e.get(j);
+      var f = _scalarProduct(v, w, G);
+      v = V.minus(v, V.scaled(f, w));
+    });
+    var d = _scalarProduct(v, v, G);
+    v = V.scaled(1/Math.sqrt(d), v);
+    e = e.set(i, v);
+  });
+
+  return M.make(e.map(function(v) { return v.data; }));
 };
 
 
@@ -168,7 +194,8 @@ module.exports = function net(ds) {
   var pos  = _chamberPositions(cov, e2t, c2s, skel, vpos);
   var syms = _symmetries(ds, cov, pos);
 
-  console.log(_resymmetrized(M.identity(delaney.dim(ds)), syms));
+  var G = _resymmetrizedGramMatrix(M.identity(delaney.dim(ds)), syms);
+  console.log(_orthonormalBasis(G));
 
   return {
     cover       : cov,
