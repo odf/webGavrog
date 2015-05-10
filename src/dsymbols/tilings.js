@@ -138,9 +138,22 @@ var _symmetries = function _symmetries(ds, cov, pos) {
   });
   var A = M.inverse(_chamberBasis(pos, D));
 
-  return I.Range(1, m).map(function(i) {
+  return I.Range(0, m).map(function(i) {
     return M.times(A, _chamberBasis(pos, D + i*n));
   });
+};
+
+
+var _resymmetrized = function _resymmetrized(G, syms) {
+  var A = M.scaled(0, G);
+
+  syms.forEach(function(S) {
+    A = M.plus(A, M.times(S, M.times(G, M.transposed(S))));
+  });
+
+  A = M.scaled(1/syms.size, A);
+
+  return A;
 };
 
 
@@ -153,6 +166,9 @@ module.exports = function net(ds) {
   var skel = _skeleton(cov, e2t, c2s);
   var vpos = periodic.barycentricPlacementAsFloat(skel.graph);
   var pos  = _chamberPositions(cov, e2t, c2s, skel, vpos);
+  var syms = _symmetries(ds, cov, pos);
+
+  console.log(_resymmetrized(M.identity(delaney.dim(ds)), syms));
 
   return {
     cover       : cov,
@@ -160,7 +176,7 @@ module.exports = function net(ds) {
     node2chamber: skel.node2chamber,
     chamber2node: skel.chamber2node,
     positions   : pos,
-    symmetries  : _symmetries(ds, cov, pos)
+    symmetries  : syms
   };
 };
 
