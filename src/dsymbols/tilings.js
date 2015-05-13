@@ -204,6 +204,7 @@ module.exports = function net(ds) {
     chamber2node: skel.chamber2node,
     positions   : pos,
     symmetries  : syms,
+    gramMatrix  : G,
     basis       : basis
   };
 };
