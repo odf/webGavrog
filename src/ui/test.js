@@ -177,9 +177,9 @@ var makeScene = function(model, camera) {
   var t   = tiling(ds);
   var net = t.graph;
   var g   = graphPortion(net, 0, 3);
-  var pos = periodic.barycentricPlacementAsFloat(net);
+  var pos = t.positions;
   var verts = g.vertices.map(function(v) {
-    return vec.plus(vec.make(pos.get(v.v)), v.s).data.toJS();
+    return vec.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s).data.toJS();
   }).toArray();
   if (delaney.dim(ds) == 2)
     verts = verts.map(function(p) {
@@ -198,7 +198,7 @@ var makeScene = function(model, camera) {
 
   var chambers = tetrahedra(
     t.cover.elements().map(function(D) {
-      return t.positions.get(D).valueSeq();
+      return pos.get(D).valueSeq();
     }),
     ballMaterial);
 
