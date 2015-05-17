@@ -195,7 +195,7 @@ module.exports = function net(ds) {
   var syms = _symmetries(ds, cov, pos);
 
   var G = _resymmetrizedGramMatrix(M.identity(delaney.dim(ds)), syms);
-  var basis = _orthonormalBasis(G);
+  var basis = M.inverse(_orthonormalBasis(G));
 
   return {
     cover       : cov,
