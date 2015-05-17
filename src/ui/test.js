@@ -6,7 +6,8 @@ var React = require('react');
 var $     = React.DOM;
 
 var R         = require('../arithmetic/float');
-var vec       = require('../arithmetic/vector')(R, 0);
+var M         = require('../arithmetic/matrix')(R, 0, 1);
+var V         = require('../arithmetic/vector')(R, 0);
 var delaney   = require('../dsymbols/delaney');
 var tiling    = require('../dsymbols/tilings');
 var periodic  = require('../pgraphs/periodic');
@@ -22,7 +23,7 @@ var CoverVertex = I.Record({
 var graphPortion = function graphPortion(graph, start, dist) {
   var adj  = periodic.adjacencies(graph);
 
-  var v0 = new CoverVertex({ v: start, s: vec.constant(graph.dim) });
+  var v0 = new CoverVertex({ v: start, s: V.constant(graph.dim) });
   var vertices = I.Map([[v0, 0]]);
   var edges = I.Set();
   var thisShell = I.List([v0]);
@@ -33,7 +34,7 @@ var graphPortion = function graphPortion(graph, start, dist) {
       var i = vertices.get(v);
 
       adj.get(v.v).forEach(function(t) {
-        var w = new CoverVertex({ v: t.v, s: vec.plus(v.s, vec.make(t.s)) });
+        var w = new CoverVertex({ v: t.v, s: V.plus(v.s, V.make(t.s)) });
 
         if (vertices.get(w) == null) {
           vertices = vertices.set(w, vertices.size);
@@ -83,24 +84,24 @@ var geometry = function geometry(vertices, faces) {
 
 var stick = function stick(p, q, radius, segments) {
   var n = segments;
-  var d = vec.normalized(vec.minus(q, p));
-  var ex = vec.make([1,0,0]);
-  var ey = vec.make([0,1,0]);
-  var t = vec.dotProduct(d, ex) > 0.9 ? ey : ex;
-  var u = vec.normalized(vec.crossProduct(d, t));
-  var v = vec.normalized(vec.crossProduct(d, u));
+  var d = V.normalized(V.minus(q, p));
+  var ex = V.make([1,0,0]);
+  var ey = V.make([0,1,0]);
+  var t = V.dotProduct(d, ex) > 0.9 ? ey : ex;
+  var u = V.normalized(V.crossProduct(d, t));
+  var v = V.normalized(V.crossProduct(d, u));
   var a = Math.PI * 2 / n;
 
   var section = I.Range(0, n).map(function(i) {
     var x = a * i;
     var c = Math.cos(x) * radius;
     var s = Math.sin(x) * radius;
-    return vec.plus(vec.scaled(c, u), vec.scaled(s, v));
+    return V.plus(V.scaled(c, u), V.scaled(s, v));
   });
 
   return geometry(
-    I.List().concat(section.map(function(c) { return vec.plus(c, p); }),
-                    section.map(function(c) { return vec.plus(c, q); }))
+    I.List().concat(section.map(function(c) { return V.plus(c, p); }),
+                    section.map(function(c) { return V.plus(c, q); }))
       .map(function(v) { return v.data.toJS(); }),
     I.Range(0, n).map(function(i) {
       var j = (i + 1) % n;
@@ -140,8 +141,8 @@ var ballAndStick = function ballAndStick(
   });
 
   edges.forEach(function(e) {
-    var u = vec.make(positions[e[0]]);
-    var v = vec.make(positions[e[1]]);
+    var u = V.make(positions[e[0]]);
+    var v = V.make(positions[e[1]]);
     var s = stick(u, v, stickRadius, 8);
     s.computeVertexNormals();
     model.add(new THREE.Mesh(s, stickMaterial));
@@ -157,6 +158,11 @@ var light = function(color, x, y, z) {
   light.position.set(x, y, z);
 
   return light;
+};
+
+
+var apply = function(v, A) {
+  return V.make(M.times(M.make([v.data]), A).data.first());
 };
 
 
@@ -179,7 +185,8 @@ var makeScene = function(model, camera) {
   var g   = graphPortion(net, 0, 3);
   var pos = t.positions;
   var verts = g.vertices.map(function(v) {
-    return vec.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s).data.toJS();
+    var p = V.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
+    return apply(p, t.basis).data.toJS();
   }).toArray();
   if (delaney.dim(ds) == 2)
     verts = verts.map(function(p) {
@@ -198,7 +205,9 @@ var makeScene = function(model, camera) {
 
   var chambers = tetrahedra(
     t.cover.elements().map(function(D) {
-      return pos.get(D).valueSeq();
+      return pos.get(D).valueSeq().map(function(p) {
+        return apply(p, t.basis);
+      });
     }),
     ballMaterial);
 
