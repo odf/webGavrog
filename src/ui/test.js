@@ -111,6 +111,15 @@ var stick = function stick(p, q, radius, segments) {
 };
 
 
+var shrunk = function shrunk(f, vertices) {
+  var n = vertices.size;
+  var last = vertices.get(n-1);
+  return I.List(vertices.take(n-1).map(function(v) {
+    return V.plus(V.scaled(f, v), V.scaled(1-f, last));
+  })).push(last);
+};
+
+
 var tetrahedra = function tetrahedron(vertexLists, material) {
   var extract = function(v) { return v.data.toJS(); };
   var model = new THREE.Object3D();
@@ -205,9 +214,9 @@ var makeScene = function(model, camera) {
 
   var chambers = tetrahedra(
     t.cover.elements().map(function(D) {
-      return pos.get(D).valueSeq().map(function(p) {
+      return shrunk(0.8, pos.get(D).valueSeq().map(function(p) {
         return apply(p, t.basis);
-      });
+      }));
     }),
     ballMaterial);
 
