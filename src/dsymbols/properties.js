@@ -209,6 +209,49 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 };
 
 
+var _protocol = function _protocol(ds, trav) {
+  var idcs   = DS.indices(ds);
+  var imap   = I.Map(idcs.zip(I.Range()));
+  var emap   = I.Map();
+  var n      = 1;
+  var result = I.List();
+
+  trav
+    .filter(function(entry) { return entry[2] != null; })
+    .forEach(function(entry) {
+      var Di = entry[0];
+      var i  = entry[1];
+      var D  = entry[2];
+
+      var E  = emap.get(D) || n;
+      var hd = (i == root) ? [-1, E] : [imap.get(i), emap.get(Di), E];
+      result = result.concat(hd);
+
+      if (E == n) {
+        emap = emap.set(D, n);
+        result = result.concat(idcs.zip(idcs.rest()).map(function(p) {
+          return ds.v(p[0], p[1], D);
+        }));
+        ++n;
+      }
+  });
+
+  return result;
+};
+
+
+var invariant = function invariant(ds) {
+  if (!isConnected(ds))
+    throw new Error('must be connected');
+
+  var idcs = DS.indices(ds);
+
+  return ds.elements()
+    .map(function(D) { return _protocol(ds, traversal(ds, idcs, [D])); })
+    .reduce(function(a, b) { return b < a ? b : a; });
+};
+
+
 module.exports = {
   isMinimal         : isMinimal,
   typePartition     : typePartition,
@@ -219,7 +262,8 @@ module.exports = {
   partialOrientation: partialOrientation,
   isLoopless        : isLoopless,
   isOriented        : isOriented,
-  isWeaklyOriented  : isWeaklyOriented
+  isWeaklyOriented  : isWeaklyOriented,
+  invariant         : invariant
 };
 
 
@@ -235,7 +279,10 @@ if (require.main == module) {
     console.log('    symbol is '+(isWeaklyOriented(ds) ? '' : 'not ')
                 +'weakly oriented.');
     console.log('    type partition: '+typePartition(ds));
-    console.log('    traversal: ' + traversal(ds, ds.indices(), ds.elements()));
+    var trav = traversal(ds, ds.indices(), ds.elements());
+    console.log('    traversal: ' + trav);
+    console.log('    protocol:  ' + _protocol(ds, trav));
+    console.log('    invariant: ' + invariant(ds));
     console.log();
 
     console.log('    0,1 orbit reps: '+orbitReps(ds, [0, 1]));
@@ -262,4 +309,5 @@ if (require.main == module) {
 
   test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
   test(DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
+  test(DS.parse('<1.1:6:4 6 5,5 4 6,4 6 5:3,6>'));
 }
