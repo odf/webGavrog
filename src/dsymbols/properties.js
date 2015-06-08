@@ -131,38 +131,44 @@ var traversal = function traversal(ds, indices, seeds) {
 
 
 var Traversal = function Traversal(ds, indices, seeds) {
-  var todo = I.OrderedMap(I.List(indices).zip(I.Repeat(I.List())))
-    .set(root, I.List(seeds));
-  var seen = I.Set();
+  var seedsLeft = seeds.slice();
+  var todo = {};
+  var seen = {};
+  indices.forEach(function(i) { seen[i] = {}; todo[i] = [] });
+  seen[root] = {};
 
   return {
     next: function() {
       while (true) {
-        var e = todo.entrySeq()
-          .filter(function(e) { return !e[1].isEmpty(); })
-          .first();
-        if (e == null)
+        var i = null, D = null;
+        for (var k = 0; k < indices.size; ++k)
+          if (todo[indices.get(k)].length > 0) {
+            i = indices.get(k);
+            D = todo[i].shift();
+            break;
+          }
+
+        if (D == null && seedsLeft.length > 0)
+          D = seedsLeft.shift();
+
+        if (D == null)
           return null;
 
-        var i = e[0];
-        var a = e[1];
-        var D = a.first();
-        todo = todo.set(i, a.rest());
-
-        if (!seen.contains(I.List([D, i]))) {
+        if (!seen[i][D]) {
           var Di = (i == root) ? D : ds.s(i, D);
 
           indices.forEach(function(i) {
-            if (!seen.contains(I.List([Di, i])))
-              todo = todo.update(i, function(a) {
-                return i < 2 ? a.unshift(Di) : a.push(Di);
-              });
+            if (!seen[i][Di]) {
+              if (i < 2)
+                todo[i].unshift(Di);
+              else
+                todo[i].push(Di);
+            }
           });
 
-          seen = seen
-            .add(I.List([Di,root]))
-            .add(I.List([D,i]))
-            .add(I.List([Di,i]));
+          seen[root][Di] = true;
+          seen[i][D]     = true;
+          seen[i][Di]    = true;
 
           return [D, i, Di];
         }
