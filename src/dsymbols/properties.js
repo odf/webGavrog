@@ -209,6 +209,12 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 };
 
 
+var _branchings = function _branchings(ds, D) {
+  var idcs = DS.indices(ds);
+  return idcs.zip(idcs.rest()).map(function(p) { return ds.v(p[0], p[1], D); });
+};
+
+
 var _protocol = function _protocol(ds, trav) {
   var idcs   = DS.indices(ds);
   var imap   = I.Map(idcs.zip(I.Range()));
@@ -229,9 +235,7 @@ var _protocol = function _protocol(ds, trav) {
 
       if (E == n) {
         emap = emap.set(D, n);
-        result = result.concat(idcs.zip(idcs.rest()).map(function(p) {
-          return ds.v(p[0], p[1], D);
-        }));
+        result = result.concat(_branchings(ds, D));
         ++n;
       }
   });
@@ -245,10 +249,14 @@ var invariant = function invariant(ds) {
     throw new Error('must be connected');
 
   var idcs = DS.indices(ds);
+  var best = ds.elements()
+    .map(function(D) { return _branchings(ds, D); })
+    .min();
 
   return ds.elements()
+    .filter(function(D) { return _branchings(ds, D).equals(best); })
     .map(function(D) { return _protocol(ds, traversal(ds, idcs, [D])); })
-    .reduce(function(a, b) { return b < a ? b : a; });
+    .min();
 };
 
 
