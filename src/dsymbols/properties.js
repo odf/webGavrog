@@ -130,6 +130,48 @@ var traversal = function traversal(ds, indices, seeds) {
 };
 
 
+var Traversal = function Traversal(ds, indices, seeds) {
+  var todo = I.OrderedMap(I.List(indices).zip(I.Repeat(I.List())))
+    .set(root, I.List(seeds));
+  var seen = I.Set();
+
+  return {
+    next: function() {
+      while (true) {
+        var e = todo.entrySeq()
+          .filter(function(e) { return !e[1].isEmpty(); })
+          .first();
+        if (e == null)
+          return null;
+
+        var i = e[0];
+        var a = e[1];
+        var D = a.first();
+        todo = todo.set(i, a.rest());
+
+        if (!seen.contains(I.List([D, i]))) {
+          var Di = (i == root) ? D : ds.s(i, D);
+
+          indices.forEach(function(i) {
+            if (!seen.contains(I.List([Di, i])))
+              todo = todo.update(i, function(a) {
+                return i < 2 ? a.unshift(Di) : a.push(Di);
+              });
+          });
+
+          seen = seen
+            .add(I.List([Di,root]))
+            .add(I.List([D,i]))
+            .add(I.List([Di,i]));
+
+          return [D, i, Di];
+        }
+      }
+    }
+  };
+};
+
+
 var root = traversal.root = null;
 
 
@@ -215,48 +257,54 @@ var _branchings = function _branchings(ds, D) {
 };
 
 
-var _protocol = function _protocol(ds, trav) {
-  var idcs   = DS.indices(ds);
-  var imap   = I.Map(idcs.zip(I.Range()));
-  var emap   = I.Map();
-  var n      = 1;
-  var result = I.List();
+var invariant = function invariant(ds) {
+  var idcs = DS.indices(ds);
+  var imap = I.Map(idcs.zip(I.Range()));
+  var best = null;
 
-  trav
-    .filter(function(entry) { return entry[2] != null; })
-    .forEach(function(entry) {
-      var Di = entry[0];
-      var i  = entry[1];
-      var D  = entry[2];
+  ds.elements().forEach(function(D0) {
+    var trav    = Traversal(ds, idcs, [D0]);
+    var emap    = I.Map();
+    var n       = 1;
+    var current = I.List();
+    var keep    = true;
+
+    while (keep) {
+      var next = trav.next();
+      if (next == null)
+        break;
+      if (next[2] == null)
+        continue;
+
+      var Di = next[0];
+      var i  = next[1];
+      var D  = next[2];
 
       var E  = emap.get(D) || n;
-      var hd = (i == root) ? [-1, E] : [imap.get(i), emap.get(Di), E];
-      result = result.concat(hd);
+      var chunk = I.List((i == root) ? [-1, E] : [imap.get(i), emap.get(Di), E]);
 
       if (E == n) {
         emap = emap.set(D, n);
-        result = result.concat(_branchings(ds, D));
+        chunk = chunk.concat(_branchings(ds, D));
         ++n;
       }
+
+      for (var k = 0; best && keep && k < chunk.size; ++k) {
+        var d = chunk.get(k) - best.get(current.size + k);
+        if (d > 0)
+          keep = false;
+        else if (d < 0)
+          best = null;
+      }
+
+      current = current.concat(chunk);
+    }
+
+    if (best == null)
+      best = current;
   });
 
-  return result;
-};
-
-
-var invariant = function invariant(ds) {
-  if (!isConnected(ds))
-    throw new Error('must be connected');
-
-  var idcs = DS.indices(ds);
-  var best = ds.elements()
-    .map(function(D) { return _branchings(ds, D); })
-    .min();
-
-  return ds.elements()
-    .filter(function(D) { return _branchings(ds, D).equals(best); })
-    .map(function(D) { return _protocol(ds, traversal(ds, idcs, [D])); })
-    .min();
+  return best;
 };
 
 
@@ -289,7 +337,6 @@ if (require.main == module) {
     console.log('    type partition: '+typePartition(ds));
     var trav = traversal(ds, ds.indices(), ds.elements());
     console.log('    traversal: ' + trav);
-    console.log('    protocol:  ' + _protocol(ds, trav));
     console.log('    invariant: ' + invariant(ds));
     console.log();
 
