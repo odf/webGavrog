@@ -265,14 +265,19 @@ var _branchings = function _branchings(ds, D) {
 
 var invariant = function invariant(ds) {
   var idcs = DS.indices(ds);
-  var imap = I.Map(idcs.zip(I.Range()));
+  var imap = I.Map(idcs.zip(I.Range())).toJS();
   var best = null;
+
+  var branchings = {};
+  ds.elements().forEach(function(D) {
+    return branchings[D] = _branchings(ds, D).toJS();
+  });
 
   ds.elements().forEach(function(D0) {
     var trav    = Traversal(ds, idcs, [D0]);
-    var emap    = I.Map();
+    var emap    = {};
     var n       = 1;
-    var current = I.List();
+    var current = [];
     var keep    = true;
 
     while (keep) {
@@ -286,17 +291,17 @@ var invariant = function invariant(ds) {
       var i  = next[1];
       var D  = next[2];
 
-      var E  = emap.get(D) || n;
-      var chunk = I.List((i == root) ? [-1, E] : [imap.get(i), emap.get(Di), E]);
+      var E  = emap[D] || n;
+      var chunk = (i == root) ? [-1, E] : [imap[i], emap[Di], E];
 
       if (E == n) {
-        emap = emap.set(D, n);
-        chunk = chunk.concat(_branchings(ds, D));
+        emap[D] = n;
+        chunk = chunk.concat(branchings[D]);
         ++n;
       }
 
-      for (var k = 0; best && keep && k < chunk.size; ++k) {
-        var d = chunk.get(k) - best.get(current.size + k);
+      for (var k = 0; best && keep && k < chunk.length; ++k) {
+        var d = chunk[k] - best[current.length + k];
         if (d > 0)
           keep = false;
         else if (d < 0)
@@ -310,7 +315,7 @@ var invariant = function invariant(ds) {
       best = current;
   });
 
-  return best;
+  return I.List(best);
 };
 
 
