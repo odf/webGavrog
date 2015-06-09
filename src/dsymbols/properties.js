@@ -89,47 +89,6 @@ var typePartition = function typePartition(ds) {
 };
 
 
-var traversal = function traversal(ds, indices, seeds) {
-  var todo = I.OrderedMap(I.List(indices).zip(I.Repeat(I.List())))
-    .set(root, I.List(seeds));
-  var seen = I.Set();
-  var result = I.List();
-
-  while (true) {
-    var e = todo.entrySeq()
-      .filter(function(e) { return !e[1].isEmpty(); })
-      .first();
-    if (e == null)
-      break;
-
-    var i = e[0];
-    var a = e[1];
-    var D = a.first();
-    todo = todo.set(i, a.rest());
-
-    if (!seen.contains(I.List([D, i]))) {
-      var Di = (i == root) ? D : ds.s(i, D);
-
-      indices.forEach(function(i) {
-        if (!seen.contains(I.List([Di, i])))
-          todo = todo.update(i, function(a) {
-            return i < 2 ? a.unshift(Di) : a.push(Di);
-          });
-      });
-
-      seen = seen
-        .add(I.List([Di,root]))
-        .add(I.List([D,i]))
-        .add(I.List([Di,i]));
-
-      result = result.push([D, i, Di]);
-    }
-  }
-
-  return result;
-};
-
-
 var Traversal = function Traversal(ds, indices, seeds) {
   var seedsLeft = seeds.slice();
   var todo = {};
@@ -152,7 +111,7 @@ var Traversal = function Traversal(ds, indices, seeds) {
           D = seedsLeft.shift();
 
         if (D == null)
-          return null;
+          return { done: true };
 
         if (!seen[i][D]) {
           var Di = (i == root) ? D : ds.s(i, D);
@@ -170,13 +129,16 @@ var Traversal = function Traversal(ds, indices, seeds) {
           seen[i][D]     = true;
           seen[i][Di]    = true;
 
-          return [D, i, Di];
+          return { done: false, value: [D, i, Di] };
         }
       }
     }
   };
 };
 
+var traversal = function traversal(ds, indices, seeds) {
+  return I.Seq(Traversal(ds, indices, seeds));
+};
 
 var root = traversal.root = null;
 
@@ -282,8 +244,9 @@ var invariant = function invariant(ds) {
 
     while (keep) {
       var next = trav.next();
-      if (next == null)
+      if (next.done)
         break;
+      next = next.value;
       if (next[2] == null)
         continue;
 
