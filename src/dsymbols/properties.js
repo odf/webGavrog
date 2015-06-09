@@ -90,7 +90,7 @@ var typePartition = function typePartition(ds) {
 
 
 var Traversal = function Traversal(ds, indices, seeds) {
-  var seedsLeft = seeds.slice();
+  var seedsLeft = I.List(seeds);
   var todo = {};
   var seen = {};
   indices.forEach(function(i) { seen[i] = {}; todo[i] = [] });
@@ -107,8 +107,10 @@ var Traversal = function Traversal(ds, indices, seeds) {
             break;
           }
 
-        if (D == null && seedsLeft.length > 0)
-          D = seedsLeft.shift();
+        if (D == null && seedsLeft.size > 0) {
+          D = seedsLeft.first();
+          seedsLeft = seedsLeft.rest();
+        }
 
         if (D == null)
           return { done: true };

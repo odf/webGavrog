@@ -3,7 +3,6 @@
 var I = require('immutable');
 
 var util       = require('../common/util');
-var seq        = require('../common/lazyseq');
 var freeWords  = require('../fpgroups/freeWords');
 var DS         = require('./delaney');
 var properties = require('./properties');

@@ -3,7 +3,6 @@
 var DS          = require('./delaney');
 var fundamental = require('./fundamental');
 var derived     = require('./derived');
-var seq         = require('../common/lazyseq');
 var generators  = require('../common/generators');
 var cosets      = require('../fpgroups/cosets');
 
@@ -33,9 +32,8 @@ var covers = function covers(ds, maxDegree) {
   var fun = fundamental.fundamentalGroup(ds);
   var tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDegree);
 
-  return seq.map(
-    function(table) { return coverForTable(ds, table, fun.edge2word); },
-    generators.results(tableGenerator))
+  return generators.results(tableGenerator)
+    .map(function(table) { return coverForTable(ds, table, fun.edge2word); });
 };
 
 

@@ -5,7 +5,6 @@ var Q = require('../arithmetic/number');
 var M = require('../arithmetic/matrix')(Q, 0, 1);
 
 var generators  = require('../common/generators');
-var seq         = require('../common/lazyseq');
 var cosets      = require('../fpgroups/cosets');
 var stabilizer  = require('../fpgroups/stabilizer');
 var fundamental = require('./fundamental');
@@ -116,7 +115,7 @@ var pseudoToroidalCover = function pseudoToroidalCover(ds) {
   var cones3 = cones.filter(function(c) { return c[1] == 3; });
 
   var sub4 = generators.results(cosets.tables(fg.nrGenerators, fg.relators, 4));
-  var base = I.List(seq.asArray(sub4)).map(cosets.coreTable);
+  var base = sub4.map(cosets.coreTable);
 
   var cores = base.filter(function(ct) { return _flattensAll(ct, cones); })
     .map(function(ct) {
