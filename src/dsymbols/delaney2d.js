@@ -6,7 +6,6 @@ var p  = require('./properties');
 var d  = require('./derived');
 var cv = require('./covers');
 var Q  = require('../arithmetic/number');
-var sq = require('../common/lazyseq');
 
 
 var _assert = function _assert(condition, message) {
@@ -120,7 +119,7 @@ var toroidalCover = function toroidalCover(ds) {
   var dso = d.orientedCover(ds);
   var degree = _map1dOrbits(dso.v, dso).max();
 
-  return sq.filter(_unbranched, cv.covers(dso, degree)).first();
+  return cv.covers(dso, degree).filter(_unbranched).first();
 };
 
 
@@ -137,7 +136,7 @@ module.exports = {
 if (require.main == module) {
   var test = function test(ds) {
     console.log('ds = '+ds);
-    console.log('  curvature is '+Q.toString(curvature(ds)));
+    console.log('  curvature is '+curvature(ds));
     console.log('  symbol is '+(isEuclidean(ds) ? '' : 'not ')+'euclidean');
     console.log('  symbol is '+(isHyperbolic(ds) ? '' : 'not ')+'hyperbolic');
     console.log('  symbol is '+(isSpherical(ds) ? '' : 'not ')+'spherical');

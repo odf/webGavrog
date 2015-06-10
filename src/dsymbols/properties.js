@@ -93,6 +93,7 @@ var Traversal = function Traversal(ds, indices, seeds) {
   var seedsLeft = I.List(seeds);
   var todo = {};
   var seen = {};
+  indices = I.List(indices);
   indices.forEach(function(i) { seen[i] = {}; todo[i] = [] });
   seen[root] = {};
 
@@ -153,7 +154,7 @@ var orbitReps = function orbitReps(ds, indices, seeds) {
 
 
 var isConnected = function isConnected(ds) {
-  return orbitReps(ds, ds.indices()).size < 2;
+  return orbitReps(ds, ds.indices()).count() < 2;
 };
 
 
