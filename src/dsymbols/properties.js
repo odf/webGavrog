@@ -93,6 +93,8 @@ var Traversal = function Traversal(ds, indices, seeds) {
   var seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
   var todo = {};
   var seen = {};
+  var emap = {};
+  var n    = 1;
   indices = (indices.constructor == Array) ? indices : indices.toJS();
   indices.forEach(function(i) { seen[i] = {}; todo[i] = [] });
   seen[root] = {};
@@ -116,6 +118,12 @@ var Traversal = function Traversal(ds, indices, seeds) {
 
         if (!seen[i][D]) {
           var Di = (i == root) ? D : ds.s(i, D);
+          var Ei = emap[Di] || n;
+
+          if (Ei == n) {
+            emap[Di] = Ei;
+            ++n;
+          }
 
           indices.forEach(function(i) {
             if (!seen[i][Di]) {
@@ -130,7 +138,7 @@ var Traversal = function Traversal(ds, indices, seeds) {
           seen[i][D]     = true;
           seen[i][Di]    = true;
 
-          return { done: false, value: [D, i, Di] };
+          return { done: false, value: [D, i, Di, emap[D], Ei] };
         }
       }
     }
@@ -227,19 +235,15 @@ var _branchings = function _branchings(ds, D) {
 
 
 var invariant = function invariant(ds) {
-  var idcs = DS.indices(ds);
-  var imap = I.Map(idcs.zip(I.Range())).toJS();
-  var best = null;
-
   var branchings = {};
   ds.elements().forEach(function(D) {
     branchings[D] = _branchings(ds, D).toJS();
   });
 
+  var best = null;
+
   ds.elements().forEach(function(D0) {
-    var trav    = Traversal(ds, idcs, [D0]);
-    var emap    = {};
-    var n       = 1;
+    var trav    = Traversal(ds, DS.indices(ds), [D0]);
     var current = [];
     var keep    = true;
 
@@ -247,30 +251,21 @@ var invariant = function invariant(ds) {
       var next = trav.next();
       if (next.done)
         break;
-      next = next.value;
-      if (next[2] == null)
+
+      var i = next.value[1];
+      var D = next.value[2];
+      if (D == null)
         continue;
 
       var m = current.length;
 
-      var Di = next[0];
-      var i  = next[1];
-      var D  = next[2];
+      current.push((i == root) ? -1 : i);
+      current.push(next.value[3]);
+      current.push(next.value[4]);
 
-      var E  = emap[D] || n;
-      if (i == root) {
-        current.push(-1); current.push(E);
-      } else {
-        current.push(imap[i]); current.push(emap[Di]); current.push(E);
-      }
-
-      if (E == n) {
-        var b = branchings[D];
-        for (var k = 0; k < b.length; ++k)
-          current.push(b[k]);
-        emap[D] = n;
-        ++n;
-      }
+      var b = branchings[D];
+      for (var k = 0; k < b.length; ++k)
+        current.push(b[k]);
 
       for (var k = m; best && keep && k < current.length; ++k) {
         var d = current[k] - best[k];
