@@ -233,7 +233,7 @@ var invariant = function invariant(ds) {
 
   var branchings = {};
   ds.elements().forEach(function(D) {
-    return branchings[D] = _branchings(ds, D).toJS();
+    branchings[D] = _branchings(ds, D).toJS();
   });
 
   ds.elements().forEach(function(D0) {
@@ -251,28 +251,34 @@ var invariant = function invariant(ds) {
       if (next[2] == null)
         continue;
 
+      var m = current.length;
+
       var Di = next[0];
       var i  = next[1];
       var D  = next[2];
 
       var E  = emap[D] || n;
-      var chunk = (i == root) ? [-1, E] : [imap[i], emap[Di], E];
+      if (i == root) {
+        current.push(-1); current.push(E);
+      } else {
+        current.push(imap[i]); current.push(emap[Di]); current.push(E);
+      }
 
       if (E == n) {
+        var b = branchings[D];
+        for (var k = 0; k < b.length; ++k)
+          current.push(b[k]);
         emap[D] = n;
-        chunk = chunk.concat(branchings[D]);
         ++n;
       }
 
-      for (var k = 0; best && keep && k < chunk.length; ++k) {
-        var d = chunk[k] - best[current.length + k];
+      for (var k = m; best && keep && k < current.length; ++k) {
+        var d = current[k] - best[k];
         if (d > 0)
           keep = false;
         else if (d < 0)
           best = null;
       }
-
-      current = current.concat(chunk);
     }
 
     if (best == null)
