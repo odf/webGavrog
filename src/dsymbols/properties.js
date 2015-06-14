@@ -228,16 +228,13 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 };
 
 
-var _branchings = function _branchings(ds, D) {
-  var idcs = DS.indices(ds);
-  return idcs.zip(idcs.rest()).map(function(p) { return ds.v(p[0], p[1], D); });
-};
-
-
 var invariant = function invariant(ds) {
+  var idcs = DS.indices(ds).toJS();
   var branchings = {};
   ds.elements().forEach(function(D) {
-    branchings[D] = _branchings(ds, D).toJS();
+    var br = branchings[D] = [];
+    for (var i = 0; i < idcs.length - 1; ++i)
+      br.push(ds.v(idcs[i], idcs[i+1], D));
   });
 
   var best = null;
