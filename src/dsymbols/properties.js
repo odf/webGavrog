@@ -228,6 +228,48 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 };
 
 
+var _compareArrays = function _compareArrays(a, b) {
+  for (var i = 0; i < a.length; ++i)
+    if (a[i] != b[i])
+      return a[i] - b[i];
+  return 0;
+};
+
+
+var _protocol = function _protocol(gen, fn) {
+  var n = -1;
+  var buffer = [];
+
+  var _advance = function _advance() {
+    var next = gen.next();
+    if (next.done)
+      return false;
+    buffer.push(fn(next.value));
+    ++n;
+    return true;
+  };
+
+  return {
+    get: function(i) {
+      while (i > n && _advance())
+        ;
+      return buffer[i];
+    },
+    flatten: function(fn) {
+      while (_advance())
+        ;
+      var result = [];
+      for (var i = 0; i < n; ++i) {
+        var entry = buffer[i];
+        for (var k = 0; k < entry.length; ++k)
+          result.push(entry[k]);
+      }
+      return result;
+    }
+  };
+};
+
+
 var invariant = function invariant(ds) {
   var idcs = DS.indices(ds).toJS();
   var branchings = {};
@@ -237,47 +279,41 @@ var invariant = function invariant(ds) {
       br.push(ds.v(idcs[i], idcs[i+1], D));
   });
 
+  var _convert = function _convert(entry) {
+    var b = branchings[entry[2]];
+    var out = [];
+    out.push(entry[1] == root ? -1 : entry[1]);
+    out.push(entry[3]);
+    out.push(entry[4]);
+    for (var i = 0; i < b.length; ++i)
+      out.push(b[i]);
+    return out;
+  };
+
   var best = null;
 
   ds.elements().forEach(function(D0) {
-    var trav    = Traversal(ds, DS.indices(ds), [D0]);
-    var current = [];
-    var keep    = true;
-
-    while (keep) {
-      var next = trav.next();
-      if (next.done)
-        break;
-
-      var i = next.value[1];
-      var D = next.value[2];
-      if (D == null)
-        continue;
-
-      var m = current.length;
-
-      current.push((i == root) ? -1 : i);
-      current.push(next.value[3]);
-      current.push(next.value[4]);
-
-      var b = branchings[D];
-      for (var k = 0; k < b.length; ++k)
-        current.push(b[k]);
-
-      for (var k = m; best && keep && k < current.length; ++k) {
-        var d = current[k] - best[k];
-        if (d > 0)
-          keep = false;
-        else if (d < 0)
-          best = null;
-      }
-    }
+    var trav = _protocol(Traversal(ds, idcs, [D0]), _convert);
 
     if (best == null)
-      best = current;
+      best = trav;
+    else {
+      for (var i = 0; ; ++i) {
+        var next = trav.get(i);
+        if (next == undefined)
+          break;
+
+        var d = _compareArrays(next, best.get(i));
+        if (d != 0) {
+          if (d < 0)
+            best = trav;
+          break;
+        }
+      }
+    }
   });
 
-  return I.List(best);
+  return I.List(best.flatten());
 };
 
 
