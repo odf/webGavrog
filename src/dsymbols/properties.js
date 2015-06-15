@@ -228,43 +228,29 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 };
 
 
-var _compareArrays = function _compareArrays(a, b) {
-  for (var i = 0; i < a.length; ++i)
-    if (a[i] != b[i])
-      return a[i] - b[i];
-  return 0;
-};
-
-
 var _protocol = function _protocol(gen, fn) {
-  var n = -1;
   var buffer = [];
 
   var _advance = function _advance() {
     var next = gen.next();
     if (next.done)
       return false;
-    buffer.push(fn(next.value));
-    ++n;
+    var tmp = fn(next.value);
+    for (var i = 0; i < tmp.length; ++i)
+      buffer.push(tmp[i]);
     return true;
   };
 
   return {
     get: function(i) {
-      while (i > n && _advance())
+      while (buffer.length <= i && _advance())
         ;
       return buffer[i];
     },
     flatten: function(fn) {
       while (_advance())
         ;
-      var result = [];
-      for (var i = 0; i < n; ++i) {
-        var entry = buffer[i];
-        for (var k = 0; k < entry.length; ++k)
-          result.push(entry[k]);
-      }
-      return result;
+      return buffer.slice();
     }
   };
 };
@@ -297,7 +283,7 @@ var invariant = function invariant(ds) {
         if (next == undefined)
           break;
 
-        var d = _compareArrays(next, best.get(i));
+        var d = next - best.get(i);
         if (d != 0) {
           if (d < 0)
             best = trav;
