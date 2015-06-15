@@ -272,21 +272,15 @@ var _protocol = function _protocol(gen, fn) {
 
 var invariant = function invariant(ds) {
   var idcs = DS.indices(ds).toJS();
-  var branchings = {};
-  ds.elements().forEach(function(D) {
-    var br = branchings[D] = [];
-    for (var i = 0; i < idcs.length - 1; ++i)
-      br.push(ds.v(idcs[i], idcs[i+1], D));
-  });
 
   var _convert = function _convert(entry) {
-    var b = branchings[entry[2]];
+    var D = entry[2];
     var out = [];
     out.push(entry[1] == root ? -1 : entry[1]);
     out.push(entry[3]);
     out.push(entry[4]);
-    for (var i = 0; i < b.length; ++i)
-      out.push(b[i]);
+    for (var i = 0; i < idcs.length - 1; ++i)
+      out.push(ds.v(idcs[i], idcs[i+1], D));
     return out;
   };
 
