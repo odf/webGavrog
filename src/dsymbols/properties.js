@@ -230,6 +230,7 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 
 var _protocol = function _protocol(ds, idcs, gen) {
   var buffer = [];
+  var max = 0;
 
   var _advance = function _advance() {
     var next = gen.next();
@@ -240,9 +241,15 @@ var _protocol = function _protocol(ds, idcs, gen) {
     var D = entry[2];
     buffer.push(entry[1] == root ? -1 : entry[1]);
     buffer.push(entry[3]);
-    buffer.push(entry[4]);
-    for (var i = 0; i < idcs.length - 1; ++i)
-      buffer.push(ds.v(idcs[i], idcs[i+1], D));
+
+    if (entry[1] != root)
+      buffer.push(entry[4]);
+
+    if (entry[4] > max) {
+      for (var i = 0; i < idcs.length - 1; ++i)
+        buffer.push(ds.v(idcs[i], idcs[i+1], D));
+      max = entry[4];
+    }
 
     return true;
   };
