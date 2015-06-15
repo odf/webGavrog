@@ -93,8 +93,6 @@ var Traversal = function Traversal(ds, indices, seeds) {
   var seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
   var todo = {};
   var seen = {};
-  var emap = {};
-  var n    = 1;
   indices = (indices.constructor == Array) ? indices : indices.toJS();
   indices.forEach(function(i) { seen[i] = {}; todo[i] = [] });
   seen[root] = {};
@@ -118,12 +116,6 @@ var Traversal = function Traversal(ds, indices, seeds) {
 
         if (!seen[i][D]) {
           var Di = (i == root) ? D : ds.s(i, D);
-          var Ei = emap[Di] || n;
-
-          if (Ei == n) {
-            emap[Di] = Ei;
-            ++n;
-          }
 
           indices.forEach(function(i) {
             if (!seen[i][Di]) {
@@ -138,7 +130,7 @@ var Traversal = function Traversal(ds, indices, seeds) {
           seen[i][D]     = true;
           seen[i][Di]    = true;
 
-          return { done: false, value: [D, i, Di, emap[D], Ei] };
+          return { done: false, value: [D, i, Di] };
         }
       }
     }
@@ -230,7 +222,8 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 
 var _protocol = function _protocol(ds, idcs, gen) {
   var buffer = [];
-  var max = 0;
+  var n = 1;
+  var emap = {};
 
   var _advance = function _advance() {
     var next = gen.next();
@@ -238,17 +231,24 @@ var _protocol = function _protocol(ds, idcs, gen) {
       return false;
     var entry = next.value;
 
+    var Di = entry[0];
+    var i = entry[1];
     var D = entry[2];
-    buffer.push(entry[1] == root ? -1 : entry[1]);
-    buffer.push(entry[3]);
+    var E = emap[D] || n;
 
-    if (entry[1] != root)
-      buffer.push(entry[4]);
+    if (E == n)
+      emap[D] = E;
 
-    if (entry[4] > max) {
+    buffer.push(i == root ? -1 : i);
+    buffer.push(emap[Di]);
+
+    if (i != root)
+      buffer.push(E);
+
+    if (E == n) {
       for (var i = 0; i < idcs.length - 1; ++i)
         buffer.push(ds.v(idcs[i], idcs[i+1], D));
-      max = entry[4];
+      ++n;
     }
 
     return true;
