@@ -228,16 +228,22 @@ var isWeaklyOriented = function isWeaklyOriented(ds) {
 };
 
 
-var _protocol = function _protocol(gen, fn) {
+var _protocol = function _protocol(ds, idcs, gen) {
   var buffer = [];
 
   var _advance = function _advance() {
     var next = gen.next();
     if (next.done)
       return false;
-    var tmp = fn(next.value);
-    for (var i = 0; i < tmp.length; ++i)
-      buffer.push(tmp[i]);
+    var entry = next.value;
+
+    var D = entry[2];
+    buffer.push(entry[1] == root ? -1 : entry[1]);
+    buffer.push(entry[3]);
+    buffer.push(entry[4]);
+    for (var i = 0; i < idcs.length - 1; ++i)
+      buffer.push(ds.v(idcs[i], idcs[i+1], D));
+
     return true;
   };
 
@@ -247,10 +253,10 @@ var _protocol = function _protocol(gen, fn) {
         ;
       return buffer[i];
     },
-    flatten: function(fn) {
+    content: function(fn) {
       while (_advance())
         ;
-      return buffer.slice();
+      return buffer;
     }
   };
 };
@@ -258,22 +264,10 @@ var _protocol = function _protocol(gen, fn) {
 
 var invariant = function invariant(ds) {
   var idcs = DS.indices(ds).toJS();
-
-  var _convert = function _convert(entry) {
-    var D = entry[2];
-    var out = [];
-    out.push(entry[1] == root ? -1 : entry[1]);
-    out.push(entry[3]);
-    out.push(entry[4]);
-    for (var i = 0; i < idcs.length - 1; ++i)
-      out.push(ds.v(idcs[i], idcs[i+1], D));
-    return out;
-  };
-
   var best = null;
 
   ds.elements().forEach(function(D0) {
-    var trav = _protocol(Traversal(ds, idcs, [D0]), _convert);
+    var trav = _protocol(ds, idcs, Traversal(ds, idcs, [D0]));
 
     if (best == null)
       best = trav;
@@ -293,7 +287,7 @@ var invariant = function invariant(ds) {
     }
   });
 
-  return I.List(best.flatten());
+  return I.List(best.content());
 };
 
 
