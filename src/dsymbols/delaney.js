@@ -408,6 +408,16 @@ module.exports = {
 
   withBranchings: function(ds, i, branchings) {
     return ds.withBranchings(i, branchings);
+  },
+
+  parseSymbols: function(text) {
+    return text
+      .split('\n')
+      .filter(function(line) {
+        var t = line.trim();
+        return t.length > 0 && t[0] != '#';
+      })
+      .map(parse);
   }
 };
 
