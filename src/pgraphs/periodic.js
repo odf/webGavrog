@@ -155,7 +155,7 @@ var _dec = function _dec(x) { return x - 1; };
 
 var _addToRow = function _addToRow(A, i, vec) {
   vec.forEach(function(x, j) {
-    A = M.update(A, i, j, function(y) { return x + y; });
+    A = M.update(A, i, j, function(y) { return Q.plus(x, y); });
   });
   return A;
 };
