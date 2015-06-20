@@ -109,7 +109,7 @@ var _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
         var t = c2s.getIn([E, i]);
         s = V.plus(s, V.minus(p, t));
       });
-      s = V.scaled(1 / orb.size, s);
+      s = V.scaled(F.div(1, orb.size), s);
       orb.forEach(function(E) {
         var t = c2s.getIn([E, i]);
         result = result.setIn([E, i], V.plus(s, t));
@@ -151,7 +151,7 @@ var _resymmetrizedGramMatrix = function _resymmetrizedGramMatrix(G, syms) {
     A = M.plus(A, M.times(S, M.times(G, M.transposed(S))));
   });
 
-  A = M.scaled(1/syms.size, A);
+  A = M.scaled(F.div(1, syms.size), A);
 
   return A;
 };
