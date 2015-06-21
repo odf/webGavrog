@@ -52,6 +52,9 @@ var fraction = function fraction(intType, promoteToInt) {
 
 
   var normalized = function normalized(n, d) {
+    if (intType.sgn(n) == 0)
+      return promote(0);
+
     var s = intType.sgn(d);
 
     if (s == 0)
