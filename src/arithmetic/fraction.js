@@ -190,5 +190,6 @@ if (require.main == module) {
     console.log(plus(q(2, 3), q(4, 3)));
     console.log(plus(q(2, 3), q(1)));
     console.log(div(q(2, 3), q(2)));
+    console.log(plus(q(2, 3), q(-2, 3)));
   }
 }

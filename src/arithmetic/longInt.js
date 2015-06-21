@@ -108,7 +108,7 @@ var longInt = function longInt(baseLength) {
 
 
   var abs = function abs(n) {
-    return make(1, n.digits);
+    return sgn(n) ? make(1, n.digits) : n;
   };
 
 
