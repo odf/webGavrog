@@ -292,9 +292,8 @@ var integer = number({
 
   downcasts: [
     [longInt.type, function(n) {
-      var val = longInt.toJS(n);
-      if (val !== undefined)
-        return checkedInt.promote(val);
+      if (checkedInt.canDowncast(n))
+        return checkedInt.promote(longInt.toJS(n));
       else
         return n;
     }]
@@ -320,9 +319,8 @@ var rational = number({
 
   downcasts: [
     [longInt.type, function(n) {
-      var val = longInt.toJS(n);
-      if (val !== undefined)
-        return checkedInt.promote(val);
+      if (checkedInt.canDowncast(n))
+        return checkedInt.promote(longInt.toJS(n));
       else
         return n;
     }],
@@ -360,4 +358,6 @@ if (require.main == module) {
   }
   console.log(t);
   console.log(num.plus(t, q));
+
+  console.log(num.div('18645978973801', '9991365345280000250718715904'));
 }

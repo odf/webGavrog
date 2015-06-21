@@ -12,6 +12,11 @@ var checkedInt = function checkedInt(longInt) {
   };
 
 
+  var canDowncast = function canDowncast(n) {
+    return n.digits < 2;
+  };
+
+
   var make = function make(n) {
     return new CheckedInt({ value: n });
   };
@@ -85,6 +90,7 @@ var checkedInt = function checkedInt(longInt) {
 
 
   return {
+    canDowncast: canDowncast,
     type    : CheckedInt,
     promote : promote,
     toJS    : toJS,
