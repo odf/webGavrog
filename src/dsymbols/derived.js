@@ -145,12 +145,43 @@ var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
 };
 
 
+var canonical = function canonical(ds) {
+  var inv = properties.invariant(ds);
+  var dim = DS.dim(ds);
+  var size = DS.size(ds);
+
+  var ops = I.Map(I.Range(0, dim+1).zip(I.Repeat(I.List())));
+  var brs = I.Map(I.Range(0, dim).zip(I.Repeat(I.List())));
+
+  var n = 0;
+  var k = -1;
+
+  while (k+1 < inv.size) {
+    var i = inv.get(++k);
+    var D = inv.get(++k);
+    var E = (i >= 0) ? inv.get(++k) : D;
+    if (E > n) {
+      for (var j = 0; j < dim; ++j)
+        brs = brs.set(j, brs.get(j).push([E, inv.get(++k)]));
+      n = E;
+    }
+    if (i >= 0)
+      ops = ops.set(i, ops.get(i).push([D, E]));
+  }
+
+  return DS.build(dim, size,
+                  function(_, i) { return ops.get(i); },
+                  function(_, i) { return brs.get(i); });
+};
+
+
 module.exports = {
   dual                  : dual,
   cover                 : cover,
   orientedCover         : orientedCover,
   minimal               : minimal,
-  barycentricSubdivision: barycentricSubdivision
+  barycentricSubdivision: barycentricSubdivision,
+  canonical             : canonical
 };
 
 
@@ -162,6 +193,7 @@ if (require.main == module) {
     console.log('    dual          : '+dual(ds));
     console.log('    minimal image : ' + minimal(ds));
     console.log('    oriented cover: ' + orientedCover(ds));
+    console.log('    canonical     : ' + canonical(ds));
     console.log();
 
     ds.indices().forEach(function(i) {
