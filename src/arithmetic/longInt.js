@@ -57,7 +57,10 @@ var longInt = function longInt(baseLength) {
 
 
   var toJS = function toJS(n) {
-    return n.sign * n.digits.first() * Math.pow(BASE, n.digits.size - 1);
+    if (n.sign == 0)
+      return 0;
+    else
+      return n.sign * n.digits.first() * Math.pow(BASE, n.digits.size - 1);
   };
 
 
