@@ -176,7 +176,7 @@ if (require.main == module) {
   var longInt = require('./longInt').custom(4);
 
   const {
-    promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mode
+    promote, negative, abs, sgn, isEven, cmp, plus, minus, times, div, mod
   } = fraction(longInt, longInt.promote);
 
   var q = function(n, d) {

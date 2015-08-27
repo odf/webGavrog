@@ -115,8 +115,8 @@ module.exports.custom = checkedInt;
 
 if (require.main == module) {
   const {
-    promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mode
-  } = checkedInt(4);
+    promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mod
+  } = checkedInt(require('./longInt').custom(4));
 
   console.log(promote(-1234));
   console.log(promote(-1234));

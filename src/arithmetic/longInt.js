@@ -357,7 +357,8 @@ module.exports.custom = longInt;
 
 if (require.main == module) {
   const {
-    promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mode
+    promote, parse,
+    negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mod
   } = longInt(4);
 
   console.log(promote(-123456789000000));
@@ -404,7 +405,7 @@ if (require.main == module) {
   console.log(mod(promote(111111111), promote(12345679)));
 
   {
-    const { promote } = longInt();
+    const { promote, times } = longInt();
     console.log(times(promote(12345678), promote(100000001)));
   }
 }
