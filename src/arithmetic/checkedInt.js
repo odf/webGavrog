@@ -1,7 +1,7 @@
 import * as I from 'immutable';
+import longInt from './longInt';
 
-
-const checkedInt = function checkedInt(longInt) {
+export default function checkedInt(L = longInt()) {
   const CheckedInt = I.Record({ value: undefined });
 
   CheckedInt.prototype.toString = function() { return `${this.value}`; };
@@ -10,7 +10,7 @@ const checkedInt = function checkedInt(longInt) {
 
   const make     = n => new CheckedInt({ value: n });
   const toJS     = n => n.value;
-  const promote  = n => longInt.shouldPromote(n) ? longInt.promote(n) : make(n);
+  const promote  = n => L.shouldPromote(n) ? L.promote(n) : make(n);
 
   const negative = n => make(-n.value);
   const abs      = n => make(Math.abs(n.value));
@@ -23,8 +23,8 @@ const checkedInt = function checkedInt(longInt) {
 
   const times = (a, b) => {
     const product = a.value * b.value;
-    if (longInt.shouldPromote(product))
-      return longInt.times(longInt.promote(a.value), longInt.promote(b.value));
+    if (L.shouldPromote(product))
+      return L.times(L.promote(a.value), L.promote(b.value));
     else
       return make(product);
   };
@@ -51,15 +51,10 @@ const checkedInt = function checkedInt(longInt) {
 };
 
 
-module.exports = checkedInt(require('./longInt'));
-
-module.exports.custom = checkedInt;
-
-
 if (require.main == module) {
   const {
     promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mod
-  } = checkedInt(require('./longInt').custom(4));
+  } = checkedInt(longInt(4));
 
   console.log(promote(-1234));
   console.log(promote(-1234));

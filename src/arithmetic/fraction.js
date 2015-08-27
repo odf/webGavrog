@@ -173,7 +173,7 @@ module.exports = fraction;
 
 
 if (require.main == module) {
-  var longInt = require('./longInt').custom(4);
+  var longInt = require('./longInt')(4);
 
   const {
     promote, negative, abs, sgn, isEven, cmp, plus, minus, times, div, mod

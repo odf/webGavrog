@@ -266,8 +266,8 @@ var number = function number(spec) {
 };
 
 
-var longInt    = require('./longInt');
-var checkedInt = require('./checkedInt');
+var longInt    = require('./longInt')();
+var checkedInt = require('./checkedInt')();
 
 var promoteToInt = function(n) {
   if (typeof n == 'string')

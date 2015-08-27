@@ -1,8 +1,7 @@
 import * as I from 'immutable';
 
 
-const longInt = function longInt(baseLength) {
-  'use strict';
+export default function longInt(baseLength = 0) {
 
   const BASE_LENGTH = (baseLength & ~1) ||
     I.Range(1)
@@ -317,11 +316,6 @@ const longInt = function longInt(baseLength) {
     mod       : mod
   };
 };
-
-
-module.exports = longInt();
-
-module.exports.custom = longInt;
 
 
 if (require.main == module) {
