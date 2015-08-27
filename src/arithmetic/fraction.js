@@ -175,24 +175,24 @@ module.exports = fraction;
 if (require.main == module) {
   var longInt = require('./longInt').custom(4);
 
-  with(module.exports(longInt, longInt.promote)) {
-    'use strict';
+  const {
+    promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mode
+  } = fraction(longInt, longInt.promote);
 
-    var q = function(n, d) {
-      return div(promote(longInt.promote(n)), promote(longInt.promote(d || 1)));
-    };
+  var q = function(n, d) {
+    return div(promote(longInt.promote(n)), promote(longInt.promote(d || 1)));
+  };
 
-    console.log(q(-1234));
-    console.log(q(2, 3));
-    console.log(q(-1234, -26));
-    console.log(q(111111, 185));
-    console.log(times(q(9, 10), q(5, 21)));
-    console.log(minus(q(3, 5), q(7, 11)));
-    console.log(div(q(111111111), q(2 * 12345679)));
-    console.log(plus(q(1, 2), q(1, 2)));
-    console.log(plus(q(2, 3), q(4, 3)));
-    console.log(plus(q(2, 3), q(1)));
-    console.log(div(q(2, 3), q(2)));
-    console.log(plus(q(2, 3), q(-2, 3)));
-  }
+  console.log(q(-1234));
+  console.log(q(2, 3));
+  console.log(q(-1234, -26));
+  console.log(q(111111, 185));
+  console.log(times(q(9, 10), q(5, 21)));
+  console.log(minus(q(3, 5), q(7, 11)));
+  console.log(div(q(111111111), q(2 * 12345679)));
+  console.log(plus(q(1, 2), q(1, 2)));
+  console.log(plus(q(2, 3), q(4, 3)));
+  console.log(plus(q(2, 3), q(1)));
+  console.log(div(q(2, 3), q(2)));
+  console.log(plus(q(2, 3), q(-2, 3)));
 }

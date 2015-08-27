@@ -356,56 +356,55 @@ module.exports.custom = longInt;
 
 
 if (require.main == module) {
-  with(module.exports.custom(4)) {
-    'use strict';
+  const {
+    promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mode
+  } = longInt(4);
 
-    console.log(promote(-123456789000000));
-    console.log(parse('1234'));
-    console.log(parse('+1234'));
-    console.log(parse('-1234'));
-    console.log(parse('-123456789000000'));
-    console.log(parse('-123456789000000'));
+  console.log(promote(-123456789000000));
+  console.log(parse('1234'));
+  console.log(parse('+1234'));
+  console.log(parse('-1234'));
+  console.log(parse('-123456789000000'));
+  console.log(parse('-123456789000000'));
 
-    console.log();
-    console.log(plus(promote(123456789), promote(876543211)));
-    console.log(minus(promote(123456789), promote(123450000)));
-    console.log(minus(promote(123456789), promote(123456790)));
-    console.log(minus(promote(123456789), promote(123456789)));
-    console.log(plus(promote(123456789), promote(-123450000)));
+  console.log();
+  console.log(plus(promote(123456789), promote(876543211)));
+  console.log(minus(promote(123456789), promote(123450000)));
+  console.log(minus(promote(123456789), promote(123456790)));
+  console.log(minus(promote(123456789), promote(123456789)));
+  console.log(plus(promote(123456789), promote(-123450000)));
 
-    console.log();
-    console.log(abs(promote(-12345)));
-    console.log(sgn(promote(1)));
-    console.log(sgn(promote(123456)));
-    console.log(sgn(promote(0)));
-    console.log(sgn(promote(0)));
-    console.log(sgn(promote(-45)));
-    console.log(sgn(promote(-12345)));
-    console.log(isEven(promote(0)));
-    console.log(isEven(promote(-12345)));
-    console.log(isEven(promote(12345678)));
+  console.log();
+  console.log(abs(promote(-12345)));
+  console.log(sgn(promote(1)));
+  console.log(sgn(promote(123456)));
+  console.log(sgn(promote(0)));
+  console.log(sgn(promote(0)));
+  console.log(sgn(promote(-45)));
+  console.log(sgn(promote(-12345)));
+  console.log(isEven(promote(0)));
+  console.log(isEven(promote(-12345)));
+  console.log(isEven(promote(12345678)));
 
-    console.log();
-    console.log(times(promote(123), promote(1001)));
-    console.log(times(promote(12345), promote(100001)));
-    console.log(times(promote(11111), promote(9)));
-    console.log(times(promote(12345679), promote(9)));
-    console.log(idiv(promote(111111), promote(37)));
-    console.log(idiv(promote(111111111), promote(37)));
-    console.log(idiv(promote(111111111), promote(12345679)));
-    console.log(idiv(promote(99980001), promote(49990001)));
-    console.log(idiv(promote(20001), promote(10001)));
-    console.log(idiv(promote(99999999), promote(9999)));
+  console.log();
+  console.log(times(promote(123), promote(1001)));
+  console.log(times(promote(12345), promote(100001)));
+  console.log(times(promote(11111), promote(9)));
+  console.log(times(promote(12345679), promote(9)));
+  console.log(idiv(promote(111111), promote(37)));
+  console.log(idiv(promote(111111111), promote(37)));
+  console.log(idiv(promote(111111111), promote(12345679)));
+  console.log(idiv(promote(99980001), promote(49990001)));
+  console.log(idiv(promote(20001), promote(10001)));
+  console.log(idiv(promote(99999999), promote(9999)));
 
-    console.log();
-    console.log(mod(promote(111), promote(37)));
-    console.log(mod(promote(111112), promote(37)));
-    console.log(mod(promote(111111111), promote(12345679)));
-  }
+  console.log();
+  console.log(mod(promote(111), promote(37)));
+  console.log(mod(promote(111112), promote(37)));
+  console.log(mod(promote(111111111), promote(12345679)));
 
-  with(module.exports) {
-    'use strict';
-
+  {
+    const { promote } = longInt();
     console.log(times(promote(12345678), promote(100000001)));
   }
 }
