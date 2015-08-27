@@ -1,46 +1,38 @@
-'use strict';
-
-var I = require('immutable');
+import * as I from 'immutable';
 
 
-var _apply = function _apply(x, f) {
-  return f(x);
-};
+const _apply = (x, f) => f(x);
 
 
-var _operationPath = function _operationPath(t, op, eOut, methods) {
+const _operationPath = function _operationPath(t, op, eOut, methods) {
   if (methods.get(t)[op])
     return;
 
-  var q = I.List([t]);
-  var backEdge = I.Map();
+  let q = I.List([t]);
+  let backEdge = I.Map();
 
   while (!q.isEmpty()) {
-    var v = q.first();
+    let v = q.first();
     q = q.rest();
 
-    var next = eOut.get(v);
+    const next = eOut.get(v);
 
     if (next) {
-      var e = next.find(function(e) {
-        return !!methods.get(e.get(1))[op];
-      });
+      const e = next.find(e => !!methods.get(e.get(1))[op]);
 
       if (e) {
         return I.List([e.get(2)]).withMutations(function(list) {
           while (backEdge.get(v)) {
-            var e = backEdge.get(v);
+            const e = backEdge.get(v);
             list.unshift(e.get(2));
             v = e.get(0);
           }
         }).reverse();
       } else {
         next
-          .filter(function(e) {
-            return !backEdge.get(e.get(1));
-          })
+          .filter(e => !backEdge.get(e.get(1)))
           .forEach(function(e) {
-            var w = e.get(1);
+            const w = e.get(1);
             q = q.push(w);
             backEdge = backEdge.set(w, e);
           });
@@ -50,77 +42,68 @@ var _operationPath = function _operationPath(t, op, eOut, methods) {
 };
 
 
-var _operationUpcastPaths = function _coercionPathPairs(upcasts, methods) {
-  var _outEdges = upcasts.groupBy(function(e) { return e.get(0); });
-  var _inEdges = upcasts.groupBy(function(e) { return e.get(1); });
-  var _types = I.Set(_outEdges.keySeq().concat(_inEdges.keySeq()));
+const _operationUpcastPaths = function _coercionPathPairs(upcasts, methods) {
+  const _outEdges = upcasts.groupBy(e => e.get(0));
+  const _inEdges  = upcasts.groupBy(e => e.get(1));
+  const _types    = I.Set(_outEdges.keySeq().concat(_inEdges.keySeq()));
 
-  var _ops = methods.reduce(
-    function(s, ops) {
-      return s.union(Object.keys(ops));
-    },
-    I.Set());
+  const _ops  = methods.reduce((s, o) => s.union(Object.keys(o)), I.Set());
+  const _path = (t, op) => _operationPath(t, op, _outEdges, methods) || [];
 
-  return I.Map(_types.map(function(t) {
-    return [t, I.Map(_ops.map(function(op) {
-      return [op, _operationPath(t, op, _outEdges, methods) || []];
-    }))];
-  }));
+  return I.Map(_types.map(t => [t, I.Map(_ops.map(op => [op, _path(t, op)]))]));
 };
 
 
-var _joiningPathPair = function _joiningPathPair(s, t, eOut, eIn) {
+const _joiningPathPair = function _joiningPathPair(s, t, eOut, eIn) {
   if (s == t)
     return I.fromJS([[],[]]);
 
-  var qs = I.List([s]);
-  var qt = I.List([t]);
-  var seenFrom = I.Map([[s, s], [t, t]]);
-  var backEdge = I.Map();
+  let qs = I.List([s]);
+  let qt = I.List([t]);
+  let seenFrom = I.Map([[s, s], [t, t]]);
+  let backEdge = I.Map();
 
-  var _step = function _step(queue, thisStart, otherStart) {
-    var v = queue.first();
+  const _step = function _step(queue, thisStart, otherStart) {
+    const v = queue.first();
     queue = queue.rest();
 
-    var next = eOut.get(v);
+    const next = eOut.get(v);
 
     if (next) {
-      var e = next.find(function(e) {
-        return seenFrom.get(e.get(1)) == otherStart;
-      });
+      const e = next.find(e => seenFrom.get(e.get(1)) == otherStart);
 
       if (e)
         return { bridge: e };
       else
         next
-        .filter(function(e) { return !seenFrom.get(e.get(1)); })
+        .filter(e => !seenFrom.get(e.get(1)))
         .forEach(function(e) {
-          var v = e.get(1);
+          const v = e.get(1);
           queue = queue.push(v);
           seenFrom = seenFrom.set(v, thisStart);
           backEdge = backEdge.set(v, e);
         });
     }
 
-    return { queue: queue };
+    return { queue };
   };
 
-  var _trace = function _trace(v) {
+  const _trace = function _trace(v) {
     return I.List().withMutations(function(list) {
       while (backEdge.get(v)) {
-        var e = backEdge.get(v);
+        const e = backEdge.get(v);
         list.unshift(e.get(2));
         v = e.get(0);
       }
     });
   };
 
-  var _tracePaths = function _tracePaths(bridge) {
+  const _tracePaths = function _tracePaths(bridge) {
     return I.List([_trace(bridge.get(0)).push(bridge.get(2)),
                    _trace(bridge.get(1))]);
   };
 
-  var tmp;
+  let tmp;
 
   while (!(qs.isEmpty() && qt.isEmpty())) {
     if (!qs.isEmpty()) {
@@ -141,112 +124,110 @@ var _joiningPathPair = function _joiningPathPair(s, t, eOut, eIn) {
 };
 
 
-var _coercionPathPairs = function _coercionPathPairs(upcasts) {
-  var _outEdges = upcasts.groupBy(function(e) { return e.get(0); });
-  var _inEdges = upcasts.groupBy(function(e) { return e.get(1); });
-  var _types = I.Set(_outEdges.keySeq().concat(_inEdges.keySeq()));
+const _coercionPathPairs = function _coercionPathPairs(upcasts) {
+  const _outEdges = upcasts.groupBy(e => e.get(0));
+  const _inEdges  = upcasts.groupBy(e => e.get(1));
+  const _types    = I.Set(_outEdges.keySeq().concat(_inEdges.keySeq()));
 
-  return I.Map(_types.map(function(s) {
-    return [s, I.Map(_types.map(function(t) {
-      return [t, _joiningPathPair(s, t, _outEdges, _inEdges)];
-    }))];
-  }));
+  const _paths = (s, t) => _joiningPathPair(s, t, _outEdges, _inEdges);
+
+  return I.Map(_types.map(s => [s, I.Map(_types.map(t => [t, _paths(s, t)]))]));
 };
 
 
-var number = function number(spec) {
-  var _methods = I.Map(spec.types.map(function(t) {
+const number = function number(spec) {
+  const _methods = I.Map(spec.types.map(function(t) {
     return [t.type, t];
   }));
-  var _coercionMatrix = _coercionPathPairs(I.fromJS(spec.upcasts));
-  var _downcasts = I.Map(I.fromJS(spec.downcasts).toJS());
-  var _upcastPaths = _operationUpcastPaths(I.fromJS(spec.upcasts), _methods);
+  const _coercionMatrix = _coercionPathPairs(I.fromJS(spec.upcasts));
+  const _downcasts = I.Map(I.fromJS(spec.downcasts).toJS());
+  const _upcastPaths = _operationUpcastPaths(I.fromJS(spec.upcasts), _methods);
 
-  var _type = function _type(n) {
+  const _type = function _type(n) {
     if (n != null && _methods.get(n.constructor))
       return n.constructor;
   };
 
-  var _num = function _num(n) {
+  const _num = function _num(n) {
     if (_type(n))
       return n;
     else
       return spec.promote(n);
   };
 
-  var _coerce = function _coerce(a, b) {
+  const _coerce = function _coerce(a, b) {
     a = _num(a);
     b = _num(b);
 
     if (_type(a) == _type(b))
       return [a, b];
     else {
-      var paths = _coercionMatrix.getIn([_type(a), _type(b)]);
+      const paths = _coercionMatrix.getIn([_type(a), _type(b)]);
       return [paths.get(0).reduce(_apply, a), paths.get(1).reduce(_apply, b)];
     }
   };
 
-  var _upcast = function _upcast(n, op) {
+  const _upcast = function _upcast(n, op) {
     n = _num(n);
     return _upcastPaths.getIn([_type(n), op]).reduce(_apply, n);
   };
 
-  var _downcast = function _downcast(n) {
-    var f = _downcasts.get(_type(n));
+  const _downcast = function _downcast(n) {
+    const f = _downcasts.get(_type(n));
     if (!f)
       return n;
     else {
-      var val = f(n);
+      const val = f(n);
       return _type(val) == _type(n) ? val : _downcast(val);
     }
   };
 
-  var _property = function _property(name) {
+  const _property = function _property(name) {
     return function f(n) {
       n = _upcast(n, name);
       return _methods.get(_type(n))[name](n);
     };
   };
 
-  var _unary = function _unary(name) {
-    var _f = _property(name);
+  const _unary = function _unary(name) {
+    const _f = _property(name);
     return function f(n) {
       return _downcast(_f(n));
     };
   };
 
-  var _relation = function _unary(name) {
+  const _relation = function _unary(name) {
     return function f(a, b) {
-      var t = _coerce(a, b);
-      var a = _upcast(t[0], name);
-      var b = _upcast(t[1], name);
-      return _methods.get(_type(a))[name](a, b);
+      const t  = _coerce(a, b);
+      const au = _upcast(t[0], name);
+      const bu = _upcast(t[1], name);
+      return _methods.get(_type(au))[name](au, bu);
     };
   };
 
-  var _binary = function _unary(name) {
-    var _f = _relation(name);
+  const _binary = function _unary(name) {
+    const _f = _relation(name);
     return function f(a, b) {
       return _downcast(_f(a, b));
     };
   };
 
-  var toJS     = _property('toJS');
-  var sgn      = _property('sgn');
-  var isEven   = _property('isEven');
+  const toJS     = _property('toJS');
+  const sgn      = _property('sgn');
+  const isEven   = _property('isEven');
 
-  var negative = _unary('negative');
-  var abs      = _unary('abs');
-  var inverse  = _unary('inverse');
+  const negative = _unary('negative');
+  const abs      = _unary('abs');
+  const inverse  = _unary('inverse');
 
-  var cmp      = _relation('cmp');
+  const cmp      = _relation('cmp');
 
-  var plus     = _binary('plus');
-  var minus    = _binary('minus');
-  var times    = _binary('times');
-  var div      = _binary('div');
-  var idiv     = _binary('idiv');
-  var mod      = _binary('mod');
+  const plus     = _binary('plus');
+  const minus    = _binary('minus');
+  const times    = _binary('times');
+  const div      = _binary('div');
+  const idiv     = _binary('idiv');
+  const mod      = _binary('mod');
 
   return {
     toJS    : toJS,
@@ -266,10 +247,10 @@ var number = function number(spec) {
 };
 
 
-var longInt    = require('./longInt')();
-var checkedInt = require('./checkedInt')(longInt);
+const longInt    = require('./longInt')();
+const checkedInt = require('./checkedInt')(longInt);
 
-var promoteToInt = function(n) {
+const promoteToInt = function(n) {
   if (typeof n == 'string')
     return longInt.parse(n);
   else if (typeof n == 'number' && n % 1 == 0)
@@ -279,7 +260,7 @@ var promoteToInt = function(n) {
 };
 
 
-var integer = number({
+const integer = number({
   promote: promoteToInt,
 
   types: [checkedInt, longInt],
@@ -301,10 +282,10 @@ var integer = number({
 });
 
 
-var fraction = require('./fraction')(integer, promoteToInt);
+const fraction = require('./fraction')(integer, promoteToInt);
 
 
-var rational = number({
+const rational = number({
   promote: promoteToInt,
 
   types: [checkedInt, longInt, fraction],
@@ -325,7 +306,7 @@ var rational = number({
         return n;
     }],
     [fraction.type, function(q) {
-      var n = fraction.asInteger(q);
+      const n = fraction.asInteger(q);
       if (n !== undefined)
         return n;
       else
@@ -339,20 +320,20 @@ module.exports = rational;
 
 
 if (require.main == module) {
-  var num = module.exports;
+  const num = module.exports;
 
-  var t = 1;
-  for (var i = 1; i < 50; ++i)
+  let t = 1;
+  for (let i = 1; i < 50; ++i)
     t = num.times(t, i);
   console.log(t);
-  for (var i = 1; i < 50; ++i)
+  for (let i = 1; i < 50; ++i)
     t = num.idiv(t, i);
   console.log(t);
   console.log(num.idiv('111111111', '12345679'));
 
-  var t = 0;
-  var q = 1;
-  for (var i = 0; i < 128; ++i) {
+  t = 0;
+  let q = 1;
+  for (let i = 0; i < 128; ++i) {
     q = num.div(q, 2);
     t = num.plus(t, q);
   }
