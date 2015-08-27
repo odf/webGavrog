@@ -51,9 +51,9 @@ const checkedInt = function checkedInt(longInt) {
 };
 
 
-export default checkedInt(require('./longInt'));
+module.exports = checkedInt(require('./longInt'));
 
-export const custom = checkedInt;
+module.exports.custom = checkedInt;
 
 
 if (require.main == module) {
