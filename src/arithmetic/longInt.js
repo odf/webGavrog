@@ -1,35 +1,35 @@
-var I = require('immutable');
+import * as I from 'immutable';
 
 
-var longInt = function longInt(baseLength) {
+const longInt = function longInt(baseLength) {
   'use strict';
 
-  var BASE_LENGTH = (baseLength & ~1) ||
+  const BASE_LENGTH = (baseLength & ~1) ||
     I.Range(1)
     .filter(function(n) {
       if (n % 2)
         return false;
-      var b = Math.pow(10, n);
+      const b = Math.pow(10, n);
       return 2 * b - 2 == 2 * b - 1 || -2 * b + 2 == -2 * b + 1;
     })
     .first() - 2;
 
-  var BASE = Math.pow(10, BASE_LENGTH);
-  var HALFBASE = Math.sqrt(BASE);
+  const BASE = Math.pow(10, BASE_LENGTH);
+  const HALFBASE = Math.sqrt(BASE);
 
-  var ZEROES = ('' + BASE).slice(1);
+  const ZEROES = ('' + BASE).slice(1);
 
 
-  var LongInt = I.Record({
+  const LongInt = I.Record({
     sign  : undefined,
     digits: undefined
   });
 
 
-  var _toString = function _toString(r) {
+  const _toString = function _toString(r) {
     return r.reverse()
       .map(function(d, i) {
-        var s = '' + d;
+        const s = '' + d;
         return (i == 0 ? '' : ZEROES.slice(s.length)) + s;
       })
       .join('');
@@ -43,12 +43,9 @@ var longInt = function longInt(baseLength) {
       return (this.sign < 0 ? '-' : '') + _toString(this.digits);
   };
 
-  var shouldPromote = function shouldPromote(n) {
-    return Math.abs(n) >= BASE;
-  };
+  const shouldPromote = n => Math.abs(n) >= BASE;
 
-
-  var make = function make(sign, digits) {
+  const make = function make(sign, digits) {
     return new LongInt({
       sign  : sign,
       digits: digits
@@ -56,7 +53,7 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var toJS = function toJS(n) {
+  const toJS = function toJS(n) {
     if (n.sign == 0)
       return 0;
     else
@@ -64,11 +61,11 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var promote = function promote(n) {
-    var sign = (n > 0) - (n < 0);
+  const promote = function promote(n) {
+    const sign = (n > 0) - (n < 0);
     n = Math.abs(n);
 
-    var digits = I.List().withMutations(function(list) {
+    const digits = I.List().withMutations(function(list) {
       while (n > 0) {
         list.push(n % BASE);
         n = Math.floor(n / BASE);
@@ -79,17 +76,16 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var parse = function parse(literal) {
+  const parse = function parse(literal) {
     if (!literal.match(/^[+-]?\d+$/))
       throw new Error("expected an integer literal, got "+literal);
 
-    var sign = literal[0] == '-' ? -1 : 1;
-    var start = literal.match(/^[+-]/) ? 1 : 0;
+    const start = literal.match(/^[+-]/) ? 1 : 0;
 
-    var digits = I.List().withMutations(function(list) {
-      var n = literal.length;
+    const digits = I.List().withMutations(function(list) {
+      let n = literal.length;
       while (n > start) {
-        var m = Math.max(n - BASE_LENGTH, start);
+        const m = Math.max(n - BASE_LENGTH, start);
         list.push(parseInt(literal.slice(m, n)));
         n = m;
       }
@@ -98,39 +94,20 @@ var longInt = function longInt(baseLength) {
         list.pop();
     });
 
-    if (digits.size == 0)
-      sign = 0;
-
+    const sign = digits.size == 0 ? 0 : literal[0] == '-' ? -1 : 1;
+    
     return make(sign, digits);
   };
 
 
-  var negative = function negative(n) {
-    return make(-n.sign, n.digits);
-  };
+  const negative = n => make(-n.sign, n.digits);
+  const abs      = n => sgn(n) ? make(1, n.digits) : n;
+  const sgn      = n => n.sign;
+  const _isZero  = n => n.sign == 0;
+  const isEven   = n => _isZero(n) || n.digits.first() % 2 == 0;
 
 
-  var abs = function abs(n) {
-    return sgn(n) ? make(1, n.digits) : n;
-  };
-
-
-  var sgn = function sgn(n) {
-    return n.sign;
-  };
-
-
-  var _isZero = function _isZero(n) {
-    return n.sign == 0;
-  };
-
-
-  var isEven = function isEven(n) {
-    return _isZero(n) || n.digits.first() % 2 == 0;
-  };
-
-
-  var _cmp = function _cmp(r, s) {
+  const _cmp = function _cmp(r, s) {
     if (r.size != s.size)
       return r.size - s.size;
 
@@ -141,12 +118,12 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var _plus = function _plus(r, s) {
+  const _plus = function _plus(r, s) {
     return I.List().withMutations(function(result) {
-      var carry = 0;
-      var i = 0;
+      let carry = 0;
+      let i = 0;
       while (i < r.size || i < s.size || carry) {
-        var digit = (r.get(i) || 0) + (s.get(i) || 0) + carry;
+        const digit = (r.get(i) || 0) + (s.get(i) || 0) + carry;
         carry = digit >= BASE;
         result.push(digit % BASE);
         ++i;
@@ -155,12 +132,12 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var _minus = function _minus(r, s) {
+  const _minus = function _minus(r, s) {
     return I.List().withMutations(function(result) {
-      var borrow = 0;
-      var i = 0;
+      let borrow = 0;
+      let i = 0;
       while (i < r.size || i < s.size) {
-        var digit = (r.get(i) || 0) - (s.get(i) || 0) - borrow;
+        const digit = (r.get(i) || 0) - (s.get(i) || 0) - borrow;
         borrow = digit < 0;
         result.push((digit + BASE) % BASE);
         ++i;
@@ -174,7 +151,7 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var cmp = function cmp(a, b) {
+  const cmp = function cmp(a, b) {
     if (_isZero(a))
       return -b.sign;
     else if (_isZero(b))
@@ -186,7 +163,7 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var plus = function plus(a, b) {
+  const plus = function plus(a, b) {
     if (_isZero(a))
       return b;
     else if (_isZero(b))
@@ -198,7 +175,7 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var minus = function minus(a, b) {
+  const minus = function minus(a, b) {
     if (_isZero(a))
       return negative(b);
     else if (_isZero(b))
@@ -206,7 +183,7 @@ var longInt = function longInt(baseLength) {
     else if (a.sign != b.sign)
       return plus(a, negative(b));
     else {
-      var d = _cmp(a.digits, b.digits);
+      const d = _cmp(a.digits, b.digits);
       if (d == 0)
         return promote(0);
       else if (d < 0)
@@ -217,37 +194,31 @@ var longInt = function longInt(baseLength) {
   }
 
 
-  var _lo = function _lo(d) {
-    return d % HALFBASE;
-  };
+  const _lo = d => d % HALFBASE;
+  const _hi = d => Math.floor(d / HALFBASE);
 
 
-  var _hi = function _hi(d) {
-    return Math.floor(d / HALFBASE);
-  };
-
-
-  var _digitByDigit = function _digitByDigit(a, b) {
+  const _digitByDigit = function _digitByDigit(a, b) {
     if (b < BASE / a)
       return [a*b, 0];
     else {
-      var alo = _lo(a);
-      var ahi = _hi(a);
-      var blo = _lo(b);
-      var bhi = _hi(b);
+      const alo = _lo(a);
+      const ahi = _hi(a);
+      const blo = _lo(b);
+      const bhi = _hi(b);
 
-      var m = alo * bhi + blo * ahi;
-      var lo = alo * blo + _lo(m) * HALFBASE;
+      const m = alo * bhi + blo * ahi;
+      const lo = alo * blo + _lo(m) * HALFBASE;
 
       return [lo % BASE, ahi * bhi + _hi(m) + (lo >= BASE)];
     }
   };
 
-  var _seqByDigit = function _seqByDigit(s, d) {
+  const _seqByDigit = function _seqByDigit(s, d) {
     return I.List().withMutations(function(result) {
-      var carry = 0;
-      for (var i = 0; i < s.size; ++i) {
-        var t = _digitByDigit(d, s.get(i));
+      let carry = 0;
+      for (let i = 0; i < s.size; ++i) {
+        const t = _digitByDigit(d, s.get(i));
         result.push(t[0] + carry);
         carry = t[1];
       }
@@ -257,21 +228,21 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var _times = function _times(r, s) {
+  const _times = function _times(r, s) {
     return I.List().withMutations(function(result) {
-      var tmp = I.List([]);
-      for (var i = 0; i < r.size; ++i) {
+      let tmp = I.List([]);
+      for (let i = 0; i < r.size; ++i) {
         tmp = _plus(tmp, _seqByDigit(s, r.get(i)));
         result.push(tmp.first());
         tmp = tmp.rest();
       }
-      for (var i = 0; i < tmp.size; ++i)
+      for (let i = 0; i < tmp.size; ++i)
         result.push(tmp.get(i));
     });
   };
 
 
-  var times = function times(a, b) {
+  const times = function times(a, b) {
     if (_isZero(a))
       return a;
     else if (_isZero(b))
@@ -281,18 +252,18 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var _idiv = function _idivmod(r, s) {
-    var scale = Math.floor(BASE / (s.last() + 1));
-    var rs = _seqByDigit(r, scale);
-    var ss = _seqByDigit(s, scale);
-    var m = ss.size;
-    var d = ss.last() + 1;
+  const _idiv = function _idiv(r, s) {
+    const scale = Math.floor(BASE / (s.last() + 1));
+    const rs = _seqByDigit(r, scale);
+    const ss = _seqByDigit(s, scale);
+    const m = ss.size;
+    const d = ss.last() + 1;
 
-    var q = I.List();
-    var h = I.List();
-    var t = rs;
+    let q = I.List();
+    let h = I.List();
+    let t = rs;
 
-    var f, n;
+    let f, n;
 
     while (true) {
       while (q.last() == 0)
@@ -313,8 +284,8 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var idiv = function idiv(a, b) {
-    var d = _cmp(a.digits, b.digits);
+  const idiv = function idiv(a, b) {
+    const d = _cmp(a.digits, b.digits);
     if (d < 0)
       return promote(0);
     else if (d == 0)
@@ -324,9 +295,7 @@ var longInt = function longInt(baseLength) {
   };
 
 
-  var mod = function mod(a, b) {
-    return minus(a, times(idiv(a, b), b));
-  };
+  const mod = (a, b) => minus(a, times(idiv(a, b), b));
 
 
   return {

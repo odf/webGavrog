@@ -1,93 +1,36 @@
-var I = require('immutable');
-
-var checkedInt = function checkedInt(longInt) {
-  'use strict';
-
-  var CheckedInt = I.Record({
-    value: undefined
-  });
-
-  CheckedInt.prototype.toString = function() {
-    return ''+this.value;
-  };
+import * as I from 'immutable';
 
 
-  var canDowncast = function canDowncast(n) {
-    return n.digits < 2;
-  };
+const checkedInt = function checkedInt(longInt) {
+  const CheckedInt = I.Record({ value: undefined });
 
+  CheckedInt.prototype.toString = function() { return `${this.value}`; };
 
-  var make = function make(n) {
-    return new CheckedInt({ value: n });
-  };
+  const canDowncast = n => n.digits <= 1;
 
+  const make     = n => new CheckedInt({ value: n });
+  const toJS     = n => n.value;
+  const promote  = n => longInt.shouldPromote(n) ? longInt.promote(n) : make(n);
 
-  var toJS = function toJS(n) {
-    return n.value;
-  };
+  const negative = n => make(-n.value);
+  const abs      = n => make(Math.abs(n.value));
+  const sgn      = n => (n.value > 0) - (n.value < 0);
+  const isEven   = n => n.value % 2 == 0;
 
+  const cmp   = (a, b) => a.value - b.value;
+  const plus  = (a, b) => promote(a.value + b.value);
+  const minus = (a, b) => promote(a.value - b.value);
 
-  var promote = function promote(n) {
-    if (longInt.shouldPromote(n))
-      return longInt.promote(n);
-    else
-      return make(n);
-  };
-
-
-  var negative = function negative(n) {
-    return make(-n.value);
-  };
-
-
-  var abs = function abs(n) {
-    return make(Math.abs(n.value));
-  };
-
-
-  var sgn = function sgn(n) {
-    return (n.value > 0) - (n.value < 0);
-  };
-
-
-  var isEven = function isEven(n) {
-    return n.value % 2 == 0;
-  };
-
-
-  var cmp = function cmp(a, b) {
-    return a.value - b.value;
-  };
-
-
-  var plus = function plus(a, b) {
-    return promote(a.value + b.value);
-  };
-
-
-  var minus = function minus(a, b) {
-    return promote(a.value - b.value);
-  };
-
-
-  var times = function times(a, b) {
-    var product = a.value * b.value;
+  const times = (a, b) => {
+    const product = a.value * b.value;
     if (longInt.shouldPromote(product))
       return longInt.times(longInt.promote(a.value), longInt.promote(b.value));
     else
       return make(product);
   };
 
-
-  var idiv = function idiv(a, b) {
-    return make(Math.floor(a.value / b.value));
-  };
-
-
-  var mod = function mod(a, b) {
-    return make(a.value % b.value);
-  };
-
+  const idiv = (a, b) => make(Math.floor(a.value / b.value));
+  const mod  = (a, b) => make(a.value % b.value);
 
   return {
     canDowncast: canDowncast,
@@ -108,9 +51,9 @@ var checkedInt = function checkedInt(longInt) {
 };
 
 
-module.exports = checkedInt(require('./longInt'));
+export default checkedInt(require('./longInt'));
 
-module.exports.custom = checkedInt;
+export const custom = checkedInt;
 
 
 if (require.main == module) {
