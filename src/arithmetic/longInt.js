@@ -42,6 +42,8 @@ export default function longInt(baseLength = 0) {
       return (this.sign < 0 ? '-' : '') + _toString(this.digits);
   };
 
+  LongInt.prototype._type = `LongInt(${BASE_LENGTH})`;
+
   const shouldPromote = n => Math.abs(n) >= BASE;
 
   const make = function make(sign, digits) {
