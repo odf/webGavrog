@@ -6,48 +6,32 @@ export default function checkedInt(longInt) {
   CheckedInt.prototype.toString = function() { return `${this.value}`; };
   CheckedInt.prototype._type = `CheckedInt(${longInt._type})`;
 
-  const canDowncast = n => n.digits <= 1;
-
-  const make     = n => new CheckedInt({ value: n });
-  const toJS     = n => n.value;
-  const promote  = n => longInt.shouldPromote(n) ? longInt.promote(n) : make(n);
-
-  const negative = n => make(-n.value);
-  const abs      = n => make(Math.abs(n.value));
-  const sgn      = n => (n.value > 0) - (n.value < 0);
-  const isEven   = n => n.value % 2 == 0;
-
-  const cmp   = (a, b) => a.value - b.value;
-  const plus  = (a, b) => promote(a.value + b.value);
-  const minus = (a, b) => promote(a.value - b.value);
-
-  const times = (a, b) => {
-    const product = a.value * b.value;
-    if (longInt.shouldPromote(product))
-      return longInt.times(longInt.promote(a.value), longInt.promote(b.value));
-    else
-      return make(product);
-  };
-
-  const idiv = (a, b) => make(Math.floor(a.value / b.value));
-  const mod  = (a, b) => make(a.value % b.value);
+  const make    = n => new CheckedInt({ value: n });
+  const promote = n => longInt.shouldPromote(n) ? longInt.promote(n) : make(n);
 
   return {
-    canDowncast: canDowncast,
-    type    : CheckedInt,
-    promote : promote,
-    toJS    : toJS,
-    negative: negative,
-    abs     : abs,
-    sgn     : sgn,
-    isEven  : isEven,
-    cmp     : cmp,
-    plus    : plus,
-    minus   : minus,
-    times   : times,
-    idiv    : idiv,
-    mod     : mod
-  };
+    type       : CheckedInt,
+    canDowncast: n => n.digits <= 1,
+    promote    : promote,
+    toJS       : n => n.value,
+    negative   : n => make(-n.value),
+    abs        : n => make(Math.abs(n.value)),
+    sgn        : n => (n.value > 0) - (n.value < 0),
+    isEven     : n => n.value % 2 == 0,
+    cmp        : (a, b) => a.value - b.value,
+    plus       : (a, b) => promote(a.value + b.value),
+    minus      : (a, b) => promote(a.value - b.value),
+    idiv       : (a, b) => make(Math.floor(a.value / b.value)),
+    mod        : (a, b) => make(a.value % b.value),
+
+    times(a, b) {
+      const product = a.value * b.value;
+      if (longInt.shouldPromote(product))
+        return longInt.times(longInt.promote(a.value), longInt.promote(b.value));
+      else
+        return make(product);
+    }
+  }
 };
 
 
