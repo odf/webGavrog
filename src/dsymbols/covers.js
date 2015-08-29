@@ -1,53 +1,43 @@
-'use strict';
-
-var DS          = require('./delaney');
-var fundamental = require('./fundamental');
-var derived     = require('./derived');
-var generators  = require('../common/generators');
-var cosets      = require('../fpgroups/cosets');
+import * as DS          from './delaney';
+import * as fundamental from './fundamental';
+import * as derived     from './derived';
+import * as generators  from '../common/generators';
+import * as cosets      from '../fpgroups/cosets';
 
 
-var coverForTable = function coverForTable(ds, table, edgeToWord) {
-  return derived.cover(ds, table.size, function(k, i, D) {
-    return (edgeToWord.getIn([D, i]) || [])
-      .reduce(function(k, g) { return table.getIn([k, g]); }, k);
-  });
+export function coverForTable(ds, table, edgeToWord) {
+  return derived.cover(ds, table.size, (k, i, D) => (
+    (edgeToWord.getIn([D, i]) || []).reduce((k, g) => table.getIn([k, g]), k))
+  );
 };
 
 
-var subgroupCover = function subgroupCover(ds, subgroupGens) {
-  var fun = fundamental.fundamentalGroup(ds);
-  var table = cosets.cosetTable(fun.nrGenerators, fun.relators, subgroupGens);
+export function subgroupCover(ds, subgroupGens) {
+  const fun = fundamental.fundamentalGroup(ds);
+  const table = cosets.cosetTable(fun.nrGenerators, fun.relators, subgroupGens);
 
   return coverForTable(ds, table, fun.edge2word);
 };
 
 
-var finiteUniversalCover = function finiteUniversalCover(ds) {
+export function finiteUniversalCover(ds) {
   return subgroupCover(ds, []);
 };
 
 
-var covers = function covers(ds, maxDegree) {
-  var fun = fundamental.fundamentalGroup(ds);
-  var tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDegree);
+export function covers(ds, maxDeg) {
+  const fun = fundamental.fundamentalGroup(ds);
+  const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
 
   return generators.results(tableGenerator)
-    .map(function(table) { return coverForTable(ds, table, fun.edge2word); });
-};
-
-
-module.exports = {
-  coverForTable: coverForTable,
-  subgroupCover: subgroupCover,
-  covers       : covers
+    .map(table => coverForTable(ds, table, fun.edge2word));
 };
 
 
 if (require.main == module) {
-  var ds = DS.parse('<1.1:1:1,1,1:4,3>');
-  var n = parseInt(process.argv[2]) || 2;
+  const n = parseInt(process.argv[2]) || 2;
+  const ds = DS.parse('<1.1:1:1,1,1:4,3>');
 
-  covers(ds, n).forEach(function(ds) { console.log('' + ds); });
-  console.log('' + finiteUniversalCover(ds));
+  covers(ds, n).forEach(ds => console.log(`${ds}`));
+  console.log(`${finiteUniversalCover(ds)}`);
 }
