@@ -1,23 +1,16 @@
-'use strict';
+const _swap = (a, i, j) => [a[i], a[j]] = [a[j], a[i]];
 
 
-var _swap = function(a, i, j) {
-  var t = a[i];
-  a[i] = a[j];
-  a[j] = t;
-};
-
-
-module.exports = function(n) {
-  var i, j;
-
-  var p = [];
-  for (i = 1; i <= n; ++i)
+export default function(n) {
+  const p = [];
+  for (let i = 1; i <= n; ++i)
     p.push(i);
 
-  var result = [];
+  const result = [];
 
   while (true) {
+    let i, j;
+
     result.push(p.slice());
 
     for (i = n-2; i >= 0 && p[i] > p[i+1]; --i)
