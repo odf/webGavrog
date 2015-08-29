@@ -31,7 +31,7 @@ const skip = function skip(spec, stack) {
 };
 
 
-const backtracker = function backtracker(spec, stack) {
+export function backtracker(spec, stack) {
   if (stack === undefined)
     return backtracker(spec, I.List([I.List([spec.root, I.List([]), 0])]));
   else {
@@ -45,7 +45,7 @@ const backtracker = function backtracker(spec, stack) {
 };
 
 
-const results = function results(gen, pred) {
+export function results(gen, pred) {
   let g = gen;
 
   return I.Seq({
@@ -65,7 +65,7 @@ const results = function results(gen, pred) {
 };
 
 
-const empty = function empty() {
+export function empty() {
   return backtracker({
     root    : null,
     extract : () => {},
@@ -74,20 +74,12 @@ const empty = function empty() {
 };
 
 
-const singleton = function singleton(x) {
+export function singleton(x) {
   return backtracker({
     root    : x,
     extract : x => x,
     children: () => {}
   });
-};
-
-
-module.exports = {
-  backtracker: backtracker,
-  results    : results,
-  empty      : empty,
-  singleton  : singleton
 };
 
 
