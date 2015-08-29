@@ -136,9 +136,7 @@ const _coercionPathPairs = function _coercionPathPairs(upcasts) {
 
 
 const number = function number(spec) {
-  const _methods = I.Map(spec.types.map(function(t) {
-    return [t.type, t];
-  }));
+  const _methods = I.Map(spec.types.map(t => [t.type, t]));
   const _coercionMatrix = _coercionPathPairs(I.fromJS(spec.upcasts));
   const _downcasts = I.Map(I.fromJS(spec.downcasts).toJS());
   const _upcastPaths = _operationUpcastPaths(I.fromJS(spec.upcasts), _methods);
@@ -148,12 +146,7 @@ const number = function number(spec) {
       return n.constructor;
   };
 
-  const _num = function _num(n) {
-    if (_type(n))
-      return n;
-    else
-      return spec.promote(n);
-  };
+  const _num = n => _type(n) ? n : spec.promote(n);
 
   const _coerce = function _coerce(a, b) {
     a = _num(a);
@@ -191,9 +184,7 @@ const number = function number(spec) {
 
   const _unary = function _unary(name) {
     const _f = _property(name);
-    return function f(n) {
-      return _downcast(_f(n));
-    };
+    return n => _downcast(_f(n));
   };
 
   const _relation = function _unary(name) {
@@ -207,42 +198,26 @@ const number = function number(spec) {
 
   const _binary = function _unary(name) {
     const _f = _relation(name);
-    return function f(a, b) {
-      return _downcast(_f(a, b));
-    };
+    return (a, b) => _downcast(_f(a, b));
   };
 
-  const toJS     = _property('toJS');
-  const sgn      = _property('sgn');
-  const isEven   = _property('isEven');
-
-  const negative = _unary('negative');
-  const abs      = _unary('abs');
-  const inverse  = _unary('inverse');
-
-  const cmp      = _relation('cmp');
-
-  const plus     = _binary('plus');
-  const minus    = _binary('minus');
-  const times    = _binary('times');
-  const div      = _binary('div');
-  const idiv     = _binary('idiv');
-  const mod      = _binary('mod');
-
   return {
-    toJS    : toJS,
-    sgn     : sgn,
-    isEven  : isEven,
-    negative: negative,
-    abs     : abs,
-    inverse : inverse,
-    cmp     : cmp,
-    plus    : plus,
-    minus   : minus,
-    times   : times,
-    div     : div,
-    idiv    : idiv,
-    mod     : mod
+    toJS    : _property('toJS'),
+    sgn     : _property('sgn'),
+    isEven  : _property('isEven'),
+
+    negative: _unary('negative'),
+    abs     : _unary('abs'),
+    inverse : _unary('inverse'),
+
+    cmp     : _relation('cmp'),
+
+    plus    : _binary('plus'),
+    minus   : _binary('minus'),
+    times   : _binary('times'),
+    div     : _binary('div'),
+    idiv    : _binary('idiv'),
+    mod     : _binary('mod')
   };
 };
 
@@ -266,18 +241,18 @@ const integer = number({
   types: [checkedInt, longInt],
 
   upcasts: [
-    [checkedInt.type, longInt.type, function(n) {
-      return longInt.promote(checkedInt.toJS(n));
-    }]
+    [
+      checkedInt.type,
+      longInt.type,
+      n => longInt.promote(checkedInt.toJS(n))
+    ]
   ],
 
   downcasts: [
-    [longInt.type, function(n) {
-      if (checkedInt.canDowncast(n))
-        return checkedInt.promote(longInt.toJS(n));
-      else
-        return n;
-    }]
+    [
+      longInt.type,
+      n => checkedInt.canDowncast(n) ? checkedInt.promote(longInt.toJS(n)) : n
+    ]
   ]
 });
 
@@ -291,27 +266,35 @@ const rational = number({
   types: [checkedInt, longInt, fraction],
 
   upcasts: [
-    [checkedInt.type, longInt.type, function(n) {
-      return longInt.promote(checkedInt.toJS(n));
-    }],
-    [checkedInt.type, fraction.type, fraction.promote],
-    [longInt.type, fraction.type, fraction.promote]
+    [
+      checkedInt.type,
+      longInt.type,
+      n => longInt.promote(checkedInt.toJS(n))
+    ],
+    [
+      checkedInt.type,
+      fraction.type,
+      fraction.promote
+    ],
+    [
+      longInt.type,
+      fraction.type,
+      fraction.promote
+    ]
   ],
 
   downcasts: [
-    [longInt.type, function(n) {
-      if (checkedInt.canDowncast(n))
-        return checkedInt.promote(longInt.toJS(n));
-      else
-        return n;
-    }],
-    [fraction.type, function(q) {
-      const n = fraction.asInteger(q);
-      if (n !== undefined)
-        return n;
-      else
-        return q;
-    }]
+    [
+      longInt.type,
+      n => checkedInt.canDowncast(n) ? checkedInt.promote(longInt.toJS(n)) : n
+    ],
+    [
+      fraction.type,
+      q => {
+        const n = fraction.asInteger(q);
+        return (n !== undefined) ? n : q
+      }
+    ]
   ]
 });
 
