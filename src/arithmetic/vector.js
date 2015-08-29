@@ -1,11 +1,9 @@
-'use strict';
-
-var I = require('immutable');
+import * as I from 'immutable';
 
 
-var vector = function vector(scalar, zero) {
+export default function vector(scalar, zero) {
 
-  var Vector = I.Record({
+  const Vector = I.Record({
     size: undefined,
     data: undefined
   });
@@ -18,12 +16,10 @@ var vector = function vector(scalar, zero) {
     return this.size == other.size && this.data.equals(other.data);
   };
 
-  var get = function get(v, i) {
-    return v.data.get(i);
-  };
+  const get = (v, i) => v.data.get(i);
 
-  var make = function make(data) {
-    var tmp = I.List(data);
+  const make = function make(data) {
+    const tmp = I.List(data);
     if (tmp.size == 0)
       throw new Error('must have positive size');
 
@@ -33,60 +29,49 @@ var vector = function vector(scalar, zero) {
     });
   };
 
-  var constant = function constant(size, value) {
-    var x = value === undefined ? zero : value;
+  const constant = function constant(size, value) {
+    const x = value === undefined ? zero : value;
     return make(I.List(I.Repeat(x, size)));
   };
 
-  var set = function set(v, i, x) {
-    return make(v.data.set(i, x));
-  };
+  const set    = (v, i, x)  => make(v.data.set(i, x));
+  const update = (v, i, fn) => make(v.data.update(i, fn));
 
-  var update = function update(v, i, fn) {
-    return make(v.data.update(i, fn));
-  };
-
-  var plus = function plus(v, w) {
+  const plus = function plus(v, w) {
     if (v.size != w.size)
       throw new Error('shapes do not match');
 
-    return make(I.Range(0, v.size).map(function(i) {
-      return scalar.plus(get(v, i), get(w, i));
-    }));
+    return make(I.Range(0, v.size).map(i => scalar.plus(get(v, i), get(w, i))));
   };
 
-  var minus = function minus(v, w) {
+  const minus = function minus(v, w) {
     if (v.size != w.size)
       throw new Error('shapes do not match');
 
-    return make(I.Range(0, v.size).map(function(i) {
-      return scalar.minus(get(v, i), get(w, i));
-    }));
+    return make(I.Range(0, v.size).map(i => scalar.minus(get(v, i), get(w, i))));
   };
 
-  var scaled = function scaled(f, v) {
-    return make(v.data.map(function(x) { return scalar.times(f, x); }));
-  };
+  const scaled = (f, v) => make(v.data.map(x => scalar.times(f, x)));
 
-  var cmp = function cmp(v, w) {
-    var d = I.Range(0, Math.min(v.size, w.size))
-      .map(function(i) { return scalar.cmp(get(v, i), get(w, i)); })
-      .filter(function(x) { return !!x; })
+  const cmp = function cmp(v, w) {
+    const d = I.Range(0, Math.min(v.size, w.size))
+      .map(i => scalar.cmp(get(v, i), get(w, i)))
+      .filter(x => !!x)
       .first();
 
     return d || v.size - w.size;
   };
 
-  var dotProduct = function dotProduct(v, w) {
+  const dotProduct = function dotProduct(v, w) {
     if (v.size != w.size)
       throw new Error('shapes do not match');
 
     return I.Range(0, v.size)
-      .map(function(i) { return scalar.times(get(v, i), get(w, i)); })
+      .map(i => scalar.times(get(v, i), get(w, i)))
       .reduce(scalar.plus, zero);
   };
 
-  var crossProduct = function crossProduct(v, w) {
+  const crossProduct = function crossProduct(v, w) {
     if (v.size != 3 || w.size != 3)
       throw new Error('both vector must be three-dimensional');
 
@@ -100,30 +85,22 @@ var vector = function vector(scalar, zero) {
     ]);
   };
 
-  var norm = function norm(v) {
-    return Math.sqrt(scalar.toJS(dotProduct(v, v)));
-  };
-
-  var normalized = function normalized(v) {
-    return scaled(1 / norm(v), v);
-  };
+  const norm       = v => Math.sqrt(scalar.toJS(dotProduct(v, v)));
+  const normalized = v => scaled(1 / norm(v), v);
 
   return {
-    get       : get,
-    make      : make,
-    constant  : constant,
-    set       : set,
-    update    : update,
-    plus      : plus,
-    minus     : minus,
-    scaled    : scaled,
-    cmp       : cmp,
-    dotProduct: dotProduct,
-    crossProduct: crossProduct,
-    norm      : norm,
-    normalized: normalized
+    get,
+    make,
+    constant,
+    set,
+    update,
+    plus,
+    minus,
+    scaled,
+    cmp,
+    dotProduct,
+    crossProduct,
+    norm,
+    normalized
   };
 };
-
-
-module.exports = vector;
