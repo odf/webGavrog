@@ -51,7 +51,7 @@ const pmake = function pmake(rank, parent) {
 };
 
 
-export function partition(pairs) {
+export default function partition(pairs = []) {
   return pairs.reduce((p, [a, b]) => p.union(a, b), pmake(I.Map(), I.Map()));
 };
 
