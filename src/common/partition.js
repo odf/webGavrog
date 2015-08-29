@@ -1,37 +1,30 @@
-'use strict';
+import * as I from 'immutable';
 
 
-var I = require('immutable');
-
-
-var get = function get(impl, x) {
-  var root = x;
-  var p, z, t;
+const get = function get(impl, x) {
+  let root = x;
 
   while (impl.parent.get(root) !== undefined)
     root = impl.parent.get(root);
 
-  p = impl.parent;
-  for (z = x; z != root;) {
-    t = z;
-    z = p.get(z);
-    p.set(t, root);
-  }
+  let p = impl.parent;
+  for (let z = x; z != root;)
+    [z, p] = [p.get(z), p.set(z, root)];
   impl.parent = p;
 
   return root;
 };
 
 
-var union = function union(impl, x, y) {
-  var x0 = get(impl, x);
-  var y0 = get(impl, y);
+const union = function union(impl, x, y) {
+  const x0 = get(impl, x);
+  const y0 = get(impl, y);
 
   if (I.is(x0, y0))
     return impl;
   else {
-    var rx = impl.rank.get(x0) || 0;
-    var ry = impl.rank.get(y0) || 0;
+    const rx = impl.rank.get(x0) || 0;
+    const ry = impl.rank.get(y0) || 0;
 
     if (rx < ry)
       return pmake(impl.rank, impl.parent.set(x0, y0));
@@ -43,36 +36,29 @@ var union = function union(impl, x, y) {
 };
 
 
-var pmake = function pmake(rank, parent) {
-  var _impl = {
+const pmake = function pmake(rank, parent) {
+  const _impl = {
     rank  : rank,
     parent: parent
   };
 
   return {
-    get  : function(x) { return get(_impl, x); },
-    union: function(x, y) { return union(_impl, x, y); },
-    isTrivial: function() { return _impl.parent.size == 0; },
-    toString: function() { return 'partition('+_impl.parent+')'; }
+    get      : x      => get(_impl, x),
+    union    : (x, y) => union(_impl, x, y),
+    isTrivial: ()     => _impl.parent.size == 0,
+    toString : ()     => `partition(${_impl.parent})`
   };
 };
 
 
-var partition = function partition(pairs) {
-  var p = pmake(I.Map(), I.Map());
-  (pairs || []).forEach(function(pair) {
-    p = p.union(pair[0], pair[1]);
-  });
-  return p;
+export function partition(pairs) {
+  return pairs.reduce((p, [a, b]) => p.union(a, b), pmake(I.Map(), I.Map()));
 };
 
 
-module.exports = partition;
-
-
 if (require.main == module) {
-  var p = partition([[1,2],[3,4],[5,6],[7,8],[2,3],[1,6]]);
+  const p = partition([[1,2],[3,4],[5,6],[7,8],[2,3],[1,6]]);
+  console.log(`${p}`);
 
-  for (var i = 0; i < 10; ++i)
-    console.log('p.get('+i+') = '+p.get(i));
+  I.Range(0, 10).forEach(i => console.log(`p.get(${i}) = ${p.get(i)}`));
 }
