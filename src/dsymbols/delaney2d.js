@@ -1,105 +1,95 @@
-'use strict';
-
-var I  = require('immutable');
-var DS = require('./delaney');
-var p  = require('./properties');
-var d  = require('./derived');
-var cv = require('./covers');
-var Q  = require('../arithmetic/number');
+import * as I  from 'immutable';
+import * as DS from './delaney';
+import * as p  from './properties';
+import * as d  from './derived';
+import * as cv from './covers';
+import * as Q  from '../arithmetic/number';
 
 
-var _assert = function _assert(condition, message) {
+const _assert = function _assert(condition, message) {
   if (!condition)
     throw new Error(message || 'assertion error');
 };
 
 
-var _map1dOrbits = function _map1dOrbits(fn, ds) {
-  return ds.indices().flatMap(function(i) {
-    return ds.indices().flatMap(function(j) {
-      if (j > i)
-        return p.orbitReps(ds, [i, j], ds.elements()).map(function(D) {
-          return fn(i, j, D);
-        });
-    });
-  });
+const _map1dOrbits = function _map1dOrbits(fn, ds) {
+  return ds.indices().flatMap(i => (
+    ds.indices()
+      .filter(j => j > i)
+      .flatMap(j => (
+        p.orbitReps(ds, [i, j], ds.elements())
+          .map(D => fn(i, j, D))
+      ))
+  ));
 };
 
 
-var _loopless = function _loopless(ds, i, j, D) {
-  return p.orbit(ds, [i, j], D).every(function(E) {
-    return ds.s(i, E) != E && ds.s(j, E) != E;
-  });
+const _loopless = function _loopless(ds, i, j, D) {
+  return p.orbit(ds, [i, j], D)
+    .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 };
 
 
-var _unbranched = function _unbranched(ds) {
-  return _map1dOrbits(ds.v, ds).every(function(v) { return v == 1; });
-};
+const _unbranched = ds => _map1dOrbits(ds.v, ds).every(v => v == 1);
+
+const _sum = numbers => numbers.reduce(Q.plus, 0);
 
 
-var _sum = function _sum(numbers) {
-  return numbers.reduce(Q.plus, 0);
-};
-
-
-var curvature = function curvature(ds) {
+export function curvature(ds) {
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
   _assert(p.isConnected(ds), 'must be connected');
 
-  var orbitContribution = function orbitContribution(i, j, D) {
-    return Q.div((_loopless(ds, i, j, D) ? 2 : 1), ds.v(i, j, D));
-  };
+  const orbitContribution = (i, j, D) => (
+    Q.div((_loopless(ds, i, j, D) ? 2 : 1), ds.v(i, j, D))
+  );
 
   return Q.minus(_sum(_map1dOrbits(orbitContribution, ds)), DS.size(ds));
 };
 
 
-var isEuclidean = function isEuclidean(ds) {
+export function isEuclidean(ds) {
   return Q.cmp(curvature(ds), 0) == 0;
 };
 
 
-var isHyperbolic = function isHyperbolic(ds) {
+export function isHyperbolic(ds) {
   return Q.cmp(curvature(ds), 0) < 0;
 };
 
 
-var isSpherical = function isSpherical(ds) {
+export function isSpherical(ds) {
   if (Q.cmp(curvature(ds), 0) <= 0)
     return false;
 
-  var dso = d.orientedCover(ds);
-  var cones = _map1dOrbits(dso.v, dso)
-    .filter(function(v) { return v > 1; })
-    .toJS();
-  var n = cones.length;
+  const dso   = d.orientedCover(ds);
+  const cones = _map1dOrbits(dso.v, dso).filter(v => v > 1).toJS();
+  const n     = cones.length;
 
   return n > 2 || (n == 2 && cones[0] == cones[1]);
 };
 
 
-var orbifoldSymbol = function orbifoldSymbol(ds) {
-  var orbitType = function(i, j, D) {
-    return { v: ds.v(i, j, D), c: _loopless(ds, i, j, D) };
-  };
+export function orbifoldSymbol(ds) {
+  const orbitType = (i, j, D) => (
+    { v: ds.v(i, j, D), c: _loopless(ds, i, j, D) }
+  );
 
-  var v        = function(o) { return o.v; };
-  var isCone   = function(o) { return o.v > 1 && o.c; };
-  var isCorner = function(o) { return o.v > 1 && !o.c; };
+  const v        = o => o.v;
+  const isCone   = o => o.v > 1 && o.c;
+  const isCorner = o => o.v > 1 && !o.c;
 
-  var types   = _map1dOrbits(orbitType, ds);
-  var cones   = types.filter(isCone).map(v);
-  var corners = types.filter(isCorner).map(v);
+  const types   = _map1dOrbits(orbitType, ds);
+  const cones   = types.filter(isCone).map(v);
+  const corners = types.filter(isCorner).map(v);
 
-  var cost = Q.toJS(Q.minus(2, _sum([
+  const cost = Q.toJS(Q.minus(2, _sum([
     Q.div(curvature(ds), 2),
-    _sum(cones.map(function(v) { return Q.div(v - 1, v); })),
-    _sum(corners.map(function(v) { return Q.div(v - 1, 2*v); })),
+    _sum(cones.map(v => Q.div(v - 1, v))),
+    _sum(corners.map(v => Q.div(v - 1, 2*v))),
     (p.isLoopless(ds) ? 0 : 1)
   ])));
 
-  var sym = I.List().concat(
+  const sym = I.List().concat(
     cones.sort().reverse(),
     (p.isLoopless(ds) ? [] : ['*']),
     corners.sort().reverse(),
@@ -113,28 +103,18 @@ var orbifoldSymbol = function orbifoldSymbol(ds) {
 };
 
 
-var toroidalCover = function toroidalCover(ds) {
+export function toroidalCover(ds) {
   _assert(isEuclidean(ds), 'must be euclidean');
 
-  var dso = d.orientedCover(ds);
-  var degree = _map1dOrbits(dso.v, dso).max();
+  const dso = d.orientedCover(ds);
+  const degree = _map1dOrbits(dso.v, dso).max();
 
   return cv.covers(dso, degree).filter(_unbranched).first();
 };
 
 
-module.exports = {
-  curvature     : curvature,
-  isEuclidean   : isEuclidean,
-  isSpherical   : isSpherical,
-  isHyperbolic  : isHyperbolic,
-  orbifoldSymbol: orbifoldSymbol,
-  toroidalCover : toroidalCover
-};
-
-
 if (require.main == module) {
-  var test = function test(ds) {
+  const test = function test(ds) {
     console.log('ds = '+ds);
     console.log('  curvature is '+curvature(ds));
     console.log('  symbol is '+(isEuclidean(ds) ? '' : 'not ')+'euclidean');
@@ -142,9 +122,9 @@ if (require.main == module) {
     console.log('  symbol is '+(isSpherical(ds) ? '' : 'not ')+'spherical');
     console.log('  orbifold symbol = '+orbifoldSymbol(ds));
     if (isEuclidean(ds)) {
-      var dst = toroidalCover(ds);
-      var curv = curvature(dst);
-      var orbs = orbifoldSymbol(dst);
+      const dst = toroidalCover(ds);
+      const curv = curvature(dst);
+      const orbs = orbifoldSymbol(dst);
 
       console.log('  toroidal cover = '+dst);
 
