@@ -175,33 +175,26 @@ const _fromData = function _fromData(dim, sData, vData) {
 };
 
 
-const build = function build(dim, size, pairingsFn, branchingsFn) {
+export function build(dim, size, pairingsFn, branchingsFn) {
   const s = I.List().setSize((dim+1) * size);
   const v = I.List().setSize(dim * size);
   const ds0 = _fromData(dim, s, v);
 
   const ds1 = I.Range(0, dim+1).reduce(
-    function(tmp, i) {
-      return tmp.withPairings(i, pairingsFn(ds0, i));
-    },
+    (tmp, i) => tmp.withPairings(i, pairingsFn(ds0, i)),
     ds0);
 
   const ds2 = I.Range(0, dim).reduce(
-    function(tmp, i) {
-      return tmp.withBranchings(i, branchingsFn(ds1, i));
-    },
+    (tmp, i) => tmp.withBranchings(i, branchingsFn(ds1, i)),
     ds1);
 
   return ds2;
 };
 
 
-const _parseInts = function _parseInts(str) {
-  return str.trim().split(/\s+/).map(function(s) { return parseInt(s); });
-};
+export function parse(str) {
+  const _parseInts = str => str.trim().split(/\s+/).map(s => parseInt(s));
 
-
-const parse = function parse(str) {
   const parts = str.trim().replace(/^</, '').replace(/>$/, '').split(/:/);
   if (parts[0].match(/\d+\.\d+/))
     parts.shift();
@@ -216,8 +209,8 @@ const parse = function parse(str) {
   const s = new Array((dim+1) * size);
   const v = new Array(dim * size);
 
-  const get = function get(a, i, D) { return a[i * size + D - 1]; };
-  const set = function set(a, i, D, x) { a[i * size + D - 1] = x; };
+  const get = (a, i, D)    => a[i * size + D - 1];
+  const set = (a, i, D, x) => { a[i * size + D - 1] = x; };
 
   for (let i = 0; i <= dim; ++i) {
     let k = -1;
@@ -262,14 +255,12 @@ const parse = function parse(str) {
 };
 
 
-const orbitReps1 = function orbitReps1(ds, i) {
-  return ds.elements().filter(function(D) {
-    return (ds.s(i, D) || D) >= D;
-  });
+export function orbitReps1(ds, i) {
+  return ds.elements().filter(D => (ds.s(i, D) || D) >= D);
 };
 
 
-const orbit2 = function orbit2(ds, i, j, D) {
+export function orbit2(ds, i, j, D) {
   return I.Set().withMutations(function(set) {
     let E = D;
     do {
@@ -283,7 +274,7 @@ const orbit2 = function orbit2(ds, i, j, D) {
 };
 
 
-const orbitReps2 = function orbitReps2(ds, i, j) {
+export function orbitReps2(ds, i, j) {
   const seen = new Array(ds.elements().size + 1);
   const result = [];
 
@@ -307,22 +298,20 @@ const orbitReps2 = function orbitReps2(ds, i, j) {
 };
 
 
-const stringify = function stringify(ds) {
+export function stringify(ds) {
   const sDefs = ds.indices()
-    .map(function(i) {
-      return orbitReps1(ds, i)
-        .map(function(D) { return ds.s(i, D) || 0; })
-        .join(' ');
-    })
+    .map(i => (
+      orbitReps1(ds, i)
+        .map(D => ds.s(i, D) || 0)
+        .join(' ')))
     .join(',');
 
   const mDefs = ds.indices()
-    .filter(function(i) { return ds.isIndex(i+1); })
-    .map(function(i) {
-      return orbitReps2(ds, i, i+1)
-        .map(function(D) { return m(ds, i, i+1, D) || 0; })
-        .join(' ');
-    })
+    .filter(i => ds.isIndex(i+1))
+    .map(i => (
+      orbitReps2(ds, i, i+1)
+        .map(D => m(ds, i, i+1, D) || 0)
+        .join(' ')))
     .join(',');
 
   const n = ds.elements().size;
@@ -332,7 +321,7 @@ const stringify = function stringify(ds) {
 };
 
 
-const r = function r(ds, i, j, D) {
+export function r(ds, i, j, D) {
   let k = 0;
   let E = D;
 
@@ -347,49 +336,55 @@ const r = function r(ds, i, j, D) {
 };
 
 
-const m = function m(ds, i, j, D) {
+export function m(ds, i, j, D) {
   return ds.v(i, j, D) * r(ds, i, j, D);
 };
 
+export function isElement(ds, D) {
+  return ds.isElement(D);
+};
 
-module.exports = {
-  isElement: function(ds, D)       { return ds.isElement(D); },
-  elements : function(ds)          { return ds.elements(); },
-  isIndex  : function(ds, i)       { return ds.isIndex(i); },
-  indices  : function(ds)          { return ds.indices(); },
-  s        : function(ds, i, D)    { return ds.s(i, D); },
-  v        : function(ds, i, j, D) { return ds.v(i, j, D); },
+export function elements(ds) {
+  return ds.elements();
+};
 
-  r        : r,
-  m        : m,
-  dim      : function(ds) { return ds.indices().size - 1; },
-  size     : function(ds) { return ds.elements().size; },
+export function isIndex(ds, i) {
+  return ds.isIndex(i);
+};
 
-  build    : build,
-  parse    : parse,
-  stringify: stringify,
+export function indices(ds) {
+  return ds.indices();
+};
 
-  orbitReps1: orbitReps1,
-  orbit2    : orbit2,
-  orbitReps2: orbitReps2,
+export function s(ds, i, D) {
+  return ds.s(i, D);
+};
 
-  withPairings: function(ds, i, pairings) {
-    return ds.withPairings(i, pairings);
-  },
+export function v(ds, i, j, D) {
+  return ds.v(i, j, D);
+};
 
-  withBranchings: function(ds, i, branchings) {
-    return ds.withBranchings(i, branchings);
-  },
+export function dim(ds) {
+  return ds.indices().size - 1;
+};
 
-  parseSymbols: function(text) {
-    return text
-      .split('\n')
-      .filter(function(line) {
-        const t = line.trim();
-        return t.length > 0 && t[0] != '#';
-      })
-      .map(parse);
-  }
+export function size(ds) {
+  return ds.elements().size;
+};
+
+export function withPairings(ds, i, pairings) {
+  return ds.withPairings(i, pairings);
+};
+
+export function withBranchings(ds, i, branchings) {
+  return ds.withBranchings(i, branchings);
+};
+
+export function parseSymbols(text) {
+  return text
+    .split('\n')
+    .filter(line => !line.match(/^\s*(#.*)?$/))
+    .map(parse);
 };
 
 
