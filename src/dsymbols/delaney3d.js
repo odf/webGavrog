@@ -137,25 +137,24 @@ export function pseudoToroidalCover(ds) {
   const categorized = I.List().concat(cores, z6, d6).groupBy(a => a[0]);
 
   const candidates = I.List('z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' '))
-    .flatMap(type => categorized.get(type) || []);
+    .flatMap(type => categorized.get(type) || [])
+    .map(([type, table]) => table);
 
-  const mapFn = map => (...args) => map.getIn(args);
+  const test = inv => inv.map(Q.sgn).equals(I.List([0,0,0]));
 
-  const good = candidates.find(function(entry) {
-    const table = entry[1];
+  const good = candidates.find(function(table) {
     const domain = table.keySeq();
     const stab = stabilizer(
       domain.first(),
       fg.nrGenerators,
       fg.relators,
       domain,
-      mapFn(table)
+      (...args) => table.getIn(args)
     );
-    const inv = _invariants(stab.generators.size, stab.relators);
-    return inv.map(Q.sgn).equals(I.List([0,0,0]));
+    return test(_invariants(stab.generators.size, stab.relators));
   });
 
-  return good && covers.coverForTable(ds, good[1], fg.edge2word);
+  return good && covers.coverForTable(ds, good, fg.edge2word);
 };
 
 
