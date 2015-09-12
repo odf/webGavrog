@@ -1,127 +1,91 @@
-'use strict';
-
-var I = require('immutable');
-var DS = require('./delaney');
-var properties = require('./properties');
-var permutations = require('../common/permutations');
+import * as I            from 'immutable';
+import * as DS           from './delaney';
+import * as properties   from './properties';
+import permutations      from '../common/permutations';
 
 
-var dual = function dual(ds) {
-  var d = DS.dim(ds);
+export function dual(ds) {
+  const d = DS.dim(ds);
+  const n = DS.size(ds);
 
   return DS.build(
-    d, DS.size(ds),
-    function(_, i) {
-      return ds.elements().map(function(D) {
-        return [D, ds.s(d - i, D)];
-      });
-    },
-    function(tmp, i) {
-      return ds.elements().map(function(D) {
-        return [D, ds.v(d-i-1, d-i, D)];
-      });
-    }
-  );
+    d, n,
+    (_, i) => ds.elements().map(D => [D, ds.s(d - i, D)]),
+    (_, i) => ds.elements().map(D => [D, ds.v(d-i-1, d-i, D)]));
 };
 
 
-var cover = function cover(ds, nrSheets, transferFn) {
-  var n = DS.size(ds);
+export function cover(ds, nrSheets, fn) {
+  const d = DS.dim(ds);
+  const n = DS.size(ds);
 
   return DS.build(
-    DS.dim(ds), n * nrSheets,
-    function(_, i) {
-      return ds.elements().flatMap(function(D) {
-        return I.Range(0, nrSheets).map(function(k) {
-          return [k * n + D, transferFn(k, i, D) * n + ds.s(i, D)];
-        });
-      });
-    },
-    function(tmp, i) {
-      var j = i+1;
-      return DS.orbitReps2(tmp, i, j).map(function(D) {
-        var D0 = (D - 1) % n + 1;
-        var v = (DS.m(ds, i, j, D0) || 0) / DS.r(tmp, i, j, D);
-        return [D, v];
-      });
-    }
-  );
+    d, n * nrSheets,
+    (_, i) => ds.elements().flatMap(D => (
+      I.Range(0, nrSheets).map(k => [k * n + D, fn(k, i, D) * n + ds.s(i, D)]))),
+    (tmp, i) => DS.orbitReps2(tmp, i, i+1).map(D => (
+      [D, (DS.m(ds, i, i+1, (D - 1) % n + 1) || 0) / DS.r(tmp, i, i+1, D)])));
 };
 
 
-var orientedCover = function orientedCover(ds) {
+export function orientedCover(ds) {
   if (properties.isOriented(ds))
     return ds;
   else {
-    var ori = properties.partialOrientation(ds);
-
-    return cover(ds, 2, function(k, i, D) {
-      return ori.get(D) == ori.get(ds.s(i, D)) ? 1 - k : k;
-    });
+    const ori = properties.partialOrientation(ds);
+    return cover(
+      ds, 2, (k, i, D) => ori.get(D) == ori.get(ds.s(i, D)) ? 1 - k : k);
   }
 };
 
 
-var minimal = function minimal(ds) {
+export function minimal(ds) {
   if (properties.isMinimal(ds))
     return ds;
   else {
-    var p = properties.typePartition(ds);
-    var reps = ds.elements().filter(function(D) { return p.get(D) == D; });
-    var emap = I.Map(reps.zip(I.Range(1)));
-    var imap = I.Map(I.Range().zip(ds.indices()));
+    const p = properties.typePartition(ds);
+    const reps = ds.elements().filter(D => p.get(D) == D);
+    const emap = I.Map(reps.zip(I.Range(1)));
+    const imap = I.Map(I.Range().zip(ds.indices()));
 
     return DS.build(
       DS.dim(ds), reps.count(),
-      function(_, i) {
-        return reps.map(function(D) {
-          return [emap.get(D), emap.get(p.get(ds.s(imap.get(i), D)))];
-        });
-      },
-      function(tmp, i) {
-        return reps.map(function(D) {
-          var v = 
-            (DS.m(ds, imap.get(i), imap.get(i+1), D) || 0)
-            /
-            DS.r(tmp, i, i+1, emap.get(D));
-          return [emap.get(D), v];
-        });
-      }
-    );
+      (_, i) => reps.map(D => (
+        [emap.get(D), emap.get(p.get(ds.s(imap.get(i), D)))])),
+      (tmp, i) => reps.map(D => (
+        [emap.get(D), 
+         (DS.m(ds, imap.get(i), imap.get(i+1), D) || 0)
+         /
+         DS.r(tmp, i, i+1, emap.get(D))])));
   }
 };
 
 
-var _apply = function _apply(p, i) {
-  if (i < 0 || i >= p.size)
-    return i;
-  else
-    return p.get(i) - 1;
-};
+const _applyPerm = (p, i) => (i < 0 || i >= p.size) ? i : p.get(i) - 1;
 
 
-var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
+export function barycentricSubdivision(ds, splitDim) {
   if (splitDim == 0)
     return ds;
   else {
-    var dim = DS.dim(ds);
-    var perms = I.List(permutations(splitDim + 1)).map(I.List);
-    var pidx = I.Map(I.List(perms).zip(I.Range()));
-    var n = DS.size(ds);
-    var m = perms.size;
+    const dim = DS.dim(ds);
+    const perms = I.List(permutations(splitDim + 1)).map(I.List);
+    const pidx = I.Map(I.List(perms).zip(I.Range()));
+    const n = DS.size(ds);
+    const m = perms.size;
 
     return DS.build(
       DS.dim(ds), n * m,
       function(_, i) {
         return ds.elements().flatMap(function(D) {
           return I.Range(0, m).map(function(j) {
-            var p = perms.get(j);
+            const p = perms.get(j);
             if (i < splitDim) {
-              var pi = p.set(i, p.get(i+1)).set(i+1, p.get(i));
-              var k = pidx.get(pi);
+              const pi = p.set(i, p.get(i+1)).set(i+1, p.get(i));
+              const k = pidx.get(pi);
               return [n * j + D, n * k + D];
             } else {
-              var E = ds.s(_apply(p, i), D);
+              const E = ds.s(_applyPerm(p, i), D);
               return [n * j + D, n * j + E];
             }
           });
@@ -130,12 +94,12 @@ var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
       function(tmp, i) {
         return ds.elements().flatMap(function(D) {
           return I.Range(0, m).map(function(j) {
-            var p = perms.get(j);
-            var v;
+            const p = perms.get(j);
+            let v;
             if (i < splitDim - 1)
               v = 1;
             else
-              v = ds.v(_apply(p, i), _apply(p, i+1), D);
+              v = ds.v(_applyPerm(p, i), _applyPerm(p, i+1), D);
             return [n * j + D, v];
           });
         });
@@ -145,23 +109,22 @@ var barycentricSubdivision = function barycentricSubdivision(ds, splitDim) {
 };
 
 
-var canonical = function canonical(ds) {
-  var inv = properties.invariant(ds);
-  var dim = DS.dim(ds);
-  var size = DS.size(ds);
+export function canonical(ds) {
+  const inv = properties.invariant(ds);
+  const dim = DS.dim(ds);
+  const size = DS.size(ds);
 
-  var ops = I.Map(I.Range(0, dim+1).zip(I.Repeat(I.List())));
-  var brs = I.Map(I.Range(0, dim).zip(I.Repeat(I.List())));
-
-  var n = 0;
-  var k = -1;
+  let ops = I.Map(I.Range(0, dim+1).zip(I.Repeat(I.List())));
+  let brs = I.Map(I.Range(0, dim).zip(I.Repeat(I.List())));
+  let n   = 0;
+  let k   = -1;
 
   while (k+1 < inv.size) {
-    var i = inv.get(++k);
-    var D = inv.get(++k);
-    var E = (i >= 0) ? inv.get(++k) : D;
+    const i = inv.get(++k);
+    const D = inv.get(++k);
+    const E = (i >= 0) ? inv.get(++k) : D;
     if (E > n) {
-      for (var j = 0; j < dim; ++j)
+      for (let j = 0; j < dim; ++j)
         brs = brs.set(j, brs.get(j).push([E, inv.get(++k)]));
       n = E;
     }
@@ -169,24 +132,12 @@ var canonical = function canonical(ds) {
       ops = ops.set(i, ops.get(i).push([D, E]));
   }
 
-  return DS.build(dim, size,
-                  function(_, i) { return ops.get(i); },
-                  function(_, i) { return brs.get(i); });
-};
-
-
-module.exports = {
-  dual                  : dual,
-  cover                 : cover,
-  orientedCover         : orientedCover,
-  minimal               : minimal,
-  barycentricSubdivision: barycentricSubdivision,
-  canonical             : canonical
+  return DS.build(dim, size, (_, i) => ops.get(i), (_, i) => brs.get(i));
 };
 
 
 if (require.main == module) {
-  var test = function(ds) {
+  const test = function(ds) {
     console.log('ds = '+ds);
     console.log();
 
