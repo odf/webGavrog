@@ -1,30 +1,24 @@
-'use strict';
+import * as I from 'immutable';
 
-var I = require('immutable');
-
-var util       = require('../common/util');
-var freeWords  = require('../fpgroups/freeWords');
-var DS         = require('./delaney');
-var properties = require('./properties');
+import * as util       from '../common/util';
+import * as freeWords  from '../fpgroups/freeWords';
+import * as DS         from './delaney';
+import * as properties from './properties';
 
 
-var _other = function _other(a, b, c) {
-  return a == c ? b : a;
-};
+const _other = (a, b, c) => a == c ? b : a;
 
 
-var _glue = function _glue(ds, bnd, D, i) {
-  var E = ds.s(i, D);
+const _glue = function _glue(ds, bnd, D, i) {
+  const E = ds.s(i, D);
 
   return bnd.withMutations(function(map) {
     ds.indices()
-      .filter(function(j) {
-        return j != i && bnd.getIn([D, i, j]);
-      })
+      .filter(j => j != i && bnd.getIn([D, i, j]))
       .forEach(function(j) {
-        var oppD = bnd.getIn([D, i, j]);
-        var oppE = bnd.getIn([E, i, j]);
-        var count = D == E ? oppD.count : oppD.count + oppE.count;
+        const oppD = bnd.getIn([D, i, j]);
+        const oppE = bnd.getIn([E, i, j]);
+        const count = D == E ? oppD.count : oppD.count + oppE.count;
         map.setIn([oppD.chamber, oppD.index, _other(i, j, oppD.index)],
                   { chamber: oppE.chamber, index: oppE.index, count: count });
         map.setIn([oppE.chamber, oppE.index, _other(i, j, oppE.index)],
@@ -35,16 +29,16 @@ var _glue = function _glue(ds, bnd, D, i) {
 };
 
 
-var _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
-  var onMirror = ds.s(i, D) == D;
+const _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
+  const onMirror = ds.s(i, D) == D;
 
   return I.List().withMutations(function(list) {
     ds.indices().forEach(function(j) {
-      var opp = bnd.getIn([D, i, j]);
+      const opp = bnd.getIn([D, i, j]);
 
       if (opp) {
-        var E = opp.chamber;
-        var k = opp.index;
+        const E = opp.chamber;
+        const k = opp.index;
         if (onMirror == (ds.s(k, E) == E))
           list.push(I.List([E, k, _other(i, j, k)]));
       }
@@ -53,21 +47,21 @@ var _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
 };
 
 
-var _glueRecursively = function _glueRecursively(ds, bnd, facets) {
-  var boundary = bnd;
-  var todo = I.List(facets).map(I.List);
-  var glued = I.List();
+const _glueRecursively = function _glueRecursively(ds, bnd, facets) {
+  let boundary = bnd;
+  let todo = I.List(facets).map(I.List);
+  let glued = I.List();
 
   while (!todo.isEmpty()) {
-    var next = todo.first();
+    const next = todo.first();
     todo = todo.shift();
 
-    var D = next.get(0);
-    var i = next.get(1);
-    var j = next.get(2);
-    var m = DS.m(ds, i, j, D) * (ds.s(i, D) == D ? 1 : 2);
+    const D = next.get(0);
+    const i = next.get(1);
+    const j = next.get(2);
+    const m = DS.m(ds, i, j, D) * (ds.s(i, D) == D ? 1 : 2);
 
-    var opp = boundary.getIn(next);
+    const opp = boundary.getIn(next);
 
     if (opp && (j == null || opp.count == m)) {
       todo = todo.concat(_todoAfterGluing(ds, boundary, D, i));
@@ -80,15 +74,15 @@ var _glueRecursively = function _glueRecursively(ds, bnd, facets) {
 };
 
 
-var _spanningTree = function _spanningTree(ds) {
-  var seen = I.Set();
-  var todo = I.List();
-  var root = properties.traversal.root;
+const _spanningTree = function _spanningTree(ds) {
+  const root = properties.traversal.root;
+  let seen = I.Set();
+  let todo = I.List();
 
   properties.traversal(ds, ds.indices(), ds.elements()).forEach(function(e) {
-    var D = e[0];
-    var i = e[1];
-    var E = e[2];
+    const D = e[0];
+    const i = e[1];
+    const E = e[2];
 
     if (i != root && !seen.contains(E))
       todo = todo.push(I.List([D, i]));
@@ -99,11 +93,11 @@ var _spanningTree = function _spanningTree(ds) {
 };
 
 
-var _initialBoundary = function _initialBoundary(ds) {
-  return I.Map().withMutations(function(map) {
-    ds.elements().forEach(function(D) {
-      ds.indices().forEach(function(i) {
-        ds.indices().forEach(function(j) {
+const _initialBoundary = function _initialBoundary(ds) {
+  return I.Map().withMutations(map => {
+    ds.elements().forEach(D => {
+      ds.indices().forEach(i => {
+        ds.indices().forEach(j => {
           if (i != j)
             map.setIn([D, i, j], { chamber: D, index: j, count: 1 });
         });
@@ -113,17 +107,10 @@ var _initialBoundary = function _initialBoundary(ds) {
 };
 
 
-var innerEdges = function innerEdges(ds) {
-  return _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
-    .get('glued')
-    .map(function(a) { return a.slice(0, 2); });
-};
-
-
-var _traceWord = function _traceWord(ds, edge2word, i, j, D) {
-  var E = ds.s(i, D);
-  var k = j;
-  var factors = [];
+const _traceWord = function _traceWord(ds, edge2word, i, j, D) {
+  let E = ds.s(i, D);
+  let k = j;
+  const factors = [];
 
   while(true) {
     factors.push(edge2word.getIn([E, k]) || freeWords.empty);
@@ -138,15 +125,15 @@ var _traceWord = function _traceWord(ds, edge2word, i, j, D) {
 };
 
 
-var _updatedWordMap = function _updatedWordMap(ds, edge2word, D, i, gen, glued) {
+const _updatedWordMap = function _updatedWordMap(ds, edge2word, D, i, gen, glued) {
   return edge2word.withMutations(function(e2w) {
     e2w.setIn([D, i], freeWords.word([gen]));
     e2w.setIn([ds.s(i, D), i], freeWords.inverse([gen]));
     glued.rest().forEach(function(e) {
-      var D = e.get(0);
-      var i = e.get(1);
-      var j = e.get(2);
-      var w = _traceWord(ds, e2w, i, j, D);
+      const D = e.get(0);
+      const i = e.get(1);
+      const j = e.get(2);
+      const w = _traceWord(ds, e2w, i, j, D);
 
       if (!freeWords.empty.equals(w)) {
         e2w.setIn([D, i], freeWords.inverse(w));
@@ -157,18 +144,18 @@ var _updatedWordMap = function _updatedWordMap(ds, edge2word, D, i, gen, glued) 
 };
 
 
-var _findGenerators = function _findGenerators(ds) {
-  var boundary = _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
+const _findGenerators = function _findGenerators(ds) {
+  let boundary = _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
     .get('boundary');
-  var edge2word = I.Map();
-  var gen2edge = I.Map();
+  let edge2word = I.Map();
+  let gen2edge = I.Map();
 
   ds.elements().forEach(function(D) {
     ds.indices().forEach(function(i) {
       if (boundary.getIn([D, i])) {
-        var tmp = _glueRecursively(ds, boundary, [[D, i]]);
-        var glued = tmp.get('glued');
-        var gen = gen2edge.size+1;
+        const tmp = _glueRecursively(ds, boundary, [[D, i]]);
+        const glued = tmp.get('glued');
+        const gen = gen2edge.size+1;
 
         boundary = tmp.get('boundary');
         gen2edge = gen2edge.set(gen, I.Map({ chamber: D, index: i }));
@@ -181,15 +168,15 @@ var _findGenerators = function _findGenerators(ds) {
 };
 
 
-var _relatorRep = function(w) {
+const _relatorRep = function(w) {
   return I.Range(0, w.size).flatMap(function(i) {
-    var wx = freeWords.product([w.slice(i), w.slice(0, i)]);
+    const wx = freeWords.product([w.slice(i), w.slice(0, i)]);
     return [wx, freeWords.inverse(wx)];
-  }).min(util.cmpLex(function(a, b) { return a * b * (a - b); }));
+  }).min(util.cmpLex((a, b) => a * b * (a - b)));
 };
 
 
-var FundamentalGroup = I.Record({
+const FundamentalGroup = I.Record({
   nrGenerators: undefined,
   relators    : undefined,
   cones       : undefined,
@@ -198,43 +185,47 @@ var FundamentalGroup = I.Record({
 });
 
 
-var fundamentalGroup = function fundamentalGroup(ds) {
-  var tmp = _findGenerators(ds);
-  var edge2word = tmp.get('edge2word');
-  var gen2edge = tmp.get('gen2edge');
+export function innerEdges(ds) {
+  return _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
+    .get('glued')
+    .map(a => a.slice(0, 2));
+};
 
-  var orbits = ds.indices().flatMap(function(i) {
+
+export function fundamentalGroup(ds) {
+  const tmp = _findGenerators(ds);
+  const edge2word = tmp.get('edge2word');
+  const gen2edge = tmp.get('gen2edge');
+
+  const orbits = ds.indices().flatMap(function(i) {
     return ds.indices().flatMap(function(j) {
       if (j > i)
         return properties.orbitReps(ds, [i, j]).flatMap(function(D) {
-          var w = _traceWord(ds, edge2word, i, j, D);
-          var v = ds.v(i, j, D);
+          const w = _traceWord(ds, edge2word, i, j, D);
+          const v = ds.v(i, j, D);
           if (v && w.size > 0)
             return [[D, i, j, w, v]];
         });
     });
   });
 
-  var orbitRelators = orbits
-    .map(function(orb) { return freeWords.raisedTo(orb[4], orb[3]); });
+  const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[4], orb[3]));
 
-  var mirrors = gen2edge.entrySeq()
+  const mirrors = gen2edge.entrySeq()
     .filter(function(e) {
-      var D = e[1].get('chamber');
-      var i = e[1].get('index');
+      const D = e[1].get('chamber');
+      const i = e[1].get('index');
       return ds.s(i, D) == D;
     })
-    .map(function(e) {
-      return freeWords.word([e[0], e[0]]);
-    });
+    .map(e => freeWords.word([e[0], e[0]]));
 
-  var cones = orbits
-    .filter(function(orb) { return orb[4] > 1; })
-    .map(function(orb) { return orb.slice(3); })
+  const cones = orbits
+    .filter(orb => orb[4] > 1)
+    .map(orb => orb.slice(3))
     .sort();
 
-  var nGens = gen2edge.size;
-  var rels  = I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort();
+  const nGens = gen2edge.size;
+  const rels  = I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort();
 
   return FundamentalGroup({
     nrGenerators: nGens,
@@ -246,14 +237,8 @@ var fundamentalGroup = function fundamentalGroup(ds) {
 };
 
 
-module.exports = {
-  fundamentalGroup: fundamentalGroup,
-  innerEdges      : innerEdges
-};
-
-
 if (require.main == module) {
-  var test = function test(ds) {
+  const test = function test(ds) {
     console.log('ds = '+ds);
     console.log();
 
@@ -261,7 +246,7 @@ if (require.main == module) {
     console.log('    inner edges: '+JSON.stringify(innerEdges(ds)));
     console.log();
 
-    var gens = _findGenerators(ds);
+    const gens = _findGenerators(ds);
 
     console.log('    generators: '+gens.get('gen2edge'));
     console.log();
@@ -269,7 +254,7 @@ if (require.main == module) {
     console.log('    edge words: '+gens.get('edge2word'));
     console.log();
 
-    var group = fundamentalGroup(ds);
+    const group = fundamentalGroup(ds);
 
     console.log('    relators: '+group.relators);
     console.log();
