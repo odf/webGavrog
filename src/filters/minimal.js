@@ -1,11 +1,9 @@
-'use strict';
+import * as fs from 'fs';
 
-var fs = require('fs');
+import * as DS         from '../dsymbols/delaney';
+import * as properties from '../dsymbols/properties';
 
-var DS         = require('../dsymbols/delaney');
-var properties = require('../dsymbols/properties');
-
-var text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
+const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 
 DS.parseSymbols(text).forEach(function(ds) {
   if (properties.isMinimal(ds))

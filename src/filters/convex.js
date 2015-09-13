@@ -1,27 +1,29 @@
-'use strict';
+import * as fs from 'fs';
 
-var fs = require('fs');
+import * as DS       from '../dsymbols/delaney';
+import * as periodic from '../pgraphs/periodic';
+import * as Q        from '../arithmetic/number';
 
-var DS       = require('../dsymbols/delaney');
-var tiling   = require('../dsymbols/tilings');
-var periodic = require('../pgraphs/periodic');
-var Q        = require('../arithmetic/number');
-var M        = require('../arithmetic/matrix')(Q, 0, 1);
-var V        = require('../arithmetic/vector')(Q, 0);
+import tiling from '../dsymbols/tilings';
+import _M     from '../arithmetic/matrix';
+import _V     from '../arithmetic/vector';
 
-var text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
+const M = _M(Q, 0, 1);
+const V = _V(Q, 0);
+
+
+const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 
 DS.parseSymbols(text).forEach(function(ds) {
-  var dim = DS.dim(ds);
-  var G   = tiling(ds).graph;
-  var pos = periodic.barycentricPlacement(G).map(V.make);
+  const dim = DS.dim(ds);
+  const G   = tiling(ds).graph;
+  const pos = periodic.barycentricPlacement(G).map(V.make);
 
-  var good = periodic.adjacencies(G).entrySeq().every(function(e) {
-    var p = pos.get(e[0]);
-    var neighbors = e[1].map(function(n) {
-      return V.minus(V.plus(pos.get(n.v), V.make(n.s)), p);
-    });
-    var A = M.make(neighbors.map(function(v) { return v.data; }));
+  const good = periodic.adjacencies(G).entrySeq().every(function(e) {
+    const p = pos.get(e[0]);
+    const neighbors =
+      e[1].map(n => V.minus(V.plus(pos.get(n.v), V.make(n.s)), p));
+    const A = M.make(neighbors.map(v => v.data));
     return M.rank(A) == dim;
   });
 
