@@ -1,22 +1,16 @@
-'use strict';
-
-var I = require('immutable');
-var fw = require('./freeWords');
-var partition = require('../common/partition');
-var generators = require('../common/generators');
+import * as I from 'immutable';
+import * as fw from './freeWords';
+import * as generators from '../common/generators';
+import partition from '../common/partition';
 
 
-var mergeRows = function mergeRows(table, part, queue, a, b) {
-  var ra = table.get(b).merge(table.get(a));
-  var rb = table.get(a).merge(table.get(b));
+const mergeRows = function mergeRows(table, part, queue, a, b) {
+  const ra = table.get(b).merge(table.get(a));
+  const rb = table.get(a).merge(table.get(b));
 
-  var nextToMerge = ra
-    .map(function(ag, g) {
-      return [ag, rb.get(g)];
-    })
-    .filter(function(pair) {
-      return part.get(pair[0]) != part.get(pair[1]);
-    });
+  const nextToMerge = ra
+    .map((ag, g) => [ag, rb.get(g)])
+    .filter(pair => part.get(pair[0]) != part.get(pair[1]));
 
   return {
     table: table.set(a, ra).set(b, ra),
@@ -25,37 +19,32 @@ var mergeRows = function mergeRows(table, part, queue, a, b) {
 };
 
 
-var identify = function identify(table, part, a, b) {
-  var queue = I.List([[a, b]]);
-  var a, b, merged;
+const identify = function identify(table, part, a, b) {
+  let queue = I.List([[a, b]]);
 
   while (queue.size > 0) {
-    a = part.get(queue.first()[0]);
-    b = part.get(queue.first()[1]);
+    const a = part.get(queue.first()[0]);
+    const b = part.get(queue.first()[1]);
     queue = queue.shift();
 
     if (a != b) {
       part = part.union(a, b);
-      merged = mergeRows(table, part, queue, a, b);
+      const merged = mergeRows(table, part, queue, a, b);
       table = merged.table;
       queue = merged.queue;
     }
   }
 
-  return {
-    table: table,
-    part : part
-  };
+  return { table, part };
 };
 
 
-var scan = function scan(table, w, start, from, to) {
-  var row = start;
-  var i = from;
-  var next;
+const scan = function scan(table, w, start, from, to) {
+  let row = start;
+  let i = from;
 
   while (i < to) {
-    next = table.getIn([row, w.get(i)]);
+    const next = table.getIn([row, w.get(i)]);
     if (next === undefined)
       break;
     else {
@@ -71,16 +60,16 @@ var scan = function scan(table, w, start, from, to) {
 };
 
 
-var scanAndIdentify = function scanAndIdentify(table, part, w, start) {
-  var n = w.size;
+const scanAndIdentify = function scanAndIdentify(table, part, w, start) {
+  const n = w.size;
 
-  var t = scan(table, w, start, 0, n);
-  var head = t.row;
-  var i = t.index;
+  let t = scan(table, w, start, 0, n);
+  const head = t.row;
+  const i = t.index;
 
   t = scan(table, fw.inverse(w), start, 0, n - i);
-  var tail = t.row;
-  var j = n - t.index;
+  const tail = t.row;
+  const j = n - t.index;
 
   if (j == i+1)
     return {
@@ -98,45 +87,42 @@ var scanAndIdentify = function scanAndIdentify(table, part, w, start) {
 };
 
 
-var scanRelations = function scanRelations(rels, subgens, table, part, start) {
-  var current = {
+const scanRelations = function scanRelations(rels, subgens, table, part, start) {
+  let current = {
     table: table,
     part : part
   };
 
   current = rels.reduce(
-    function(c, w) {
-      return scanAndIdentify(c.table, c.part, w, start);
-    },
+    (c, w) => scanAndIdentify(c.table, c.part, w, start),
     current
   );
 
   return subgens.reduce(
-    function(c, w) {
-      return scanAndIdentify(c.table, c.part, w, c.part.get(0));
-    },
+    (c, w) => scanAndIdentify(c.table, c.part, w, c.part.get(0)),
     current
   );
 };
 
 
-var compressed = function(table, part) {
-  var toIdx = table.map(function(_,k) { return k; })
-    .filter(function(k) { return part.get(k) == k; })
-    .toMap().flip();
+const compressed = function(table, part) {
+  const toIdx = table
+    .map((_, k) => k)
+    .filter(k => part.get(k) == k)
+    .toMap()
+    .flip();
 
-  var canon = function(a) { return toIdx.get(part.get(a)); };
+  const canon = a => toIdx.get(part.get(a));
 
   return table.toMap()
-    .filter(function(r, k) { return toIdx.get(k) != undefined; })
+    .filter((r, k) => toIdx.get(k) != undefined)
     .mapKeys(canon)
-    .map(function(row) { return row.map(canon); });
+    .map(row => row.map(canon));
 };
 
 
-var maybeCompressed = function(c, factor) {
-  var invalid = (c.table.filter(function(k) { return c.part.get(k) != k; }).size
-                 / c.table.size);
+const maybeCompressed = function(c, factor) {
+  const invalid = c.table.filter(k => c.part.get(k) != k).size / c.table.size;
   if (invalid > factor)
     return { table: compressed(c.table, c.part), part: partition };
   else
@@ -144,26 +130,23 @@ var maybeCompressed = function(c, factor) {
 };
 
 
-var withInverses = function(words) {
+const withInverses = function(words) {
   return I.Set(words).merge(words.map(fw.inverse));
 };
 
 
-var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
-  var gens = I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
-  var rels = withInverses(I.List(relators).map(fw.word).flatMap(function(r) {
-    return I.Range(0, r.size).map(function(i) {
-      return r.slice(i).concat(r.slice(0, i));
-    });
-  }));
-  var subgens = withInverses(subgroupGens.map(fw.word));
+export function cosetTable(nrGens, relators, subgroupGens) {
+  const gens = I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
+  const rels = withInverses(I.List(relators).map(fw.word).flatMap(
+    r => I.Range(0, r.size).map(i => r.slice(i).concat(r.slice(0, i)))));
+  const subgens = withInverses(subgroupGens.map(fw.word));
 
-  var current = {
+  let current = {
     table: I.List([I.Map()]),
     part : partition()
   };
 
-  var i = 0, j = 0;
+  let i = 0, j = 0;
 
   while (true) {
     if (current.table.size > 10000)
@@ -177,9 +160,9 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
     } else if (current.table.getIn([i, gens.get(j)]) !== undefined) {
       ++j;
     } else {
-      var g = gens.get(j);
-      var n = current.table.size;
-      var table = current.table.setIn([i, g], n).setIn([n, -g], i);
+      const g = gens.get(j);
+      const n = current.table.size;
+      const table = current.table.setIn([i, g], n).setIn([n, -g], i);
       current = maybeCompressed(
         scanRelations(rels, subgens, table, current.part, n));
       ++j;
@@ -188,17 +171,16 @@ var cosetTable = function cosetTable(nrGens, relators, subgroupGens) {
 };
 
 
-var cosetRepresentatives = function(table) {
-  var queue = I.List([0]);
-  var reps = I.Map([[0, fw.empty]]);
+export function cosetRepresentatives(table) {
+  let queue = I.List([0]);
+  let reps = I.Map([[0, fw.empty]]);
 
   while (queue.size > 0) {
-    var i = queue.first();
-    var row = table.get(i);
-    var free = row.filter(function(v) { return reps.get(v) === undefined; });
-    reps = reps.merge(free.entrySeq().map(function(e) {
-      return [e[1], fw.product([reps.get(i), [e[0]]])];
-    }));
+    const i = queue.first();
+    const row = table.get(i);
+    const free = row.filter(v => reps.get(v) === undefined);
+    reps = reps.merge(free.entrySeq().map(
+      e => [e[1], fw.product([reps.get(i), [e[0]]])]));
     queue = queue.shift().concat(free.toList());
   }
 
@@ -206,41 +188,38 @@ var cosetRepresentatives = function(table) {
 };
 
 
-var _expandGenerators = function _expandGenerators(nrGens) {
+const _expandGenerators = function _expandGenerators(nrGens) {
   return I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
 };
 
 
-var _expandRelators = function _expandRelators(relators) {
+const _expandRelators = function _expandRelators(relators) {
   return I.Set(I.List(relators).map(I.List).flatMap(function(w) {
     return I.Range(0, w.size).flatMap(function(i) {
-      var wx = fw.product([w.slice(i), w.slice(0, i)]);
+      const wx = fw.product([w.slice(i), w.slice(0, i)]);
       return [wx, fw.inverse(wx)];
     });
   }));
 };
 
 
-var _freeInTable = function _freeInTable(table, gens) {
-  return I.Range(0, table.size).flatMap(function(k) {
-    var row = table.get(k);
-    return gens.map(function(g) {
-      if (row.get(g) == null)
-        return { index: k, generator: g };
-    }).filter(function(x) { return x != null });
-  });
+const _freeInTable = function _freeInTable(table, gens) {
+  return I.Range(0, table.size).flatMap(k => (
+    gens
+      .filter(g => table.get(k).get(g) == null)
+      .map(g => ({ index: k, generator: g }))));
 };
 
 
-var _scanRecursively = function _scanRecursively(rels, table, index) {
-  var q = I.List();
-  var k = index;
-  var t = table;
-  var rs = rels;
+const _scanRecursively = function _scanRecursively(rels, table, index) {
+  let q = I.List();
+  let k = index;
+  let t = table;
+  let rs = rels;
 
   while (!rs.isEmpty() || !q.isEmpty()) {
     if (!rs.isEmpty()) {
-      var out = scanAndIdentify(t, partition(), rs.first(), k);
+      const out = scanAndIdentify(t, partition(), rs.first(), k);
       if (!out.part.isTrivial())
         return;
 
@@ -259,37 +238,35 @@ var _scanRecursively = function _scanRecursively(rels, table, index) {
 };
 
 
-var _potentialChildren = function _potentialChildren(
+const _potentialChildren = function _potentialChildren(
   table, gens, rels, maxCosets
 ) {
-  var free = _freeInTable(table, gens);
+  const free = _freeInTable(table, gens);
 
   if (!free.isEmpty()) {
-    var k = free.first().index;
-    var g = free.first().generator;
-    var ginv = -g;
-    var n = table.size;
-    var matches = I.Range(k, n).filter(function(k) {
-      return table.getIn([k, ginv]) == null;
-    });
-    var candidates = n < maxCosets ? I.List(matches).push(n) : matches;
+    const k = free.first().index;
+    const g = free.first().generator;
+    const ginv = -g;
+    const n = table.size;
+    const matches = I.Range(k, n).filter(k => table.getIn([k, ginv]) == null);
+    const candidates = n < maxCosets ? I.List(matches).push(n) : matches;
 
     return candidates
       .map(function(pos) {
-        var t = table.setIn([k, g], pos).setIn([pos, ginv], k);
+        const t = table.setIn([k, g], pos).setIn([pos, ginv], k);
         return _scanRecursively(rels, t, k);
       })
-      .filter(function(t) { return t != null; })
+      .filter(t => t != null);
   } else
     return I.List();
 };
 
 
-var _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
-  var o2n = I.Map([[start, 0]]);
-  var n2o = I.Map([[0, start]]);
-  var row = 0;
-  var col = 0;
+const _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
+  let o2n = I.Map([[start, 0]]);
+  let n2o = I.Map([[0, start]]);
+  let row = 0;
+  let col = 0;
 
   while (true) {
     if (row >= o2n.size && row < table.size)
@@ -301,8 +278,8 @@ var _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
       ++row;
       col = 0;
     } else {
-      var oval = table.getIn([row, gens.get(col)]);
-      var nval = table.getIn([n2o.get(row), gens.get(col)]);
+      const oval = table.getIn([row, gens.get(col)]);
+      let nval = table.getIn([n2o.get(row), gens.get(col)]);
       if (nval != null && o2n.get(nval) == null) {
         n2o = n2o.set(o2n.size, nval);
         o2n = o2n.set(nval, o2n.size);
@@ -322,43 +299,38 @@ var _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
 };
 
 
-var _isCanonical = function _isCanonical(table, gens) {
-  return I.Range(1, table.size).every(function(start) {
-    return _compareRenumberedFom(table, gens, start) >= 0; 
-  });
+const _isCanonical = function _isCanonical(table, gens) {
+  return I.Range(1, table.size)
+    .every(start => _compareRenumberedFom(table, gens, start) >= 0);
 };
 
 
-var tables = function tables(nrGens, relators, maxCosets) {
-  var gens = _expandGenerators(nrGens);
-  var rels = _expandRelators(relators);
-  var free = function free(t) { return _freeInTable(t, gens); };
+export function tables(nrGens, relators, maxCosets) {
+  const gens = _expandGenerators(nrGens);
+  const rels = _expandRelators(relators);
+  const free = t => _freeInTable(t, gens);
 
   return generators.backtracker({
     root: I.List([I.Map()]),
-    extract: function(table) {
-      return free(table).isEmpty() ? table : undefined;
-    },
-    children: function(table) {
+    extract(table) { return free(table).isEmpty() ? table : undefined },
+    children(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
-        .filter(function(t) {
-          return !t.isEmpty() && _isCanonical(t, gens);
-        });
+        .filter(t => !t.isEmpty() && _isCanonical(t, gens));
     }
   });
 };
 
 
-var _inducedTable = function _inducedTable(gens, img, img0) {
-  var table = I.List([I.Map()]);
-  var o2n = I.Map([[img0, 0]]);
-  var n2o = I.Map([[0, img0]]);
-  var i = 0;
+const _inducedTable = function _inducedTable(gens, img, img0) {
+  let table = I.List([I.Map()]);
+  let o2n = I.Map([[img0, 0]]);
+  let n2o = I.Map([[0, img0]]);
+  let i = 0;
 
   while (i < table.size) {
     gens.forEach(function(g) {
-      var k = img(n2o.get(i), g);
-      var n = o2n.has(k) ? o2n.get(k) : table.size;
+      const k = img(n2o.get(i), g);
+      const n = o2n.has(k) ? o2n.get(k) : table.size;
       o2n = o2n.set(k, n);
       n2o = n2o.set(n, k);
       table = table.setIn([i, g], n).setIn([n, -g], i);
@@ -370,68 +342,47 @@ var _inducedTable = function _inducedTable(gens, img, img0) {
 };
 
 
-var intersectionTable = function intersectionTable(tableA, tableB) {
+export function intersectionTable(tableA, tableB) {
   return _inducedTable(
     (tableA.first() || I.Map()).keySeq(),
-    function(es, g) {
-      return I.List([tableA.getIn([es.get(0), g]),
-                     tableB.getIn([es.get(1), g])]);
-    },
+    (es, g) => I.List([tableA.getIn([es.get(0), g]),
+                       tableB.getIn([es.get(1), g])]),
     I.List([0, 0])
   );
 };
 
 
-var coreTable = function coreTable(base) {
+export function coreTable(base) {
   return _inducedTable(
     (base.first() || I.Map()).keySeq(),
-    function(es, g) {
-      return es.map(function(e) { return base.getIn([e, g]); });
-    },
+    (es, g) => es.map(e => base.getIn([e, g])),
     base.keySeq()
   );
 };
 
 
-var _sgn = function _sgn(x) { return (x > 0) - (x < 0); };
-var _sum = function _sum(a) {
-  return a.reduce(function(x, y) { return x + y; }, 0);
+const _sgn = x => (x > 0) - (x < 0);
+const _sum = a => a.reduce((x, y) => x + y, 0);
+
+
+export function relatorAsVector(rel, nrgens) {
+  const counts = rel.groupBy(Math.abs).map(a => _sum(a.map(_sgn)));
+  return I.List(I.Range(1, nrgens+1).map(i => counts.get(i) || 0));
 };
 
 
-var relatorAsVector = function relatorAsVector(rel, nrgens) {
-  var counts = rel.groupBy(Math.abs).map(function(a) {
-    return _sum(a.map(_sgn));
-  });
-  return I.List(I.Range(1, nrgens+1).map(function(i) {
-    return counts.get(i) || 0;
-  }));
-};
-
-
-var relatorMatrix = function relatorMatrix(nrgens, relators) {
-  return relators.map(function(rel) { return relatorAsVector(rel, nrgens); });
-};
-
-
-module.exports = {
-  cosetRepresentatives: cosetRepresentatives,
-  cosetTable          : cosetTable,
-  tables              : tables,
-  intersectionTable   : intersectionTable,
-  coreTable           : coreTable,
-  relatorAsVector     : relatorAsVector,
-  relatorMatrix       : relatorMatrix
+export function relatorMatrix(nrgens, relators) {
+  return relators.map(rel => relatorAsVector(rel, nrgens));
 };
 
 
 if (require.main == module) {
-  var base = cosetTable(
+  const base = cosetTable(
     3,
     [[1,1], [2,2], [3,3], [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
     [[1,2]]);
 
-  var t = cosetRepresentatives(base);
+  let t = cosetRepresentatives(base);
   console.log(t.toList(), t.size);
 
   t = cosetRepresentatives(coreTable(base));
@@ -440,7 +391,6 @@ if (require.main == module) {
   console.log(_expandGenerators(4));
   console.log(_expandRelators([[1,2,-3]]));
 
-  generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8)).forEach(function(x) {
-    console.log(JSON.stringify(x));
-  });
+  generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8))
+    .forEach(x => console.log(JSON.stringify(x)));
 }
