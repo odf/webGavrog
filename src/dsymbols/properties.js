@@ -1,18 +1,16 @@
-'use strict';
-
-var I = require('immutable');
-var DS = require('./delaney');
-var Partition = require('../common/partition');
+import * as I from 'immutable';
+import * as DS from './delaney';
+import Partition from '../common/partition';
 
 
-var _fold = function _fold(partition, a, b, matchP, spreadFn) {
-  var p = partition;
-  var q = I.List().push(I.List([a, b]));
+const _fold = function _fold(partition, a, b, matchP, spreadFn) {
+  let p = partition;
+  let q = I.List().push(I.List([a, b]));
 
   while (!q.isEmpty()) {
-    var _tmp = q.first();
-    var x = _tmp.get(0);
-    var y = _tmp.get(1);
+    const _tmp = q.first();
+    const x = _tmp.get(0);
+    const y = _tmp.get(1);
 
     q = q.rest();
 
@@ -30,20 +28,18 @@ var _fold = function _fold(partition, a, b, matchP, spreadFn) {
 };
 
 
-var _typeMap = function _typeMap(ds) {
-  var base = I.Map(ds.elements().map(function(D) {
-    return [D, I.List()];
-  }));
-  var idcs = DS.indices(ds);
+const _typeMap = function _typeMap(ds) {
+  const base = I.Map(ds.elements().map(D => [D, I.List()]));
+  const idcs = DS.indices(ds);
 
   return base.withMutations(function(map) {
     idcs.zip(idcs.rest()).forEach(function(p) {
-      var i = p[0];
-      var j = p[1];
+      const i = p[0];
+      const j = p[1];
 
       DS.orbitReps2(ds, i, j).forEach(function(D) {
-        var m = DS.m(ds, i, j, D);
-        DS.orbit2(ds, i, j, D).forEach(function(E) {
+        const m = DS.m(ds, i, j, D);
+        DS.orbit2(ds, i, j, D).forEach(E => {
           map.set(E, map.get(E).push(m));
         });
       });
@@ -52,61 +48,52 @@ var _typeMap = function _typeMap(ds) {
 };
 
 
-var isMinimal = function isMinimal(ds) {
-  var D0 = ds.elements().first();
-  var tm = _typeMap(ds);
+export function isMinimal(ds) {
+  const D0 = ds.elements().first();
+  const tm = _typeMap(ds);
 
-  var match = function(D, E) { return tm.get(D).equals(tm.get(E)); };
-  var spread = function(D, E) {
-    return ds.indices().map(function(i) {
-      return [ds.s(i, D), ds.s(i, E)];
-    });
-  };
+  const match  = (D, E) => tm.get(D).equals(tm.get(E));
+  const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
 
-  return ds.elements().rest().every(function(D) {
-    return _fold(Partition(), D0, D, match, spread) === undefined;
-  });
+  return ds.elements().rest()
+    .every(D => _fold(Partition(), D0, D, match, spread) === undefined);
 };
 
 
-var typePartition = function typePartition(ds) {
-  var D0 = ds.elements().first();
-  var tm = _typeMap(ds);
+export function typePartition(ds) {
+  const D0 = ds.elements().first();
+  const tm = _typeMap(ds);
 
-  var match = function(D, E) { return tm.get(D).equals(tm.get(E)); };
-  var spread = function(D, E) {
-    return ds.indices().map(function(i) {
-      return [ds.s(i, D), ds.s(i, E)];
-    });
-  };
+  const match  = (D, E) => tm.get(D).equals(tm.get(E));
+  const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
 
   return ds.elements().rest().reduce(
-    function(p, D) {
-      return _fold(p, D0, D, match, spread) || p;
-    },
+    (p, D) => _fold(p, D0, D, match, spread) || p,
     Partition()
   );
 };
 
 
-var Traversal = function Traversal(ds, indices, seeds) {
-  var seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
-  var todo = {};
-  var seen = {};
+const Traversal = function Traversal(ds, indices, seeds) {
+  const seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
+  const todo = {};
+  const seen = {};
   indices = (indices.constructor == Array) ? indices : indices.toJS();
-  indices.forEach(function(i) { seen[i] = {}; todo[i] = [] });
+  indices.forEach(i => { seen[i] = {}; todo[i] = [] });
   seen[root] = {};
 
   return {
-    next: function() {
+    next() {
       while (true) {
-        var i = null, D = null;
-        for (var k = 0; k < indices.length; ++k)
+        let i = null;
+        let D = null;
+        for (const k in indices) {
           if (todo[indices[k]].length > 0) {
             i = indices[k];
             D = todo[i].shift();
             break;
           }
+        }
 
         if (D == null && seedsLeft.length > 0)
           D = seedsLeft.pop();
@@ -115,9 +102,9 @@ var Traversal = function Traversal(ds, indices, seeds) {
           return { done: true };
 
         if (!seen[i][D]) {
-          var Di = (i == root) ? D : ds.s(i, D);
+          const Di = (i == root) ? D : ds.s(i, D);
 
-          indices.forEach(function(i) {
+          indices.forEach(i => {
             if (!seen[i][Di]) {
               if (i < 2)
                 todo[i].unshift(Di);
@@ -137,31 +124,31 @@ var Traversal = function Traversal(ds, indices, seeds) {
   };
 };
 
-var traversal = function traversal(ds, indices, seeds) {
+export function traversal(ds, indices, seeds) {
   return I.Seq(Traversal(ds, indices, seeds));
 };
 
-var root = traversal.root = null;
+const root = traversal.root = null;
 
 
-var orbitReps = function orbitReps(ds, indices, seeds) {
+export function orbitReps(ds, indices, seeds) {
   return traversal(ds, indices, seeds || ds.elements())
-    .filter(function(e) { return e[1] == root; })
-    .map(function(e) { return e[2]; });
+    .filter(e => e[1] == root)
+    .map(e => e[2]);
 };
 
 
-var isConnected = function isConnected(ds) {
+export function isConnected(ds) {
   return orbitReps(ds, ds.indices()).count() < 2;
 };
 
 
-var orbit = function orbit(ds, indices, seed) {
-  var seen = I.Set().asMutable();
-  var result = I.List().asMutable();
+export function orbit(ds, indices, seed) {
+  const seen = I.Set().asMutable();
+  const result = I.List().asMutable();
 
   traversal(ds, indices, [seed]).forEach(function(e) {
-    var D = e[2];
+    const D = e[2];
     if (D && !seen.contains(D)) {
       seen.add(D);
       result.push(D);
@@ -172,13 +159,13 @@ var orbit = function orbit(ds, indices, seed) {
 };
 
 
-var partialOrientation = function partialOrientation(ds) {
-  var ori = I.Map().asMutable();
+export function partialOrientation(ds) {
+  const ori = I.Map().asMutable();
 
   traversal(ds, ds.indices(), ds.elements()).forEach(function(e) {
-    var Di = e[0];
-    var i = e[1];
-    var D = e[2];
+    const Di = e[0];
+    const i = e[1];
+    const D = e[2];
 
     if (D && !ori.get(D))
       ori.set(D, i == root ? 1 : -ori.get(Di));
@@ -188,53 +175,44 @@ var partialOrientation = function partialOrientation(ds) {
 };
 
 
-var isLoopless = function isLoopless(ds) {
-  return ds.elements().every(function(D) {
-    return ds.indices().every(function(i) {
-      return D != ds.s(i, D);
-    });
-  });
+export function _forAllEdges(ds, test) {
+  return ds.elements().every(D => ds.indices().every(i => test(D, i)));
 };
 
 
-var isOriented = function isOriented(ds) {
-  var ori = partialOrientation(ds);
-
-  return ds.elements().every(function(D) {
-    return ds.indices().every(function(i) {
-      return ori.get(D) != ori.get(ds.s(i, D));
-    });
-  });
+export function isLoopless(ds) {
+  return _forAllEdges(ds, (D, i) => D != ds.s(i, D));
 };
 
 
-var isWeaklyOriented = function isWeaklyOriented(ds) {
-  var ori = partialOrientation(ds);
-
-  return ds.elements().every(function(D) {
-    return ds.indices().every(function(i) {
-      var Di = ds.s(i, D);
-      return D == Di || ori.get(D) != ori.get(Di);
-    });
-  });
+export function isOriented(ds) {
+  const ori = partialOrientation(ds);
+  return _forAllEdges(ds, (D, i) => ori.get(D) != ori.get(ds.s(i, D)));
 };
 
 
-var _protocol = function _protocol(ds, idcs, gen) {
-  var buffer = [];
-  var n = 1;
-  var emap = {};
+export function isWeaklyOriented(ds) {
+  const ori = partialOrientation(ds);
+  const test = (D, Di) => D == Di || ori.get(D) != ori.get(Di);
+  return _forAllEdges(ds, (D, i) => test(D, ds.s(i, D)));
+};
 
-  var _advance = function _advance() {
-    var next = gen.next();
+
+const _protocol = function _protocol(ds, idcs, gen) {
+  const buffer = [];
+  const emap = {};
+  let n = 1;
+
+  const _advance = function _advance() {
+    const next = gen.next();
     if (next.done)
       return false;
-    var entry = next.value;
+    const entry = next.value;
 
-    var Di = entry[0];
-    var i = entry[1];
-    var D = entry[2];
-    var E = emap[D] || n;
+    const Di = entry[0];
+    const i = entry[1];
+    const D = entry[2];
+    const E = emap[D] || n;
 
     if (E == n)
       emap[D] = E;
@@ -246,7 +224,7 @@ var _protocol = function _protocol(ds, idcs, gen) {
       buffer.push(E);
 
     if (E == n) {
-      for (var i = 0; i < idcs.length - 1; ++i)
+      for (let i = 0; i < idcs.length - 1; ++i)
         buffer.push(ds.v(idcs[i], idcs[i+1], D));
       ++n;
     }
@@ -255,12 +233,12 @@ var _protocol = function _protocol(ds, idcs, gen) {
   };
 
   return {
-    get: function(i) {
+    get(i) {
       while (buffer.length <= i && _advance())
         ;
       return buffer[i];
     },
-    content: function(fn) {
+    content(fn) {
       while (_advance())
         ;
       return buffer;
@@ -269,22 +247,22 @@ var _protocol = function _protocol(ds, idcs, gen) {
 };
 
 
-var invariant = function invariant(ds) {
-  var idcs = DS.indices(ds).toJS();
-  var best = null;
+export function invariant(ds) {
+  const idcs = DS.indices(ds).toJS();
+  let best = null;
 
   ds.elements().forEach(function(D0) {
-    var trav = _protocol(ds, idcs, Traversal(ds, idcs, [D0]));
+    const trav = _protocol(ds, idcs, Traversal(ds, idcs, [D0]));
 
     if (best == null)
       best = trav;
     else {
-      for (var i = 0; ; ++i) {
-        var next = trav.get(i);
+      for (let i = 0; ; ++i) {
+        const next = trav.get(i);
         if (next == undefined)
           break;
 
-        var d = next - best.get(i);
+        const d = next - best.get(i);
         if (d != 0) {
           if (d < 0)
             best = trav;
@@ -298,23 +276,8 @@ var invariant = function invariant(ds) {
 };
 
 
-module.exports = {
-  isMinimal         : isMinimal,
-  typePartition     : typePartition,
-  traversal         : traversal,
-  orbitReps         : orbitReps,
-  isConnected       : isConnected,
-  orbit             : orbit,
-  partialOrientation: partialOrientation,
-  isLoopless        : isLoopless,
-  isOriented        : isOriented,
-  isWeaklyOriented  : isWeaklyOriented,
-  invariant         : invariant
-};
-
-
 if (require.main == module) {
-  var test = function test(ds) {
+  const test = function test(ds) {
     console.log('ds = '+ds);
     console.log();
 
@@ -325,7 +288,7 @@ if (require.main == module) {
     console.log('    symbol is '+(isWeaklyOriented(ds) ? '' : 'not ')
                 +'weakly oriented.');
     console.log('    type partition: '+typePartition(ds));
-    var trav = traversal(ds, ds.indices(), ds.elements());
+    const trav = traversal(ds, ds.indices(), ds.elements());
     console.log('    traversal: ' + trav);
     console.log('    invariant: ' + invariant(ds));
     console.log();
