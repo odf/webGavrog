@@ -51,7 +51,7 @@ Graph.prototype.toString = function toString() {
 };
 
 
-const make = function make(data) {
+export function make(data) {
   const edges = I.Set(data).map(_makeEdge);
   if (edges.size == 0)
     throw new Error('cannot be empty');
@@ -73,7 +73,7 @@ const CoverVertex = I.Record({
 const _target = e => CoverVertex({ v: e.tail, s: e.shift });
 
 
-const adjacencies = function adjacencies(graph) {
+export function adjacencies(graph) {
   let res = I.Map();
 
   graph.edges.forEach(function(e) {
@@ -86,7 +86,7 @@ const adjacencies = function adjacencies(graph) {
 };
 
 
-const coordinationSeq = function coordinationSeq(graph, start, dist) {
+export function coordinationSeq(graph, start, dist) {
   const adj  = adjacencies(graph);
   const zero = I.List(I.Repeat(0, graph.dim));
   const plus = (s, t) => I.Range(0, graph.dim).map(i => s.get(i) + t.get(i));
@@ -149,7 +149,7 @@ const _addToRow = function _addToRow(A, i, vec) {
 const _getRow = (A, i) => I.List(I.Range(0, A.ncols).map(j => M.get(A, i, j)));
 
 
-const barycentricPlacement = function barycentricPlacement(graph) {
+export function barycentricPlacement(graph) {
   if (!_isConnectedOrbitGraph(graph))
     throw new Error('must have a connected orbit graph');
 
@@ -180,16 +180,8 @@ const barycentricPlacement = function barycentricPlacement(graph) {
 };
 
 
-const barycentricPlacementAsFloat = graph =>
-  barycentricPlacement(graph).map(p => p.map(Q.toJS));
-
-
-module.exports = {
-  make                : make,
-  adjacencies         : adjacencies,
-  coordinationSeq     : coordinationSeq,
-  barycentricPlacement: barycentricPlacement,
-  barycentricPlacementAsFloat: barycentricPlacementAsFloat
+export function barycentricPlacementAsFloat(graph) {
+  return barycentricPlacement(graph).map(p => p.map(Q.toJS));
 };
 
 
