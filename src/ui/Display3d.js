@@ -1,17 +1,19 @@
-'use strict';
+import * as THREE from 'three';
+import * as React from 'react';
+import * as I     from 'immutable';
 
-var THREE = require('three');
-var React = require('react');
-var I     = require('immutable');
+import * as R from '../arithmetic/float';
+import _M from '../arithmetic/matrix';
+import _V from '../arithmetic/vector';
 
-var R     = require('../arithmetic/float');
-var M     = require('../arithmetic/matrix')(R, 0, 1);
-var vec   = require('../arithmetic/vector')(R, 0);
+const M = _M(R, 0, 1);
+const vec = _V(R, 0);
 
 
-var rotation = function(dx, dy, aboutZ) {
-  var phi, s, c, vx, vy, vxx, vyy, vxy;
+const sgn = x => (x > 0) - (x < 0);
 
+
+const rotation = function(dx, dy, aboutZ) {
   dx = Math.PI / 2 * dx;
   dy = Math.PI / 2 * dy;
 
@@ -20,22 +22,22 @@ var rotation = function(dx, dy, aboutZ) {
              [ 0, 1, 0 ],
              [ 0, 0, 1 ] ];
   } else if (aboutZ) {
-    phi = (Math.abs(dx) > Math.abs(dy)) ? -dx : dy;
-    s = Math.sin(phi);
-    c = Math.cos(phi);
+    const phi = (Math.abs(dx) > Math.abs(dy)) ? -dx : dy;
+    const s = Math.sin(phi);
+    const c = Math.cos(phi);
     return [ [  c,  s,  0 ],
              [ -s,  c,  0 ],
              [  0,  0,  1 ] ];
   } else {
-    phi = Math.sqrt(dx * dx + dy * dy);
-    s = Math.sin(phi);
-    c = Math.cos(phi);
+    const phi = Math.sqrt(dx * dx + dy * dy);
+    const s = Math.sin(phi);
+    const c = Math.cos(phi);
 
-    vx = -dx / phi;
-    vy = -dy / phi;
-    vxx = vx * vx;
-    vxy = vx * vy;
-    vyy = vy * vy;
+    const vx = -dx / phi;
+    const vy = -dy / phi;
+    const vxx = vx * vx;
+    const vxy = vx * vy;
+    const vyy = vy * vy;
 
     return [ [    vyy + c*vxx, vxy * (c-1.0), s*vx ],
              [ -vxy * (c-1.0),   vxx + c*vyy, s*vy ],
@@ -44,24 +46,24 @@ var rotation = function(dx, dy, aboutZ) {
 };
 
 
-var MODE = {
+const MODE = {
   ROTATE: 0,
   TILT  : 1,
   PAN   : 2
 };
 
 
-var CameraParameters = I.Record({
+const CameraParameters = I.Record({
   matrix  : M.identity(3),
   distance: undefined,
   target  : vec.constant(3)
 });
 
 
-var newCameraParameters = function(params, dx, dy, button, wheel, pos) {
-  var m = params.matrix.data.map(vec.make);
-  var d = params.distance;
-  var t = params.target;
+const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
+  const m = params.matrix.data.map(vec.make);
+  const d = params.distance;
+  const t = params.target;
 
   if (pos) {
     pos = vec.make(pos);
@@ -77,13 +79,13 @@ var newCameraParameters = function(params, dx, dy, button, wheel, pos) {
       vec.plus(t, vec.plus(vec.scaled(-0.2 * d * dx, m.get(0)),
                            vec.scaled(-0.2 * d * dy, m.get(1)))));
   } else {
-    var rot = M.make(rotation(-dx, -dy, button == MODE.TILT));
+    const rot = M.make(rotation(-dx, -dy, button == MODE.TILT));
     return params.set('matrix', M.orthonormalized(M.times(rot, params.matrix)));
   }
 };
 
 
-var DisplayState = I.Record({
+const DisplayState = I.Record({
   mouseDown        : false,
   mouseButton      : null,
   ndcX             : 0,
@@ -98,16 +100,16 @@ var DisplayState = I.Record({
 });
 
 
-var render3d = (function makeRender() {
-  var _value;
-  var _props;
-  var _scheduled;
+const render3d = (function makeRender() {
+  let _value;
+  let _props;
+  let _scheduled;
 
-  var doRender = function doRender() {
+  const doRender = function doRender() {
     if (_value.renderer) {
-      var params = _value.cameraParameters;
-      var m = params.matrix.data.toJS();
-      var e = vec.plus(
+      const params = _value.cameraParameters;
+      const m = params.matrix.data.toJS();
+      const e = vec.plus(
         params.target,
         vec.scaled(params.distance, vec.make(m[2])));
 
@@ -115,7 +117,7 @@ var render3d = (function makeRender() {
       _props.camera.position.y = vec.get(e, 1);
       _props.camera.position.z = vec.get(e, 2);
 
-      var mat = new THREE.Matrix4();
+      const mat = new THREE.Matrix4();
       mat.set(
         m[0][0], m[1][0], m[2][0], 0,
         m[0][1], m[1][1], m[2][1], 0,
@@ -148,20 +150,20 @@ var render3d = (function makeRender() {
 })();
 
 
-var Display3d = React.createClass({
+export default React.createClass({
   displayName: 'Display3d',
 
-  getInitialState: function() {
+  getInitialState() {
     return {
       value: new DisplayState()
     };
   },
 
-  update: function(mods) {
+  update(mods) {
     this.setState(function(state, props) {
-      var value = state.value.merge(mods);
+      const value = state.value.merge(mods);
 
-      var params = newCameraParameters(
+      const params = newCameraParameters(
         value.cameraParameters || new CameraParameters(props.cameraParameters),
         value.ndcOldX == null ? 0 : value.ndcX - value.ndcOldX,
         value.ndcOldY == null ? 0 : value.ndcY - value.ndcOldY,
@@ -182,13 +184,13 @@ var Display3d = React.createClass({
     });
   },
 
-  preventDefault: function(event) {
+  preventDefault(event) {
     event.preventDefault();
   },
 
-  componentDidMount: function() {
-    var renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.getDOMNode().appendChild(renderer.domElement);
+  componentDidMount() {
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    React.findDOMNode(this).appendChild(renderer.domElement);
 
     renderer.domElement.addEventListener('contextmenu', this.preventDefault);
 
@@ -197,11 +199,11 @@ var Display3d = React.createClass({
     });
   },
 
-  componentWillUnmount: function() {
+  componentWillUnmount() {
     renderer.domElement.removeEventListener('contextmenu', this.preventDefault);
   },
 
-  handleMouseDown: function(event) {
+  handleMouseDown(event) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -216,7 +218,7 @@ var Display3d = React.createClass({
     });
   },
 
-  handleMouseMove: function(event) {
+  handleMouseMove(event) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -226,7 +228,7 @@ var Display3d = React.createClass({
     });
   },
 
-  handleMouseUp: function(event) {
+  handleMouseUp(event) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -238,37 +240,36 @@ var Display3d = React.createClass({
     });
   },
 
-  handleMouseEnter: function(event) {
-    this.refs.container.getDOMNode().focus();
+  handleMouseEnter(event) {
+    React.findDOMNode(this.refs.container).focus();
   },
 
-  handleWheel: function(event) {
-    var d = event.deltaY;
-    d = (d > 0) - (d < 0);
+  handleWheel(event) {
+    let d = sgn(event.deltaY);
 
     this.update({
       wheel: this.state.value.wheel + d
     });
   },
 
-  handleKeyDown: function(event) {
+  handleKeyDown(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    var key = String.fromCharCode(event.keyCode).toLowerCase();
+    const key = String.fromCharCode(event.keyCode).toLowerCase();
 
     if (key == 'c') {
       this.update({
         centeringPosition: this.state.value.pickedPosition || [0,0,0]
       });
     } else {
-      var fn = (this.props.keyHandlers || {})[key];
+      const fn = (this.props.keyHandlers || {})[key];
       if (fn)
         fn(event);
     }
   },
 
-  render: function() {
+  render() {
     render3d(this.state.value, this.props);
 
     return React.DOM.div({
@@ -284,6 +285,3 @@ var Display3d = React.createClass({
     });
   }
 });
-
-
-module.exports = Display3d;
