@@ -19,19 +19,16 @@ const faceNormal = function faceNormal(vs) {
 };
 
 
-const faceNormals = function faceNormals(pos, faces) {
-  return faces.map(idcs => faceNormal(idcs.map(i => pos.get(i))));
-};
+const faceNormals = (pos, faces) =>
+  faces.map(idcs => faceNormal(idcs.map(i => pos.get(i))));
 
 
 const vertexNormals = function vertexNormals(pos, faces, faceNormals) {
-  let normals = pos.map(v => V.scaled(0, v));
+  const normals = pos.map(v => V.scaled(0, v)).asMutable();
 
-  I.Range(0, faces.size).forEach(function(i) {
+  faces.forEach((f, i) => {
     const n = faceNormals.get(i);
-    faces.get(i).forEach(function(k) {
-      normals = normals.set(k, V.plus(normals.get(k), n));
-    });
+    f.forEach(k => { normals.update(k, v => V.plus(v, n)); });
   });
 
   return normals.map(V.normalized);
