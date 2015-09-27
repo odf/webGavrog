@@ -20,10 +20,13 @@ const faceNormal = vs => V.normalized(
     .reduce(V.plus)
 );
 
-const faceNormals = (pos, faces) => faces.map(corners(pos)).map(faceNormal);
+
+export function faceNormals(pos, faces) {
+  return faces.map(corners(pos)).map(faceNormal);
+};
 
 
-const vertexNormals = function vertexNormals(pos, faces, faceNormals) {
+export function vertexNormals(pos, faces, faceNormals) {
   const normals = pos.map(v => V.scaled(0, v)).asMutable();
 
   faces.forEach((f, i) => {
@@ -35,7 +38,7 @@ const vertexNormals = function vertexNormals(pos, faces, faceNormals) {
 };
 
 
-const subD = function subD({ pos, faces, isFixed }) {
+export function subD({ pos, faces, isFixed }) {
   const n        = pos.size;
   const m        = faces.size;
   const rPos     = pos.asMutable();
@@ -80,21 +83,23 @@ const subD = function subD({ pos, faces, isFixed }) {
 };
 
 
-const pos = I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
-                      [1,0,0], [1,0,1], [1,1,0], [1,1,1]]).map(V.make);
+if (require.main == module) {
+  const pos = I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
+                        [1,0,0], [1,0,1], [1,1,0], [1,1,1]]).map(V.make);
 
-const faces = I.fromJS([[0,1,3,2],[5,4,6,7],
-                        [1,0,4,5],[2,3,7,6],
-                        [0,2,6,4],[3,1,5,7]]);
+  const faces = I.fromJS([[0,1,3,2],[5,4,6,7],
+                          [1,0,4,5],[2,3,7,6],
+                          [0,2,6,4],[3,1,5,7]]);
 
-const normals = faceNormals(pos, faces);
+  const normals = faceNormals(pos, faces);
 
-console.log(normals);
+  console.log(normals);
 
-console.log(vertexNormals(pos, faces, normals));
+  console.log(vertexNormals(pos, faces, normals));
 
-console.log(subD({
-  pos,
-  faces,
-  isFixed: I.List(I.Repeat(true, 8))
-}));
+  console.log(subD({
+    pos,
+    faces,
+    isFixed: I.List(I.Repeat(true, 8))
+  }));
+}
