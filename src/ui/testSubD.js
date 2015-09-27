@@ -2,6 +2,10 @@ import * as I     from 'immutable';
 import * as THREE from 'three';
 import * as React from 'react';
 
+import * as F from '../arithmetic/float';
+import _V from '../arithmetic/vector';
+const V = _V(F, 0);
+
 import * as surface from '../geometry/surface';
 
 import Display3d from './Display3d';
@@ -27,14 +31,20 @@ const geometry = function geometry(vertices, faces) {
 
 
 const model = material => {
-  const pos = [[0,0,0], [0,0,1], [0,1,0], [0,1,1],
-               [1,0,0], [1,0,1], [1,1,0], [1,1,1]];
+  const s0 = {
+    pos: I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
+                   [1,0,0], [1,0,1], [1,1,0], [1,1,1]]).map(V.make),
+    faces: I.fromJS([[0,1,3,2],[5,4,6,7],
+                     [1,0,4,5],[2,3,7,6],
+                     [0,2,6,4],[3,1,5,7]]),
+    isFixed: I.List(I.Repeat(false, 8))
+  };
+  const s1 = surface.subD(s0);
+  const s2 = surface.subD(s1);
 
-  const faces = [[0,1,3,2],[5,4,6,7],
-                 [1,0,4,5],[2,3,7,6],
-                 [0,2,6,4],[3,1,5,7]];
-
-  return new THREE.Mesh(geometry(pos, faces), material);
+  return new THREE.Mesh(
+    geometry(s2.pos.map(v => v.data.toJS()), s2.faces.toJS()),
+    material);
 };
 
 
@@ -60,7 +70,7 @@ const makeScene = function() {
     shininess: 50
   });
 
-  const distance = 18;
+  const distance = 3;
   const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
   camera.name = 'camera';
   camera.position.z = 5*distance;
@@ -68,7 +78,10 @@ const makeScene = function() {
   camera.add(light(0xffffff,  3*distance,  5*distance, distance));
   camera.add(light(0x666666, -5*distance, -5*distance, distance));
 
-  scene.add(model(material));
+  const m = model(material);
+
+  scene.add(m);
+  scene.add(new THREE.WireframeHelper(m, 0x00ff00));
   scene.add(camera);
 
   return scene;
