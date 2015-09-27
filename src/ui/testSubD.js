@@ -39,11 +39,10 @@ const model = material => {
                      [0,2,6,4],[3,1,5,7]]),
     isFixed: I.List(I.Repeat(false, 8))
   };
-  const s1 = surface.subD(s0);
-  const s2 = surface.subD(s1);
+  const s = I.Range(0, 3).reduce(s => surface.subD(s), s0);
 
   return new THREE.Mesh(
-    geometry(s2.pos.map(v => v.data.toJS()), s2.faces.toJS()),
+    geometry(s.pos.map(v => v.data.toJS()), s.faces.toJS()),
     material);
 };
 
