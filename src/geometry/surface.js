@@ -51,23 +51,42 @@ const edgeIndexes = faces => {
 export function subD({ pos, faces, isFixed }) {
   const n = pos.size;
   const m = faces.size;
-
-  const fpos = faces.map(corners(pos)).map(centroid);
-  const ffix = I.Repeat(false, faces.size);
-
   const { edges, lookup } = edgeIndexes(faces);
-
-  const epos = edges.map(([v, w]) => centroid([pos.get(v), pos.get(w)]));
-  const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
 
   const newFaces = faces.flatMap((vs, f) => {
     const edge = i => n + m + lookup.get(f).get(i);
     const prev = i => (i + vs.size - 1) % vs.size;
-    return vs.map((v, i) => I.List([n + f, edge(prev(i)), v, edge(i)]));
+    return vs.map((v, i) => I.List([v, edge(i), n + f, edge(prev(i))]));
+  });
+
+  const ffix = I.Repeat(false, faces.size);
+  const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
+
+  const efac = lookup
+    .flatMap((a, f) => a.map(e => [e, f]))
+    .groupBy(([e, f]) => e)
+    .map(a => a.map(([e, f]) => f));
+
+  const vnfc = newFaces.groupBy(f => f.get(0));
+
+  const fpos = faces.map(corners(pos)).map(centroid);
+  const epos = edges.map(([v, w], i) => {
+    const p = I.List([pos.get(v), pos.get(w)])
+      .concat(efac.get(i).map(v => fpos.get(v)));
+    return centroid(p)
+  });
+  const vpos = pos.map((p, i) => {
+    const sz = vnfc.get(i).size;
+    const t = vnfc.get(i)
+      .flatMap(f => [V.scaled( 2, epos.get(f.get(1) - n - m)),
+                     V.scaled( 2, epos.get(f.get(3) - n - m)),
+                     V.scaled(-1, fpos.get(f.get(2) - n))])
+      .reduce(V.plus);
+    return V.plus(V.scaled(1/(sz*sz), t), V.scaled((sz-3)/sz, p));
   });
 
   return {
-    pos    : pos.concat(fpos, epos),
+    pos    : vpos.concat(fpos, epos),
     isFixed: isFixed.concat(ffix, efix),
     faces  : newFaces
   };

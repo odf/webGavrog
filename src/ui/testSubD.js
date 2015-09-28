@@ -26,6 +26,7 @@ const geometry = function geometry(vertices, faces) {
   });
 
   geom.computeFaceNormals();
+  geom.computeVertexNormals();
   return geom;
 };
 
