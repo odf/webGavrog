@@ -38,47 +38,43 @@ export function vertexNormals(pos, faces, faceNormals) {
 };
 
 
+const edgeIndexes = faces => {
+  const edges    = faces.flatMap(is => pairs(is).filter(([v,w]) => v < w));
+  const index    = I.Map(edges.map((e, i) => [I.List(e), i]));
+  const findPair = ([v,w]) => index.get(I.List(v < w ? [v, w] : [w, v]));
+  const lookup   = faces.map(is => pairs(is).map(findPair));
+
+  return { edges, lookup }
+};
+
+
 export function subD({ pos, faces, isFixed }) {
-  const n        = pos.size;
-  const m        = faces.size;
-  const rPos     = pos.asMutable();
-  const rIsFixed = isFixed.asMutable();
+  const n = pos.size;
+  const m = faces.size;
 
-  faces.map(corners(pos)).map(centroid).forEach(v => rPos.push(v));
-  I.Repeat(false, faces.size).forEach(x => rIsFixed.push(x));
+  const fpos = faces.map(corners(pos)).map(centroid);
+  const ffix = I.Repeat(false, faces.size);
 
-  const rFaces    = I.List().asMutable();
-  const edgeIndex = I.Map().asMutable();
+  const { edges, lookup } = edgeIndexes(faces);
 
-  faces.forEach((vs, f) => {
-    const k = vs.size;
-    const edgePointIndices = [];
+  const epos = edges.map(e => centroid(I.List(e.map(v => pos.get(v)))));
+  const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
 
-    pairs(vs).forEach(([v, w]) => {
-      let e = edgeIndex.get(I.List([w, v]));
-      if (e == null) {
-        e = rPos.size;
-        rPos.push(V.scaled(0.5, V.plus(pos.get(v), pos.get(w))));
-        rIsFixed.push(isFixed.get(v) && isFixed.get(w));
-      }
-      edgeIndex.set(I.List([v, w]), e);
-      edgePointIndices.push(e);
-    });
+  const findEdge = (f, i) => n + m + lookup.get(f).get(i);
 
-    I.Range(0, k)
-      .map(j => I.List([
-        n + f,
-        edgePointIndices[(j + k - 1) % k],
-        vs.get(j),
-        edgePointIndices[j]
-      ]))
-      .forEach(f => rFaces.push(f));
+  const newFaces = faces.flatMap((vs, f) => {
+    const edge = i => n + m + lookup.get(f).get(i);
+    const prev = i => (i + vs.size - 1) % vs.size;
+
+    return I.Range(0, vs.size).map(i => I.List([
+      n + f, edge(prev(i)), vs.get(i), edge(i)
+    ]));
   });
 
   return {
-    pos    : rPos.asImmutable(),
-    faces  : rFaces.asImmutable(),
-    isFixed: rIsFixed.asImmutable()
+    pos    : pos.concat(fpos, epos),
+    isFixed: isFixed.concat(ffix, efix),
+    faces  : newFaces
   };
 };
 
