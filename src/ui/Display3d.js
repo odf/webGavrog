@@ -189,7 +189,7 @@ export default React.createClass({
   },
 
   componentDidMount() {
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     React.findDOMNode(this).appendChild(renderer.domElement);
 
     renderer.domElement.addEventListener('contextmenu', this.preventDefault);
@@ -274,6 +274,7 @@ export default React.createClass({
 
     return React.DOM.div({
       className   : this.props.className,
+      style       : { outline: 'none' },
       ref         : 'container',
       tabIndex    : 0,
       onMouseDown : this.handleMouseDown,
