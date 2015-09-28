@@ -11,7 +11,7 @@ const pairs = as => as.pop().zip(as.shift()).push([as.last(), as.first()]);
 
 const corners = pos => idcs => idcs.map(i => pos.get(i));
 
-const centroid = pos => V.scaled(1/pos.size, pos.reduce(V.plus));
+const centroid = pos => V.scaled(1/I.List(pos).size, pos.reduce(V.plus));
 
 
 const faceNormal = vs => V.normalized(
@@ -57,7 +57,7 @@ export function subD({ pos, faces, isFixed }) {
 
   const { edges, lookup } = edgeIndexes(faces);
 
-  const epos = edges.map(e => centroid(I.List(e.map(v => pos.get(v)))));
+  const epos = edges.map(([v, w]) => centroid([pos.get(v), pos.get(w)]));
   const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
 
   const newFaces = faces.flatMap((vs, f) => {
