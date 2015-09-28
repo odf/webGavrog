@@ -38,7 +38,7 @@ const model = material => {
     faces: I.fromJS([[0,1,3,2],[5,4,6,7],
                      [1,0,4,5],[2,3,7,6],
                      [0,2,6,4],[3,1,5,7]]),
-    isFixed: I.List(I.Repeat(false, 8))
+    isFixed: I.Range(0, 8).map(i => i < 4)
   };
   const s = I.Range(0, 3).reduce(s => surface.subD(s), s0);
 

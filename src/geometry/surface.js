@@ -72,10 +72,13 @@ export function subD({ pos, faces, isFixed }) {
   const fpos = faces.map(corners(pos)).map(centroid);
   const epos = edges.map(([v, w], i) => {
     const p = I.List([pos.get(v), pos.get(w)])
-      .concat(efac.get(i).map(v => fpos.get(v)));
+      .concat(efix.get(i) ? I.List() : efac.get(i).map(v => fpos.get(v)));
     return centroid(p)
   });
   const vpos = pos.map((p, i) => {
+    if (isFixed.get(i))
+      return p;
+
     const sz = vnfc.get(i).size;
     const t = vnfc.get(i)
       .flatMap(f => [V.scaled( 2, epos.get(f.get(1) - n - m)),
@@ -110,6 +113,6 @@ if (require.main == module) {
   console.log(subD({
     pos,
     faces,
-    isFixed: I.List(I.Repeat(true, 8))
+    isFixed: I.Range(0,8).map(i => i < 4)
   }));
 }
