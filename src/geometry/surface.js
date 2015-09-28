@@ -60,15 +60,10 @@ export function subD({ pos, faces, isFixed }) {
   const epos = edges.map(e => centroid(I.List(e.map(v => pos.get(v)))));
   const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
 
-  const findEdge = (f, i) => n + m + lookup.get(f).get(i);
-
   const newFaces = faces.flatMap((vs, f) => {
     const edge = i => n + m + lookup.get(f).get(i);
     const prev = i => (i + vs.size - 1) % vs.size;
-
-    return I.Range(0, vs.size).map(i => I.List([
-      n + f, edge(prev(i)), vs.get(i), edge(i)
-    ]));
+    return vs.map((v, i) => I.List([n + f, edge(prev(i)), v, edge(i)]));
   });
 
   return {
