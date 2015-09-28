@@ -13,6 +13,8 @@ const corners = pos => idcs => idcs.map(i => pos.get(i));
 
 const centroid = pos => V.scaled(1/I.List(pos).size, pos.reduce(V.plus));
 
+const dedupe = a => I.List(I.Set(a));
+
 
 const faceNormal = vs => V.normalized(
   pairs(I.List(vs))
@@ -39,9 +41,10 @@ export function vertexNormals(pos, faces, faceNormals) {
 
 
 const edgeIndexes = faces => {
-  const edges    = faces.flatMap(is => pairs(is).filter(([v,w]) => v < w));
+  const eKey     = ([v, w]) => I.List(v < w ? [v, w] : [w, v]);
+  const edges    = dedupe(faces.flatMap(is => pairs(is).map(eKey)));
   const index    = I.Map(edges.map((e, i) => [I.List(e), i]));
-  const findPair = ([v,w]) => index.get(I.List(v < w ? [v, w] : [w, v]));
+  const findPair = ([v,w]) => index.get(eKey([v, w]));
   const lookup   = faces.map(is => pairs(is).map(findPair));
 
   return { edges, lookup }
@@ -76,7 +79,7 @@ export function subD({ pos, faces, isFixed }) {
     return centroid(p)
   });
   const vpos = pos.map((p, i) => {
-    if (isFixed.get(i))
+    if (isFixed.get(i) || vnfc.get(i) == null)
       return p;
 
     const sz = vnfc.get(i).size;
