@@ -31,16 +31,40 @@ const geometry = function geometry(vertices, faces) {
 };
 
 
-const model = material => {
-  const s0 = {
-    pos: I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
-                   [1,0,0], [1,0,1], [1,1,0], [1,1,1]]).map(V.make),
-    faces: I.fromJS([[0,1,3,2],[5,4,6,7],
-                     [1,0,4,5],[2,3,7,6],
-                     [0,2,6,4],[3,1,5,7]]),
-    isFixed: I.Range(0, 8).map(i => i < 4)
+const diamond = {
+  pos: I.fromJS([
+    [-1,-1,-1], [-1,+1,+1], [+1,-1,+1], [+1,+1,-1],
+    [-2, 0, 0], [ 0,-2, 0], [ 0, 0,-2],
+    [+2, 0, 0], [ 0,+2, 0], [ 0, 0,+2]
+  ]).map(V.make),
+
+  faces: I.fromJS([
+    [0, 4, 1, 8, 3, 6], [1, 4, 0, 5, 2, 9],
+    [3, 8, 1, 9, 2, 7], [0, 6, 3, 7, 2, 5]
+  ]),
+
+  isFixed: I.Range(0, 10).map(i => true)
+};
+
+
+const split = ({ pos, faces, isFixed }) => {
+  const rpos    = faces.flatMap(is => is.map(i => pos.get(i)));
+  const rfixed  = faces.flatMap(is => is.map(i => isFixed.get(i)));
+  const offsets = faces
+    .reduce((a, is) => a.push(a.last() + is.size), I.List([0]));
+  const rfaces  = faces
+    .map((_, i) => I.List(I.Range(offsets.get(i), offsets.get(i+1))));
+
+  return {
+    pos    : rpos,
+    isFixed: rfixed,
+    faces  : rfaces
   };
-  const s = I.Range(0, 3).reduce(s => surface.subD(s), s0);
+};
+
+
+const model = material => {
+  const s = I.Range(0, 3).reduce(s => surface.subD(s), split(diamond));
 
   return new THREE.Mesh(
     geometry(s.pos.map(v => v.data.toJS()), s.faces.toJS()),
