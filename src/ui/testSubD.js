@@ -33,9 +33,9 @@ const geometry = function geometry(vertices, faces) {
 
 const diamond = {
   pos: I.fromJS([
-    [-1,-1,-1], [-1,+1,+1], [+1,-1,+1], [+1,+1,-1],
+    [-1,-1,-1], [-1, 1, 1], [ 1,-1, 1], [ 1, 1,-1],
     [-2, 0, 0], [ 0,-2, 0], [ 0, 0,-2],
-    [+2, 0, 0], [ 0,+2, 0], [ 0, 0,+2]
+    [ 2, 0, 0], [ 0, 2, 0], [ 0, 0, 2]
   ]).map(V.make),
 
   faces: I.fromJS([
@@ -44,6 +44,25 @@ const diamond = {
   ]),
 
   isFixed: I.Range(0, 10).map(i => true)
+};
+
+
+const cds = {
+  pos: I.fromJS([
+    [-1,-1,-2], [-1,-1, 0], [-1,-1, 2],
+    [-1, 1,-2], [-1, 1, 0], [-1, 1, 2],
+    [ 1,-1,-2], [ 1,-1, 0], [ 1,-1, 2],
+    [ 1, 1,-2], [ 1, 1, 0], [ 1, 1, 2]
+  ]).map(V.make),
+
+  faces: I.fromJS([
+    [  6,  7,  8,  2,  1,  0],
+    [  3,  4,  5, 11, 10,  9],
+    [  1,  2,  8,  7, 10, 11,  5,  4],
+    [  7,  6,  0,  1,  4,  3,  9, 10]
+  ]),
+
+  isFixed: I.Range(0, 12).map(i => true)
 };
 
 
@@ -64,7 +83,7 @@ const split = ({ pos, faces, isFixed }) => {
 
 
 const model = material => {
-  const s = I.Range(0, 3).reduce(s => surface.subD(s), split(diamond));
+  const s = I.Range(0, 3).reduce(s => surface.subD(s), split(cds));
 
   return new THREE.Mesh(
     geometry(s.pos.map(v => v.data.toJS()), s.faces.toJS()),
