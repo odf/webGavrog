@@ -131,23 +131,18 @@ if (require.main == module) {
                           [1,0,4,5],[2,3,7,6],
                           [0,2,6,4],[3,1,5,7]]);
 
+  const surface = {
+    pos,
+    faces,
+    isFixed: I.Range(0,8).map(i => i < 4)
+  };
+
   const normals = faceNormals(pos, faces);
 
   console.log(normals);
 
   console.log(vertexNormals(pos, faces, normals));
 
-  console.log(subD({
-    pos,
-    faces,
-    isFixed: I.Range(0,8).map(i => i < 4)
-  }));
-
-  console.log(smooth({
-    pos,
-    faces,
-    isFixed: I.Range(0,8).map(i => i < 4)
-  }));
-
-  console.log(neighbors(faces));
+  console.log(subD(surface));
+  console.log(smooth(surface));
 }
