@@ -123,26 +123,67 @@ export function smooth({ faces, pos, isFixed }) {
 };
 
 
+const projection = (c, n) => p => {
+  const d = V.minus(p, c);
+  return V.plus(c, V.minus(d, V.scaled(V.dotProduct(n, d), n)));
+};
+
+
+const flattened = vs => vs.map(projection(centroid(vs), faceNormal(vs)));
+
+
+const scaled = (f, vs) => {
+  const c = centroid(vs);
+  return vs.map(v => V.plus(V.scaled(f, v), V.scaled(1-f, c)));
+};
+
+
+export function withFlattenedCenterFaces({ faces, pos }) {
+  const centerFaces = faces
+    .map(corners(pos))
+    .map(vs => scaled(0.5, vs.zip(flattened(vs)).map(centroid)));
+
+  return {
+    faces: centerFaces
+  };
+};
+
+
 if (require.main == module) {
-  const pos = I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
-                        [1,0,0], [1,0,1], [1,1,0], [1,1,1]]).map(V.make);
-
-  const faces = I.fromJS([[0,1,3,2],[5,4,6,7],
-                          [1,0,4,5],[2,3,7,6],
-                          [0,2,6,4],[3,1,5,7]]);
-
-  const surface = {
-    pos,
-    faces,
+  const cube = {
+    pos: I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
+                   [1,0,0], [1,0,1], [1,1,0], [1,1,1]]).map(V.make),
+    faces: I.fromJS([[0,1,3,2],[5,4,6,7],
+                     [1,0,4,5],[2,3,7,6],
+                     [0,2,6,4],[3,1,5,7]]),
     isFixed: I.Range(0,8).map(i => i < 4)
   };
 
-  const normals = faceNormals(pos, faces);
+  const cds = {
+    pos: I.fromJS([
+      [-1,-1,-2], [-1,-1, 0], [-1,-1, 2],
+      [-1, 1,-2], [-1, 1, 0], [-1, 1, 2],
+      [ 1,-1,-2], [ 1,-1, 0], [ 1,-1, 2],
+      [ 1, 1,-2], [ 1, 1, 0], [ 1, 1, 2]
+    ]).map(V.make),
+
+    faces: I.fromJS([
+      [  6,  7,  8,  2,  1,  0],
+      [  3,  4,  5, 11, 10,  9],
+      [  1,  2,  8,  7, 10, 11,  5,  4],
+      [  7,  6,  0,  1,  4,  3,  9, 10]
+    ]),
+
+    isFixed: I.Range(0, 12).map(i => true)
+  };
+
+  const normals = faceNormals(cube.pos, cube.faces);
 
   console.log(normals);
 
-  console.log(vertexNormals(pos, faces, normals));
+  console.log(vertexNormals(cube.pos, cube.faces, normals));
 
-  console.log(subD(surface));
-  console.log(smooth(surface));
+  console.log(subD(cube));
+  console.log(smooth(cube));
+  console.log(withFlattenedCenterFaces(cds));
 }
