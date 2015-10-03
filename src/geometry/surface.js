@@ -7,6 +7,9 @@ const M = _M(F, 0, 1);
 const V = _V(F, 0);
 
 
+const reductions = (xs, fn, init) =>
+  xs.reduce((a, x) => a.push(fn(a.last(), x)), I.List([init]));
+
 const pairs = as => as.pop().zip(as.shift()).push([as.last(), as.first()]);
 
 const corners = pos => idcs => idcs.map(i => pos.get(i));
@@ -14,6 +17,11 @@ const corners = pos => idcs => idcs.map(i => pos.get(i));
 const centroid = pos => V.scaled(1/I.List(pos).size, pos.reduce(V.plus));
 
 const dedupe = a => I.List(I.Set(a));
+
+const projection = (origin, normal) => p => {
+  const d = V.minus(p, origin);
+  return V.plus(origin, V.minus(d, V.scaled(V.dotProduct(normal, d), normal)));
+};
 
 
 const faceNormal = vs => V.normalized(
@@ -123,14 +131,7 @@ export function smooth({ faces, pos, isFixed }) {
 };
 
 
-const projection = (c, n) => p => {
-  const d = V.minus(p, c);
-  return V.plus(c, V.minus(d, V.scaled(V.dotProduct(n, d), n)));
-};
-
-
 const flattened = vs => vs.map(projection(centroid(vs), faceNormal(vs)));
-
 
 const scaled = (f, vs) => {
   const c = centroid(vs);
@@ -138,13 +139,28 @@ const scaled = (f, vs) => {
 };
 
 
-export function withFlattenedCenterFaces({ faces, pos }) {
+export function withFlattenedCenterFaces({ faces, pos, isFixed }) {
   const centerFaces = faces
     .map(corners(pos))
-    .map(vs => scaled(0.5, vs.zip(flattened(vs)).map(centroid)));
+    .map(vs => scaled(0.5, flattened(vs)));
+  const offsets = reductions(centerFaces, (a, vs) => a + vs.size, pos.size);
+  const extraPositions = centerFaces.flatten(1);
+
+  const newFaces = faces.flatMap((is, f) => {
+    const k = offsets.get(f);
+    const m = is.size;
+    const center = I.List(I.Range(k, k+m));
+    const gallery = I.Range(0, m).map(i => {
+      const j = (i + 1) % m;
+      return I.List([is.get(i), is.get(j), j+k, i+k]); 
+    });
+    return I.List(gallery).push(center);
+  });
 
   return {
-    faces: centerFaces
+    faces  : newFaces,
+    pos    : pos.concat(extraPositions),
+    isFixed: isFixed.concat(extraPositions.map(p => false))
   };
 };
 

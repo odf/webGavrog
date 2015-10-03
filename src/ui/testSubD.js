@@ -83,10 +83,11 @@ const split = ({ pos, faces, isFixed }) => {
 
 
 const model = material => {
-  const s = I.Range(0, 3).reduce(s => surface.subD(s), split(cds));
+  const base = surface.withFlattenedCenterFaces(split(cds));
+  const surf = I.Range(0, 2).reduce(s => surface.subD(s), base);
 
   return new THREE.Mesh(
-    geometry(s.pos.map(v => v.data.toJS()), s.faces.toJS()),
+    geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS()),
     material);
 };
 
