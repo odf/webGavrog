@@ -51,6 +51,23 @@ const edgeIndexes = faces => {
 };
 
 
+const adjustedPositions = (faces, pos, isFixed) => {
+  const coord = (face, idx, factor) => V.scaled(factor, pos.get(face.get(idx)));
+  const facesByVertex = faces.groupBy(f => f.get(0));
+
+  return pos.map((p, i) => {
+    if (isFixed.get(i) || facesByVertex.get(i) == null)
+      return p;
+
+    const m = facesByVertex.get(i).size;
+    const t = facesByVertex.get(i)
+      .flatMap(f => [coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)])
+      .reduce(V.plus);
+    return V.plus(V.scaled(1/(m*m), t), V.scaled((m-3)/m, p));
+  });
+};
+
+
 export function subD({ pos, faces, isFixed }) {
   const n = pos.size;
   const m = faces.size;
@@ -63,36 +80,21 @@ export function subD({ pos, faces, isFixed }) {
   });
 
   const ffix = I.Repeat(false, faces.size);
-  const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
+  const fpos = faces.map(corners(pos)).map(centroid);
 
-  const efac = lookup
+  const facesByEdge = lookup
     .flatMap((a, f) => a.map(e => [e, f]))
     .groupBy(([e, f]) => e)
     .map(a => a.map(([e, f]) => f));
 
-  const vnfc = newFaces.groupBy(f => f.get(0));
-
-  const fpos = faces.map(corners(pos)).map(centroid);
-  const epos = edges.map(([v, w], i) => {
-    const p = I.List([pos.get(v), pos.get(w)])
-      .concat(efix.get(i) ? I.List() : efac.get(i).map(v => fpos.get(v)));
-    return centroid(p)
-  });
-  const vpos = pos.map((p, i) => {
-    if (isFixed.get(i) || vnfc.get(i) == null)
-      return p;
-
-    const sz = vnfc.get(i).size;
-    const t = vnfc.get(i)
-      .flatMap(f => [V.scaled( 2, epos.get(f.get(1) - n - m)),
-                     V.scaled( 2, epos.get(f.get(3) - n - m)),
-                     V.scaled(-1, fpos.get(f.get(2) - n))])
-      .reduce(V.plus);
-    return V.plus(V.scaled(1/(sz*sz), t), V.scaled((sz-3)/sz, p));
-  });
+  const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
+  const epos = edges.map(([v, w], i) => centroid(
+    (efix.get(i) ? I.List() : facesByEdge.get(i).map(v => fpos.get(v)))
+      .concat([pos.get(v), pos.get(w)]))
+                        );
 
   return {
-    pos    : vpos.concat(fpos, epos),
+    pos    : adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
     isFixed: isFixed.concat(ffix, efix),
     faces  : newFaces
   };
