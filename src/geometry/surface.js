@@ -43,7 +43,7 @@ export function vertexNormals(pos, faces, faceNormals) {
 const edgeIndexes = faces => {
   const eKey     = ([v, w]) => I.List(v < w ? [v, w] : [w, v]);
   const edges    = dedupe(faces.flatMap(is => pairs(is).map(eKey)));
-  const index    = I.Map(edges.map((e, i) => [I.List(e), i]));
+  const index    = I.Map(edges.map((e, i) => [e, i]));
   const findPair = ([v,w]) => index.get(eKey([v, w]));
   const lookup   = faces.map(is => pairs(is).map(findPair));
 
@@ -68,7 +68,7 @@ const adjustedPositions = (faces, pos, isFixed) => {
 };
 
 
-export function subD({ pos, faces, isFixed }) {
+export function subD({ faces, pos, isFixed }) {
   const n = pos.size;
   const m = faces.size;
   const { edges, lookup } = edgeIndexes(faces);
@@ -90,13 +90,35 @@ export function subD({ pos, faces, isFixed }) {
   const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
   const epos = edges.map(([v, w], i) => centroid(
     (efix.get(i) ? I.List() : facesByEdge.get(i).map(v => fpos.get(v)))
-      .concat([pos.get(v), pos.get(w)]))
-                        );
+      .concat([pos.get(v), pos.get(w)])));
 
   return {
     pos    : adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
     isFixed: isFixed.concat(ffix, efix),
     faces  : newFaces
+  };
+};
+
+
+export function neighbors(faces) {
+  return faces
+    .flatMap(is => pairs(is).flatMap(([v, w]) => [[v, w], [w, v]]))
+    .groupBy(([v, w]) => v)
+    .map(a => dedupe(a.map(([v, w]) => w)))
+  ;
+};
+
+
+export function smooth({ faces, pos, isFixed }) {
+  const nbs = neighbors(faces);
+  const newPositions = pos.map((p, i) => (
+    isFixed.get(i) ? p : centroid(nbs.get(i).map(v => pos.get(v)))
+  ));
+
+  return {
+    faces,
+    pos: newPositions,
+    isFixed
   };
 };
 
@@ -120,4 +142,12 @@ if (require.main == module) {
     faces,
     isFixed: I.Range(0,8).map(i => i < 4)
   }));
+
+  console.log(smooth({
+    pos,
+    faces,
+    isFixed: I.Range(0,8).map(i => i < 4)
+  }));
+
+  console.log(neighbors(faces));
 }
