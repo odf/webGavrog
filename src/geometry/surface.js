@@ -18,7 +18,7 @@ const centroid = pos => V.scaled(1/I.List(pos).size, pos.reduce(V.plus));
 
 const dedupe = a => I.List(I.Set(a));
 
-const projection = (origin, normal) => p => {
+const projection = (normal, origin = V.scaled(0, normal)) => p => {
   const d = V.minus(p, origin);
   return V.plus(origin, V.minus(d, V.scaled(V.dotProduct(normal, d), normal)));
 };
@@ -131,7 +131,7 @@ export function smooth({ faces, pos, isFixed }) {
 };
 
 
-const flattened = vs => vs.map(projection(centroid(vs), faceNormal(vs)));
+const flattened = vs => vs.map(projection(faceNormal(vs), centroid(vs)));
 
 const scaled = (f, vs) => {
   const c = centroid(vs);
@@ -140,9 +140,7 @@ const scaled = (f, vs) => {
 
 
 const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
-  const centerFaces = faces
-    .map(corners(pos))
-    .map(vs => scaled(0.5, flattened(vs)));
+  const centerFaces = faces.map(corners(pos)).map(fn);
   const offsets = reductions(centerFaces, (a, vs) => a + vs.size, pos.size);
   const extraPositions = centerFaces.flatten(1);
 
@@ -167,6 +165,25 @@ const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
 
 export function withFlattenedCenterFaces(surface) {
   return withCenterFaces(surface, vs => scaled(0.5, flattened(vs)));
+};
+
+
+export function beveled(surface, wd) {
+  return withCenterFaces(surface, vs => {
+    const n = vs.size;
+    const c = centroid(vs);
+
+    return vs.map((v, i) => {
+      const vu = V.normalized(V.minus(vs.get((i + n - 1) % n), v));
+      const vw = V.normalized(V.minus(vs.get((i + 1) % n), v));
+      const d  = V.plus(vu, vw);
+      const ln = wd * V.norm(d) / V.norm(projection(vu)(d));
+      const s  = V.normalized(V.crossProduct(d, V.crossProduct(vu, vw)));
+      const t  = projection(s)(V.minus(c, v));
+      const f  = ln / V.norm(t);
+      return V.plus(v, V.scaled(f, t));
+    });
+  });
 };
 
 
