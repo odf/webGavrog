@@ -139,7 +139,7 @@ const scaled = (f, vs) => {
 };
 
 
-export function withFlattenedCenterFaces({ faces, pos, isFixed }) {
+const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
   const centerFaces = faces
     .map(corners(pos))
     .map(vs => scaled(0.5, flattened(vs)));
@@ -162,6 +162,11 @@ export function withFlattenedCenterFaces({ faces, pos, isFixed }) {
     pos    : pos.concat(extraPositions),
     isFixed: isFixed.concat(extraPositions.map(p => false))
   };
+};
+
+
+export function withFlattenedCenterFaces(surface) {
+  return withCenterFaces(surface, vs => scaled(0.5, flattened(vs)));
 };
 
 
