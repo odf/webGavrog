@@ -168,21 +168,25 @@ export function withFlattenedCenterFaces(surface) {
 };
 
 
+const bevelPoint = (original, wd, left, right, center) => {
+  const lft = V.normalized(V.minus(left, original));
+  const rgt = V.normalized(V.minus(right, original));
+  const dia = V.plus(lft, rgt);
+  const len = wd * V.norm(dia) / V.norm(projection(lft)(dia));
+  const s   = V.normalized(V.crossProduct(dia, V.crossProduct(lft, rgt)));
+  const t   = projection(s)(V.minus(center, original));
+  const f   = len / V.norm(t);
+  return V.plus(original, V.scaled(f, t));
+};
+
+
 export function beveled(surface, wd) {
   return withCenterFaces(surface, vs => {
     const n = vs.size;
     const c = centroid(vs);
 
-    return vs.map((v, i) => {
-      const vu = V.normalized(V.minus(vs.get((i + n - 1) % n), v));
-      const vw = V.normalized(V.minus(vs.get((i + 1) % n), v));
-      const d  = V.plus(vu, vw);
-      const ln = wd * V.norm(d) / V.norm(projection(vu)(d));
-      const s  = V.normalized(V.crossProduct(d, V.crossProduct(vu, vw)));
-      const t  = projection(s)(V.minus(c, v));
-      const f  = ln / V.norm(t);
-      return V.plus(v, V.scaled(f, t));
-    });
+    return vs.map((v, i) => (
+      bevelPoint(v, wd, vs.get((i + n - 1) % n), vs.get((i + 1) % n), c)));
   });
 };
 
