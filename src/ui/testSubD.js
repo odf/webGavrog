@@ -83,12 +83,19 @@ const split = ({ pos, faces, isFixed }) => {
 
 
 const model = material => {
-  const base = surface.withFlattenedCenterFaces(split(cds));
+  const original = cds;
+
+  const t = surface.withFlattenedCenterFaces(original);
+  const base = surface.beveledAt(
+    t,
+    0.1,
+    I.Range(0, original.pos.size).map(i => true)
+  );
   const surf = I.Range(0, 2).reduce(s => surface.subD(s), base);
 
-  return new THREE.Mesh(
-    geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS()),
-    material);
+  const geom = geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS());
+
+  return new THREE.Mesh(geom, material);
 };
 
 

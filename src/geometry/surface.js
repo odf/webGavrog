@@ -189,11 +189,17 @@ const bevelPoint = (corner, wd, left, right, center) => {
   const lft = V.normalized(V.minus(left, corner));
   const rgt = V.normalized(V.minus(right, corner));
   const dia = V.plus(lft, rgt);
-  const len = wd * V.norm(dia) / V.norm(projection(lft)(dia));
-  const s   = V.normalized(V.crossProduct(dia, V.crossProduct(lft, rgt)));
-  const t   = projection(s)(V.minus(center, corner));
-  const f   = len / V.norm(t);
-  return V.plus(corner, V.scaled(f, t));
+
+  if (V.norm(dia) < 0.01) {
+    return V.plus(corner, V.scaled(wd, V.normalized(V.minus(center, corner))));
+  }
+  else {
+    const len = wd * V.norm(dia) / V.norm(projection(lft)(dia));
+    const s   = V.normalized(V.crossProduct(dia, V.crossProduct(lft, rgt)));
+    const t   = projection(s)(V.minus(center, corner));
+    const f   = len / V.norm(t);
+    return V.plus(corner, V.scaled(f, t));
+  }
 };
 
 
@@ -238,10 +244,25 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
       const center = centroid(a.slice(1, -1).map(target));
       const bevel  = bevelPoint(corner, wd, left, right, center);
 
-      return [bevel, I.fromJS(a)];
+      return [bevel, I.fromJS(a.slice(0, -1))];
     });
   });
-  console.log(modifications);
+
+  const newPos = modifications.map(([p]) => p);
+  const modsByHalfEdge = I.Map(
+    modifications.flatMap(([p, hs], i) => hs.map(h => [h, i])));
+
+  const newFaces = faces.map((is, f) => (
+    is.map((v, i) => {
+      const w = modsByHalfEdge.get(I.List([f, i]));
+      return w == null ? v : w + pos.size;
+    })));
+
+  return {
+    pos    : pos.concat(newPos),
+    isFixed: pos.map(i => false).concat(newPos.map(i => true)),
+    faces  : newFaces
+  };
 };
 
 
