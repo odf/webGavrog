@@ -235,35 +235,25 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
   const nextIndex = (f, i) => (i + 1) % faceSize(f);
   const prevIndex = (f, i) => (i + faceSize(f) - 1) % faceSize(f);
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
+  const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
 
-  const isSplit = ([f, i]) => isCorner.get(endIndex(f, i));
-  const target  = ([f, i]) => pos.get(endIndex(f, i));
-
-  const modifications = I.List(halfEdges).flatMap(([v, hs]) => {
-    if (!isCorner.get(v))
-      return [];
-
-    const p = pos.get(v);
-
-    return hs.filter(isSplit).map(([f, i]) => {
+  const modifications = I.List(halfEdges)
+    .filter(([v]) => isCorner.get(v))
+    .flatMap(([v, hs]) => hs.filter(isSplit).map(([f, i]) => {
       const idcs  = steps(
         [f, i], ([f, i]) => reversals.get(f).get(prevIndex(f, i)), isSplit);
-      const pts   = idcs.map(target);
-      const bevel = bevelPoint(p, wd, pts[0], pts[pts.length-1],
+      const pts   = idcs.map(([f, i]) => pos.get(endIndex(f, i)));
+      const bevel = bevelPoint(pos.get(v), wd, pts[0], pts[pts.length-1],
                                centroid(pts.slice(1, -1)));
       return [bevel, I.fromJS(idcs.slice(0, -1))];
-    });
-  });
+    }));
 
   const newPos = modifications.map(([p]) => p);
   const modsByHalfEdge = I.Map(
-    modifications.flatMap(([p, hs], i) => hs.map(h => [h, i])));
+    modifications.flatMap(([p, hs], i) => hs.map(h => [h, i + pos.size])));
 
   const newFaces = faces.map((is, f) => (
-    is.map((v, i) => {
-      const w = modsByHalfEdge.get(I.List([f, i]));
-      return w == null ? v : w + pos.size;
-    })));
+    is.map((v, i) => modsByHalfEdge.get(I.List([f, i])) || v)));
 
   return {
     pos    : pos.concat(newPos),
