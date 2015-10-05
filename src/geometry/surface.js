@@ -59,6 +59,23 @@ const edgeIndexes = faces => {
 };
 
 
+const halfEdgeReversals = faces => {
+  const edges = dedupe(faces.flatMap(is => pairs(is).map(I.List)));
+  const index = I.Map(edges.map((e, i) => [e, i]));
+  const etofi = I.Map(faces.flatMap((is, f) => (
+    pairs(is).map(([v, w], i) => (
+      [I.List([v, w]), [f, i]])))));
+
+  return faces.map(is => pairs(is).map(([v, w]) => etofi.get(I.List([w, v]))));
+};
+
+
+const halfEdgesByStartVertex = faces => faces
+  .flatMap((is, f) => is.map((v, i) => [[f, i], v]))
+  .groupBy(([_, v]) => v)
+  .map(a => a.map(([p, _]) => p));
+
+
 const adjustedPositions = (faces, pos, isFixed) => {
   const coord = (face, idx, factor) => V.scaled(factor, pos.get(face.get(idx)));
   const facesByVertex = faces.groupBy(f => f.get(0));
@@ -168,15 +185,15 @@ export function withFlattenedCenterFaces(surface) {
 };
 
 
-const bevelPoint = (original, wd, left, right, center) => {
-  const lft = V.normalized(V.minus(left, original));
-  const rgt = V.normalized(V.minus(right, original));
+const bevelPoint = (corner, wd, left, right, center) => {
+  const lft = V.normalized(V.minus(left, corner));
+  const rgt = V.normalized(V.minus(right, corner));
   const dia = V.plus(lft, rgt);
   const len = wd * V.norm(dia) / V.norm(projection(lft)(dia));
   const s   = V.normalized(V.crossProduct(dia, V.crossProduct(lft, rgt)));
-  const t   = projection(s)(V.minus(center, original));
+  const t   = projection(s)(V.minus(center, corner));
   const f   = len / V.norm(t);
-  return V.plus(original, V.scaled(f, t));
+  return V.plus(corner, V.scaled(f, t));
 };
 
 
@@ -191,6 +208,43 @@ export function beveled(surface, wd) {
 };
 
 
+export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
+  const reversals = halfEdgeReversals(faces);
+  const halfEdges = halfEdgesByStartVertex(faces);
+  const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
+  const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
+
+  const isSplit = ([f, i]) => isCorner.get(endIndex(f, i));
+  const target  = ([f, i]) => pos.get(endIndex(f, i));
+
+  const modifications = I.List(halfEdges).flatMap(([v, hs]) => {
+    if (!isCorner.get(v))
+      return [];
+
+    const splits = hs.filter(isSplit);
+
+    return splits.map(([f, i]) => {
+      const a = [];
+      do {
+        const n = faces.get(f).size;
+        a.push([f, i]);
+        [f, i] = reversals.get(f).get((i + n - 1) % n);
+      } while (!isSplit([f, i]));
+      a.push([f, i]);
+
+      const corner = pos.get(v);
+      const left   = target(a[0]);
+      const right  = target(a.slice(-1)[0]);
+      const center = centroid(a.slice(1, -1).map(target));
+      const bevel  = bevelPoint(corner, wd, left, right, center);
+
+      return [bevel, I.fromJS(a)];
+    });
+  });
+  console.log(modifications);
+};
+
+
 if (require.main == module) {
   const cube = {
     pos: I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
@@ -201,24 +255,6 @@ if (require.main == module) {
     isFixed: I.Range(0,8).map(i => i < 4)
   };
 
-  const cds = {
-    pos: I.fromJS([
-      [-1,-1,-2], [-1,-1, 0], [-1,-1, 2],
-      [-1, 1,-2], [-1, 1, 0], [-1, 1, 2],
-      [ 1,-1,-2], [ 1,-1, 0], [ 1,-1, 2],
-      [ 1, 1,-2], [ 1, 1, 0], [ 1, 1, 2]
-    ]).map(V.make),
-
-    faces: I.fromJS([
-      [  6,  7,  8,  2,  1,  0],
-      [  3,  4,  5, 11, 10,  9],
-      [  1,  2,  8,  7, 10, 11,  5,  4],
-      [  7,  6,  0,  1,  4,  3,  9, 10]
-    ]),
-
-    isFixed: I.Range(0, 12).map(i => true)
-  };
-
   const normals = faceNormals(cube.pos, cube.faces);
 
   console.log(normals);
@@ -227,5 +263,11 @@ if (require.main == module) {
 
   console.log(subD(cube));
   console.log(smooth(cube));
-  console.log(withFlattenedCenterFaces(cds));
+  console.log();
+
+  const t = withFlattenedCenterFaces(cube);
+  console.log(t);
+  console.log();
+
+  beveledAt(t, 0.1, I.Range(0, 8).map(i => true));
 }
