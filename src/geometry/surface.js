@@ -236,16 +236,16 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
   const prevIndex = (f, i) => (i + faceSize(f) - 1) % faceSize(f);
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
+  const nextAtVtx = ([f, i]) => reversals.get(f).get(prevIndex(f, i));
 
   const modifications = I.List(halfEdges)
     .filter(([v]) => isCorner.get(v))
     .flatMap(([v, hs]) => hs.filter(isSplit).map(([f, i]) => {
-      const idcs  = steps(
-        [f, i], ([f, i]) => reversals.get(f).get(prevIndex(f, i)), isSplit);
-      const pts   = idcs.map(([f, i]) => pos.get(endIndex(f, i)));
+      const edges = steps([f, i], nextAtVtx, isSplit);
+      const pts   = edges.map(([f, i]) => pos.get(endIndex(f, i)));
       const bevel = bevelPoint(pos.get(v), wd, pts[0], pts[pts.length-1],
                                centroid(pts.slice(1, -1)));
-      return [bevel, I.fromJS(idcs.slice(0, -1))];
+      return [bevel, I.fromJS(edges.slice(0, -1))];
     }));
 
   const newPos = modifications.map(([p]) => p);
