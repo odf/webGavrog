@@ -214,10 +214,26 @@ export function beveled(surface, wd) {
 };
 
 
+const steps = (start, next, endCond) => {
+  const result = [];
+
+  let current = start;
+  do {
+    result.push(current);
+    current = next(current);
+  } while (!endCond(current));
+  result.push(current);
+
+  return result;
+};
+
+
 export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
   const reversals = halfEdgeReversals(faces);
   const halfEdges = halfEdgesByStartVertex(faces);
-  const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
+  const faceSize  = f => faces.get(f).size;
+  const nextIndex = (f, i) => (i + 1) % faceSize(f);
+  const prevIndex = (f, i) => (i + faceSize(f) - 1) % faceSize(f);
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
 
   const isSplit = ([f, i]) => isCorner.get(endIndex(f, i));
@@ -227,24 +243,15 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
     if (!isCorner.get(v))
       return [];
 
-    const splits = hs.filter(isSplit);
+    const p = pos.get(v);
 
-    return splits.map(([f, i]) => {
-      const a = [];
-      do {
-        const n = faces.get(f).size;
-        a.push([f, i]);
-        [f, i] = reversals.get(f).get((i + n - 1) % n);
-      } while (!isSplit([f, i]));
-      a.push([f, i]);
-
-      const corner = pos.get(v);
-      const left   = target(a[0]);
-      const right  = target(a.slice(-1)[0]);
-      const center = centroid(a.slice(1, -1).map(target));
-      const bevel  = bevelPoint(corner, wd, left, right, center);
-
-      return [bevel, I.fromJS(a.slice(0, -1))];
+    return hs.filter(isSplit).map(([f, i]) => {
+      const idcs  = steps(
+        [f, i], ([f, i]) => reversals.get(f).get(prevIndex(f, i)), isSplit);
+      const pts   = idcs.map(target);
+      const bevel = bevelPoint(p, wd, pts[0], pts[pts.length-1],
+                               centroid(pts.slice(1, -1)));
+      return [bevel, I.fromJS(idcs.slice(0, -1))];
     });
   });
 
