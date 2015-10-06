@@ -203,17 +203,6 @@ const bevelPoint = (corner, wd, left, right, center) => {
 };
 
 
-export function beveled(surface, wd) {
-  return withCenterFaces(surface, vs => {
-    const n = vs.size;
-    const c = centroid(vs);
-
-    return vs.map((v, i) => (
-      bevelPoint(v, wd, vs.get((i + n - 1) % n), vs.get((i + 1) % n), c)));
-  });
-};
-
-
 const steps = (start, next, endCond) => {
   const result = [];
 
