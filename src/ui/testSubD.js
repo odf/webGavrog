@@ -91,8 +91,8 @@ const model = material => {
     0.1,
     I.Range(0, original.pos.size).map(i => true)
   );
-  const surf = I.Range(0, 2).reduce(s => surface.subD(s), base);
 
+  const surf = I.Range(0, 2).reduce(s => surface.subD(s), base);
   const geom = geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS());
 
   return new THREE.Mesh(geom, material);

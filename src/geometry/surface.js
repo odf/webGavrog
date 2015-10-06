@@ -241,13 +241,19 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
   const modsByHalfEdge = I.Map(
     modifications.flatMap(([p, hs], i) => hs.map(h => [h, i + pos.size])));
 
-  const newFaces = faces.map((is, f) => (
+  const modifiedFaces = faces.map((is, f) => (
     is.map((v, i) => modsByHalfEdge.get(I.List([f, i])) || v)));
+
+  const newFaces = faces.zip(modifiedFaces)
+    .flatMap(([isOld, isNew]) => (
+      pairs(isOld).zip(pairs(isNew))
+        .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
+        .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]))));
 
   return {
     pos    : pos.concat(newPos),
     isFixed: pos.map(i => false).concat(newPos.map(i => true)),
-    faces  : newFaces
+    faces  : modifiedFaces.concat(newFaces)
   };
 };
 
@@ -262,19 +268,7 @@ if (require.main == module) {
     isFixed: I.Range(0,8).map(i => i < 4)
   };
 
-  const normals = faceNormals(cube.pos, cube.faces);
-
-  console.log(normals);
-
-  console.log(vertexNormals(cube.pos, cube.faces, normals));
-
-  console.log(subD(cube));
-  console.log(smooth(cube));
-  console.log();
-
   const t = withFlattenedCenterFaces(cube);
-  console.log(t);
-  console.log();
 
-  beveledAt(t, 0.1, I.Range(0, 8).map(i => true));
+  console.log(beveledAt(t, 0.1, I.Range(0, 8).map(i => true)));
 }
