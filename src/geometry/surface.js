@@ -217,25 +217,36 @@ const steps = (start, next, endCond) => {
 };
 
 
-export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
+const nextHalfEdgeAtVertex = faces => {
   const reversals = halfEdgeReversals(faces);
-  const halfEdges = halfEdgesByStartVertex(faces);
   const faceSize  = f => faces.get(f).size;
-  const nextIndex = (f, i) => (i + 1) % faceSize(f);
   const prevIndex = (f, i) => (i + faceSize(f) - 1) % faceSize(f);
+  return ([f, i]) => reversals.get(f).get(prevIndex(f, i));
+};
+
+
+export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
+  const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
-  const nextAtVtx = ([f, i]) => reversals.get(f).get(prevIndex(f, i));
+  const nextAtVtx = nextHalfEdgeAtVertex(faces);
 
-  const modifications = I.List(halfEdges)
+  const edgeStretches = ([v, hs]) =>
+    hs.filter(isSplit).map(([f, i]) => steps([f, i], nextAtVtx, isSplit));
+
+  const newVertexForStretch = hs => {
+    const [f,i] = hs[0];
+    const v     = faces.get(f).get(i);
+    const ends  = hs.map(([f, i]) => pos.get(endIndex(f, i)));
+    const bevel = bevelPoint(pos.get(v), wd, ends[0], ends[ends.length-1],
+                             centroid(ends.slice(1, -1)));
+    return [bevel, I.fromJS(hs.slice(0, -1))];
+  };
+
+  const modifications = I.List(halfEdgesByStartVertex(faces))
     .filter(([v]) => isCorner.get(v))
-    .flatMap(([v, hs]) => hs.filter(isSplit).map(([f, i]) => {
-      const edges = steps([f, i], nextAtVtx, isSplit);
-      const pts   = edges.map(([f, i]) => pos.get(endIndex(f, i)));
-      const bevel = bevelPoint(pos.get(v), wd, pts[0], pts[pts.length-1],
-                               centroid(pts.slice(1, -1)));
-      return [bevel, I.fromJS(edges.slice(0, -1))];
-    }));
+    .flatMap(edgeStretches)
+    .map(newVertexForStretch);
 
   const newPos = modifications.map(([p]) => p);
   const modsByHalfEdge = I.Map(
