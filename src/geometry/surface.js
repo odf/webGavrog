@@ -185,7 +185,7 @@ export function withFlattenedCenterFaces(surface) {
 };
 
 
-const bevelPoint = (corner, wd, left, right, center) => {
+const insetPoint = (corner, wd, left, right, center) => {
   const lft = V.normalized(V.minus(left, corner));
   const rgt = V.normalized(V.minus(right, corner));
   const dia = V.plus(lft, rgt);
@@ -225,7 +225,7 @@ const nextHalfEdgeAtVertex = faces => {
 };
 
 
-export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
+export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
   const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
@@ -238,9 +238,9 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
     const [f,i] = hs[0];
     const v     = faces.get(f).get(i);
     const ends  = hs.map(([f, i]) => pos.get(endIndex(f, i)));
-    const bevel = bevelPoint(pos.get(v), wd, ends[0], ends[ends.length-1],
+    const inset = insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1],
                              centroid(ends.slice(1, -1)));
-    return [bevel, I.fromJS(hs.slice(0, -1))];
+    return [inset, I.fromJS(hs.slice(0, -1))];
   };
 
   const modifications = I.List(halfEdgesByStartVertex(faces))
@@ -281,5 +281,5 @@ if (require.main == module) {
 
   const t = withFlattenedCenterFaces(cube);
 
-  console.log(beveledAt(t, 0.1, I.Range(0, 8).map(i => true)));
+  console.log(insetAt(t, 0.1, I.Range(0, 8).map(i => true)));
 }

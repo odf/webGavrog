@@ -86,7 +86,7 @@ const model = material => {
   const original = cds;
 
   const t = surface.withFlattenedCenterFaces(original);
-  const base = surface.beveledAt(
+  const base = surface.insetAt(
     t,
     0.1,
     I.Range(0, original.pos.size).map(i => true)
