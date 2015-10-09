@@ -267,6 +267,29 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
 };
 
 
+const movedToward = (source, target, distance) =>
+  V.plus(source, V.scaled(distance, V.normalized(V.minus(target, source))));
+
+
+export function cutAtCorners({ faces, pos, isFixed }, wd, isCorner) {
+  const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
+  const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
+  const nextAtVtx = nextHalfEdgeAtVertex(faces);
+
+  const modifications = I.List(halfEdgesByStartVertex(faces))
+    .filter(([v]) => isCorner.get(v))
+    .map(([v, hs]) => {
+      const p = pos.get(v);
+      const [f0, i0] = hs.first();
+      return steps([f0, i0], nextAtVtx, ([f, i]) => f == f0 && i == i0)
+        .slice(0, -1)
+        .map(([f, i]) => [[f, i], movedToward(p, pos.get(endIndex(f, i)), wd)]);
+    });
+
+  console.log(JSON.stringify(modifications));
+};
+
+
 if (require.main == module) {
   const cube = {
     pos: I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
@@ -280,4 +303,6 @@ if (require.main == module) {
   const t = withFlattenedCenterFaces(cube);
 
   console.log(insetAt(t, 0.1, I.Range(0, 8).map(i => true)));
+
+  cutAtCorners(cube, 0.05, I.Range(0,8).map(i => i < 4));
 }
