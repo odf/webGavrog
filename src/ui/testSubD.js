@@ -31,6 +31,22 @@ const geometry = function geometry(vertices, faces) {
 };
 
 
+const cube = {
+  pos: I.fromJS([
+    [-1,-1,-1], [-1,-1, 1], [-1, 1,-1], [-1, 1, 1],
+    [ 1,-1,-1], [ 1,-1, 1], [ 1, 1,-1], [ 1, 1, 1]
+  ]).map(V.make),
+
+  faces: I.fromJS([
+    [0, 1, 3, 2], [5, 4, 6, 7],
+    [1, 0, 4, 5], [2, 3, 7, 6],
+    [0, 2, 6, 4], [3, 1, 5, 7]
+  ]),
+
+  isFixed: I.Range(0,8).map(i => true)
+};
+
+
 const diamond = {
   pos: I.fromJS([
     [-1,-1,-1], [-1, 1, 1], [ 1,-1, 1], [ 1, 1,-1],
@@ -69,9 +85,10 @@ const cds = {
 const processedSolid = t0 => {
   const t1 = surface.withFlattenedCenterFaces(t0);
   const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
-  const t3 = surface.insetAt(t2, 0.05, t2.isFixed);
+  const t3 = surface.insetAt(t2, 0.06, t2.isFixed, 2/3);
+  const t4 = surface.insetAt(t3, 0.01, t2.isFixed, 2/3);
 
-  return t3;
+  return t4;
 };
 
 
@@ -116,7 +133,7 @@ const makeScene = function() {
   const m = model(material);
 
   scene.add(m);
-  scene.add(new THREE.WireframeHelper(m, 0x00ff00));
+  //scene.add(new THREE.WireframeHelper(m, 0x00ff00));
   scene.add(camera);
 
   return scene;

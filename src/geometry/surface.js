@@ -227,7 +227,7 @@ const nextHalfEdgeAtVertex = faces => {
 };
 
 
-export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
+export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
   const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
@@ -248,12 +248,13 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
     .flatMap(([v, hs]) => edgeStretches(hs).map(hs => [v, hs]))
     .map(newVertexForStretch);
 
-  const newPos = modifications.map(([p]) => p);
   const modsByHalfEdge = I.Map(
     modifications.flatMap(([p, hs], i) => hs.map(h => [h, i + pos.size])));
 
   const modifiedFaces = faces.map((is, f) => (
     is.map((v, i) => modsByHalfEdge.get(I.List([f, i])) || v)));
+
+  const newPos = modifications.map(([p]) => p);
 
   const newFaces = faces.zip(modifiedFaces)
     .flatMap(([isOld, isNew]) => (
@@ -261,34 +262,22 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
         .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
         .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]))));
 
+  const centers = faces.zip(modifiedFaces)
+    .flatMap(([iso, isn], f) => iso.zip(isn).filter(([vo, vn]) => vo != vn))
+    .groupBy(([v]) => v)
+    .map(a => dedupe(a.map(([v, w]) => w)))
+    .map(a => centroid(a.map(w => newPos.get(w - pos.size))));
+
+  const modifiedPos = pos.map((p, i) => {
+    const q = centers.get(i) || p;
+    return V.plus(V.scaled(rounding, q), V.scaled(1 - rounding, p));
+  });
+
   return {
-    pos    : pos.concat(newPos),
+    pos    : modifiedPos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faces  : modifiedFaces.concat(newFaces)
   };
-};
-
-
-const movedToward = (source, target, distance) =>
-  V.plus(source, V.scaled(distance, V.normalized(V.minus(target, source))));
-
-
-export function cutAtCorners({ faces, pos, isFixed }, wd, isCorner) {
-  const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
-  const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
-  const nextAtVtx = nextHalfEdgeAtVertex(faces);
-
-  const modifications = I.List(halfEdgesByStartVertex(faces))
-    .filter(([v]) => isCorner.get(v))
-    .map(([v, hs]) => {
-      const p = pos.get(v);
-      const [f0, i0] = hs.first();
-      return steps([f0, i0], nextAtVtx, ([f, i]) => f == f0 && i == i0)
-        .slice(0, -1)
-        .map(([f, i]) => [[f, i], movedToward(p, pos.get(endIndex(f, i)), wd)]);
-    });
-
-  console.log(JSON.stringify(modifications));
 };
 
 
@@ -305,6 +294,4 @@ if (require.main == module) {
   const t = withFlattenedCenterFaces(cube);
 
   console.log(insetAt(t, 0.1, I.Range(0, 8).map(i => true)));
-
-  cutAtCorners(cube, 0.05, I.Range(0,8).map(i => i < 4));
 }
