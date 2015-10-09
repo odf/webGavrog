@@ -231,21 +231,19 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
   const nextAtVtx = nextHalfEdgeAtVertex(faces);
 
-  const edgeStretches = ([v, hs]) =>
+  const edgeStretches = hs =>
     hs.filter(isSplit).map(([f, i]) => steps([f, i], nextAtVtx, isSplit));
 
-  const newVertexForStretch = hs => {
-    const [f,i] = hs[0];
-    const v     = faces.get(f).get(i);
+  const newVertexForStretch = ([v, hs]) => {
     const ends  = hs.map(([f, i]) => pos.get(endIndex(f, i)));
-    const inset = insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1],
-                             centroid(ends.slice(1, -1)));
+    const c     = centroid(ends.slice(1, -1));
+    const inset = insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
     return [inset, I.fromJS(hs.slice(0, -1))];
   };
 
   const modifications = I.List(halfEdgesByStartVertex(faces))
     .filter(([v]) => isCorner.get(v))
-    .flatMap(edgeStretches)
+    .flatMap(([v, hs]) => edgeStretches(hs).map(hs => [v, hs]))
     .map(newVertexForStretch);
 
   const newPos = modifications.map(([p]) => p);
@@ -263,7 +261,7 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
 
   return {
     pos    : pos.concat(newPos),
-    isFixed: pos.map(i => false).concat(newPos.map(i => true)),
+    isFixed: isFixed.concat(newPos.map(i => true)),
     faces  : modifiedFaces.concat(newFaces)
   };
 };
