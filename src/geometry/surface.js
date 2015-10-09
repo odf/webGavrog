@@ -191,7 +191,9 @@ const insetPoint = (corner, wd, left, right, center) => {
   const dia = V.plus(lft, rgt);
 
   if (V.norm(dia) < 0.01) {
-    return V.plus(corner, V.scaled(wd, V.normalized(V.minus(center, corner))));
+    const s = V.normalized(V.minus(center, corner));
+    const t = projection(lft)(s);
+    return V.plus(corner, V.scaled(wd / V.norm(t), s));
   }
   else {
     const len = wd * V.norm(dia) / V.norm(projection(lft)(dia));
