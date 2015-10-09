@@ -66,33 +66,17 @@ const cds = {
 };
 
 
-const split = ({ pos, faces, isFixed }) => {
-  const rpos    = faces.flatMap(is => is.map(i => pos.get(i)));
-  const rfixed  = faces.flatMap(is => is.map(i => isFixed.get(i)));
-  const offsets = faces
-    .reduce((a, is) => a.push(a.last() + is.size), I.List([0]));
-  const rfaces  = faces
-    .map((_, i) => I.List(I.Range(offsets.get(i), offsets.get(i+1))));
+const processedSolid = t0 => {
+  const t1 = surface.withFlattenedCenterFaces(t0);
+  const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
+  const t3 = surface.insetAt(t2, 0.05, t2.isFixed);
 
-  return {
-    pos    : rpos,
-    isFixed: rfixed,
-    faces  : rfaces
-  };
+  return t3;
 };
 
 
 const model = material => {
-  const original = cds;
-
-  const t = surface.withFlattenedCenterFaces(original);
-  const base = surface.insetAt(
-    t,
-    0.1,
-    I.Range(0, original.pos.size).map(i => true)
-  );
-
-  const surf = I.Range(0, 2).reduce(s => surface.subD(s), base);
+  const surf = processedSolid(cds);
   const geom = geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS());
 
   return new THREE.Mesh(geom, material);
