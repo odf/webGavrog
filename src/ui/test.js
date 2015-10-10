@@ -10,9 +10,11 @@ const M = _M(R, 0, 1);
 const V = _V(R, 0);
 
 import * as delaney  from '../dsymbols/delaney';
+import * as props    from '../dsymbols/properties';
 import * as periodic from '../pgraphs/periodic';
-import tiling        from '../dsymbols/tilings';
+import * as surface  from '../geometry/surface';
 
+import tiling    from '../dsymbols/tilings';
 import Display3d from './Display3d';
 
 
@@ -77,6 +79,7 @@ const geometry = function geometry(vertices, faces) {
   });
 
   geom.computeFaceNormals();
+  geom.computeVertexNormals();
   return geom;
 };
 
@@ -116,21 +119,6 @@ const shrunk = function shrunk(f, vertices) {
   return I.List(
     vertices.take(n-1).map(v => V.plus(V.scaled(f, v), V.scaled(1-f, last)))
   ).push(last);
-};
-
-
-const tetrahedra = function tetrahedron(vertexLists, material) {
-  const extract = v => v.data.toJS();
-  const model = new THREE.Object3D();
-
-  vertexLists.forEach(function(vs) {
-    const geom = geometry(vs.map(extract),
-                        [[0,1,2],[1,0,3],[2,1,3],[0,2,3],
-                         [0,2,1],[1,3,0],[2,3,1],[0,3,2]]);
-    model.add(new THREE.Mesh(geom, material));
-  });
-
-  return model;
 };
 
 
@@ -174,17 +162,68 @@ const apply = function(v, A) {
 };
 
 
+const combine = (f1, v1, f2, v2) => V.plus(V.scaled(f1, v1), V.scaled(f2, v2));
+
+
+const mapElementsToOrbitIndices = (ds, indices) => I.Map(
+  props.orbitReps(ds, indices)
+    .flatMap((D, k) => props.orbit(ds, indices, D).zip(I.Repeat(k))));
+
+
+const tiles = t => {
+  const cov = t.cover;
+  const ori = props.partialOrientation(cov);
+  const pos = t.positions;
+
+  const cornerOrbits =
+    props.orbitReps(cov, [1, 2]).map(D => props.orbit(cov, [1, 2], D));
+  const cornerPositions = I.List(cornerOrbits.map(orb => {
+    const ps = pos.get(orb.first());
+    return apply(combine(0.8, ps.get(0), 0.2, ps.get(3)), t.basis);
+  }));
+  const positionIndexForElement =
+    I.Map(cornerOrbits.flatMap((orb, i) => orb.map(D => [D, i])));
+
+  const faces = I.List(props.orbitReps(cov, [0, 1])
+    .map(D => ori.get(D) < 0 ? D : cov.s(0, D))
+    .map(D => (
+      props.orbit(cov, [0, 1], D)
+        .filter((D, i) => i % 2 == 0)
+        .map(D => positionIndexForElement.get(D)))));
+
+  return {
+    pos    : cornerPositions,
+    faces  : faces,
+    isFixed: I.Range(0, cornerPositions.size).map(i => true)
+  };
+};
+
+
+const processedSolid = t0 => {
+  const t1 = surface.withFlattenedCenterFaces(t0);
+  const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
+  const t3 = surface.insetAt(t2, 0.024, t2.isFixed, 2/3);
+  const t4 = surface.insetAt(t3, 0.004, t2.isFixed, 2/3);
+
+  return t4;
+};
+
+
 const makeScene = function() {
   const scene  = new THREE.Scene();
 
   const ballMaterial = new THREE.MeshPhongMaterial({
-    color    : 0xff0000,
+    color    : 0xff4040,
     shininess: 50
   });
 
   const stickMaterial = new THREE.MeshPhongMaterial({
-    color    : 0x0000ff,
+    color    : 0x4040ff,
     shininess: 50
+  });
+
+  const tileMaterial = new THREE.MeshPhongMaterial({
+    color    : 0x00ffff
   });
 
   const ds  = delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>');
@@ -203,17 +242,15 @@ const makeScene = function() {
     'cube',
     verts,
     g.edges,
-    0.1,
-    0.05,
+    0.06,
+    0.03,
     ballMaterial,
     stickMaterial
   );
 
-  const chambers = tetrahedra(
-    t.cover.elements()
-      .map(D => shrunk(0.8, pos.get(D).valueSeq().map(p => apply(p, t.basis)))),
-    ballMaterial
-  );
+  const surf = processedSolid(tiles(t));
+  const geom = geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS());
+  const tilesMesh = new THREE.Mesh(geom, tileMaterial);
 
   const distance = 18;
   const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
@@ -224,7 +261,7 @@ const makeScene = function() {
   camera.add(light(0x666666, -5*distance, -5*distance, distance));
 
   scene.add(model);
-  scene.add(chambers);
+  scene.add(tilesMesh);
   scene.add(camera);
 
   return scene;
