@@ -206,16 +206,6 @@ const tiles = t => {
 };
 
 
-const _processedSolid = t0 => {
-  const t1 = surface.withFlattenedCenterFaces(t0);
-  const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
-  const t3 = surface.insetAt(t2, 0.024, t2.isFixed, 2/3);
-  const t4 = surface.insetAt(t3, 0.004, t2.isFixed, 2/3);
-
-  return t4;
-};
-
-
 const processedSolid = t0 => {
   const t1 = surface.withFlattenedCenterFaces(t0);
   const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
@@ -278,6 +268,7 @@ export default function(ds) {
 
   scene.add(model);
   scene.add(tilesMesh);
+  //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
   scene.add(camera);
 
   return scene;

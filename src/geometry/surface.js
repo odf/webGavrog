@@ -259,7 +259,7 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
 };
 
 
-export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
+export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
 
@@ -268,20 +268,8 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
     .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
     .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]));
 
-  const centers = faces.zip(modifiedFaces)
-    .flatMap(([iso, isn], f) => iso.zip(isn))
-    .filter(([vo, vn]) => vo != vn)
-    .groupBy(([v]) => v)
-    .map(a => dedupe(a.map(([v, w]) => w)))
-    .map(a => centroid(a.map(w => newPos.get(w - pos.size))));
-
-  const modifiedPos = pos.map((p, i) => {
-    const q = centers.get(i) || p;
-    return V.plus(V.scaled(rounding, q), V.scaled(1 - rounding, p));
-  });
-
   return {
-    pos    : modifiedPos.concat(newPos),
+    pos    : pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faces  : modifiedFaces.concat(newFaces)
   };
