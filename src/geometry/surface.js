@@ -18,9 +18,30 @@ const centroid = pos => V.scaled(1/I.List(pos).size, pos.reduce(V.plus));
 
 const dedupe = a => I.List(I.Set(a));
 
+
 const projection = (normal, origin = V.scaled(0, normal)) => p => {
   const d = V.minus(p, origin);
   return V.plus(origin, V.minus(d, V.scaled(V.dotProduct(normal, d), normal)));
+};
+
+
+const cycles = m => {
+  const seen = {};
+  const faces = [];
+
+  m.keySeq().forEach(i => {
+    if (!seen[i]) {
+      const f = [];
+      while (!seen[i]) {
+        seen[i] = true;
+        f.push(i);
+        i = m.get(i);
+      }
+      faces.push(f);
+    }
+  });
+
+  return I.fromJS(faces);
 };
 
 
@@ -289,10 +310,13 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
       .map(([[, a], [, b]]) => a.concat(b).reverse())
       .valueSeq());
 
+  const cornerFaces = cycles(I.Map(
+    edgeFaces.flatMap(is => [[is.get(2), is.get(1)], [is.get(0), is.get(3)]])));
+
   return {
     pos    : pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
-    faces  : modifiedFaces.concat(edgeFaces)
+    faces  : modifiedFaces.concat(edgeFaces).concat(cornerFaces)
   };
 };
 
