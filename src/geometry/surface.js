@@ -264,13 +264,13 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
 
   const newFaces = faces.zip(modifiedFaces)
-    .flatMap(([isOld, isNew]) => (
-      pairs(isOld).zip(pairs(isNew))
-        .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
-        .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]))));
+    .flatMap(([isOld, isNew]) => pairs(isOld).zip(pairs(isNew)))
+    .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
+    .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]));
 
   const centers = faces.zip(modifiedFaces)
-    .flatMap(([iso, isn], f) => iso.zip(isn).filter(([vo, vn]) => vo != vn))
+    .flatMap(([iso, isn], f) => iso.zip(isn))
+    .filter(([vo, vn]) => vo != vn)
     .groupBy(([v]) => v)
     .map(a => dedupe(a.map(([v, w]) => w)))
     .map(a => centroid(a.map(w => newPos.get(w - pos.size))));
