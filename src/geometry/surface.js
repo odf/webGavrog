@@ -227,7 +227,7 @@ const nextHalfEdgeAtVertex = faces => {
 };
 
 
-export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
+const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
@@ -249,12 +249,19 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
     .map(newVertexForStretch);
 
   const modsByHalfEdge = I.Map(
-    modifications.flatMap(([p, hs], i) => hs.map(h => [h, i + pos.size])));
+    modifications.flatMap(([p, hs], i) => hs.zip(I.Repeat(i + pos.size))));
 
-  const modifiedFaces = faces.map((is, f) => (
-    is.map((v, i) => modsByHalfEdge.get(I.List([f, i])) || v)));
+  return {
+    pos  : modifications.map(([p]) => p),
+    faces: faces.map(
+      (is, f) => is.map((v, i) => modsByHalfEdge.get(I.List([f, i])) || v))
+  };
+};
 
-  const newPos = modifications.map(([p]) => p);
+
+export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
+  const { pos: newPos, faces: modifiedFaces } =
+    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
 
   const newFaces = faces.zip(modifiedFaces)
     .flatMap(([isOld, isNew]) => (
