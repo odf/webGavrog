@@ -168,10 +168,19 @@ const mapElementsToOrbitIndices = (ds, indices) => I.Map(
     .flatMap((D, k) => props.orbit(ds, indices, D).zip(I.Repeat(k))));
 
 
+const chamberBasis = function chamberBasis(pos, D) {
+  const t = pos.get(D).valueSeq();
+  return M.make(t.rest().map(v => V.minus(v, t.get(0)).data));
+};
+
+
 const tiles = t => {
   const cov = t.cover;
+  const D0  = cov.elements().first();
   const ori = props.partialOrientation(cov);
   const pos = t.positions;
+  const sgn = ori.get(D0) *
+    R.sgn(M.determinant(M.times(chamberBasis(pos, D0), t.basis)));
 
   const cornerOrbits =
     props.orbitReps(cov, [1, 2]).map(D => props.orbit(cov, [1, 2], D));
@@ -183,7 +192,7 @@ const tiles = t => {
     I.Map(cornerOrbits.flatMap((orb, i) => orb.map(D => [D, i])));
 
   const faces = I.List(props.orbitReps(cov, [0, 1])
-    .map(D => ori.get(D) < 0 ? D : cov.s(0, D))
+    .map(D => sgn * ori.get(D) < 0 ? D : cov.s(0, D))
     .map(D => (
       props.orbit(cov, [0, 1], D)
         .filter((D, i) => i % 2 == 0)
