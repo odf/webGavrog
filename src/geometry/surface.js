@@ -288,6 +288,27 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner, rounding = 0) {
 };
 
 
+export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
+  const { pos: newPos, faces: modifiedFaces } =
+    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
+
+  const edgeFaces = I.List(
+    faces.zip(modifiedFaces)
+      .flatMap(([isOld, isNew]) => pairs(isOld).zip(pairs(isNew)))
+      .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
+      .map(([eo, en]) => [I.List(eo).sort(), I.List(en)])
+      .groupBy(([eo]) => eo)
+      .map(([[, a], [, b]]) => a.concat(b).reverse())
+      .valueSeq());
+
+  return {
+    pos    : pos.concat(newPos),
+    isFixed: isFixed.concat(newPos.map(i => true)),
+    faces  : modifiedFaces.concat(edgeFaces)
+  };
+};
+
+
 if (require.main == module) {
   const cube = {
     pos: I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
@@ -301,4 +322,5 @@ if (require.main == module) {
   const t = withFlattenedCenterFaces(cube);
 
   console.log(insetAt(t, 0.1, I.Range(0, 8).map(i => true)));
+  console.log(beveledAt(t, 0.1, I.Range(0, 8).map(i => true)));
 }
