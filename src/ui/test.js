@@ -15,7 +15,7 @@ const App = React.createClass({
   displayName: 'App',
 
   getInitialState() {
-    const scene = makeScene(delaney.parse(tilings.pcu));
+    const scene = makeScene(delaney.parse(tilings.dia));
     const camera = scene.getObjectByName('camera');
     return {
       scene: scene,

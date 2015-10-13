@@ -259,7 +259,8 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
 
   const newVertexForStretch = ([v, hs]) => {
     const ends  = hs.map(([f, i]) => pos.get(endIndex(f, i)));
-    const c     = centroid(ends.slice(1, -1));
+    const c     = centroid(ends.length > 2 ?
+                           ends.slice(1, -1) : corners(pos)(faces.get(hs[0][0])));
     const inset = insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
     return [inset, I.fromJS(hs.slice(0, -1))];
   };
@@ -334,5 +335,5 @@ if (require.main == module) {
   const t = withFlattenedCenterFaces(cube);
 
   console.log(insetAt(t, 0.1, I.Range(0, 8).map(i => true)));
-  console.log(beveledAt(t, 0.1, I.Range(0, 8).map(i => true)));
+  console.log(beveledAt(cube, 0.1, I.Range(0, 8).map(i => true)));
 }

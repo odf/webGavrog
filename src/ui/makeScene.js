@@ -77,7 +77,7 @@ const geometry = function geometry(vertices, faces) {
   });
 
   geom.computeFaceNormals();
-  geom.computeVertexNormals();
+  //geom.computeVertexNormals();
   return geom;
 };
 
@@ -209,10 +209,13 @@ const tiles = t => {
 const processedSolid = t0 => {
   const t1 = surface.withFlattenedCenterFaces(t0);
   const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
-  const t3 = surface.insetAt(t2, 0.04, t2.isFixed);
-  const t4 = surface.beveledAt(t3, 0.02, t2.isFixed);
+  const t3 = surface.insetAt(t2, 0.03, t2.isFixed);
+  const t4 = surface.beveledAt(t3, 0.015, t2.isFixed);
 
-  return t4;
+  const isCorner = I.Range(0, t4.pos.size).map(i => i >= t3.pos.size);
+  const t5 = surface.beveledAt(t4, 0.005, isCorner);
+
+  return t5;
 };
 
 
@@ -266,9 +269,9 @@ export default function(ds) {
   camera.add(light(0xffffff,  3*distance,  5*distance, distance));
   camera.add(light(0x666666, -5*distance, -5*distance, distance));
 
-  scene.add(model);
+  //scene.add(model);
   scene.add(tilesMesh);
-  //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
+  scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
   scene.add(camera);
 
   return scene;
