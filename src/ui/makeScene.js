@@ -77,7 +77,7 @@ const geometry = function geometry(vertices, faces) {
   });
 
   geom.computeFaceNormals();
-  //geom.computeVertexNormals();
+  geom.computeVertexNormals();
   return geom;
 };
 
@@ -215,7 +215,7 @@ const processedSolid = t0 => {
   const isCorner = I.Range(0, t4.pos.size).map(i => i >= t3.pos.size);
   const t5 = surface.beveledAt(t4, 0.005, isCorner);
 
-  return t5;
+  return t4;
 };
 
 
@@ -271,7 +271,7 @@ export default function(ds) {
 
   //scene.add(model);
   scene.add(tilesMesh);
-  scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
+  //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
   scene.add(camera);
 
   return scene;
