@@ -223,17 +223,16 @@ export default function(ds) {
   const scene  = new THREE.Scene();
 
   const ballMaterial = new THREE.MeshPhongMaterial({
-    color    : 0xff4040,
-    shininess: 50
+    color: 0xff4040
   });
 
   const stickMaterial = new THREE.MeshPhongMaterial({
-    color    : 0x4040ff,
-    shininess: 50
+    color: 0x4040ff,
   });
 
   const tileMaterial = new THREE.MeshPhongMaterial({
-    color    : 0x00ffff
+    color: 0x00ffff,
+    shininess: 5
   });
 
   const t   = tiling(ds);
@@ -261,13 +260,13 @@ export default function(ds) {
   const geom = geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS());
   const tilesMesh = new THREE.Mesh(geom, tileMaterial);
 
-  const distance = 18;
+  const distance = 6;
   const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
   camera.name = 'camera';
-  camera.position.z = 5*distance;
+  camera.position.z = distance;
 
-  camera.add(light(0xffffff,  3*distance,  5*distance, distance));
-  camera.add(light(0x666666, -5*distance, -5*distance, distance));
+  camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
+  camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
 
   //scene.add(model);
   scene.add(tilesMesh);
