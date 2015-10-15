@@ -237,7 +237,7 @@ export default function(ds) {
 
   const t   = tiling(ds);
   const net = t.graph;
-  const g   = graphPortion(net, 0, 3);
+  const g   = graphPortion(net, 0, 2);
   const pos = t.positions;
   let verts = g.vertices.map(function(v) {
     const p = V.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
@@ -269,7 +269,7 @@ export default function(ds) {
   camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
   camera.add(light(0x000022, 0.25*distance, 0.25*distance, -distance));
 
-  //scene.add(model);
+  scene.add(model);
   scene.add(tilesMesh);
   //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
   scene.add(camera);
