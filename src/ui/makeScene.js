@@ -267,6 +267,7 @@ export default function(ds) {
 
   camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
   camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
+  camera.add(light(0x000022, 0.25*distance, 0.25*distance, -distance));
 
   //scene.add(model);
   scene.add(tilesMesh);
