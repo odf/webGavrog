@@ -15,6 +15,8 @@ import * as surface  from '../geometry/surface';
 
 import tiling from '../dsymbols/tilings';
 
+import * as webworkers from '../common/webworkers';
+
 
 const CoverVertex = I.Record({
   v: undefined,
@@ -220,6 +222,9 @@ const processedSolid = t0 => {
 
 
 export default function(ds) {
+  const worker = webworkers.create('js/testWorker.js');
+  worker({ a: 1, b: 2 }, (err, val) => console.log(`err=${err}, val=${val}`));
+
   const scene  = new THREE.Scene();
 
   const ballMaterial = new THREE.MeshPhongMaterial({
