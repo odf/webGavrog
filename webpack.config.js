@@ -2,7 +2,7 @@ var path    = require('path');
 var basedir = __dirname;
 
 
-module.exports = [ "test", "testWorker" ].map(function(name) {
+module.exports = [ "test", "sceneWorker" ].map(function(name) {
   return {
     context: path.join(basedir, "src"),
     entry: [ "babel-core/polyfill", "./ui/"+name+".js" ],

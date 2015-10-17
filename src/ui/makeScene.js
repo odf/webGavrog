@@ -1,5 +1,6 @@
 import * as I     from 'immutable';
 import * as THREE from 'three';
+import * as csp   from 'plexus-csp';
 
 import * as R from '../arithmetic/float';
 import _M     from '../arithmetic/matrix';
@@ -11,7 +12,6 @@ const V = _V(R, 0);
 import * as delaney  from '../dsymbols/delaney';
 import * as props    from '../dsymbols/properties';
 import * as periodic from '../pgraphs/periodic';
-import * as surface  from '../geometry/surface';
 
 import tiling from '../dsymbols/tilings';
 
@@ -201,83 +201,74 @@ const tiles = t => {
         .map(D => positionIndexForElement.get(D)))));
 
   return {
-    pos    : cornerPositions,
-    faces  : faces,
-    isFixed: I.Range(0, cornerPositions.size).map(i => true)
+    pos    : cornerPositions.map(v => v.data).toJS(),
+    faces  : faces.toJS(),
+    isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS()
   };
 };
 
 
-const processedSolid = t0 => {
-  const t1 = surface.withFlattenedCenterFaces(t0);
-  const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
-  const t3 = surface.insetAt(t2, 0.03, t2.isFixed);
-  const t4 = surface.beveledAt(t3, 0.015, t2.isFixed);
-
-  const isCorner = I.Range(0, t4.pos.size).map(i => i >= t3.pos.size);
-  const t5 = surface.beveledAt(t4, 0.005, isCorner);
-
-  return t4;
-};
+const worker = webworkers.create('js/sceneWorker.js');
+const callWorker = csp.nbind(worker, null);
 
 
 export default function(ds) {
-  const worker = webworkers.create('js/testWorker.js');
-  worker({ a: 1, b: 2 }, (err, val) => console.log(`err=${err}, val=${val}`));
+  return csp.go(function*() {
+    const scene  = new THREE.Scene();
 
-  const scene  = new THREE.Scene();
+    const ballMaterial = new THREE.MeshPhongMaterial({
+      color: 0xff4040
+    });
 
-  const ballMaterial = new THREE.MeshPhongMaterial({
-    color: 0xff4040
+    const stickMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4040ff,
+    });
+
+    const tileMaterial = new THREE.MeshPhongMaterial({
+      color: 0x00ffff,
+      shininess: 5
+    });
+
+    const t   = tiling(ds);
+    const net = t.graph;
+    const g   = graphPortion(net, 0, 2);
+    const pos = t.positions;
+    let verts = g.vertices.map(function(v) {
+      const p = V.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
+      return apply(p, t.basis).data.toJS();
+    }).toArray();
+    if (delaney.dim(ds) == 2)
+      verts = verts.map(p => [p[0], p[1], 0]);
+
+    const model = ballAndStick(
+      'cube',
+      verts,
+      g.edges,
+      0.06,
+      0.03,
+      ballMaterial,
+      stickMaterial
+    );
+
+    const surf = yield callWorker({ cmd: 'processSolid', val: tiles(t) });
+
+    const geom = geometry(surf.pos, surf.faces);
+    const tilesMesh = new THREE.Mesh(geom, tileMaterial);
+
+    const distance = 6;
+    const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
+    camera.name = 'camera';
+    camera.position.z = distance;
+
+    camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
+    camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
+    camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
+
+    scene.add(model);
+    scene.add(tilesMesh);
+    //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
+    scene.add(camera);
+
+    return scene;
   });
-
-  const stickMaterial = new THREE.MeshPhongMaterial({
-    color: 0x4040ff,
-  });
-
-  const tileMaterial = new THREE.MeshPhongMaterial({
-    color: 0x00ffff,
-    shininess: 5
-  });
-
-  const t   = tiling(ds);
-  const net = t.graph;
-  const g   = graphPortion(net, 0, 2);
-  const pos = t.positions;
-  let verts = g.vertices.map(function(v) {
-    const p = V.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
-    return apply(p, t.basis).data.toJS();
-  }).toArray();
-  if (delaney.dim(ds) == 2)
-    verts = verts.map(p => [p[0], p[1], 0]);
-
-  const model = ballAndStick(
-    'cube',
-    verts,
-    g.edges,
-    0.06,
-    0.03,
-    ballMaterial,
-    stickMaterial
-  );
-
-  const surf = processedSolid(tiles(t));
-  const geom = geometry(surf.pos.map(v => v.data.toJS()), surf.faces.toJS());
-  const tilesMesh = new THREE.Mesh(geom, tileMaterial);
-
-  const distance = 6;
-  const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
-  camera.name = 'camera';
-  camera.position.z = distance;
-
-  camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
-  camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
-  camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
-
-  scene.add(model);
-  scene.add(tilesMesh);
-  //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
-  scene.add(camera);
-
-  return scene;
 };

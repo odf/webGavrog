@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as csp   from 'plexus-csp';
 
 import * as delaney  from '../dsymbols/delaney';
 import Display3d from './Display3d';
@@ -15,13 +16,7 @@ const App = React.createClass({
   displayName: 'App',
 
   getInitialState() {
-    const scene = makeScene(delaney.parse(tilings.dia));
-    const camera = scene.getObjectByName('camera');
-    return {
-      scene: scene,
-      camera: camera,
-      cameraParameters: { distance: camera.position.z }
-    };
+    return {};
   },
 
   handleResize(data) {
@@ -32,8 +27,20 @@ const App = React.createClass({
   },
 
   componentDidMount() {
+    const setState = this.setState.bind(this);
+
     this.handleResize();
     window.addEventListener('resize', this.handleResize);
+
+    csp.go(function*() {
+      try {
+        const scene = yield makeScene(delaney.parse(tilings.dia));
+        const camera = scene.getObjectByName('camera');
+        const cameraParameters = { distance: camera.position.z };
+
+        setState({ scene, camera, cameraParameters });
+      } catch(ex) { console.error(ex); }
+    });
   },
 
   componentWillUnmount() {
@@ -41,6 +48,9 @@ const App = React.createClass({
   },
 
   render() {
+    if (this.state.scene == null)
+      return React.DOM.div();
+
     return React.DOM.div(
       null,
       React.createElement(Display3d, {

@@ -106,7 +106,7 @@ const render3d = (function makeRender() {
   let _scheduled;
 
   const doRender = function doRender() {
-    if (_value.renderer) {
+    if (_value && _value.renderer) {
       const params = _value.cameraParameters;
       const m = params.matrix.data.toJS();
       const e = vec.plus(
