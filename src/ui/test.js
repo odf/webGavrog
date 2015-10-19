@@ -47,19 +47,35 @@ const App = React.createClass({
     window.removeEventListener('resize', this.handleResize);
   },
 
-  render() {
-    if (this.state.scene == null)
-      return React.DOM.div();
-
-    return React.DOM.div(
-      null,
-      React.createElement(Display3d, {
+  render3d() {
+    if (this.state.scene != null)
+      return React.createElement(Display3d, {
         scene           : this.state.scene,
         camera          : this.state.camera,
         cameraParameters: this.state.cameraParameters,
         width           : this.state.width - 20,
         height          : this.state.height - 20
-      }));
+      });
+  },
+
+  render() {
+    return React.DOM.div(
+      null,
+      this.render3d(),
+      React.DOM.p(
+        {
+          style: {
+            zIndex    : 10,
+            position  : 'fixed',
+            top       : '50px',
+            left      : '50px',
+            background: 'lightyellow',
+            border    : '1px solid lightgray',
+            padding   : '5px'
+          }
+        },
+        "Hello Gavrog!"
+      ));
   }
 });
 
