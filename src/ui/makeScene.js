@@ -229,7 +229,10 @@ export default function(ds) {
       shininess: 5
     });
 
-    const t   = tiling(ds);
+    const cov = delaney.parse(
+      yield callWorker({ cmd: 'dsCover', val: `${ds}` }));
+    const t = tiling(ds, cov);
+
     const net = t.graph;
     const g   = graphPortion(net, 0, 2);
     const pos = t.positions;

@@ -1,10 +1,13 @@
-import * as I       from 'immutable';
-import * as surface from '../geometry/surface';
+import * as I from 'immutable';
 
 import * as R from '../arithmetic/float';
 import _V     from '../arithmetic/vector';
 
 const V = _V(R, 0);
+
+import * as surface   from '../geometry/surface';
+import * as delaney   from '../dsymbols/delaney';
+import * as delaney3d from '../dsymbols/delaney3d';
 
 
 const processedSolid = t0 => {
@@ -20,22 +23,32 @@ const processedSolid = t0 => {
 };
 
 
+const handlers = {
+  processSolid({ pos, faces, isFixed }) {
+    const surfIn = {
+      pos    : I.fromJS(pos).map(V.make),
+      faces  : I.fromJS(faces),
+      isFixed: I.fromJS(isFixed)
+    };
+
+    const surfOut = processedSolid(surfIn);
+
+    return {
+      pos    : surfOut.pos.map(v => v.data).toJS(),
+      faces  : surfOut.faces.toJS(),
+      isFixed: surfOut.isFixed.toJS()
+    };
+  },
+
+  dsCover(dsTxt) {
+    const ds = delaney.parse(dsTxt);
+    const cov = delaney3d.pseudoToroidalCover(ds);
+    return `${cov}`;
+  }
+};
+
+
 onmessage = event => {
-  const { id, input: { cmd, val: { pos, faces, isFixed } } } = event.data;
-
-  const surfIn = {
-    pos    : I.fromJS(pos).map(V.make),
-    faces  : I.fromJS(faces),
-    isFixed: I.fromJS(isFixed)
-  };
-
-  const surfOut = processedSolid(surfIn);
-
-  const output = {
-    pos    : surfOut.pos.map(v => v.data).toJS(),
-    faces  : surfOut.faces.toJS(),
-    isFixed: surfOut.isFixed.toJS()
-  };
-
-  postMessage({ id, output, ok: true });
+  const { id, input: { cmd, val } } = event.data;
+  postMessage({ id, output: handlers[cmd](val), ok: true });
 };

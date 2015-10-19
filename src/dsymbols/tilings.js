@@ -180,10 +180,14 @@ const _orthonormalBasis = function _orthonormalBasis(G) {
 };
 
 
-export default function net(ds) {
-  const cov  = (delaney.dim(ds) == 3 ?
-              delaney3d.pseudoToroidalCover(ds) :
-              delaney2d.toroidalCover(ds));
+const makeCover = ds =>
+  delaney.dim(ds) == 3 ?
+  delaney3d.pseudoToroidalCover(ds) :
+  delaney2d.toroidalCover(ds);
+
+
+export default function tiling(ds, cover) {
+  const cov  = cover || makeCover(ds);
   const e2t  = _edgeTranslations(cov);
   const c2s  = _cornerShifts(cov, e2t);
   const skel = _skeleton(cov, e2t, c2s);
@@ -210,7 +214,7 @@ export default function net(ds) {
 if (require.main == module) {
   const test = function test(ds) {
     console.log('ds = '+ds);
-    console.log(net(ds));
+    console.log(tiling(ds));
     console.log();
   }
 
