@@ -1,0 +1,14 @@
+*, *:before, *:after {
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+html {
+    font-size: 13px;
+    font-family: arial, sans-serif;
+}
+
+body {
+    margin: 0;
+}

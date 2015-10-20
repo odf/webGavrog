@@ -67,8 +67,9 @@ const App = React.createClass({
           style: {
             zIndex    : 10,
             position  : 'fixed',
-            top       : '50px',
-            left      : '50px',
+            top       : '10px',
+            right     : '10px',
+            margin    : '0',
             background: 'lightyellow',
             border    : '1px solid lightgray',
             padding   : '5px'
