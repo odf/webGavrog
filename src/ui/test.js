@@ -53,8 +53,8 @@ const App = React.createClass({
         scene           : this.state.scene,
         camera          : this.state.camera,
         cameraParameters: this.state.cameraParameters,
-        width           : this.state.width - 20,
-        height          : this.state.height - 20
+        width           : this.state.width,
+        height          : this.state.height
       });
   },
 

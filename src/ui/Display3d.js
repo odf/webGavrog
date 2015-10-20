@@ -190,7 +190,9 @@ export default React.createClass({
 
   componentDidMount() {
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    React.findDOMNode(this).appendChild(renderer.domElement);
+    const canvas = renderer.domElement;
+    canvas.style.display = 'block';
+    React.findDOMNode(this).appendChild(canvas);
 
     renderer.domElement.addEventListener('contextmenu', this.preventDefault);
 
