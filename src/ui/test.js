@@ -75,7 +75,7 @@ const App = React.createClass({
             padding   : '5px'
           }
         },
-        "Hello Gavrog!"
+        "Welcome to Gavrog!"
       ));
   }
 });
