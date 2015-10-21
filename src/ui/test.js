@@ -62,21 +62,7 @@ const App = React.createClass({
     return React.DOM.div(
       null,
       this.render3d(),
-      React.DOM.p(
-        {
-          style: {
-            zIndex    : 10,
-            position  : 'fixed',
-            top       : '10px',
-            right     : '10px',
-            margin    : '0',
-            background: 'lightyellow',
-            border    : '1px solid lightgray',
-            padding   : '5px'
-          }
-        },
-        "Welcome to Gavrog!"
-      ));
+      React.DOM.p({ className: 'menu' }, "Welcome to Gavrog!"));
   }
 });
 
