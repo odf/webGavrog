@@ -1,5 +1,9 @@
 import * as React from 'react';
 
+
+const clamp = (val, lo, hi) => Math.max(lo, Math.min(hi, val));
+
+
 export default React.createClass({
   getInitialState() {
     return {
@@ -12,12 +16,16 @@ export default React.createClass({
     event.preventDefault();
 
     document.addEventListener('mousemove', this.handleMouseMove, false);
-    document.addEventListener('mouseup'  , this.handleMouseUp, false);
+    document.addEventListener('mouseup'  , this.handleMouseUp  , false);
+
+    const element = React.findDOMNode(this);
 
     this.setState({
       mouseDown: true,
       offsetX: this.state.posX - event.clientX,
-      offsetY: this.state.posY - event.clientY
+      offsetY: this.state.posY - event.clientY,
+      maxX   : window.innerWidth  - element.offsetWidth,
+      maxY   : window.innerHeight - element.offsetHeight
     });
   },
 
@@ -25,8 +33,8 @@ export default React.createClass({
     event.preventDefault();
 
     this.setState({
-      posX: event.clientX + this.state.offsetX,
-      posY: event.clientY + this.state.offsetY
+      posX: clamp(event.clientX + this.state.offsetX, 0, this.state.maxX),
+      posY: clamp(event.clientY + this.state.offsetY, 0, this.state.maxY)
     });
   },
 
