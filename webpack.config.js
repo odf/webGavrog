@@ -5,7 +5,7 @@ var basedir = __dirname;
 module.exports = [ "test", "sceneWorker" ].map(function(name) {
   return {
     context: path.join(basedir, "src"),
-    entry: [ "babel-core/polyfill", "./ui/"+name+".js" ],
+    entry: [ "babel-core/polyfill", "./ui/"+name ],
     devtool: "#inline-source-map",
     output: {
       path: path.join(basedir, "public", "js"),

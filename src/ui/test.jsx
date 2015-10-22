@@ -3,6 +3,7 @@ import * as csp   from 'plexus-csp';
 
 import * as delaney  from '../dsymbols/delaney';
 import Display3d from './Display3d';
+import Floatable from './Floatable';
 import makeScene from './makeScene';
 
 
@@ -49,22 +50,25 @@ const App = React.createClass({
 
   render3d() {
     if (this.state.scene != null)
-      return React.createElement(Display3d, {
-        scene           : this.state.scene,
-        camera          : this.state.camera,
-        cameraParameters: this.state.cameraParameters,
-        width           : this.state.width,
-        height          : this.state.height
-      });
+      return (
+        <Display3d scene            = {this.state.scene}
+                   camera           = {this.state.camera}
+                   cameraParameters = {this.state.cameraParameters}
+                   width            = {this.state.width}
+                   height           = {this.state.height}
+                   />
+      );
   },
 
   render() {
-    return React.DOM.div(
-      null,
-      this.render3d(),
-      React.DOM.p({ className: 'menu' }, "Welcome to Gavrog!"));
+    return (
+      <div>
+        {this.render3d()}
+        <Floatable><span>Welcome to Gavrog!</span></Floatable>
+      </div>
+    );
   }
 });
 
 
-React.render(React.createElement(App), document.getElementById('react-main'));
+React.render(<App/>, document.getElementById('react-main'));
