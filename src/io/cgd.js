@@ -33,11 +33,12 @@ const splitLine = (s, lineNr) => {
 
 
 const rawBlocks = function*(lines) {
+  let i = 0;
   let current = null;
 
-  for (let i = 0; i < lines.length; ++i) {
-    const lineNr = i+1;
-    const fields = splitLine(lines[i], lineNr);
+  for (const line of lines) {
+    const lineNr = ++i;
+    const fields = splitLine(line, lineNr);
     if (fields.length == 0)
       continue;
 
