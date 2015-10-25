@@ -103,7 +103,7 @@ const processBlock = block => {
 
 
 export default function* blocks(lines) {
-  for (let b of rawBlocks(lines))
+  for (const b of rawBlocks(lines))
     yield processBlock(b);
 };
 
@@ -131,7 +131,7 @@ if (require.main == module) {
   process.argv.slice(2).forEach(file => {
     const txt = fs.readFileSync(file, { encoding: 'utf8' });
     const lines = txt.split(/\r?\n/);
-    for (let b of blocks(lines))
+    for (const b of blocks(lines))
       console.log(JSON.stringify(b, null, 2));
   });
 }
