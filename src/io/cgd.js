@@ -32,9 +32,7 @@ const splitLine = (s, lineNr) => {
 };
 
 
-const splitIntoRawBlocks = s => {
-  const lines = s.split(/\r?\n/);
-  const blocks = [];
+const rawBlocks = function*(lines) {
   let current = null;
 
   for (let i = 0; i < lines.length; ++i) {
@@ -46,7 +44,7 @@ const splitIntoRawBlocks = s => {
     if (fields[0].toLowerCase() == 'end') {
       if (current == null)
         throw new Error(`no active block to be closed at line ${lineNr}`);
-      blocks.push(current);
+      yield current;
       current = null;
     }
     else {
@@ -59,8 +57,6 @@ const splitIntoRawBlocks = s => {
 
   if (current != null)
     throw new Error('file ends within a block');
-
-  return blocks;
 };
 
 
@@ -95,7 +91,7 @@ const processBlock = block => {
     }
 
     if (args.length)
-      content.push({ key, args });
+      content.push({ lineNr, key, args });
   }
 
   return {
@@ -106,8 +102,9 @@ const processBlock = block => {
 };
 
 
-export default function parse(s) {
-  return splitIntoRawBlocks(s).map(processBlock);
+export default function* blocks(lines) {
+  for (let b of rawBlocks(lines))
+    yield processBlock(b);
 };
 
 
@@ -133,6 +130,8 @@ if (require.main == module) {
 
   process.argv.slice(2).forEach(file => {
     const txt = fs.readFileSync(file, { encoding: 'utf8' });
-    console.log(JSON.stringify(parse(txt), null, 2));
+    const lines = txt.split(/\r?\n/);
+    for (let b of blocks(lines))
+      console.log(JSON.stringify(b, null, 2));
   });
 }
