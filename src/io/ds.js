@@ -38,6 +38,8 @@ if (require.main == module) {
 1,1,1:
 4,4
 >
+
+    <1:1,1,1:6,3>
 `;
 
   const lines = txt.split(/\r?\n/);
