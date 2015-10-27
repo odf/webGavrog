@@ -212,7 +212,7 @@ const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
 
 
-export default function(ds) {
+export default function(ds, log = console.log) {
   return csp.go(function*() {
     const scene  = new THREE.Scene();
 
@@ -229,10 +229,14 @@ export default function(ds) {
       shininess: 5
     });
 
+    log('Finding the pseudo-toroidal cover...');
     const cov = delaney.parse(
       yield callWorker({ cmd: 'dsCover', val: `${ds}` }));
+
+    log('Building the tiling object...');
     const t = tiling(ds, cov);
 
+    log('Generating the subgraph...');
     const net = t.graph;
     const g   = graphPortion(net, 0, 2);
     const pos = t.positions;
@@ -243,6 +247,7 @@ export default function(ds) {
     if (delaney.dim(ds) == 2)
       verts = verts.map(p => [p[0], p[1], 0]);
 
+    log('Building a ball-and-stick model...');
     const model = ballAndStick(
       'cube',
       verts,
@@ -253,11 +258,13 @@ export default function(ds) {
       stickMaterial
     );
 
+    log('Making the tile geometries...');
     const surf = yield callWorker({ cmd: 'processSolid', val: tiles(t) });
 
     const geom = geometry(surf.pos, surf.faces);
     const tilesMesh = new THREE.Mesh(geom, tileMaterial);
 
+    log('Adding lights and a camera...');
     const distance = 6;
     const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
     camera.name = 'camera';
@@ -272,6 +279,7 @@ export default function(ds) {
     //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
     scene.add(camera);
 
+    log('Scene complete!');
     return scene;
   });
 };

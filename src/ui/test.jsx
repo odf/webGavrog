@@ -27,21 +27,23 @@ const App = React.createClass({
     });
   },
 
-  componentDidMount() {
-    const setState = this.setState.bind(this);
+  log(s) {
+    this.setState({ log: s });
+  },
 
+  componentDidMount() {
     this.handleResize();
     window.addEventListener('resize', this.handleResize);
 
     csp.go(function*() {
       try {
-        const scene = yield makeScene(delaney.parse(tilings.dia));
+        const scene = yield makeScene(delaney.parse(tilings.dia), this.log);
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
-        setState({ scene, camera, cameraParameters });
+        this.setState({ scene, camera, cameraParameters });
       } catch(ex) { console.error(ex); }
-    });
+    }.bind(this));
   },
 
   componentWillUnmount() {
@@ -61,10 +63,15 @@ const App = React.createClass({
   },
 
   render() {
+    const message = this.state.log || "Welcome!";
+
     return (
       <div>
         {this.render3d()}
-        <Floatable><span>Welcome to Gavrog!</span></Floatable>
+        <Floatable>
+          <h3 style={{ margin: 0 }}>Gavrog</h3>
+          <span>{message}</span>
+        </Floatable>
       </div>
     );
   }
