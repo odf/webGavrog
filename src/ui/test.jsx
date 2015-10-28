@@ -68,10 +68,9 @@ const App = React.createClass({
     return (
       <div>
         {this.render3d()}
-        <Floatable>
-          <img style={{ float: "left", marginRight: "1em" }}
-               src="3dt.ico"/>
-          <h3 style={{ margin: 0 }}>Gavrog</h3>
+        <Floatable className="infoBox">
+          <img className="logo" src="3dt.ico"/>
+          <h3 className="infoHeader">Gavrog</h3>
           {message}
         </Floatable>
       </div>

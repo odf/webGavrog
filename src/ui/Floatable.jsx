@@ -51,7 +51,7 @@ export default React.createClass({
 
   render() {
     return (
-      <div className="floatable"
+      <div className={`floatable ${this.props.className}`}
            style={{ left  : `${this.state.posX}px`,
                     top   : `${this.state.posY}px`,
                     cursor: this.state.mouseDown ? 'grabbing' : 'grab' }}

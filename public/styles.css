@@ -25,3 +25,19 @@ body {
     border-radius: 10px;
     box-shadow   : 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
+
+.infoBox {
+    width: 18em;
+}
+
+.infoHeader {
+    font-size: 18px;
+    font-variant: small-caps;
+    color: darkblue;
+    margin: 0.2em 0;
+}
+
+.logo {
+    float: left;
+    margin-right: 1em;
+}
