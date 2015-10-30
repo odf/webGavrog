@@ -7,6 +7,12 @@ import Floatable from './Floatable';
 import makeScene from './makeScene';
 
 
+const triangleUp    = '\u25b2';
+const triangleRight = '\u25ba';
+const triangleDown  = '\u25bc';
+const triangleLeft  = '\u25c0';
+
+
 const tilings = {
   dia: '<1.1:2 3:2,1 2,1 2,2:6,3 2,6>',
   pcu: '<1.1:1 3:1,1,1,1:4,3,4>'
@@ -50,6 +56,10 @@ const App = React.createClass({
     window.removeEventListener('resize', this.handleResize);
   },
 
+  toggleMenu() {
+    this.setState({ showMenu: !this.state.showMenu });
+  },
+
   render3d() {
     if (this.state.scene != null)
       return (
@@ -62,6 +72,20 @@ const App = React.createClass({
       );
   },
 
+  renderTrigger() {
+    return (
+      <div className="infoBoxTrigger"
+           onClick={this.toggleMenu}>
+        {this.state.showMenu ? triangleUp : triangleDown}
+      </div>
+    );
+  },
+
+  renderMenu() {
+    if (this.state.showMenu)
+      return (<div className="infoBoxMenu">Menu</div>);
+  },
+
   render() {
     const message = this.state.log || "Welcome!";
 
@@ -69,9 +93,11 @@ const App = React.createClass({
       <div>
         {this.render3d()}
         <Floatable className="infoBox">
-          <img className="logo" src="3dt.ico"/>
-          <h3 className="infoHeader">Gavrog</h3>
-          {message}
+          {this.renderTrigger()}
+          <img className="infoBoxLogo" src="3dt.ico"/>
+          <h3 className="infoBoxHeader">Gavrog</h3>
+          <span className="clearFix">{message}</span>
+          {this.renderMenu()}
         </Floatable>
       </div>
     );

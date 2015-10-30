@@ -30,14 +30,35 @@ body {
     width: 18em;
 }
 
-.infoHeader {
+.infoBoxHeader {
     font-size: 18px;
     font-variant: small-caps;
     color: darkblue;
     margin: 0.2em 0;
 }
 
-.logo {
+.infoBoxLogo {
     float: left;
     margin-right: 1em;
+}
+
+.infoBoxTrigger {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.infoBoxMenu {
+    margin: 1em;
+}
+
+.clearFix:before,
+.clearFix:after {
+  content: ' ';
+  display: table;
+}
+
+.clearFix:after {
+  clear: both;
 }
