@@ -83,7 +83,13 @@ const App = React.createClass({
 
   renderMenu() {
     if (this.state.showMenu)
-      return (<div className="infoBoxMenu">Menu</div>);
+      return (
+        <ul className="infoBoxMenu">
+          <li className="infoBoxMenuItem">File</li>
+          <li className="infoBoxMenuItem">Options</li>
+          <li className="infoBoxMenuItem">Help</li>
+        </ul>
+      );
   },
 
   render() {

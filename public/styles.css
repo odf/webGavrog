@@ -51,6 +51,18 @@ body {
 
 .infoBoxMenu {
     margin: 1em;
+    padding: 0;
+    list-style: none;
+}
+
+.infoBoxMenuItem {
+    display: inline;
+    padding: 2px 1em;
+    border: 1px solid lightgray;
+    margin-left: -1px;
+    background-color: white;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .clearFix:before,
