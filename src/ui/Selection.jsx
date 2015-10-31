@@ -1,0 +1,137 @@
+import * as React from 'react';
+
+
+export default React.createClass({
+  getInitialState() {
+    return {};
+  },
+
+  componentDidMount() {
+    document.addEventListener('mousedown', this.handleMouseDown);
+  },
+
+  componentWillUnmount() {
+    document.removeEventListener('mousedown', this.handleMouseDown);
+  },
+
+  handleMouseDown(event) {
+    const node = React.findDOMNode(this);
+    const { left, right, top, bottom } = node.getBoundingClientRect();
+    const { pageX: x, pageY: y } = event;
+
+    if (x < left || x > right || y < top || y > bottom)
+      this.cancel();
+    else
+      event.preventDefault();
+  },
+
+  handleMouseEnter(event) {
+    this.focus();
+  },
+
+  handleKeyDown(event) {
+    const { key, keyCode } = event;
+
+    if (key == 'ArrowUp' || keyCode == 38) {
+      event.preventDefault();
+      this.previous();
+    }
+    else if (key == 'ArrowDown' || keyCode == 40) {
+      event.preventDefault();
+      this.next();
+    }
+    else if (key == 'Enter' || keyCode == 13) {
+      event.preventDefault();
+      this.select();
+    }
+    else if (key == 'Escape' || keyCode == 27) {
+      event.preventDefault();
+      this.cancel();
+    }
+    else if (key == 'Tab' || keyCode == 9) {
+      this.select();
+    }
+  },
+
+  focus() {
+    React.findDOMNode(this.refs.container).focus();
+  },
+
+  highlight(i) {
+    this.focus();
+    this.setState({ highlighted: i });
+  },
+
+  next() {
+    const n = this.props.children.length;
+    const i = this.state.highlighted + 1;
+
+    if (i < n)
+      this.highlight(i);
+    else if (this.props.onMenuLeave) {
+      this.highlight(null);
+      this.props.onMenuLeave();
+    } else
+      this.props.highlight(0);
+  },
+
+  previous() {
+    const n = this.props.children.length;
+    const i = this.state.highlighted - 1;
+
+    if (i >= 0)
+      this.highlight(i);
+    else if (this.props.onMenuLeave) {
+      this.highlight(null);
+      this.props.onMenuLeave();
+    } else
+      this.props.highlight(n-1);
+  },
+
+  select(i) {
+    const selected = i == null ? this.state.highlighted : i;
+    this.setState({ selected: selected });
+    if (this.props.onSelect)
+      this.props.onSelect(selected);
+  },
+
+  cancel() {
+    if (this.props.onCancel)
+      this.props.onCancel();
+  },
+
+  render() {
+    const baseClass = this.props.className || 'selection';
+
+    const classes = i => {
+      const t = [ [`${baseClass}-item`     , true],
+                  [`${baseClass}-highlight`, this.state.highlighted == i],
+                  [`${baseClass}-selected` , this.state.selected == i] ];
+
+      return t.filter(([_, val]) => !!val)
+              .map(([cl, _]) => cl)
+              .join(' ');
+    };
+
+    const wrapItem = (item, i) => (
+      <li key          = {i}
+          index        = {i}
+          className    = {classes(i)}
+          onMouseEnter = {event => this.highlight(i)}
+          onClick      = {event => this.select(i)}
+          >
+        {item}
+      </li>
+    );
+
+    return (
+      <ul className = {baseClass}
+          tabIndex     = {0}
+          ref          = "container"
+          onMouseEnter = {this.handleMouseEnter}
+          onKeyDown    = {this.handleKeyDown}>
+        {this.props.children.map(wrapItem)}
+      </ul>
+    );
+  }
+});
