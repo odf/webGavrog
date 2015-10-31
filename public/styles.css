@@ -65,6 +65,10 @@ body {
     cursor: pointer;
 }
 
+.infoBoxMenuItem:hover {
+    background-color: lightgray;
+}
+
 .clearFix:before,
 .clearFix:after {
   content: ' ';
