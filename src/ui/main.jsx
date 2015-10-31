@@ -4,6 +4,7 @@ import * as csp   from 'plexus-csp';
 import * as delaney  from '../dsymbols/delaney';
 import Display3d from './Display3d';
 import Floatable from './Floatable';
+import Menu      from './Menu';
 import makeScene from './makeScene';
 
 
@@ -83,13 +84,8 @@ const App = React.createClass({
 
   renderMenu() {
     if (this.state.showMenu)
-      return (
-        <ul className="infoBoxMenu">
-          <li className="infoBoxMenuItem">File</li>
-          <li className="infoBoxMenuItem">Options</li>
-          <li className="infoBoxMenuItem">Help</li>
-        </ul>
-      );
+      return <Menu className="infoBoxMenu"
+                   labels={['File', 'Options', 'Help']}/>;
   },
 
   render() {
