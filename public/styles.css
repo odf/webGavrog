@@ -27,7 +27,7 @@ body {
 }
 
 .infoBox {
-    width: 18em;
+    min-width: 18em;
 }
 
 .infoBoxHeader {

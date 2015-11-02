@@ -85,7 +85,7 @@ const App = React.createClass({
   renderMenu() {
     if (this.state.showMenu)
       return <Menu className="infoBoxMenu"
-                   labels={['File', 'Options', 'Help']}/>;
+                   labels={['File', 'Tiling', 'View', 'Options', 'Help']}/>;
   },
 
   render() {
@@ -96,7 +96,7 @@ const App = React.createClass({
         {this.render3d()}
         <Floatable className="infoBox">
           {this.renderTrigger()}
-          <img className="infoBoxLogo" src="3dt.ico"/>
+          <img width="48" className="infoBoxLogo" src="3dt.ico"/>
           <h3 className="infoBoxHeader">Gavrog</h3>
           <span className="clearFix">{message}</span>
           {this.renderMenu()}
