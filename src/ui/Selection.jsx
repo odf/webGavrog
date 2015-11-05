@@ -32,11 +32,15 @@ export default React.createClass({
   handleKeyDown(event) {
     const { key, keyCode } = event;
 
-    if (key == 'ArrowUp' || keyCode == 38) {
+    if (key == 'ArrowLeft' || key == 'ArrowUp' ||
+        keyCode == 37 || keyCode == 38)
+    {
       event.preventDefault();
       this.previous();
     }
-    else if (key == 'ArrowDown' || keyCode == 40) {
+    else if (key == 'ArrowRight' || key == 'ArrowDown' ||
+             keyCode == 39 || keyCode == 40)
+    {
       event.preventDefault();
       this.next();
     }
@@ -72,7 +76,7 @@ export default React.createClass({
       this.highlight(null);
       this.props.onMenuLeave();
     } else
-      this.props.highlight(0);
+      this.highlight(0);
   },
 
   previous() {
@@ -85,7 +89,7 @@ export default React.createClass({
       this.highlight(null);
       this.props.onMenuLeave();
     } else
-      this.props.highlight(n-1);
+      this.highlight(n-1);
   },
 
   select(i) {
@@ -104,9 +108,9 @@ export default React.createClass({
     const baseClass = this.props.className || 'selection';
 
     const classes = i => {
-      const t = [ [`${baseClass}-item`     , true],
-                  [`${baseClass}-highlight`, this.state.highlighted == i],
-                  [`${baseClass}-selected` , this.state.selected == i] ];
+      const t = [ [`${baseClass}Item`     , true],
+                  [`${baseClass}Highlight`, this.state.highlighted == i],
+                  [`${baseClass}Selected` , this.state.selected == i] ];
 
       return t.filter(([_, val]) => !!val)
               .map(([cl, _]) => cl)

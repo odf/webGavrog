@@ -20,6 +20,15 @@ const tilings = {
 };
 
 
+const mainMenu = [
+  { label: 'File' },
+  { label: 'Tiling' },
+  { label: 'View' },
+  { label: 'Options' },
+  { label: 'Help' }
+];
+
+
 const App = React.createClass({
   displayName: 'App',
 
@@ -84,8 +93,7 @@ const App = React.createClass({
 
   renderMenu() {
     if (this.state.showMenu)
-      return <Menu className="infoBoxMenu"
-                   labels={['File', 'Tiling', 'View', 'Options', 'Help']}/>;
+      return <Menu className="infoBoxMenu" spec={mainMenu}/>;
   },
 
   render() {

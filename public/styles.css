@@ -53,6 +53,7 @@ body {
     margin: 1em;
     padding: 0;
     list-style: none;
+    outline: none;
 }
 
 .infoBoxMenuItem {
@@ -65,7 +66,7 @@ body {
     cursor: pointer;
 }
 
-.infoBoxMenuItem:hover {
+.infoBoxMenuHighlight {
     background-color: lightgray;
 }
 

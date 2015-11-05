@@ -1,20 +1,19 @@
 import * as React from 'react';
 
+import Selection from './Selection';
+
 
 export default React.createClass({
-  prefix() {
-    return this.props.className || "Menu";
-  },
-
-  renderMenuItem(name) {
-    return <li className={`${this.prefix()}Item`} key={name}>{name}</li>;
+  handleSelect(i) {
+    console.log(`=> ${i}`);
   },
 
   render() {
     return (
-      <ul className={this.prefix()}>
-        { this.props.labels.map(this.renderMenuItem) }
-      </ul>
+      <Selection className={this.props.className || "Menu"}
+                 onSelect={this.handleSelect}>
+        { this.props.spec.map(({ label }) => label) }
+      </Selection>
     );
   }
 });
