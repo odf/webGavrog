@@ -64,6 +64,8 @@ export default React.createClass({
   highlight(i) {
     this.focus();
     this.setState({ highlighted: i });
+    if (this.props.onHighlight)
+      this.props.onHighlight(i);
   },
 
   next() {
@@ -94,7 +96,7 @@ export default React.createClass({
 
   select(i) {
     const selected = i == null ? this.state.highlighted : i;
-    this.setState({ selected: selected });
+    this.setState({ selected: selected, highlighted: selected });
     if (this.props.onSelect)
       this.props.onSelect(selected);
   },
@@ -105,7 +107,7 @@ export default React.createClass({
   },
 
   render() {
-    const baseClass = this.props.className || 'selection';
+    const baseClass = this.props.className || 'Selection';
 
     const classes = i => {
       const t = [ [`${baseClass}Item`     , true],

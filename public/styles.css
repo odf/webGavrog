@@ -70,6 +70,10 @@ body {
     background-color: lightgray;
 }
 
+.infoBoxMenuActive {
+    color: green;
+}
+
 .clearFix:before,
 .clearFix:after {
   content: ' ';

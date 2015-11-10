@@ -4,15 +4,42 @@ import Selection from './Selection';
 
 
 export default React.createClass({
+  getInitialState() {
+    return { active: null };
+  },
+
   handleSelect(i) {
-    console.log(`=> ${i}`);
+    this.setState((state, props) => (
+      { active: state.active == null ? i : null }
+    ));
+  },
+
+  handleHighlight(i) {
+    this.setState((state, props) =>
+      state.active == null ? {} : { active: i }
+    );
+  },
+
+  handleCancel() {
+    this.setState({ active: null });
   },
 
   render() {
+    const baseClass = this.props.className || 'Menu';
+    const activeClass = `${baseClass}Active`;
+
+    const entries = this.props.spec.map(({ label }, i) => (
+      <span key={i} className={this.state.active == i ? activeClass : ""}>
+        {label}
+      </span>
+    ));
+
     return (
       <Selection className={this.props.className || "Menu"}
-                 onSelect={this.handleSelect}>
-        { this.props.spec.map(({ label }) => label) }
+                 onSelect={this.handleSelect}
+                 onHighlight={this.handleHighlight}
+                 onCancel={this.handleCancel}>
+        {entries}
       </Selection>
     );
   }
