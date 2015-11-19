@@ -26,13 +26,15 @@ export default function longInt(baseLength = 0) {
   });
 
 
+  const zeroFill = s => ZEROES.slice(s.length) + s;
+
+
   const _toString = function _toString(r) {
-    return r.reverse()
-      .map(function(d, i) {
-        const s = '' + d;
-        return (i == 0 ? '' : ZEROES.slice(s.length)) + s;
-      })
-      .join('');
+    return r
+      .map(d => zeroFill(''+d))
+      .reverse()
+      .join('')
+      .replace(/^0+/, '');
   };
 
 
@@ -59,7 +61,7 @@ export default function longInt(baseLength = 0) {
     if (n.sign == 0)
       return 0;
     else
-      return n.sign * n.digits.first() * Math.pow(BASE, n.digits.size - 1);
+      return n.sign * n.digits[0] * Math.pow(BASE, n.digits.length - 1);
   };
 
 
@@ -67,15 +69,17 @@ export default function longInt(baseLength = 0) {
     const sign = (n > 0) - (n < 0);
     n = Math.abs(n);
 
-    const digits = I.List().withMutations(function(list) {
-      while (n > 0) {
-        list.push(n % BASE);
-        n = Math.floor(n / BASE);
-      }
-    });
+    const digits = [];
+    while (n > 0) {
+      digits.push(n % BASE);
+      n = Math.floor(n / BASE);
+    }
 
     return make(sign, digits);
   };
+
+
+  const _last = a => a[a.length - 1];
 
 
   const parse = function parse(literal) {
@@ -84,19 +88,18 @@ export default function longInt(baseLength = 0) {
 
     const start = literal.match(/^[+-]/) ? 1 : 0;
 
-    const digits = I.List().withMutations(function(list) {
-      let n = literal.length;
-      while (n > start) {
-        const m = Math.max(n - BASE_LENGTH, start);
-        list.push(parseInt(literal.slice(m, n)));
-        n = m;
-      }
+    const digits = [];
+    let n = literal.length;
+    while (n > start) {
+      const m = Math.max(n - BASE_LENGTH, start);
+      digits.push(parseInt(literal.slice(m, n)));
+      n = m;
+    }
 
-      while (list.size > 0 && list.last() == 0)
-        list.pop();
-    });
+    while (digits.length > 0 && _last(digits) == 0)
+      digits.pop();
 
-    const sign = digits.size == 0 ? 0 : literal[0] == '-' ? -1 : 1;
+    const sign = digits.length == 0 ? 0 : literal[0] == '-' ? -1 : 1;
     
     return make(sign, digits);
   };
@@ -106,50 +109,51 @@ export default function longInt(baseLength = 0) {
   const abs      = n => sgn(n) ? make(1, n.digits) : n;
   const sgn      = n => n.sign;
   const _isZero  = n => n.sign == 0;
-  const isEven   = n => _isZero(n) || n.digits.first() % 2 == 0;
+  const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
 
 
   const _cmp = function _cmp(r, s) {
-    if (r.size != s.size)
-      return r.size - s.size;
+    if (r.length != s.length)
+      return r.length - s.length;
 
-    return I.Range(0, r.size)
-      .map(function(i) { return r.get(i) - s.get(i); })
-      .filter(function(x) { return x != 0 })
-      .last() || 0;
+    for (let i = r.length - 1; i >= 0; --i)
+      if (r[i] != s[i])
+        return r[i] - s[i];
+
+    return 0;
   };
 
 
   const _plus = function _plus(r, s) {
-    return I.List().withMutations(function(result) {
-      let carry = 0;
-      let i = 0;
-      while (i < r.size || i < s.size || carry) {
-        const digit = (r.get(i) || 0) + (s.get(i) || 0) + carry;
-        carry = digit >= BASE;
-        result.push(digit % BASE);
-        ++i;
-      }
-    });
+    const result = [];
+    let carry = 0;
+    let i = 0;
+    while (i < r.length || i < s.length || carry) {
+      const digit = (r[i] || 0) + (s[i] || 0) + carry;
+      carry = digit >= BASE;
+      result.push(digit % BASE);
+      ++i;
+    }
+    return result;
   };
 
 
   const _minus = function _minus(r, s) {
-    return I.List().withMutations(function(result) {
-      let borrow = 0;
-      let i = 0;
-      while (i < r.size || i < s.size) {
-        const digit = (r.get(i) || 0) - (s.get(i) || 0) - borrow;
-        borrow = digit < 0;
-        result.push((digit + BASE) % BASE);
-        ++i;
-      }
-      if (borrow)
-        throw new Error("panic: internal function called with bad arguments");
+    const result = [];
+    let borrow = 0;
+    let i = 0;
+    while (i < r.length || i < s.length) {
+      const digit = (r[i] || 0) - (s[i] || 0) - borrow;
+      borrow = digit < 0;
+      result.push((digit + BASE) % BASE);
+      ++i;
+    }
+    if (borrow)
+      throw new Error("panic: internal function called with bad arguments");
 
-      while (result.last() == 0)
-        result.pop();
-    });
+    while (_last(result) == 0)
+      result.pop();
+    return result;
   };
 
 
@@ -217,30 +221,29 @@ export default function longInt(baseLength = 0) {
   };
 
   const _seqByDigit = function _seqByDigit(s, d) {
-    return I.List().withMutations(function(result) {
-      let carry = 0;
-      for (let i = 0; i < s.size; ++i) {
-        const t = _digitByDigit(d, s.get(i));
-        result.push(t[0] + carry);
-        carry = t[1];
-      }
-      if (carry)
-        result.push(carry);
-    });
+    const result = [];
+    let carry = 0;
+    for (let i = 0; i < s.length; ++i) {
+      const t = _digitByDigit(d, s[i]);
+      result.push(t[0] + carry);
+      carry = t[1];
+    }
+    if (carry)
+      result.push(carry);
+    return result;
   };
 
 
   const _times = function _times(r, s) {
-    return I.List().withMutations(function(result) {
-      let tmp = I.List([]);
-      for (let i = 0; i < r.size; ++i) {
-        tmp = _plus(tmp, _seqByDigit(s, r.get(i)));
-        result.push(tmp.first());
-        tmp = tmp.rest();
-      }
-      for (let i = 0; i < tmp.size; ++i)
-        result.push(tmp.get(i));
-    });
+    const result = [];
+    let tmp = [];
+    for (let i = 0; i < r.length; ++i) {
+      tmp = _plus(tmp, _seqByDigit(s, r[i]));
+      result.push(tmp.shift());
+    }
+    for (let i = 0; i < tmp.length; ++i)
+      result.push(tmp[i]);
+    return result;
   };
 
 
@@ -255,31 +258,31 @@ export default function longInt(baseLength = 0) {
 
 
   const _idiv = function _idiv(r, s) {
-    const scale = Math.floor(BASE / (s.last() + 1));
+    const scale = Math.floor(BASE / (_last(s) + 1));
     const rs = _seqByDigit(r, scale);
     const ss = _seqByDigit(s, scale);
-    const m = ss.size;
-    const d = ss.last() + 1;
+    const m = ss.length;
+    const d = _last(ss) + 1;
 
-    let q = I.List();
-    let h = I.List();
+    let q = [];
+    let h = [];
     let t = rs;
 
     let f, n;
 
     while (true) {
-      while (q.last() == 0)
-        q = q.pop();
+      while (_last(q) == 0)
+        q.pop();
 
       if (_cmp(h, ss) >= 0) {
-        n = h.last() * (h.size > m ? BASE : 1);
+        n = _last(h) * (h.length > m ? BASE : 1);
         f = Math.floor(n / d) || 1;
-        q = _plus(q, I.List([f]));
+        q = _plus(q, [f]);
         h = _minus(h, _seqByDigit(ss, f));
-      } else if (!t.isEmpty()) {
-        q = q.unshift(0);
-        h = h.unshift(t.last());
-        t = t.pop();
+      } else if (t.length) {
+        q.unshift(0);
+        h.unshift(_last(t))
+        t.pop();
       } else
         return q;
     }
