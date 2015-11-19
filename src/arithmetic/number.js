@@ -1,4 +1,5 @@
 import * as I from 'immutable';
+import * as util from '../common/util';
 
 
 const _apply = (x, f) => f(x);
@@ -305,6 +306,8 @@ module.exports = rational;
 if (require.main == module) {
   const num = module.exports;
 
+  const timer = util.timer();
+
   let t = 1;
   for (let i = 1; i < 50; ++i)
     t = num.times(t, i);
@@ -324,4 +327,7 @@ if (require.main == module) {
   console.log(num.plus(t, q));
 
   console.log(num.div('18645978973801', '9991365345280000250718715904'));
+
+  console.log();
+  console.log(`Computation time: ${timer()} msec`);
 }

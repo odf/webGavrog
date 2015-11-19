@@ -1,4 +1,5 @@
 import * as I from 'immutable';
+import * as util from '../common/util';
 
 
 export default function longInt(baseLength = 0) {
@@ -326,6 +327,8 @@ if (require.main == module) {
     negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mod
   } = longInt(4);
 
+  const t = util.timer();
+
   console.log(promote(-123456789000000));
   console.log(parse('1234'));
   console.log(parse('+1234'));
@@ -373,4 +376,7 @@ if (require.main == module) {
     const { promote, times } = longInt();
     console.log(times(promote(12345678), promote(100000001)));
   }
+
+  console.log();
+  console.log(`Computation time: ${t()} msec`);
 }

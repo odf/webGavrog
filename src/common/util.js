@@ -1,6 +1,17 @@
 import * as I from 'immutable';
 
 
+const now = (() => {
+  if (typeof performance != 'undefined' && performance.now)
+    return performance.now;
+  if (typeof process != 'undefined' && process.hrtime)
+    return () => {
+      const [sec, nsec] = process.hrtime();
+      return sec * 1000 + nsec / 1000000;
+    };
+})();
+
+
 export function cmpLex(cmp = (x, y) => x < y ? -1 : x > y ? 1 : 0) {
   return function(a, b) {
     const n = Math.min(a.size, b.size);
@@ -15,11 +26,11 @@ export function cmpLex(cmp = (x, y) => x < y ? -1 : x > y ? 1 : 0) {
 
 
 export function timer() {
-  let _last = performance.now();
+  let _last = now();
 
   return () => {
     const previous = _last;
-    _last = performance.now();
-    return Math.round(_last - previous);
+    _last = now();
+    return _last - previous;
   };
 };
