@@ -373,8 +373,16 @@ if (require.main == module) {
   console.log(mod(promote(111111111), promote(12345679)));
 
   {
-    const { promote, times } = longInt();
+    const { promote, times, idiv } = longInt();
     console.log(times(promote(12345678), promote(100000001)));
+
+    let t = promote(1);
+    for (let i = 1; i < 50; ++i)
+      t = times(t, promote(i));
+    console.log(t);
+    for (let i = 1; i < 50; ++i)
+      t = idiv(t, promote(i));
+    console.log(t);
   }
 
   console.log();
