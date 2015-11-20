@@ -79,8 +79,8 @@ export default function matrix(scalar, zero, one) {
       throw new Error('shapes do not match');
 
     return _make(
-      I.Range(0, A.nrows).map(i => (
-        I.Range(0, A.ncols).map(j => (
+      _array(A.nrows).map((_, i) => (
+        _array(A.ncols).map((_, j) => (
           scalar.plus(get(A, i, j), get(B, i, j))))))
     );
   };
@@ -90,8 +90,8 @@ export default function matrix(scalar, zero, one) {
       throw new Error('shapes do not match');
 
     return _make(
-      I.Range(0, A.nrows).map(i => (
-        I.Range(0, A.ncols).map(j => (
+      _array(A.nrows).map((_, i) => (
+        _array(A.ncols).map((_, j) => (
           scalar.minus(get(A, i, j), get(B, i, j))))))
     );
   };
@@ -105,10 +105,10 @@ export default function matrix(scalar, zero, one) {
       throw new Error('shapes do not match');
 
     return _make(
-      I.Range(0, A.nrows).map(i => (
-        I.Range(0, B.ncols).map(j => (
-          I.Range(0, A.ncols)
-            .map(k => scalar.times(get(A, i, k), get(B, k, j)))
+      _array(A.nrows).map((_, i) => (
+        _array(B.ncols).map((_, j) => (
+          _array(A.ncols)
+            .map((_, k) => scalar.times(get(A, i, k), get(B, k, j)))
             .reduce(scalar.plus, zero)))))
     );
   };
@@ -235,8 +235,8 @@ export default function matrix(scalar, zero, one) {
 
 
   const _determinant = function _determinant(t) {
-    return I.Range(0, t.R.nrows)
-      .map(i => get(t.R, i, i))
+    return _array(t.R.nrows)
+      .map((_, i) => get(t.R, i, i))
       .reduce(scalar.times, t.sign);
   };
 
@@ -259,7 +259,7 @@ export default function matrix(scalar, zero, one) {
 
     for (let j = 0; j < k; ++j) {
       for (let i = top-1; i >= 0; --i) {
-        const x = I.Range(i+1, top)
+        const x = _array(top).map((_, nu) => nu).slice(i+1)
           .map(nu => scalar.times(get(R, i, nu), get(X, nu, j)))
           .reduce(scalar.plus, zero);
         const right = scalar.minus(get(v, i, j), x);
@@ -307,8 +307,8 @@ export default function matrix(scalar, zero, one) {
       return identity(m);
 
     const B = make(
-      I.Range(0, r).map(i => (
-        I.Range(0, d).map(j => (
+      _array(r).map((_, i) => (
+        _array(d).map((_, j) => (
           (j + r >= n) ? 0 : scalar.negative(get(R, i, j + r))))))
     );
 
@@ -323,19 +323,21 @@ export default function matrix(scalar, zero, one) {
 
 
   const _rowProduct = function _rowProduct(A, i, j) {
-    return I.Range(0, A.ncols)
-      .map(k => scalar.times(get(A, i, k), get(A, j, k)))
+    return _array(A.ncols)
+      .map((_, k) => scalar.times(get(A, i, k), get(A, j, k)))
       .reduce(scalar.plus, zero);
   };
 
   const _normalizeRow = function _normalizeRow(A, i) {
     const norm = Math.sqrt(scalar.toJS(_rowProduct(A, i, i)));
-    return _make(A.data.set(i, A.data.get(i).map(x => scalar.div(x, norm))));
+    const tmp = A.data.slice();
+    tmp[i] = tmp[i].map(x => scalar.div(x, norm));
+    return _make(tmp);
   };
 
   const orthonormalized = function orthonormalized(A) {
-    I.Range(0, A.nrows).forEach(i => {
-      I.Range(0, i).forEach(j => {
+    _array(A.nrows).forEach((_, i) => {
+      _array(i).forEach((_, j) => {
         A = _adjustRow(A, i, j, scalar.negative(_rowProduct(A, i, j)))
       });
       A = _normalizeRow(A, i);
