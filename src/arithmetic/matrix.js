@@ -9,53 +9,69 @@ export default function matrix(scalar, zero, one) {
     data : undefined
   });
 
-  Matrix.prototype.toString = function() {
-    return '<'+this.nrows+'x'+this.ncols+' matrix: '+this.data+'>';
+  const _printM = a => {
+    if (Array.isArray(a)) {
+      const entries = a.map(_printM);
+      return `List [ ${a.map(_printM).join(', ')} ]`;
+    }
+    else
+      return `${a}`;
   };
 
-  const get = (A, i, j) => A.data.getIn([i, j]);
+  Matrix.prototype.toString = function() {
+    return `<${this.nrows}x${this.ncols} matrix: ${_printM(this.data)}>`;
+  };
+
+  const get = (A, i, j) => A.data[i][j];
 
   const _make = function _make(data) {
-    if (data.size == 0 || data.first().size == 0)
+    if (data.length == 0 || data[0].length == 0)
       throw new Error('both dimensions must be positive');
 
     return new Matrix({
-      nrows: data.size,
-      ncols: data.first().size,
-      data : I.List(data.map(I.List))
+      nrows: data.length,
+      ncols: data[0].length,
+      data
     });
   };
 
+  const _asJS  = a => typeof a.toJS == 'function' ? a.toJS() : a;
+  const _max   = a => Math.max.apply(null, a);
+  const _array = (len, val = 0) => Array(len).fill(val);
+
   const make = function make(data) {
-    const tmp = I.List(data.map(I.List));
-    const m = tmp.map(row => row.size).max();
-    return _make(tmp.map(row => row.concat(I.Repeat(zero, m - row.size))));
+    const tmp = _asJS(data);
+    const m = _max(tmp.map(row => row.length));
+    return _make(tmp.map(row => row.concat(_array(m - row.length))));
   };
 
   const constant = function constant(nrows, ncols, value) {
     const x = value === undefined ? zero : value;
-    return _make(I.List(I.Repeat(I.List(I.Repeat(x, ncols)), nrows)));
+    const row = _array(ncols, x);
+    return _make(_array(nrows).map(_ => row));
   };
 
   const identity = function identity(n) {
-    const zrow = I.List(I.Repeat(zero, n));
-    return _make(I.Range(0, n).map(i => zrow.set(i, one)));
+    return _make(_array(n).map((_, i) => _array(n).fill(1, i, i+1))); 
   };
 
   const transposed = function transposed(A) {
     return _make(
-      I.Range(0, A.ncols).map(j => (
-        I.Range(0, A.nrows).map(i => (
+      _array(A.ncols).map((_, j) => (
+        _array(A.nrows).map((_, i) => (
           get(A, i, j)))))
     );
   };
 
   const set = function set(A, i, j, x) {
-    return _make(A.data.setIn([i, j], x));
+    const tmp = A.data.slice();
+    tmp[i] = tmp[i].slice();
+    tmp[i][j] = x;
+    return _make(tmp);
   };
 
   const update = function update(A, i, j, fn) {
-    return _make(A.data.updateIn([i, j], fn));
+    return set(A, i, j, fn(get(A, i, j)));
   };
 
   const plus = function plus(A, B) {
@@ -112,11 +128,16 @@ export default function matrix(scalar, zero, one) {
   };
 
   const _swapRows = function _swapRows(A, i, j) {
-    return _make(A.data.set(i, A.data.get(j)).set(j, A.data.get(i)));
+    const tmp = A.data.slice();
+    tmp[i] = A.data[j];
+    tmp[j] = A.data[i];
+    return _make(tmp);
   };
 
   const _negateRow = function _negateRow(A, i) {
-    return _make(A.data.set(i, A.data.get(i).map(scalar.negative)));
+    const tmp = A.data.slice();
+    tmp[i] = tmp[i].map(scalar.negative);
+    return _make(tmp);
   };
 
   const _truncate = function _truncate(x, a) {
@@ -131,7 +152,9 @@ export default function matrix(scalar, zero, one) {
     const fn0 = k => scalar.plus(get(A, i, k), scalar.times(get(A, j, k), f));
     const fn  = scalar.epsilon ? k => _truncate(fn0(k), get(A, i, k)) : fn0;
 
-    return _make(A.data.set(i, I.Range(0, A.ncols).map(fn)));
+    const tmp = A.data.slice();
+    tmp[i] = tmp[i].map((_, j) => fn(j));
+    return _make(tmp);
   };
 
   const _Triangulation = I.Record({
@@ -345,6 +368,8 @@ export default function matrix(scalar, zero, one) {
 
 
 if (require.main == module) {
+  const timer = require('../common/util').timer();
+
   let M = matrix(require('./number'), 0, 1);
 
   console.log(M.constant(3, 4));
@@ -419,4 +444,7 @@ if (require.main == module) {
 
   testOrthonormalize(M.make([[1],[2,3],[4,5,6]]));
   testOrthonormalize(M.make([[1,2,3],[0,4,5],[0,0,6]]));
+
+  console.log();
+  console.log(`Computation time: ${timer()} msec`);
 }
