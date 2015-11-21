@@ -370,9 +370,8 @@ export default function matrix(scalar, zero, one) {
 
 
 if (require.main == module) {
-  const timer = require('../common/util').timer();
-
   let M = matrix(require('./number'), 0, 1);
+  const timer = require('../common/util').timer();
 
   console.log(M.constant(3, 4));
   console.log(M.constant(3, 4, 5));
