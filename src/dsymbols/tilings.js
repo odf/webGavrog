@@ -218,6 +218,8 @@ if (require.main == module) {
     console.log();
   }
 
+  const timer = require('../common/util').timer();
+
   test(delaney.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
   test(delaney.parse('<1.1:1:1,1,1:6,3>'));
   test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
@@ -225,4 +227,7 @@ if (require.main == module) {
   test(delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>'));
   test(delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
   test(delaney.parse('<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>'));
+
+  console.log();
+  console.log(`Computation time: ${timer()} msec`);
 }
