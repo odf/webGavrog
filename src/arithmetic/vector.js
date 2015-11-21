@@ -9,69 +9,73 @@ export default function vector(scalar, zero) {
   });
 
   Vector.prototype.toString = function() {
-    return '<vector: '+this.data+'>'
+    return `<vector: List [ ${this.data.join(', ')} ]>`;
   };
 
   Vector.prototype.equals = function(other) {
-    return this.size == other.size && this.data.equals(other.data);
+    return cmp(this, other) == 0;
   };
 
-  const get = (v, i) => v.data.get(i);
+  const get = (v, i) => v.data[i];
 
-  const make = function make(data) {
-    const tmp = I.List(data);
-    if (tmp.size == 0)
+  const _make = data => {
+    if (data.length == 0)
       throw new Error('must have positive size');
 
     return new Vector({
-      size: tmp.size,
-      data: tmp
+      size: data.length,
+      data: data
     });
   };
 
-  const constant = function constant(size, value) {
-    const x = value === undefined ? zero : value;
-    return make(I.List(I.Repeat(x, size)));
-  };
+  const _array = (len, val = 0) => Array(len).fill(val);
 
-  const set    = (v, i, x)  => make(v.data.set(i, x));
-  const update = (v, i, fn) => make(v.data.update(i, fn));
+  const make     = data => _make(Array.isArray(data) ? data : data.toJS());
+  const constant = (size, value) => _make(_array(size, value));
 
-  const plus = function plus(v, w) {
+  const set    = (v, i, x)  => _make(v.data.slice().fill(x, i, i+1));
+  const update = (v, i, fn) => set(v, i, fn(get(v, i)));
+
+  const plus = (v, w) => {
     if (v.size != w.size)
       throw new Error('shapes do not match');
 
-    return make(I.Range(0, v.size).map(i => scalar.plus(get(v, i), get(w, i))));
+    return _make(
+      _array(v.size).map((_, i) => (
+        scalar.plus(get(v, i), get(w, i)))));
   };
 
-  const minus = function minus(v, w) {
+  const minus = (v, w) => {
     if (v.size != w.size)
       throw new Error('shapes do not match');
 
-    return make(I.Range(0, v.size).map(i => scalar.minus(get(v, i), get(w, i))));
+    return _make(
+      _array(v.size).map((_, i) => (
+        scalar.minus(get(v, i), get(w, i)))));
   };
 
-  const scaled = (f, v) => make(v.data.map(x => scalar.times(f, x)));
+  const scaled = (f, v) => _make(v.data.map(x => scalar.times(f, x)));
 
-  const cmp = function cmp(v, w) {
-    const d = I.Range(0, Math.min(v.size, w.size))
-      .map(i => scalar.cmp(get(v, i), get(w, i)))
-      .filter(x => !!x)
-      .first();
+  const cmp = (v, w) => {
+    for (let i = 0; i < v.size && i < w.size; ++i) {
+      const d = scalar.cmp(get(v, i), get(w, i));
+      if (d)
+        return d;
+    }
 
-    return d || v.size - w.size;
+    return v.size - w.size;
   };
 
-  const dotProduct = function dotProduct(v, w) {
+  const dotProduct = (v, w) => {
     if (v.size != w.size)
       throw new Error('shapes do not match');
 
-    return I.Range(0, v.size)
-      .map(i => scalar.times(get(v, i), get(w, i)))
+    return _array(v.size)
+      .map((_, i) => scalar.times(get(v, i), get(w, i)))
       .reduce(scalar.plus, zero);
   };
 
-  const crossProduct = function crossProduct(v, w) {
+  const crossProduct = (v, w) => {
     if (v.size != 3 || w.size != 3)
       throw new Error('both vector must be three-dimensional');
 

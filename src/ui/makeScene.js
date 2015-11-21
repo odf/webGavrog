@@ -104,7 +104,7 @@ const stick = function stick(p, q, radius, segments) {
   return geometry(
     I.List().concat(section.map(c => V.plus(c, p)),
                     section.map(c => V.plus(c, q)))
-      .map(v => v.data.toJS()),
+      .map(v => v.data),
     I.Range(0, n).map(function(i) {
       const j = (i + 1) % n;
       return [i, j, j+n, i+n];
@@ -242,7 +242,7 @@ export default function(ds, log = console.log) {
     const pos = t.positions;
     let verts = g.vertices.map(function(v) {
       const p = V.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
-      return apply(p, t.basis).data.toJS();
+      return apply(p, t.basis).data;
     }).toArray();
     if (delaney.dim(ds) == 2)
       verts = verts.map(p => [p[0], p[1], 0]);
