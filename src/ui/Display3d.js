@@ -108,7 +108,7 @@ const render3d = (function makeRender() {
   const doRender = function doRender() {
     if (_value && _value.renderer) {
       const params = _value.cameraParameters;
-      const m = params.matrix.data.toJS();
+      const m = params.matrix.data;
       const e = vec.plus(
         params.target,
         vec.scaled(params.distance, vec.make(m[2])));

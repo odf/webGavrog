@@ -36,9 +36,17 @@ export default function matrix(scalar, zero, one) {
   };
 
   const _clone = A => _make(A.data.map(row => row.slice()));
-  const _asJS  = a => typeof a.toJS == 'function' ? a.toJS() : a;
   const _max   = a => Math.max.apply(null, a);
   const _array = (len, val = 0) => Array(len).fill(val);
+
+  const _asJS  = a => {
+    if (typeof a.toJS == 'function')
+      return a.toJS();
+    else if (Array.isArray(a))
+      return a.map(row => typeof row.toJS == 'function' ? row.toJS() : row);
+    else
+      return a;
+  };
 
   const make = function make(data) {
     const tmp = _asJS(data);

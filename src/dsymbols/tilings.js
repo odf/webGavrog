@@ -28,7 +28,7 @@ const _edgeTranslations = function _edgeTranslations(cov) {
   return fg.edge2word.map(function(a) {
     return a.map(function(b) {
       const v = M.make([cosets.relatorAsVector(b, n)]);
-      return V.make(M.times(v, nul).data.first());
+      return V.make(M.times(v, nul).data[0]);
     });
   });
 };
@@ -161,8 +161,8 @@ const _scalarProduct = function _scalarProduct(v, w, G) {
 
 
 const _orthonormalBasis = function _orthonormalBasis(G) {
-  const n = G.data.size;
-  let e = M.identity(n).data.map(V.make);
+  const n = G.nrows;
+  let e = I.List(M.identity(n).data.map(V.make));
 
   I.Range(0, n).forEach(function(i) {
     let v = e.get(i);

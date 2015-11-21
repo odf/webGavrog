@@ -158,7 +158,7 @@ const light = function(color, x, y, z) {
 
 
 const apply = function(v, A) {
-  return V.make(M.times(M.make([v.data]), A).data.first());
+  return V.make(M.times(M.make([v.data]), A).data[0]);
 };
 
 
