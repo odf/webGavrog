@@ -35,6 +35,7 @@ export default function matrix(scalar, zero, one) {
     });
   };
 
+  const _clone = A => _make(A.data.map(row => row.slice()));
   const _asJS  = a => typeof a.toJS == 'function' ? a.toJS() : a;
   const _max   = a => Math.max.apply(null, a);
   const _array = (len, val = 0) => Array(len).fill(val);
@@ -68,6 +69,10 @@ export default function matrix(scalar, zero, one) {
     tmp[i] = tmp[i].slice();
     tmp[i][j] = x;
     return _make(tmp);
+  };
+
+  const _setInPlace = (A, i, j, x) => {
+    A.data[i][j] = x;
   };
 
   const update = function update(A, i, j, fn) {
@@ -127,17 +132,14 @@ export default function matrix(scalar, zero, one) {
     return best;
   };
 
-  const _swapRows = function _swapRows(A, i, j) {
-    const tmp = A.data.slice();
-    tmp[i] = A.data[j];
-    tmp[j] = A.data[i];
-    return _make(tmp);
+  const _swapRowsInPlace = (A, i, j) => {
+    [A.data[i], A.data[j]] = [A.data[j], A.data[i]];
   };
 
-  const _negateRow = function _negateRow(A, i) {
-    const tmp = A.data.slice();
-    tmp[i] = tmp[i].map(scalar.negative);
-    return _make(tmp);
+  const _negateRowInPlace = (A, i) => {
+    const row = A.data[i];
+    for (const j in row)
+      row[j] = scalar.negative(row[j]);
   };
 
   const _truncate = function _truncate(x, a) {
@@ -148,13 +150,13 @@ export default function matrix(scalar, zero, one) {
       return x;
   };
 
-  const _adjustRow = function _adjustRow(A, i, j, f) {
+  const _adjustRowInPlace = (A, i, j, f) => {
     const fn0 = k => scalar.plus(get(A, i, k), scalar.times(get(A, j, k), f));
     const fn  = scalar.epsilon ? k => _truncate(fn0(k), get(A, i, k)) : fn0;
 
-    const tmp = A.data.slice();
-    tmp[i] = tmp[i].map((_, j) => fn(j));
-    return _make(tmp);
+    const row = A.data[i];
+    for (const j in row)
+      row[j] = fn(j);
   };
 
   const _Triangulation = I.Record({
@@ -166,8 +168,8 @@ export default function matrix(scalar, zero, one) {
   const triangulation = function triangulation(A, overField) {
     const divide = overField ? scalar.div : scalar.idiv;
 
-    let R = A;
-    let U = identity(R.nrows);
+    const R = _clone(A);
+    const U = _clone(identity(R.nrows));
     let col = 0;
     let sign = 1;
 
@@ -184,14 +186,14 @@ export default function matrix(scalar, zero, one) {
         }
 
         if (pivotRow != row) {
-          R = _swapRows(R, row, pivotRow);
-          U = _swapRows(U, row, pivotRow);
+          _swapRowsInPlace(R, row, pivotRow);
+          _swapRowsInPlace(U, row, pivotRow);
           sign *= -1;
         }
 
         if (scalar.sgn(pivot) < 0) {
-          R = _negateRow(R, row);
-          U = _negateRow(U, row);
+          _negateRowInPlace(R, row);
+          _negateRowInPlace(U, row);
           sign *= -1;
         }
 
@@ -201,11 +203,11 @@ export default function matrix(scalar, zero, one) {
           if (scalar.sgn(get(R, k, col)) != 0) {
             const f = scalar.negative(divide(get(R, k, col), get(R, row, col)));
 
-            R = _adjustRow(R, k, row, f);
-            U = _adjustRow(U, k, row, f);
+            _adjustRowInPlace(R, k, row, f);
+            _adjustRowInPlace(U, k, row, f);
 
             if (overField)
-              R = set(R, k, col, zero);
+              _setInPlace(R, k, col, zero);
             else
               cleared = scalar.sgn(get(R, k, col)) == 0;
           }
@@ -255,7 +257,7 @@ export default function matrix(scalar, zero, one) {
     const k = v.ncols;
     const top = Math.min(n, m);
 
-    let X = constant(m, k);
+    const X = _clone(constant(m, k));
 
     for (let j = 0; j < k; ++j) {
       for (let i = top-1; i >= 0; --i) {
@@ -265,11 +267,11 @@ export default function matrix(scalar, zero, one) {
         const right = scalar.minus(get(v, i, j), x);
 
         if (scalar.sgn(right) == 0)
-          X = set(X, i, j, right);
+          _setInPlace(X, i, j, right);
         else if (scalar.sgn(get(R, i, i)) == 0)
           return null;
         else
-          X = set(X, i, j, scalar.div(right, get(R, i, i)));
+          _setInPlace(X, i, j, scalar.div(right, get(R, i, i)));
       }
     }
 
@@ -328,21 +330,25 @@ export default function matrix(scalar, zero, one) {
       .reduce(scalar.plus, zero);
   };
 
-  const _normalizeRow = function _normalizeRow(A, i) {
+  const _normalizeRowInPlace = (A, i) => {
     const norm = Math.sqrt(scalar.toJS(_rowProduct(A, i, i)));
-    const tmp = A.data.slice();
-    tmp[i] = tmp[i].map(x => scalar.div(x, norm));
-    return _make(tmp);
+
+    const row = A.data[i];
+    for (const j in row)
+      row[j] = scalar.div(row[j], norm);
   };
 
   const orthonormalized = function orthonormalized(A) {
-    _array(A.nrows).forEach((_, i) => {
+    const O = _clone(A);
+
+    _array(O.nrows).forEach((_, i) => {
       _array(i).forEach((_, j) => {
-        A = _adjustRow(A, i, j, scalar.negative(_rowProduct(A, i, j)))
+        _adjustRowInPlace(O, i, j, scalar.negative(_rowProduct(O, i, j)))
       });
-      A = _normalizeRow(A, i);
+      _normalizeRowInPlace(O, i);
     });
-    return A;
+
+    return O;
   };
 
 
