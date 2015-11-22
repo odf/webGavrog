@@ -8,6 +8,7 @@ const V = _V(R, 0);
 import * as surface   from '../geometry/surface';
 import * as delaney   from '../dsymbols/delaney';
 import * as delaney3d from '../dsymbols/delaney3d';
+import * as util      from '../common/util';
 
 
 const processedSolid = t0 => {
@@ -31,7 +32,9 @@ const handlers = {
       isFixed: I.fromJS(isFixed)
     };
 
+    const t = util.timer();
     const surfOut = processedSolid(surfIn);
+    console.log(`${Math.round(t())} msec in total to process the surfaces`);
 
     return {
       pos    : surfOut.pos.map(v => v.data).toJS(),
@@ -42,7 +45,11 @@ const handlers = {
 
   dsCover(dsTxt) {
     const ds = delaney.parse(dsTxt);
+
+    const t = util.timer();
     const cov = delaney3d.pseudoToroidalCover(ds);
+    console.log(`${Math.round(t())} msec in total to compute the cover`);
+
     return `${cov}`;
   }
 };

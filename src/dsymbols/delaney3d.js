@@ -5,6 +5,7 @@ import     _M from '../arithmetic/matrix';
 
 import stabilizer from '../fpgroups/stabilizer';
 
+import * as util        from '../common/util';
 import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
 import * as fundamental from './fundamental';
@@ -96,19 +97,22 @@ const _invariants = function _invariants(nrGens, rels) {
 
 
 export function pseudoToroidalCover(ds) {
+  const t = util.timer();
+  const elapsed = () => `${Math.round(t())} msec`;
+
   ds = derived.orientedCover(ds);
+  console.log(`  ${elapsed()} to compute the oriented cover`);
 
   const fg = fundamental.fundamentalGroup(ds);
+  console.log(`  ${elapsed()} to compute the fundamental group`);
   const cones = fg.cones;
 
   if (cones.some(c => c[1] == 5 || c[1] > 6))
     throw new Error('violates the crystallographic restriction');
 
-  const cones2 = cones.filter(c => c[1] == 2);
-  const cones3 = cones.filter(c => c[1] == 3);
-
   const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
-  const base     = generators.results(tableGen).map(cosets.coreTable);
+  const base     = I.List(generators.results(tableGen).map(cosets.coreTable));
+  console.log(`  ${elapsed()} to generate the base subgroups`);
 
   const cType = ct =>
     ct.size == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.size];
@@ -116,6 +120,9 @@ export function pseudoToroidalCover(ds) {
   const cores = base
     .filter(ct => _flattensAll(ct, cones))
     .map(ct => [cType(ct), ct]);
+
+  const cones2 = cones.filter(c => c[1] == 2);
+  const cones3 = cones.filter(c => c[1] == 3);
 
   const z2a = base.filter(ct => ct.size == 2 &&  _flattensAll(ct, cones2));
   const z2b = base.filter(ct => ct.size == 2 && !_flattensAll(ct, cones2));
@@ -134,11 +141,12 @@ export function pseudoToroidalCover(ds) {
       .filter(ct => ct.size == 12 && _flattensAll(ct, cones))
       .map(ct => ['d6', ct])));
 
-  const categorized = I.List().concat(cores, z6, d6).groupBy(a => a[0]);
-
+  const categorized = I.Seq().concat(cores, z6, d6).groupBy(a => a[0]);
   const candidates = I.List('z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' '))
     .flatMap(type => categorized.get(type) || [])
     .map(([type, table]) => table);
+
+  console.log(`  ${elapsed()} to compile the candidate subgroups list`);
 
   const test = inv => inv.map(Q.sgn).equals(I.List([0,0,0]));
 
@@ -153,8 +161,13 @@ export function pseudoToroidalCover(ds) {
     );
     return test(_invariants(stab.generators.size, stab.relators));
   });
+  console.log(`  ${elapsed()} to check for a good subgroup`);
 
-  return good && covers.coverForTable(ds, good, fg.edge2word);
+  if (good) {
+    const result = covers.coverForTable(ds, good, fg.edge2word);
+    console.log(`  ${elapsed()} to construct the result D-symbol`);
+    return result;
+  }
 };
 
 
