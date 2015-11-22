@@ -3,12 +3,14 @@ import * as I from 'immutable';
 
 const now = (() => {
   if (typeof performance != 'undefined' && performance.now)
-    return performance.now;
-  if (typeof process != 'undefined' && process.hrtime)
+    return performance.now.bind(performance);
+  else if (typeof process != 'undefined' && process.hrtime)
     return () => {
       const [sec, nsec] = process.hrtime();
       return sec * 1000 + nsec / 1000000;
     };
+  else
+    return Date.now.bind(Date);
 })();
 
 
