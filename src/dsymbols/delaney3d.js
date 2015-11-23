@@ -111,8 +111,10 @@ export function pseudoToroidalCover(ds) {
     throw new Error('violates the crystallographic restriction');
 
   const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
-  const base     = I.List(generators.results(tableGen).map(cosets.coreTable));
+  const subgroups = I.List(generators.results(tableGen));
   console.log(`  ${elapsed()} to generate the base subgroups`);
+  const base = subgroups.map(cosets.coreTable);
+  console.log(`  ${elapsed()} to compute the cores`);
 
   const cType = ct =>
     ct.size == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.size];
@@ -148,8 +150,6 @@ export function pseudoToroidalCover(ds) {
 
   console.log(`  ${elapsed()} to compile the candidate subgroups list`);
 
-  const test = inv => inv.map(Q.sgn).equals(I.List([0,0,0]));
-
   const good = candidates.find(function(table) {
     const domain = table.keySeq();
     const stab = stabilizer(
@@ -159,7 +159,8 @@ export function pseudoToroidalCover(ds) {
       domain,
       (...args) => table.getIn(args)
     );
-    return test(_invariants(stab.generators.size, stab.relators));
+    const inv = _invariants(stab.generators.size, stab.relators);
+    return inv.map(Q.sgn).equals(I.List([0,0,0]));
   });
   console.log(`  ${elapsed()} to check for a good subgroup`);
 
