@@ -7,10 +7,10 @@ const get = function get(impl, x) {
   while (impl.parent.get(root) !== undefined)
     root = impl.parent.get(root);
 
-  let p = impl.parent;
-  for (let z = x; z != root;)
-    [z, p] = [p.get(z), p.set(z, root)];
-  impl.parent = p;
+  let p = impl.parent.asMutable();
+  for (let z = x; z != root; z = impl.parent.get(z))
+    p.set(z, root);
+  impl.parent = p.asImmutable();
 
   return root;
 };
