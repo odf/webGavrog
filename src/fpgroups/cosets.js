@@ -322,23 +322,23 @@ export function tables(nrGens, relators, maxCosets) {
 
 
 const _inducedTable = function _inducedTable(gens, img, img0) {
-  let table = I.List([I.Map()]);
-  let o2n = I.Map([[img0, 0]]);
-  let n2o = I.Map([[0, img0]]);
+  const table = I.List([I.Map()]).asMutable();
+  const o2n = I.Map([[img0, 0]]).asMutable();
+  const n2o = I.Map([[0, img0]]).asMutable();
   let i = 0;
 
   while (i < table.size) {
     gens.forEach(function(g) {
       const k = img(n2o.get(i), g);
       const n = o2n.has(k) ? o2n.get(k) : table.size;
-      o2n = o2n.set(k, n);
-      n2o = n2o.set(n, k);
-      table = table.setIn([i, g], n).setIn([n, -g], i);
+      o2n.set(k, n);
+      n2o.set(n, k);
+      table.setIn([i, g], n).setIn([n, -g], i);
     });
     ++i;
   }
 
-  return table;
+  return table.asImmutable();
 };
 
 
