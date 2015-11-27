@@ -36,3 +36,44 @@ export function timer() {
     return _last - previous;
   };
 };
+
+
+export function timers() {
+  const _accumulated = {};
+  const _start = {};
+
+  return {
+    start(key) {
+      if (key != null && _start[key] == null) {
+        _start[key] = now();
+      }
+    },
+    stop(key) {
+      if (_start[key] != null) {
+        _accumulated[key] = (_accumulated[key] || 0.0) + now() - _start[key];
+        _start[key] = null;
+      }
+    },
+    stopAll() {
+      for (const k in _start)
+        this.stop(k);
+    },
+    switchTo(key) {
+      this.stopAll();
+      this.start(key);
+    },
+    current() {
+      for (const k in _start) {
+        if (_start[k] != null) {
+          this.stop[k];
+          this.start[k];
+        }
+      }
+
+      const result = {};
+      for (const k in _accumulated)
+        result[k] = _accumulated[k];
+      return result;
+    }
+  };
+};

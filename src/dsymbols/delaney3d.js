@@ -150,6 +150,8 @@ export function pseudoToroidalCover(ds) {
 
   console.log(`  ${elapsed()} to compile the candidate subgroups list`);
 
+  const stabilizerTimers = util.timers();
+
   const good = candidates.find(function(table) {
     const domain = table.keySeq();
     const stab = stabilizer(
@@ -157,12 +159,15 @@ export function pseudoToroidalCover(ds) {
       fg.nrGenerators,
       fg.relators,
       domain,
-      (...args) => table.getIn(args)
+      (...args) => table.getIn(args),
+      stabilizerTimers
     );
     const inv = _invariants(stab.generators.size, stab.relators);
     return inv.map(Q.sgn).equals(I.List([0,0,0]));
   });
   console.log(`  ${elapsed()} to check for a good subgroup`);
+  console.log(`  stabilizer timing details:`);
+  console.log(`${JSON.stringify(stabilizerTimers.current(), null, 2)}`);
 
   if (good) {
     const result = covers.coverForTable(ds, good, fg.edge2word);

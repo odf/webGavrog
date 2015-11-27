@@ -142,8 +142,9 @@ const _spanningTree = function _spanningTree(basePoint, nrGens, action) {
 
 
 const stabilizer = function stabilizer(
-  basePoint, nrGens, relators, domain, action
+  basePoint, nrGens, relators, domain, action, timers = null
 ) {
+  timers && timers.start('preparations');
   const relsByGen = _relatorsByStartGen(relators);
   const tree = _spanningTree(basePoint, nrGens, action);
   const gens = I.Range(1, nrGens+1).flatMap(i => [i, -i]);
@@ -152,6 +153,7 @@ const stabilizer = function stabilizer(
   let point2word = I.Map([[basePoint, id]]);
   let edge2word = I.Map();
 
+  timers && timers.switchTo('closing trivial relations');
   tree.forEach(function(edge) {
     edge2word = edge2word.set(edge, id).set(_reverseEdge(edge, action), id);
     edge2word = _closeRelations(edge, edge2word, relsByGen, action);
@@ -163,6 +165,7 @@ const stabilizer = function stabilizer(
   let lastGen = 0;
   let generators = I.List();
 
+  timers && timers.switchTo('constructing the generators');
   domain.forEach(function(px) {
     const wx = point2word.get(px);
     gens.forEach(function(g) {
@@ -182,6 +185,7 @@ const stabilizer = function stabilizer(
     });
   });
 
+  timers && timers.switchTo('constructing the relators');
   const subrels = I.Set(domain)
     .flatMap(p => relators.map(function(w) {
       const trace = _traceWord(p, w, edge2word, action);
@@ -190,6 +194,7 @@ const stabilizer = function stabilizer(
     .filter(w => w && w.size > 0)
     .sort(_cmpWords);
 
+  timers && timers.stopAll();
   return { generators: generators, relators: subrels };
 };
 
