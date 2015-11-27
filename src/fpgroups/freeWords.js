@@ -9,9 +9,6 @@ const _isInteger = x => typeof x == 'number' && x % 1 == 0;
 
 
 const _overlap = function _overlap(w1, w2) {
-  w1 = word(w1);
-  w2 = word(w2);
-
   const n1 = w1.size;
   const n2 = w2.size;
   const n  = Math.min(n1, n2);
@@ -31,19 +28,20 @@ export const empty = I.List();
 
 
 export function word(w) {
-  return w.reduce(
-    function(w, x) {
-      if (!_isInteger(x))
-        throw new Error('illegal word '+w);
-      if (x == 0)
-        return w;
-      else if (w.last() == -x)
-        return w.pop();
-      else
-        return w.push(x);
-    },
-    empty
-  );
+  const out = [];
+
+  for (const x of w) {
+    if (!_isInteger(x))
+      throw new Error('illegal word '+w);
+    else if (x == 0)
+      break;
+    else if (out[out.length-1] == -x)
+      out.pop();
+    else
+      out.push(x);
+  }
+
+  return I.List(out);
 };
 
 
@@ -95,7 +93,12 @@ export function commutator(a, b) {
 
 
 if (require.main == module) {
+  const timer = require('../common/util').timer();
+
   console.log(product([[1,2,3], [-3,-2,4]]));
   console.log(raisedTo(3, [1,2,3,4,5,-2,-1]));
   console.log(commutator([1,2], [3,2]));
+
+  console.log();
+  console.log(`Computation time: ${timer()} msec`);
 }
