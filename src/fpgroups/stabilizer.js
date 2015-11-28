@@ -10,32 +10,6 @@ const _relatorsByStartGen = function _relatorsByStartGen(relators) {
 };
 
 
-const _sgn = x => (x > 0) - (x < 0);
-
-const _cmpGens = function(a, b) {
-  if (_sgn(a) != _sgn(b))
-    return _sgn(b) - _sgn(a);
-  else
-    return Math.abs(a) - Math.abs(b);
-};
-
-
-const _cmpWords = function _cmpWords(a, b) {
-  const n = Math.min(a.size, b.size);
-  for (let i = 0; i < n; ++i) {
-    const d = _cmpGens(a.get(i), b.get(i));
-    if (d)
-      return d;
-  }
-  if (a.size > n)
-    return 1;
-  else if (b.size > n)
-    return -1;
-  else
-    return 0;
-};
-
-
 const Edge = I.Record({
   point: undefined,
   gen  : undefined
@@ -179,12 +153,11 @@ const stabilizer = function stabilizer(
 
   timers && timers.switchTo('constructing the relators');
   const subrels = I.Set(domain)
-    .flatMap(p => relators.map(function(w) {
-      const trace = _traceWord(p, w, edge2word, action);
-      return fw.relatorPermutations(trace).min(_cmpWords);
-    }))
+    .flatMap(p => (
+      relators.map(w => (
+        fw.relatorRepresentative(_traceWord(p, w, edge2word, action))))))
     .filter(w => w && w.size > 0)
-    .sort(_cmpWords);
+    .sort(fw.compare);
 
   timers && timers.stopAll();
   return { generators: generators, relators: subrels };

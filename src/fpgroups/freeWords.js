@@ -80,6 +80,23 @@ export const relatorPermutations = wd => {
 };
 
 
+const _cmp = (x, y) => x * y * (x - y);
+
+
+export const compare = (a, b) => {
+  const n = Math.min(a.size, b.size);
+  for (let i = 0; i < n; ++i) {
+    const d = _cmp(a.get(i), b.get(i));
+    if (d)
+      return d;
+  }
+  return a.size - b.size;
+};
+
+
+export const relatorRepresentative = w => relatorPermutations(w).min(compare);
+
+
 if (require.main == module) {
   const timer = require('../common/util').timer();
 

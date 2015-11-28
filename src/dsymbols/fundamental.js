@@ -168,12 +168,6 @@ const _findGenerators = function _findGenerators(ds) {
 };
 
 
-const _relatorRep = function(w) {
-  return freeWords.relatorPermutations(w)
-    .min(util.cmpLex((a, b) => a * b * (a - b)));
-};
-
-
 const FundamentalGroup = I.Record({
   nrGenerators: undefined,
   relators    : undefined,
@@ -223,7 +217,10 @@ export function fundamentalGroup(ds) {
     .sort();
 
   const nGens = gen2edge.size;
-  const rels  = I.Set(orbitRelators.concat(mirrors).map(_relatorRep)).sort();
+  const rels  = orbitRelators.concat(mirrors)
+    .map(freeWords.relatorRepresentative)
+    .toSet()
+    .sort();
 
   return FundamentalGroup({
     nrGenerators: nGens,
