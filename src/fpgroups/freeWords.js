@@ -64,6 +64,22 @@ export function commutator(a, b) {
 };
 
 
+export const rotated = (a, i) => product([a.slice(i), a.slice(0, i)]);
+
+
+export const relatorPermutations = wd => {
+  const w = word(wd);
+
+  const result = [];
+  for (let i = 0; i < w.size; ++i) {
+    const wx = rotated(w, i);
+    result.push(wx);
+    result.push(inverse(wx));
+  }
+  return I.List(result);
+};
+
+
 if (require.main == module) {
   const timer = require('../common/util').timer();
 

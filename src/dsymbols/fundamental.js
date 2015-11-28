@@ -169,10 +169,8 @@ const _findGenerators = function _findGenerators(ds) {
 
 
 const _relatorRep = function(w) {
-  return I.Range(0, w.size).flatMap(function(i) {
-    const wx = freeWords.product([w.slice(i), w.slice(0, i)]);
-    return [wx, freeWords.inverse(wx)];
-  }).min(util.cmpLex((a, b) => a * b * (a - b)));
+  return freeWords.relatorPermutations(w)
+    .min(util.cmpLex((a, b) => a * b * (a - b)));
 };
 
 

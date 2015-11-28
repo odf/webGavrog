@@ -2,17 +2,9 @@ import * as I  from 'immutable';
 import * as fw from './freeWords';
 
 
-const _relatorPermutations = function _relatorPermutations(w) {
-  return I.Range(0, w.size).flatMap(function(i) {
-    const wx = fw.product([w.slice(i), w.slice(0, i)]);
-    return [wx, fw.inverse(wx)];
-  });
-};
-
-
 const _relatorsByStartGen = function _relatorsByStartGen(relators) {
   return I.List(relators).map(I.List)
-    .flatMap(_relatorPermutations)
+    .flatMap(fw.relatorPermutations)
     .groupBy(rel => rel.get(0))
     .map(I.Set);
 };
@@ -100,7 +92,7 @@ const _closeRelations = function _closeRelations(
       if (cuts.size == 1) {
         const i = cuts.first()[0];
         const cut = cuts.first()[1];
-        const w = fw.inverse(fw.product([r.slice(i+1), r.slice(0, i)]));
+        const w = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
         const trace = _traceWord(cut.point, w, edge2word, action);
 
         edge2word = edge2word
@@ -189,7 +181,7 @@ const stabilizer = function stabilizer(
   const subrels = I.Set(domain)
     .flatMap(p => relators.map(function(w) {
       const trace = _traceWord(p, w, edge2word, action);
-      return _relatorPermutations(trace).min(_cmpWords);
+      return fw.relatorPermutations(trace).min(_cmpWords);
     }))
     .filter(w => w && w.size > 0)
     .sort(_cmpWords);

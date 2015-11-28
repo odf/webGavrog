@@ -194,12 +194,7 @@ const _expandGenerators = function _expandGenerators(nrGens) {
 
 
 const _expandRelators = function _expandRelators(relators) {
-  return I.Set(I.List(relators).map(I.List).flatMap(function(w) {
-    return I.Range(0, w.size).flatMap(function(i) {
-      const wx = fw.product([w.slice(i), w.slice(0, i)]);
-      return [wx, fw.inverse(wx)];
-    });
-  }));
+  return I.Set(I.List(relators).flatMap(fw.relatorPermutations));
 };
 
 
