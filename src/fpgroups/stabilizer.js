@@ -25,16 +25,15 @@ const _reverseEdge = (edge, action) => new Edge({
 });
 
 
-const _traceWord = function _traceWord(point, w, edge2word, action) {
+const _traceWord = (point, w, edge2word, action) => {
   let p = point;
-  let trace = fw.empty;
-  w.forEach(function(g) {
-    const t = edge2word.get(new Edge({ point: p, gen: g }));
-    trace = fw.product([trace, t]);
+  const trace = [];
+  w.forEach(g => {
+    trace.push(edge2word.get(new Edge({ point: p, gen: g })));
     p = action(p, g);
   });
 
-  return trace;
+  return fw.product(trace);
 };
 
 
