@@ -8,40 +8,34 @@ import * as I from 'immutable';
 const _isInteger = x => typeof x == 'number' && x % 1 == 0;
 
 
-const _overlap = function _overlap(w1, w2) {
-  const n1 = w1.size;
-  const n2 = w2.size;
-  const n  = Math.min(n1, n2);
+const _normalize = ws => {
+  const tmp = [];
+  let head = 0;
 
-  for (let k = 0; k < n; ++k) {
-    if (w2.get(k) != -w1.get(n1 - 1 - k))
-      return k;
+  for (const w of ws) {
+    for (const x of w) {
+      if (!_isInteger(x))
+        throw new Error(`illegal word ${w} - all letters must be integers`);
+      if (x == 0)
+        break;
+      else if (head > 0 && x == - tmp[head-1])
+        --head;
+      else {
+        tmp[head] = x;
+        ++head;
+      }
+    }
   }
-  return n;
+
+  return I.List(tmp.slice(0, head));
 };
-
-
-const _repeat = (w, m) => I.Range(0, m).reduce(r => r.concat(w), empty);
 
 
 export const empty = I.List();
 
 
 export function word(w) {
-  const out = [];
-
-  for (const x of w) {
-    if (!_isInteger(x))
-      throw new Error('illegal word '+w);
-    else if (x == 0)
-      break;
-    else if (out[out.length-1] == -x)
-      out.pop();
-    else
-      out.push(x);
-  }
-
-  return I.List(out);
+  return _normalize([w]);
 };
 
 
@@ -51,39 +45,17 @@ export function inverse(w) {
 
 
 export function raisedTo(m, w) {
-  w = word(w);
-
   if (m == 0)
     return empty;
   else if (m < 0)
     return raisedTo(-m, inverse(w));
-  else {
-    const n = w.size;
-    const k = _overlap(w, w);
-
-    if (k == 0)
-      return _repeat(w, m);
-    else if (k == n)
-      return (m % 2 == 0) ? empty : w;
-    else {
-      const head = w.slice(0, k);
-      const tail = w.slice(n - k);
-      const mid  = w.slice(k, n - k);
-
-      return head.concat(_repeat(mid, m)).concat(tail);
-    }
-  }
+  else
+    return _normalize(Array(m).fill(w));
 };
 
 
 export function product(words) {
-  return words.map(word).reduce(
-    function(w1, w2) {
-      const k = _overlap(w1, w2);
-      return w1.slice(0, w1.size - k).concat(w2.slice(k));
-    },
-    empty
-  );
+  return _normalize(words);
 };
 
 
