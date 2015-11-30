@@ -37,47 +37,49 @@ const _traceWord = (point, w, edge2word, action) => {
 };
 
 
-const _closeRelations = function _closeRelations(
-  startEdge,
-  edge2word,
-  relsByGen,
-  action
-) {
-  let queue = I.List([startEdge]);
+const _closeRelations = (startEdge, edge2word, relsByGen, action) => {
+  const queue = [startEdge];
+  const e2w = edge2word.asMutable();
 
-  while (!queue.isEmpty()) {
-    const next = queue.first();
-    queue = queue.rest();
+  while (queue.length) {
+    const next = queue.shift();
 
     const p = next.point;
     const g = next.gen;
 
     relsByGen.get(g).forEach(function(r) {
-      let x = p;
-      let cuts = I.List();
-      r.forEach(function(h, i) {
+      let cut = null;
+      let w   = null;
+      let x   = p;
+
+      for (const i of r.keys()) {
+        const h = r.get(i);
         const next = new Edge({ point: x, gen: h });
-        if (edge2word.get(next) == null)
-          cuts = cuts.push([i, next]);
+        if (e2w.get(next) == null) {
+          if (cut == null) {
+            cut = next;
+            w   = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
+          }
+          else {
+            cut = null;
+            break;
+          }
+        }
         x = action(x, h);
-      });
+      };
 
-      if (cuts.size == 1) {
-        const i = cuts.first()[0];
-        const cut = cuts.first()[1];
-        const w = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
-        const trace = _traceWord(cut.point, w, edge2word, action);
+      if (cut != null) {
+        const trace = _traceWord(cut.point, w, e2w, action);
 
-        edge2word = edge2word
-          .set(cut, trace)
-          .set(_reverseEdge(cut, action), fw.inverse(trace));
+        e2w.set(cut, trace);
+        e2w.set(_reverseEdge(cut, action), fw.inverse(trace));
 
-        queue = queue.push(cut);
+        queue.push(cut);
       }
     });
   }
 
-  return edge2word;
+  return e2w.asImmutable();
 };
 
 
