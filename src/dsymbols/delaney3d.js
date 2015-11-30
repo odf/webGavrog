@@ -3,7 +3,7 @@ import * as I from 'immutable';
 import * as Q from '../arithmetic/number';
 import     _M from '../arithmetic/matrix';
 
-import stabilizer from '../fpgroups/stabilizer';
+import { stabilizer } from '../fpgroups/stabilizer';
 
 import * as util        from '../common/util';
 import * as generators  from '../common/generators';
