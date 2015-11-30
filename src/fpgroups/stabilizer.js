@@ -39,7 +39,6 @@ const _traceWord = (point, w, edge2word, action) => {
 
 const _closeRelations = (startEdge, edge2word, relsByGen, action) => {
   const queue = [startEdge];
-  const e2w = edge2word.asMutable();
 
   while (queue.length) {
     const next = queue.shift();
@@ -55,7 +54,7 @@ const _closeRelations = (startEdge, edge2word, relsByGen, action) => {
       for (const i of r.keys()) {
         const h = r.get(i);
         const next = new Edge({ point: x, gen: h });
-        if (e2w.get(next) == null) {
+        if (edge2word.get(next) == null) {
           if (cut == null) {
             cut = next;
             w   = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
@@ -69,37 +68,34 @@ const _closeRelations = (startEdge, edge2word, relsByGen, action) => {
       };
 
       if (cut != null) {
-        const trace = _traceWord(cut.point, w, e2w, action);
+        const trace = _traceWord(cut.point, w, edge2word, action);
 
-        e2w.set(cut, trace);
-        e2w.set(_reverseEdge(cut, action), fw.inverse(trace));
+        edge2word.set(cut, trace);
+        edge2word.set(_reverseEdge(cut, action), fw.inverse(trace));
 
         queue.push(cut);
       }
     });
   }
-
-  return e2w.asImmutable();
 };
 
 
 const _spanningTree = function _spanningTree(basePoint, nrGens, action) {
   const gens = I.Range(1, nrGens+1).flatMap(i => [i, -i]);
 
-  let queue = I.List([basePoint]);
-  let seen = I.Set([basePoint]);
-  let edges = I.List();
+  const queue = [basePoint];
+  const edges = [];
+  const seen  = I.Set([basePoint]).asMutable();
 
-  while (!queue.isEmpty()) {
-    const point = queue.first();
-    queue = queue.rest();
+  while (queue.length) {
+    const point = queue.shift();
 
     gens.forEach(function(g) {
       const p = action(point, g);
       if (!seen.contains(p)) {
-        queue = queue.push(p);
-        seen = seen.add(p);
-        edges = edges.push(new Edge({ point: point, gen: g }));
+        queue.push(p);
+        seen.add(p);
+        edges.push(new Edge({ point: point, gen: g }));
       }
     });
   }
@@ -108,29 +104,30 @@ const _spanningTree = function _spanningTree(basePoint, nrGens, action) {
 };
 
 
-const stabilizer = function stabilizer(
+export const stabilizer = (
   basePoint, nrGens, relators, domain, action, timers = null
-) {
+) => {
   timers && timers.start('preparations');
   const relsByGen = _relatorsByStartGen(relators);
   const tree = _spanningTree(basePoint, nrGens, action);
   const gens = I.Range(1, nrGens+1).flatMap(i => [i, -i]);
   const id = fw.empty;
 
-  let point2word = I.Map([[basePoint, id]]);
-  let edge2word = I.Map();
+  const point2word = I.Map([[basePoint, id]]).asMutable();
+  const edge2word = I.Map().asMutable();
 
   timers && timers.switchTo('closing trivial relations');
   tree.forEach(function(edge) {
-    edge2word = edge2word.set(edge, id).set(_reverseEdge(edge, action), id);
-    edge2word = _closeRelations(edge, edge2word, relsByGen, action);
-    point2word = point2word.set(
+    edge2word.set(edge, id);
+    edge2word.set(_reverseEdge(edge, action), id);
+    _closeRelations(edge, edge2word, relsByGen, action);
+    point2word.set(
       action(edge.point, edge.gen),
       fw.product([point2word.get(edge.point), [edge.gen]]));
   });
 
+  const generators = [];
   let lastGen = 0;
-  let generators = I.List();
 
   timers && timers.switchTo('constructing the generators');
   domain.forEach(function(px) {
@@ -142,30 +139,28 @@ const stabilizer = function stabilizer(
         const wy = point2word.get(py);
         const h = ++lastGen;
         const redge = _reverseEdge(edge, action);
-        edge2word = edge2word
-          .set(edge, fw.word([h]))
-          .set(redge, fw.inverse([h]));
-        edge2word = _closeRelations(edge, edge2word, relsByGen, action);
-        edge2word = _closeRelations(redge, edge2word, relsByGen, action);
-        generators = generators.push(fw.product([wx, [g], fw.inverse(wy)]));
+        edge2word.set(edge, fw.word([h]));
+        edge2word.set(redge, fw.inverse([h]));
+        _closeRelations(edge, edge2word, relsByGen, action);
+        _closeRelations(redge, edge2word, relsByGen, action);
+        generators.push(fw.product([wx, [g], fw.inverse(wy)]));
       }
     });
   });
 
   timers && timers.switchTo('constructing the relators');
-  const subrels = I.Set(domain)
-    .flatMap(p => (
-      relators.map(w => (
-        fw.relatorRepresentative(_traceWord(p, w, edge2word, action))))))
-    .filter(w => w && w.size > 0)
-    .sort(fw.compare);
+  const subrels = I.Set().asMutable();
+  for (const p of domain) {
+    for (const r of relators) {
+      const w = fw.relatorRepresentative(_traceWord(p, r, edge2word, action));
+      if (w && w.size)
+        subrels.add(w);
+    }
+  }
 
   timers && timers.stopAll();
-  return { generators: generators, relators: subrels };
+  return { generators: I.List(generators), relators: subrels.sort(fw.compare) };
 };
-
-
-module.exports = stabilizer;
 
 
 if (require.main == module) {
