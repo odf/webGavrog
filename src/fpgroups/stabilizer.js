@@ -10,26 +10,14 @@ const _relatorsByStartGen = function _relatorsByStartGen(relators) {
 };
 
 
-const Edge = I.Record({
-  point: undefined,
-  gen  : undefined
-});
-
-
 const _inverseGen = g => fw.inverse([g]).first();
-
-
-const _reverseEdge = (edge, action) => new Edge({
-  point: action(edge.point, edge.gen),
-  gen  : _inverseGen(edge.gen)
-});
 
 
 const _traceWord = (point, w, edge2word, action) => {
   let p = point;
   const trace = [];
   w.forEach(g => {
-    trace.push(edge2word.get(new Edge({ point: p, gen: g })));
+    trace.push(edge2word.getIn([p, g]));
     p = action(p, g);
   });
 
@@ -37,26 +25,25 @@ const _traceWord = (point, w, edge2word, action) => {
 };
 
 
-const _closeRelations = (startEdge, edge2word, relsByGen, action) => {
-  const queue = [startEdge];
+const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
+  const queue = [[startEdge, wd]];
 
   while (queue.length) {
-    const next = queue.shift();
+    const [{ point, gen }, w] = queue.shift();
 
-    const p = next.point;
-    const g = next.gen;
+    edge2word.setIn([point, gen], w);
+    edge2word.setIn([action(point, gen), _inverseGen(gen)], fw.inverse(w));
 
-    relsByGen.get(g).forEach(function(r) {
+    relsByGen.get(gen).forEach(function(r) {
       let cut = null;
       let w   = null;
-      let x   = p;
+      let x   = point;
 
       for (const i of r.keys()) {
         const h = r.get(i);
-        const next = new Edge({ point: x, gen: h });
-        if (edge2word.get(next) == null) {
+        if (edge2word.getIn([x, h]) == null) {
           if (cut == null) {
-            cut = next;
+            cut = { point: x, gen: h };
             w   = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
           }
           else {
@@ -67,14 +54,8 @@ const _closeRelations = (startEdge, edge2word, relsByGen, action) => {
         x = action(x, h);
       };
 
-      if (cut != null) {
-        const trace = _traceWord(cut.point, w, edge2word, action);
-
-        edge2word.set(cut, trace);
-        edge2word.set(_reverseEdge(cut, action), fw.inverse(trace));
-
-        queue.push(cut);
-      }
+      if (cut != null)
+        queue.push([cut, _traceWord(cut.point, w, edge2word, action)]);
     });
   }
 };
@@ -90,12 +71,12 @@ const _spanningTree = function _spanningTree(basePoint, nrGens, action) {
   while (queue.length) {
     const point = queue.shift();
 
-    gens.forEach(function(g) {
-      const p = action(point, g);
+    gens.forEach(function(gen) {
+      const p = action(point, gen);
       if (!seen.contains(p)) {
         queue.push(p);
         seen.add(p);
-        edges.push(new Edge({ point: point, gen: g }));
+        edges.push({ point, gen });
       }
     });
   }
@@ -118,9 +99,7 @@ export const stabilizer = (
 
   timers && timers.switchTo('closing trivial relations');
   tree.forEach(function(edge) {
-    edge2word.set(edge, id);
-    edge2word.set(_reverseEdge(edge, action), id);
-    _closeRelations(edge, edge2word, relsByGen, action);
+    _closeRelations(edge, id, edge2word, relsByGen, action);
     point2word.set(
       action(edge.point, edge.gen),
       fw.product([point2word.get(edge.point), [edge.gen]]));
@@ -133,16 +112,12 @@ export const stabilizer = (
   domain.forEach(function(px) {
     const wx = point2word.get(px);
     gens.forEach(function(g) {
-      const edge = new Edge({ point: px, gen: g });
-      if (edge2word.get(edge) == null) {
+      const edge = { point: px, gen: g };
+      if (edge2word.getIn([px, g]) == null) {
         const py = action(px, g);
         const wy = point2word.get(py);
         const h = ++lastGen;
-        const redge = _reverseEdge(edge, action);
-        edge2word.set(edge, fw.word([h]));
-        edge2word.set(redge, fw.inverse([h]));
-        _closeRelations(edge, edge2word, relsByGen, action);
-        _closeRelations(redge, edge2word, relsByGen, action);
+        _closeRelations(edge, fw.word([h]), edge2word, relsByGen, action);
         generators.push(fw.product([wx, [g], fw.inverse(wy)]));
       }
     });
