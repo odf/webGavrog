@@ -2,36 +2,32 @@ import * as I from 'immutable';
 import * as fw from './freeWords';
 import * as generators from '../common/generators';
 import partition from '../common/partition';
+import * as util        from '../common/util';
 
 
-const mergeRows = function mergeRows(table, part, queue, a, b) {
-  const ra = table.get(b).merge(table.get(a));
-  const rb = table.get(a).merge(table.get(b));
+const mergeRows = (part, ra, rb) => {
+  const row    = rb.merge(ra);
+  const rowAlt = ra.merge(rb);
 
-  const nextToMerge = ra
-    .map((ag, g) => [ag, rb.get(g)])
-    .filter(pair => part.get(pair[0]) != part.get(pair[1]));
+  const next = row
+    .map((ag, g) => [ag, rowAlt.get(g)])
+    .filter(([a, b]) => part.get(a) != part.get(b));
 
-  return {
-    table: table.set(a, ra).set(b, ra),
-    queue: queue.concat(nextToMerge)
-  };
+  return { row, next };
 };
 
 
-const identify = function identify(table, part, a, b) {
-  let queue = I.List([[a, b]]);
+const identify = (table, part, a, b) => {
+  const queue = [[a, b]];
 
-  while (queue.size > 0) {
-    const a = part.get(queue.first()[0]);
-    const b = part.get(queue.first()[1]);
-    queue = queue.shift();
+  while (queue.length) {
+    const [a, b] = queue.shift().map(part.get);
 
     if (a != b) {
       part = part.union(a, b);
-      const merged = mergeRows(table, part, queue, a, b);
-      table = merged.table;
-      queue = merged.queue;
+      const { row, next } = mergeRows(part, table.get(a), table.get(b));
+      table = table.set(a, row).set(b, row);
+      next.forEach(x => queue.push(x));
     }
   }
 
@@ -372,6 +368,8 @@ export function relatorMatrix(nrgens, relators) {
 
 
 if (require.main == module) {
+  const timer = util.timer();
+
   const base = cosetTable(
     3,
     [[1,1], [2,2], [3,3], [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
@@ -388,4 +386,6 @@ if (require.main == module) {
 
   generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8))
     .forEach(x => console.log(JSON.stringify(x)));
+
+  console.log(`${timer()} msec used for computation`);
 }
