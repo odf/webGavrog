@@ -65,8 +65,8 @@ export function timers() {
     current() {
       for (const k in _start) {
         if (_start[k] != null) {
-          this.stop[k];
-          this.start[k];
+          this.stop(k);
+          this.start(k);
         }
       }
 
