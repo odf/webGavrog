@@ -110,9 +110,14 @@ export function pseudoToroidalCover(ds) {
   if (cones.some(c => c[1] == 5 || c[1] > 6))
     throw new Error('violates the crystallographic restriction');
 
+  const subgroupsTimers = util.timers();
+  cosets.useTimers(subgroupsTimers);
   const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
   const subgroups = I.List(generators.results(tableGen));
   console.log(`  ${elapsed()} to generate the base subgroups`);
+  console.log(`  subgroup generation timing details:`);
+  console.log(`${JSON.stringify(subgroupsTimers.current(), null, 2)}`);
+
   const base = subgroups.map(cosets.coreTable);
   console.log(`  ${elapsed()} to compute the cores`);
 

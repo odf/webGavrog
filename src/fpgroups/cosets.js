@@ -1,8 +1,12 @@
-import * as I from 'immutable';
-import * as fw from './freeWords';
+import * as I          from 'immutable';
+import * as fw         from './freeWords';
 import * as generators from '../common/generators';
+import * as util       from '../common/util';
+
 import partition from '../common/partition';
-import * as util        from '../common/util';
+
+
+let _timers = null;
 
 
 const mergeRows = (part, ra, rb) => {
@@ -57,6 +61,8 @@ const scan = function scan(table, w, start, from, to) {
 
 
 const scanAndIdentify = function scanAndIdentify(table, part, w, start) {
+  _timers && _timers.start('scanAndIdentify()');
+
   const n = w.size;
 
   let t = scan(table, w, start, 0, n);
@@ -67,19 +73,25 @@ const scanAndIdentify = function scanAndIdentify(table, part, w, start) {
   const tail = t.row;
   const j = n - t.index;
 
+  let result;
+
   if (j == i+1)
-    return {
+    result =  {
       table: table.setIn([head, w.get(i)], tail).setIn([tail, -w.get(i)], head),
       part : part,
       next : head
     };
   else if (i == j && head != tail)
-    return identify(table, part, head, tail);
+    result =  identify(table, part, head, tail);
   else
-    return {
+    result =  {
       table: table,
       part : part
     };
+
+  _timers && _timers.stop('scanAndIdentify()');
+
+  return result;
 };
 
 
@@ -203,25 +215,27 @@ const _freeInTable = function _freeInTable(table, gens) {
 
 
 const _scanRecursively = function _scanRecursively(rels, table, index) {
-  let q = I.List();
-  let k = index;
-  let t = table;
-  let rs = rels;
+  const q = [];
+  const rs = rels.toArray();
 
-  while (!rs.isEmpty() || !q.isEmpty()) {
-    if (!rs.isEmpty()) {
-      const out = scanAndIdentify(t, partition(), rs.first(), k);
+  let row = index;
+  let t   = table;
+  let k   = 0;
+
+  while (k < rs.length || q.length) {
+    if (k < rs.length) {
+      const rel = rs[k];
+      ++k;
+      const out = scanAndIdentify(t, partition(), rel, row);
       if (!out.part.isTrivial())
         return;
 
       t = out.table;
       if (out.next != null)
-        q = q.push(out.next);
-      rs = rs.rest();
+        q.push(out.next);
     } else {
-      k = q.first();
-      q = q.rest();
-      rs = rels;
+      row = q.shift();
+      k = 0;
     }
   }
 
@@ -232,6 +246,7 @@ const _scanRecursively = function _scanRecursively(rels, table, index) {
 const _potentialChildren = function _potentialChildren(
   table, gens, rels, maxCosets
 ) {
+  _timers && _timers.switchTo('generating candidates for extending the table');
   const free = _freeInTable(table, gens);
 
   if (!free.isEmpty()) {
@@ -242,13 +257,15 @@ const _potentialChildren = function _potentialChildren(
     const matches = I.Range(k, n).filter(k => table.getIn([k, ginv]) == null);
     const candidates = n < maxCosets ? I.List(matches).push(n) : matches;
 
+    _timers && _timers.switchTo('processing and filtering candidates');
     return candidates
       .map(function(pos) {
         const t = table.setIn([k, g], pos).setIn([pos, ginv], k);
         return _scanRecursively(rels, t, k);
       })
       .filter(t => t != null);
-  } else
+  }
+  else
     return I.List();
 };
 
@@ -291,6 +308,7 @@ const _compareRenumberedFom = function _compareRenumberedFom(table, gens, start)
 
 
 const _isCanonical = function _isCanonical(table, gens) {
+  _timers && _timers.switchTo('checking for canonicity');
   return I.Range(1, table.size)
     .every(start => _compareRenumberedFom(table, gens, start) >= 0);
 };
@@ -367,6 +385,11 @@ export function relatorMatrix(nrgens, relators) {
 };
 
 
+export function useTimers(timers) {
+  _timers = timers;
+}
+
+
 if (require.main == module) {
   const timer = util.timer();
 
@@ -384,8 +407,13 @@ if (require.main == module) {
   console.log(_expandGenerators(4));
   console.log(_expandRelators([[1,2,-3]]));
 
+  const tablesTimers = util.timers();
+  useTimers(tablesTimers);
+
   generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8))
     .forEach(x => console.log(JSON.stringify(x)));
+  console.log(`timing detail for coset table generation:`);
+  console.log(`${JSON.stringify(tablesTimers.current(), null, 2)}`);
 
-  console.log(`${timer()} msec used for computation`);
+  console.log(`${timer()} msec total computation time`);
 }
