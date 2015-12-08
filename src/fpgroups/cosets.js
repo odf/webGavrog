@@ -22,7 +22,6 @@ const mergeRows = (part, ra, rb) => {
 
 
 const identify = (table, part, a, b) => {
-  _timers && _timers.start('identify()');
   const queue = [[a, b]];
 
   while (queue.length) {
@@ -35,19 +34,19 @@ const identify = (table, part, a, b) => {
       next.forEach(x => queue.push(x));
     }
   }
-  _timers && _timers.stop('identify()');
 
   return { table, part };
 };
 
 
-const scan = function scan(table, w, start, from, to) {
-  _timers && _timers.start('scan()');
+const scan = function scan(table, w, start, from, to, inverse = false) {
+  const n = w.size - 1;
   let row = start;
   let i = from;
 
   while (i < to) {
-    const next = table.getIn([row, w.get(i)]);
+    const c = inverse ? -w.get(n-i) : w.get(i);
+    const next = table.getIn([row, c]);
     if (next === undefined)
       break;
     else {
@@ -55,7 +54,6 @@ const scan = function scan(table, w, start, from, to) {
       row = next;
     }
   }
-  _timers && _timers.stop('scan()');
 
   return {
     row  : row,
@@ -65,15 +63,13 @@ const scan = function scan(table, w, start, from, to) {
 
 
 const scanAndIdentify = function scanAndIdentify(table, part, w, start) {
-  _timers && _timers.start('scanAndIdentify()');
-
   const n = w.size;
 
   let t = scan(table, w, start, 0, n);
   const head = t.row;
   const i = t.index;
 
-  t = scan(table, fw.inverse(w), start, 0, n - i);
+  t = scan(table, w, start, 0, n - i, true);
   const tail = t.row;
   const j = n - t.index;
 
@@ -92,8 +88,6 @@ const scanAndIdentify = function scanAndIdentify(table, part, w, start) {
       table: table,
       part : part
     };
-
-  _timers && _timers.stop('scanAndIdentify()');
 
   return result;
 };
