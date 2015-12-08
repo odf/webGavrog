@@ -22,6 +22,7 @@ const mergeRows = (part, ra, rb) => {
 
 
 const identify = (table, part, a, b) => {
+  _timers && _timers.start('identify()');
   const queue = [[a, b]];
 
   while (queue.length) {
@@ -34,12 +35,14 @@ const identify = (table, part, a, b) => {
       next.forEach(x => queue.push(x));
     }
   }
+  _timers && _timers.stop('identify()');
 
   return { table, part };
 };
 
 
 const scan = function scan(table, w, start, from, to) {
+  _timers && _timers.start('scan()');
   let row = start;
   let i = from;
 
@@ -52,6 +55,7 @@ const scan = function scan(table, w, start, from, to) {
       row = next;
     }
   }
+  _timers && _timers.stop('scan()');
 
   return {
     row  : row,
