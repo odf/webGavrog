@@ -252,6 +252,16 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
     return hs;
   };
 
+  const stretches = hs => {
+    const splits = hs
+      .map((e, i) => isSplit(e) ? i : null)
+      .filter(i => i != null);
+    return splits.map((k, i) => (
+      i == 0 ?
+        hs.slice(splits[splits.length-1]).concat(hs.slice(0, splits[0]+1)) :
+        hs.slice(splits[i-1], splits[i]+1)));
+  };
+
   const seen   = I.Set().asMutable();
   const mods   = I.Map().asMutable();
   const newPos = [];
@@ -262,21 +272,11 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
         return;
       seen.add(v);
 
-      const hs = edgeCycle([f, k]);
-      const splits = hs
-        .map((e, i) => isSplit(e) ? i : null)
-        .filter(i => i != null);
-
-      for (const i in splits) {
-        const stretch = i == 0 ?
-          hs.slice(splits[splits.length-1]).concat(hs.slice(0, splits[0]+1)) :
-          hs.slice(splits[i-1], splits[i]+1);
-
+      stretches(edgeCycle([f, k])).forEach(stretch => {
         newPos.push(newVertexForStretch(v, stretch));
-
         for (let j = 0; j < stretch.length - 1; ++j)
           mods.set(I.List(stretch[j]), pos.size + newPos.length - 1);
-      }
+      });
     });
   });
 
