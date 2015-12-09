@@ -12,14 +12,23 @@ import * as util      from '../common/util';
 
 
 const processedSolid = (t0, timers) => {
-  timers && timers.switchTo('adding flattened center faces');
+  surface.useTimers(timers);
+
+  timers && timers.start('adding flattened center faces');
   const t1 = surface.withFlattenedCenterFaces(t0);
-  timers && timers.switchTo('subdividing the faces');
+  timers && timers.stop('adding flattened center faces');
+
+  timers && timers.start('subdividing the faces');
   const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
-  timers && timers.switchTo('insetting');
+  timers && timers.stop('subdividing the faces');
+
+  timers && timers.start('insetting');
   const t3 = surface.insetAt(t2, 0.03, t2.isFixed);
-  timers && timers.switchTo('beveling');
+  timers && timers.stop('insetting');
+
+  timers && timers.start('beveling');
   const t4 = surface.beveledAt(t3, 0.015, t2.isFixed);
+  timers && timers.stop('beveling');
 
   return t4;
 };

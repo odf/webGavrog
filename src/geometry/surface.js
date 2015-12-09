@@ -7,6 +7,9 @@ const M = _M(F, 0, 1);
 const V = _V(F, 0);
 
 
+let _timers = null;
+
+
 const reductions = (xs, fn, init) =>
   xs.reduce((a, x) => a.push(fn(a.last(), x)), I.List([init]));
 
@@ -81,13 +84,20 @@ const edgeIndexes = faces => {
 
 
 const halfEdgeReversals = faces => {
-  const edges = dedupe(faces.flatMap(is => pairs(is).map(I.List)));
-  const index = I.Map(edges.map((e, i) => [e, i]));
-  const etofi = I.Map(faces.flatMap((is, f) => (
-    pairs(is).map(([v, w], i) => (
-      [I.List([v, w]), [f, i]])))));
+  const edgeLoc = I.Map().asMutable();
 
-  return faces.map(is => pairs(is).map(([v, w]) => etofi.get(I.List([w, v]))));
+  faces.forEach((is, f) => {
+    const n = is.size;
+    is.forEach((v, k) => {
+      const w = is.get((k + 1) % n);
+      edgeLoc.setIn([v, w], [f, k]);
+    });
+  });
+
+  return faces.map((is, f) => {
+    const n = is.size;
+    return is.map((v, k) => edgeLoc.getIn([is.get((k + 1) % n), v]));
+  });
 };
 
 
@@ -320,6 +330,9 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
     faces  : modifiedFaces.concat(edgeFaces).concat(cornerFaces)
   };
 };
+
+
+export const useTimers = timers => { _timers = timers };
 
 
 if (require.main == module) {
