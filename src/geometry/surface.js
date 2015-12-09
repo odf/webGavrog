@@ -80,17 +80,6 @@ const edgeIndexes = faces => {
 };
 
 
-const halfEdgesByStartVertex = faces => {
-  let result = I.Map().asMutable();
-  faces.forEach((is, f) => {
-    is.forEach((v, k) => {
-      result.update(v, a => (a || I.List()).push([f, k]));
-    });
-  });
-  return result.asImmutable();
-};
-
-
 const adjustedPositions = (faces, pos, isFixed) => {
   const coord = (face, idx, factor) => V.scaled(factor, pos.get(face.get(idx)));
   const facesByVertex = faces.groupBy(f => f.get(0));
@@ -220,20 +209,6 @@ const insetPoint = (corner, wd, left, right, center) => {
 };
 
 
-const steps = (start, next, endCond) => {
-  const result = [];
-
-  let current = start;
-  do {
-    result.push(current);
-    current = next(current);
-  } while (!endCond(current));
-  result.push(current);
-
-  return result;
-};
-
-
 const nextHalfEdgeAtVertex = faces => {
   const edgeLoc = I.Map().asMutable();
 
@@ -259,31 +234,53 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
   const nextAtVtx = nextHalfEdgeAtVertex(faces);
 
-  const edgeStretches = hs => hs.filter(isSplit)
-    .map(([f, i]) => steps([f, i], nextAtVtx, isSplit));
-
-  const newVertexForStretch = ([v, hs]) => {
-    const ends  = hs.map(([f, i]) => pos.get(endIndex(f, i)));
-    const c     = centroid(ends.length > 2 ?
-                           ends.slice(1, -1) :
-                           corners(pos)(faces.get(hs[0][0])));
-    const inset = insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
-    return [inset, I.fromJS(hs.slice(0, -1))];
+  const newVertexForStretch = (v, hs) => {
+    const ends = hs.map(([f, i]) => pos.get(endIndex(f, i)));
+    const c    = centroid(ends.length > 2 ?
+                          ends.slice(1, -1) :
+                          corners(pos)(faces.get(hs[0][0])));
+    return insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
   };
 
-  const modifications = I.List(halfEdgesByStartVertex(faces))
-    .filter(([v]) => isCorner.get(v))
-    .flatMap(([v, hs]) => edgeStretches(hs).map(hs => [v, hs]))
-    .map(newVertexForStretch);
+  const seen   = I.Set().asMutable();
+  const mods   = I.Map().asMutable();
+  const newPos = [];
 
-  const modsByHalfEdge = I.Map(
-    modifications.flatMap(([p, hs], i) => hs.zip(I.Repeat(i + pos.size))));
+  faces.forEach((is, f) => {
+    is.forEach((v, k) => {
+      if (seen.contains(v) || !isCorner.get(v))
+        return;
+      seen.add(v);
+
+      const hs = [];
+      const splits = [];
+
+      let e = [f, k];
+      do {
+        if (isSplit(e))
+          splits.push(hs.length);
+        hs.push(e);
+        e = nextAtVtx(e);
+      } while(e[0] != f || e[1] != k);
+
+      for (const i in splits) {
+        const stretch = i == 0 ?
+          hs.slice(splits[splits.length-1]).concat(hs.slice(0, splits[0]+1)) :
+          hs.slice(splits[i-1], splits[i]+1);
+
+        newPos.push(newVertexForStretch(v, stretch));
+
+        for (let j = 0; j < stretch.length - 1; ++j)
+          mods.set(I.List(stretch[j]), pos.size + newPos.length - 1);
+      }
+    });
+  });
 
   const newFaces = faces.map(
-    (is, f) => is.map((v, i) => modsByHalfEdge.get(I.List([f, i])) || v));
+    (is, f) => is.map((v, i) => mods.get(I.List([f, i])) || v));
 
   return {
-    pos  : modifications.map(([p]) => p),
+    pos  : newPos,
     faces: newFaces
   };
 };
