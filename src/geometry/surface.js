@@ -83,24 +83,6 @@ const edgeIndexes = faces => {
 };
 
 
-const halfEdgeReversals = faces => {
-  const edgeLoc = I.Map().asMutable();
-
-  faces.forEach((is, f) => {
-    const n = is.size;
-    is.forEach((v, k) => {
-      const w = is.get((k + 1) % n);
-      edgeLoc.setIn([v, w], [f, k]);
-    });
-  });
-
-  return faces.map((is, f) => {
-    const n = is.size;
-    return is.map((v, k) => edgeLoc.getIn([is.get((k + 1) % n), v]));
-  });
-};
-
-
 const halfEdgesByStartVertex = faces => faces
   .flatMap((is, f) => is.map((v, i) => [[f, i], v]))
   .groupBy(([_, v]) => v)
@@ -251,10 +233,21 @@ const steps = (start, next, endCond) => {
 
 
 const nextHalfEdgeAtVertex = faces => {
-  const reversals = halfEdgeReversals(faces);
-  const faceSize  = f => faces.get(f).size;
-  const prevIndex = (f, i) => (i + faceSize(f) - 1) % faceSize(f);
-  return ([f, i]) => reversals.get(f).get(prevIndex(f, i));
+  const edgeLoc = I.Map().asMutable();
+
+  faces.forEach((is, f) => {
+    is.forEach((v, k) => {
+      const w = is.get((k + 1) % is.size);
+      edgeLoc.setIn([v, w], [f, k]);
+    });
+  });
+
+  return ([f, i]) => {
+    const is = faces.get(f);
+    const v = is.get(i);
+    const w = is.get((i + is.size - 1) % is.size);
+    return edgeLoc.getIn([v, w]);
+  };
 };
 
 
