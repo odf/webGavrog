@@ -12,8 +12,6 @@ import * as util      from '../common/util';
 
 
 const processedSolid = (t0, timers) => {
-  surface.useTimers(timers);
-
   timers && timers.start('adding flattened center faces');
   const t1 = surface.withFlattenedCenterFaces(t0);
   timers && timers.stop('adding flattened center faces');

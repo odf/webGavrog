@@ -7,9 +7,6 @@ const M = _M(F, 0, 1);
 const V = _V(F, 0);
 
 
-let _timers = null;
-
-
 const reductions = (xs, fn, init) =>
   xs.reduce((a, x) => a.push(fn(a.last(), x)), I.List([init]));
 
@@ -84,18 +81,13 @@ const edgeIndexes = faces => {
 
 
 const halfEdgesByStartVertex = faces => {
-  _timers && _timers.start('halfEdgesByStartVertex()');
-
   let result = I.Map().asMutable();
   faces.forEach((is, f) => {
     is.forEach((v, k) => {
       result.update(v, a => (a || I.List()).push([f, k]));
     });
   });
-  result = result.asImmutable();
-
-  _timers && _timers.stop('halfEdgesByStartVertex()');
-  return result;
+  return result.asImmutable();
 };
 
 
@@ -265,46 +257,30 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
-
-  _timers && _timers.start('shrunkAt() computing edge linkage');
   const nextAtVtx = nextHalfEdgeAtVertex(faces);
-  _timers && _timers.stop('shrunkAt() computing edge linkage');
 
-  const edgeStretches = hs => {
-    _timers && _timers.start('edgeStretches()');
-    const result = hs.filter(isSplit)
-      .map(([f, i]) => steps([f, i], nextAtVtx, isSplit));
-    _timers && _timers.stop('edgeStretches()');
-    return result;
-  };
+  const edgeStretches = hs => hs.filter(isSplit)
+    .map(([f, i]) => steps([f, i], nextAtVtx, isSplit));
 
   const newVertexForStretch = ([v, hs]) => {
-    _timers && _timers.start('newVertexForStretch()');
     const ends  = hs.map(([f, i]) => pos.get(endIndex(f, i)));
     const c     = centroid(ends.length > 2 ?
                            ends.slice(1, -1) :
                            corners(pos)(faces.get(hs[0][0])));
     const inset = insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
-    _timers && _timers.stop('newVertexForStretch()');
     return [inset, I.fromJS(hs.slice(0, -1))];
   };
 
-  _timers && _timers.start('shrunkAt() computing modifications');
   const modifications = I.List(halfEdgesByStartVertex(faces))
     .filter(([v]) => isCorner.get(v))
     .flatMap(([v, hs]) => edgeStretches(hs).map(hs => [v, hs]))
     .map(newVertexForStretch);
-  _timers && _timers.stop('shrunkAt() computing modifications');
 
-  _timers && _timers.start('shrunkAt() collating modifications');
   const modsByHalfEdge = I.Map(
     modifications.flatMap(([p, hs], i) => hs.zip(I.Repeat(i + pos.size))));
-  _timers && _timers.stop('shrunkAt() collating modifications');
 
-  _timers && _timers.start('shrunkAt() computing new faces');
   const newFaces = faces.map(
     (is, f) => is.map((v, i) => modsByHalfEdge.get(I.List([f, i])) || v));
-  _timers && _timers.stop('shrunkAt() computing new faces');
 
   return {
     pos  : modifications.map(([p]) => p),
@@ -352,9 +328,6 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
     faces  : modifiedFaces.concat(edgeFaces).concat(cornerFaces)
   };
 };
-
-
-export const useTimers = timers => { _timers = timers };
 
 
 if (require.main == module) {
