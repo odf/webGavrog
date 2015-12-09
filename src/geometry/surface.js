@@ -242,6 +242,16 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
     return insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
   };
 
+  const edgeCycle = ([f, k]) => {
+    let e = [f, k];
+    const hs = [];
+    do {
+      hs.push(e);
+      e = nextAtVtx(e);
+    } while(e[0] != f || e[1] != k);
+    return hs;
+  };
+
   const seen   = I.Set().asMutable();
   const mods   = I.Map().asMutable();
   const newPos = [];
@@ -252,16 +262,10 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
         return;
       seen.add(v);
 
-      const hs = [];
-      const splits = [];
-
-      let e = [f, k];
-      do {
-        if (isSplit(e))
-          splits.push(hs.length);
-        hs.push(e);
-        e = nextAtVtx(e);
-      } while(e[0] != f || e[1] != k);
+      const hs = edgeCycle([f, k]);
+      const splits = hs
+        .map((e, i) => isSplit(e) ? i : null)
+        .filter(i => i != null);
 
       for (const i in splits) {
         const stretch = i == 0 ?
