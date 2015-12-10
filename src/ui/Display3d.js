@@ -68,7 +68,7 @@ const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
   if (pos) {
     pos = vec.make(pos);
     return params.merge({
-      distance: vec.norm(vec.minus(pos, vec.plus(t, vec.scaled(d, m.get(2))))),
+      distance: vec.norm(vec.minus(pos, vec.plus(t, vec.scaled(d, m[2])))),
       target  : pos
     });
   } else if (wheel) {
@@ -76,8 +76,8 @@ const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
   } else if (button == MODE.PAN) {
     return params.set(
       'target',
-      vec.plus(t, vec.plus(vec.scaled(-0.2 * d * dx, m.get(0)),
-                           vec.scaled(-0.2 * d * dy, m.get(1)))));
+      vec.plus(t, vec.plus(vec.scaled(-0.2 * d * dx, m[0]),
+                           vec.scaled(-0.2 * d * dy, m[1]))));
   } else {
     const rot = M.make(rotation(-dx, -dy, button == MODE.TILT));
     return params.set('matrix', M.orthonormalized(M.times(rot, params.matrix)));
