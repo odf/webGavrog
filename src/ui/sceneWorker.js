@@ -12,6 +12,8 @@ import * as util      from '../common/util';
 
 
 const processedSolid = (t0, timers) => {
+  surface.useTimers(timers);
+
   timers && timers.start('adding flattened center faces');
   const t1 = surface.withFlattenedCenterFaces(t0);
   timers && timers.stop('adding flattened center faces');
@@ -27,6 +29,8 @@ const processedSolid = (t0, timers) => {
   timers && timers.start('beveling');
   const t4 = surface.beveledAt(t3, 0.015, t2.isFixed);
   timers && timers.stop('beveling');
+
+  surface.useTimers(null);
 
   return t4;
 };

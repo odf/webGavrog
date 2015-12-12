@@ -7,6 +7,11 @@ const M = _M(F, 0, 1);
 const V = _V(F, 0);
 
 
+let _timers = null;
+
+export const useTimers = timers => { _timers = timers };
+
+
 const reductions = (xs, fn, init) =>
   xs.reduce((a, x) => a.push(fn(a.last(), x)), I.List([init]));
 
@@ -290,44 +295,72 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
 };
 
 
+const connectors = (oldFaces, newFaces) => {
+  const result = I.List().asMutable();
+  oldFaces.forEach((isOld, i) => {
+    const isNew = newFaces.get(i);
+    isOld.forEach((vo, k) => {
+      const k1 = (k + 1) % isOld.size;
+      if (vo != isNew.get(k) && isOld.get(k1) != isNew.get(k1))
+        result.push([[vo, isOld.get(k1)], [isNew.get(k), isNew.get(k1)]]);
+    });
+  });
+  return result.asImmutable();
+};
+
+
 export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
+  _timers && _timers.start("  insetAt(): shrinking");
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
+  _timers && _timers.stop("  insetAt(): shrinking");
 
-  const newFaces = faces.zip(modifiedFaces)
-    .flatMap(([isOld, isNew]) => pairs(isOld).zip(pairs(isNew)))
-    .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
+  _timers && _timers.start("  insetAt(): computing new faces");
+  const newFaces = connectors(faces, modifiedFaces)
     .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]));
+  _timers && _timers.stop("  insetAt(): computing new faces");
 
-  return {
+  _timers && _timers.start("  insetAt(): putting things together");
+  const result = {
     pos    : pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faces  : modifiedFaces.concat(newFaces)
   };
+  _timers && _timers.stop("  insetAt(): putting things together");
+
+  return result;
 };
 
 
 export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
+  _timers && _timers.start("  beveledAt(): shrinking");
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
+  _timers && _timers.stop("  beveledAt(): shrinking");
 
+  _timers && _timers.start("  beveledAt(): computing edge faces");
   const edgeFaces = I.List(
-    faces.zip(modifiedFaces)
-      .flatMap(([isOld, isNew]) => pairs(isOld).zip(pairs(isNew)))
-      .filter(([[vo, wo], [vn, wn]]) => vo != vn && wo != wn)
+    connectors(faces, modifiedFaces)
       .map(([eo, en]) => [I.List(eo).sort(), I.List(en)])
       .groupBy(([eo]) => eo)
       .map(([[, a], [, b]]) => a.concat(b).reverse())
       .valueSeq());
+  _timers && _timers.stop("  beveledAt(): computing edge faces");
 
+  _timers && _timers.start("  beveledAt(): computing corner faces");
   const cornerFaces = cycles(I.Map(
     edgeFaces.flatMap(is => [[is.get(2), is.get(1)], [is.get(0), is.get(3)]])));
+  _timers && _timers.stop("  beveledAt(): computing corner faces");
 
-  return {
+  _timers && _timers.start("  beveledAt(): putting things together");
+  const result = {
     pos    : pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faces  : modifiedFaces.concat(edgeFaces).concat(cornerFaces)
   };
+  _timers && _timers.stop("  beveledAt(): putting things together");
+
+  return result;
 };
 
 
