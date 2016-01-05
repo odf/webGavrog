@@ -282,7 +282,7 @@ export function invariant(ds) {
 };
 
 
-const morphism = (src, srcD0, img, imgD0) => {
+export const morphism = (src, srcD0, img, imgD0) => {
   _assert(isConnected(src), 'source symbol must be connected');
   _assert(src.indices().equals(img.indices()), 'index lists must be equal');
 
@@ -310,6 +310,16 @@ const morphism = (src, srcD0, img, imgD0) => {
   }
 
   return m.asImmutable();
+};
+
+
+export const automorphisms = ds => {
+  _assert(isConnected(ds), 'symbol must be connected');
+  const elms = ds.elements();
+  if (elms.size) {
+    const D = elms.first();
+    return elms.map(E => morphism(ds, D, ds, E)).filter(m => m != null);
+  }
 };
 
 
@@ -343,7 +353,7 @@ if (require.main == module) {
     console.log('    partial orientation: '+partialOrientation(ds));
     console.log();
 
-    console.log('    morphism: '+morphism(ds, 1, ds, 2));
+    console.log('    automorphisms: '+automorphisms(ds));
     console.log();
     console.log();
   };
