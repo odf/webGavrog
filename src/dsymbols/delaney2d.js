@@ -32,33 +32,45 @@ const _loopless = function _loopless(ds, i, j, D) {
 
 const _unbranched = ds => _map1dOrbits(ds.v, ds).every(v => v == 1);
 
+const _fullyBranched = ds => _map1dOrbits(ds.v, ds).every(v => !!v);
+
 const _sum = numbers => numbers.reduce(Q.plus, 0);
 
 
-export function curvature(ds) {
+export function curvature(ds, vDefault = 1) {
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
   _assert(p.isConnected(ds), 'must be connected');
 
   const orbitContribution = (i, j, D) => (
-    Q.div((_loopless(ds, i, j, D) ? 2 : 1), ds.v(i, j, D))
+    Q.div((_loopless(ds, i, j, D) ? 2 : 1), (ds.v(i, j, D) || vDefault))
   );
 
   return Q.minus(_sum(_map1dOrbits(orbitContribution, ds)), DS.size(ds));
 };
 
 
+export function isProtoEuclidean(ds) {
+  return Q.cmp(curvature(ds), 0) >= 0;
+};
+
+
+export function isProtoSpherical(ds) {
+  return Q.cmp(curvature(ds), 0) > 0;
+};
+
+
 export function isEuclidean(ds) {
-  return Q.cmp(curvature(ds), 0) == 0;
+  return _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) == 0);
 };
 
 
 export function isHyperbolic(ds) {
-  return Q.cmp(curvature(ds), 0) < 0;
+  return _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) < 0);
 };
 
 
 export function isSpherical(ds) {
-  if (Q.cmp(curvature(ds), 0) <= 0)
+  if (!_fullyBranched(ds) || (Q.cmp(curvature(ds), 0) <= 0))
     return false;
 
   const dso   = d.orientedCover(ds);
@@ -117,6 +129,10 @@ if (require.main == module) {
   const test = function test(ds) {
     console.log('ds = '+ds);
     console.log('  curvature is '+curvature(ds));
+    console.log('  symbol is '+(isProtoEuclidean(ds) ? '' : 'not ')
+                +'proto-euclidean');
+    console.log('  symbol is '+(isProtoSpherical(ds) ? '' : 'not ')
+                +'proto-spherical');
     console.log('  symbol is '+(isEuclidean(ds) ? '' : 'not ')+'euclidean');
     console.log('  symbol is '+(isHyperbolic(ds) ? '' : 'not ')+'hyperbolic');
     console.log('  symbol is '+(isSpherical(ds) ? '' : 'not ')+'spherical');
@@ -137,6 +153,8 @@ if (require.main == module) {
     console.log();
   };
 
+  test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 0,0>'));
+  test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,0>'));
   test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
   test(DS.parse('<1.1:1:1,1,1:5,3>'));
   test(DS.parse('<1.1:1:1,1,1:6,3>'));
