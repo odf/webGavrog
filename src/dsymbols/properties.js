@@ -3,6 +3,12 @@ import * as DS from './delaney';
 import Partition from '../common/partition';
 
 
+const _assert = function _assert(condition, message) {
+  if (!condition)
+    throw new Error(message || 'assertion error');
+};
+
+
 const _fold = function _fold(partition, a, b, matchP, spreadFn) {
   let p = partition;
   let q = I.List().push(I.List([a, b]));
@@ -276,6 +282,37 @@ export function invariant(ds) {
 };
 
 
+const morphism = (src, srcD0, img, imgD0) => {
+  _assert(isConnected(src), 'source symbol must be connected');
+  _assert(src.indices().equals(img.indices()), 'index lists must be equal');
+
+  const idcs = src.indices();
+  const tSrc = _typeMap(src);
+  const tImg = _typeMap(img);
+  const match = (m, D, E) =>
+    E == m.get(D) || (m.get(D) == null && tSrc.get(D).equals(tImg.get(E)));
+
+  const m = I.Map([[srcD0, imgD0]]).asMutable();
+  const q = [[srcD0, imgD0]];
+
+  while (q.length) {
+    const [D, E] = q.shift();
+    const pairs = idcs
+      .map(i => [DS.s(src, i, D), DS.s(img, i, E)])
+      .filter(([D, E]) => D != null || E != null);
+
+    if (pairs.every(([D, E]) => match(m, D, E))) {
+      pairs.filter(([D]) => m.get(D) == null).forEach(p => { q.push(p) });
+      pairs.forEach(([D, E]) => m.set(D, E));
+    }
+    else
+      return null;
+  }
+
+  return m.asImmutable();
+};
+
+
 if (require.main == module) {
   const test = function test(ds) {
     console.log('ds = '+ds);
@@ -304,6 +341,9 @@ if (require.main == module) {
     console.log();
 
     console.log('    partial orientation: '+partialOrientation(ds));
+    console.log();
+
+    console.log('    morphism: '+morphism(ds, 1, ds, 2));
     console.log();
     console.log();
   };
