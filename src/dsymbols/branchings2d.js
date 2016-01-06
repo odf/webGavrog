@@ -77,6 +77,16 @@ export const branchings = (
 
 
 if (require.main == module) {
+  const covers = require('./covers');
+  const isIsohedral = ds => DS.orbitReps2(ds, 0, 1).size == 1;
+
   const ds = DS.parse('<1.1:1:1,1,1:0,0>');
-  generators.results(branchings(ds)).forEach(sym => console.log(`${sym}`));
+
+  covers.covers(ds, 12)
+    .filter(isIsohedral)
+    .filter(DS2D.isProtoEuclidean)
+    .flatMap(ds => generators.results(branchings(ds)))
+    .filter(DS2D.isEuclidean)
+    .filter(props.isMinimal)
+    .forEach(ds => console.log(`${ds}`));
 }
