@@ -285,7 +285,7 @@ export function orbitReps2(ds, i, j) {
       do {
         E = ds.s(i, E) || E;
         seen[E] = true;
-        E = ds.s(i+1, E) || E;
+        E = ds.s(j, E) || E;
         seen[E] = true;
       }
       while (E != D);
