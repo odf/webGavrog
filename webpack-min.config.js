@@ -14,7 +14,8 @@ module.exports = [ "main", "sceneWorker" ].map(function(name) {
     module: {
       loaders: [
         { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader" },
-        { test: /\.json$/, loader: "json" }
+        { test: /\.json$/, loader: "json" },
+        { test: /\.pegjs$/, loader: "pegjs-loader" }
       ]
     },
     plugins: [
