@@ -16,13 +16,26 @@
 }
 
 start
-  = operator
+  = file
 
 _ "optional whitespace"
   = [ \t]*
 
+__ "mandatory whitespace"
+  = [ \t]+
+
+comment
+  = "//" $[^\n]*
+
+nl "advances to the next non-empty line"
+  = (_ comment? "\n")+
+
+name
+  = $[A-Za-z0-9/:-]+
+
 nat
   = digits:$[0-9]+ { return parseInt(digits); }
+
 
 factor
   = num:nat _ "/" _ den:nat { return { n: num, d: den }; }
@@ -49,3 +62,23 @@ coordinate
 operator
   = first:coordinate _ "," _ rest:operator { return [first].concat(rest); }
   / only:coordinate { return [only]; }
+
+entry
+  = "alias" __ name:name __ fullName:name
+    { return { type: 'alias', name: name, fullName: fullName } }
+  / "lookup" __ name:name __ system:$[a-z]+ __ centering:$[A-Z] __ fromStd:operator
+    { return {
+        type     : 'lookup',
+        name     : name,
+        system   : system,
+        centering: centering,
+        fromStd  : fromStd
+        };
+     }
+
+entries
+  = first:entry nl _ rest:entries { return [first].concat(rest); }
+  / only:entry { return [only]; }
+
+file
+  = nl? entries:entries nl? { return entries; }

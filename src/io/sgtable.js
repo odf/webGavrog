@@ -89,5 +89,26 @@ if (require.main == module) {
 
   const parser = require('./sgtableParser');
 
-  console.log(JSON.stringify(parser.parse('- 3/2x,x + y,1-z'), null, 2));
+  const test = s => {
+    console.log(`${s} =>`);
+    try {
+      console.log(`${JSON.stringify(parser.parse(s), null, 2)}`);
+    } catch(ex) {
+      console.error(ex);
+    }
+    console.log(`\n`);
+  };
+
+  test(`
+
+// Hello sgtable!
+// odf 2016
+
+lookup P3m1 trigonal P -y,x-y,z
+lookup Fd-3c:2 cubic F x-1/8,y-3/8,z-1/8
+
+
+alias I2/c I12/c1
+
+`);
 };
