@@ -1,22 +1,20 @@
 {
-  function negate(x) {
+  function _negate(x) {
     if (typeof x == 'number')
       return -x;
     else
       return { n: -x.n, d: x.d };
   }
 
-  function negateFirst(a) {
-    if (a.length == 0)
-      return a;
-    var result = a.slice();
-    result[0] = { i: a[0].i, f: negate(a[0].f) };
-    return result;
+  function negate(s) {
+    return { i: s.i, f: _negate(s.f) }
   }
 }
 
+
 start
   = file
+
 
 _ "optional whitespace"
   = [ \t]*
@@ -25,9 +23,9 @@ __ "mandatory whitespace"
   = [ \t]+
 
 comment
-  = "//" $[^\n]*
+  = "#" $[^\n]*
 
-nl "advances to the next non-empty line"
+nl "new line"
   = (_ comment? "\n")+
 
 name
@@ -48,36 +46,43 @@ axis
 
 summand
   = i:axis { return { i: i, f: 1 }; }
-  / f:factor _ i:axis { return { i: i, f: f }; }
+  / f:factor (_ "*"?) i:axis { return { i: i, f: f }; }
   / f:factor { return { i: 0, f: f }; }
 
+furtherSummand
+  = _ "+" s:summand { return s; }
+  / _ "-" s:summand { return negate(s); }
+
 coordinate
-  = first:summand _ "-" _ rest:coordinate
-    { return [first].concat(negateFirst(rest)); }
-  / first:summand _ "+" _ rest:coordinate
+  = first:summand rest:furtherSummand*
     { return [first].concat(rest); }
-  / "-" _ only:summand { return negateFirst([only]); }
-  / only:summand { return [only]; }
+  / "-" first:summand rest:furtherSummand*
+    { return [negate(first)].concat(rest); }
 
 operator
   = first:coordinate _ "," _ rest:operator { return [first].concat(rest); }
   / only:coordinate { return [only]; }
 
+operators
+  = __ first:operator nl rest:operators { return [first].concat(rest); }
+  / __ only:operator { return [only]; }
+
 entry
   = "alias" __ name:name __ fullName:name
-    { return { type: 'alias', name: name, fullName: fullName } }
-  / "lookup" __ name:name __ system:$[a-z]+ __ centering:$[A-Z] __ fromStd:operator
-    { return {
-        type     : 'lookup',
-        name     : name,
-        system   : system,
-        centering: centering,
-        fromStd  : fromStd
-        };
-     }
+    {
+      return { type: 'alias', name: name, fullName: fullName };
+    }
+  / "lookup" __ n:name __ s:$[a-z]+ __ c:$[A-Za-z] __ op:operator
+    {
+      return { type: 'lookup', name: n, system: s, centering: c, fromStd: op };
+    }
+  / n:name __ t:operator nl ops:operators
+    {
+      return { type: 'setting', name: n, transform: t, operators: ops };
+    }
 
 entries
-  = first:entry nl _ rest:entries { return [first].concat(rest); }
+  = first:entry nl rest:entries { return [first].concat(rest); }
   / only:entry { return [only]; }
 
 file
