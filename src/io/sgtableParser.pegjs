@@ -1,35 +1,32 @@
 {
+  function negate(x) {
+    if (typeof x == 'number')
+      return -x;
+    else
+      return { n: -x.n, d: x.d };
+  }
+
+  function negateFirst(a) {
+    if (a.length == 0)
+      return a;
+    var result = a.slice();
+    result[0] = { i: a[0].i, f: negate(a[0].f) };
+    return result;
+  }
 }
 
-
 start
-  = file
-
-
-__ "mandatory whitespace"
-  = [ \t\n]+ comment?
-  / comment
+  = operator
 
 _ "optional whitespace"
-  = [ \t\n]* comment?
-
-comment
-  = "//" [^\n]* "\n" _
+  = [ \t]*
 
 nat
   = digits:$[0-9]+ { return parseInt(digits); }
 
-int
-  = "+" num:nat { return num; }
-  / "-" num:nat { return -num; }
-  / nat
-
 factor
-  = num:int _ "/" _ den:nat { return { n: num, d: den }; }
-  / int
-  / "+" { return  1; }
-  / "-" { return -1; }
-  / ""  { return  1; }
+  = num:nat _ "/" _ den:nat { return { n: num, d: den }; }
+  / nat
 
 axis
   = "x" { return 1; }
@@ -37,11 +34,16 @@ axis
   / "z" { return 3; }
 
 summand
-  = f:factor _ i:axis { return { i: i, f: f }; }
+  = i:axis { return { i: i, f: 1 }; }
+  / f:factor _ i:axis { return { i: i, f: f }; }
   / f:factor { return { i: 0, f: f }; }
 
 coordinate
-  = first:summand _ rest:coordinate { return [first].concat(rest); }
+  = first:summand _ "-" _ rest:coordinate
+    { return [first].concat(negateFirst(rest)); }
+  / first:summand _ "+" _ rest:coordinate
+    { return [first].concat(rest); }
+  / "-" _ only:summand { return negateFirst([only]); }
   / only:summand { return [only]; }
 
 operator

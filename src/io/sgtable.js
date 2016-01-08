@@ -80,10 +80,14 @@ export default function* entries(lines) {
 
 
 if (require.main == module) {
-  const fs = require('fs');
-  const file = process.argv[2]
-  const lines = fs.readFileSync(file, { encoding: 'utf8' }).split(/\r?\n/);
+//   const fs = require('fs');
+//   const file = process.argv[2]
+//   const lines = fs.readFileSync(file, { encoding: 'utf8' }).split(/\r?\n/);
   
-  for (const e of entries(lines))
-    console.log(JSON.stringify(e, null, 2));
+//   for (const e of entries(lines))
+//     console.log(JSON.stringify(e, null, 2));
+
+  const parser = require('./sgtableParser');
+
+  console.log(JSON.stringify(parser.parse('- 3/2x,x + y,1-z'), null, 2));
 };
