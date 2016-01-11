@@ -36,7 +36,7 @@ export default function checkedInt(longInt) {
 
 
 if (require.main == module) {
-  const longInt = require('./longInt');
+  const longInt = require('./longInt').default;
 
   const {
     promote, negative, abs, sgn, isEven, cmp, plus, minus, times, idiv, mod

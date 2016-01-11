@@ -132,7 +132,7 @@ export default function fraction(intType, promoteToInt) {
 
 
 if (require.main == module) {
-  const longInt = require('./longInt')(4);
+  const longInt = require('./longInt').default(4);
 
   const {
     promote,
