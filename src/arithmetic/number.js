@@ -223,8 +223,8 @@ const number = function number(spec) {
 };
 
 
-const longInt    = require('./longInt')();
-const checkedInt = require('./checkedInt')(longInt);
+const longInt    = require('./longInt').default();
+const checkedInt = require('./checkedInt').default(longInt);
 
 const promoteToInt = function(n) {
   if (typeof n == 'string')
@@ -258,7 +258,7 @@ const integer = number({
 });
 
 
-const fraction = require('./fraction')(integer, promoteToInt);
+const fraction = require('./fraction').default(integer, promoteToInt);
 
 
 const rational = number({
