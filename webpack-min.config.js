@@ -6,7 +6,7 @@ var basedir = __dirname;
 module.exports = [ "main", "sceneWorker" ].map(function(name) {
   return {
     context: path.join(basedir, "src"),
-    entry: [ "babel-core/polyfill", "./ui/"+name ],
+    entry: (name == "main" ? ["babel-polyfill"] : []).concat("./ui/"+name),
     output: {
       path: path.join(basedir, "public", "js"),
       filename: name+".js"

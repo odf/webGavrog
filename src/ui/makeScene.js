@@ -212,74 +212,77 @@ const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
 
 
-export default function(ds, log = console.log) {
-  return csp.go(function*() {
-    const scene  = new THREE.Scene();
+const makeScene = function*(ds, log) {
+  const scene  = new THREE.Scene();
 
-    const ballMaterial = new THREE.MeshPhongMaterial({
-      color: 0xff4040
-    });
-
-    const stickMaterial = new THREE.MeshPhongMaterial({
-      color: 0x4040ff,
-    });
-
-    const tileMaterial = new THREE.MeshPhongMaterial({
-      color: 0x00ffff,
-      shininess: 5
-    });
-
-    log('Finding the pseudo-toroidal cover...');
-    const cov = delaney.parse(
-      yield callWorker({ cmd: 'dsCover', val: `${ds}` }));
-
-    log('Building the tiling object...');
-    const t = tiling(ds, cov);
-
-    log('Generating the subgraph...');
-    const net = t.graph;
-    const g   = graphPortion(net, 0, 2);
-    const pos = t.positions;
-    let verts = g.vertices.map(function(v) {
-      const p = V.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
-      return apply(p, t.basis).data;
-    }).toArray();
-    if (delaney.dim(ds) == 2)
-      verts = verts.map(p => [p[0], p[1], 0]);
-
-    log('Building a ball-and-stick model...');
-    const model = ballAndStick(
-      'cube',
-      verts,
-      g.edges,
-      0.06,
-      0.03,
-      ballMaterial,
-      stickMaterial
-    );
-
-    log('Making the tile geometries...');
-    const surf = yield callWorker({ cmd: 'processSolid', val: tiles(t) });
-
-    const geom = geometry(surf.pos, surf.faces);
-    const tilesMesh = new THREE.Mesh(geom, tileMaterial);
-
-    log('Adding lights and a camera...');
-    const distance = 6;
-    const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
-    camera.name = 'camera';
-    camera.position.z = distance;
-
-    camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
-    camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
-    camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
-
-    scene.add(model);
-    scene.add(tilesMesh);
-    //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
-    scene.add(camera);
-
-    log('Scene complete!');
-    return scene;
+  const ballMaterial = new THREE.MeshPhongMaterial({
+    color: 0xff4040
   });
+
+  const stickMaterial = new THREE.MeshPhongMaterial({
+    color: 0x4040ff,
+  });
+
+  const tileMaterial = new THREE.MeshPhongMaterial({
+    color: 0x00ffff,
+    shininess: 5
+  });
+
+  log('Finding the pseudo-toroidal cover...');
+  const cov = delaney.parse(
+    yield callWorker({ cmd: 'dsCover', val: `${ds}` }));
+
+  log('Building the tiling object...');
+  const t = tiling(ds, cov);
+
+  log('Generating the subgraph...');
+  const net = t.graph;
+  const g   = graphPortion(net, 0, 2);
+  const pos = t.positions;
+  let verts = g.vertices.map(function(v) {
+    const p = V.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
+    return apply(p, t.basis).data;
+  }).toArray();
+  if (delaney.dim(ds) == 2)
+    verts = verts.map(p => [p[0], p[1], 0]);
+
+  log('Building a ball-and-stick model...');
+  const model = ballAndStick(
+    'cube',
+    verts,
+    g.edges,
+    0.06,
+    0.03,
+    ballMaterial,
+    stickMaterial
+  );
+
+  log('Making the tile geometries...');
+  const surf = yield callWorker({ cmd: 'processSolid', val: tiles(t) });
+
+  const geom = geometry(surf.pos, surf.faces);
+  const tilesMesh = new THREE.Mesh(geom, tileMaterial);
+
+  log('Adding lights and a camera...');
+  const distance = 6;
+  const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
+  camera.name = 'camera';
+  camera.position.z = distance;
+
+  camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
+  camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
+  camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
+
+  scene.add(model);
+  scene.add(tilesMesh);
+  //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
+  scene.add(camera);
+
+  log('Scene complete!');
+  return scene;
+};
+
+
+export default function(ds, log = console.log) {
+  return csp.go(makeScene, ds, log);
 };
