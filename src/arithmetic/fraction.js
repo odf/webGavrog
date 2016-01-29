@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
 
-export default function fraction(intType, promoteToInt) {
+export default function fraction(intType, promoteToInt, timers = null) {
 
   const Fraction = I.Record({
     numer: undefined,
@@ -19,36 +19,48 @@ export default function fraction(intType, promoteToInt) {
 
 
   const make = (numer, denom) => new Fraction({ numer, denom });
-
-  const promote = n => make(n, promoteToInt(1));
-  const toJS    = n => intType.toJS(n.numer) / intType.toJS(n.denom);
+  const toJS = n => intType.toJS(n.numer) / intType.toJS(n.denom);
 
 
   const gcd = function gcd(a, b) {
+    timers && timers.start("computing gcd");
     a = intType.abs(a);
     b = intType.abs(b);
 
+    timers && timers.start("gcd loop");
     while (intType.sgn(b) > 0)
       [a, b] = [b, intType.mod(a, b)];
+    timers && timers.stop("gcd loop");
 
+    timers && timers.stop("computing gcd");
     return a;
   };
 
 
-  const normalized = function normalized(n, d) {
-    if (intType.sgn(n) == 0)
-      return promote(0);
+  const normalized = function normalized(n, d = promoteToInt(1)) {
+    let result;
 
-    const s = intType.sgn(d);
+    timers && timers.start("normalizing");
 
-    if (s == 0)
-      throw new Error('fraction has zero denominator');
-    else if (s < 0)
-      return normalized(intType.negative(n), intType.negative(d));
-    else {
-      const a = gcd(n, d);
-      return make(intType.idiv(n, a), intType.idiv(d, a));
+    if (intType.sgn(n) == 0) {
+      result = make(n, promoteToInt(1));
     }
+    else {
+      const s = intType.sgn(d);
+
+      if (s == 0)
+        throw new Error('fraction has zero denominator');
+      else if (s < 0)
+        result = normalized(intType.negative(n), intType.negative(d));
+      else {
+        const a = gcd(n, d);
+        result = make(intType.idiv(n, a), intType.idiv(d, a));
+      }
+    }
+
+    timers && timers.stop("normalizing");
+
+    return result;
   };
 
 
@@ -107,12 +119,12 @@ export default function fraction(intType, promoteToInt) {
   };
 
 
-  const mod = (a, b) => minus(a, times(promote(idiv(a, b)), b));
+  const mod = (a, b) => minus(a, times(normalized(idiv(a, b)), b));
 
 
   return {
     type: Fraction,
-    promote,
+    promote: normalized,
     toJS,
     asInteger,
     negative,
@@ -132,16 +144,19 @@ export default function fraction(intType, promoteToInt) {
 
 
 if (require.main == module) {
+  const util = require('../common/util');
+  const timer = util.timer();
+  const timers = util.timers();
+
   const longInt = require('./longInt').default(4);
+  const integer = longInt;
 
   const {
     promote,
     negative, abs, sgn, isEven, cmp, plus, minus, times, div, idiv, mod
-  } = fraction(longInt, longInt.promote);
+  } = fraction(integer, integer.promote, timers);
 
-  const q = function(n, d) {
-    return div(promote(longInt.promote(n)), promote(longInt.promote(d || 1)));
-  };
+  const q = (n, d = 1) => promote(integer.promote(n), integer.promote(d));
 
   console.log(q(-1234));
   console.log(q(2, 3));
@@ -157,4 +172,7 @@ if (require.main == module) {
   console.log(plus(q(2, 3), q(-2, 3)));
   console.log(idiv(q(2, 5), q(1, 7)));
   console.log(mod(q(2, 5), q(1, 7)));
+
+  console.log(`Computation time was ${timer()} msec.`);
+  console.log(`Details: ${JSON.stringify(timers.current(), null, 2)}`);
 }
