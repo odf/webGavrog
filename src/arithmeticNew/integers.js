@@ -34,21 +34,13 @@ export default function longInt(baseLength = 0) {
     constructor(sign, digits) {
       this.sign = sign;
       this.digits = digits;
-    },
+    }
 
     toString() {
       if (_isZero(this))
         return '0';
       else
         return (this.sign < 0 ? '-' : '') + _toString(this.digits);
-    },
-
-    toJS(n) {
-      if (this.sign == 0)
-        return 0;
-      else
-        return (this.sign * this.digits[0] *
-                Math.pow(BASE, this.digits.length - 1));
     }
   };
 
@@ -57,11 +49,13 @@ export default function longInt(baseLength = 0) {
     if (d.length > 1)
       return new LongInt(s, d);
     else if (d.length == 1)
-      return this.sign * this.digits[0];
+      return s * d[0];
     else
       return 0;
   }
 
+
+  const shouldPromote = n => Math.abs(n) >= BASE;
 
   const promote = function promote(n) {
     const sign = (n > 0) - (n < 0);
@@ -73,7 +67,14 @@ export default function longInt(baseLength = 0) {
       n = Math.floor(n / BASE);
     }
 
-    return make(sign, digits);
+    return new LongInt(sign, digits);
+  };
+
+  const toJS = n => {
+    if (n.sign == 0)
+      return 0;
+    else
+      return (n.sign * n.digits[0] * Math.pow(BASE, n.digits.length - 1));
   };
 
 
@@ -298,50 +299,110 @@ export default function longInt(baseLength = 0) {
   };
 
 
-  return {
-    types: [
-      { name : 'LongInt',
-        parse: parse
-      }
-    ],
+  const checkedOperator = (longMethod, nativeMethod) => (x, y) => {
+    const t = nativeMethod(x, y);
+    if (shouldPromote(x) || shouldPromote(y) || shouldPromote(t))
+      return longMethod(promote(x), promote(y));
+    else
+      return t;
+  };
 
-    methods: [
-      { op      : 'negative',
-        argtypes: ['LongInt'],
-        method  : negative
-      },
-      { op      : 'abs',
-        argtypes: ['LongInt'],
-        method  : abs
-      },
-      { op      : 'sgn',
-        argtypes: ['LongInt'],
-        method  : sgn
-      },
-      { op      : 'isEven',
-        argtypes: ['LongInt'],
-        method  : isEven
-      },
-      { op      : 'cmp',
-        argtypes: ['LongInt', 'LongInt'],
-        method  : cmp
-      },
-      { op      : 'plus',
-        argtypes: ['LongInt', 'LongInt'],
-        method  : plus
-      },
-      { op      : 'minus',
-        argtypes: ['LongInt', 'LongInt'],
-        method  : minus
-      },
-      { op      : 'times',
-        argtypes: ['LongInt', 'LongInt'],
-        method  : times
-      },
-      { op      : 'idiv',
-        argtypes: ['LongInt', 'LongInt'],
-        method  : idiv
-      }
-    ]
+
+  return {
+    parsers: {
+      LongInt: parse
+    },
+
+    methods: {
+      toJS: [
+        { argtypes: ['LongInt'], method: toJS },
+        { argtypes: ['Integer'], method: x => x }
+      ],
+      negative: [
+        { argtypes: ['LongInt'], method: negative },
+        { argtypes: ['Integer'], method: x => -x }
+      ],
+      abs: [
+        { argtypes: ['LongInt'], method: abs },
+        { argtypes: ['Integer'], method: x => Math.abs(x) }
+      ],
+      sgn: [
+        { argtypes: ['LongInt'], method: sgn },
+        { argtypes: ['Integer'], method: x => (x > 0) - (x < 0) }
+      ],
+      isEven: [
+        { argtypes: ['LongInt'], method: isEven },
+        { argtypes: ['Integer'], method: x => x % 2 == 0 }
+      ],
+      cmp: [
+        { argtypes: ['LongInt', 'LongInt'], method: cmp },
+        { argtypes: ['LongInt', 'Integer'],
+          method  : (x, y) => cmp(x, promote(y)) },
+        { argtypes: ['Integer', 'LongInt'],
+          method  : (x, y) => cmp(promote(x), y) },
+        { argtypes: ['Integer', 'Integer'],
+          method  : (x, y) => (x > y) - (x < y) }
+      ],
+      plus: [
+        { argtypes: ['LongInt', 'LongInt'], method: plus },
+        { argtypes: ['LongInt', 'Integer'],
+          method  : (x, y) => plus(x, promote(y)) },
+        { argtypes: ['Integer', 'LongInt'],
+          method  : (x, y) => plus(promote(x), y) },
+        { argtypes: ['Integer', 'Integer'],
+          method  : checkedOperator(plus, (x, y) => x + y) }
+      ],
+      minus: [
+        { argtypes: ['LongInt', 'LongInt'], method: minus },
+        { argtypes: ['LongInt', 'Integer'],
+          method  : (x, y) => minus(x, promote(y)) },
+        { argtypes: ['Integer', 'LongInt'],
+          method  : (x, y) => minus(promote(x), y) },
+        { argtypes: ['Integer', 'Integer'],
+          method  : checkedOperator(minus, (x, y) => x - y) }
+      ],
+      times: [
+        { argtypes: ['LongInt', 'LongInt'], method: times },
+        { argtypes: ['LongInt', 'Integer'],
+          method  : (x, y) => times(x, promote(y)) },
+        { argtypes: ['Integer', 'LongInt'],
+          method  : (x, y) => times(promote(x), y) },
+        { argtypes: ['Integer', 'Integer'],
+          method  : checkedOperator(times, (x, y) => x * y) }
+      ],
+      idiv: [
+        { argtypes: ['LongInt', 'LongInt'], method: idiv },
+        { argtypes: ['LongInt', 'Integer'],
+          method  : (x, y) => idiv(x, promote(y)) },
+        { argtypes: ['Integer', 'LongInt'],
+          method  : (x, y) => idiv(promote(x), y) },
+        { argtypes: ['Integer', 'Integer'],
+          method  : (x, y) => Math.floor(x / y) }
+      ]
+    }
   };
 };
+
+
+if (require.main == module) {
+  const { parsers, methods } = longInt();
+
+  const ops = require('./base').default().register(methods).ops();
+  const timer = require('../common/util').timer();
+
+  const N = 59;
+  let t = 1;
+
+  for (let i = 1; i < N; ++i) {
+    t = ops.times(t, i);
+    console.log(`${t}`);
+  }
+
+  for (let i = 1; i < N; ++i) {
+    t = ops.idiv(t, i);
+    console.log(`${t}`);
+  }
+
+  console.log();
+  console.log(`Computation time: ${timer()} msec`);
+}
