@@ -10,11 +10,7 @@ export default function fraction(intOps) {
     }
 
     toString() {
-      const n = asInteger(this);
-      if (n !== undefined)
-        return n.toString();
-      else
-        return this.numer.toString() + '/' + this.denom.toString();
+      return this.numer.toString() + '/' + this.denom.toString();
     }
   };
 
@@ -55,8 +51,10 @@ export default function fraction(intOps) {
   };
 
 
-  const negative = q => make(intOps.negative(q.numer), q.denom);
-  const abs      = q => make(intOps.abs(q.numer), q.denom);
+  const promote = n => new Fraction(n, 1);
+
+  const negative = q => new Fraction(intOps.negative(q.numer), q.denom);
+  const abs      = q => new Fraction(intOps.abs(q.numer), q.denom);
   const sgn      = q => intOps.sgn(q.numer);
 
 
@@ -85,25 +83,105 @@ export default function fraction(intOps) {
   };
 
 
-  const div = (q, r) => times(q, make(r.denom, r.numer));
-
-
-  const idiv = function idiv(q, r) {
-    const t = div(q, r);
-    return intOps.idiv(t.numer, t.denom);
-  };
+  const div = (q, r) => times(q, new Fraction(r.denom, r.numer));
 
 
   return {
+    methods: {
+      toJS    : [ { argtypes: ['Fraction'], method: toJS } ],
+      negative: [ { argtypes: ['Fraction'], method: negative } ],
+      abs     : [ { argtypes: ['Fraction'], method: abs } ],
+      sgn     : [ { argtypes: ['Fraction'], method: sgn } ],
+
+      cmp: [
+        { argtypes: ['Fraction', 'Fraction'],
+          method  : cmp },
+        { argtypes: ['Fraction', 'Integer' ],
+          method  : (x, y) => cmp(x, promote(y)) },
+        { argtypes: ['Integer' , 'Fraction'],
+          method  : (x, y) => cmp(promote(x), y) },
+        { argtypes: ['Fraction', 'LongInt' ],
+          method  : (x, y) => cmp(x, promote(y)) },
+        { argtypes: ['LongInt' , 'Fraction'],
+          method  : (x, y) => cmp(promote(x), y) },
+      ],
+      plus: [
+        { argtypes: ['Fraction', 'Fraction'],
+          method  : plus },
+        { argtypes: ['Fraction', 'Integer' ],
+          method  : (x, y) => plus(x, promote(y)) },
+        { argtypes: ['Integer' , 'Fraction'],
+          method  : (x, y) => plus(promote(x), y) },
+        { argtypes: ['Fraction', 'LongInt' ],
+          method  : (x, y) => plus(x, promote(y)) },
+        { argtypes: ['LongInt' , 'Fraction'],
+          method  : (x, y) => plus(promote(x), y) },
+      ],
+      minus: [
+        { argtypes: ['Fraction', 'Fraction'],
+          method  : minus },
+        { argtypes: ['Fraction', 'Integer' ],
+          method  : (x, y) => minus(x, promote(y)) },
+        { argtypes: ['Integer' , 'Fraction'],
+          method  : (x, y) => minus(promote(x), y) },
+        { argtypes: ['Fraction', 'LongInt' ],
+          method  : (x, y) => minus(x, promote(y)) },
+        { argtypes: ['LongInt' , 'Fraction'],
+          method  : (x, y) => minus(promote(x), y) },
+      ],
+      times: [
+        { argtypes: ['Fraction', 'Fraction'],
+          method  : times },
+        { argtypes: ['Fraction', 'Integer' ],
+          method  : (x, y) => times(x, promote(y)) },
+        { argtypes: ['Integer' , 'Fraction'],
+          method  : (x, y) => times(promote(x), y) },
+        { argtypes: ['Fraction', 'LongInt' ],
+          method  : (x, y) => times(x, promote(y)) },
+        { argtypes: ['LongInt' , 'Fraction'],
+          method  : (x, y) => times(promote(x), y) },
+      ],
+      div: [
+        { argtypes: ['Integer' , 'Integer' ], method: (x, y) => make(x, y) },
+        { argtypes: ['Integer' , 'LongInt' ], method: (x, y) => make(x, y) },
+        { argtypes: ['LongInt' , 'Integer' ], method: (x, y) => make(x, y) },
+        { argtypes: ['LongInt' , 'LongInt' ], method: (x, y) => make(x, y) },
+        { argtypes: ['Fraction', 'Fraction'], method: div },
+        { argtypes: ['Fraction', 'Integer' ],
+          method  : (x, y) => div(x, promote(y)) },
+        { argtypes: ['Integer' , 'Fraction'],
+          method  : (x, y) => div(promote(x), y) },
+        { argtypes: ['Fraction', 'LongInt' ],
+          method  : (x, y) => div(x, promote(y)) },
+        { argtypes: ['LongInt' , 'Fraction'],
+          method  : (x, y) => div(promote(x), y) }
+      ]
+    }
   };
 };
 
 
 if (require.main == module) {
-  const { intParsers, intMethods } = require('./integers').default();
+  const { methods: intMethods } = require('./integers').default();
   const a = require('./base').default()
 
   a.register(intMethods);
 
-  const { parsers, methods } = fraction(a.ops);
+  const { methods } = fraction(a.ops());
+
+  const ops = a.register(methods).ops();
+  const timer = require('../common/util').timer();
+
+  const N = 128;
+  let t = 0, q = 1;
+
+  for (let i = 0; i < 128; ++i) {
+    q = ops.div(q, 2);
+    t = ops.plus(t, q);
+  }
+  console.log(`${t}`);
+  console.log(`${ops.plus(t, q)}`);
+
+  console.log();
+  console.log(`Computation time: ${timer()} msec`);
 }
