@@ -33,8 +33,10 @@ export default function arithmetic() {
 
   return {
     register(specs) {
-      for (const {op, argtypes, method} of specs) {
-        _registry.setIn([op].concat(argtypes), method);
+      for (const op in specs) {
+        for (const {argtypes, method} of specs[op]) {
+          _registry.setIn([op].concat(argtypes), method);
+        }
       }
       return this;
     },
@@ -50,16 +52,12 @@ export default function arithmetic() {
 
 if (require.main == module) {
   const ops = arithmetic()
-    .register([
-      { op: 'add',
-        argtypes: ['Integer', 'Integer'],
-        method: (a, b) => a + b
-      },
-      { op: 'add',
-        argtypes: ['Integer', 'String'],
-        method: (n, s) => `${n}+"${s}"`
-      }
-    ])
+    .register({
+      add: [
+        { argtypes: ['Integer', 'Integer'], method: (a, b) => a + b },
+        { argtypes: ['Integer', 'String' ], method: (n, s) => `${n}+"${s}"` }
+      ]
+    })
     .ops();
 
   console.log(`add(3, 4) = ${ops.add(3, 4)}`);
