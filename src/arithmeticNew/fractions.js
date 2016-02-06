@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
 
-export default function fraction(intOps) {
+export default function fraction(intOps, intTypes, typeName = 'Fraction') {
 
   class Fraction {
     constructor(numer, denom) {
@@ -12,6 +12,8 @@ export default function fraction(intOps) {
     toString() {
       return this.numer.toString() + '/' + this.denom.toString();
     }
+
+    get __typeName() { return typeName; }
   };
 
 
@@ -86,78 +88,39 @@ export default function fraction(intOps) {
   const div = (q, r) => times(q, new Fraction(r.denom, r.numer));
 
 
-  return {
-    methods: {
-      toJS    : [ { argtypes: ['Fraction'], method: toJS } ],
-      negative: [ { argtypes: ['Fraction'], method: negative } ],
-      abs     : [ { argtypes: ['Fraction'], method: abs } ],
-      sgn     : [ { argtypes: ['Fraction'], method: sgn } ],
+  const methods = {
+    toJS    : [ { argtypes: [typeName], method: toJS     } ],
+    negative: [ { argtypes: [typeName], method: negative } ],
+    abs     : [ { argtypes: [typeName], method: abs      } ],
+    sgn     : [ { argtypes: [typeName], method: sgn      } ],
+  }
 
-      cmp: [
-        { argtypes: ['Fraction', 'Fraction'],
-          method  : cmp },
-        { argtypes: ['Fraction', 'Integer' ],
-          method  : (x, y) => cmp(x, promote(y)) },
-        { argtypes: ['Integer' , 'Fraction'],
-          method  : (x, y) => cmp(promote(x), y) },
-        { argtypes: ['Fraction', 'LongInt' ],
-          method  : (x, y) => cmp(x, promote(y)) },
-        { argtypes: ['LongInt' , 'Fraction'],
-          method  : (x, y) => cmp(promote(x), y) },
-      ],
-      plus: [
-        { argtypes: ['Fraction', 'Fraction'],
-          method  : plus },
-        { argtypes: ['Fraction', 'Integer' ],
-          method  : (x, y) => plus(x, promote(y)) },
-        { argtypes: ['Integer' , 'Fraction'],
-          method  : (x, y) => plus(promote(x), y) },
-        { argtypes: ['Fraction', 'LongInt' ],
-          method  : (x, y) => plus(x, promote(y)) },
-        { argtypes: ['LongInt' , 'Fraction'],
-          method  : (x, y) => plus(promote(x), y) },
-      ],
-      minus: [
-        { argtypes: ['Fraction', 'Fraction'],
-          method  : minus },
-        { argtypes: ['Fraction', 'Integer' ],
-          method  : (x, y) => minus(x, promote(y)) },
-        { argtypes: ['Integer' , 'Fraction'],
-          method  : (x, y) => minus(promote(x), y) },
-        { argtypes: ['Fraction', 'LongInt' ],
-          method  : (x, y) => minus(x, promote(y)) },
-        { argtypes: ['LongInt' , 'Fraction'],
-          method  : (x, y) => minus(promote(x), y) },
-      ],
-      times: [
-        { argtypes: ['Fraction', 'Fraction'],
-          method  : times },
-        { argtypes: ['Fraction', 'Integer' ],
-          method  : (x, y) => times(x, promote(y)) },
-        { argtypes: ['Integer' , 'Fraction'],
-          method  : (x, y) => times(promote(x), y) },
-        { argtypes: ['Fraction', 'LongInt' ],
-          method  : (x, y) => times(x, promote(y)) },
-        { argtypes: ['LongInt' , 'Fraction'],
-          method  : (x, y) => times(promote(x), y) },
-      ],
-      div: [
-        { argtypes: ['Integer' , 'Integer' ], method: (x, y) => make(x, y) },
-        { argtypes: ['Integer' , 'LongInt' ], method: (x, y) => make(x, y) },
-        { argtypes: ['LongInt' , 'Integer' ], method: (x, y) => make(x, y) },
-        { argtypes: ['LongInt' , 'LongInt' ], method: (x, y) => make(x, y) },
-        { argtypes: ['Fraction', 'Fraction'], method: div },
-        { argtypes: ['Fraction', 'Integer' ],
-          method  : (x, y) => div(x, promote(y)) },
-        { argtypes: ['Integer' , 'Fraction'],
-          method  : (x, y) => div(promote(x), y) },
-        { argtypes: ['Fraction', 'LongInt' ],
-          method  : (x, y) => div(x, promote(y)) },
-        { argtypes: ['LongInt' , 'Fraction'],
-          method  : (x, y) => div(promote(x), y) }
-      ]
+  for (const [op, name] of [
+    [cmp  , 'cmp'  ],
+    [plus , 'plus' ],
+    [minus, 'minus'],
+    [times, 'times'],
+    [div  , 'div'  ]
+  ]) {
+    methods[name] = [ { argtypes: [typeName, typeName], method: op } ];
+
+    for (const intType of intTypes) {
+      methods[name].push({
+        argtypes: [typeName, intType], method: (x, y) => op(x, promote(y))
+      });
+      methods[name].push({
+        argtypes: [intType, typeName], method: (x, y) => op(promote(x), y)
+      });
     }
-  };
+  }
+
+  for (const t1 of intTypes) {
+    for (const t2 of intTypes) {
+      methods.div.push({ argtypes: [t1, t2], method: (x, y) => make(x, y) });
+    }
+  }
+
+  return { methods };
 };
 
 
@@ -167,7 +130,7 @@ if (require.main == module) {
 
   a.register(intMethods);
 
-  const { methods } = fraction(a.ops());
+  const { methods } = fraction(a.ops(), ['Integer', 'LongInt']);
 
   const ops = a.register(methods).ops();
   const timer = require('../common/util').timer();
