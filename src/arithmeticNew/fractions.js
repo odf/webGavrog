@@ -90,7 +90,7 @@ export default function fraction(intOps, intTypes, typeName = 'Fraction') {
     negative: [ { argtypes: [typeName], method: negative } ],
     abs     : [ { argtypes: [typeName], method: abs      } ],
     sgn     : [ { argtypes: [typeName], method: sgn      } ],
-  }
+  };
 
   for (const [op, name] of [
     [cmp  , 'cmp'  ],
