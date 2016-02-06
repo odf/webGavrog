@@ -1,5 +1,4 @@
 import * as I from 'immutable';
-import * as util from '../common/util';
 
 
 export default function longInt(baseLength = 0) {
