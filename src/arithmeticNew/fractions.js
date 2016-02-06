@@ -1,6 +1,3 @@
-import * as I from 'immutable';
-
-
 export default function fraction(intOps, intTypes, typeName = 'Fraction') {
 
   class Fraction {
