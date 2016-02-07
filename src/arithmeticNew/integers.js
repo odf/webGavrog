@@ -288,13 +288,22 @@ export default function longInt(baseLength = 0) {
 
 
   const idiv = function idiv(a, b) {
+    if (b.sign == 0)
+      throw new Error('division by zero');
+
     const d = _cmp(a.digits, b.digits);
+
     if (d < 0)
       return 0;
     else if (d == 0)
       return a.sign * b.sign;
-    else
-      return make(a.sign * b.sign, _idiv(a.digits, b.digits));
+    else {
+      const s = a.sign * b.sign;
+      if (s > 0)
+        return make(s, _idiv(a.digits, b.digits));
+      else
+        return make(s, _idiv(_plus(a.digits, _minus(b.digits, [1])), b.digits));
+    }
   };
 
 
