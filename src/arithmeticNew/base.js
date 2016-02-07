@@ -13,6 +13,18 @@ export const typeOf = x => {
 };
 
 
+const call = (dispatch, ops) => (...args) => {
+  const method = dispatch.getIn(args.map(typeOf)) || dispatch.get()
+
+  if (method)
+    return method(...args, ops);
+  else {
+    const msg = `Operator '${op}' not defined on [${args.map(typeOf)}]`;
+    throw new Error(msg);
+  }
+};
+
+
 const defaults = {
   isZero       : [{ method: (x, ops) => ops.sgn(x) == 0 }],
   isPositive   : [{ method: (x, ops) => ops.sgn(x) >  0 }],
@@ -27,21 +39,6 @@ const defaults = {
 export default function arithmetic() {
   const _registry = I.Map().asMutable();
 
-  const _call = (op, ops) => {
-    const dispatch = _registry.get(op);
-
-    return (...args) => {
-      const method = dispatch.getIn(args.map(typeOf)) || dispatch.get()
-
-      if (method)
-        return method(...args, ops);
-      else {
-        const msg = `Operator '${op}' not defined on [${args.map(typeOf)}]`;
-        throw new Error(msg);
-      }
-    };
-  };
-
   const result = {
     register(specs) {
       for (const op in specs) {
@@ -54,7 +51,7 @@ export default function arithmetic() {
 
     ops() {
       const result = {};
-      _registry.keySeq().forEach(op => { result[op] = _call(op, result); });
+      _registry.forEach((dispatch, op) => result[op] = call(dispatch, result));
       return result;
     }
   };
@@ -70,6 +67,9 @@ if (require.main == module) {
         { argtypes: ['Integer', 'Integer'], method: (a, b) => a + b },
         { argtypes: ['Integer', 'String' ], method: (n, s) => `${n}+"${s}"` },
         { method: (x, y) => `${x} plus ${y}` }
+      ],
+      test: [
+        { method: (x, y, ops) => `<${ops.add(x, y)}>` }
       ]
     })
     .ops();
@@ -77,4 +77,5 @@ if (require.main == module) {
   console.log(`add(3, 4) = ${ops.add(3, 4)}`);
   console.log(`add(5, "Olaf") = ${ops.add(5, "Olaf")}`);
   console.log(`add("Olaf", "Delgado") = ${ops.add("Olaf", "Delgado")}`);
+  console.log(`test(5, "Olaf") = ${ops.test(5, "Olaf")}`);
 }
