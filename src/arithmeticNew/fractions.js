@@ -57,6 +57,15 @@ export default function fraction(intOps, intTypes, typeName = 'Fraction') {
   const sgn      = q => intOps.sgn(q.numer);
 
 
+  const floor = q => {
+    return intOps.idiv(q.numer, q.denom);
+  };
+
+  const ceil = q => {
+    return intOps.idiv(intOps.plus(q.numer, intOps.minus(q.denom, 1)),
+                       q.denom);
+  };
+
   const cmp = (q, r) => sgn(minus(q, r));
 
 
@@ -90,6 +99,8 @@ export default function fraction(intOps, intTypes, typeName = 'Fraction') {
     negative: [ { argtypes: [typeName], method: negative } ],
     abs     : [ { argtypes: [typeName], method: abs      } ],
     sgn     : [ { argtypes: [typeName], method: sgn      } ],
+    floor   : [ { argtypes: [typeName], method: floor    } ],
+    ceil    : [ { argtypes: [typeName], method: ceil     } ]
   };
 
   for (const [op, name] of [
@@ -141,6 +152,12 @@ if (require.main == module) {
   }
   console.log(`${t}`);
   console.log(`${ops.plus(t, q)}`);
+
+  console.log();
+  console.log(`floor( 5/3) = ${ops.floor(ops.div( 5, 3))}`);
+  console.log(`floor(-5/3) = ${ops.floor(ops.div(-5, 3))}`);
+  console.log(`ceil ( 5/3) = ${ops.ceil (ops.div( 5, 3))}`);
+  console.log(`ceil (-5/3) = ${ops.ceil (ops.div(-5, 3))}`);
 
   console.log();
   console.log(`Computation time: ${timer()} msec`);

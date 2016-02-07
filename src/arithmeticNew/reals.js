@@ -17,7 +17,9 @@ const realMethods = {
   toJS    : [ { argtypes: ['Float'], method: x => x  } ],
   negative: [ { argtypes: ['Float'], method: x => -x } ],
   abs     : [ { argtypes: ['Float'], method: x => Math.abs(x) } ],
-  sgn     : [ { argtypes: ['Float'], method: x => (x > 0) - (x < 0) } ]
+  sgn     : [ { argtypes: ['Float'], method: x => (x > 0) - (x < 0) } ],
+  floor   : [ { argtypes: ['Float'], method: x => Math.floor(x) } ],
+  ceil    : [ { argtypes: ['Float'], method: x => Math.ceil(x) } ]
 };
 
 for (const [op, name] of [

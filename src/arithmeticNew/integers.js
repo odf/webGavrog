@@ -342,6 +342,14 @@ export default function longInt(baseLength = 0) {
         { argtypes: ['LongInt'], method: isEven },
         { argtypes: ['Integer'], method: x => x % 2 == 0 }
       ],
+      floor: [
+        { argtypes: ['LongInt'], method: x => x },
+        { argtypes: ['Integer'], method: x => x }
+      ],
+      ceil: [
+        { argtypes: ['LongInt'], method: x => x },
+        { argtypes: ['Integer'], method: x => x }
+      ],
       cmp: [
         { argtypes: ['LongInt', 'LongInt'], method: cmp },
         { argtypes: ['LongInt', 'Integer'],
@@ -405,6 +413,11 @@ if (require.main == module) {
     t = ops.times(t, i);
     console.log(`${t}`);
   }
+
+  console.log(`${ops.idiv(ops.plus(t, 1), t)}`);
+  console.log(`${ops.idiv(ops.negative(ops.plus(t, 1)), t)}`);
+  console.log(`${ops.idiv(ops.plus(t, 1), ops.negative(t))}`);
+  console.log(`${ops.idiv(ops.negative(ops.plus(t, 1)), ops.negative(t))}`);
 
   for (let i = 1; i < N; ++i) {
     t = ops.idiv(t, i);
