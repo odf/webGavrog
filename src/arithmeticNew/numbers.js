@@ -4,14 +4,16 @@ const a = require('./base').default()
 const { methods: intMethods } = require('./integers').default();
 a.register(intMethods);
 
+export const integers = a.ops();
+
 
 const { methods: ratMethods } = require('./fractions').default(
   a.ops(), ['Integer', 'LongInt'], 'Fraction'
 );
 a.register(ratMethods);
 
+export const rationals = a.ops();
 
-const ratOps = a.ops();
 
 const realMethods = {
   toJS    : [ { argtypes: ['Float'], method: x => x  } ],
@@ -33,22 +35,20 @@ for (const [op, name] of [
 
   for (const ratType of ['Integer', 'LongInt', 'Fraction']) {
     realMethods[name].push({
-      argtypes: ['Float', ratType], method: (x, y) => op(x, ratOps.toJS(y))
+      argtypes: ['Float', ratType], method: (x, y) => op(x, rationals.toJS(y))
     });
     realMethods[name].push({
-      argtypes: [ratType, 'Float'], method: (x, y) => op(ratOps.toJS(x), y)
+      argtypes: [ratType, 'Float'], method: (x, y) => op(rationals.toJS(x), y)
     });
   }
 }
 
 a.register(realMethods);
 
-const ops = a.ops();
-
-export default ops;
+export const reals = a.ops();
 
 
 if (require.main == module) {
-  console.log(`${ops.div(2,3)}`);
-  console.log(`${ops.plus(ops.div(2,3), 0.1)}`);
+  console.log(`${reals.div(2,3)}`);
+  console.log(`${reals.plus(reals.div(2,3), 0.1)}`);
 }
