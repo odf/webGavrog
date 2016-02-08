@@ -1,4 +1,4 @@
-export default function fraction(intOps, intTypes, typeName = 'Fraction') {
+export function methods(intOps, intTypes, typeName = 'Fraction') {
 
   class Fraction {
     constructor(numer, denom) {
@@ -128,19 +128,15 @@ export default function fraction(intOps, intTypes, typeName = 'Fraction') {
     }
   }
 
-  return { methods };
+  return methods;
 };
 
 
 if (require.main == module) {
-  const { methods: intMethods } = require('./integers').default();
-  const a = require('./base').default()
+  const a = require('./base').arithmetic()
+    .register(require('./integers').methods());
 
-  a.register(intMethods);
-
-  const { methods } = fraction(a.ops(), ['Integer', 'LongInt']);
-
-  const ops = a.register(methods).ops();
+  const ops = a.register(methods(a.ops(), ['Integer', 'LongInt'])).ops();
   const timer = require('../common/util').timer();
 
   const N = 128;

@@ -36,7 +36,7 @@ const defaults = {
 };
 
 
-export default function arithmetic() {
+export function arithmetic() {
   const _registry = I.Map().asMutable();
 
   const result = {

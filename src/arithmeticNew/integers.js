@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
 
-export default function longInt(baseLength = 0) {
+export function methods(baseLength = 0) {
 
   const BASE_LENGTH = (baseLength & ~1) ||
     I.Range(1)
@@ -317,93 +317,85 @@ export default function longInt(baseLength = 0) {
 
 
   return {
-    parsers: {
-      LongInt: parse
-    },
-
-    methods: {
-      toJS: [
-        { argtypes: ['LongInt'], method: toJS },
-        { argtypes: ['Integer'], method: x => x }
-      ],
-      negative: [
-        { argtypes: ['LongInt'], method: negative },
-        { argtypes: ['Integer'], method: x => -x }
-      ],
-      abs: [
-        { argtypes: ['LongInt'], method: abs },
-        { argtypes: ['Integer'], method: x => Math.abs(x) }
-      ],
-      sgn: [
-        { argtypes: ['LongInt'], method: sgn },
-        { argtypes: ['Integer'], method: x => (x > 0) - (x < 0) }
-      ],
-      isEven: [
-        { argtypes: ['LongInt'], method: isEven },
-        { argtypes: ['Integer'], method: x => x % 2 == 0 }
-      ],
-      floor: [
-        { argtypes: ['LongInt'], method: x => x },
-        { argtypes: ['Integer'], method: x => x }
-      ],
-      ceil: [
-        { argtypes: ['LongInt'], method: x => x },
-        { argtypes: ['Integer'], method: x => x }
-      ],
-      cmp: [
-        { argtypes: ['LongInt', 'LongInt'], method: cmp },
-        { argtypes: ['LongInt', 'Integer'],
-          method  : (x, y) => cmp(x, promote(y)) },
-        { argtypes: ['Integer', 'LongInt'],
-          method  : (x, y) => cmp(promote(x), y) },
-        { argtypes: ['Integer', 'Integer'],
-          method  : (x, y) => (x > y) - (x < y) }
-      ],
-      plus: [
-        { argtypes: ['LongInt', 'LongInt'], method: plus },
-        { argtypes: ['LongInt', 'Integer'],
-          method  : (x, y) => plus(x, promote(y)) },
-        { argtypes: ['Integer', 'LongInt'],
-          method  : (x, y) => plus(promote(x), y) },
-        { argtypes: ['Integer', 'Integer'],
-          method  : checkedOperator(plus, (x, y) => x + y) }
-      ],
-      minus: [
-        { argtypes: ['LongInt', 'LongInt'], method: minus },
-        { argtypes: ['LongInt', 'Integer'],
-          method  : (x, y) => minus(x, promote(y)) },
-        { argtypes: ['Integer', 'LongInt'],
-          method  : (x, y) => minus(promote(x), y) },
-        { argtypes: ['Integer', 'Integer'],
-          method  : checkedOperator(minus, (x, y) => x - y) }
-      ],
-      times: [
-        { argtypes: ['LongInt', 'LongInt'], method: times },
-        { argtypes: ['LongInt', 'Integer'],
-          method  : (x, y) => times(x, promote(y)) },
-        { argtypes: ['Integer', 'LongInt'],
-          method  : (x, y) => times(promote(x), y) },
-        { argtypes: ['Integer', 'Integer'],
-          method  : checkedOperator(times, (x, y) => x * y) }
-      ],
-      idiv: [
-        { argtypes: ['LongInt', 'LongInt'], method: idiv },
-        { argtypes: ['LongInt', 'Integer'],
-          method  : (x, y) => idiv(x, promote(y)) },
-        { argtypes: ['Integer', 'LongInt'],
-          method  : (x, y) => idiv(promote(x), y) },
-        { argtypes: ['Integer', 'Integer'],
-          method  : (x, y) => Math.floor(x / y) }
-      ]
-    }
-  };
+    toJS: [
+      { argtypes: ['LongInt'], method: toJS },
+      { argtypes: ['Integer'], method: x => x }
+    ],
+    negative: [
+      { argtypes: ['LongInt'], method: negative },
+      { argtypes: ['Integer'], method: x => -x }
+    ],
+    abs: [
+      { argtypes: ['LongInt'], method: abs },
+      { argtypes: ['Integer'], method: x => Math.abs(x) }
+    ],
+    sgn: [
+      { argtypes: ['LongInt'], method: sgn },
+      { argtypes: ['Integer'], method: x => (x > 0) - (x < 0) }
+    ],
+    isEven: [
+      { argtypes: ['LongInt'], method: isEven },
+      { argtypes: ['Integer'], method: x => x % 2 == 0 }
+    ],
+    floor: [
+      { argtypes: ['LongInt'], method: x => x },
+      { argtypes: ['Integer'], method: x => x }
+    ],
+    ceil: [
+      { argtypes: ['LongInt'], method: x => x },
+      { argtypes: ['Integer'], method: x => x }
+    ],
+    cmp: [
+      { argtypes: ['LongInt', 'LongInt'], method: cmp },
+      { argtypes: ['LongInt', 'Integer'],
+        method  : (x, y) => cmp(x, promote(y)) },
+      { argtypes: ['Integer', 'LongInt'],
+        method  : (x, y) => cmp(promote(x), y) },
+      { argtypes: ['Integer', 'Integer'],
+        method  : (x, y) => (x > y) - (x < y) }
+    ],
+    plus: [
+      { argtypes: ['LongInt', 'LongInt'], method: plus },
+      { argtypes: ['LongInt', 'Integer'],
+        method  : (x, y) => plus(x, promote(y)) },
+      { argtypes: ['Integer', 'LongInt'],
+        method  : (x, y) => plus(promote(x), y) },
+      { argtypes: ['Integer', 'Integer'],
+        method  : checkedOperator(plus, (x, y) => x + y) }
+    ],
+    minus: [
+      { argtypes: ['LongInt', 'LongInt'], method: minus },
+      { argtypes: ['LongInt', 'Integer'],
+        method  : (x, y) => minus(x, promote(y)) },
+      { argtypes: ['Integer', 'LongInt'],
+        method  : (x, y) => minus(promote(x), y) },
+      { argtypes: ['Integer', 'Integer'],
+        method  : checkedOperator(minus, (x, y) => x - y) }
+    ],
+    times: [
+      { argtypes: ['LongInt', 'LongInt'], method: times },
+      { argtypes: ['LongInt', 'Integer'],
+        method  : (x, y) => times(x, promote(y)) },
+      { argtypes: ['Integer', 'LongInt'],
+        method  : (x, y) => times(promote(x), y) },
+      { argtypes: ['Integer', 'Integer'],
+        method  : checkedOperator(times, (x, y) => x * y) }
+    ],
+    idiv: [
+      { argtypes: ['LongInt', 'LongInt'], method: idiv },
+      { argtypes: ['LongInt', 'Integer'],
+        method  : (x, y) => idiv(x, promote(y)) },
+      { argtypes: ['Integer', 'LongInt'],
+        method  : (x, y) => idiv(promote(x), y) },
+      { argtypes: ['Integer', 'Integer'],
+        method  : (x, y) => Math.floor(x / y) }
+    ]
+  }
 };
 
 
 if (require.main == module) {
-  const { parsers, methods } = longInt();
-
-  const ops = require('./base').default().register(methods).ops();
+  const ops = require('./base').arithmetic().register(methods()).ops();
   const timer = require('../common/util').timer();
 
   const N = 59;

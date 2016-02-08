@@ -1,16 +1,12 @@
-const a = require('./base').default()
+const a = require('./base').arithmetic()
 
-
-const { methods: intMethods } = require('./integers').default();
-a.register(intMethods);
+a.register(require('./integers').methods());
 
 export const integers = a.ops();
 
-
-const { methods: ratMethods } = require('./fractions').default(
-  a.ops(), ['Integer', 'LongInt'], 'Fraction'
-);
-a.register(ratMethods);
+a.register(require('./fractions').methods(
+  integers, ['Integer', 'LongInt'], 'Fraction'
+));
 
 export const rationals = a.ops();
 
