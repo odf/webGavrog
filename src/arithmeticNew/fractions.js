@@ -95,12 +95,12 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
 
 
   const methods = {
-    toJS    : [ { argtypes: [typeName], method: toJS     } ],
-    negative: [ { argtypes: [typeName], method: negative } ],
-    abs     : [ { argtypes: [typeName], method: abs      } ],
-    sgn     : [ { argtypes: [typeName], method: sgn      } ],
-    floor   : [ { argtypes: [typeName], method: floor    } ],
-    ceil    : [ { argtypes: [typeName], method: ceil     } ]
+    toJS    : { [typeName]: toJS     },
+    negative: { [typeName]: negative },
+    abs     : { [typeName]: abs      },
+    sgn     : { [typeName]: sgn      },
+    floor   : { [typeName]: floor    },
+    ceil    : { [typeName]: ceil     }
   };
 
   for (const [op, name] of [
@@ -110,21 +110,18 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
     [times, 'times'],
     [div  , 'div'  ]
   ]) {
-    methods[name] = [ { argtypes: [typeName, typeName], method: op } ];
+    methods[name] = { [typeName]: { [typeName]: op } };
 
     for (const intType of intTypes) {
-      methods[name].push({
-        argtypes: [typeName, intType], method: (x, y) => op(x, promote(y))
-      });
-      methods[name].push({
-        argtypes: [intType, typeName], method: (x, y) => op(promote(x), y)
-      });
+      methods[name][typeName][intType] = (x, y) => op(x, promote(y));
+      methods[name][intType] = { [typeName]: (x, y) => op(promote(x), y) };
     }
   }
 
   for (const t1 of intTypes) {
+    methods.div[t1] = {};
     for (const t2 of intTypes) {
-      methods.div.push({ argtypes: [t1, t2], method: (x, y) => make(x, y) });
+      methods.div[t1][t2] = (x, y) => make(x, y);
     }
   }
 

@@ -14,7 +14,7 @@ export const typeOf = x => {
 
 
 const call = (dispatch, ops) => (...args) => {
-  const method = dispatch.getIn(args.map(typeOf)) || dispatch.get()
+  const method = dispatch.getIn(args.map(typeOf)) || dispatch.get('__default__')
 
   if (method)
     return method(...args, ops);
@@ -26,26 +26,22 @@ const call = (dispatch, ops) => (...args) => {
 
 
 const defaults = {
-  isZero       : [{ method: (x, ops) => ops.sgn(x) == 0 }],
-  isPositive   : [{ method: (x, ops) => ops.sgn(x) >  0 }],
-  isNonNegative: [{ method: (x, ops) => ops.sgn(x) >= 0 }],
-  isNegative   : [{ method: (x, ops) => ops.sgn(x) <  0 }],
-  isNonPositive: [{ method: (x, ops) => ops.sgn(x) <= 0 }],
+  isZero       : { __default__: (x, ops) => ops.sgn(x) == 0 },
+  isPositive   : { __default__: (x, ops) => ops.sgn(x) >  0 },
+  isNonNegative: { __default__: (x, ops) => ops.sgn(x) >= 0 },
+  isNegative   : { __default__: (x, ops) => ops.sgn(x) <  0 },
+  isNonPositive: { __default__: (x, ops) => ops.sgn(x) <= 0 },
 
-  mod: [{ method: (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y)) }]
+  mod: { __default__: (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y)) }
 };
 
 
 export function arithmetic() {
-  const _registry = I.Map().asMutable();
+  let _registry = I.Map();
 
   const result = {
     register(specs) {
-      for (const op in specs) {
-        for (const {argtypes, method} of specs[op]) {
-          _registry.setIn([op].concat(argtypes || [undefined]), method);
-        }
-      }
+      _registry = _registry.mergeDeep(specs);
       return this;
     },
 
@@ -63,14 +59,16 @@ export function arithmetic() {
 if (require.main == module) {
   const ops = arithmetic()
     .register({
-      add: [
-        { argtypes: ['Integer', 'Integer'], method: (a, b) => a + b },
-        { argtypes: ['Integer', 'String' ], method: (n, s) => `${n}+"${s}"` },
-        { method: (x, y) => `${x} plus ${y}` }
-      ],
-      test: [
-        { method: (x, y, ops) => `<${ops.add(x, y)}>` }
-      ]
+      add: {
+        Integer: {
+          Integer: (a, b) => a + b,
+          String : (n, s) => `${n}+"${s}"`
+        },
+        __default__: (x, y) => `${x} plus ${y}`
+      },
+      test: {
+        __default__: (x, y, ops) => `<${ops.add(x, y)}>`
+      }
     })
     .ops();
 
