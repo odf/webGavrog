@@ -50,6 +50,17 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
   };
 
 
+  const parse = s => {
+    const parts = s.split('/');
+    if (parts.length == 1)
+      return intOps.integer(parts[0]);
+    else if (parts.length == 2)
+      return make(intOps.integer(parts[0]), intOps.integer(parts[1]));
+    else
+      throw new Error(`expected an integer or fraction literal, got ${s}`);
+  };
+
+
   const promote = n => new Fraction(n, 1);
 
   const negative = q => new Fraction(intOps.negative(q.numer), q.denom);
@@ -103,6 +114,10 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
     ceil    : { [typeName]: ceil     }
   };
 
+  methods.rational = { String: parse };
+  for (const intType of intTypes)
+    methods.rational[intType] = x => x;
+
   for (const [op, name] of [
     [cmp  , 'cmp'  ],
     [plus , 'plus' ],
@@ -151,6 +166,9 @@ if (require.main == module) {
   console.log(`floor(-5/3) = ${ops.floor(ops.div(-5, 3))}`);
   console.log(`ceil ( 5/3) = ${ops.ceil (ops.div( 5, 3))}`);
   console.log(`ceil (-5/3) = ${ops.ceil (ops.div(-5, 3))}`);
+
+  console.log(`${ops.rational('-12_345_678_901_234_567_890')}`);
+  console.log(`${ops.rational('-111_111_111_111_111_111/-12_345_679')}`);
 
   console.log();
   console.log(`Computation time: ${timer()} msec`);
