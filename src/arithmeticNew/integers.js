@@ -81,16 +81,16 @@ export function methods(baseLength = 0) {
 
 
   const parse = function parse(literal) {
-    if (!literal.match(/^[+-]?\d+$/))
+    if (!literal.match(/^[+-]?\d{1,3}(_?\d{3})*$/))
       throw new Error("expected an integer literal, got "+literal);
 
-    const start = literal.match(/^[+-]/) ? 1 : 0;
+    const s = literal.replace(/^[+-]/, '').replace(/_/g, '');
 
     const digits = [];
-    let n = literal.length;
-    while (n > start) {
-      const m = Math.max(n - BASE_LENGTH, start);
-      digits.push(parseInt(literal.slice(m, n)));
+    let n = s.length;
+    while (n > 0) {
+      const m = Math.max(n - BASE_LENGTH, 0);
+      digits.push(parseInt(s.slice(m, n)));
       n = m;
     }
 
@@ -317,6 +317,11 @@ export function methods(baseLength = 0) {
 
 
   return {
+    integer: {
+      String : parse,
+      LongInt: x => x,
+      Integer: x => x
+    },
     toJS: {
       LongInt: toJS,
       Integer: x => x
@@ -413,6 +418,7 @@ if (require.main == module) {
 
   console.log(`${ops.idiv(ops.plus(t, 1), t)}`);
   console.log(`${ops.idiv(ops.negative(ops.plus(t, 1)), t)}`);
+  console.log(`${ops.integer(t.toString())}`);
   console.log(`${ops.idiv(ops.plus(t, 1), ops.negative(t))}`);
   console.log(`${ops.idiv(ops.negative(ops.plus(t, 1)), ops.negative(t))}`);
 
@@ -420,6 +426,8 @@ if (require.main == module) {
     t = ops.idiv(t, i);
     console.log(`${t}`);
   }
+
+  console.log(`${ops.integer('-12_345_678_901_234_567_890')}`);
 
   console.log();
   console.log(`Computation time: ${timer()} msec`);
