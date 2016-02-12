@@ -8,6 +8,12 @@ export const typeOf = x => {
     const s = Math.abs(x);
     return (s % 1 == 0 && s + 1 > s) ? 'Integer' : 'Float';
   }
+  else if (t == 'Array') {
+    if (x.length > 0 && x[0].constructor.name == 'Array')
+      return 'Matrix';
+    else
+      return 'Vector';
+  }
   else
     return t;
 };
