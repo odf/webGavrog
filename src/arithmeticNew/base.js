@@ -13,7 +13,7 @@ export const typeOf = x => {
 };
 
 
-const call = (dispatch, ops) => (...args) => {
+const call = (dispatch, op, ops) => (...args) => {
   const method = dispatch.getIn(args.map(typeOf)) || dispatch.get('__default__')
 
   if (method)
@@ -47,7 +47,9 @@ export function arithmetic() {
 
     ops() {
       const result = {};
-      _registry.forEach((dispatch, op) => result[op] = call(dispatch, result));
+      _registry.forEach(
+        (dispatch, op) => result[op] = call(dispatch, op, result)
+      );
       return result;
     }
   };
