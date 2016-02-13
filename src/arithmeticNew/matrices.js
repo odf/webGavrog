@@ -80,20 +80,29 @@ export function methods(scalarOps, scalarTypes) {
     }
   };
 
-  for (const name of ['plus', 'minus']) {
-    methods[name] = {
-      Vector: { Vector: map.VV(scalarOps[name]) },
-      Matrix: { Matrix: map.MM(scalarOps[name]) }
-    };
+  for (const name of ['plus', 'minus', 'div', 'idiv']) {
+    methods[name] = { Vector: {}, Matrix: {} };
+  };
 
+  for (const name of ['plus', 'minus', 'times', 'div', 'idiv']) {
     for (const sType of scalarTypes) {
       methods[name]['Vector'][sType] = map.VS(scalarOps[name]);
       methods[name]['Matrix'][sType] = map.MS(scalarOps[name]);
+    }
+  }
+
+  for (const name of ['plus', 'minus', 'times']) {
+    for (const sType of scalarTypes) {
       methods[name][sType] = {
         Vector: map.SV(scalarOps[name]),
         Matrix: map.SM(scalarOps[name])
       }
     }
+  }
+
+  for (const name of ['plus', 'minus']) {
+    methods[name].Vector.Vector = map.VV(scalarOps[name]);
+    methods[name].Matrix.Matrix = map.MM(scalarOps[name]);
   }
 
   return methods;
@@ -118,6 +127,7 @@ if (require.main == module) {
   console.log(ops.minus(V, [0, 1, 2]));
   console.log(ops.minus(V, 1));
   console.log(ops.minus(1, V));
+  console.log(ops.idiv(V, 2));
 
   console.log();
   console.log(ops.negative(M));
