@@ -1,8 +1,5 @@
 export function methods(scalarOps, scalarTypes) {
 
-  const squareNormV = v =>
-    v.map(x => scalarOps.times(x, x)).reduce((s, x) => scalarOps.plus(s, x));
-
   const checkLen = (v, w) => {
     if (w.length == v.length)
       return true;
@@ -21,6 +18,10 @@ export function methods(scalarOps, scalarTypes) {
     MM: f => (a, b) => checkLen(a, b) && a.map((v, i) => map.VV(f)(v, b[i]))
   };
 
+  const mapFold = {
+    V : (f, g) => v => v.map(x => f(x)).reduce((a, x) => g(a, x)),
+    M : (f, g) => m => m.map(v => mapFold.V(f, g)(v)).reduce((a, x) => g(a, x))
+  };
 
   const methods = {
     negative: {
@@ -28,8 +29,8 @@ export function methods(scalarOps, scalarTypes) {
       Matrix: map.M(scalarOps.negative)
     },
     squareNorm: {
-      Vector: squareNormV,
-      Matrix: m => m.map(squareNormV).reduce((s, x) => scalarOps.plus(s, x))
+      Vector: mapFold.V(x => scalarOps.times(x, x), scalarOps.plus),
+      Matrix: mapFold.M(x => scalarOps.times(x, x), scalarOps.plus)
     }
   };
 
