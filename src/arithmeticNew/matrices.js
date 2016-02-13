@@ -3,66 +3,49 @@ export function methods(scalarOps, scalarTypes) {
   const squareNormV = v =>
     v.map(x => scalarOps.times(x, x)).reduce((s, x) => scalarOps.plus(s, x));
 
-  const plusVV = (v, w) => {
-    const n = v.length;
-    if (w.length != n)
-      throw new Error('vector length mismatch');
-    return v.map((x, i) => x + w[i]);
+  const checkLen = (v, w) => {
+    if (w.length == v.length)
+      return true;
+    else
+      throw new Error('size mismatch');
   };
 
-  const plusMM = (a, b) => {
-    const n = a.length;
-    if (b.length != n)
-      throw new Error('matrix size mismatch');
-    return a.map((v, i) => plusVV(v, b[i]));
+  const map = {
+    V : f => v => v.map(x => f(x)),
+    M : f => m => m.map(v => v.map(x => f(x))),
+    VS: f => (v, s) => v.map(x => f(x, s)),
+    MS: f => (m, s) => m.map(v => v.map(x => f(x, s))),
+    SV: f => (s, v) => v.map(x => f(s, x)),
+    SM: f => (s, m) => m.map(v => v.map(x => f(s, x))),
+    VV: f => (v, w) => checkLen(v, w) && v.map((x, i) => f(x, w[i])),
+    MM: f => (a, b) => checkLen(a, b) && a.map((v, i) => map.VV(f)(v, b[i]))
   };
 
-  const plusVS = (v, s) => v.map(x => scalarOps.plus(x, s));
-  const plusMS = (m, s) => m.map(v => plusVS(v, s));
-
-  const minusVV = (v, w) => {
-    const n = v.length;
-    if (w.length != n)
-      throw new Error('vector length mismatch');
-    return v.map((x, i) => x - w[i]);
-  };
-
-  const minusMM = (a, b) => {
-    const n = a.length;
-    if (b.length != n)
-      throw new Error('matrix size mismatch');
-    return a.map((v, i) => minusVV(v, b[i]));
-  };
-
-  const minusVS = (v, s) => v.map(x => scalarOps.minus(x, s));
-  const minusMS = (m, s) => m.map(v => minusVS(v, s));
 
   const methods = {
     negative: {
-      Vector: v => v.map(x => scalarOps.negative(x)),
-      Matrix: m => m.map(v => v.map(x => scalarOps.negative(x)))
+      Vector: map.V(scalarOps.negative),
+      Matrix: map.M(scalarOps.negative)
     },
     squareNorm: {
       Vector: squareNormV,
       Matrix: m => m.map(squareNormV).reduce((s, x) => scalarOps.plus(s, x))
-    },
-    plus: {
-      Vector: { Vector: plusVV },
-      Matrix: { Matrix: plusMM }
-    },
-    minus: {
-      Vector: { Vector: minusVV },
-      Matrix: { Matrix: minusMM }
     }
   };
 
-  for (const [name, opVS, opMS] of [
-    ['plus' , plusVS , plusMS ],
-    ['minus', minusVS, minusMS]
-  ]) {
+  for (const name of ['plus', 'minus']) {
+    methods[name] = {
+      Vector: { Vector: map.VV(scalarOps[name]) },
+      Matrix: { Matrix: map.MM(scalarOps[name]) }
+    };
+
     for (const sType of scalarTypes) {
-      methods[name]['Vector'][sType] = opVS;
-      methods[name]['Matrix'][sType] = opMS;
+      methods[name]['Vector'][sType] = map.VS(scalarOps[name]);
+      methods[name]['Matrix'][sType] = map.MS(scalarOps[name]);
+      methods[name][sType] = {
+        Vector: map.SV(scalarOps[name]),
+        Matrix: map.SM(scalarOps[name])
+      }
     }
   }
 
@@ -87,8 +70,10 @@ if (require.main == module) {
   console.log(ops.plus(V, 2));
   console.log(ops.minus(V, [0, 1, 2]));
   console.log(ops.minus(V, 1));
+  console.log(ops.minus(1, V));
   console.log(ops.plus(M, [[9, 8, 7], [6, 5, 4]]));
   console.log(ops.plus(M, 2));
   console.log(ops.minus(M, [[0, 1, 2], [3, 4, 5]]));
   console.log(ops.minus(M, 1));
+  console.log(ops.minus(1, M));
 }
