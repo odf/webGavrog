@@ -51,6 +51,18 @@ export function methods(scalarOps, scalarTypes) {
   };
 
 
+  const crossProduct = (v, w) => {
+    if (v.length != 3 || w.length != 3)
+      throw new Error('both vectors must have length 3');
+
+    return [
+      scalarOps.minus(scalarOps.times(v[1], w[2]), scalarOps.times(v[2], w[1])),
+      scalarOps.minus(scalarOps.times(v[2], w[0]), scalarOps.times(v[0], w[2])),
+      scalarOps.minus(scalarOps.times(v[0], w[1]), scalarOps.times(v[1], w[0]))
+    ];
+  };
+
+
   const methods = {
     shape: {
       Vector: v => [v.length],
@@ -68,6 +80,7 @@ export function methods(scalarOps, scalarTypes) {
       Vector: v => v.map(x => [x]),
       Matrix: transposedMatrix
     },
+    crossProduct: { Vector: { Vector: crossProduct } },
     times: {
       Vector: {
         Vector: (v, w) => matrixProduct([v], methods.transposed.Vector(w)),
@@ -128,6 +141,7 @@ if (require.main == module) {
   console.log(ops.minus(V, 1));
   console.log(ops.minus(1, V));
   console.log(ops.idiv(V, 2));
+  console.log(ops.crossProduct([1, 0, 0], [1, 2, 0]));
 
   console.log();
   console.log(ops.negative(M));
