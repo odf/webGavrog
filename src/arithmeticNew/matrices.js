@@ -1,4 +1,6 @@
-export function methods(scalarOps, scalarTypes) {
+export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
+
+  const s = scalarOps;
 
   const checkLen = (v, w) => {
     if (w.length == v.length)
@@ -29,6 +31,9 @@ export function methods(scalarOps, scalarTypes) {
 
   const array = (len, val = 0) => Array(len).fill(val);
 
+  const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
+
+
   const transposedMatrix = m => {
     const [nrows, ncols] = shapeOfMatrix(m);
     return array(ncols).map((_, j) => array(nrows).map((_, i) => m[i][j]));
@@ -46,8 +51,8 @@ export function methods(scalarOps, scalarTypes) {
       array(nrowsA).map((_, i) => (
         array(ncolsB).map((_, j) => (
           array(ncolsA)
-            .map((_, k) => scalarOps.times(A[i][k], B[k][j]))
-            .reduce((a, x) => scalarOps.plus(a, x)))))));
+            .map((_, k) => s.times(A[i][k], B[k][j]))
+            .reduce((a, x) => s.plus(a, x)))))));
   };
 
 
@@ -56,10 +61,230 @@ export function methods(scalarOps, scalarTypes) {
       throw new Error('both vectors must have length 3');
 
     return [
-      scalarOps.minus(scalarOps.times(v[1], w[2]), scalarOps.times(v[2], w[1])),
-      scalarOps.minus(scalarOps.times(v[2], w[0]), scalarOps.times(v[0], w[2])),
-      scalarOps.minus(scalarOps.times(v[0], w[1]), scalarOps.times(v[1], w[0]))
+      s.minus(s.times(v[1], w[2]), s.times(v[2], w[1])),
+      s.minus(s.times(v[2], w[0]), s.times(v[0], w[2])),
+      s.minus(s.times(v[0], w[1]), s.times(v[1], w[0]))
     ];
+  };
+
+
+  const _clone = A => A.map(row => row.slice());
+
+
+  const _findPivot = (A, row, col) {
+    let best = row;
+    for (let i = row; i < A.length; ++i) {
+      const x = s.abs(A[i][col]);
+      if (s.sgn(x) != 0) {
+        const d = s.cmp(x, s.abs(A[best][col]));
+        if (overField ? d > 0 : d < 0)
+          best = i;
+      }
+    }
+    return best;
+  };
+
+  const _swapRowsInPlace = (A, i, j) => { [A[i], A[j]] = [A[j], A[i]]; };
+
+  const _negateRowInPlace = (A, i) => { A[i] = map.V(s.negative)(A[i]); };
+
+  const _truncate = (x, a) =>
+    (s.cmp(s.abs(x), s.abs(s.times(a, epsilon))) <= 0) ? 0 : x;
+
+  const _adjustRowInPlace = (A, i, j, f) => {
+    const fn0 = k => s.plus(A[i][k], s.times(A[j][k], f));
+    const fn  = epsilon ? k => _truncate(fn0(k), A[i][k]) : fn0;
+
+    const row = A[i];
+    for (const j in row)
+      row[j] = fn(j);
+  };
+
+  const triangulation = A => {
+    const divide = overField ? s.div : s.idiv;
+    const [nrows, ncols] = shapeOfMatrix(A);
+
+    const R = _clone(A);
+    const U = identity(A.length);
+    let col = 0;
+    let sign = 1;
+
+    for (let row = 0; row < nrows; ++row) {
+      let cleared = false;
+
+      while (!cleared && col < ncols) {
+        const pivotRow = _findPivot(R, row, col);
+        const pivot = R[pivotRow][col];
+
+        if (s.sgn(pivot) == 0) {
+          ++col;
+          continue;
+        }
+
+        if (pivotRow != row) {
+          _swapRowsInPlace(R, row, pivotRow);
+          _swapRowsInPlace(U, row, pivotRow);
+          sign *= -1;
+        }
+
+        if (s.sgn(pivot) < 0) {
+          _negateRowInPlace(R, row);
+          _negateRowInPlace(U, row);
+          sign *= -1;
+        }
+
+        cleared = true;
+
+        for (let k = row + 1; k < nrows; ++k) {
+          if (s.sgn(R[k][col]) != 0) {
+            const f = s.negative(divide(R[k][col], R[row][col]));
+
+            _adjustRowInPlace(R, k, row, f);
+            _adjustRowInPlace(U, k, row, f);
+
+            if (overField)
+              _setInPlace(R, k, col, 0);
+            else
+              cleared = s.sgn(R[k][col]) == 0;
+          }
+        }
+
+        if (cleared)
+          ++col;
+      }
+    }
+
+    return { R, U, sign };
+  };
+
+
+  const _rank = function _rank(R) {
+    let row = 0;
+    for (let col = 0; col < R.ncols; ++col)
+      if (row < R.nrows && s.sgn(get(R, row, col)) != 0)
+        ++row;
+    return row;
+  };
+
+
+  const rank = function rank(A) {
+    return _rank(triangulation(A, true).R);
+  };
+
+
+  const _determinant = function _determinant(t) {
+    return _array(t.R.nrows)
+      .map((_, i) => get(t.R, i, i))
+      .reduce(s.times, t.sign);
+  };
+
+
+  const determinant = function determinant(A) {
+    if (A.nrows != A.ncols)
+      throw new Error('must be a square matrix');
+
+    return _determinant(triangulation(A, true));
+  };
+
+
+  const _solve = function _solve(R, v) {
+    const n = R.nrows;
+    const m = R.ncols;
+    const k = v.ncols;
+    const top = Math.min(n, m);
+
+    const X = _clone(constant(m, k));
+
+    for (let j = 0; j < k; ++j) {
+      for (let i = top-1; i >= 0; --i) {
+        const x = _array(top).map((_, nu) => nu).slice(i+1)
+          .map(nu => s.times(get(R, i, nu), get(X, nu, j)))
+          .reduce(s.plus, 0);
+        const right = s.minus(get(v, i, j), x);
+
+        if (s.sgn(right) == 0)
+          _setInPlace(X, i, j, right);
+        else if (s.sgn(get(R, i, i)) == 0)
+          return null;
+        else
+          _setInPlace(X, i, j, s.div(right, get(R, i, i)));
+      }
+    }
+
+    return X;
+  };
+
+
+  const solve = function solve(A, b) {
+    if (A.nrows != b.nrows)
+      throw new Error('matrix shapes must match');
+
+    const t = triangulation(A, true);
+
+    return _solve(t.R, times(t.U, b));
+  };
+
+
+  const inverse = function inverse(A) {
+    if (A.nrows != A.ncols)
+      throw new Error('must be a square matrix');
+
+    return solve(A, identity(A.nrows));
+  };
+
+
+  const _nullSpace = function _nullSpace(R) {
+    const n = R.nrows;
+    const m = R.ncols;
+    const r = _rank(R);
+    const d = m - r;
+
+    if (d == 0)
+      return null;
+    else if (r == 0)
+      return identity(m);
+
+    const B = make(
+      _array(r).map((_, i) => (
+        _array(d).map((_, j) => (
+          (j + r >= n) ? 0 : s.negative(get(R, i, j + r))))))
+    );
+
+    const S = _solve(make(R.data.slice(0,r)), B);
+    return make(S.data.slice(0, r).concat(identity(d).data));
+  };
+
+
+  const nullSpace = function nullSpace(A) {
+    return _nullSpace(triangulation(A, true).R);
+  };
+
+
+  const _rowProduct = function _rowProduct(A, i, j) {
+    return _array(A.ncols)
+      .map((_, k) => s.times(get(A, i, k), get(A, j, k)))
+      .reduce(s.plus, 0);
+  };
+
+  const _normalizeRowInPlace = (A, i) => {
+    const norm = Math.sqrt(s.toJS(_rowProduct(A, i, i)));
+
+    const row = A.data[i];
+    for (const j in row)
+      row[j] = s.div(row[j], norm);
+  };
+
+  const orthonormalized = function orthonormalized(A) {
+    const O = _clone(A);
+
+    _array(O.nrows).forEach((_, i) => {
+      _array(i).forEach((_, j) => {
+        _adjustRowInPlace(O, i, j, s.negative(_rowProduct(O, i, j)))
+      });
+      _normalizeRowInPlace(O, i);
+    });
+
+    return O;
   };
 
 
@@ -68,19 +293,32 @@ export function methods(scalarOps, scalarTypes) {
       Vector: v => [v.length],
       Matrix: shapeOfMatrix
     },
+
     negative: {
-      Vector: map.V(scalarOps.negative),
-      Matrix: map.M(scalarOps.negative)
+      Vector: map.V(s.negative),
+      Matrix: map.M(s.negative)
     },
+
     squareNorm: {
-      Vector: mapFold.V(x => scalarOps.times(x, x), scalarOps.plus),
-      Matrix: mapFold.M(x => scalarOps.times(x, x), scalarOps.plus)
+      Vector: mapFold.V(x => s.times(x, x), s.plus),
+      Matrix: mapFold.M(x => s.times(x, x), s.plus)
     },
+
     transposed: {
       Vector: v => v.map(x => [x]),
       Matrix: transposedMatrix
     },
-    crossProduct: { Vector: { Vector: crossProduct } },
+
+    triangulation: {
+      Matrix: triangulation
+    },
+
+    crossProduct: {
+      Vector: {
+        Vector: crossProduct
+      }
+    },
+
     times: {
       Vector: {
         Vector: (v, w) => matrixProduct([v], methods.transposed.Vector(w)),
@@ -99,23 +337,23 @@ export function methods(scalarOps, scalarTypes) {
 
   for (const name of ['plus', 'minus', 'times', 'div', 'idiv']) {
     for (const sType of scalarTypes) {
-      methods[name]['Vector'][sType] = map.VS(scalarOps[name]);
-      methods[name]['Matrix'][sType] = map.MS(scalarOps[name]);
+      methods[name]['Vector'][sType] = map.VS(s[name]);
+      methods[name]['Matrix'][sType] = map.MS(s[name]);
     }
   }
 
   for (const name of ['plus', 'minus', 'times']) {
     for (const sType of scalarTypes) {
       methods[name][sType] = {
-        Vector: map.SV(scalarOps[name]),
-        Matrix: map.SM(scalarOps[name])
+        Vector: map.SV(s[name]),
+        Matrix: map.SM(s[name])
       }
     }
   }
 
   for (const name of ['plus', 'minus']) {
-    methods[name].Vector.Vector = map.VV(scalarOps[name]);
-    methods[name].Matrix.Matrix = map.MM(scalarOps[name]);
+    methods[name].Vector.Vector = map.VV(s[name]);
+    methods[name].Matrix.Matrix = map.MM(s[name]);
   }
 
   return methods;
@@ -159,4 +397,5 @@ if (require.main == module) {
   console.log(ops.times(M, V));
   console.log(ops.times(V, ops.transposed(M)));
   console.log(ops.times(M, ops.transposed(M)));
+  console.log(ops.triangulation(M));
 }
