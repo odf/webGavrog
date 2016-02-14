@@ -71,7 +71,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   const _clone = A => A.map(row => row.slice());
 
 
-  const _findPivot = (A, row, col) {
+  const _findPivot = (A, row, col) => {
     let best = row;
     for (let i = row; i < A.length; ++i) {
       const x = s.abs(A[i][col]);
@@ -158,32 +158,29 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
-  const _rank = function _rank(R) {
+  const _rank = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
     let row = 0;
-    for (let col = 0; col < R.ncols; ++col)
-      if (row < R.nrows && s.sgn(get(R, row, col)) != 0)
+    for (let col = 0; col < ncols; ++col) {
+      if (row < nrows && s.sgn(A[row][col]) != 0)
         ++row;
+    }
     return row;
   };
 
 
-  const rank = function rank(A) {
-    return _rank(triangulation(A, true).R);
-  };
+  const rank = A => _rank(triangulation(A).R);
 
 
-  const _determinant = function _determinant(t) {
-    return _array(t.R.nrows)
-      .map((_, i) => get(t.R, i, i))
-      .reduce(s.times, t.sign);
-  };
-
-
-  const determinant = function determinant(A) {
-    if (A.nrows != A.ncols)
+  const determinant = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
+    if (nrows != ncols)
       throw new Error('must be a square matrix');
 
-    return _determinant(triangulation(A, true));
+    const t = triangulation(A);
+    return array(nrows)
+      .map((_, i) => t.R[i][i])
+      .reduce((a, x) => s.times(a, x), t.sign);
   };
 
 
@@ -313,6 +310,14 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
       Matrix: triangulation
     },
 
+    rank: {
+      Matrix: rank
+    },
+
+    determinant: {
+      Matrix: determinant
+    },
+
     crossProduct: {
       Vector: {
         Vector: crossProduct
@@ -397,5 +402,9 @@ if (require.main == module) {
   console.log(ops.times(M, V));
   console.log(ops.times(V, ops.transposed(M)));
   console.log(ops.times(M, ops.transposed(M)));
-  console.log(ops.triangulation(M));
+
+  const A = [[1,2,3],[4,5,6],[7,8,0]];
+  console.log(ops.triangulation(A));
+  console.log(ops.rank(A));
+  console.log(ops.determinant(A));
 }
