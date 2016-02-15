@@ -77,7 +77,10 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
                        q.denom);
   };
 
-  const cmp = (q, r) => sgn(minus(q, r));
+  const cmp = (q, r) => {
+    const d = minus(q, r);
+    return intOps.sgn(d.numer == null ? d : d.numer);
+  };
 
 
   const plus = function plus(q, r) {
