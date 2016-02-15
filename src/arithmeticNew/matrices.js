@@ -143,7 +143,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
             _adjustRowInPlace(U, k, row, f);
 
             if (overField)
-              _setInPlace(R, k, col, 0);
+              R[k][col] = 0;
             else
               cleared = s.sgn(R[k][col]) == 0;
           }
@@ -184,7 +184,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
-  const _solve = function _solve(R, v) {
+  const _solve = (R, v) => {
     const [n, m] = shapeOfMatrix(R);
     const [_, k] = shapeOfMatrix(v);
     const top = Math.min(n, m);
@@ -211,7 +211,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
-  const solve = function solve(A, b) {
+  const solve = (A, b) => {
     if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
       throw new Error('matrix shapes must match');
 
@@ -221,17 +221,17 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
-  const inverse = function inverse(A) {
-    if (A.nrows != A.ncols)
+  const inverse = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
+    if (nrows != ncols)
       throw new Error('must be a square matrix');
 
-    return solve(A, identity(A.nrows));
+    return solve(A, identity(nrows));
   };
 
 
-  const _nullSpace = function _nullSpace(R) {
-    const n = R.nrows;
-    const m = R.ncols;
+  const _nullSpace = R => {
+    const [n, m] = shapeOfMatrix(R);
     const r = _rank(R);
     const d = m - r;
 
@@ -240,20 +240,18 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     else if (r == 0)
       return identity(m);
 
-    const B = make(
-      _array(r).map((_, i) => (
-        _array(d).map((_, j) => (
-          (j + r >= n) ? 0 : s.negative(get(R, i, j + r))))))
+    const B = (
+      array(r).map((_, i) => (
+        array(d).map((_, j) => (
+          (j + r >= n) ? 0 : s.negative(R[i][j+r])))))
     );
 
-    const S = _solve(make(R.data.slice(0,r)), B);
-    return make(S.data.slice(0, r).concat(identity(d).data));
+    return _solve(R.slice(0,r), B)
+      .slice(0, r).concat(identity(d));
   };
 
 
-  const nullSpace = function nullSpace(A) {
-    return _nullSpace(triangulation(A, true).R);
-  };
+  const nullSpace = A => _nullSpace(triangulation(A).R);
 
 
   const _rowProduct = function _rowProduct(A, i, j) {
@@ -322,6 +320,14 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
         Vector: (m, v) => solve(m, methods.transposed.Vector(v)),
         Matrix: solve
       }
+    },
+
+    inverse: {
+      Matrix: inverse
+    },
+
+    nullSpace: {
+      Matrix: nullSpace
     },
 
     crossProduct: {
@@ -424,5 +430,10 @@ if (require.main == module) {
 
   const b = [1, 1, 1];
   const v = ops.solve(A, b);
-  console.log(`${A} * ${v} = ${b}`);
+  console.log(`${A} * ${v} = ${ops.times(A, v)}`);
+  const Ainv = ops.inverse(A);
+  console.log(`${A} * ${Ainv} = ${ops.times(A, Ainv)}`);
+  const B = [[1,2,3], [4,5,6], [7,8,9]];
+  const N = ops.nullSpace(B);
+  console.log(`${B} * ${N} = ${N ? ops.times(B, N) : N}`);
 }
