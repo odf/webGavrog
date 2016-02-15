@@ -243,7 +243,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     const B = (
       array(r).map((_, i) => (
         array(d).map((_, j) => (
-          (j + r >= n) ? 0 : s.negative(R[i][j+r])))))
+          s.negative(R[i][j+r])))))
     );
 
     return _solve(R.slice(0,r), B)

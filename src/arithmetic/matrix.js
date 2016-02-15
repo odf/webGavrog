@@ -319,7 +319,7 @@ export default function matrix(scalar, zero, one) {
     const B = make(
       _array(r).map((_, i) => (
         _array(d).map((_, j) => (
-          (j + r >= n) ? 0 : scalar.negative(get(R, i, j + r))))))
+          scalar.negative(get(R, i, j + r))))))
     );
 
     const S = _solve(make(R.data.slice(0,r)), B);
