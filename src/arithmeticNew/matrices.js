@@ -440,7 +440,11 @@ if (require.main == module) {
   const Ainv = ops.inverse(A);
   console.log(`${A} *\n${Ainv} =\n${ops.times(A, Ainv)}\n`);
 
-  const B = [[1,2,3], [2,4,6], [3,6,9]];
-  const N = ops.nullSpace(B);
-  console.log(`${B} *\n${N} =\n${N ? ops.times(B, N) : N}\n`);
+  const testNullSpace = B => {
+    const N = ops.nullSpace(B);
+    console.log(`${B} *\n${N} =\n${N ? ops.times(B, N) : N}\n`);
+  }
+
+  testNullSpace([[1,2,3], [2,4,6], [3,6,9]]);
+  testNullSpace([[1,2,3,1], [4,5,6,1], [7,8,9,1]]);
 }
