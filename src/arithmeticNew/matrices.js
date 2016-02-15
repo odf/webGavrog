@@ -391,6 +391,10 @@ if (require.main == module) {
   a.register(methods(rationals, ['Integer', 'LongInt', 'Fraction'], true));
   const ops = a.ops();
 
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
   const V = [1, 2, 3];
   const M = [[1, 2, 3], [4, 5, 6]];
 
@@ -428,12 +432,15 @@ if (require.main == module) {
   console.log(ops.rank(A));
   console.log(ops.determinant(A));
 
+  console.log();
   const b = [1, 1, 1];
   const v = ops.solve(A, b);
-  console.log(`${A} * ${v} = ${ops.times(A, v)}`);
+  console.log(`${A} *\n${v} =\n${ops.times(A, v)}\n`);
+
   const Ainv = ops.inverse(A);
-  console.log(`${A} * ${Ainv} = ${ops.times(A, Ainv)}`);
-  const B = [[1,2,3], [4,5,6], [7,8,9]];
+  console.log(`${A} *\n${Ainv} =\n${ops.times(A, Ainv)}\n`);
+
+  const B = [[1,2,3], [2,4,6], [3,6,9]];
   const N = ops.nullSpace(B);
-  console.log(`${B} * ${N} = ${N ? ops.times(B, N) : N}`);
+  console.log(`${B} *\n${N} =\n${N ? ops.times(B, N) : N}\n`);
 }
