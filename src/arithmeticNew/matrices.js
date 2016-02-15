@@ -185,26 +185,25 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const _solve = function _solve(R, v) {
-    const n = R.nrows;
-    const m = R.ncols;
-    const k = v.ncols;
+    const [n, m] = shapeOfMatrix(R);
+    const [_, k] = shapeOfMatrix(v);
     const top = Math.min(n, m);
 
-    const X = _clone(constant(m, k));
+    const X = array(m).map(() => array(k));
 
     for (let j = 0; j < k; ++j) {
       for (let i = top-1; i >= 0; --i) {
-        const x = _array(top).map((_, nu) => nu).slice(i+1)
-          .map(nu => s.times(get(R, i, nu), get(X, nu, j)))
-          .reduce(s.plus, 0);
-        const right = s.minus(get(v, i, j), x);
+        let right = v[i][j];
+        for (let nu = i+1; nu < top; ++nu) {
+          right = s.minus(right, s.times(R[i][nu], X[nu][j]));
+        }
 
         if (s.sgn(right) == 0)
-          _setInPlace(X, i, j, right);
-        else if (s.sgn(get(R, i, i)) == 0)
+          X[i][j] = right;
+        else if (s.sgn(R[i][i]) == 0)
           return null;
         else
-          _setInPlace(X, i, j, s.div(right, get(R, i, i)));
+          X[i][j] = s.div(right, R[i][i]);
       }
     }
 
@@ -213,12 +212,12 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const solve = function solve(A, b) {
-    if (A.nrows != b.nrows)
+    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
       throw new Error('matrix shapes must match');
 
-    const t = triangulation(A, true);
+    const t = triangulation(A);
 
-    return _solve(t.R, times(t.U, b));
+    return _solve(t.R, matrixProduct(t.U, b));
   };
 
 
@@ -318,6 +317,13 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
       Matrix: determinant
     },
 
+    solve: {
+      Matrix: {
+        Vector: (m, v) => solve(m, methods.transposed.Vector(v)),
+        Matrix: solve
+      }
+    },
+
     crossProduct: {
       Vector: {
         Vector: crossProduct
@@ -367,9 +373,17 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
 if (require.main == module) {
   const a = require('./base').arithmetic()
-    .register(require('./integers').methods());
 
-  const ops = a.register(methods(a.ops(), ['Integer', 'LongInt'])).ops();
+  a.register(require('./integers').methods());
+  const integers = a.ops();
+
+  a.register(require('./fractions').methods(
+    integers, ['Integer', 'LongInt'], 'Fraction'
+  ));
+  const rationals = a.ops();
+
+  a.register(methods(rationals, ['Integer', 'LongInt', 'Fraction'], true));
+  const ops = a.ops();
 
   const V = [1, 2, 3];
   const M = [[1, 2, 3], [4, 5, 6]];
@@ -403,8 +417,12 @@ if (require.main == module) {
   console.log(ops.times(V, ops.transposed(M)));
   console.log(ops.times(M, ops.transposed(M)));
 
-  const A = [[1,2,3],[4,5,6],[7,8,0]];
+  const A = [[1,2,3],[0,4,5],[0,0,6]];
   console.log(ops.triangulation(A));
   console.log(ops.rank(A));
   console.log(ops.determinant(A));
+
+  const b = [1, 1, 1];
+  const v = ops.solve(A, b);
+  console.log(`${A} * ${v} = ${b}`);
 }
