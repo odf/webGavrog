@@ -298,6 +298,11 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
       Matrix: mapFold.M(x => s.times(x, x), s.plus)
     },
 
+    norm: {
+      Vector: v => s.sqrt(methods.squareNorm.Vector(v)),
+      Matrix: m => s.sqrt(methods.squareNorm.Matrix(m))
+    },
+
     transposed: {
       Vector: v => v.map(x => [x]),
       Matrix: transposedMatrix
@@ -388,7 +393,14 @@ if (require.main == module) {
   ));
   const rationals = a.ops();
 
-  a.register(methods(rationals, ['Integer', 'LongInt', 'Fraction'], true));
+  a.register(require('./floats').methods(
+    rationals, ['Integer', 'LongInt', 'Fraction']
+  ));
+  const reals = a.ops();
+
+  a.register(
+    methods(reals, ['Integer', 'LongInt', 'Fraction', 'Float'], true)
+  );
   const ops = a.ops();
 
   Array.prototype.toString = function() {
@@ -402,6 +414,7 @@ if (require.main == module) {
   console.log(ops.negative(V));
   console.log(ops.transposed(V));
   console.log(ops.squareNorm(V));
+  console.log(ops.norm(V));
   console.log(ops.plus(V, [3, 2, 1]));
   console.log(ops.plus(V, 2));
   console.log(ops.minus(V, [0, 1, 2]));
@@ -415,6 +428,7 @@ if (require.main == module) {
   console.log(ops.shape(M));
   console.log(ops.transposed(M));
   console.log(ops.squareNorm(M));
+  console.log(ops.norm(M));
   console.log(ops.plus(M, [[9, 8, 7], [6, 5, 4]]));
   console.log(ops.plus(M, 2));
   console.log(ops.minus(M, [[0, 1, 2], [3, 4, 5]]));
