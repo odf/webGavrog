@@ -254,25 +254,27 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   const nullSpace = A => _nullSpace(triangulation(A).R);
 
 
-  const _rowProduct = function _rowProduct(A, i, j) {
-    return _array(A.ncols)
-      .map((_, k) => s.times(get(A, i, k), get(A, j, k)))
-      .reduce(s.plus, 0);
+  const _rowProduct = (A, i, j) => {
+    const [nrows, ncols] = shapeOfMatrix(A)
+    return array(ncols)
+      .map((_, k) => s.times(A[i][k], A[j][k]))
+      .reduce((a, x) => s.plus(a, x));
   };
 
   const _normalizeRowInPlace = (A, i) => {
     const norm = Math.sqrt(s.toJS(_rowProduct(A, i, i)));
 
-    const row = A.data[i];
+    const row = A[i];
     for (const j in row)
       row[j] = s.div(row[j], norm);
   };
 
-  const orthonormalized = function orthonormalized(A) {
+  const orthonormalized = A => {
+    const [nrows, ncols] = shapeOfMatrix(A)
     const O = _clone(A);
 
-    _array(O.nrows).forEach((_, i) => {
-      _array(i).forEach((_, j) => {
+    array(nrows).forEach((_, i) => {
+      array(i).forEach((_, j) => {
         _adjustRowInPlace(O, i, j, s.negative(_rowProduct(O, i, j)))
       });
       _normalizeRowInPlace(O, i);
@@ -318,6 +320,10 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
     determinant: {
       Matrix: determinant
+    },
+
+    orthonormalized: {
+      Matrix: orthonormalized
     },
 
     solve: {
@@ -445,6 +451,9 @@ if (require.main == module) {
   console.log(ops.triangulation(A));
   console.log(ops.rank(A));
   console.log(ops.determinant(A));
+  const O = ops.orthonormalized(A);
+  console.log(O);
+  console.log(ops.times(O, ops.transposed(O)));
 
   console.log();
   const b = [1, 1, 1];
