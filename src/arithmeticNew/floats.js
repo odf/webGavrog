@@ -5,7 +5,8 @@ export function methods(rationals, rationalTypes) {
     abs     : { Float: x => Math.abs(x)       },
     sgn     : { Float: x => (x > 0) - (x < 0) },
     floor   : { Float: x => Math.floor(x)     },
-    ceil    : { Float: x => Math.ceil(x)      }
+    ceil    : { Float: x => Math.ceil(x)      },
+    sqrt    : { Float: x => Math.sqrt(x)      }
   };
 
   for (const [op, name] of [
@@ -21,6 +22,10 @@ export function methods(rationals, rationalTypes) {
       methods[name]['Float'][T] = (x, y) => op(x, rationals.toJS(y));
       methods[name][T] = { Float: (x, y) => op(rationals.toJS(x), y) };
     }
+  }
+
+  for (const T of rationalTypes) {
+    methods.sqrt[T] = x => Math.sqrt(rationals.toJS(x))
   }
 
   return methods;
