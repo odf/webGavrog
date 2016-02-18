@@ -283,6 +283,21 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     return O;
   };
 
+  const cleanup = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
+    let sup = 0;
+    for (let i = 0; i < nrows; ++i) {
+      for (let j = 0; j < ncols; ++j) {
+        const val = s.abs(A[i][j]);
+        if (s.cmp(sup, val) < 0)
+          sup = val;
+      }
+    }
+    const delta = sup * epsilon;
+
+    return A.map(v => v.map(x => s.cmp(s.abs(x), delta) < 0 ? 0 : x));
+  };
+
 
   const methods = {
     shape: {
@@ -382,6 +397,13 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   for (const name of ['plus', 'minus']) {
     methods[name].Vector.Vector = map.VV(s[name]);
     methods[name].Matrix.Matrix = map.MM(s[name]);
+  }
+
+  if (epsilon) {
+    methods.cleanup = {
+      Vector: v => cleanup([v]),
+      Matrix: m => cleanup(m)
+    }
   }
 
   return methods;

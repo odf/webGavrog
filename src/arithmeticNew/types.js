@@ -1,37 +1,37 @@
-const a = require('./base').arithmetic()
+const base = require('./base');
+const ints = require('./integers');
+const frac = require('./fractions');
+const fpts = require('./floats');
+const mats = require('./matrices');
 
-a.register(require('./integers').methods());
 
+const a = base.arithmetic();
+
+a.register(ints.methods());
 export const integers = a.ops();
 
-a.register(require('./fractions').methods(
-  integers, ['Integer', 'LongInt'], 'Fraction'
-));
-
+a.register(frac.methods(integers, ['Integer', 'LongInt'], 'Fraction'));
 export const rationals = a.ops();
 
-a.register(require('./floats').methods(
-  rationals, ['Integer', 'LongInt', 'Fraction']
-));
+a.register(mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], true));
+export const matrices = a.ops();
 
-export const reals = a.ops();
 
-a.register(require('./matrices').methods(
-  reals, ['Integer', 'LongInt', 'Fraction', 'Float'], true)
-);
+const b = base.arithmetic();
 
-export const realMatrices = a.ops();
+b.register(fpts.methods());
+export const floats = b.ops();
+
+b.register(mats.methods(floats, ['Integer', 'Float'], true, Math.pow(2, -50)));
+export const floatMatrices = b.ops();
 
 
 if (require.main == module) {
-  console.log(`${reals.div(2,3)}`);
-  console.log(`${reals.plus(reals.div(2,3), 0.1)}`);
-
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const ops = realMatrices;
+  const ops = matrices;
 
   const V = [1, 2, 3];
   const M = [[1, 2, 3], [4, 5, 6]];
@@ -40,7 +40,6 @@ if (require.main == module) {
   console.log(ops.negative(V));
   console.log(ops.transposed(V));
   console.log(ops.squareNorm(V));
-  console.log(ops.norm(V));
   console.log(ops.plus(V, [3, 2, 1]));
   console.log(ops.plus(V, 2));
   console.log(ops.minus(V, [0, 1, 2]));
@@ -54,7 +53,6 @@ if (require.main == module) {
   console.log(ops.shape(M));
   console.log(ops.transposed(M));
   console.log(ops.squareNorm(M));
-  console.log(ops.norm(M));
   console.log(ops.plus(M, [[9, 8, 7], [6, 5, 4]]));
   console.log(ops.plus(M, 2));
   console.log(ops.minus(M, [[0, 1, 2], [3, 4, 5]]));
@@ -71,9 +69,6 @@ if (require.main == module) {
   console.log(ops.triangulation(A));
   console.log(ops.rank(A));
   console.log(ops.determinant(A));
-  const O = ops.orthonormalized(A);
-  console.log(O);
-  console.log(ops.times(O, ops.transposed(O)));
 
   console.log();
   const b = [1, 1, 1];
@@ -90,4 +85,19 @@ if (require.main == module) {
 
   testNullSpace([[1,2,3], [2,4,6], [3,6,9]]);
   testNullSpace([[1,2,3,1], [4,5,6,1], [7,8,9,1]]);
+
+
+  const fops = floatMatrices;
+
+  console.log();
+  const B = fops.inverse(A);
+  console.log(`${A} *`);
+  console.log(`${B} =`);
+  console.log(`${fops.times(A, B)}`);
+
+  console.log();
+  const O = fops.orthonormalized(A);
+  const P = fops.cleanup(fops.times(O, fops.transposed(O)));
+  console.log(`O = ${O}`);
+  console.log(`O * O.T = ${P}`);
 }

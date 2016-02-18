@@ -1,13 +1,23 @@
-export function methods(rationals, rationalTypes) {
-  const methods = {
-    toJS    : { Float: x => x                 },
-    negative: { Float: x => -x                },
-    abs     : { Float: x => Math.abs(x)       },
-    sgn     : { Float: x => (x > 0) - (x < 0) },
-    floor   : { Float: x => Math.floor(x)     },
-    ceil    : { Float: x => Math.ceil(x)      },
-    sqrt    : { Float: x => Math.sqrt(x)      }
-  };
+export function methods() {
+  const methods = {};
+
+  for (const name of [ 'abs', 'floor', 'ceil', 'sqrt' ]) {
+    methods[name] = {
+      Float  : x => Math[name](x),
+      Integer: x => Math[name](x)
+    }
+  }
+
+  for (const [op, name] of [
+    [x => x                , 'toJS'    ],
+    [x => -x               , 'negative'],
+    [x => (x > 0) - (x < 0), 'sgn'     ]
+  ]) {
+    methods[name] = {
+      Float  : op,
+      Integer: op
+    }
+  }
 
   for (const [op, name] of [
     [(x, y) => (x > y) - (x < y), 'cmp'  ],
@@ -16,16 +26,16 @@ export function methods(rationals, rationalTypes) {
     [(x, y) => x * y            , 'times'],
     [(x, y) => x / y            , 'div'  ]
   ]) {
-    methods[name] = { Float: { Float: op } };
-
-    for (const T of rationalTypes) {
-      methods[name]['Float'][T] = (x, y) => op(x, rationals.toJS(y));
-      methods[name][T] = { Float: (x, y) => op(rationals.toJS(x), y) };
-    }
-  }
-
-  for (const T of rationalTypes) {
-    methods.sqrt[T] = x => Math.sqrt(rationals.toJS(x))
+    methods[name] = {
+      Float: {
+        Float  : op,
+        Integer: op
+      },
+      Integer: {
+        Float  : op,
+        Integer: op
+      }
+    };
   }
 
   return methods;
