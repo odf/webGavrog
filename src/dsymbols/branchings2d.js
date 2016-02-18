@@ -3,7 +3,9 @@ import * as generators from '../common/generators';
 import * as DS from './delaney';
 import * as DS2D from './delaney2d';
 import * as props from './properties';
-import * as Q  from '../arithmetic/number';
+
+import { rationals } from '../arithmeticNew/types';
+const Q = rationals;
 
 
 const _loopless = (ds, i, j, D) => props.orbit(ds, [i, j], D)

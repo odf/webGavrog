@@ -3,7 +3,9 @@ import * as DS from './delaney';
 import * as p  from './properties';
 import * as d  from './derived';
 import * as cv from './covers';
-import * as Q  from '../arithmetic/number';
+
+import { rationals } from '../arithmeticNew/types';
+const Q = rationals;
 
 
 const _assert = function _assert(condition, message) {
@@ -34,7 +36,7 @@ const _unbranched = ds => _map1dOrbits(ds.v, ds).every(v => v == 1);
 
 const _fullyBranched = ds => _map1dOrbits(ds.v, ds).every(v => !!v);
 
-const _sum = numbers => numbers.reduce(Q.plus, 0);
+const _sum = numbers => numbers.reduce((a, x) => Q.plus(a, x), 0);
 
 
 export function curvature(ds, vDefault = 1) {
