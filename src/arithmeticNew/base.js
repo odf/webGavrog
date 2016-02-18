@@ -2,7 +2,7 @@ import * as I from 'immutable';
 
 
 export const typeOf = x => {
-  const t = x.__typeName || x.constructor.name;
+  const t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
 
   if (t == 'Number') {
     const s = Math.abs(x);
