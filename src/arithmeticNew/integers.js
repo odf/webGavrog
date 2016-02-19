@@ -1,17 +1,15 @@
-import * as I from 'immutable';
+const findBaseLength = () => {
+  for (let n = 2; ; n += 2) {
+    const b = Math.pow(10, n);
+    if (2 * b - 2 == 2 * b - 1 || -2 * b + 2 == -2 * b + 1)
+      return n - 2;
+  }
+};
 
 
 export function methods(baseLength = 0) {
 
-  const BASE_LENGTH = (baseLength & ~1) ||
-    I.Range(1)
-    .filter(function(n) {
-      if (n % 2)
-        return false;
-      const b = Math.pow(10, n);
-      return 2 * b - 2 == 2 * b - 1 || -2 * b + 2 == -2 * b + 1;
-    })
-    .first() - 2;
+  const BASE_LENGTH = (baseLength & ~1) || findBaseLength();
 
   const BASE = Math.pow(10, BASE_LENGTH);
   const HALFBASE = Math.sqrt(BASE);
