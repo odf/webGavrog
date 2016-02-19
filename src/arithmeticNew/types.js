@@ -16,6 +16,9 @@ export const rationals = a.ops();
 a.register(mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], true));
 export const matrices = a.ops();
 
+a.register(mats.methods(integers, ['Integer', 'LongInt'], false));
+export const intMatrices = a.ops();
+
 
 const b = base.arithmetic();
 
@@ -65,8 +68,11 @@ if (require.main == module) {
   console.log(ops.times(V, ops.transposed(M)));
   console.log(ops.times(M, ops.transposed(M)));
 
-  const A = [[1,2,3],[0,4,5],[0,0,6]];
-  console.log(ops.triangulation(A));
+  const A = [[1,2,3],[0,4,5],[6,0,7]];
+  const T = ops.triangulation(A);
+  console.log(`T.R = ${T.R}`);
+  console.log(`T.U = ${T.U}`);
+  console.log(`T.sign = ${T.sign}`);
   console.log(ops.rank(A));
   console.log(ops.determinant(A));
 
@@ -100,4 +106,8 @@ if (require.main == module) {
   const P = fops.cleanup(fops.times(O, fops.transposed(O)));
   console.log(`O = ${O}`);
   console.log(`O * O.T = ${P}`);
+
+
+  const iops = intMatrices;
+  console.log(JSON.stringify(iops.triangulation(A)));
 }
