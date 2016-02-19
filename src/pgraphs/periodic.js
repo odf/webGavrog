@@ -1,8 +1,7 @@
 import * as I from 'immutable';
-import * as Q from '../arithmetic/number';
-import _M from '../arithmetic/matrix';
 
-const M = _M(Q, 0, 1);
+import { matrices } from '../arithmeticNew/types';
+const ops = matrices;
 
 
 const Edge = I.Record({
@@ -24,8 +23,7 @@ Edge.prototype.reverse = function reverse() {
 };
 
 
-const _sgn = x => (x > 0) - (x < 0);
-const _isNegative = vec => vec.map(_sgn).find(x => x != 0) < 0;
+const _isNegative = vec => vec.find(x => ops.sgn(x) != 0) < 0;
 
 
 Edge.prototype.canonical = function canonical() {
@@ -137,16 +135,7 @@ const _isConnectedOrbitGraph = function _isConnectedOrbitGraph(graph) {
 };
 
 
-const _inc = x => x+1;
-const _dec = x => x-1;
-
-
-const _addToRow = function _addToRow(A, i, vec) {
-  vec.forEach((x, j) => { A = M.update(A, i, j, y => Q.plus(x, y)); });
-  return A;
-};
-
-const _getRow = (A, i) => I.List(I.Range(0, A.ncols).map(j => M.get(A, i, j)));
+const _array = (len, val = 0) => Array(len).fill(val);
 
 
 export function barycentricPlacement(graph) {
@@ -159,29 +148,29 @@ export function barycentricPlacement(graph) {
 
   const n = verts.size;
   const d = graph.dim;
-  let A = M.constant(n+1, n);
-  let t = M.constant(n+1, d);
+  let A = _array(n+1).map(() => _array(n));
+  let t = _array(n+1).map(() => _array(d));
 
-  verts.forEach(function(v, i) {
-    adj.get(v).forEach(function(c) {
+  verts.forEach((v, i) => {
+    adj.get(v).forEach(c => {
       if (c.v != v) {
         const j = vIdcs.get(c.v);
-        A = M.update(A, i, j, _dec);
-        A = M.update(A, i, i, _inc);
-        t = _addToRow(t, i, c.s);
+        A[i][j] -= 1;
+        A[i][i] += 1;
+        t[i] = ops.plus(t[i], c.s.toArray());
       }
     });
   });
-  A = M.set(A, n, 0, 1);
+  A[n][0] = 1;
 
-  const p = M.solve(A, t);
+  const p = ops.solve(A, t);
 
-  return I.Map(I.Range(0, n).map(i => [verts.get(i), _getRow(p, i)]));
+  return I.Map(I.Range(0, n).map(i => [verts.get(i), I.List(p[i])]));
 };
 
 
 export function barycentricPlacementAsFloat(graph) {
-  return barycentricPlacement(graph).map(p => p.map(Q.toJS));
+  return barycentricPlacement(graph).map(p => p.map(x => ops.toJS(x)));
 };
 
 
