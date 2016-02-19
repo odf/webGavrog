@@ -165,13 +165,15 @@ export function methods(baseLength = 0) {
   };
 
 
+  const _negative = n => new LongInt(-n.sign, n.digits);
+
   const plus = function plus(a, b) {
     if (_isZero(a))
       return b;
     else if (_isZero(b))
       return a;
     else if (a.sign != b.sign)
-      return minus(a, negative(b));
+      return minus(a, _negative(b));
     else
       return make(a.sign, _plus(a.digits, b.digits));
   };
@@ -183,7 +185,7 @@ export function methods(baseLength = 0) {
     else if (_isZero(b))
       return a;
     else if (a.sign != b.sign)
-      return plus(a, negative(b));
+      return plus(a, _negative(b));
     else {
       const d = _cmp(a.digits, b.digits);
       if (d == 0)
