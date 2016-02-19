@@ -137,7 +137,6 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
   }
 
   for (const t1 of intTypes) {
-    methods.div[t1] = {};
     for (const t2 of intTypes) {
       methods.div[t1][t2] = (x, y) => make(x, y);
     }
