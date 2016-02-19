@@ -1,8 +1,5 @@
 import * as I from 'immutable';
 
-import * as Q from '../arithmetic/number';
-import     _M from '../arithmetic/matrix';
-
 import { stabilizer } from '../fpgroups/stabilizer';
 
 import * as util        from '../common/util';
@@ -12,8 +9,8 @@ import * as fundamental from './fundamental';
 import * as derived     from './derived';
 import * as covers      from './covers';
 
-
-const M = _M(Q, 0, 1);
+import { intMatrices } from '../arithmeticNew/types';
+const ops = intMatrices;
 
 const _coreType = {
    1: 'z1',
@@ -47,18 +44,21 @@ const _flattensAll = (ct, cones) =>
   cones.every(([wd, d]) => _degree(ct, wd) == d);
 
 
-const _isDiagonal = mat => (
-  I.Range(0, mat.nrows).every(i => (
-    I.Range(0, mat.ncols).every(j => (
-      i == j || 0 == Q.sgn(M.get(mat, i, j)))))));
+const _isDiagonal = mat => {
+  const [nrows, ncols] = ops.shape(mat);
+  return (
+    I.Range(0, nrows).every(i => (
+      I.Range(0, ncols).every(j => (
+        i == j || 0 == ops.sgn(mat[i][j]))))));
+}
 
 
 const _gcd = function _gcd(a, b) {
-  a = Q.abs(a);
-  b = Q.abs(b);
+  a = ops.abs(a);
+  b = ops.abs(b);
 
-  while (Q.sgn(b) > 0)
-    [a, b] = [b, Q.mod(a, b)];
+  while (ops.sgn(b) > 0)
+    [a, b] = [b, ops.mod(a, b)];
 
   return a;
 };
@@ -71,7 +71,7 @@ const _factors = function _factors(xs) {
       I.Range(i+1, xs.size).forEach(function(j) {
         const b = xs.get(j);
         const g = _gcd(a, b);
-        xs.set(j, Q.sgn(g) == 0 ? 0 : Q.times(Q.idiv(a, g), b));
+        xs.set(j, ops.sgn(g) == 0 ? 0 : ops.times(ops.idiv(a, g), b));
         a = g;
       });
       xs.set(i, a);
@@ -81,16 +81,19 @@ const _factors = function _factors(xs) {
 
 
 const _invariants = function _invariants(nrGens, rels) {
-  let mat = M.make(cosets.relatorMatrix(nrGens, rels));
+  let mat = cosets.relatorMatrix(nrGens, rels).toJS();
 
   while (!_isDiagonal(mat)) {
-    mat = M.transposed(M.triangulation(mat).R);
-    mat = M.transposed(M.triangulation(mat).R);
+    mat = ops.transposed(ops.triangulation(mat).R);
+    mat = ops.transposed(ops.triangulation(mat).R);
   }
 
-  const d       = Math.min(mat.nrows, mat.ncols);
-  const diag    = I.Range(0, d).map(i => M.get(mat, i, i));
-  const factors = _factors(diag).filter(x => Q.cmp(x, 1)).sort(Q.cmp);
+  const [nrows, ncols] = ops.shape(mat);
+  const d = Math.min(nrows, ncols);
+  const diag = I.Range(0, d).map(i => mat[i][i]);
+  const factors = _factors(diag)
+    .filter(x => ops.cmp(x, 1))
+    .sort((a, b) => ops.cmp(a, b));
 
   return I.Repeat(0, nrGens - d).concat(factors);
 };
@@ -168,7 +171,7 @@ export function pseudoToroidalCover(ds) {
       stabilizerTimers
     );
     const inv = _invariants(stab.generators.size, stab.relators);
-    return inv.map(Q.sgn).equals(I.List([0,0,0]));
+    return inv.map(x => ops.sgn(x)).equals(I.List([0,0,0]));
   });
   console.log(`  ${elapsed()} to check for a good subgroup`);
   console.log(`  stabilizer timing details:`);
