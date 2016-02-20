@@ -4,7 +4,7 @@ import * as p  from './properties';
 import * as d  from './derived';
 import * as cv from './covers';
 
-import { rationals } from '../arithmeticNew/types';
+import { rationals } from '../arithmetic/types';
 const Q = rationals;
 
 

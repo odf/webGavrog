@@ -4,7 +4,7 @@ import * as DS from './delaney';
 import * as DS2D from './delaney2d';
 import * as props from './properties';
 
-import { rationals } from '../arithmeticNew/types';
+import { rationals } from '../arithmetic/types';
 const Q = rationals;
 
 

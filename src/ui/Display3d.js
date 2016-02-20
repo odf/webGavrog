@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as React from 'react';
 import * as I     from 'immutable';
 
-import { floatMatrices } from '../arithmeticNew/types';
+import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
 

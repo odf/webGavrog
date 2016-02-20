@@ -9,7 +9,7 @@ import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
 
-import { floatMatrices } from '../arithmeticNew/types';
+import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
 

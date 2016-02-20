@@ -5,7 +5,7 @@ import * as periodic from '../pgraphs/periodic';
 
 import tiling from '../dsymbols/tilings';
 
-import { matrices } from '../arithmeticNew/types';
+import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
 

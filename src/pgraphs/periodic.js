@@ -1,6 +1,6 @@
 import * as I from 'immutable';
 
-import { matrices } from '../arithmeticNew/types';
+import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
 

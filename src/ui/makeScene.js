@@ -2,7 +2,7 @@ import * as I     from 'immutable';
 import * as THREE from 'three';
 import * as csp   from 'plexus-csp';
 
-import { floatMatrices } from '../arithmeticNew/types';
+import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
 import * as delaney  from '../dsymbols/delaney';

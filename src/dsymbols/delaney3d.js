@@ -9,7 +9,7 @@ import * as fundamental from './fundamental';
 import * as derived     from './derived';
 import * as covers      from './covers';
 
-import { intMatrices } from '../arithmeticNew/types';
+import { intMatrices } from '../arithmetic/types';
 const ops = intMatrices;
 
 const _coreType = {
