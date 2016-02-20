@@ -1,10 +1,7 @@
 import * as I from 'immutable';
-import * as F from '../arithmetic/float';
-import _M from '../arithmetic/matrix';
-import _V from '../arithmetic/vector';
 
-const M = _M(F, 0, 1);
-const V = _V(F, 0);
+import { floatMatrices } from '../arithmeticNew/types';
+const ops = floatMatrices;
 
 
 let _timers = null;
@@ -19,14 +16,19 @@ const pairs = as => as.pop().zip(as.shift()).push([as.last(), as.first()]);
 
 const corners = pos => idcs => idcs.map(i => pos.get(i));
 
-const centroid = pos => V.scaled(1/I.List(pos).size, pos.reduce(V.plus));
+const plus = (v, w) => ops.plus(v, w)
+
+const centroid = pos => ops.times(1/I.List(pos).size, pos.reduce(plus));
 
 const dedupe = a => I.List(I.Set(a));
 
+const normalized = v => ops.div(v, ops.norm(v));
 
-const projection = (normal, origin = V.scaled(0, normal)) => p => {
-  const d = V.minus(p, origin);
-  return V.plus(origin, V.minus(d, V.scaled(V.dotProduct(normal, d), normal)));
+
+const projection = (normal, origin = ops.times(0, normal)) => p => {
+  const d = ops.minus(p, origin);
+  return ops.plus(origin,
+                  ops.minus(d, ops.times(ops.times(normal, d)[0][0], normal)));
 };
 
 
@@ -50,10 +52,10 @@ const cycles = m => {
 };
 
 
-const faceNormal = vs => V.normalized(
+const faceNormal = vs => normalized(
   pairs(I.List(vs))
-    .map(e => V.crossProduct(e[0], e[1]))
-    .reduce(V.plus)
+    .map(e => ops.crossProduct(e[0], e[1]))
+    .reduce(plus)
 );
 
 
@@ -63,14 +65,14 @@ export function faceNormals(pos, faces) {
 
 
 export function vertexNormals(pos, faces, faceNormals) {
-  const normals = pos.map(v => V.scaled(0, v)).asMutable();
+  const normals = pos.map(v => ops.times(0, v)).asMutable();
 
   faces.forEach((f, i) => {
     const n = faceNormals.get(i);
-    f.forEach(k => { normals.update(k, v => V.plus(v, n)); });
+    f.forEach(k => { normals.update(k, v => ops.plus(v, n)); });
   });
 
-  return normals.map(V.normalized);
+  return normals.map(normalized);
 };
 
 
@@ -86,7 +88,7 @@ const edgeIndexes = faces => {
 
 
 const adjustedPositions = (faces, pos, isFixed) => {
-  const coord = (face, idx, factor) => V.scaled(factor, pos.get(face.get(idx)));
+  const coord = (face, idx, factor) => ops.times(factor, pos.get(face.get(idx)));
   const facesByVertex = faces.groupBy(f => f.get(0));
 
   return pos.map((p, i) => {
@@ -96,8 +98,8 @@ const adjustedPositions = (faces, pos, isFixed) => {
     const m = facesByVertex.get(i).size;
     const t = facesByVertex.get(i)
       .flatMap(f => [coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)])
-      .reduce(V.plus);
-    return V.plus(V.scaled(1/(m*m), t), V.scaled((m-3)/m, p));
+      .reduce(ops.plus);
+    return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
   });
 };
 
@@ -161,7 +163,7 @@ const flattened = vs => vs.map(projection(faceNormal(vs), centroid(vs)));
 
 const scaled = (f, vs) => {
   const c = centroid(vs);
-  return vs.map(v => V.plus(V.scaled(f, v), V.scaled(1-f, c)));
+  return vs.map(v => ops.plus(ops.times(f, v), ops.times(1-f, c)));
 };
 
 
@@ -195,21 +197,21 @@ export function withFlattenedCenterFaces(surface) {
 
 
 const insetPoint = (corner, wd, left, right, center) => {
-  const lft = V.normalized(V.minus(left, corner));
-  const rgt = V.normalized(V.minus(right, corner));
-  const dia = V.plus(lft, rgt);
+  const lft = normalized(ops.minus(left, corner));
+  const rgt = normalized(ops.minus(right, corner));
+  const dia = ops.plus(lft, rgt);
 
-  if (V.norm(dia) < 0.01) {
-    const s = V.normalized(V.minus(center, corner));
+  if (ops.norm(dia) < 0.01) {
+    const s = normalized(ops.minus(center, corner));
     const t = projection(lft)(s);
-    return V.plus(corner, V.scaled(wd / V.norm(t), s));
+    return ops.plus(corner, ops.times(wd / ops.norm(t), s));
   }
   else {
-    const len = wd * V.norm(dia) / V.norm(projection(lft)(dia));
-    const s   = V.normalized(V.crossProduct(dia, V.crossProduct(lft, rgt)));
-    const t   = projection(s)(V.minus(center, corner));
-    const f   = len / V.norm(t);
-    return V.plus(corner, V.scaled(f, t));
+    const len = wd * ops.norm(dia) / ops.norm(projection(lft)(dia));
+    const s   = normalized(ops.crossProduct(dia, ops.crossProduct(lft, rgt)));
+    const t   = projection(s)(ops.minus(center, corner));
+    const f   = len / ops.norm(t);
+    return ops.plus(corner, ops.times(f, t));
   }
 };
 
@@ -365,9 +367,13 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return 'List [ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
   const cube = {
-    pos: I.fromJS([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
-                   [1,0,0], [1,0,1], [1,1,0], [1,1,1]]).map(V.make),
+    pos: I.List([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
+                 [1,0,0], [1,0,1], [1,1,0], [1,1,1]]),
     faces: I.fromJS([[0,1,3,2],[5,4,6,7],
                      [1,0,4,5],[2,3,7,6],
                      [0,2,6,4],[3,1,5,7]]),
