@@ -18,7 +18,7 @@ const corners = pos => idcs => idcs.map(i => pos.get(i));
 
 const plus = (v, w) => ops.plus(v, w)
 
-const centroid = pos => ops.times(1/I.List(pos).size, pos.reduce(plus));
+const centroid = pos => ops.div(pos.reduce(plus), I.List(pos).size);
 
 const dedupe = a => I.List(I.Set(a));
 
