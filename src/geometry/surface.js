@@ -27,8 +27,7 @@ const normalized = v => ops.div(v, ops.norm(v));
 
 const projection = (normal, origin = ops.times(0, normal)) => p => {
   const d = ops.minus(p, origin);
-  return ops.plus(origin,
-                  ops.minus(d, ops.times(ops.times(normal, d)[0][0], normal)));
+  return ops.plus(origin, ops.minus(d, ops.times(ops.times(normal, d), normal)));
 };
 
 

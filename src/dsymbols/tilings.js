@@ -154,7 +154,7 @@ const _resymmetrizedGramMatrix = function _resymmetrizedGramMatrix(G, syms) {
 };
 
 
-const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G)[0], w)[0][0];
+const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G)[0], w);
 
 
 const _orthonormalBasis = function _orthonormalBasis(G) {

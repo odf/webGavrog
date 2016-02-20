@@ -40,6 +40,17 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
+  const dotProduct = (v, w) => {
+    if (v.length != w.length)
+      throw new Error('vectors must have equal length');
+
+    return (
+      array(v.length)
+        .map((_, k) => s.times(v[k], w[k]))
+        .reduce((a, x) => s.plus(a, x)));
+  };
+
+
   const matrixProduct = (A, B) => {
     const [nrowsA, ncolsA] = shapeOfMatrix(A);
     const [nrowsB, ncolsB] = shapeOfMatrix(B);
@@ -364,11 +375,15 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
     times: {
       Vector: {
-        Vector: (v, w) => matrixProduct([v], methods.transposed.Vector(w)),
-        Matrix: (v, m) => matrixProduct([v], m)
+        Vector: dotProduct,
+        Matrix(v, m) {
+          return matrixProduct([v], m);
+        }
       },
       Matrix: {
-        Vector: (m, v) => matrixProduct(m, methods.transposed.Vector(v)),
+        Vector(m, v) {
+          return matrixProduct(m, methods.transposed.Vector(v));
+        },
         Matrix: matrixProduct
       }
     }
