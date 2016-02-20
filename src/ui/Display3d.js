@@ -2,15 +2,14 @@ import * as THREE from 'three';
 import * as React from 'react';
 import * as I     from 'immutable';
 
-import * as R from '../arithmetic/float';
-import _M from '../arithmetic/matrix';
-import _V from '../arithmetic/vector';
-
-const M = _M(R, 0, 1);
-const vec = _V(R, 0);
+import { floatMatrices } from '../arithmeticNew/types';
+const ops = floatMatrices;
 
 
 const sgn = x => (x > 0) - (x < 0);
+
+const _array = (len, val = 0) => Array(len).fill(val);
+const _identity = n => _array(n).map((_, i) => _array(n).fill(1, i, i+1));
 
 
 const rotation = function(dx, dy, aboutZ) {
@@ -54,21 +53,20 @@ const MODE = {
 
 
 const CameraParameters = I.Record({
-  matrix  : M.identity(3),
+  matrix  : _identity(3),
   distance: undefined,
-  target  : vec.constant(3)
+  target  : _array(3)
 });
 
 
 const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
-  const m = params.matrix.data.map(vec.make);
+  const m = params.matrix;
   const d = params.distance;
   const t = params.target;
 
   if (pos) {
-    pos = vec.make(pos);
     return params.merge({
-      distance: vec.norm(vec.minus(pos, vec.plus(t, vec.scaled(d, m[2])))),
+      distance: ops.norm(ops.minus(pos, ops.plus(t, ops.times(d, m[2])))),
       target  : pos
     });
   } else if (wheel) {
@@ -76,11 +74,12 @@ const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
   } else if (button == MODE.PAN) {
     return params.set(
       'target',
-      vec.plus(t, vec.plus(vec.scaled(-0.2 * d * dx, m[0]),
-                           vec.scaled(-0.2 * d * dy, m[1]))));
+      ops.plus(t, ops.plus(ops.times(-0.2 * d * dx, m[0]),
+                           ops.times(-0.2 * d * dy, m[1]))));
   } else {
-    const rot = M.make(rotation(-dx, -dy, button == MODE.TILT));
-    return params.set('matrix', M.orthonormalized(M.times(rot, params.matrix)));
+    const rot = rotation(-dx, -dy, button == MODE.TILT);
+    return params.set('matrix',
+                      ops.orthonormalized(ops.times(rot, params.matrix)));
   }
 };
 
@@ -108,14 +107,14 @@ const render3d = (function makeRender() {
   const doRender = function doRender() {
     if (_value && _value.renderer) {
       const params = _value.cameraParameters;
-      const m = params.matrix.data;
-      const e = vec.plus(
+      const m = params.matrix;
+      const e = ops.plus(
         params.target,
-        vec.scaled(params.distance, vec.make(m[2])));
+        ops.times(params.distance, m[2]));
 
-      _props.camera.position.x = vec.get(e, 0);
-      _props.camera.position.y = vec.get(e, 1);
-      _props.camera.position.z = vec.get(e, 2);
+      _props.camera.position.x = e[0];
+      _props.camera.position.y = e[1];
+      _props.camera.position.z = e[2];
 
       const mat = new THREE.Matrix4();
       mat.set(

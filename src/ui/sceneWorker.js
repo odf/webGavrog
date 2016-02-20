@@ -1,10 +1,5 @@
 import * as I from 'immutable';
 
-import * as R from '../arithmetic/float';
-import _V     from '../arithmetic/vector';
-
-const V = _V(R, 0);
-
 import * as surface   from '../geometry/surface';
 import * as delaney   from '../dsymbols/delaney';
 import * as delaney3d from '../dsymbols/delaney3d';
@@ -39,7 +34,7 @@ const processedSolid = (t0, timers) => {
 const handlers = {
   processSolid({ pos, faces, isFixed }) {
     const surfIn = {
-      pos    : I.fromJS(pos).map(V.make),
+      pos    : I.List(pos),
       faces  : I.fromJS(faces),
       isFixed: I.fromJS(isFixed)
     };
@@ -54,7 +49,7 @@ const handlers = {
     console.log(`${JSON.stringify(timers.current(), null, 2)}`);
 
     return {
-      pos    : surfOut.pos.map(v => v.data).toJS(),
+      pos    : surfOut.pos.toJS(),
       faces  : surfOut.faces.toJS(),
       isFixed: surfOut.isFixed.toJS()
     };

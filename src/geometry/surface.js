@@ -97,7 +97,7 @@ const adjustedPositions = (faces, pos, isFixed) => {
     const m = facesByVertex.get(i).size;
     const t = facesByVertex.get(i)
       .flatMap(f => [coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)])
-      .reduce(ops.plus);
+      .reduce(plus);
     return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
   });
 };
