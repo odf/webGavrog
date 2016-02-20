@@ -28,7 +28,7 @@ const _edgeTranslations = function _edgeTranslations(cov) {
   return fg.edge2word.map(function(a) {
     return a.map(function(b) {
       const v = cosets.relatorAsVector(b, n).toJS();
-      return ops.times(v, nul)[0];
+      return ops.times(v, nul);
     });
   });
 };
@@ -154,7 +154,7 @@ const _resymmetrizedGramMatrix = function _resymmetrizedGramMatrix(G, syms) {
 };
 
 
-const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G)[0], w);
+const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G), w);
 
 
 const _orthonormalBasis = function _orthonormalBasis(G) {

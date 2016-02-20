@@ -376,14 +376,10 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     times: {
       Vector: {
         Vector: dotProduct,
-        Matrix(v, m) {
-          return matrixProduct([v], m);
-        }
+        Matrix: (v, m) => matrixProduct([v], m)[0]
       },
       Matrix: {
-        Vector(m, v) {
-          return matrixProduct(m, methods.transposed.Vector(v));
-        },
+        Vector: (m, v) => matrixProduct([v], transposedMatrix(m))[0],
         Matrix: matrixProduct
       }
     }
