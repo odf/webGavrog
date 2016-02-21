@@ -135,9 +135,6 @@ const _isConnectedOrbitGraph = function _isConnectedOrbitGraph(graph) {
 };
 
 
-const _array = (len, val = 0) => Array(len).fill(val);
-
-
 export function barycentricPlacement(graph) {
   if (!_isConnectedOrbitGraph(graph))
     throw new Error('must have a connected orbit graph');
@@ -148,8 +145,8 @@ export function barycentricPlacement(graph) {
 
   const n = verts.size;
   const d = graph.dim;
-  let A = _array(n+1).map(() => _array(n));
-  let t = _array(n+1).map(() => _array(d));
+  let A = ops.matrix(n+1, n);
+  let t = ops.matrix(n+1, d);
 
   verts.forEach((v, i) => {
     adj.get(v).forEach(c => {

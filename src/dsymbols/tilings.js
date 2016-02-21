@@ -13,10 +13,6 @@ import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
 
-const _array = (len, val = 0) => Array(len).fill(val);
-const _identity = n => _array(n).map((_, i) => _array(n).fill(1, i, i+1));
-
-
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
@@ -36,7 +32,7 @@ const _edgeTranslations = function _edgeTranslations(cov) {
 
 const _cornerShifts = function _cornerShifts(cov, e2t) {
   const dim = delaney.dim(cov);
-  const zero = _array(dim);
+  const zero = ops.vector(dim);
 
   return I.Map().withMutations(function(m) {
     cov.indices().forEach(function(i) {
@@ -60,7 +56,7 @@ const _cornerShifts = function _cornerShifts(cov, e2t) {
 
 const _skeleton = function _skeleton(cov, e2t, c2s) {
   const dim = delaney.dim(cov);
-  const zero = _array(dim);
+  const zero = ops.vector(dim);
   const chambers = cov.elements();
   const idcs0 = _remainingIndices(cov, 0);
   const nodeReps = properties.orbitReps(cov, idcs0, chambers);
@@ -105,7 +101,7 @@ const _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
     const idcs = I.Range(0, i);
     properties.orbitReps(cov, idcs, cov.elements()).forEach(function(D) {
       const orb = properties.orbit(cov, idcs, D);
-      let s = _array(dim);
+      let s = ops.vector(dim);
       orb.forEach(function(E) {
         const p = result.getIn([E, 0]);
         const t = c2s.getIn([E, i]);
@@ -159,7 +155,7 @@ const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G), w);
 
 const _orthonormalBasis = function _orthonormalBasis(G) {
   const [n, m] = ops.shape(G);
-  let e = _identity(n);
+  let e = ops.identityMatrix(n);
 
   I.Range(0, n).forEach(function(i) {
     let v = e[i];
@@ -192,7 +188,7 @@ export default function tiling(ds, cover) {
   const pos  = _chamberPositions(cov, e2t, c2s, skel, vpos);
   const syms = _symmetries(ds, cov, pos);
 
-  const G = _resymmetrizedGramMatrix(_identity(delaney.dim(ds)), syms);
+  const G = _resymmetrizedGramMatrix(ops.identityMatrix(delaney.dim(ds)), syms);
   const basis = ops.inverse(_orthonormalBasis(G));
 
   return {

@@ -14,8 +14,6 @@ import tiling from '../dsymbols/tilings';
 import * as webworkers from '../common/webworkers';
 
 
-const _array = (len, val = 0) => Array(len).fill(val);
-
 const _normalized = v => ops.div(v, ops.norm(v));
 
 
@@ -27,7 +25,7 @@ const CoverVertex = I.Record({
 const graphPortion = function graphPortion(graph, start, dist) {
   const adj  = periodic.adjacencies(graph);
 
-  const v0 = new CoverVertex({ v: start, s: _array(graph.dim) });
+  const v0 = new CoverVertex({ v: start, s: ops.vector(graph.dim) });
   let vertices = I.Map([[v0, 0]]);
   let edges = I.Set();
   let thisShell = I.List([v0]);

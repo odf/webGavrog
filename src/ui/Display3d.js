@@ -6,12 +6,6 @@ import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
 
-const sgn = x => (x > 0) - (x < 0);
-
-const _array = (len, val = 0) => Array(len).fill(val);
-const _identity = n => _array(n).map((_, i) => _array(n).fill(1, i, i+1));
-
-
 const rotation = function(dx, dy, aboutZ) {
   dx = Math.PI / 2 * dx;
   dy = Math.PI / 2 * dy;
@@ -53,9 +47,9 @@ const MODE = {
 
 
 const CameraParameters = I.Record({
-  matrix  : _identity(3),
+  matrix  : ops.identityMatrix(3),
   distance: undefined,
-  target  : _array(3)
+  target  : ops.vector(3)
 });
 
 
@@ -246,7 +240,7 @@ export default React.createClass({
   },
 
   handleWheel(event) {
-    let d = sgn(event.deltaY);
+    let d = ops.sgn(event.deltaY);
 
     this.update({
       wheel: this.state.value.wheel + d

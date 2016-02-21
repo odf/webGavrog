@@ -29,7 +29,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
   const shapeOfMatrix = m => [m.length, m[0].length];
 
-  const array = (len, val = 0) => Array(len).fill(val);
+  const array = n => Array(n).fill(0);
 
   const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
 
@@ -311,6 +311,26 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const methods = {
+    vector: {
+      Integer: array
+    },
+
+    unitVector: {
+      Integer: {
+        Integer: (n, k) => array(n).fill(1, k, k+1)
+      }
+    },
+
+    matrix: {
+      Integer: {
+        Integer: (nrows, ncols) => array(nrows).map(() => array(ncols))
+      }
+    },
+
+    identityMatrix: {
+      Integer: identity
+    },
+
     shape: {
       Vector: v => [v.length],
       Matrix: shapeOfMatrix
