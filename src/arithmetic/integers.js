@@ -307,6 +307,17 @@ export function methods(baseLength = 0) {
   };
 
 
+  const gcd = (a, b) => {
+    a = Math.abs(a);
+    b = Math.abs(b);
+
+    while (b > 0)
+      [a, b] = [b, a % b];
+
+    return a;
+  };
+
+
   const checkedOperator = (longMethod, nativeMethod) => (x, y) => {
     const t = nativeMethod(x, y);
     if (shouldPromote(x) || shouldPromote(y) || shouldPromote(t))
@@ -403,6 +414,11 @@ export function methods(baseLength = 0) {
     mod: {
       Integer: {
         Integer: (x, y) => x % y + (x < 0 ? y : 0)
+      }
+    },
+    gcd: {
+      Integer: {
+        Integer: gcd
       }
     }
   }

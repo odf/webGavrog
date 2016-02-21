@@ -31,6 +31,17 @@ const call = (dispatch, op, ops) => (...args) => {
 };
 
 
+const gcd = (a, b, ops) => {
+  a = ops.abs(a);
+  b = ops.abs(b);
+
+  while (ops.sgn(b) > 0)
+    [a, b] = [b, ops.mod(a, b)];
+
+  return a;
+};
+
+
 const defaults = {
   isZero       : { __default__: (x, ops) => ops.sgn(x) == 0 },
   isPositive   : { __default__: (x, ops) => ops.sgn(x) >  0 },
@@ -38,7 +49,11 @@ const defaults = {
   isNegative   : { __default__: (x, ops) => ops.sgn(x) <  0 },
   isNonPositive: { __default__: (x, ops) => ops.sgn(x) <= 0 },
 
-  mod: { __default__: (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y)) }
+  mod: {
+    __default__: (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y))
+  },
+
+  gcd: { __default__: gcd }
 };
 
 

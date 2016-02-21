@@ -17,17 +17,6 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
   const toJS = n => intOps.toJS(n.numer) / intOps.toJS(n.denom);
 
 
-  const _gcd = (a, b) => {
-    a = intOps.abs(a);
-    b = intOps.abs(b);
-
-    while (intOps.sgn(b) > 0)
-      [a, b] = [b, intOps.mod(a, b)];
-
-    return a;
-  };
-
-
   const make = (numer, denom) => {
     const s = intOps.sgn(denom);
 
@@ -36,7 +25,7 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
     else if (s == 0)
       throw new Error('fraction has zero denominator');
     else {
-      const a = _gcd(denom, numer);
+      const a = intOps.gcd(denom, numer);
       const n = intOps.idiv(numer, a);
       const d = intOps.idiv(denom, a);
 
@@ -82,7 +71,7 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
 
 
   const plus = function plus(q, r) {
-    const a = _gcd(q.denom, r.denom);
+    const a = intOps.gcd(q.denom, r.denom);
     const s = intOps.idiv(r.denom, a);
     const t = intOps.idiv(q.denom, a);
 
@@ -95,8 +84,8 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
 
 
   const times = function times(q, r) {
-    const a = _gcd(q.numer, r.denom);
-    const b = _gcd(q.denom, r.numer);
+    const a = intOps.gcd(q.numer, r.denom);
+    const b = intOps.gcd(q.denom, r.numer);
 
     return make(intOps.times(intOps.idiv(q.numer, a), intOps.idiv(r.numer, b)),
                 intOps.times(intOps.idiv(q.denom, b), intOps.idiv(r.denom, a)));

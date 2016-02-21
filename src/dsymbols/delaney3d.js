@@ -53,24 +53,13 @@ const _isDiagonal = mat => {
 }
 
 
-const _gcd = function _gcd(a, b) {
-  a = ops.abs(a);
-  b = ops.abs(b);
-
-  while (ops.sgn(b) > 0)
-    [a, b] = [b, ops.mod(a, b)];
-
-  return a;
-};
-
-
 const _factors = function _factors(xs) {
   return I.List(xs).withMutations(function(xs) {
     I.Range(0, xs.size).forEach(function(i) {
       let a = xs.get(i);
       I.Range(i+1, xs.size).forEach(function(j) {
         const b = xs.get(j);
-        const g = _gcd(a, b);
+        const g = ops.gcd(a, b);
         xs.set(j, ops.sgn(g) == 0 ? 0 : ops.times(ops.idiv(a, g), b));
         a = g;
       });
