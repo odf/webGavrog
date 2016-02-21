@@ -399,6 +399,11 @@ export function methods(baseLength = 0) {
         LongInt: (x, y) => idiv(promote(x), y),
         Integer: (x, y) => Math.floor(x / y)
       }
+    },
+    mod: {
+      Integer: {
+        Integer: (x, y) => x % y + (x < 0 ? y : 0)
+      }
     }
   }
 };

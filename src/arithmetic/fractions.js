@@ -17,14 +17,12 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
   const toJS = n => intOps.toJS(n.numer) / intOps.toJS(n.denom);
 
 
-  const _mod = (a, b) => intOps.minus(a, intOps.times(intOps.idiv(a, b), b));
-
   const _gcd = (a, b) => {
     a = intOps.abs(a);
     b = intOps.abs(b);
 
     while (intOps.sgn(b) > 0)
-      [a, b] = [b, _mod(a, b)];
+      [a, b] = [b, intOps.mod(a, b)];
 
     return a;
   };
