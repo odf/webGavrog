@@ -17,7 +17,28 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
   const toJS = n => intOps.toJS(n.numer) / intOps.toJS(n.denom);
 
 
+  const _makeFast = (numer, denom) => {
+    if (denom < 0)
+      return _makeFast(-numer, -denom);
+    else if (denom == 0)
+      throw new Error('fraction has zero denominator');
+    else {
+      const a = intOps.gcd(denom, numer);
+      const n = numer / a;
+      const d = denom / a;
+
+      if (d == 1 || n == 0)
+        return n;
+      else
+        return new Fraction(n, d);
+    }
+  };
+
+
   const make = (numer, denom) => {
+    if (typeof numer == 'number' && typeof denom == 'number')
+      return _makeFast(numer, denom);
+
     const s = intOps.sgn(denom);
 
     if (s < 0)
