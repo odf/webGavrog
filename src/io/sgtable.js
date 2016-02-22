@@ -1,4 +1,5 @@
 const parser = require('./sgtableParser');
+const ops = require('../arithmetic/types').rationals;
 
 
 const makeOperator = spec => {
@@ -6,7 +7,7 @@ const makeOperator = spec => {
   return spec.map(row => {
     const r = new Array(d).fill(0);
     for (const { i, f } of row)
-      r[i-1] = f;
+      r[i-1] = typeof f == 'number' ? f : ops.div(f.n, f.d);
     return r;
   });
 };
