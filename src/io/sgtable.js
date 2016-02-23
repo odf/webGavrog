@@ -46,18 +46,20 @@ const cook = rawData => {
 };
 
 
+export default function parse(text) {
+  return cook(parser.parse(text));
+};
+
+
 if (require.main == module) {
   const fs   = require('fs');
   const file = process.argv[2]
   const text = fs.readFileSync(file, { encoding: 'utf8' });
 
-  const timer  = require('../common/util').timer();
-  const raw    = parser.parse(text);
-  const tparse = timer();
-  const data   = cook(raw);
-  const tcook  = timer();
+  const timer = require('../common/util').timer();
+  const data  = parse(text);
+  const t     = timer();
 
   console.log(`${JSON.stringify(data, null, 2)}`);
-  console.error(`Parsing time   : ${tparse} msec`);
-  console.error(`Processing time: ${tcook} msec`);
+  console.error(`Processing time: ${t} msec`);
 };
