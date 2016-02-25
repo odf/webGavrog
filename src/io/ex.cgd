@@ -1,3 +1,10 @@
+NET # the diamond net
+  Group Fd-3m
+  Node 1 3/8 3/8 3/8
+  Edge 1 1 1-x 1-y 1-z
+END
+
+
 # The type of data to expect
 CRYSTAL
   # Structure id (optional; ID and NAME both work)
