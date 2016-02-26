@@ -91,7 +91,7 @@ field
   / __ nm:name     { return nm; }
 
 contentLine
-  = key:keyword args:field* _ nl { return { key: key, args: args }; }
+  = _ key:keyword args:field* _ nl { return { key: key, args: args }; }
   / args:field* _ nl { return { args: args }; }
 
 block
