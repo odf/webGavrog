@@ -48,17 +48,21 @@ string
 name
   = !end val:$([A-Za-z][^\t\n "]*) { return val; }
 
-numberCore
-  = [0-9]+ ("." [0-9]*)?
+nat
+  = digits:$[0-9]+ { return parseInt(digits); }
+
+floatCore
+  = [0-9]+ "." [0-9]*
   / "." [0-9]+
 
-number
-  = sign:$"-"? core:$numberCore exp:$("e" [+-]? [0-9]+)? [bf]?
+float
+  = sign:$"-"? core:$floatCore exp:$("e" [+-]? [0-9]+)? [bf]?
     { return parseFloat(sign + core + exp); }
 
-factor
-  = num:number _ "/" _ den:number { return { n: num, d: den }; }
-  / number
+number
+  = num:nat _ "/" _ den:nat { return { n: num, d: den }; }
+  / float
+  / nat
 
 axis
   = "x" { return 1; }
@@ -67,8 +71,8 @@ axis
 
 summand
   = i:axis { return { i: i, f: 1 }; }
-  / f:factor (_ "*"?) i:axis { return { i: i, f: f }; }
-  / f:factor { return { i: 0, f: f }; }
+  / f:number (_ "*"?) i:axis { return { i: i, f: f }; }
+  / f:number { return { i: 0, f: f }; }
 
 furtherSummand
   = _ "+" s:summand { return s; }
@@ -86,7 +90,6 @@ operator
 
 field
   = operator
-  / number
   / string
   / name
 
