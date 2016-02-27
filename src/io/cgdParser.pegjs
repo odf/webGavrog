@@ -46,7 +46,7 @@ string
   = "\"" chunks:stringChunk* "\"" { return chunks.join(''); }
 
 name
-  = $([A-Za-z][^\t\n "]*)
+  = !end val:$([A-Za-z][^\t\n "]*) { return val; }
 
 numberCore
   = [0-9]+ ("." [0-9]*)?
@@ -85,14 +85,19 @@ operator
   / only:coordinate { return [only]; }
 
 field
-  = __ op:operator { return op; }
-  / __ fp:number   { return fp; }
-  / __ st:string   { return st; }
-  / __ nm:name     { return nm; }
+  = operator
+  / number
+  / string
+  / name
+
+additionalField
+  = __ f:field { return f; }
 
 contentLine
-  = _ key:keyword args:field* _ nl { return { key: key, args: args }; }
-  / args:field* _ nl { return { args: args }; }
+  = _ key:keyword args:additionalField* _ nl
+    { return { key: key, args: args }; }
+  / _ first:field rest:additionalField* _ nl
+    { return { args: [first].concat(rest) }; }
 
 block
   = type:keyword nl content:contentLine* end nl
