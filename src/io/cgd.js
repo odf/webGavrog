@@ -101,29 +101,34 @@ const preprocessBlock = ({ type, content }) => ({
 });
 
 
+const reportError = (text, ex) => {
+  if (ex.location) {
+    var n = ex.location.start.line - 1;
+    var m = ex.location.start.column || 0;
+    var lines = txt.split('\n');
+    var pre  = lines.slice(Math.max(n-5, 0), n);
+    var line = lines[n];
+    var post = lines.slice(n+1, n+6);
+    console.error(ex.message);
+    console.error('(line '+(n+1)+', column '+m+')\n');
+    if (pre.length > 0)
+      console.error('  ' + pre.join('\n  '));
+    console.error('* ' + line);
+    console.error('  ' + Array(m).join(' ') + '^');
+    console.error('  ' + post.join('\n  '));
+  }
+  else
+    console.error(ex);
+};
+
+
 export function* structures(text) {
   let blocks;
 
   try {
     blocks = parser.parse(text);
   } catch(ex) {
-    if (ex.location) {
-      var n = ex.location.start.line - 1;
-      var m = ex.location.start.column || 0;
-      var lines = txt.split('\n');
-      var pre  = lines.slice(Math.max(n-5, 0), n);
-      var line = lines[n];
-      var post = lines.slice(n+1, n+6);
-      console.error(ex.message);
-      console.error('(line '+(n+1)+', column '+m+')\n');
-      if (pre.length > 0)
-        console.error('  ' + pre.join('\n  '));
-      console.error('* ' + line);
-      console.error('  ' + Array(m).join(' ') + '^');
-      console.error('  ' + post.join('\n  '));
-    }
-    else
-      console.error(ex);
+    reportError(text, ex);
   }
 
   for (const b of blocks) {
