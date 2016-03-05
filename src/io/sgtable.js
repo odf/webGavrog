@@ -7,13 +7,13 @@ const makeOperator = spec => {
   return spec.map(row => {
     const r = new Array(d).fill(0);
     for (const { i, f } of row)
-      r[i-1] = typeof f == 'number' ? f : ops.div(f.n, f.d);
+      r[i == 0 ? d : i-1] = typeof f == 'number' ? f : ops.div(f.n, f.d);
     return r;
   });
 };
 
 
-const cook = rawData => {
+const postProcess = rawData => {
   const lookup = [];
   const alias  = {};
   const table  = {};
@@ -46,20 +46,67 @@ const cook = rawData => {
 };
 
 
-export default function parse(text) {
-  return cook(parser.parse(text));
+const candidates = (base, extension, options) => {
+  if (base[0] == 'R') {
+    if (extension == 'R')
+      return [`${base}:R`];
+    else if (extension == 'H')
+      return [`${base}:H`];
+    else if (options.preferRhombohedral)
+      return [`${base}:R`, `${base}:H`];
+    else
+      return [`${base}:H`, `${base}:R`];
+  }
+  else if (extension == '1')
+    return [`${base}:1`, base];
+  else if (extension == '2')
+    return [`${base}:2`, base];
+  else if (options.preferFirstOrigin)
+    return [base, `${base}:1`, `${base}:2`];
+  else
+    return [base, `${base}:2`, `${base}:1`];
 };
+
+
+const settingByName = (name, alias, table, options = {}) => {
+  const [rawBase, ...rest] = name.split(':');
+  const base = alias[rawBase] || rawBase;
+  const extension = rest.join(':').toUpperCase();
+
+  if (extension && 'RH12'.split('').indexOf(extension) < 0)
+    return { error: `Illegal extension ${extension} in group setting ${name}` };
+
+  for (const name of candidates(base, extension, options)) {
+    const { transform, operators } = table[name] || {};
+    if (operators)
+      return { name, transform, operators };
+  }
+
+  return { error: `Unrecognized group setting ${name}` };
+};
+
+
+const parse = text => postProcess(parser.parse(text));
+
+
+const names = [
+  'P1',
+  'Pmn21',
+  'R3',
+  'R3:R',
+  'Fd-3m',
+  'Fd-3m:1'
+];
 
 
 if (require.main == module) {
   const fs   = require('fs');
   const file = process.argv[2]
   const text = fs.readFileSync(file, { encoding: 'utf8' });
+  const { lookup, alias, table } = parse(text);
 
-  const timer = require('../common/util').timer();
-  const data  = parse(text);
-  const t     = timer();
-
-  console.log(`${JSON.stringify(data, null, 2)}`);
-  console.error(`Processing time: ${t} msec`);
+  for (const key of names) {
+    const { name, transform } = settingByName(key, alias, table);
+    console.log(JSON.stringify({ name, transform }));
+  }
 };
