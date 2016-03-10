@@ -86,24 +86,19 @@ const settingByName = (name, alias, table, options = {}) => {
 };
 
 
-const parse = text => postProcess(parser.parse(text));
-
-
-const names = [
-  'P1',
-  'Pmn21',
-  'R3',
-  'R3:R',
-  'Fd-3m',
-  'Fd-3m:1'
-];
+const tableText = require('../data/sgtable').default;
+const { lookup, alias, table } = postProcess(parser.parse(tableText));
 
 
 if (require.main == module) {
-  const fs   = require('fs');
-  const file = process.argv[2]
-  const text = fs.readFileSync(file, { encoding: 'utf8' });
-  const { lookup, alias, table } = parse(text);
+  const names = [
+    'P1',
+    'Pmn21',
+    'R3',
+    'R3:R',
+    'Fd-3m',
+    'Fd-3m:1'
+  ];
 
   for (const key of names) {
     const { name, transform } = settingByName(key, alias, table);

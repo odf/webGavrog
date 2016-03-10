@@ -1,3 +1,4 @@
+export default `
 #
 #   Copyright 2005 Olaf Delgado-Friedrichs
 #
@@ -8356,3 +8357,4 @@ lookup R-3c:H trigonal R x,y,z
 lookup P63mc hexagonal P x-y,x,z
 lookup I4/m tetragonal I y,-x,z
 lookup Fmmm orthorhombic F x,y,z
+`;
