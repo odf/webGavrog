@@ -44,30 +44,50 @@ const unknown = data => {
 };
 
 
+const joinArgs = args => args.join(' ');
+
+
+const initialState = data => ({
+  input   : data,
+  output  : {},
+  errors  : [],
+  warnings: []
+});
+
+
+const extractSingleValue = (state, key, options = {}) => {
+  const { input, output, errors, warnings } = state;
+  const good = input.filter(s => s.key == key);
+
+  state.input = input.filter(s => s.key != key);
+
+  if (good.length == 0)
+    (options.mandatory ? errors : warnings).push(`Missing ${key} statement`);
+  else if (good.length > 1)
+    warnings.push('Multiple ${key} statements');
+  else if (good[0].args.length == 0)
+    (options.mandatory ? errors : warnings).push(`Empty ${key} statement`);
+  else
+    output[key] = options.fn ? options.fn(good[0].args) : good[0].args;
+};
+
+
 const processPeriodicGraphData = data => {
-  const warnings = [];
-  const errors = [];
+  const state = initialState(data.content);
   const edges = [];
   let dim = null;
-  let name = null;
 
-  for (const { key, args } of data.content) {
-    if (key == 'name') {
-      if (name != null)
-        warnings.push("Multiple names");
-      else if (args.length == 0)
-        warnings.push("Empty name");
-      else
-        name = args.join(' ');
-    }
-    else if (key == 'edge') {
+  extractSingleValue(state, 'name', { mandatory: true, fn: joinArgs });
+
+  for (const { key, args } of state.input) {
+    if (key == 'edge') {
       let [v, w, ...shift] = args;
 
       if (w == null)
-        errors.push("Incomplete edge specification");
+        state.errors.push("Incomplete edge specification");
       else {
         if (shift.length == 0 && dim != null) {
-          warnings.push("Missing shift vector");
+          state.warnings.push("Missing shift vector");
           shift = new Array(dim).fill(0);
         }
 
@@ -80,10 +100,15 @@ const processPeriodicGraphData = data => {
       }
     }
     else
-      warnings.push("Unknown keyword '#{key}'");
+      state.warnings.push("Unknown keyword '#{key}'");
   }
 
-  return { name, warnings, errors, graph: pg.make(edges) };
+  return {
+    name    : state.output.name,
+    warnings: state.warnings,
+    errors  : state.warnings,
+    graph   : pg.make(edges)
+  };
 };
 
 
