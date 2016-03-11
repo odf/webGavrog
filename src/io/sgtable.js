@@ -68,7 +68,7 @@ const candidates = (base, extension, options) => {
 };
 
 
-const settingByName = (name, alias, table, options = {}) => {
+const _settingByName = (name, alias, table, options = {}) => {
   const [rawBase, ...rest] = name.split(':');
   const base = alias[rawBase] || rawBase;
   const extension = rest.join(':').toUpperCase();
@@ -86,8 +86,12 @@ const settingByName = (name, alias, table, options = {}) => {
 };
 
 
-const tableText = require('../data/sgtable').default;
-const { lookup, alias, table } = postProcess(parser.parse(tableText));
+const { lookup, alias, table } =
+  postProcess(parser.parse(require('../data/sgtable').default));
+
+
+export const settingByName = (name, options = {}) =>
+  _settingByName(name, alias, table, options);
 
 
 if (require.main == module) {
@@ -101,7 +105,7 @@ if (require.main == module) {
   ];
 
   for (const key of names) {
-    const { name, transform } = settingByName(key, alias, table);
+    const { name, transform } = settingByName(key);
     console.log(JSON.stringify({ name, transform }));
   }
 };
