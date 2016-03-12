@@ -48,8 +48,9 @@ const unknown = data => {
 
 
 const joinArgs = args => args.join(' ');
-const findGroup = args => sg.settingByName(args.join(''));
+const capitalize = s => s[0].toUpperCase() + s.slice(1);
 
+const findGroup = args => sg.settingByName(args.join(''));
 
 const makeCoordinate = x => typeof x == 'number' ? x : ops.div(x.n, x.d);
 
@@ -90,6 +91,11 @@ const makeGramMatrix = args => {
   else
     return { error: `expected 3 or 6 arguments, got ${args.length}` };
 };
+
+
+const array = n => Array(n).fill(0);
+
+const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
 
 
 const initialState = data => ({
@@ -185,6 +191,11 @@ const processSymmetricNet = data => {
       if (rest.length)
         state.warnings.push(`Extra arguments for node '${name}'`);
 
+      if (dim == null)
+        dim = pos.length
+      else if (pos.length != dim)
+        state.errors.push("Inconsistent dimensions");
+
       if (nodes[name] != null)
         state.errors.push(`Node '${name}' specified twice`);
       else
@@ -207,7 +218,7 @@ const processSymmetricNet = data => {
         if (dim == null)
           dim = shift.length
         else if (shift.length != dim)
-          state.errors.push("Inconsistent shift dimensions");
+          state.errors.push("Inconsistent dimensions");
 
         edges.push([v, w, makeOperator(shift)]);
       }
@@ -228,7 +239,9 @@ const processSymmetricNet = data => {
 
 const processCrystal = data => {
   const state = initialState(data.content);
+  const { errors, warnings, output } = state;
   const nodes = {};
+  const edgeCenters = {};
   const edges = [];
   let dim = null;
 
@@ -237,18 +250,55 @@ const processCrystal = data => {
   extractSingleValue(state, 'cell' , { fn: makeGramMatrix });
   extractSingleValue(state, 'coordination_sequence', { silent: true });
 
+  if (output.group == null)
+    output.group = findGroup(['P1']);
+
+  dim = output.group.transform.length;
+
+  if (output.cell == null)
+    output.cell = identity(dim);
+  else if (output.cell.length != dim)
+    errors.push("Inconsistent dimensions");
+
   for (const { key, args } of state.input) {
+    if (key == 'node' || key == 'edge_center') {
+      const location = `${capitalize(key)} '${name}'`;
+      const [name, coordination, ...position] = args;
+
+      if (position.length != dim)
+        errors.push("Inconsistent dimensions");
+
+      if (typeof coordination != 'number' || coordination < 0)
+        errors.push(`${location}: coordination must be a non-negative number`);
+
+      if (nodes[name] != null)
+        errors.push(`${location} specified twice`);
+      else {
+        const target = key == 'node' ? nodes : edgeCenters;
+        target[name] = { coordination, position: makeOperator(position) };
+      }
+    }
+    else if (key == 'edge') {
+      if (args.length == 2 * dim)
+        edges.push([makeOperator(args.slice(0,3)), makeOperator(args.slice(3))]);
+      else if (args.length == 1 + dim)
+        edges.push([args[0], makeOperator(args.slice(1))]);
+      else if (args.length == 2)
+        edges.push(args);
+      else
+        errors.push(`${location}: expected 2, ${dim+1} or ${2*dim} arguments`);
+    }
   }
 
   return {
-    name    : state.output.name,
-    group   : state.output.group.name,
-    cell    : state.output.cell,
-    cs      : state.output.coordination_sequence,
+    name    : output.name,
+    group   : output.group.name,
+    cell    : output.cell,
+    cs      : output.coordination_sequence,
     nodes   : nodes,
     edges   : edges,
-    warnings: state.warnings,
-    errors  : state.errors
+    warnings: warnings,
+    errors  : errors
   };
 };
 
