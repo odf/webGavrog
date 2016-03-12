@@ -248,7 +248,6 @@ const processCrystal = data => {
   extractSingleValue(state, 'name' , { fn: joinArgs });
   extractSingleValue(state, 'group', { fn: findGroup });
   extractSingleValue(state, 'cell' , { fn: makeGramMatrix });
-  extractSingleValue(state, 'coordination_sequence', { silent: true });
 
   if (output.group == null)
     output.group = findGroup(['P1']);
@@ -294,7 +293,6 @@ const processCrystal = data => {
     name    : output.name,
     group   : output.group.name,
     cell    : output.cell,
-    cs      : output.coordination_sequence,
     nodes   : nodes,
     edges   : edges,
     warnings: warnings,
