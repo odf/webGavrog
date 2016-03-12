@@ -1,6 +1,9 @@
 const parser = require('./cgdParser');
 
+const ops = require('../arithmetic/types').rationals;
+
 import * as pg from '../pgraphs/periodic';
+import * as sg from './sgtable';
 
 
 const translation = {
@@ -45,6 +48,24 @@ const unknown = data => {
 
 
 const joinArgs = args => args.join(' ');
+const findGroup = args => sg.settingByName(args.join(''));
+
+
+const makeCoordinate = x => typeof x == 'number' ? x : ops.div(x.n, x.d);
+
+const makeOperator = spec => {
+  const d = spec.length;
+  return spec.map(row => {
+    if (Array.isArray(row)) {
+      const r = new Array(d).fill(0);
+      for (const { i, f } of row)
+        r[i == 0 ? d : i-1] = makeCoordinate(f);
+      return r;
+    }
+    else
+      return makeCoordinate(row);
+  });
+};
 
 
 const initialState = data => ({
@@ -67,8 +88,18 @@ const extractSingleValue = (state, key, options = {}) => {
     warnings.push('Multiple ${key} statements');
   else if (good[0].args.length == 0)
     (options.mandatory ? errors : warnings).push(`Empty ${key} statement`);
-  else
-    output[key] = options.fn ? options.fn(good[0].args) : good[0].args;
+  else if (options.fn == null)
+    output[key] = good[0].args;
+  else {
+    const processed = options.fn(good[0].args);
+    if (processed != null) {
+      for (const s of (processed.warnings || []))
+        warnings.push(s);
+      for (const s of (processed.errors || []))
+        errors.push(s);
+      output[key] = processed;
+    }
+  }
 };
 
 
@@ -77,7 +108,7 @@ const processPeriodicGraphData = data => {
   const edges = [];
   let dim = null;
 
-  extractSingleValue(state, 'name', { mandatory: true, fn: joinArgs });
+  extractSingleValue(state, 'name', { fn: joinArgs });
 
   for (const { key, args } of state.input) {
     if (key == 'edge') {
@@ -94,26 +125,84 @@ const processPeriodicGraphData = data => {
         if (dim == null)
           dim = shift.length
         else if (shift.length != dim)
-          errors.push("Inconsistent shift dimensions");
+          state.errors.push("Inconsistent shift dimensions");
 
         edges.push([v, w, shift]);
       }
     }
     else
-      state.warnings.push("Unknown keyword '#{key}'");
+      state.warnings.push(`Unknown keyword '${key}'`);
   }
 
   return {
     name    : state.output.name,
+    graph   : pg.make(edges),
     warnings: state.warnings,
-    errors  : state.warnings,
-    graph   : pg.make(edges)
+    errors  : state.errors
+  };
+};
+
+
+const processSymmetricNet = data => {
+  const state = initialState(data.content);
+  const nodes = {};
+  const edges = [];
+  let dim = null;
+
+  extractSingleValue(state, 'name', { fn: joinArgs });
+  extractSingleValue(state, 'group', { fn: findGroup });
+
+  for (const { key, args } of state.input) {
+    if (key == 'node') {
+      const [name, pos, ...rest] = args;
+
+      if (rest.length)
+        state.warnings.push(`Extra arguments for node '${name}'`);
+
+      if (nodes[name] != null)
+        state.errors.push(`Node '${name}' specified twice`);
+      else
+        nodes[name] = makeOperator(pos);
+    }
+    else if (key == 'edge') {
+      let [v, w, shift, ...rest] = args;
+
+      if (rest.length)
+        state.warnings.push('Extra arguments for edge');
+
+      if (w == null)
+        state.errors.push("Incomplete edge specification");
+      else {
+        if (shift.length == 0 && dim != null) {
+          state.warnings.push("Missing shift vector");
+          shift = new Array(dim).fill(0);
+        }
+
+        if (dim == null)
+          dim = shift.length
+        else if (shift.length != dim)
+          state.errors.push("Inconsistent shift dimensions");
+
+        edges.push([v, w, makeOperator(shift)]);
+      }
+    }
+    else
+      state.warnings.push(`Unknown keyword '${key}'`);
+  }
+
+  return {
+    group   : state.output.group.name,
+    nodes   : nodes,
+    edges   : edges,
+    warnings: state.warnings,
+    errors  : state.errors
   };
 };
 
 
 const makeStructure = {
-  periodic_graph: processPeriodicGraphData
+  periodic_graph: processPeriodicGraphData,
+  net           : processSymmetricNet
 };
 
 
