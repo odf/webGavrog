@@ -53,6 +53,7 @@ const findGroup = args => sg.settingByName(args.join(''));
 
 const makeCoordinate = x => typeof x == 'number' ? x : ops.div(x.n, x.d);
 
+
 const makeOperator = spec => {
   const d = spec.length;
   return spec.map(row => {
@@ -65,6 +66,29 @@ const makeOperator = spec => {
     else
       return makeCoordinate(row);
   });
+};
+
+
+const eps    = Math.pow(2, -50);
+const trim   = x => Math.abs(x) < eps ? 0 : x;
+const cosdeg = deg => trim(Math.cos(deg * Math.PI / 180.0));
+
+
+const makeGramMatrix = args => {
+  if (args.length == 3) {
+    const [a, b, angle] = args;
+    const x = cosdeg(angle) * a * b;
+    return trim([[a*a, x], [x, b*b]]);
+  }
+  else if (args.length == 6) {
+    const [a, b, c, alpha, beta, gamma] = args;
+    const aG = cosdeg(alpha) * b * c;
+    const bG = cosdeg(beta ) * a * c;
+    const cG = cosdeg(gamma) * a * b;
+    return trim([[a*a, cG, bG], [cG, b*b, aG], [bG, aG, c*c]]);
+  }
+  else
+    return { error: `expected 3 or 6 arguments, got ${args.length}` };
 };
 
 
@@ -82,8 +106,10 @@ const extractSingleValue = (state, key, options = {}) => {
 
   state.input = input.filter(s => s.key != key);
 
-  if (good.length == 0)
-    (options.mandatory ? errors : warnings).push(`Missing ${key} statement`);
+  if (good.length == 0) {
+    if (!options.silent)
+      (options.mandatory ? errors : warnings).push(`Missing ${key} statement`);
+  }
   else if (good.length > 1)
     warnings.push('Multiple ${key} statements');
   else if (good[0].args.length == 0)
@@ -200,9 +226,37 @@ const processSymmetricNet = data => {
 };
 
 
+const processCrystal = data => {
+  const state = initialState(data.content);
+  const nodes = {};
+  const edges = [];
+  let dim = null;
+
+  extractSingleValue(state, 'name' , { fn: joinArgs });
+  extractSingleValue(state, 'group', { fn: findGroup });
+  extractSingleValue(state, 'cell' , { fn: makeGramMatrix });
+  extractSingleValue(state, 'coordination_sequence', { silent: true });
+
+  for (const { key, args } of state.input) {
+  }
+
+  return {
+    name    : state.output.name,
+    group   : state.output.group.name,
+    cell    : state.output.cell,
+    cs      : state.output.coordination_sequence,
+    nodes   : nodes,
+    edges   : edges,
+    warnings: state.warnings,
+    errors  : state.errors
+  };
+};
+
+
 const makeStructure = {
   periodic_graph: processPeriodicGraphData,
-  net           : processSymmetricNet
+  net           : processSymmetricNet,
+  crystal       : processCrystal
 };
 
 
