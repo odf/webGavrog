@@ -1,3 +1,13 @@
+PERIODIC_GRAPH
+ID diamond
+EDGES
+  1 2 0 0 0
+  1 2 1 0 0
+  1 2 0 1 0
+  1 2 0 0 1
+END
+
+
 NET # the diamond net
   Group Fd-3m
   Node 1 3/8,3/8,3/8
@@ -17,16 +27,6 @@ CRYSTAL
   #   (decimal numbers or fractions can be used for coordinates)
   ATOM  1  4   5/8 5/8 5/8
 # This ends the structure description
-END
-
-
-PERIODIC_GRAPH
-ID diamond
-EDGES
-  1 2 0 0 0
-  1 2 1 0 0
-  1 2 0 1 0
-  1 2 0 0 1
 END
 
 
