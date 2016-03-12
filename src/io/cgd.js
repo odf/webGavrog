@@ -287,6 +287,8 @@ const processCrystal = data => {
       else
         errors.push(`${location}: expected 2, ${dim+1} or ${2*dim} arguments`);
     }
+    else
+      state.warnings.push(`Unknown keyword '${key}'`);
   }
 
   return {
