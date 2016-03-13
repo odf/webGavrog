@@ -1,6 +1,6 @@
 import * as I from 'immutable';
 
-import * as surface   from '../geometry/surface';
+import * as surface   from '../graphics/surface';
 import * as delaney   from '../dsymbols/delaney';
 import * as delaney3d from '../dsymbols/delaney3d';
 import * as util      from '../common/util';
