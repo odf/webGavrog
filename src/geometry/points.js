@@ -27,6 +27,10 @@ export function methods(vectorOps, scalarTypes) {
       Vector: v => new Point(v)
     },
 
+    vector: {
+      Point: p => p.coords
+    },
+
     dimension: {
       Point: p => p.coords.length
     },
@@ -79,7 +83,7 @@ if (require.main == module) {
   const vops = require('../arithmetic/types').matrices;
 
   const a = base.arithmetic();
-  a.register(methods(vops, ['Integer', 'LongInt', 'Fraction'], 'Vector'));
+  a.register(methods(vops, ['Integer', 'LongInt', 'Fraction']));
 
   const pops = a.ops();
 
