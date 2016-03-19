@@ -57,25 +57,20 @@ const defaults = {
 };
 
 
-export function arithmetic() {
-  let _registry = I.Map();
-
-  const result = {
+export function arithmetic(registry = I.Map().mergeDeep(defaults)) {
+  return {
     register(specs) {
-      _registry = _registry.mergeDeep(specs);
-      return this;
+      return arithmetic(registry.mergeDeep(specs));
     },
 
     ops() {
       const result = {};
-      _registry.forEach(
+      registry.forEach(
         (dispatch, op) => result[op] = call(dispatch, op, result)
       );
       return result;
     }
   };
-
-  return result.register(defaults);
 };
 
 
