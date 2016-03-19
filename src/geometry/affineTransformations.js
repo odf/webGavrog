@@ -32,14 +32,14 @@ export function methods(pointAndVectorOps, scalarTypes) {
     V.plus(t1.shift, V.times(t1.linear, t2.shift))
   );
 
-  const apply = (t, p) =>
-    V.point(V.plus(V.times(t.linear, V.vector(p)), t.shift));
-
   const inverse = t => {
     const A = V.inverse(t.linear);
     if (A != null)
       return new AffineTransformation(A, V.negative(V.times(A, t.shift)));
   };
+
+  const applyToPoint = (t, p) =>
+    V.point(V.plus(V.times(t.linear, V.vector(p)), t.shift));
 
 
   const methods = {
@@ -55,7 +55,7 @@ export function methods(pointAndVectorOps, scalarTypes) {
       Integer: n => new AffineTransformation(I(n), V.vector(n))
     },
 
-    identity: {
+    identityTransform: {
       Integer: n => new AffineTransformation(I(n), V.vector(n))
     },
 
@@ -70,7 +70,8 @@ export function methods(pointAndVectorOps, scalarTypes) {
     times: {
       AffineTransformation: {
         AffineTransformation: compose,
-        Point: apply
+        Point: applyToPoint,
+        Vector: (t, v) => V.times(t.linear, v)
       }
     }
   };
@@ -94,6 +95,9 @@ if (require.main == module) {
   const t = tops.affine([[1,1,0],[1,2,0],[0,0,1]], [1,1,1]);
   console.log(`${t}`);
   console.log(`${tops.times(t, tops.point([1,2,3]))}`);
+  console.log(`${tops.times(t, [1,2,3])}`);
   console.log(`${tops.inverse(t)}`);
   console.log(`${tops.times(tops.inverse(t), tops.point([4,6,4]))}`);
+  console.log(`${tops.times(tops.inverse(t), [3,5,3])}`);
+  console.log(`${tops.inverse(tops.shift([1,2,3]))}`);
 }
