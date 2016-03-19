@@ -79,15 +79,15 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const base = require('../arithmetic/base');
-  const vops = require('../arithmetic/types').matrices;
+  const mats = require('../arithmetic/types').matrixMethods;
+  const pnts = mats.register(
+    methods(mats.ops(), ['Integer', 'LongInt', 'Fraction'])
+  );
 
-  const a = base.arithmetic();
-  a.register(methods(vops, ['Integer', 'LongInt', 'Fraction']));
+  const pops = pnts.ops();
 
-  const pops = a.ops();
-
-  console.log(`${pops.div(pops.plus(pops.origin(3), [1,2,3]), 3)}`);
+  console.log(`${pops.div(pops.plus(pops.origin(3), [1,2,3]),
+                          pops.div(3, 2))}`);
   console.log(`${pops.minus(pops.point([2,4,0]), pops.point([0,1,1]))}`);
   console.log(`${pops.minus(pops.point([2,4,0]), [0,1,1])}`);
 }

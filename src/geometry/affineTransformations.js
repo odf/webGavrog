@@ -9,7 +9,7 @@ export function methods(pointAndVectorOps, scalarTypes) {
   class AffineTransformation {
     constructor(linear, shift) {
       const [n, m] = V.shape(linear);
-      if (n != m || n != v.length)
+      if (n != m || n != shift.length)
         throw new Error('size mismatch');
 
       this.linear = linear;
@@ -32,11 +32,13 @@ export function methods(pointAndVectorOps, scalarTypes) {
     V.plus(t1.shift, V.times(t1.linear, t2.shift))
   );
 
-  const apply = (t, p) => V.plus(V.times(t.linear, V.vector(p)), t.shift);
+  const apply = (t, p) =>
+    V.point(V.plus(V.times(t.linear, V.vector(p)), t.shift));
 
   const inverse = t => {
     const A = V.inverse(t.linear);
-    return new AffineTransformation(A, V.negative(V.times(A, t.shift)));
+    if (A != null)
+      return new AffineTransformation(A, V.negative(V.times(A, t.shift)));
   };
 
 
@@ -82,16 +84,16 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const base = require('../arithmetic/base');
-  const vops = require('../arithmetic/types').matrices;
-  const pts  = require('./points');
+  const mats = require('../arithmetic/types').matrixMethods;
+  const pnts = mats.register(
+    require('./points').methods(mats.ops(), ['Integer', 'LongInt', 'Fraction'])
+  );
+  const trns = pnts.register(methods(pnts.ops(), []));
+  const tops = trns.ops();
 
-  const a = base.arithmetic();
-  a.register(pts.methods(vops, ['Integer', 'LongInt', 'Fraction']));
-  a.register(methods(a.ops(), []));
-
-  const tops = a.ops();
-
-  const t = tops.affine([[1,1,0],[1,1,0],[0,0,1]], [1,1,1]);
+  const t = tops.affine([[1,1,0],[1,2,0],[0,0,1]], [1,1,1]);
   console.log(`${t}`);
+  console.log(`${tops.times(t, tops.point([1,2,3]))}`);
+  console.log(`${tops.inverse(t)}`);
+  console.log(`${tops.times(tops.inverse(t), tops.point([4,6,4]))}`);
 }
