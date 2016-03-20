@@ -54,10 +54,22 @@ export function methods(vectorOps, scalarTypes) {
         Point: (p, q) => V.minus(p.coords, q.coords)
       }
     },
+
+    times: {
+      Matrix: {
+        Point: (A, p) => new Point(V.times(A, p.coords))
+      },
+      Point: {
+      }
+    },
+
+    div: {
+      Point: {
+      }
+    }
   };
 
   for (const name of ['times', 'div']) {
-    methods[name] = { Point: {} };
     for (const sType of scalarTypes) {
       methods[name]['Point'][sType] =
         (p, x) => new Point(V[name](p.coords, x));
@@ -90,4 +102,5 @@ if (require.main == module) {
                           pops.div(3, 2))}`);
   console.log(`${pops.minus(pops.point([2,4,0]), pops.point([0,1,1]))}`);
   console.log(`${pops.minus(pops.point([2,4,0]), [0,1,1])}`);
+  console.log(`${pops.times([[1,2],[3,4]], pops.point([1,2]))}`);
 }
