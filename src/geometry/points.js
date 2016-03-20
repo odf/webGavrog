@@ -84,23 +84,3 @@ export function methods(vectorOps, scalarTypes) {
 
   return methods;
 };
-
-
-if (require.main == module) {
-  Array.prototype.toString = function() {
-    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
-  };
-
-  const mats = require('../arithmetic/types').matrixMethods;
-  const pnts = mats.register(
-    methods(mats.ops(), ['Integer', 'LongInt', 'Fraction'])
-  );
-
-  const pops = pnts.ops();
-
-  console.log(`${pops.div(pops.plus(pops.origin(3), [1,2,3]),
-                          pops.div(3, 2))}`);
-  console.log(`${pops.minus(pops.point([2,4,0]), pops.point([0,1,1]))}`);
-  console.log(`${pops.minus(pops.point([2,4,0]), [0,1,1])}`);
-  console.log(`${pops.times([[1,2],[3,4]], pops.point([1,2]))}`);
-}

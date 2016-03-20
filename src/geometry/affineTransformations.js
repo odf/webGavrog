@@ -84,26 +84,3 @@ export function methods(pointAndVectorOps, scalarTypes) {
 
   return methods;
 };
-
-
-if (require.main == module) {
-  Array.prototype.toString = function() {
-    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
-  };
-
-  const mats = require('../arithmetic/types').matrixMethods;
-  const pnts = mats.register(
-    require('./points').methods(mats.ops(), ['Integer', 'LongInt', 'Fraction'])
-  );
-  const trns = pnts.register(methods(pnts.ops(), []));
-  const tops = trns.ops();
-
-  const t = tops.times(tops.shift([1,1,1]), [[1,1,0],[1,2,0],[0,0,1]]);
-  console.log(`${t}`);
-  console.log(`${tops.times(t, tops.point([1,2,3]))}`);
-  console.log(`${tops.times(t, [1,2,3])}`);
-  console.log(`${tops.inverse(t)}`);
-  console.log(`${tops.times(tops.inverse(t), tops.point([4,6,4]))}`);
-  console.log(`${tops.times(tops.inverse(t), [3,5,3])}`);
-  console.log(`${tops.inverse(tops.shift([1,2,3]))}`);
-}
