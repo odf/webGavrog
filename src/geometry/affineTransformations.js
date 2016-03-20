@@ -7,7 +7,7 @@ export function methods(pointAndVectorOps, scalarTypes) {
 
 
   class AffineTransformation {
-    constructor(linear, shift) {
+    constructor(linear, shift = V.vector(V.shape(linear)[0])) {
       const [n, m] = V.shape(linear);
       if (n != m || n != shift.length)
         throw new Error('size mismatch');
@@ -22,6 +22,8 @@ export function methods(pointAndVectorOps, scalarTypes) {
 
       return `AffineTransformation(${coordsLin}, ${coordsShift})`;
     }
+
+    get __typeName() { return 'AffineTransformation'; }
   };
 
 
@@ -47,16 +49,16 @@ export function methods(pointAndVectorOps, scalarTypes) {
       AffineTransformation: t => V.shape(t.linear)[0]
     },
 
-    affine: {
+    affineTransformation: {
       Matrix: {
         Vector: (A, t) => new AffineTransformation(A, t)
       },
       Vector : v => new AffineTransformation(I(v.length), v),
-      Integer: n => new AffineTransformation(I(n), V.vector(n))
+      Integer: n => new AffineTransformation(I(n))
     },
 
-    identityTransform: {
-      Integer: n => new AffineTransformation(I(n), V.vector(n))
+    identityTransformation: {
+      Integer: n => new AffineTransformation(I(n))
     },
 
     shift: {
@@ -70,8 +72,12 @@ export function methods(pointAndVectorOps, scalarTypes) {
     times: {
       AffineTransformation: {
         AffineTransformation: compose,
+        Matrix: (T, M) => compose(T, new AffineTransformation(M)),
         Point: applyToPoint,
         Vector: (t, v) => V.times(t.linear, v)
+      },
+      Matrix: {
+        AffineTransformation: (M, T) => compose(new AffineTransformation(M), T)
       }
     }
   };
@@ -92,7 +98,7 @@ if (require.main == module) {
   const trns = pnts.register(methods(pnts.ops(), []));
   const tops = trns.ops();
 
-  const t = tops.affine([[1,1,0],[1,2,0],[0,0,1]], [1,1,1]);
+  const t = tops.times(tops.shift([1,1,1]), [[1,1,0],[1,2,0],[0,0,1]]);
   console.log(`${t}`);
   console.log(`${tops.times(t, tops.point([1,2,3]))}`);
   console.log(`${tops.times(t, [1,2,3])}`);
