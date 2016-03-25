@@ -20,7 +20,7 @@ const checkRational = x => {
 const checkLinearPartOfOperator = (M, d) => {
   const [n, m] = V.shape(M);
 
-  if (d != null && n != d || m != d)
+  if (n != d || m != d)
     throw new Error(`expected a ${d}x${d} matrix, got ${M}`);
 
   M.forEach(row => row.forEach(checkInteger));
@@ -42,18 +42,38 @@ const checkTranslationalPartOfOperator = (s, d) => {
 };
 
 
-const checkOperator = (op, d) => {
+const checkOperatorType = op => {
   const t = typeOf(op);
 
   if (t != 'Matrix' && t != 'AffineTransformation')
     throw new Error(`expected a Matrix or AffineTransformation, got ${op}`);
+};
 
-  if (t == 'Matrix') 
+
+const checkOperator = (op, d) => {
+  checkOperatorType(op);
+
+  if (typeOf(op) == 'Matrix')
     checkLinearPartOfOperator(op, d);
   else {
     checkLinearPartOfOperator(op.linear, d);
     checkTranslationalPartOfOperator(op.shift, d);
   }
+};
+
+
+const operatorDimension = op =>
+  (typeOf(op) == 'Matrix' ? op : op.linear).length;
+
+
+const checkOperatorList = ops => {
+  if (!ops.length)
+    return;
+
+  ops.forEach(checkOperatorType);
+
+  const d = operatorDimension(ops[0]);
+  ops.forEach(op => checkOperator(op, d));
 };
 
 
@@ -64,7 +84,7 @@ if (require.main == module) {
 
   const check = (op, d) => {
     try {
-      checkOperator(op, d);
+      d == null ? checkOperatorList(op) : checkOperator(op, d);
       console.log(`Operator ${op} is okay`);
     } catch(ex) {
       console.log(ex);
@@ -81,4 +101,6 @@ if (require.main == module) {
   check([[1,1,0],[0,1,5],[0,0.2,1]], 3);
   check([[1,1,0],[0,1,5],[0,0,-2]], 3);
   check(V.affineTransformation(M, [0.3,0,1]), 3);
+
+  check([ [[1,1],[3,4]], [[1,0],[1,1],[1,3]] ]);
 }
