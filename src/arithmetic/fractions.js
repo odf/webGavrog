@@ -117,12 +117,14 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
 
 
   const methods = {
-    toJS    : { [typeName]: toJS     },
-    negative: { [typeName]: negative },
-    abs     : { [typeName]: abs      },
-    sgn     : { [typeName]: sgn      },
-    floor   : { [typeName]: floor    },
-    ceil    : { [typeName]: ceil     }
+    isRational: { [typeName]: x => true },
+    isReal    : { [typeName]: x => true },
+    toJS      : { [typeName]: toJS     },
+    negative  : { [typeName]: negative },
+    abs       : { [typeName]: abs      },
+    sgn       : { [typeName]: sgn      },
+    floor     : { [typeName]: floor    },
+    ceil      : { [typeName]: ceil     }
   };
 
   methods.rational = { String: parse };

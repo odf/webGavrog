@@ -328,6 +328,18 @@ export function methods(baseLength = 0) {
 
 
   return {
+    isInteger: {
+      LongInt: x => true,
+      Integer: x => true
+    },
+    isRational: {
+      LongInt: x => true,
+      Integer: x => true
+    },
+    isReal: {
+      LongInt: x => true,
+      Integer: x => true
+    },
     integer: {
       String : parse,
       LongInt: x => x,

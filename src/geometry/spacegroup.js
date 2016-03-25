@@ -6,15 +6,13 @@ const V = affineTransformations;
 
 
 const checkInteger = x => {
-  const t = typeOf(x);
-  if (t != 'Integer' && t != 'LongInt')
+  if (!V.isInteger(x))
     throw new Error(`expected an integer, got ${x}`);
 };
 
 
 const checkRational = x => {
-  const t = typeOf(x);
-  if (t != 'Integer' && t != 'LongInt' && t != 'Fraction')
+  if (!V.isRational(x))
     throw new Error(`expected a rational number, got ${x}`);
 };
 

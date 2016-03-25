@@ -43,6 +43,10 @@ const gcd = (a, b, ops) => {
 
 
 const defaults = {
+  isInteger    : { __default__: x => false },
+  isRational   : { __default__: x => false },
+  isReal       : { __default__: x => false },
+
   isZero       : { __default__: (x, ops) => ops.sgn(x) == 0 },
   isPositive   : { __default__: (x, ops) => ops.sgn(x) >  0 },
   isNonNegative: { __default__: (x, ops) => ops.sgn(x) >= 0 },

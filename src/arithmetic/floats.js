@@ -1,5 +1,5 @@
 export function methods() {
-  const methods = {};
+  const methods = { isReal: { Float: x => true } };
 
   for (const name of [ 'abs', 'floor', 'ceil', 'sqrt' ]) {
     methods[name] = {
