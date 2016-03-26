@@ -116,6 +116,12 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
   const div = (q, r) => times(q, new Fraction(r.denom, r.numer));
 
 
+  const idiv = (q, r) => {
+    const t = div(q, r);
+    return (typeof t == typeName ? floor : intOps.floor)(t);
+  };
+
+
   const methods = {
     isRational: { [typeName]: x => true },
     isReal    : { [typeName]: x => true },
@@ -136,7 +142,8 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
     [plus , 'plus' ],
     [minus, 'minus'],
     [times, 'times'],
-    [div  , 'div'  ]
+    [div  , 'div'  ],
+    [idiv , 'idiv' ]
   ]) {
     methods[name] = { [typeName]: { [typeName]: op } };
 
