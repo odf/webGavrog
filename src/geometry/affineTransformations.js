@@ -7,7 +7,7 @@ export function methods(pointAndVectorOps, scalarTypes) {
 
 
   class AffineTransformation {
-    constructor(linear, shift = V.vector(V.shape(linear)[0])) {
+    constructor(linear, shift) {
       const [n, m] = V.shape(linear);
       if (n != m || n != shift.length)
         throw new Error('size mismatch');
@@ -29,7 +29,17 @@ export function methods(pointAndVectorOps, scalarTypes) {
 
   const I = n => V.identityMatrix(n);
 
-  const compose = (t1, t2) => new AffineTransformation(
+
+  const make = (linear, shift = []) => {
+    for (let i = 0; i < shift.length; ++i)
+      if (!V.isZero(shift[i]))
+        return new AffineTransformation(linear, shift);
+
+    return linear;
+  };
+
+
+  const compose = (t1, t2) => make(
     V.times(t1.linear, t2.linear),
     V.plus(t1.shift, V.times(t1.linear, t2.shift))
   );
@@ -37,7 +47,7 @@ export function methods(pointAndVectorOps, scalarTypes) {
   const inverse = t => {
     const A = V.inverse(t.linear);
     if (A != null)
-      return new AffineTransformation(A, V.negative(V.times(A, t.shift)));
+      return make(A, V.negative(V.times(A, t.shift)));
   };
 
   const applyToPoint = (t, p) =>
@@ -51,18 +61,12 @@ export function methods(pointAndVectorOps, scalarTypes) {
 
     affineTransformation: {
       Matrix: {
-        Vector: (A, t) => new AffineTransformation(A, t)
-      },
-      Vector : v => new AffineTransformation(I(v.length), v),
-      Integer: n => new AffineTransformation(I(n))
-    },
-
-    identityTransformation: {
-      Integer: n => new AffineTransformation(I(n))
+        Vector: (A, t) => make(A, t)
+      }
     },
 
     shift: {
-      Vector : v => new AffineTransformation(I(v.length), v)
+      Vector : v => make(I(v.length), v)
     },
 
     inverse: {
@@ -72,12 +76,13 @@ export function methods(pointAndVectorOps, scalarTypes) {
     times: {
       AffineTransformation: {
         AffineTransformation: compose,
-        Matrix: (T, M) => compose(T, new AffineTransformation(M)),
-        Point: applyToPoint,
+        Matrix: (T, M) => make(V.times(T.linear, M), T.shift),
+        Point : applyToPoint,
         Vector: (t, v) => V.times(t.linear, v)
       },
       Matrix: {
-        AffineTransformation: (M, T) => compose(new AffineTransformation(M), T)
+        AffineTransformation: (M, T) =>
+          make(V.times(M, T.linear), V.times(M, T.shift))
       }
     }
   };
