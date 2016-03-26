@@ -1,11 +1,30 @@
 import { typeOf } from '../arithmetic/base';
+import { rationalMethods, rationals } from '../arithmetic/types';
+import * as mats from '../arithmetic/matrices';
+
 import { affineTransformations } from './types';
 
+const X = rationalMethods.register(
+  mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
+).ops();
 
 const V = affineTransformations;
 
 
 const modZ = q => V.minus(q, V.floor(q));
+
+
+const isIdentity = M => {
+  for (let i = 0; i < M.length; ++i) {
+    const row = M[i];
+    for (let j = 0; j < row.length; ++j) {
+      if (V.ne(row[j], 0 + (i == j)))
+        return false;
+    }
+  }
+
+  return true;
+};
 
 
 const checkInteger = x => {
@@ -124,6 +143,19 @@ const checkGroup = ops => {
 };
 
 
+const primitiveCell = ops => {
+  const d  = operatorDimension(ops[0]);
+  const vs = ops
+    .filter(op => typeOf(op) == 'AffineTransformation')
+    .filter(op => isIdentity(op.linear))
+    .map(op => op.shift);
+
+  const B = V.identityMatrix(d).concat(vs);
+
+  return X.triangulation(B).R.slice(0, d);
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -163,4 +195,8 @@ if (require.main == module) {
   ];
   check(ops);
   check(fullOperatorList(ops));
+
+  console.log(isIdentity([[1,0,0],[0,1,0],[0,0,1]]));
+  console.log(isIdentity([[1,0,0],[0,1,-1],[0,0,1]]));
+  console.log(`${primitiveCell(fullOperatorList(ops))}`);
 }
