@@ -111,6 +111,19 @@ const fullOperatorList = gens => {
 };
 
 
+const checkGroup = ops => {
+  const seen = {};
+  ops.forEach(op => seen[op] = true);
+
+  ops.forEach(A => {
+    ops.forEach(B => {
+      if (!seen[opModZ(V.times(A, V.inverse(B)))])
+        throw new Error('operators do not form a group');
+    })
+  });
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -118,8 +131,15 @@ if (require.main == module) {
 
   const check = (op, d) => {
     try {
-      d == null ? checkOperatorList(op) : checkOperator(op, d);
-      console.log(`Operator ${op} is okay`);
+      if (d == null) {
+        checkOperatorList(op);
+        checkGroup(op);
+        console.log(`Operator list ${op} is okay`);
+      }
+      else {
+        checkOperator(op, d);
+        console.log(`Operator ${op} is okay`);
+      }
     } catch(ex) {
       console.log(ex);
     }
@@ -137,11 +157,10 @@ if (require.main == module) {
   check(V.affineTransformation(M, [V.div(5,3),0,1]), 3);
 
   check([ [[1,1],[3,4]], [[1,0],[1,1],[1,3]] ]);
-  console.log();
-
-  const ops = fullOperatorList([
+  const ops = [
     [[-1,0],[0,1]],
     V.affineTransformation([[1,0],[0,1]], V.div([1,1], 2))
-  ]);
-  ops.forEach(op => console.log(`${op}`));
+  ];
+  check(ops);
+  check(fullOperatorList(ops));
 }
