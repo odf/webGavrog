@@ -156,6 +156,25 @@ const primitiveCell = ops => {
 };
 
 
+const primitiveSetting = ops => {
+  const cell    = primitiveCell(ops);
+  const toStd   = V.transposed(cell);
+  const fromStd = V.inverse(toStd);
+
+  const seen = {};
+  const pops = [];
+  ops.forEach(op => {
+    const t = opModZ(V.times(fromStd, V.times(op, toStd)));
+    if (!seen[t]) {
+      pops.push(t);
+      seen[t] = true;
+    }
+  });
+
+  return { cell, fromStd, toStd, ops: pops };
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -198,5 +217,5 @@ if (require.main == module) {
 
   console.log(isIdentity([[1,0,0],[0,1,0],[0,0,1]]));
   console.log(isIdentity([[1,0,0],[0,1,-1],[0,0,1]]));
-  console.log(`${primitiveCell(fullOperatorList(ops))}`);
+  console.log(`${JSON.stringify(primitiveSetting(fullOperatorList(ops)))}`);
 }
