@@ -1,15 +1,23 @@
 const parser = require('./sgtableParser');
-const ops = require('../arithmetic/types').rationals;
+const ops = require('../geometry/types').affineTransformations;
 
 
 const makeOperator = spec => {
   const d = spec.length;
-  return spec.map(row => {
-    const r = new Array(d).fill(0);
-    for (const { i, f } of row)
-      r[i == 0 ? d : i-1] = typeof f == 'number' ? f : ops.div(f.n, f.d);
-    return r;
+  const M = ops.matrix(d, d);
+  const t = ops.vector(d);
+
+  spec.forEach((row, k) => {
+    row.forEach(({i, f}) => {
+      const x = typeof f == 'number' ? f : ops.div(f.n, f.d);
+      if (i == 0)
+        t[k] = x;
+      else
+        M[k][i-1] = x;
+    })
   });
+
+  return ops.affineTransformation(M, t);
 };
 
 
@@ -95,6 +103,10 @@ export const settingByName = (name, options = {}) =>
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
   const names = [
     'P1',
     'Pmn21',
@@ -105,7 +117,11 @@ if (require.main == module) {
   ];
 
   for (const key of names) {
-    const { name, transform } = settingByName(key);
-    console.log(JSON.stringify({ name, transform }));
+    console.log();
+    const { name, transform, operators } = settingByName(key);
+    console.log(`     name: ${name}`);
+    console.log(`transform: ${transform}`);
+    console.log(`operators: ${operators[0]}`);
+    operators.slice(1).forEach(op => console.log(`           ${op}`));
   }
 };
