@@ -1,4 +1,4 @@
-export function methods(pointAndVectorOps, scalarTypes) {
+export function methods(pointAndVectorOps) {
 
   const V = pointAndVectorOps;
 

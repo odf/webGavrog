@@ -7,9 +7,14 @@ export const pointMethods = matrixMethods.register(
 export const points = pointMethods.ops();
 
 export const affineTransformationMethods = pointMethods.register(
-  require('./affineTransformations').methods(points, [])
+  require('./affineTransformations').methods(points)
 );
 export const affineTransformations = affineTransformationMethods.ops();
+
+export const coordinateChangeMethods = affineTransformationMethods.register(
+  require('./coordinateChanges').methods(affineTransformations)
+);
+export const coordinateChanges = coordinateChangeMethods.ops();
 
 
 if (require.main == module) {
@@ -17,7 +22,7 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const ops = affineTransformations;
+  const ops = coordinateChanges;
 
   const t = ops.times(ops.shift([1,1,1]), [[1,1,0],[1,2,0],[0,0,1]]);
 
@@ -32,4 +37,10 @@ if (require.main == module) {
   console.log(`${ops.times(ops.inverse(t), ops.point([4,6,4]))}`);
   console.log(`${ops.times(ops.inverse(t), [3,5,3])}`);
   console.log(`${ops.inverse(ops.shift([1,2,3]))}`);
+
+  console.log(`${
+    ops.times(
+      ops.coordinateChange(ops.times(3, ops.identityMatrix(3))),
+      ops.shift([1,2,3]))
+  }`);
 }
