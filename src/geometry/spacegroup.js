@@ -2,13 +2,13 @@ import { typeOf } from '../arithmetic/base';
 import { rationalMethods, rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
-import { affineTransformations } from './types';
+import { coordinateChanges } from './types';
 
 const X = rationalMethods.register(
   mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
 ).ops();
 
-const V = affineTransformations;
+const V = coordinateChanges;
 
 
 const modZ = q => V.minus(q, V.floor(q));
@@ -156,22 +156,25 @@ const primitiveCell = ops => {
 };
 
 
-const primitiveSetting = ops => {
-  const cell    = primitiveCell(ops);
-  const toStd   = V.transposed(cell);
-  const fromStd = V.inverse(toStd);
-
+const dedupe = as => {
   const seen = {};
-  const pops = [];
-  ops.forEach(op => {
-    const t = opModZ(V.times(fromStd, V.times(op, toStd)));
-    if (!seen[t]) {
-      pops.push(t);
-      seen[t] = true;
+  const result = [];
+  as.forEach(a => {
+    if (!seen[a]) {
+      result.push(a);
+      seen[a] = true;
     }
   });
+  return result;
+};
 
-  return { cell, fromStd, toStd, ops: pops };
+
+const primitiveSetting = stdOps => {
+  const cell    = primitiveCell(stdOps);
+  const fromStd = V.coordinateChange(V.inverse(V.transposed(cell)));
+  const ops     = dedupe(stdOps.map(op => opModZ(V.times(fromStd, op))));
+
+  return { cell, fromStd, ops };
 };
 
 
@@ -217,5 +220,11 @@ if (require.main == module) {
 
   console.log(isIdentity([[1,0,0],[0,1,0],[0,0,1]]));
   console.log(isIdentity([[1,0,0],[0,1,-1],[0,0,1]]));
-  console.log(`${JSON.stringify(primitiveSetting(fullOperatorList(ops)))}`);
+  console.log();
+
+  const primitive = primitiveSetting(fullOperatorList(ops));
+  console.log('Primitive setting:');
+  console.log(`  cell   : ${primitive.cell}`);
+  console.log(`  fromStd: ${primitive.fromStd}`);
+  console.log(`  ops    : ${primitive.ops}`);
 }
