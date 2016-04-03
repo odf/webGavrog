@@ -59,6 +59,16 @@ export function methods(pointAndVectorOps) {
       AffineTransformation: t => V.shape(t.linear)[0]
     },
 
+    linearPart: {
+      AffineTransformation: t => t.linear,
+      Matrix: m => m
+    },
+
+    shiftPart: {
+      AffineTransformation: t => t.shift,
+      Matrix: m => V.vector(m.length)
+    },
+
     affineTransformation: {
       Matrix: {
         Vector: (A, t) => make(A, t)

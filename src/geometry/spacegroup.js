@@ -3,9 +3,20 @@ import { rationalMethods, rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
 import { coordinateChanges } from './types';
+import * as parms from './parameterVectors';
+
+const parameterVectorMethods = rationalMethods.register(
+  parms.methods(rationals, ['Integer', 'LongInt', 'Fraction'])
+);
+const parameterVectors = parameterVectorMethods.ops();
 
 const X = rationalMethods.register(
   mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
+).ops();
+
+const P = parameterVectorMethods.register(
+  mats.methods(parameterVectors,
+               ['Integer', 'LongInt', 'Fraction', 'ParameterVector'], false)
 ).ops();
 
 const V = coordinateChanges;
@@ -178,6 +189,32 @@ const primitiveSetting = stdOps => {
 };
 
 
+const gramMatrixConfigurationSpace = ops => {
+  const d = V.dimension(ops[0]);
+  const m = (d * (d+1)) / 2;
+
+  // -- make a parametrized Gram matrix with unknowns encoded by vectors
+  const M = V.matrix(d, d);
+  let k = 0;
+  for (let i = 0; i < d; ++i) {
+    for (let j = i; j < d; ++j) {
+      M[i][j] = M[j][i] = P.unitParameterVector(m, k++);
+    }
+  }
+
+  // -- collect equations for the configuration space
+  const eqns = [];
+  for (const op of ops) {
+    const S = V.linearPart(op);
+    const A = P.minus(P.times(S, P.times(M, P.transposed(S))), M);
+    A.forEach(row => row.forEach(x => eqns.push(x.coords)));
+  }
+
+  // -- return the solution space
+  return V.transposed(V.nullSpace(eqns));
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -227,4 +264,8 @@ if (require.main == module) {
   console.log(`  cell   : ${primitive.cell}`);
   console.log(`  fromStd: ${primitive.fromStd}`);
   console.log(`  ops    : ${primitive.ops}`);
+  console.log();
+
+  const confSpace = gramMatrixConfigurationSpace(ops);
+  console.log(`Gram config. space: ${confSpace}`);
 }

@@ -31,6 +31,8 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
   const array = n => Array(n).fill(0);
 
+  const matrix = (nrows, ncols) => array(nrows).map(() => array(ncols));
+
   const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
 
 
@@ -323,7 +325,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
     matrix: {
       Integer: {
-        Integer: (nrows, ncols) => array(nrows).map(() => array(ncols))
+        Integer: matrix
       }
     },
 
@@ -334,6 +336,10 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     shape: {
       Vector: v => [v.length],
       Matrix: shapeOfMatrix
+    },
+
+    dimension: {
+      Matrix: m => m.length
     },
 
     negative: {
