@@ -215,6 +215,18 @@ const gramMatrixConfigurationSpace = ops => {
 };
 
 
+const shiftSpace = ops => {
+  const d = V.dimension(ops[0]);
+  const I = V.identityMatrix(d);
+  const primitive = primitiveSetting(ops);
+  const toStd = V.inverse(primitive.fromStd);
+  const pops = primitive.ops.map(op => opModZ(V.times(toStd, op)));
+
+  const M = [].concat(...pops.map(op => V.minus(V.linearPart(op), I)));
+  return V.transposed(V.nullSpace(M));
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -268,4 +280,6 @@ if (require.main == module) {
 
   const confSpace = gramMatrixConfigurationSpace(ops);
   console.log(`Gram config. space: ${confSpace}`);
+  const shifts = shiftSpace(ops);
+  console.log(`Shift space: ${shifts}`);
 }
