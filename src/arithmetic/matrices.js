@@ -243,28 +243,45 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
-  const _nullSpace = R => {
-    const [n, m] = shapeOfMatrix(R);
-    const r = _rank(R);
-    const d = m - r;
-
-    if (d == 0)
-      return null;
-    else if (r == 0)
-      return identity(m);
-
-    const B = (
-      array(r).map((_, i) => (
-        array(d).map((_, j) => (
-          s.negative(R[i][j+r])))))
-    );
-
-    return _solve(R.slice(0,r), B)
-      .slice(0, r).concat(identity(d));
+  const isDiagonal = A => {
+    const [n, m] = shapeOfMatrix(A);
+    for (let i = 0; i < n; ++i) {
+      for (let j = 0; j < m; ++j) {
+        if (i != j && s.isNonZero(A[i][j]))
+          return false;
+      }
+    }
+    return true;
   };
 
 
-  const nullSpace = A => _nullSpace(triangulation(A).R);
+  const smithNormalForm = A => {
+    const [n, m] = shapeOfMatrix(A);
+    let D = A;
+    let P = identity(n);
+    let Q = identity(m);
+    let t;
+
+    do {
+      t = triangulation(D);
+      P = matrixProduct(t.U, P);
+      D = transposedMatrix(t.R);
+      t = triangulation(D);
+      Q = matrixProduct(t.U, Q);
+      D = transposedMatrix(t.R);
+    } while (!(overField || isDiagonal(D)))
+
+    return { P, D, Q: transposedMatrix(Q) };
+  };
+
+
+  const nullSpace = A => {
+    const { P, D, Q } = smithNormalForm(A);
+    const [m] = shapeOfMatrix(Q);
+    const r = _rank(D);
+    const M = matrix(r, m-r).concat(identity(m-r));
+    return matrixProduct(Q, M);
+  };
 
 
   const _rowProduct = (A, i, j) => {
