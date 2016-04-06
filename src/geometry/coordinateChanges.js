@@ -32,7 +32,7 @@ export function methods(transformationOps) {
     },
 
     inverse: {
-      CoordinateChange: C => new CoordinateChange(T.newToOld, T.oldToNew)
+      CoordinateChange: C => new CoordinateChange(C.newToOld, C.oldToNew)
     },
 
     times: {
