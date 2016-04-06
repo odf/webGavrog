@@ -48,6 +48,7 @@ const defaults = {
   isReal       : { __default__: x => false },
 
   isZero       : { __default__: (x, ops) => ops.sgn(x) == 0 },
+  isNonZero    : { __default__: (x, ops) => ops.sgn(x) != 0 },
   isPositive   : { __default__: (x, ops) => ops.sgn(x) >  0 },
   isNonNegative: { __default__: (x, ops) => ops.sgn(x) >= 0 },
   isNegative   : { __default__: (x, ops) => ops.sgn(x) <  0 },
