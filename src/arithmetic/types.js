@@ -96,6 +96,7 @@ if (require.main == module) {
 
   testNullSpace([[1,2,3], [2,4,6], [3,6,9]]);
   testNullSpace([[1,2,3,1], [4,5,6,1], [7,8,9,1]]);
+  testNullSpace([[0,2,0]]);
 
 
   const fops = floatMatrices;
