@@ -54,12 +54,12 @@ const defaults = {
   isNegative   : { __default__: (x, ops) => ops.sgn(x) <  0 },
   isNonPositive: { __default__: (x, ops) => ops.sgn(x) <= 0 },
 
-  eq : { __default__: (a, b, ops) => ops.cmp(a, b) == 0 },
-  ne : { __default__: (a, b, ops) => ops.cmp(a, b) != 0 },
-  lt : { __default__: (a, b, ops) => ops.cmp(a, b) <  0 },
-  gt : { __default__: (a, b, ops) => ops.cmp(a, b) >  0 },
-  lte: { __default__: (a, b, ops) => ops.cmp(a, b) <= 0 },
-  gte: { __default__: (a, b, ops) => ops.cmp(a, b) >= 0 },
+  eq: { __default__: (a, b, ops) => ops.cmp(a, b) == 0 },
+  ne: { __default__: (a, b, ops) => ops.cmp(a, b) != 0 },
+  lt: { __default__: (a, b, ops) => ops.cmp(a, b) <  0 },
+  gt: { __default__: (a, b, ops) => ops.cmp(a, b) >  0 },
+  le: { __default__: (a, b, ops) => ops.cmp(a, b) <= 0 },
+  ge: { __default__: (a, b, ops) => ops.cmp(a, b) >= 0 },
 
   mod: {
     __default__: (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y))
