@@ -1,7 +1,7 @@
 export function methods() {
   const methods = { isReal: { Float: x => true } };
 
-  for (const name of [ 'abs', 'floor', 'ceil', 'sqrt' ]) {
+  for (const name of [ 'abs', 'floor', 'ceil', 'sqrt', 'round' ]) {
     methods[name] = {
       Float  : x => Math[name](x),
       Integer: x => Math[name](x)
