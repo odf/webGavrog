@@ -3,6 +3,7 @@ import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 const eps = Math.pow(2, -50);
 
+const trim    = x => Math.abs(x) < eps ? 0 : x;
 const lift    = op => (...args) => args.reduce((a, b) => op(a, b));
 const sum     = lift(ops.plus);
 const product = lift(ops.times);
@@ -93,7 +94,7 @@ const reducedLatticeBasis = (vs, G = ops.identityMatrix(vs.length)) => {
         w = ops.negative(w);
       if (i > 0 && ops.gt(dot(A[0], w), 0))
         w = ops.negative(w);
-      A[i] = w;
+      A[i] = w.map(trim);
       if (ops.rank(A) > i)
         break;
     }
