@@ -100,6 +100,30 @@ const reducedLatticeBasis = (vs, dot = ops.times) => {
 };
 
 
+const shiftedIntoDirichletDomain = (pos, dirichletVecs, dot = ops.times) => {
+  let p = pos;
+
+  const _step = () => {
+    let changed = false;
+
+    for (const v of dirichletVecs) {
+      const t = ops.div(dot(p, v), dot(v, v));
+      if (t <= -0.5 || t > 0.5+eps) {
+        p = ops.minus(p, ops.times(ops.round(t), v));
+        changed = true;
+      }
+    }
+
+    return changed;
+  };
+
+  while (_step()) {
+  }
+
+  return p;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -107,4 +131,6 @@ if (require.main == module) {
 
   console.log(reducedLatticeBasis([[16,3], [5,1]]));
   console.log(reducedLatticeBasis([[1,0,0], [1,1,0], [1,1,1]]));
+
+  console.log(shiftedIntoDirichletDomain([3.2, -1.4], [[1,0],[0,1],[1,1]]));
 }
