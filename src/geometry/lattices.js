@@ -3,40 +3,37 @@ import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 const eps = Math.pow(2, -50);
 
-const trim    = x => Math.abs(x) < eps ? 0 : x;
-const lift    = op => (...args) => args.reduce((a, b) => op(a, b));
-const sum     = lift(ops.plus);
-const product = lift(ops.times);
+const trim = x => Math.abs(x) < eps ? 0 : x;
+const lift = op => (...args) => args.reduce((a, b) => op(a, b));
+const sum  = lift(ops.plus);
 
 
-const gaussReduced = (u, v, G = ops.identityMatrix(2)) => {
+const gaussReduced = (u, v, dot = ops.times) => {
   const vs   = [u, v];
-  const dot  = (i, j) => product(vs[i], G, vs[j]);
-  const norm = i => dot(i, i);
+  const norm = v => dot(v, v);
 
   while (true) {
-    const [i, j] = ops.lt(norm(0), norm(1)) ? [0, 1] : [1, 0];
-    const t = ops.round(ops.div(dot(0, 1), norm(i)));
-    vs[j] = ops.minus(vs[j], product(t, vs[i]));
-    if (ops.ge(norm(j), product(norm(i), 1-eps)))
+    const [i, j] = ops.lt(norm(vs[0]), norm(vs[1])) ? [0, 1] : [1, 0];
+    const t = ops.round(ops.div(dot(vs[0], vs[1]), norm(vs[i])));
+    vs[j] = ops.minus(vs[j], ops.times(t, vs[i]));
+    if (ops.ge(norm(vs[j]), ops.times(norm(vs[i]), 1-eps)))
       break;
   }
 
-  if (ops.gt(dot(0, 1), 0))
+  if (ops.gt(dot(vs[0], vs[1]), 0))
     vs[1] = ops.negative(vs[1]);
 
   return vs;
 };
 
 
-const sellingReduced = (u, v, w, G = ops.identityMatrix(3)) => {
+const sellingReduced = (u, v, w, dot = ops.times) => {
   const vs   = [u, v, w, ops.negative(sum(u, v, w))];
-  const dot  = (i, j) => product(vs[i], G, vs[j]);
 
   const _sellingStep = () => {
     for (let i = 0; i < 3; ++i) {
       for (let j = i+1; j < 4; ++j) {
-	if (ops.gt(dot(i, j), eps)) {
+	if (ops.gt(dot(vs[i], vs[j]), eps)) {
 	  for (let k = 0; k < 4; ++k) {
 	    if (k != i && k != j) {
 	      vs[k] = sum(vs[k], vs[i]);
@@ -56,17 +53,17 @@ const sellingReduced = (u, v, w, G = ops.identityMatrix(3)) => {
 };
 
 
-const dirichletVectors = (basis, G) => {
+const dirichletVectors = (basis, dot = ops.times) => {
   switch (basis.length) {
   case 0:
   case 1:
     return basis;
   case 2: {
-    const vs = gaussReduced(...basis, G);
+    const vs = gaussReduced(...basis, dot);
     return [vs[0], vs[1], sum(vs[0], vs[1])];
   }
   case 3: {
-    const vs = sellingReduced(...basis, G);
+    const vs = sellingReduced(...basis, dot);
     return [
       vs[0], vs[1], vs[2],
       sum(vs[0], vs[1]), sum(vs[0], vs[2]), sum(vs[1], vs[2]),
@@ -77,14 +74,13 @@ const dirichletVectors = (basis, G) => {
 };
 
 
-const reducedLatticeBasis = (vs, G = ops.identityMatrix(vs.length)) => {
-  const dot = (v, w) => product(v, G, w);
+const reducedLatticeBasis = (vs, dot = ops.times) => {
   const abs = v => v.map(x => Math.abs(x));
   const dif = (v, w) => (v > w) - (v < w);
   const cmp = (v, w) => ops.minus(dot(v, v), dot(w, w)) || dif(abs(w), abs(v));
 
   const dim = vs[0].length;
-  const tmp = dirichletVectors(vs, G).sort(cmp);
+  const tmp = dirichletVectors(vs, dot).sort(cmp);
   const A = [];
 
   for (let k = 0, i = 0; i < dim; ++i) {
