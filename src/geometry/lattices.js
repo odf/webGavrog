@@ -29,8 +29,11 @@ const gaussReduced = (u, v, dot = ops.times) => {
 
 const sellingReduced = (u, v, w, dot = ops.times) => {
   const vs   = [u, v, w, ops.negative(sum(u, v, w))];
+  let changed;
 
-  const _sellingStep = () => {
+  do {
+    changed = false;
+
     for (let i = 0; i < 3; ++i) {
       for (let j = i+1; j < 4; ++j) {
 	if (ops.gt(dot(vs[i], vs[j]), eps)) {
@@ -40,14 +43,11 @@ const sellingReduced = (u, v, w, dot = ops.times) => {
 	    }
 	  }
 	  vs[i] = ops.negative(vs[i]);
-	  return true;
+	  changed = true;
 	}
       }
     }
-  };
-
-  while (_sellingStep()) {
-  }
+  } while (changed);
 
   return vs.slice(0, 3);
 };
@@ -102,9 +102,10 @@ const reducedLatticeBasis = (vs, dot = ops.times) => {
 
 const shiftedIntoDirichletDomain = (pos, dirichletVecs, dot = ops.times) => {
   let p = pos;
+  let changed;
 
-  const _step = () => {
-    let changed = false;
+  do {
+    changed = false;
 
     for (const v of dirichletVecs) {
       const t = ops.div(dot(p, v), dot(v, v));
@@ -113,12 +114,7 @@ const shiftedIntoDirichletDomain = (pos, dirichletVecs, dot = ops.times) => {
         changed = true;
       }
     }
-
-    return changed;
-  };
-
-  while (_step()) {
-  }
+  } while (changed);
 
   return p;
 };
