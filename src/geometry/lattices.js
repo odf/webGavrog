@@ -74,26 +74,32 @@ const dirichletVectors = (basis, dot = ops.times) => {
 };
 
 
-const reducedLatticeBasis = (vs, dot = ops.times) => {
+const compareVectors = dot => (v, w) => {
   const abs = v => v.map(x => Math.abs(x));
-  const dif = (v, w) => (v > w) - (v < w);
-  const cmp = (v, w) => ops.minus(dot(v, v), dot(w, w)) || dif(abs(w), abs(v));
+  const cmp = (v, w) => (v > w) - (v < w);
 
+  return ops.minus(dot(v, v), dot(w, w)) || cmp(abs(w), abs(v));
+};
+
+
+const reducedLatticeBasis = (vs, dot = ops.times) => {
   const dim = vs[0].length;
-  const tmp = dirichletVectors(vs, dot).sort(cmp);
+  const tmp = dirichletVectors(vs, dot).sort(compareVectors(dot));
   const A = [];
 
-  for (let k = 0, i = 0; i < dim; ++i) {
-    while (k < tmp.length) {
-      let w = tmp[k++];
-      if (w < ops.times(0, w))
-        w = ops.negative(w);
-      if (i > 0 && ops.gt(dot(A[0], w), 0))
-        w = ops.negative(w);
-      A[i] = w.map(trim);
-      if (ops.rank(A) > i)
-        break;
-    }
+  const _normalized = v => {
+    let t = v.map(trim);
+    if (t < ops.times(0, t))
+      t = ops.negative(t);
+    if (A.length > 0 && ops.gt(dot(A[0], t), 0))
+      t = ops.negative(t);
+    return t;
+  };
+
+  for (let k = 0, i = 0; k < tmp.length && i < dim; ++k) {
+    A[i] = _normalized(tmp[k]);
+    if (ops.rank(A) > i)
+      ++i;
   }
 
   return A;
