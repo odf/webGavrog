@@ -126,24 +126,6 @@ const shiftedIntoDirichletDomain = (pos, dirichletVecs, dot = ops.times) => {
 };
 
 
-const replicatedIfNearDirichletDomainBoundary = (
-  pos, dirichletVecs, dot = ops.times, delta = 0.01
-) => {
-  //TODO potential issues when domain is non-general, e.g. cubical?
-  const result = [pos];
-
-  for (const v of dirichletVecs) {
-    const t = ops.div(dot(pos, v), dot(v, v));
-    if (t > 0.5-delta)
-      result.push(ops.minus(pos, v));
-    else if (t < -(0.5-delta))
-      result.push(ops.plus(pos, v));
-  }
-
-  return result;
-};
-
-
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -152,9 +134,5 @@ if (require.main == module) {
   console.log(reducedLatticeBasis([[16,3], [5,1]]));
   console.log(reducedLatticeBasis([[1,0,0], [1,1,0], [1,1,1]]));
 
-  const vs = [[1,0],[0,1],[1,1]];
-  console.log(shiftedIntoDirichletDomain([3.2, -1.4], vs));
-  console.log(replicatedIfNearDirichletDomainBoundary([0.3, -0.4], vs));
-  console.log(replicatedIfNearDirichletDomainBoundary([0.495, -0.498], vs));
-  console.log(replicatedIfNearDirichletDomainBoundary([0.495, 0.498], vs));
+  console.log(shiftedIntoDirichletDomain([3.2, -1.4], [[1,0],[0,1],[1,1]]));
 }
