@@ -325,7 +325,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     }
     const delta = sup * epsilon;
 
-    return A.map(v => v.map(x => s.cmp(s.abs(x), delta) < 0 ? 0 : x));
+    return A.map(v => v.map(x => s.cmp(s.abs(x), delta) <= 0 ? 0 : x));
   };
 
 
