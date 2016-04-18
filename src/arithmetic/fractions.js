@@ -91,6 +91,15 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
   };
 
 
+  const round = q => {
+    const t = floor(q);
+    const up = intOps.ge(
+      intOps.times(2, intOps.minus(q.numer, intOps.times(t, q.denom))),
+      q.denom);
+    return up ? intOps.plus(t, 1) : t;
+  };
+
+
   const plus = function plus(q, r) {
     const a = intOps.gcd(q.denom, r.denom);
     const s = intOps.idiv(r.denom, a);
@@ -130,7 +139,8 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
     abs       : { [typeName]: abs      },
     sgn       : { [typeName]: sgn      },
     floor     : { [typeName]: floor    },
-    ceil      : { [typeName]: ceil     }
+    ceil      : { [typeName]: ceil     },
+    round     : { [typeName]: round    }
   };
 
   methods.rational = { String: parse };
@@ -185,6 +195,8 @@ if (require.main == module) {
   console.log(`floor(-5/3) = ${ops.floor(ops.div(-5, 3))}`);
   console.log(`ceil ( 5/3) = ${ops.ceil (ops.div( 5, 3))}`);
   console.log(`ceil (-5/3) = ${ops.ceil (ops.div(-5, 3))}`);
+  console.log(`round( 5/3) = ${ops.round(ops.div( 5, 3))}`);
+  console.log(`round(-5/3) = ${ops.round(ops.div(-5, 3))}`);
 
   console.log(`${ops.rational('-12_345_678_901_234_567_890')}`);
   console.log(`${ops.rational('-111_111_111_111_111_111/-12_345_679')}`);
