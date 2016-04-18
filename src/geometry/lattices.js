@@ -131,8 +131,8 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  console.log(reducedLatticeBasis([[16,3], [5,1]]));
-  console.log(reducedLatticeBasis([[1,0,0], [1,1,0], [1,1,1]]));
+  console.log(`${reducedLatticeBasis([[16,3], [5,1]])}`);
+  console.log(`${reducedLatticeBasis([[1,0,0], [1,1,0], [1,1,1]])}`);
 
   console.log(shiftedIntoDirichletDomain([3.2, -1.4], [[1,0],[0,1],[1,1]]));
 }
