@@ -29,7 +29,8 @@ export const floatMethods = rationalMethods.register(
 export const floats = floatMethods.ops();
 
 export const floatMatrixMethods = floatMethods.register(
-  mats.methods(floats, ['Integer', 'Float'], true, Math.pow(2, -50))
+  mats.methods(floats, ['Integer', 'Float', 'ImpreciseInteger', 'Fraction'],
+               true, Math.pow(2, -50))
 );
 export const floatMatrices = floatMatrixMethods.ops();
 
