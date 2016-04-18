@@ -23,8 +23,8 @@ export const intMatrixMethods = integerMethods.register(
 export const intMatrices = intMatrixMethods.ops();
 
 
-export const floatMethods = base.arithmetic().register(
-  require('./floats').methods()
+export const floatMethods = rationalMethods.register(
+  require('./floats').methods(rationals)
 );
 export const floats = floatMethods.ops();
 
@@ -105,7 +105,7 @@ if (require.main == module) {
   const B = fops.inverse(A);
   console.log(`${A} *`);
   console.log(`${B} =`);
-  console.log(`${fops.times(A, B)}`);
+  console.log(`${fops.cleanup(fops.times(A, B))}`);
 
   console.log();
   const O = fops.orthonormalized(A);
@@ -115,5 +115,7 @@ if (require.main == module) {
 
 
   const iops = intMatrices;
+
+  console.log();
   console.log(JSON.stringify(iops.triangulation(A)));
 }

@@ -1,10 +1,35 @@
-export function methods() {
+export function methods(rationals) {
+  const ops = rationals;
+
+
+  class ImpreciseInteger {
+    constructor(value) {
+      this.value = value;
+    }
+
+    toString() {
+      return this.value.toString() + '.0';
+    }
+
+    get __typeName() { return 'ImpreciseInteger'; }
+  };
+
+
+  const isInteger = x => {
+    const s = Math.abs(x);
+    return s % 1 == 0 && s + 1 > s;
+  };
+
+  const make = x => isInteger(x) ? new ImpreciseInteger(x) : x;
+
+
   const methods = { isReal: { Float: x => true } };
 
   for (const name of [ 'abs', 'floor', 'ceil', 'sqrt', 'round' ]) {
     methods[name] = {
-      Float  : x => Math[name](x),
-      Integer: x => Math[name](x)
+      Float           : x => make(Math[name](x)),
+      Integer         : x => make(Math[name](x)),
+      ImpreciseInteger: x => make(Math[name](x.value))
     }
   }
 
@@ -14,8 +39,9 @@ export function methods() {
     [x => (x > 0) - (x < 0), 'sgn'     ]
   ]) {
     methods[name] = {
-      Float  : op,
-      Integer: op
+      Float           : x => make(op(x)),
+      Integer         : x => make(op(x)),
+      ImpreciseInteger: x => make(op(x.value))
     }
   }
 
@@ -28,12 +54,26 @@ export function methods() {
   ]) {
     methods[name] = {
       Float: {
-        Float  : op,
-        Integer: op
+        Float           : (x, y) => make(op(x, y)),
+        Integer         : (x, y) => make(op(x, y)),
+        ImpreciseInteger: (x, y) => make(op(x, y.value)),
+        Fraction        : (x, y) => make(op(x, ops.toJS(y)))
       },
       Integer: {
-        Float  : op,
-        Integer: op
+        Float           : (x, y) => make(op(x, y)),
+        ImpreciseInteger: (x, y) => make(op(x, y.value)),
+        Fraction        : (x, y) => make(op(x, ops.toJS(y)))
+      },
+      ImpreciseInteger: {
+        Float           : (x, y) => make(op(x.value, y)),
+        Integer         : (x, y) => make(op(x.value, y)),
+        ImpreciseInteger: (x, y) => make(op(x.value, y.value)),
+        Fraction        : (x, y) => make(op(x, ops.toJS(y)))
+      },
+      Fraction: {
+        Float           : (x, y) => make(op(ops.toJS(x), y)),
+        Integer         : (x, y) => make(op(ops.toJS(x), y)),
+        ImpreciseInteger: (x, y) => make(op(ops.toJS(x), y.value))
       }
     };
   }
