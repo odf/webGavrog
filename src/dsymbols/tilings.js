@@ -211,7 +211,8 @@ if (require.main == module) {
 
   const test = function test(ds) {
     console.log('ds = '+ds);
-    console.log(tiling(ds));
+    const til = tiling(ds);
+    Object.keys(til).forEach(k => console.log(`${k}: ${til[k]}`));
     console.log();
   }
 
