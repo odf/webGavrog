@@ -23,7 +23,16 @@ export function methods(rationals) {
   const make = x => isInteger(x) ? new ImpreciseInteger(x) : x;
 
 
-  const methods = { isReal: { Float: x => true } };
+  const methods = {
+    isReal: {
+      Float           : x => true,
+      ImpreciseInteger: x => true
+    },
+    toJS: {
+      Float           : x => x,
+      ImpreciseInteger: x => x.value
+    }
+  };
 
   for (const name of [ 'abs', 'floor', 'ceil', 'sqrt', 'round' ]) {
     methods[name] = {
@@ -34,7 +43,6 @@ export function methods(rationals) {
   }
 
   for (const [op, name] of [
-    [x => x                , 'toJS'    ],
     [x => -x               , 'negative'],
     [x => (x > 0) - (x < 0), 'sgn'     ]
   ]) {
