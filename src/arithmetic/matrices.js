@@ -330,6 +330,11 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const methods = {
+    toJS: {
+      Vector: map.V(s.toJS),
+      Matrix: map.M(s.toJS)
+    },
+
     vector: {
       Integer: array
     },
