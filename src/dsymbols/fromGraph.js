@@ -1,6 +1,7 @@
 import * as I  from 'immutable';
 
 import { build } from './delaney';
+import { invariant } from './properties';
 
 
 export function fromCyclicAdjencencies(adjs) {
@@ -53,6 +54,7 @@ export function fromCyclicAdjencencies(adjs) {
 
 if (require.main == module) {
   const fs = require('fs');
+  const path = require('path');
 
   const { minimal } = require('./derived');
 
@@ -60,10 +62,15 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
+  const symByInvariant = I.Map().asMutable();
+  const minByInvariant = I.Map().asMutable();
+
   process.argv.slice(2).forEach(file => {
+    const name = path.basename(file, '.txt')
+
     console.log();
     console.log();
-    console.log(file);
+    console.log(name);
 
     const text = fs.readFileSync(file, { encoding: 'utf8' });
     const adjs = text
@@ -77,9 +84,20 @@ if (require.main == module) {
 
     const ds = fromCyclicAdjencencies(adjs);
 
+    minByInvariant.update(invariant(minimal(ds)), I.List(), a => a.push(name));
+    symByInvariant.update(invariant(ds), I.List(), a => a.push(name));
+
     console.log();
     console.log(`${ds}`);
     console.log();
     console.log(`${minimal(ds)}`);
   });
+
+  console.log();
+  console.log('Equivalence classes for maximal symmetry:');
+  minByInvariant.valueSeq().forEach(a => console.log(`{ ${a.join(', ')} }`));
+
+  console.log();
+  console.log('Equivalence classes for given symmetry:');
+  symByInvariant.valueSeq().forEach(a => console.log(`{ ${a.join(', ')} }`));
 }
