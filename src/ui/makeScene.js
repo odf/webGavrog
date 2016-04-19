@@ -201,7 +201,7 @@ const tiles = t => {
         .map(D => positionIndexForElement.get(D)))));
 
   return {
-    pos    : cornerPositions.toJS(),
+    pos    : cornerPositions.map(p => ops.toJS(p)).toJS(),
     faces  : faces.toJS(),
     isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS()
   };

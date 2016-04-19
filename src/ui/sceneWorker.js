@@ -27,7 +27,7 @@ const processedSolid = (t0, timers) => {
 
   surface.useTimers(null);
 
-  return t4;
+  return surface.standardized(t4);
 };
 
 
