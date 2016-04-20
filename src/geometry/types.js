@@ -2,7 +2,8 @@ const matrixMethods = require('../arithmetic/types').matrixMethods;
 const matrices = matrixMethods.ops();
 
 export const pointMethods = matrixMethods.register(
-  require('./points').methods(matrices, ['Integer', 'LongInt', 'Fraction'])
+  require('./points')
+    .methods(matrices, ['Integer', 'LongInt', 'Fraction', 'Float'])
 );
 export const points = pointMethods.ops();
 
@@ -37,6 +38,7 @@ if (require.main == module) {
   console.log(`${ops.times(ops.inverse(t), ops.point([4,6,4]))}`);
   console.log(`${ops.times(ops.inverse(t), [3,5,3])}`);
   console.log(`${ops.inverse(ops.shift([1,2,3]))}`);
+  console.log(`${ops.inverse(ops.shift([1.1,2,3]))}`);
 
   console.log(`${
     ops.times(
