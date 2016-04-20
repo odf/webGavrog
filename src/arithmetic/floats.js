@@ -37,10 +37,11 @@ export function methods(rationals) {
   for (const name of [ 'abs', 'floor', 'ceil', 'sqrt', 'round' ]) {
     methods[name] = {
       Float           : x => make(Math[name](x)),
-      Integer         : x => make(Math[name](x)),
       ImpreciseInteger: x => make(Math[name](x.value))
     }
   }
+
+  methods.sqrt.Integer = x => make(Math.sqrt(x));
 
   for (const [op, name] of [
     [x => -x               , 'negative'],
@@ -48,7 +49,6 @@ export function methods(rationals) {
   ]) {
     methods[name] = {
       Float           : x => make(op(x)),
-      Integer         : x => make(op(x)),
       ImpreciseInteger: x => make(op(x.value))
     }
   }
@@ -67,20 +67,18 @@ export function methods(rationals) {
         ImpreciseInteger: (x, y) => make(op(x, y.value)),
         Fraction        : (x, y) => make(op(x, ops.toJS(y)))
       },
-      Integer: {
-        Float           : (x, y) => make(op(x, y)),
-        ImpreciseInteger: (x, y) => make(op(x, y.value)),
-        Fraction        : (x, y) => make(op(x, ops.toJS(y)))
-      },
       ImpreciseInteger: {
         Float           : (x, y) => make(op(x.value, y)),
         Integer         : (x, y) => make(op(x.value, y)),
         ImpreciseInteger: (x, y) => make(op(x.value, y.value)),
         Fraction        : (x, y) => make(op(x, ops.toJS(y)))
       },
+      Integer: {
+        Float           : (x, y) => make(op(x, y)),
+        ImpreciseInteger: (x, y) => make(op(x, y.value))
+      },
       Fraction: {
         Float           : (x, y) => make(op(ops.toJS(x), y)),
-        Integer         : (x, y) => make(op(ops.toJS(x), y)),
         ImpreciseInteger: (x, y) => make(op(ops.toJS(x), y.value))
       }
     };

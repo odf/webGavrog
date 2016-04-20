@@ -373,6 +373,10 @@ export function methods(baseLength = 0) {
       LongInt: x => x,
       Integer: x => x
     },
+    round: {
+      LongInt: x => x,
+      Integer: x => x
+    },
     cmp: {
       LongInt: {
         LongInt: cmp,
