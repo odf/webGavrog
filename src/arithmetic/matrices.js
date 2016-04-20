@@ -319,13 +319,21 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     for (let i = 0; i < nrows; ++i) {
       for (let j = 0; j < ncols; ++j) {
         const val = s.abs(A[i][j]);
-        if (s.cmp(sup, val) < 0)
+        if (s.gt(val, sup))
           sup = val;
       }
     }
-    const delta = sup * epsilon;
+    const delta = s.times(sup, epsilon);
+    const cleaned = x => {
+      if (s.le(s.abs(x), delta))
+        return 0;
+      else if (s.le(s.abs(s.minus(s.round(x),x)), epsilon))
+        return s.round(x);
+      else
+        return x;
+    };
 
-    return A.map(v => v.map(x => s.cmp(s.abs(x), delta) <= 0 ? 0 : x));
+    return map.M(cleaned)(A);
   };
 
 
