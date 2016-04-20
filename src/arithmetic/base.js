@@ -5,8 +5,10 @@ export const typeOf = x => {
   const t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
 
   if (t == 'Number') {
-    const s = Math.abs(x);
-    return (s % 1 == 0 && s + 1 > s) ? 'Integer' : 'Float';
+    if (Number.isSafeInteger(x))
+      return 'Integer';
+    else
+      return 'Float';
   }
   else if (t == 'Array') {
     if (x.length > 0 && x[0].constructor.name == 'Array')
