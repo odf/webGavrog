@@ -23,8 +23,9 @@ export function methods(rationals) {
     methods[name] = { Float: x => Math[name](x) }
 
   methods.sqrt = {
-    Float  : x => make(Math.sqrt(x)),
-    Integer: x => make(Math.sqrt(x))
+    Float   : x => make(Math.sqrt(x)),
+    Integer : x => make(Math.sqrt(x)),
+    Fraction: x => make(Math.sqrt(ops.toJS(x)))
   };
 
   for (const [op, name] of [
