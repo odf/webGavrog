@@ -12,6 +12,14 @@ export function methods(rationals) {
   };
 
 
+  const isqrt = x => {
+    if (Math.abs(x) <= Number.MAX_SAFE_INTEGER)
+      return Math.sqrt(x);
+    else
+      return make(Make.sqrt(x));
+  };
+
+
   const methods = {
     isReal  : { Float: x => true },
     toJS    : { Float: x => x },
@@ -23,29 +31,29 @@ export function methods(rationals) {
     methods[name] = { Float: x => Math[name](x) }
 
   methods.sqrt = {
+    Integer : isqrt,
     Float   : x => make(Math.sqrt(x)),
-    Integer : x => make(Math.sqrt(x)),
     Fraction: x => make(Math.sqrt(ops.toJS(x)))
   };
 
-  for (const [op, name] of [
-    [(x, y) => (x > y) - (x < y), 'cmp'  ],
-    [(x, y) => x + y            , 'plus' ],
-    [(x, y) => x - y            , 'minus'],
-    [(x, y) => x * y            , 'times'],
-    [(x, y) => x / y            , 'div'  ]
+  for (const [name, op] of [
+    [ 'cmp'  , (x, y) => (x > y) - (x < y)                    ],
+    [ 'plus' , (x, y) => make(x + y)                          ],
+    [ 'minus', (x, y) => make(x - y)                          ],
+    [ 'times', (x, y) => (x == 0 || y == 0) ? 0 : make(x * y) ],
+    [ 'div'  , (x, y) => x == 0 ? 0 : make(x / y)             ]
   ]) {
     methods[name] = {
       Float: {
-        Float   : (x, y) => make(op(x, y)),
-        Integer : (x, y) => make(op(x, y)),
-        Fraction: (x, y) => make(op(x, ops.toJS(y)))
+        Float   : (x, y) => op(x, y),
+        Integer : (x, y) => op(x, y),
+        Fraction: (x, y) => op(x, ops.toJS(y))
       },
       Integer: {
-        Float   : (x, y) => make(op(x, y))
+        Float   : (x, y) => op(x, y)
       },
       Fraction: {
-        Float   : (x, y) => make(op(ops.toJS(x), y))
+        Float   : (x, y) => op(ops.toJS(x), y)
       }
     };
   }

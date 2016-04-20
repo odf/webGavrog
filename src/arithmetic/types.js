@@ -103,6 +103,8 @@ if (require.main == module) {
   const fops = matrices;
 
   console.log();
+  console.log(fops.sqrt(625));
+  console.log(fops.sqrt(626));
   const B = fops.inverse(A);
   console.log(`${A} *`);
   console.log(`${B} =`);
