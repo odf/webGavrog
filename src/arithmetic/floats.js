@@ -33,6 +33,7 @@ export function methods(rationals) {
   methods.sqrt = {
     Integer : isqrt,
     Float   : x => make(Math.sqrt(x)),
+    LongInt : x => make(Math.sqrt(ops.toJS(x))),
     Fraction: x => make(Math.sqrt(ops.toJS(x)))
   };
 
@@ -47,10 +48,14 @@ export function methods(rationals) {
       Float: {
         Float   : (x, y) => op(x, y),
         Integer : (x, y) => op(x, y),
+        LongInt : (x, y) => op(x, ops.toJS(y)),
         Fraction: (x, y) => op(x, ops.toJS(y))
       },
       Integer: {
         Float   : (x, y) => op(x, y)
+      },
+      LongInt: {
+        Float   : (x, y) => op(ops.toJS(x), y)
       },
       Fraction: {
         Float   : (x, y) => op(ops.toJS(x), y)
