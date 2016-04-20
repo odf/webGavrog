@@ -12,27 +12,27 @@ export const rationalMethods = integerMethods.register(
 );
 export const rationals = rationalMethods.ops();
 
-export const matrixMethods = rationalMethods.register(
-  mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], true)
+export const realMethods = rationalMethods.register(
+  require('./floats').methods(rationals)
 );
-export const matrices = matrixMethods.ops();
+export const reals = realMethods.ops();
+
 
 export const intMatrixMethods = integerMethods.register(
   mats.methods(integers, ['Integer', 'LongInt'], false)
 );
 export const intMatrices = intMatrixMethods.ops();
 
-
-export const floatMethods = rationalMethods.register(
-  require('./floats').methods(rationals)
+export const rationalMatrixMethods = rationalMethods.register(
+  mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], true)
 );
-export const floats = floatMethods.ops();
+export const rationalMatrices = rationalMatrixMethods.ops();
 
-export const floatMatrixMethods = floatMethods.register(
-  mats.methods(floats, ['Integer', 'LongInt', 'Float', 'Fraction'],
+export const matrixMethods = realMethods.register(
+  mats.methods(reals, ['Integer', 'LongInt', 'Float', 'Fraction'],
                true, Math.pow(2, -50))
 );
-export const floatMatrices = floatMatrixMethods.ops();
+export const matrices = matrixMethods.ops();
 
 
 if (require.main == module) {
@@ -40,7 +40,7 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const ops = matrices;
+  const ops = rationalMatrices;
 
   const V = [1, 2, 3];
   const M = [[1, 2, 3], [4, 5, 6]];
@@ -100,7 +100,7 @@ if (require.main == module) {
   testNullSpace([[0,2,0]]);
 
 
-  const fops = floatMatrices;
+  const fops = matrices;
 
   console.log();
   const B = fops.inverse(A);

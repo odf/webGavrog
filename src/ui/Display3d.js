@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as React from 'react';
 import * as I     from 'immutable';
 
-import { floatMatrices } from '../arithmetic/types';
-const ops = floatMatrices;
+import { matrices } from '../arithmetic/types';
+const ops = matrices;
 
 
 const rotation = function(dx, dy, aboutZ) {

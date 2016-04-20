@@ -1,6 +1,6 @@
-import { floatMatrices } from '../arithmetic/types';
+import { matrices } from '../arithmetic/types';
 
-const ops = floatMatrices;
+const ops = matrices;
 const eps = Math.pow(2, -50);
 
 const trim = x => Math.abs(x) < eps ? 0 : x;

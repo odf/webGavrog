@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
-import { floatMatrices } from '../arithmetic/types';
-const ops = floatMatrices;
+import { matrices } from '../arithmetic/types';
+const ops = matrices;
 
 
 let _timers = null;

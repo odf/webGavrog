@@ -2,8 +2,8 @@ import * as I     from 'immutable';
 import * as THREE from 'three';
 import * as csp   from 'plexus-csp';
 
-import { floatMatrices } from '../arithmetic/types';
-const ops = floatMatrices;
+import { matrices } from '../arithmetic/types';
+const ops = matrices;
 
 import * as delaney  from '../dsymbols/delaney';
 import * as props    from '../dsymbols/properties';

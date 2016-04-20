@@ -5,8 +5,8 @@ import * as periodic from '../pgraphs/periodic';
 
 import tiling from '../dsymbols/tilings';
 
-import { matrices } from '../arithmetic/types';
-const ops = matrices;
+import { rationalMatrices } from '../arithmetic/types';
+const ops = rationalMatrices;
 
 
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });

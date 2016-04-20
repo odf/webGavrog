@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
-import { matrices } from '../arithmetic/types';
-const ops = matrices;
+import { rationalMatrices } from '../arithmetic/types';
+const ops = rationalMatrices;
 
 
 const Edge = I.Record({
