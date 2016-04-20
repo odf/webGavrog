@@ -165,7 +165,7 @@ const _orthonormalBasis = function _orthonormalBasis(G) {
       v = ops.minus(v, ops.times(f, w));
     });
     const d = _scalarProduct(v, v, G);
-    v = ops.times(1/Math.sqrt(d), v);
+    v = ops.times(ops.div(1, ops.sqrt(d)), v);
     e[i] = v;
   });
 
