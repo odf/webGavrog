@@ -22,37 +22,41 @@ const allDistances = (points, dot) => {
   return sortBy([].concat(...tmp), 'dist');
 };
 
-
-export function inducedEdges(points, dot = ops.times) {
-  const edges = [];
-  const neighbors = {};
-  points.forEach(p => neighbors[p.id] = []);
-
-  const unsaturated = p => neighbors[p.id].length < p.degree;
-
+export function induceEdges(points, graph, dot = ops.times) {
   allDistances(points, dot).forEach(({ base: p, neighbor: q, dist: d }) => {
-    if (unsaturated(p) && unsaturated(q) && neighbors[q.id].indexOf(p.id) < 0) {
-      edges.push([p.id, q.id]);
-      neighbors[p.id].push(q.id);
-      neighbors[q.id].push(p.id);
-    }
+    if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
+      graph.addEdge(p, q);
   });
-
-  return edges;
 };
 
 
 if (require.main == module) {
-  const points = [
-    { id: 1, pos: [ 1, 1, 1], degree: 4 },
-    { id: 2, pos: [ 1,-1,-1], degree: 4 },
-    { id: 3, pos: [-1, 1,-1], degree: 4 },
-    { id: 4, pos: [-1,-1, 1], degree: 4 },
-    { id: 5, pos: [ 2, 2, 2], degree: 4 },
-    { id: 6, pos: [ 2,-2,-2], degree: 4 },
-    { id: 7, pos: [-2, 2,-2], degree: 4 },
-    { id: 8, pos: [-2,-2, 2], degree: 4 }
-  ];
+  const points = [ { id: 1, pos: [ 1, 1, 1], degree: 4 },
+                   { id: 2, pos: [ 1,-1,-1], degree: 4 },
+                   { id: 3, pos: [-1, 1,-1], degree: 4 },
+                   { id: 4, pos: [-1,-1, 1], degree: 4 },
+                   { id: 5, pos: [ 2, 2, 2], degree: 1 },
+                   { id: 6, pos: [ 2,-2,-2], degree: 1 },
+                   { id: 7, pos: [-2, 2,-2], degree: 1 },
+                   { id: 8, pos: [-2,-2, 2], degree: 1 } ];
 
-  console.log(inducedEdges(points).map(e => e.sort()).sort());
+  const neighbors = {};
+
+  const degree = p => (neighbors[p.id] || []).length;
+
+  const addNeighbor = (p, q) => {
+    if (neighbors[p.id] == null)
+      neighbors[p.id] = [];
+    if (neighbors[p.id].indexOf(q.id) < 0)
+      neighbors[p.id].push(q.id);
+  };
+
+  const addEdge = (p, q) => {
+    addNeighbor(p, q);
+    addNeighbor(q, p);
+  };
+
+  induceEdges(points, { degree, addEdge });
+
+  console.log(neighbors);
 }
