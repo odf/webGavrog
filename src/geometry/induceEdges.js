@@ -22,7 +22,7 @@ const allDistances = (points, dot) => {
   return sortBy([].concat(...tmp), 'dist');
 };
 
-export function induceEdges(points, graph, dot = ops.times) {
+export default function induceEdges(points, graph, dot = ops.times) {
   allDistances(points, dot).forEach(({ base: p, neighbor: q, dist: d }) => {
     if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
       graph.addEdge(p, q);
