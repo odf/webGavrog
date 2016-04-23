@@ -53,7 +53,7 @@ const sellingReduced = (u, v, w, dot = ops.times) => {
 };
 
 
-const dirichletVectors = (basis, dot = ops.times) => {
+export function dirichletVectors(basis, dot = ops.times) {
   switch (basis.length) {
   case 0:
   case 1:
@@ -82,7 +82,7 @@ const compareVectors = dot => (v, w) => {
 };
 
 
-const reducedLatticeBasis = (vs, dot = ops.times) => {
+export function reducedLatticeBasis(vs, dot = ops.times) {
   const dim = vs[0].length;
   const tmp = dirichletVectors(vs, dot).sort(compareVectors(dot));
   const A = [];
@@ -106,7 +106,9 @@ const reducedLatticeBasis = (vs, dot = ops.times) => {
 };
 
 
-const shiftedIntoDirichletDomain = (pos, dirichletVecs, dot = ops.times) => {
+export function shiftedIntoDirichletDomain(
+  pos, dirichletVecs, dot = ops.times)
+{
   let p = pos;
   let changed;
 
