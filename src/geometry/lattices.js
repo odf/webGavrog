@@ -106,25 +106,25 @@ export function reducedLatticeBasis(vs, dot = ops.times) {
 };
 
 
-export function shiftedIntoDirichletDomain(
+export function shiftIntoDirichletDomain(
   pos, dirichletVecs, dot = ops.times)
 {
-  let p = pos;
+  let s = ops.times(0, pos);
   let changed;
 
   do {
     changed = false;
 
     for (const v of dirichletVecs) {
-      const t = ops.div(dot(p, v), dot(v, v));
+      const t = ops.div(dot(ops.plus(pos, s), v), dot(v, v));
       if (t <= -0.5 || t > 0.5+eps) {
-        p = ops.minus(p, ops.times(ops.round(t), v));
+        s = ops.minus(s, ops.times(ops.round(t), v));
         changed = true;
       }
     }
   } while (changed);
 
-  return p;
+  return s;
 };
 
 
@@ -136,5 +136,5 @@ if (require.main == module) {
   console.log(`${reducedLatticeBasis([[16,3], [5,1]])}`);
   console.log(`${reducedLatticeBasis([[1,0,0], [1,1,0], [1,1,1]])}`);
 
-  console.log(shiftedIntoDirichletDomain([3.2, -1.4], [[1,0],[0,1],[1,1]]));
+  console.log(shiftIntoDirichletDomain([3.2, -1.4], [[1,0],[0,1],[1,1]]));
 }

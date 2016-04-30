@@ -8,8 +8,6 @@ export default function fromPointCloud({ rawPoints, edges, basis, gram }) {
   const dvs = ops.times(2, lattices.dirichletVectors(basis, dot));
 
   const pts = rawPoints.map(p => {
-    const pp = lattices.shiftedIntoDirichletDomain(p, dvs, dot);
-    const shift = ops.minus(pp, p);
-    
+    const s = lattices.shiftIntoDirichletDomain(p, dvs, dot);
   });
 };
