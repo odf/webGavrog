@@ -98,9 +98,18 @@ export default function fromPointCloud(rawPoints, edges, gram) {
 
 
 if (require.main == module) {
+  const sqrt2 = Math.sqrt(2);
+
   const points = [
-    { id: 1, pos: [ 0.4, -0.1 ], degree: 4 }
+    { id: 1, pos: [  0.125,  0.125,  0.125 ], degree: 4 },
+    { id: 2, pos: [ -0.125, -0.125, -0.125 ], degree: 4 }
   ];
 
-  console.log(fromPointCloud(points, [], [[1,0], [0,1]]));
+  const gram = [
+    [sqrt2, 1.0, 1.0],
+    [1.0, sqrt2, 1.0],
+    [1.0, 1.0, sqrt2]
+  ];
+
+  console.log(fromPointCloud(points, [], gram));
 }
