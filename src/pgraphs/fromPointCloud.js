@@ -1,17 +1,18 @@
 import * as lattices from '../geometry/lattices';
-import { points } from '../geometry/types';
+import { points }    from '../geometry/types';
+import induceEdges   from '../geometry/induceEdges';
+
+
 const ops = points;
-
-
-const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
-const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x, y]), xs);
-const vecabs    = v => v < ops.times(0, v) ? ops.negative(v) : v;
 
 
 const graph = () => {
   const neighbors = [];
 
-  const degree = i => (neighbors[i] || []).length;
+  const degree = i => {
+    const nbrs = neighbors[i] || [];
+    return nbrs.length + nbrs.filter(([j, _]) => j == i).length;
+  };
 
   const contains = (adjs, j, s) => {
     for (const [k, v] of adjs) {
@@ -30,7 +31,7 @@ const graph = () => {
 
   const addEdge = (i, j, s) => {
     if (i == j)
-      addNeighbor(i, j, vecabs(s));
+      addNeighbor(i, j, s < ops.times(0, s) ? ops.negative(s) : s);
     else {
       addNeighbor(i, j, s);
       addNeighbor(j, i, ops.negative(s));
@@ -52,6 +53,23 @@ const graph = () => {
 };
 
 
+const pgraph = () => {
+  const G = graph();
+
+  return {
+    addEdge: (p, q) => {
+      G.addEdge(p.originalId, q.originalId, ops.minus(q.shift, p.shift));
+    },
+    degree : p  => G.degree(p.originalId),
+    edges  : () => G.edges()
+  };
+};
+
+
+const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
+const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x, y]), xs);
+
+
 export default function fromPointCloud(rawPoints, edges, gram) {
   const dot    = (v, w) => ops.times(v, ops.times(gram, w));
   const basis  = ops.identityMatrix(gram.length);
@@ -60,28 +78,29 @@ export default function fromPointCloud(rawPoints, edges, gram) {
   const origin = ops.times(0, dvs[0]);
 
   const points = cartesian(rawPoints, [origin].concat(dvs))
-    .map(([pos, shift]) => {
+    .map(([{ id, pos, degree }, shift], i) => {
       const p = ops.plus(pos, shift);
       const s = lattices.shiftIntoDirichletDomain(p, dvs2, dot);
-      return [pos, ops.plus(shift, s)];
+      return {
+        id: i,
+        pos: ops.plus(p, s),
+        degree,
+        shift: ops.plus(shift, s),
+        originalId: id,
+        originalPosition: pos
+      };
     });
-  console.log(points);
+
+  const G = pgraph();
+  induceEdges(points, G, dot);
+  return G.edges();
 };
 
 
 if (require.main == module) {
-  const G = graph();
-  G.addEdge(1, 2, [0,0,0]);
-  G.addEdge(2, 1, [0,0,0]);
-  G.addEdge(1, 2, [1,0,0]);
-  G.addEdge(1, 2, [0,1,0]);
-  G.addEdge(1, 2, [0,0,1]);
-  console.log(G.degree(1));
-  console.log(G.degree(2));
-  console.log(G.edges());
-  console.log();
+  const points = [
+    { id: 1, pos: [ 0.4, -0.1 ], degree: 4 }
+  ];
 
-  fromPointCloud(
-    [[0.4,-0.1]], [], [[1,0], [0,1]]
-  );
+  console.log(fromPointCloud(points, [], [[1,0], [0,1]]));
 }
