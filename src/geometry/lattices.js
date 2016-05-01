@@ -117,7 +117,7 @@ export function shiftIntoDirichletDomain(
 
     for (const v of dirichletVecs) {
       const t = ops.div(dot(ops.plus(pos, s), v), dot(v, v));
-      if (t <= -0.5 || t > 0.5+eps) {
+      if (t < -0.5 || t > 0.5+eps) {
         s = ops.minus(s, ops.times(ops.round(t), v));
         changed = true;
       }
