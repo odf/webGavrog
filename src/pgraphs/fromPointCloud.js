@@ -56,12 +56,15 @@ const graph = () => {
 const pgraph = () => {
   const G = graph();
 
+  const addEdge = (p, q) => {
+    G.addEdge(p.originalId, q.originalId, ops.minus(q.shift, p.shift));
+  };
+
   return {
-    addEdge: (p, q) => {
-      G.addEdge(p.originalId, q.originalId, ops.minus(q.shift, p.shift));
-    },
-    degree : p  => G.degree(p.originalId),
-    edges  : () => G.edges()
+    addEdge     : addEdge,
+    addPlainEdge: ([i, j, s]) => G.addEdge(i, j, s),
+    degree      : p  => G.degree(p.originalId),
+    edges       : G.edges
   };
 };
 
@@ -70,7 +73,7 @@ const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
 const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x, y]), xs);
 
 
-export default function fromPointCloud(rawPoints, edges, gram) {
+export default function fromPointCloud(rawPoints, explicitEdges, gram) {
   const dot    = (v, w) => ops.times(v, ops.times(gram, w));
   const basis  = ops.identityMatrix(gram.length);
   const dvs    = lattices.dirichletVectors(basis, dot);
@@ -92,6 +95,7 @@ export default function fromPointCloud(rawPoints, edges, gram) {
     });
 
   const G = pgraph();
+  explicitEdges.forEach(G.addPlainEdge);
   induceEdges(points, G, dot);
   return G.edges();
 };
@@ -111,5 +115,5 @@ if (require.main == module) {
     [1.0, 1.0, sqrt2]
   ];
 
-  console.log(fromPointCloud(points, [], gram));
+  console.log(fromPointCloud(points, [[1, 2, [0, 0, 0]]], gram));
 }
