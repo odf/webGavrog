@@ -1,6 +1,6 @@
 const parser = require('./cgdParser');
 
-const ops = require('../arithmetic/types').rationals;
+const ops = require('../geometry/types').affineTransformations;
 
 import * as pg from '../pgraphs/periodic';
 import * as sg from './sgtable';
@@ -252,7 +252,7 @@ const processCrystal = data => {
   if (output.group == null)
     output.group = findGroup(['P1']);
 
-  dim = output.group.transform.length;
+  dim = ops.dimension(output.group.transform);
 
   if (output.cell == null)
     output.cell = identity(dim);
