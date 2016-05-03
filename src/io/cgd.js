@@ -292,13 +292,14 @@ const processCrystal = data => {
   }
 
   return {
-    name    : output.name,
-    group   : output.group.name,
-    cell    : output.cell,
-    nodes   : nodes,
-    edges   : edges,
-    warnings: warnings,
-    errors  : errors
+    name : output.name,
+    group: output.group.name,
+    cell : output.cell,
+    nodes,
+    edgeCenters,
+    edges,
+    warnings,
+    errors
   };
 };
 
