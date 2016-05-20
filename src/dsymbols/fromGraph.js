@@ -1,12 +1,13 @@
 import * as I  from 'immutable';
 
 import { build } from './delaney';
-import { invariant } from './properties';
+import { invariant, partialOrientation } from './properties';
 
 
 export function fromCyclicAdjencencies(adjs) {
   const v2ch = I.Map().asMutable();
   const e2ch = I.Map().asMutable();
+  const ch2v = I.Map().asMutable();
 
   let nextch = 1;
   let ne = 0;
@@ -20,6 +21,8 @@ export function fromCyclicAdjencencies(adjs) {
       if (w > v)
         ++ne;
       e2ch.set(I.List([v, w]), nextch);
+      ch2v.set(nextch, v);
+      ch2v.set(nextch+1, v);
       nextch += 2;
     }
   }
@@ -44,11 +47,40 @@ export function fromCyclicAdjencencies(adjs) {
   for (let D = 1; D < size; D += 2)
     op[2].push([D, D+1]);
 
-  return build(
+  const ds = build(
     2, size,
     (_, i) => op[i],
     (_, i) => I.Range(1, size+1).map(D => [D, 1])
-  );
+  ); 
+
+  return {
+    symbol: ds,
+    chamberToVertex: ch2v.asImmutable()
+  };
+};
+
+
+const traceFaces = (ds, ch2v) => {
+  const ori = partialOrientation(ds);
+  const seen = {};
+  const faces = [];
+
+  for (const D of ds.elements()) {
+    if (ori.get(D) < 0 || seen[D])
+      continue;
+
+    const newFace = [];
+    let E = D;
+    do {
+      newFace.push(ch2v.get(E));
+      seen[E] = true;
+      E = ds.s(0, ds.s(1, E));
+    } while (E != D);
+
+    faces.push(newFace);
+  }
+
+  return faces;
 };
 
 
@@ -82,11 +114,13 @@ if (require.main == module) {
     console.log();
     console.log(adjs);
 
-    const ds = fromCyclicAdjencencies(adjs);
+    const { symbol: ds, chamberToVertex } = fromCyclicAdjencencies(adjs);
 
     minByInvariant.update(invariant(minimal(ds)), I.List(), a => a.push(name));
     symByInvariant.update(invariant(ds), I.List(), a => a.push(name));
 
+    console.log();
+    console.log(traceFaces(ds, chamberToVertex));
     console.log();
     console.log(`${ds}`);
     console.log();
