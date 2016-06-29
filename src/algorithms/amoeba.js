@@ -22,12 +22,14 @@ const insert = (simplex, point) => {
 };
 
 
-const shrink = (simplex, fn) => {
-  return simplex
+const sorted = simplex =>
+  simplex.clone().sort((a, b) => ops.cmp(a.val, b.val));
+
+
+const shrink = (simplex, fn) => sorted(
+  simplex
     .map(vertex => ops.div(ops.plus(simplex[0].pos, vertex.pos), 2.0))
-    .map(p => ({ pos: p, val: fn(p) }))
-    .sort((a, b) => ops.cmp(a.val, b.val))
-};
+    .map(p => ({ pos: p, val: fn(p) })));
 
 
 const step = (simplex, fn) => {
@@ -48,4 +50,9 @@ const step = (simplex, fn) => {
     else
       return insert(simplex, pc);
   }
+};
+
+
+const optimize = (fn, start, maxSteps, tolerance) => {
+  
 };
