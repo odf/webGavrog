@@ -64,7 +64,8 @@ const optimize = (fn, dim, start, maxSteps, tolerance) => {
   while (i < maxSteps) {
     const vlo = s[0].val;
     const vhi = s[dim].val;
-    if (2 * Math.abs(vhi - vlo) <= tolerance * (Math.abs(vlo) + Math.abs(vhi)))
+    if (2 * Math.abs(vhi - vlo) <=
+        tolerance * Math.max(tolerance, Math.abs(vlo) + Math.abs(vhi)))
       break;
 
     s = step(s, fn);
@@ -75,11 +76,17 @@ const optimize = (fn, dim, start, maxSteps, tolerance) => {
 };
 
 
+const himmelblau = ([x, y]) =>
+  Math.pow(x*x + y - 11, 2) + Math.pow(x + y*y - 7, 2);
+
+
+const rosenbrock = (a, b) => ([x, y]) =>
+  Math.pow(a - x, 2) + b * Math.pow(y - x*x, 2);
+
+
 if (require.main == module) {
-  console.log(optimize(
-    ([x, y]) => 1 + Math.pow(x - 0.4, 2) * Math.pow(y - 0.4, 2),
-    2,
-    [0, 0],
-    1000,
-    1e-12));
+  console.log('Himmelblau:');
+  console.log(optimize(himmelblau, 2, [-1, -1], 1000, 1e-12));
+  console.log('Rosenbrock:');
+  console.log(optimize(rosenbrock(1, 100), 2, [-1, -1], 1000, 1e-12));
 }
