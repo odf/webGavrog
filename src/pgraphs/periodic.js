@@ -112,26 +112,45 @@ export function coordinationSeq(graph, start, dist) {
 };
 
 
-const _isConnectedOrbitGraph = function _isConnectedOrbitGraph(graph) {
-  const adj   = adjacencies(graph);
-  const verts = I.List(adj.keySeq());
-  const start = verts.first();
-  let seen  = I.Set([start]);
-  let queue = I.List([start]);
+const _componentInOrbitGraph = (graph, start) => {
+  const adj = adjacencies(graph);
+  const queue = I.List([start]).asMutable();
+  const nodeShifts = I.Map([[start, ops.vector(graph.dim)]]).asMutable();
+  const bridges = I.List().asMutable();
 
   while (!queue.isEmpty()) {
     const v = queue.first();
-    queue = queue.shift();
-    adj.get(v).forEach(function(t) {
-      const w = t.v;
-      if (!seen.contains(w)) {
-        seen = seen.add(w);
-        queue = queue.push(w);
+    const av = nodeShifts.get(v);
+
+    queue.shift();
+
+    for (const {v: w, s} of adj.get(v)) {
+      const shift = I.List(s).toArray();
+      if (nodeShifts.get(w) == undefined) {
+        queue.push(w);
+        nodeShifts.set(w, ops.minus(av, shift));
       }
-    });
+      else {
+        const aw = nodeShifts.get(w);
+        const newShift = ops.plus(shift, ops.minus(aw, av));
+        const pivot = newShift.find(x => ops.ne(x, 0));
+
+        if (pivot != undefined && ops.gt(pivot, 0))
+          bridges.push({ v, w, s: newShift });
+      }
+    }
   }
 
-  return verts.every(v => seen.contains(v));
+  return { nodes: I.Set(nodeShifts.keys()), bridges };
+};
+
+
+const _isConnectedOrbitGraph = function _isConnectedOrbitGraph(graph) {
+  const adj   = adjacencies(graph);
+  const verts = I.List(adj.keySeq());
+  const comp = _componentInOrbitGraph(graph, verts.first());
+
+  return comp.nodes.size >= verts.size;
 };
 
 
@@ -175,8 +194,12 @@ if (require.main == module) {
   const test = function test(g) {
     console.log('g = '+g);
     console.log('  cs  = '+coordinationSeq(g, 1, 10));
-    console.log('  pos = '+barycentricPlacement(g));
-    console.log('      = '+barycentricPlacementAsFloat(g));
+    if (_isConnectedOrbitGraph(g)) {
+      console.log('  pos = '+barycentricPlacement(g));
+      console.log('      = '+barycentricPlacementAsFloat(g));
+    }
+    console.log('  component of 1: '
+                + JSON.stringify(_componentInOrbitGraph(g, 1)));
     console.log();
   };
 
@@ -192,4 +215,12 @@ if (require.main == module) {
               [ 1, 2, [ 1, 0, 0 ] ],
               [ 1, 2, [ 0, 1, 0 ] ],
               [ 1, 2, [ 0, 0, 1 ] ] ]));
+
+  test(make([ [ 1, 1, [ 3, 0 ] ],
+              [ 1, 1, [ 0, 5 ] ] ]));
+
+  test(make([ [ 1, 1, [ 1, 0 ] ],
+              [ 1, 1, [ 0, 1 ] ],
+              [ 2, 2, [ 1, 0 ] ],
+              [ 2, 2, [ 0, 1 ] ] ]));
 }
