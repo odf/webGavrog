@@ -141,7 +141,11 @@ const _componentInOrbitGraph = (graph, start) => {
     }
   }
 
-  return { nodes: I.Set(nodeShifts.keys()), bridges };
+  return {
+    nodes: I.Set(nodeShifts.keys()),
+    nodeShifts,
+    bridges
+  };
 };
 
 
