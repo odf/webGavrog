@@ -114,15 +114,13 @@ export function coordinationSeq(graph, start, dist) {
 
 const _componentInOrbitGraph = (graph, start) => {
   const adj = adjacencies(graph);
-  const queue = I.List([start]).asMutable();
+  const queue = [start]
+  const bridges = [];
   const nodeShifts = I.Map([[start, ops.vector(graph.dim)]]).asMutable();
-  const bridges = I.List().asMutable();
 
-  while (!queue.isEmpty()) {
-    const v = queue.first();
+  while (queue.length) {
+    const v = queue.shift();
     const av = nodeShifts.get(v);
-
-    queue.shift();
 
     for (const {v: w, s} of adj.get(v)) {
       const shift = I.List(s).toArray();
