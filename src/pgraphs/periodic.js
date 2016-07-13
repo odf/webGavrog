@@ -156,6 +156,16 @@ const _isConnectedOrbitGraph = function _isConnectedOrbitGraph(graph) {
 };
 
 
+const _componentInCoverGraph = (graph, start) => {
+  const { nodes, nodeShifts, bridges } = _componentInOrbitGraph(graph, start);
+  const basis = ops.triangulation(bridges.map(b => b.s)).R;
+  const transform = ops.inverse(basis);
+  const multiplicity = ops.determinant(basis);
+  const old2new = I.Map(I.Range(1, nodes.size+1).zip(nodes));
+  return old2new;
+};
+
+
 export function barycentricPlacement(graph) {
   if (!_isConnectedOrbitGraph(graph))
     throw new Error('must have a connected orbit graph');
@@ -193,6 +203,10 @@ export function barycentricPlacementAsFloat(graph) {
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
   const test = function test(g) {
     console.log('g = '+g);
     console.log('  cs  = '+coordinationSeq(g, 1, 10));
@@ -200,8 +214,13 @@ if (require.main == module) {
       console.log('  pos = '+barycentricPlacement(g));
       console.log('      = '+barycentricPlacementAsFloat(g));
     }
-    console.log('  component of 1: '
-                + JSON.stringify(_componentInOrbitGraph(g, 1)));
+    const comp = _componentInOrbitGraph(g, 1);
+    console.log('  component of 1:');
+    console.log('    nodes = '+comp.nodes);
+    console.log('    nodeShifts = '+comp.nodeShifts);
+    console.log('    bridges = '+comp.bridges.map(JSON.stringify));
+    console.log('  cover component of 1:');
+    console.log('    '+_componentInCoverGraph(g, 1));
     console.log();
   };
 
