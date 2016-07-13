@@ -160,9 +160,24 @@ const _componentInCoverGraph = (graph, start) => {
   const { nodes, nodeShifts, bridges } = _componentInOrbitGraph(graph, start);
   const basis = ops.triangulation(bridges.map(b => b.s)).R;
   const transform = ops.inverse(basis);
-  const multiplicity = ops.determinant(basis);
-  const old2new = I.Map(I.Range(1, nodes.size+1).zip(nodes));
-  return old2new;
+  const old2new = I.Map(I.List(nodes).zip(I.Range(1, nodes.size+1)));
+
+  const newEdges = graph.edges
+    .filter(({ head, tail }) =>
+            old2new.get(head) != null && old2new.get(tail) != null)
+    .map(({ head, tail, shift }) => {
+      const [v, w] = [old2new.get(head), old2new.get(tail)];
+      const [av, aw] = [nodeShifts.get(head), nodeShifts.get(tail)];
+      const s = shift.toArray();
+      const t = ops.times(transform, ops.plus(s, ops.minus(aw, av)));
+      return [v, w, t];
+    });
+
+  return {
+    basis,
+    multiplicity: ops.determinant(basis),
+    graph: make(newEdges)
+  };
 };
 
 
@@ -214,13 +229,18 @@ if (require.main == module) {
       console.log('  pos = '+barycentricPlacement(g));
       console.log('      = '+barycentricPlacementAsFloat(g));
     }
-    const comp = _componentInOrbitGraph(g, 1);
+
+    const ocomp = _componentInOrbitGraph(g, 1);
     console.log('  component of 1:');
-    console.log('    nodes = '+comp.nodes);
-    console.log('    nodeShifts = '+comp.nodeShifts);
-    console.log('    bridges = '+comp.bridges.map(JSON.stringify));
+    console.log('    nodes = '+ocomp.nodes);
+    console.log('    nodeShifts = '+ocomp.nodeShifts);
+    console.log('    bridges = '+ocomp.bridges.map(JSON.stringify));
+
+    const ccomp = _componentInCoverGraph(g, 1);
     console.log('  cover component of 1:');
-    console.log('    '+_componentInCoverGraph(g, 1));
+    console.log('    graph = '+ccomp.graph);
+    console.log('    basis = '+ccomp.basis);
+    console.log('    multiplicity = '+ccomp.multiplicity);
     console.log();
   };
 
@@ -237,11 +257,12 @@ if (require.main == module) {
               [ 1, 2, [ 0, 1, 0 ] ],
               [ 1, 2, [ 0, 0, 1 ] ] ]));
 
-  test(make([ [ 1, 1, [ 3, 0 ] ],
-              [ 1, 1, [ 0, 5 ] ] ]));
-
-  test(make([ [ 1, 1, [ 1, 0 ] ],
-              [ 1, 1, [ 0, 1 ] ],
-              [ 2, 2, [ 1, 0 ] ],
-              [ 2, 2, [ 0, 1 ] ] ]));
+  test(make([ [ 1, 3, [ 0, 0, 0 ] ],
+              [ 1, 3, [ 2, 0, 0 ] ],
+              [ 1, 3, [ 0, 2, 0 ] ],
+              [ 1, 3, [ 0, 0, 2 ] ],
+              [ 2, 4, [ 0, 0, 0 ] ],
+              [ 2, 4, [ 2, 0, 0 ] ],
+              [ 2, 4, [ 0, 2, 0 ] ],
+              [ 2, 4, [ 0, 0, 2 ] ] ]));
 }
