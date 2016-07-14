@@ -189,6 +189,23 @@ export function isConnected(graph) {
 };
 
 
+export function connectedComponents(graph) {
+  const verts = I.List(adjacencies(graph).keySeq());
+  const seen = I.Set().asMutable();
+  const result = [];
+
+  for (const start of verts) {
+    if (!seen.contains(start)) {
+      const comp = _componentInCoverGraph(graph, start);
+      result.push(comp);
+      comp.nodes.forEach(v => seen.add(v));
+    }
+  }
+
+  return result;
+};
+
+
 export function barycentricPlacement(graph) {
   if (!isConnected(graph))
     throw new Error('must have a connected orbit graph');
@@ -238,22 +255,18 @@ if (require.main == module) {
       console.log('      = '+barycentricPlacementAsFloat(g));
     }
 
-    const ocomp = _componentInOrbitGraph(g, 1);
-    console.log('  component of 1:');
-    console.log('    nodes = '+ocomp.nodes);
-    console.log('    nodeShifts = '+ocomp.nodeShifts);
-    console.log('    bridges = '+ocomp.bridges.map(JSON.stringify));
-
-    const ccomp = _componentInCoverGraph(g, 1);
-    console.log('  cover component of 1:');
-    console.log('    graph = '+ccomp.graph);
-    console.log('    basis = '+ccomp.basis);
-    console.log('    multiplicity = '+ccomp.multiplicity);
+    for (const comp of connectedComponents(g)) {
+      console.log('  component:');
+      console.log('    nodes = '+comp.nodes);
+      console.log('    graph = '+comp.graph);
+      console.log('    basis = '+comp.basis);
+      console.log('    multiplicity = '+comp.multiplicity);
+    }
     console.log();
   };
 
-  test(make([ [ 1, 1, [ -1,  0,  0 ] ],
-              [ 1, 1, [  0, -1,  0 ] ],
+  test(make([ [ 1, 1, [ -1,  1,  1 ] ],
+              [ 1, 1, [  0, -1,  1 ] ],
               [ 1, 1, [  0,  0, -1 ] ] ]));
 
   test(make([ [ 1, 2, [ 0, 0 ] ],
