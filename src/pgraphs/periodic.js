@@ -147,9 +147,8 @@ const _componentInOrbitGraph = (graph, start) => {
 };
 
 
-const _isConnectedOrbitGraph = function _isConnectedOrbitGraph(graph) {
-  const adj   = adjacencies(graph);
-  const verts = I.List(adj.keySeq());
+const _isConnectedOrbitGraph = (graph) => {
+  const verts = I.List(adjacencies(graph).keySeq());
   const comp = _componentInOrbitGraph(graph, verts.first());
 
   return comp.nodes.size >= verts.size;
@@ -175,14 +174,23 @@ const _componentInCoverGraph = (graph, start) => {
 
   return {
     basis,
+    nodes: I.List(nodes),
     multiplicity: ops.determinant(basis),
     graph: make(newEdges)
   };
 };
 
 
+export function isConnected(graph) {
+  const verts = I.List(adjacencies(graph).keySeq());
+  const comp = _componentInCoverGraph(graph, verts.first());
+
+  return comp.nodes.size >= verts.size && comp.multiplicity == 1;
+};
+
+
 export function barycentricPlacement(graph) {
-  if (!_isConnectedOrbitGraph(graph))
+  if (!isConnected(graph))
     throw new Error('must have a connected orbit graph');
 
   const adj   = adjacencies(graph);
@@ -225,7 +233,7 @@ if (require.main == module) {
   const test = function test(g) {
     console.log('g = '+g);
     console.log('  cs  = '+coordinationSeq(g, 1, 10));
-    if (_isConnectedOrbitGraph(g)) {
+    if (isConnected(g)) {
       console.log('  pos = '+barycentricPlacement(g));
       console.log('      = '+barycentricPlacementAsFloat(g));
     }
@@ -256,6 +264,11 @@ if (require.main == module) {
               [ 1, 2, [ 1, 0, 0 ] ],
               [ 1, 2, [ 0, 1, 0 ] ],
               [ 1, 2, [ 0, 0, 1 ] ] ]));
+
+  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
+              [ 1, 2, [ 2, 0, 0 ] ],
+              [ 1, 2, [ 0, 2, 0 ] ],
+              [ 1, 2, [ 0, 0, 2 ] ] ]));
 
   test(make([ [ 1, 3, [ 0, 0, 0 ] ],
               [ 1, 3, [ 2, 0, 0 ] ],
