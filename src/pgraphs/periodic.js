@@ -168,7 +168,7 @@ const _componentInCoverGraph = (graph, start) => {
       const [v, w] = [old2new.get(head), old2new.get(tail)];
       const [av, aw] = [nodeShifts.get(head), nodeShifts.get(tail)];
       const s = shift.toArray();
-      const t = ops.times(transform, ops.plus(s, ops.minus(aw, av)));
+      const t = ops.times(ops.plus(s, ops.minus(aw, av)), transform);
       return [v, w, t];
     });
 
