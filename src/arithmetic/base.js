@@ -67,7 +67,9 @@ const defaults = {
     __default__: (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y))
   },
 
-  gcd: { __default__: gcd }
+  gcd: { __default__: gcd },
+
+  typeOf: { __default__: x => typeOf(x) }
 };
 
 
