@@ -44,6 +44,9 @@ const gcd = (a, b, ops) => {
 };
 
 
+const mod = (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y));
+
+
 const defaults = {
   isInteger    : { __default__: x => false },
   isRational   : { __default__: x => false },
@@ -56,13 +59,12 @@ const defaults = {
   le: { __default__: (a, b, ops) => ops.cmp(a, b) <= 0 },
   ge: { __default__: (a, b, ops) => ops.cmp(a, b) >= 0 },
 
-  mod: {
-    __default__: (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y))
-  },
-
+  mod: { __default__: mod },
   gcd: { __default__: gcd },
 
-  typeOf: { __default__: x => typeOf(x) }
+  typeOf  : { __default__: x => typeOf(x) },
+  repr    : { __default__: (x, ops) => ({ [typeOf(x)]: ops.__repr__(x) }) },
+  __repr__: { __default__: x => x }
 };
 
 

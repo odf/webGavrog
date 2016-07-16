@@ -436,6 +436,9 @@ export function methods(baseLength = 0) {
       Integer: {
         Integer: gcd
       }
+    },
+    __repr__: {
+      LongInt: x => ({ sign: x.sign, digits: x.digits })
     }
   }
 };

@@ -36,6 +36,8 @@ export const matrices = matrixMethods.ops();
 
 
 if (require.main == module) {
+  const I = require('immutable');
+
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
@@ -121,4 +123,12 @@ if (require.main == module) {
 
   console.log();
   console.log(JSON.stringify(iops.triangulation(A)));
+
+  console.log();
+  console.log(JSON.stringify(ops.repr(ops.div([1, 2, 3], 3))));
+  console.log(I.fromJS(ops.repr(ops.div([1, 2, 3], 3))));
+  console.log(JSON.stringify(
+    ops.repr([[1.1, 2.2, ops.integer('-12_345_678_901_234_567_890')]])));
+  console.log(I.fromJS(
+    ops.repr([[1.1, 2.2, ops.integer('-12_345_678_901_234_567_890')]])))
 }

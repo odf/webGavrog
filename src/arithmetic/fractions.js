@@ -140,7 +140,13 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
     sgn       : { [typeName]: sgn      },
     floor     : { [typeName]: floor    },
     ceil      : { [typeName]: ceil     },
-    round     : { [typeName]: round    }
+    round     : { [typeName]: round    },
+    __repr__  : {
+      [typeName]: x => ({
+        numer: intOps.repr(x.numer),
+        denom: intOps.repr(x.denom)
+      })
+    }
   };
 
   methods.rational = { String: parse };

@@ -66,6 +66,10 @@ export function methods(vectorOps, scalarTypes) {
     div: {
       Point: {
       }
+    },
+
+    __repr__: {
+      Point: p => p.coords.map(x => vectorOps.repr(x))
     }
   };
 

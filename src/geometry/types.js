@@ -19,6 +19,8 @@ export const coordinateChanges = coordinateChangeMethods.ops();
 
 
 if (require.main == module) {
+  const I = require('immutable');
+
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
@@ -46,4 +48,12 @@ if (require.main == module) {
       ops.coordinateChange(ops.times(3, ops.identityMatrix(3))),
       ops.shift([1,2,3]))
   }`);
+
+  console.log();
+  console.log(JSON.stringify(ops.repr(ops.point(ops.div([1, 2, 3], 3)))));
+  console.log(I.fromJS(ops.repr(ops.point(ops.div([1, 2, 3], 3)))));
+  console.log(JSON.stringify(ops.repr(t)));
+  console.log(I.fromJS(ops.repr(t)));
+  console.log(JSON.stringify(ops.repr(ops.coordinateChange(t))));
+  console.log(I.fromJS(ops.repr(ops.coordinateChange(t))));
 }

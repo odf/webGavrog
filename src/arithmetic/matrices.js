@@ -438,6 +438,11 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
         Vector: (m, v) => matrixProduct([v], transposedMatrix(m))[0],
         Matrix: matrixProduct
       }
+    },
+
+    __repr__: {
+      Vector: map.V(s.repr),
+      Matrix: map.M(s.repr)
     }
   };
 

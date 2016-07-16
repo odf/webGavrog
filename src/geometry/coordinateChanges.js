@@ -42,6 +42,10 @@ export function methods(transformationOps) {
         Matrix: applyToOp,
         AffineTransformation: applyToOp
       }
+    },
+
+    __repr__: {
+      CoordinateChange: C => V.repr(C.oldToNew)
     }
   };
 
