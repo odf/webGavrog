@@ -247,7 +247,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     const [n, m] = shapeOfMatrix(A);
     for (let i = 0; i < n; ++i) {
       for (let j = 0; j < m; ++j) {
-        if (i != j && s.isNonZero(A[i][j]))
+        if (i != j && s.ne(A[i][j], 0))
           return false;
       }
     }

@@ -32,6 +32,7 @@ if (require.main == module) {
   console.log(`${ops.minus(ops.point([2,4,0]), [0,1,1])}`);
   console.log(`${ops.times([[1,2],[3,4]], ops.point([1,2]))}`);
   console.log(`${t}`);
+  console.log(`${ops.times(t, ops.inverse(t))}`);
   console.log(`${ops.times(t, ops.point([1,2,3]))}`);
   console.log(`${ops.times(t, [1,2,3])}`);
   console.log(`${ops.inverse(t)}`);

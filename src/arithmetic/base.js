@@ -49,13 +49,6 @@ const defaults = {
   isRational   : { __default__: x => false },
   isReal       : { __default__: x => false },
 
-  isZero       : { __default__: (x, ops) => ops.sgn(x) == 0 },
-  isNonZero    : { __default__: (x, ops) => ops.sgn(x) != 0 },
-  isPositive   : { __default__: (x, ops) => ops.sgn(x) >  0 },
-  isNonNegative: { __default__: (x, ops) => ops.sgn(x) >= 0 },
-  isNegative   : { __default__: (x, ops) => ops.sgn(x) <  0 },
-  isNonPositive: { __default__: (x, ops) => ops.sgn(x) <= 0 },
-
   eq: { __default__: (a, b, ops) => ops.cmp(a, b) == 0 },
   ne: { __default__: (a, b, ops) => ops.cmp(a, b) != 0 },
   lt: { __default__: (a, b, ops) => ops.cmp(a, b) <  0 },

@@ -32,7 +32,7 @@ export function methods(pointAndVectorOps) {
 
   const make = (linear, shift = []) => {
     for (let i = 0; i < shift.length; ++i)
-      if (!V.isZero(shift[i]))
+      if (!V.eq(shift[i], 0))
         return new AffineTransformation(linear, shift);
 
     return linear;
