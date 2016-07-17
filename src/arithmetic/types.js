@@ -124,11 +124,14 @@ if (require.main == module) {
   console.log();
   console.log(JSON.stringify(iops.triangulation(A)));
 
-  console.log();
-  console.log(JSON.stringify(ops.repr(ops.div([1, 2, 3], 3))));
-  console.log(I.fromJS(ops.repr(ops.div([1, 2, 3], 3))));
-  console.log(JSON.stringify(
-    ops.repr([[1.1, 2.2, ops.integer('-12_345_678_901_234_567_890')]])));
-  console.log(I.fromJS(
-    ops.repr([[1.1, 2.2, ops.integer('-12_345_678_901_234_567_890')]])))
+  const testRepr = x => {
+    const xr = fops.repr(x);
+    console.log();
+    console.log(JSON.stringify(xr));
+    console.log(I.fromJS(xr));
+    console.log(JSON.stringify(fops.fromRepr(xr)));
+  };
+
+  testRepr(ops.div([1, 2, 3], 3));
+  testRepr([[1.1, 2.2, ops.integer('-12_345_678_901_234_567_890')]]);
 }

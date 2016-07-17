@@ -437,9 +437,9 @@ export function methods(baseLength = 0) {
         Integer: gcd
       }
     },
-    __repr__: {
-      LongInt: x => ({ sign: x.sign, digits: x.digits })
-    }
+    __repr__: { LongInt: x => ({ sign: x.sign, digits: x.digits }) },
+    __Integer__: { Object: ({ Integer: n }) => n },
+    __LongInt__: { Object: ({ LongInt: obj }) => make(obj.sign, obj.digits) }
   }
 };
 

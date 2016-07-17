@@ -47,6 +47,15 @@ const gcd = (a, b, ops) => {
 const mod = (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y));
 
 
+const fromRepr = (obj, ops) => {
+  const keys = Object.keys(obj);
+  if (keys.length != 1)
+    throw new Error('must have exactly one key');
+
+  return ops[`__${keys[0]}__`](obj);
+};
+
+
 const defaults = {
   isInteger    : { __default__: x => false },
   isRational   : { __default__: x => false },
@@ -64,6 +73,8 @@ const defaults = {
 
   typeOf  : { __default__: x => typeOf(x) },
   repr    : { __default__: (x, ops) => ({ [typeOf(x)]: ops.__repr__(x) }) },
+  fromRepr: { Object: fromRepr },
+
   __repr__: { __default__: x => x }
 };
 

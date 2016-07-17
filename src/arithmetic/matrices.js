@@ -443,7 +443,10 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     __repr__: {
       Vector: map.V(s.repr),
       Matrix: map.M(s.repr)
-    }
+    },
+
+    __Vector__: { Object: ({ Vector: v }) => map.V(s.fromRepr)(v) },
+    __Matrix__: { Object: ({ Matrix: m }) => map.M(s.fromRepr)(m) },
   };
 
   for (const name of ['plus', 'minus', 'div', 'idiv']) {

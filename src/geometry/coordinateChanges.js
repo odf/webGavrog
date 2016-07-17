@@ -46,6 +46,11 @@ export function methods(transformationOps) {
 
     __repr__: {
       CoordinateChange: C => V.repr(C.oldToNew)
+    },
+
+    __CoordinateChange__: {
+      Object: ({ CoordinateChange: transform }) =>
+        new CoordinateChange(V.fromRepr(transform))
     }
   };
 

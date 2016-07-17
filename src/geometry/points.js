@@ -70,6 +70,10 @@ export function methods(vectorOps, scalarTypes) {
 
     __repr__: {
       Point: p => p.coords.map(x => vectorOps.repr(x))
+    },
+
+    __Point__: {
+      Object: ({ Point: v }) => new Point(v.map(x => vectorOps.fromRepr(x)))
     }
   };
 

@@ -49,11 +49,15 @@ if (require.main == module) {
       ops.shift([1,2,3]))
   }`);
 
-  console.log();
-  console.log(JSON.stringify(ops.repr(ops.point(ops.div([1, 2, 3], 3)))));
-  console.log(I.fromJS(ops.repr(ops.point(ops.div([1, 2, 3], 3)))));
-  console.log(JSON.stringify(ops.repr(t)));
-  console.log(I.fromJS(ops.repr(t)));
-  console.log(JSON.stringify(ops.repr(ops.coordinateChange(t))));
-  console.log(I.fromJS(ops.repr(ops.coordinateChange(t))));
+  const testRepr = x => {
+    const xr = ops.repr(x);
+    console.log();
+    console.log(JSON.stringify(xr));
+    console.log(I.fromJS(xr));
+    console.log(JSON.stringify(ops.fromRepr(xr)));
+  };
+
+  testRepr(ops.point(ops.div([1, 2, 3], 3)));
+  testRepr(t);
+  testRepr(ops.coordinateChange(t));
 }

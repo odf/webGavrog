@@ -24,7 +24,8 @@ export function methods(rationals) {
     isReal  : { Float: x => true },
     toJS    : { Float: x => x },
     negative: { Float: x => -x },
-    sgn     : { Float: x => (x > 0) - (x < 0) }
+    sgn     : { Float: x => (x > 0) - (x < 0) },
+    __Float__: { Object: ({ Float: x }) => x }
   };
 
   for (const name of [ 'abs', 'floor', 'ceil', 'round' ])

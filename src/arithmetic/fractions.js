@@ -146,6 +146,10 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
         numer: intOps.repr(x.numer),
         denom: intOps.repr(x.denom)
       })
+    },
+    [`__${typeName}__`]: {
+      Object: ({ [typeName]: obj }) =>
+        make(intOps.fromRepr(obj.numer), intOps.fromRepr(obj.denom))
     }
   };
 
