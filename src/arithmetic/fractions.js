@@ -127,7 +127,7 @@ export function methods(intOps, intTypes, typeName = 'Fraction') {
 
   const idiv = (q, r) => {
     const t = div(q, r);
-    return (ops.typeOf(t) == typeName ? floor : intOps.floor)(t);
+    return (intOps.typeOf(t) == typeName ? floor : intOps.floor)(t);
   };
 
 
