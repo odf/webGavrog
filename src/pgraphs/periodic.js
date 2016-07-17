@@ -35,7 +35,7 @@ Edge.prototype.canonical = function canonical() {
 };
 
 const _makeEdge = function _makeEdge(e) {
-  return new Edge({ head: e[0], tail: e[1], shift: I.List(e[2]) }).canonical();
+  return new Edge({ head: e[0], tail: e[1], shift: e[2] }).canonical();
 };
 
 
@@ -54,8 +54,8 @@ export function make(data) {
   if (edges.size == 0)
     throw new Error('cannot be empty');
 
-  const dim = edges.first().shift.size;
-  if (edges.some(e => e.shift.size != dim))
+  const dim = edges.first().shift.length;
+  if (edges.some(e => e.shift.length != dim))
     throw new Error('must have consistent shift dimensions');
 
   return new Graph({ dim: dim, edges: edges });
@@ -87,11 +87,11 @@ export function adjacencies(graph) {
 export function coordinationSeq(graph, start, dist) {
   const adj  = adjacencies(graph);
   const zero = I.List(I.Repeat(0, graph.dim));
-  const plus = (s, t) => I.Range(0, graph.dim).map(i => s.get(i) + t.get(i));
+  const plus = (s, t) => I.Range(0, graph.dim).map(i => s.get(i) + t[i]);
 
   let oldShell = I.Set();
   let thisShell = I.Set([CoverVertex({ v: start, s: zero })]);
-  let res = I.List([1]);
+  let res = [1];
 
   I.Range(1, dist+1).forEach(function(i) {
     let nextShell = I.Set();
@@ -103,7 +103,7 @@ export function coordinationSeq(graph, start, dist) {
       });
     });
 
-    res = res.push(nextShell.size);
+    res.push(nextShell.size);
     oldShell = thisShell;
     thisShell = nextShell;
   });
@@ -173,14 +173,13 @@ const _componentInCoverGraph = (graph, start) => {
     .map(({ head, tail, shift }) => {
       const [v, w] = [old2new.get(head), old2new.get(tail)];
       const [av, aw] = [nodeShifts.get(head), nodeShifts.get(tail)];
-      const s = shift.toArray();
-      const t = ops.times(ops.plus(s, ops.minus(aw, av)), transform);
+      const t = ops.times(ops.plus(shift, ops.minus(aw, av)), transform);
       return [v, w, t];
     });
 
   return {
     basis,
-    nodes: I.List(nodes),
+    nodes: nodes.toArray(),
     multiplicity: ops.determinant(basis),
     graph: make(newEdges)
   };
@@ -191,7 +190,7 @@ export function isConnected(graph) {
   const verts = I.List(adjacencies(graph).keySeq());
   const comp = _componentInCoverGraph(graph, verts.first());
 
-  return comp.nodes.size >= verts.size && comp.multiplicity == 1;
+  return comp.nodes.length >= verts.size && comp.multiplicity == 1;
 };
 
 
@@ -231,7 +230,7 @@ export function barycentricPlacement(graph) {
         const j = vIdcs.get(c.v);
         A[i][j] -= 1;
         A[i][i] += 1;
-        t[i] = ops.plus(t[i], c.s.toArray());
+        t[i] = ops.plus(t[i], c.s);
       }
     });
   });
@@ -239,7 +238,7 @@ export function barycentricPlacement(graph) {
 
   const p = ops.solve(A, t);
 
-  return I.Map(I.Range(0, n).map(i => [verts.get(i), I.List(p[i])]));
+  return I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
 };
 
 
@@ -253,7 +252,7 @@ export function isStable(graph, pos=barycentricPlacement(graph)) {
   const seen = I.Set().asMutable();
 
   for (const v of verts) {
-    const p = pos.get(v).toArray();
+    const p = pos.get(v);
     const key = I.fromJS(ops.repr(p.map(x => ops.mod(x, 1))));
     if (seen.contains(key))
       return false;
@@ -273,7 +272,7 @@ export function isLocallyStable(graph, pos=barycentricPlacement(graph)) {
     const seen = I.Set().asMutable();
 
     for (const w of adj.get(v)) {
-      const p = ops.plus(pos.get(w.v).toArray(), w.s.toArray());
+      const p = ops.plus(pos.get(w.v), w.s);
       const key = I.fromJS(ops.repr(p));
       if (seen.contains(key))
         return false;
