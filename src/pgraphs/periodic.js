@@ -122,8 +122,7 @@ const _componentInOrbitGraph = (graph, start) => {
     const v = queue.shift();
     const av = nodeShifts.get(v);
 
-    for (const {v: w, s} of adj.get(v)) {
-      const shift = I.List(s).toArray();
+    for (const {v: w, s: shift} of adj.get(v)) {
       if (nodeShifts.get(w) == undefined) {
         queue.push(w);
         nodeShifts.set(w, ops.minus(av, shift));
