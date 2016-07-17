@@ -62,26 +62,23 @@ export function make(data) {
 };
 
 
+export function adjacencies(graph) {
+  const target = e => ({ v: e.tail, s: e.shift });
+
+  let res = I.Map();
+  for (const e of graph.edges) {
+    res = res
+      .update(e.head, a => (a || I.List()).push(target(e)))
+      .update(e.tail, a => (a || I.List()).push(target(e.reverse())));
+  }
+  return res;
+};
+
+
 const CoverVertex = I.Record({
   v: undefined,
   s: undefined
 });
-
-
-const _target = e => CoverVertex({ v: e.tail, s: e.shift });
-
-
-export function adjacencies(graph) {
-  let res = I.Map();
-
-  graph.edges.forEach(function(e) {
-    res = res
-      .update(e.head, a => (a || I.List()).push(_target(e)))
-      .update(e.tail, a => (a || I.List()).push(_target(e.reverse())));
-  });
-
-  return res;
-};
 
 
 export function coordinationSeq(graph, start, dist) {
