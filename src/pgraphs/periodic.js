@@ -248,6 +248,44 @@ export function barycentricPlacementAsFloat(graph) {
 };
 
 
+export function isStable(graph, pos=barycentricPlacement(graph)) {
+  const verts = I.List(adjacencies(graph).keySeq());
+  const seen = I.Set().asMutable();
+
+  for (const v of verts) {
+    const p = pos.get(v).toArray();
+    const key = I.fromJS(ops.repr(p.map(x => ops.mod(x, 1))));
+    if (seen.contains(key))
+      return false;
+    else
+      seen.add(key);
+  }
+
+  return true;
+};
+
+
+export function isLocallyStable(graph, pos=barycentricPlacement(graph)) {
+  const adj = adjacencies(graph);
+  const verts = I.List(adj.keySeq());
+
+  for (const v of verts) {
+    const seen = I.Set().asMutable();
+
+    for (const w of adj.get(v)) {
+      const p = ops.plus(pos.get(w.v).toArray(), w.s.toArray());
+      const key = I.fromJS(ops.repr(p));
+      if (seen.contains(key))
+        return false;
+      else
+        seen.add(key);
+    }
+  }
+
+  return true;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -259,6 +297,8 @@ if (require.main == module) {
     if (isConnected(g)) {
       console.log('  pos = '+barycentricPlacement(g));
       console.log('      = '+barycentricPlacementAsFloat(g));
+      console.log('  stable: '+isStable(g));
+      console.log('  locally stable: '+isLocallyStable(g));
     }
 
     for (const comp of connectedComponents(g)) {
@@ -270,6 +310,22 @@ if (require.main == module) {
     }
     console.log();
   };
+
+  test(make([ [ 1, 1, [ 1, 0 ] ],
+              [ 1, 1, [ 0, 1 ] ],
+              [ 1, 2, [ 0, 0 ] ],
+              [ 1, 2, [ 1, 1 ] ],
+              [ 1, 3, [ 0, 0 ] ],
+              [ 1, 3, [ 1, -1 ] ] ]));
+
+  test(make([ [ 1, 1, [ 1, 0 ] ],
+              [ 1, 1, [ 0, 1 ] ],
+              [ 1, 2, [ 0, 0 ] ],
+              [ 1, 2, [ 1, 1 ] ],
+              [ 1, 3, [ 0, 0 ] ],
+              [ 1, 3, [ 1, -1 ] ],
+              [ 1, 4, [ 0, 0 ] ],
+              [ 1, 4, [ 1, -1 ] ] ]));
 
   test(make([ [ 1, 1, [ -1,  1,  1 ] ],
               [ 1, 1, [  0, -1,  1 ] ],
