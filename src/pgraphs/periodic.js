@@ -155,9 +155,15 @@ const _isConnectedOrbitGraph = (graph) => {
 };
 
 
+const _basis = M => {
+  const T = ops.triangulation(M).R;
+  return T.slice(0, ops.rank(T));
+};
+
+
 const _componentInCoverGraph = (graph, start) => {
   const { nodes, nodeShifts, bridges } = _componentInOrbitGraph(graph, start);
-  const basis = ops.triangulation(bridges.map(b => b.s)).R;
+  const basis = _basis(bridges.map(b => b.s));
   const transform = ops.inverse(basis);
   const old2new = I.Map(I.List(nodes).zip(I.Range(1, nodes.size+1)));
 
