@@ -75,35 +75,29 @@ export function adjacencies(graph) {
 };
 
 
-const CoverVertex = I.Record({
-  v: undefined,
-  s: undefined
-});
-
-
 export function coordinationSeq(graph, start, dist) {
   const adj  = adjacencies(graph);
-  const zero = I.List(I.Repeat(0, graph.dim));
-  const plus = (s, t) => I.Range(0, graph.dim).map(i => s.get(i) + t[i]);
+  const zero = ops.vector(graph.dim);
 
   let oldShell = I.Set();
-  let thisShell = I.Set([CoverVertex({ v: start, s: zero })]);
-  let res = [1];
+  let thisShell = I.Set([I.fromJS([start, zero])]);
+  const res = [1];
 
-  I.Range(1, dist+1).forEach(function(i) {
-    let nextShell = I.Set();
-    thisShell.forEach(function(v) {
-      adj.get(v.v).forEach(function(t) {
-        const w = CoverVertex({ v: t.v, s: plus(v.s, t.s) });
-        if (!oldShell.contains(w) && !thisShell.contains(w))
-          nextShell = nextShell.add(w);
-      });
-    });
+  for (const i of I.Range(1, dist+1)) {
+    let nextShell = I.Set().asMutable();
+    for (const item of thisShell) {
+      const [v, s] = item.toJS();
+      for (const { v: w, s: t } of adj.get(v)) {
+        const key = I.fromJS([w, ops.plus(s, t)]);
+        if (!oldShell.contains(key) && !thisShell.contains(key))
+          nextShell.add(key);
+      }
+    }
 
     res.push(nextShell.size);
     oldShell = thisShell;
     thisShell = nextShell;
-  });
+  }
 
   return res;
 };
