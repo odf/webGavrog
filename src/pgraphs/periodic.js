@@ -49,6 +49,10 @@ Graph.prototype.toString = function toString() {
 };
 
 
+const encode = value => I.fromJS(ops.repr(value));
+const decode = value => ops.fromRepr(value.toJS());
+
+
 export function make(data) {
   const edges = I.Set(data).map(_makeEdge);
   if (edges.size == 0)
@@ -243,7 +247,7 @@ export function isStable(graph, pos=barycentricPlacement(graph)) {
 
   for (const v of verts) {
     const p = pos.get(v);
-    const key = I.fromJS(ops.repr(p.map(x => ops.mod(x, 1))));
+    const key = encode(p.map(x => ops.mod(x, 1)));
     if (seen.contains(key))
       return false;
     else
@@ -263,7 +267,7 @@ export function isLocallyStable(graph, pos=barycentricPlacement(graph)) {
 
     for (const w of adj.get(v)) {
       const p = ops.plus(pos.get(w.v), w.s);
-      const key = I.fromJS(ops.repr(p));
+      const key = encode(p);
       if (seen.contains(key))
         return false;
       else
@@ -282,9 +286,9 @@ const _neighborsByEdgeVector = (
 
   for (const { v: w, s } of adj.get(v)) {
     const d = ops.plus(s, ops.minus(pos.get(w), pos.get(v)));
-    result.set(I.fromJS(d), { v: w, s })
+    result.set(encode(d), { v: w, s })
     if (v == w)
-      result.set(I.fromJS(ops.negative(d)), { v, s: ops.negative(s) });
+      result.set(encode(ops.negative(d)), { v, s: ops.negative(s) });
   }
 
   return result.asImmutable();
@@ -304,7 +308,7 @@ export function morphism(graph1, graph2, start1, start2, transform) {
     errors.push('first graph is not connected');
   if (!isConnected(graph2))
     errors.push('second graph is not connected');
-  if (transform != null && ops.dimensions(transform) != graph1.dim)
+  if (transform != null && ops.dimension(transform) != graph1.dim)
     errors.push('coordinate transformation has the wrong dimension');
 
   if (errors.length > 0)
@@ -328,6 +332,14 @@ export function morphism(graph1, graph2, start1, start2, transform) {
     const w2 = src2img.get(w1);
     const n1 = _neighborsByEdgeVector(graph1, w1, adj1, pos1);
     const n2 = _neighborsByEdgeVector(graph2, w2, adj2, pos2);
+
+    for (const [d1, {v: node1, s: shift1}] of n1) {
+      const d2 = encode(ops.times(decode(d1), transform));
+      const {v: node2, s: shift2} = n1.get(d2);
+
+      if (node2 == null)
+        return null;
+    }
   }
 };
 
@@ -343,10 +355,13 @@ if (require.main == module) {
     if (isConnected(g)) {
       console.log('  pos = '+barycentricPlacement(g));
       console.log('      = '+barycentricPlacementAsFloat(g));
-      console.log('  neighbors of 1: '
-                  + JSON.stringify(_neighborsByEdgeVector(g, 1)));
+      //console.log('  neighbors of 1: '+ _neighborsByEdgeVector(g, 1));
       console.log('  stable: '+isStable(g));
       console.log('  locally stable: '+isLocallyStable(g));
+
+      if (isLocallyStable(g)) {
+        morphism(g, g, 1, 1, ops.identityMatrix(g.dim));
+      }
     }
 
     for (const comp of connectedComponents(g)) {
