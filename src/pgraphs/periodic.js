@@ -4,38 +4,32 @@ import { rationalMatrices } from '../arithmetic/types';
 const ops = rationalMatrices;
 
 
-const Edge = I.Record({
-  head : undefined,
-  tail : undefined,
-  shift: undefined
-});
+class VectorLabeledEdge {
+  constructor(head, tail, shift) {
+    this.head = head;
+    this.tail = tail;
+    this.shift = shift;
+  }
 
-Edge.prototype.toString = function toString() {
-  return 'Edge('+this.head+', '+this.tail+', '+this.shift+')';
-};
+  toString() {
+    return `VectorLabeledEdge(${this.head}, ${this.tail}, ${this.shift})`;
+  }
 
-Edge.prototype.reverse = function reverse() {
-  return new Edge({
-    head : this.tail,
-    tail : this.head,
-    shift: this.shift.map(x => -x)
-  });
-};
+  reverse() {
+    return new VectorLabeledEdge(
+      this.tail, this.head, ops.negative(this.shift));
+  }
 
+  canonical() {
+    if (this.tail < this.head
+        || (this.tail == this.head && this.shift.find(x => x != 0) < 0)
+       )
+      return this.reverse();
+    else
+      return this;
+  }
 
-const _isNegative = vec => vec.find(x => ops.sgn(x) != 0) < 0;
-
-
-Edge.prototype.canonical = function canonical() {
-  if (this.tail < this.head || (this.tail == this.head
-                                && _isNegative(this.shift)))
-    return this.reverse();
-  else
-    return this;
-};
-
-const _makeEdge = function _makeEdge(e) {
-  return new Edge({ head: e[0], tail: e[1], shift: e[2] }).canonical();
+  get __typeName() { return 'VectorLabeledEdge'; }
 };
 
 
@@ -54,7 +48,8 @@ const decode = value => ops.fromRepr(value.toJS());
 
 
 export function make(data) {
-  const edges = I.Set(data).map(_makeEdge);
+  const edges = I.Set(data)
+    .map(([h, t, s]) => new VectorLabeledEdge(h, t, s).canonical());
   if (edges.size == 0)
     throw new Error('cannot be empty');
 
