@@ -1,7 +1,6 @@
 import * as I from 'immutable';
 
-import { rationalMatrices } from '../arithmetic/types';
-const ops = rationalMatrices;
+import { rationalMatrixMethods, rationalMatrices } from '../arithmetic/types';
 
 
 class VectorLabeledEdge {
@@ -17,7 +16,7 @@ class VectorLabeledEdge {
 
   reverse() {
     return new VectorLabeledEdge(
-      this.tail, this.head, ops.negative(this.shift));
+      this.tail, this.head, rationalMatrices.negative(this.shift));
   }
 
   canonical() {
@@ -31,6 +30,24 @@ class VectorLabeledEdge {
 
   get __typeName() { return 'VectorLabeledEdge'; }
 };
+
+
+const ops = rationalMatrixMethods.register({
+  __repr__  : {
+    VectorLabeledEdge: x => ({
+      head: ops.repr(x.head),
+      tail: ops.repr(x.tail),
+      shift: ops.repr(x.shift)
+    })
+  },
+  __VectorLabeledEdge__: {
+    Object: ({ VectorLabeledEdge: obj }) =>
+      new VectorLabeledEdge(
+        ops.fromRepr(obj.head),
+        ops.fromRepr(obj.tail),
+        ops.fromRepr(obj.shift))
+  }
+}).ops();
 
 
 const Graph = I.Record({
