@@ -355,7 +355,9 @@ if (require.main == module) {
     if (isConnected(g)) {
       console.log('  pos = '+barycentricPlacement(g));
       console.log('      = '+barycentricPlacementAsFloat(g));
-      //console.log('  neighbors of 1: '+ _neighborsByEdgeVector(g, 1));
+
+      const nbrs = _neighborsByEdgeVector(g, 1).mapKeys(decode);
+      console.log('  neighbors of 1: '+ JSON.stringify(nbrs));
       console.log('  stable: '+isStable(g));
       console.log('  locally stable: '+isLocallyStable(g));
 
