@@ -64,9 +64,14 @@ const encode = value => I.fromJS(ops.repr(value));
 const decode = value => ops.fromRepr(value.toJS());
 
 
+export function makeEdge(head, tail, shift) {
+  return new VectorLabeledEdge(head, tail, shift);
+};
+
+
 export function make(data) {
   const edges = I.Set(data)
-    .map(([h, t, s]) => new VectorLabeledEdge(h, t, s).canonical());
+    .map(([h, t, s]) => makeEdge(h, t, s).canonical());
   if (edges.size == 0)
     throw new Error('cannot be empty');
 
