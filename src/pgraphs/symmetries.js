@@ -31,16 +31,17 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
 
   if (graph2.dim != graph1.dim)
     errors.push('graphs have different dimensions');
-  if (!pg.isLocallyStable(graph1))
-    errors.push('first graph is not locally stable');
-  if (!pg.isLocallyStable(graph2))
-    errors.push('second graph is not locally stable');
+  if (transform != null && ops.dimension(transform) != graph1.dim)
+    errors.push('coordinate transformation has the wrong dimension');
+
   if (!pg.isConnected(graph1))
     errors.push('first graph is not connected');
   if (!pg.isConnected(graph2))
     errors.push('second graph is not connected');
-  if (transform != null && ops.dimension(transform) != graph1.dim)
-    errors.push('coordinate transformation has the wrong dimension');
+  if (!pg.isLocallyStable(graph1))
+    errors.push('first graph is not locally stable');
+  if (!pg.isLocallyStable(graph2))
+    errors.push('second graph is not locally stable');
 
   if (errors.length > 0)
     throw new Error(errors.join('\n'));
