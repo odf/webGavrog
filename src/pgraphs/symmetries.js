@@ -36,11 +36,12 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
 
   if (!pg.isConnected(graph1))
     errors.push('first graph is not connected');
+  else if (!pg.isLocallyStable(graph1))
+    errors.push('first graph is not locally stable');
+
   if (!pg.isConnected(graph2))
     errors.push('second graph is not connected');
-  if (!pg.isLocallyStable(graph1))
-    errors.push('first graph is not locally stable');
-  if (!pg.isLocallyStable(graph2))
+  else if (!pg.isLocallyStable(graph2))
     errors.push('second graph is not locally stable');
 
   if (errors.length > 0)
