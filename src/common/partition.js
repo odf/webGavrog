@@ -21,7 +21,7 @@ const union = function union(impl, x, y) {
   const y0 = get(impl, y);
 
   if (I.is(x0, y0))
-    return impl;
+    return pmake(impl.rank, impl.parent);
   else {
     const rx = impl.rank.get(x0) || 0;
     const ry = impl.rank.get(y0) || 0;
