@@ -1,6 +1,7 @@
 import * as I from 'immutable';
 
 import * as pg from './periodic';
+import Partition from '../common/partition';
 
 const ops = pg.ops;
 
@@ -130,6 +131,32 @@ export function morphism(
 };
 
 
+const translationalEquivalences = (
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph)
+) => {
+  const id = ops.identityMatrix(graph.dim);
+  const verts = I.List(adj.keySeq());
+  const start = verts.first();
+
+  let p = Partition();
+
+  for (const v of verts) {
+    if (p.get(start) != p.get(v)) {
+      const iso = morphism(graph, graph, start, v, id, adj, adj, pos, pos);
+      if (iso != null) {
+        for (const w of verts) {
+          p = p.union(w, iso.src2img.get(w));
+        }
+      }
+    }
+  }
+
+  return p;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -155,6 +182,8 @@ if (require.main == module) {
       for (const [k, v] of phi.img2src)
         console.log(`    ${maybeDecode(k)} -> ${v}`);
       console.log(`  injective = ${phi.injective}`);
+      console.log();
+      console.log(`translational equivalence: ${translationalEquivalences(g)}`);
     }
     console.log();
     console.log();
@@ -180,6 +209,13 @@ if (require.main == module) {
   test(pg.make([ [ 1, 1, [ -1,  1,  1 ] ],
                  [ 1, 1, [  0, -1,  1 ] ],
                  [ 1, 1, [  0,  0, -1 ] ] ]));
+
+  test(pg.make([ [ 1, 1, [ 1, 0, 0 ] ],
+                 [ 1, 1, [ 0, 1, 0 ] ],
+                 [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 1, 2, [ 0, 0, 1 ] ],
+                 [ 2, 2, [ 1, 0, 0 ] ],
+                 [ 2, 2, [ 0, 1, 0 ] ] ]));
 
   test(pg.make([ [ 1, 2, [ 0, 0 ] ],
                  [ 1, 2, [ 1, 0 ] ],
