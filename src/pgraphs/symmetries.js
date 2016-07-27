@@ -131,6 +131,24 @@ export function morphism(
 };
 
 
+export function isMinimal(
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph))
+{
+  const id = ops.identityMatrix(graph.dim);
+  const verts = I.List(adj.keySeq());
+  const start = verts.first();
+
+  for (const v of verts.rest()) {
+    if (morphism(graph, graph, start, v, id, adj, adj, pos, pos) != null)
+      return false;
+  }
+
+  return true;
+}
+
+
 const translationalEquivalences = (
   graph,
   adj = pg.adjacencies(graph),
@@ -183,7 +201,13 @@ if (require.main == module) {
         console.log(`    ${maybeDecode(k)} -> ${v}`);
       console.log(`  injective = ${phi.injective}`);
       console.log();
-      console.log(`translational equivalence: ${translationalEquivalences(g)}`);
+
+      const minimal = isMinimal(g);
+      console.log(`minimal = ${isMinimal(g)}`);
+      if (!minimal) {
+        const p = translationalEquivalences(g);
+        console.log(`translational equivalences: ${p}`);
+      }
     }
     console.log();
     console.log();
