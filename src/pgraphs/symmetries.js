@@ -175,6 +175,27 @@ const translationalEquivalences = (
 };
 
 
+export function extraTranslationVectors(
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph),
+  equivs = translationalEquivalences(graph, adj, pos))
+{
+  const verts = pg.vertices(graph);
+  const class0 = equivs.get(verts.first());
+  const pos0 = pos.get(verts.first());
+  const vectors = [];
+
+  for (const v of verts.rest()) {
+    if (equivs.get(v) == class0) {
+      vectors.push(ops.mod(ops.minus(pos.get(v), pos0), 1));
+    }
+  }
+
+  return vectors;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -207,6 +228,7 @@ if (require.main == module) {
       if (!minimal) {
         const p = translationalEquivalences(g);
         console.log(`translational equivalences: ${p}`);
+        console.log(`extra translations = ${extraTranslationVectors(g)}`);
       }
     }
     console.log();
