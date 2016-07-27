@@ -113,7 +113,7 @@ export function morphism(
     }
   }
 
-  for (const v of I.List(adj2.keySeq()))
+  for (const v of pg.vertices(graph2))
     if (!img2src.has(v))
       return null;
   for (const e of graph2.edges)
@@ -137,7 +137,7 @@ export function isMinimal(
   pos = pg.barycentricPlacement(graph))
 {
   const id = ops.identityMatrix(graph.dim);
-  const verts = I.List(adj.keySeq());
+  const verts = pg.vertices(graph);
   const start = verts.first();
 
   for (const v of verts.rest()) {
@@ -155,7 +155,7 @@ const translationalEquivalences = (
   pos = pg.barycentricPlacement(graph)
 ) => {
   const id = ops.identityMatrix(graph.dim);
-  const verts = I.List(adj.keySeq());
+  const verts = pg.vertices(graph);
   const start = verts.first();
 
   let p = Partition();

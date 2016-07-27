@@ -83,6 +83,16 @@ export function make(data) {
 };
 
 
+export function vertices(graph) {
+  const result = I.Set().asMutable();
+  for (const e of graph.edges) {
+    result.add(e.head);
+    result.add(e.tail);
+  }
+  return I.List(result);
+};
+
+
 export function adjacencies(graph) {
   const target = e => ({ v: e.tail, s: e.shift });
 
@@ -159,7 +169,7 @@ const _componentInOrbitGraph = (graph, start) => {
 
 
 const _isConnectedOrbitGraph = (graph) => {
-  const verts = I.List(adjacencies(graph).keySeq());
+  const verts = vertices(graph);
   const comp = _componentInOrbitGraph(graph, verts.first());
 
   return comp.nodes.size >= verts.size;
@@ -198,7 +208,7 @@ const _componentInCoverGraph = (graph, start) => {
 
 
 export function isConnected(graph) {
-  const verts = I.List(adjacencies(graph).keySeq());
+  const verts = vertices(graph);
   const comp = _componentInCoverGraph(graph, verts.first());
 
   return comp.nodes.length >= verts.size && comp.multiplicity == 1;
@@ -206,7 +216,7 @@ export function isConnected(graph) {
 
 
 export function connectedComponents(graph) {
-  const verts = I.List(adjacencies(graph).keySeq());
+  const verts = vertices(graph);
   const seen = I.Set().asMutable();
   const result = [];
 
@@ -227,7 +237,7 @@ export function barycentricPlacement(graph) {
     throw new Error('must have a connected orbit graph');
 
   const adj   = adjacencies(graph);
-  const verts = I.List(adj.keySeq());
+  const verts = vertices(graph);
   const vIdcs = I.Map(I.Range(0, verts.size).map(i => [verts.get(i), i]));
 
   const n = verts.size;
@@ -259,7 +269,7 @@ export function barycentricPlacementAsFloat(graph) {
 
 
 export function isStable(graph, pos=barycentricPlacement(graph)) {
-  const verts = I.List(adjacencies(graph).keySeq());
+  const verts = vertices(graph);
   const seen = I.Set().asMutable();
 
   for (const v of verts) {
@@ -277,7 +287,7 @@ export function isStable(graph, pos=barycentricPlacement(graph)) {
 
 export function isLocallyStable(graph, pos=barycentricPlacement(graph)) {
   const adj = adjacencies(graph);
-  const verts = I.List(adj.keySeq());
+  const verts = vertices(graph);
 
   for (const v of verts) {
     const seen = I.Set().asMutable();
