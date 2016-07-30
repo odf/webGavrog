@@ -219,6 +219,29 @@ const translationEquivalenceClasses = (
 };
 
 
+const _basis = M => {
+  const T = ops.triangulation(M).R;
+  return T.slice(0, ops.rank(T));
+};
+
+
+export function minimalImage(
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph),
+  equivs = translationalEquivalences(graph, adj, pos))
+{
+  const classes = translationalEquivalences(graph, adj, pos, equivs);
+  const vectors = extraTranslationVectors(graph, adj, pos, equivs);
+  const basis = _basis(vectors);
+
+  const imgEdges = [];
+  for (const e of graph.edges) {
+    
+  }
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -254,6 +277,7 @@ if (require.main == module) {
         console.log(`translational equivalences: ${p}`);
         console.log(`extra translations = ${extraTranslationVectors(g)}`);
         console.log(`equivalence classes: ${translationEquivalenceClasses(g)}`);
+        console.log(`minimal image: ${minimalImage(g)}`);
       }
     }
     console.log();
