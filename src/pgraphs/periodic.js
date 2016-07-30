@@ -70,7 +70,7 @@ export function makeEdge(head, tail, shift) {
 
 
 export function make(data) {
-  const edges = I.Set(data)
+  const edges = I.OrderedSet(data)
     .map(([h, t, s]) => makeEdge(h, t, s).canonical());
   if (edges.size == 0)
     throw new Error('cannot be empty');
@@ -84,7 +84,7 @@ export function make(data) {
 
 
 export function vertices(graph) {
-  const result = I.Set().asMutable();
+  const result = I.OrderedSet().asMutable();
   for (const e of graph.edges) {
     result.add(e.head);
     result.add(e.tail);
