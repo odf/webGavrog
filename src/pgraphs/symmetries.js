@@ -175,12 +175,12 @@ const translationalEquivalences = (
 };
 
 
-export function extraTranslationVectors(
+const extraTranslationVectors = (
   graph,
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph),
-  equivs = translationalEquivalences(graph, adj, pos))
-{
+  equivs = translationalEquivalences(graph, adj, pos)
+) => {
   const verts = pg.vertices(graph);
   const class0 = equivs.get(verts.first());
   const pos0 = pos.get(verts.first());
@@ -196,6 +196,29 @@ export function extraTranslationVectors(
 };
 
 
+const translationEquivalenceClasses = (
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph),
+  equivs = translationalEquivalences(graph, adj, pos)
+) => {
+  const repToClass = {};
+  const classes = [];
+
+  for (const v of pg.vertices(graph)) {
+    const rep = equivs.get(v);
+    if (repToClass[rep] == null) {
+      repToClass[rep] = classes.length;
+      classes.push([v]);
+    }
+    else
+      classes[repToClass[rep]].push(v);
+  }
+
+  return classes;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -204,6 +227,7 @@ if (require.main == module) {
   const maybeDecode = x => x.constructor.name == 'Number' ? x : decode(x);
 
   const test = function test(g) {
+    console.log(`vertices: ${pg.vertices(g)}`);
     console.log('edges:');
     for (const e of g.edges)
       console.log(`  ${e}`);
@@ -229,32 +253,13 @@ if (require.main == module) {
         const p = translationalEquivalences(g);
         console.log(`translational equivalences: ${p}`);
         console.log(`extra translations = ${extraTranslationVectors(g)}`);
+        console.log(`equivalence classes: ${translationEquivalenceClasses(g)}`);
       }
     }
     console.log();
     console.log();
     console.log();
   };
-
-  test(pg.make([ [ 1, 1, [ 1, 0 ] ],
-                 [ 1, 1, [ 0, 1 ] ],
-                 [ 1, 2, [ 0, 0 ] ],
-                 [ 1, 2, [ 1, 1 ] ],
-                 [ 1, 3, [ 0, 0 ] ],
-                 [ 1, 3, [ 1, -1 ] ] ]));
-
-  test(pg.make([ [ 1, 1, [ 1, 0 ] ],
-                 [ 1, 1, [ 0, 1 ] ],
-                 [ 1, 2, [ 0, 0 ] ],
-                 [ 1, 2, [ 1, 1 ] ],
-                 [ 1, 3, [ 0, 0 ] ],
-                 [ 1, 3, [ 1, -1 ] ],
-                 [ 1, 4, [ 0, 0 ] ],
-                 [ 1, 4, [ 1, -1 ] ] ]));
-
-  test(pg.make([ [ 1, 1, [ -1,  1,  1 ] ],
-                 [ 1, 1, [  0, -1,  1 ] ],
-                 [ 1, 1, [  0,  0, -1 ] ] ]));
 
   test(pg.make([ [ 1, 1, [ 1, 0, 0 ] ],
                  [ 1, 1, [ 0, 1, 0 ] ],
@@ -263,12 +268,13 @@ if (require.main == module) {
                  [ 2, 2, [ 1, 0, 0 ] ],
                  [ 2, 2, [ 0, 1, 0 ] ] ]));
 
-  test(pg.make([ [ 1, 2, [ 0, 0 ] ],
-                 [ 1, 2, [ 1, 0 ] ],
-                 [ 1, 2, [ 0, 1 ] ] ]));
-
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 1, 2, [ 1, 0, 0 ] ],
                  [ 1, 2, [ 0, 1, 0 ] ],
-                 [ 1, 2, [ 0, 0, 1 ] ] ]));
+                 [ 1, 2, [ 0, 0, 1 ] ],
+                 [ 3, 4, [ 0, 0, 0 ] ],
+                 [ 3, 4, [ 1, 0, 0 ] ],
+                 [ 3, 4, [ 0, 1, 0 ] ],
+                 [ 3, 4, [ 0, 0, 1 ] ],
+                 [ 1, 3, [ 0, 0, 0 ] ] ]));
 }
