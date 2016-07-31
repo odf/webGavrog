@@ -2,6 +2,8 @@ import * as I from 'immutable';
 
 import * as pg from './periodic';
 import Partition from '../common/partition';
+import { rationalMethods, rationals } from '../arithmetic/types';
+import * as mats from '../arithmetic/matrices';
 
 const ops = pg.ops;
 
@@ -220,10 +222,14 @@ const translationalEquivalenceClasses = (
 
 
 const fullTranslationBasis = vectors => {
+  const ops = rationalMethods.register(
+    mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
+  ).ops();
+
   const dim = vectors[0].length;
-  const M = vectors.concat(ops.identityMatrix(dim));
+  const M = ops.identityMatrix(dim).concat(vectors);
   const T = ops.triangulation(M).R;
-  return T.slice(0, ops.rank(T));
+  return T.slice(0, dim);
 };
 
 
@@ -235,7 +241,7 @@ export function minimalImage(
 {
   const classes = translationalEquivalenceClasses(graph, adj, pos, equivs);
   const vectors = extraTranslationVectors(graph, adj, pos, equivs);
-  const basisChange = ops.coordinateChange(fullTranslationBasis(vectors));
+  const basisChange = ops.inverse(fullTranslationBasis(vectors));
 
   const old2new = {};
   for (let i = 0; i < classes.length; ++i) {
