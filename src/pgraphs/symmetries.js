@@ -196,7 +196,7 @@ const extraTranslationVectors = (
 };
 
 
-const translationEquivalenceClasses = (
+const translationalEquivalenceClasses = (
   graph,
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph),
@@ -219,7 +219,9 @@ const translationEquivalenceClasses = (
 };
 
 
-const _basis = M => {
+const fullTranslationBasis = vectors => {
+  const dim = vectors[0].length;
+  const M = vectors.concat(ops.identityMatrix(dim));
   const T = ops.triangulation(M).R;
   return T.slice(0, ops.rank(T));
 };
@@ -231,14 +233,35 @@ export function minimalImage(
   pos = pg.barycentricPlacement(graph),
   equivs = translationalEquivalences(graph, adj, pos))
 {
-  const classes = translationalEquivalences(graph, adj, pos, equivs);
+  const classes = translationalEquivalenceClasses(graph, adj, pos, equivs);
   const vectors = extraTranslationVectors(graph, adj, pos, equivs);
-  const basis = _basis(vectors);
+  const basisChange = ops.coordinateChange(fullTranslationBasis(vectors));
+
+  const old2new = {};
+  for (let i = 0; i < classes.length; ++i) {
+    for (const v of classes[i]) {
+      old2new[v] = i;
+    }
+  }
 
   const imgEdges = [];
   for (const e of graph.edges) {
-    
+    const v = e.head;
+    const w = e.tail;
+    const vNew = old2new[v];
+    const wNew = old2new[w];
+    const vRep = classes[vNew][0];
+    const wRep = classes[wNew][0];
+
+    const s = e.shift;
+    const vShift = ops.minus(pos.get(v), pos.get(vRep));
+    const wShift = ops.minus(pos.get(w), pos.get(wRep));
+    const sNew = ops.times(basisChange, ops.plus(s, ops.minus(wShift, vShift)));
+
+    imgEdges.push([vNew + 1, wNew + 1, sNew]);
   }
+
+  return pg.make(imgEdges);
 };
 
 
@@ -276,7 +299,8 @@ if (require.main == module) {
         const p = translationalEquivalences(g);
         console.log(`translational equivalences: ${p}`);
         console.log(`extra translations = ${extraTranslationVectors(g)}`);
-        console.log(`equivalence classes: ${translationEquivalenceClasses(g)}`);
+        console.log(
+          `equivalence classes: ${translationalEquivalenceClasses(g)}`);
         console.log(`minimal image: ${minimalImage(g)}`);
       }
     }
