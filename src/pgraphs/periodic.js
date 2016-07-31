@@ -70,8 +70,9 @@ export function makeEdge(head, tail, shift) {
 
 
 export function make(data) {
-  const edges = I.OrderedSet(data)
-    .map(([h, t, s]) => makeEdge(h, t, s).canonical());
+  const ereps = data.map(([h, t, s]) => encode(makeEdge(h, t, s).canonical()));
+  const edges = I.OrderedSet(ereps).map(decode);
+
   if (edges.size == 0)
     throw new Error('cannot be empty');
 
