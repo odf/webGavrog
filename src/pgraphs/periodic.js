@@ -1,6 +1,6 @@
 import * as I from 'immutable';
 
-import { rationalMatrixMethods, rationalMatrices } from '../arithmetic/types';
+import { coordinateChangeMethods, coordinateChanges } from '../geometry/types';
 
 
 class VectorLabeledEdge {
@@ -16,7 +16,7 @@ class VectorLabeledEdge {
 
   reverse() {
     return new VectorLabeledEdge(
-      this.tail, this.head, rationalMatrices.negative(this.shift));
+      this.tail, this.head, coordinateChanges.negative(this.shift));
   }
 
   canonical() {
@@ -32,7 +32,7 @@ class VectorLabeledEdge {
 };
 
 
-export const ops = rationalMatrixMethods.register({
+export const ops = coordinateChangeMethods.register({
   __repr__  : {
     VectorLabeledEdge: x => ({
       head: ops.repr(x.head),
