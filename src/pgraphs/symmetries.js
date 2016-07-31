@@ -287,17 +287,6 @@ if (require.main == module) {
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const phi = morphism(g, g, 1, 1, ops.identityMatrix(g.dim));
       console.log();
-      console.log('identity morphism:');
-
-      console.log('  src2img:');
-      for (const [k, v] of phi.src2img)
-        console.log(`    ${maybeDecode(k)} -> ${v}`);
-
-      console.log('  img2src:');
-      for (const [k, v] of phi.img2src)
-        console.log(`    ${maybeDecode(k)} -> ${v}`);
-      console.log(`  injective = ${phi.injective}`);
-      console.log();
 
       const minimal = isMinimal(g);
       console.log(`minimal = ${isMinimal(g)}`);
@@ -315,12 +304,30 @@ if (require.main == module) {
     console.log();
   };
 
-  test(pg.make([ [ 1, 1, [ 1, 0, 0 ] ],
-                 [ 1, 1, [ 0, 1, 0 ] ],
-                 [ 1, 2, [ 0, 0, 0 ] ],
-                 [ 1, 2, [ 0, 0, 1 ] ],
-                 [ 2, 2, [ 1, 0, 0 ] ],
-                 [ 2, 2, [ 0, 1, 0 ] ] ]));
+  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 1, 2, [ 1, 0, 0 ] ],
+                 [ 3, 4, [ 0, 0, 0 ] ],
+                 [ 3, 4, [ 1, 0, 0 ] ],
+                 [ 5, 6, [ 0, 0, 0 ] ],
+                 [ 5, 6, [ 1, 0, 0 ] ],
+                 [ 7, 8, [ 0, 0, 0 ] ],
+                 [ 7, 8, [ 1, 0, 0 ] ],
+                 [ 1, 3, [ 0, 0, 0 ] ],
+                 [ 1, 3, [ 0, 1, 0 ] ],
+                 [ 2, 4, [ 0, 0, 0 ] ],
+                 [ 2, 4, [ 0, 1, 0 ] ],
+                 [ 5, 7, [ 0, 0, 0 ] ],
+                 [ 5, 7, [ 0, 1, 0 ] ],
+                 [ 6, 8, [ 0, 0, 0 ] ],
+                 [ 6, 8, [ 0, 1, 0 ] ],
+                 [ 1, 5, [ 0, 0, 0 ] ],
+                 [ 1, 5, [ 0, 0, 1 ] ],
+                 [ 2, 6, [ 0, 0, 0 ] ],
+                 [ 2, 6, [ 0, 0, 1 ] ],
+                 [ 3, 7, [ 0, 0, 0 ] ],
+                 [ 3, 7, [ 0, 0, 1 ] ],
+                 [ 4, 8, [ 0, 0, 0 ] ],
+                 [ 4, 8, [ 0, 0, 1 ] ] ]));
 
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 1, 2, [ 1, 0, 0 ] ],
