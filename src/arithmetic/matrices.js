@@ -85,16 +85,15 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const _findPivot = (A, row, col) => {
-    let best = row;
+    let best = null;
     for (let i = row; i < A.length; ++i) {
-      const x = s.abs(A[i][col]);
-      if (s.sgn(x) != 0) {
-        const d = s.cmp(x, s.abs(A[best][col]));
-        if (overField ? d > 0 : d < 0)
+      if (s.ne(0, A[i][col])
+          && (best == null || s.lt(s.abs(A[i][col]), s.abs(A[best][col]))))
+      {
           best = i;
       }
     }
-    return best;
+    return best || row;
   };
 
   const _swapRowsInPlace = (A, i, j) => { [A[i], A[j]] = [A[j], A[i]]; };
