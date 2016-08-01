@@ -93,7 +93,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
           best = i;
       }
     }
-    return best || row;
+    return best;
   };
 
   const _swapRowsInPlace = (A, i, j) => { [A[i], A[j]] = [A[j], A[i]]; };
@@ -126,9 +126,8 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
       while (!cleared && col < ncols) {
         const pivotRow = _findPivot(R, row, col);
-        const pivot = R[pivotRow][col];
 
-        if (s.sgn(pivot) == 0) {
+        if (pivotRow == null) {
           ++col;
           continue;
         }
@@ -139,7 +138,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
           sign *= -1;
         }
 
-        if (s.sgn(pivot) < 0) {
+        if (s.le(R[pivotRow][col], 0)) {
           _negateRowInPlace(R, row);
           _negateRowInPlace(U, row);
           sign *= -1;
