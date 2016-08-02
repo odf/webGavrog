@@ -1,7 +1,7 @@
 const _swap = (a, i, j) => [a[i], a[j]] = [a[j], a[i]];
 
 
-export default function(n) {
+export function permutations(n) {
   const p = [];
   for (let i = 1; i <= n; ++i)
     p.push(i);

@@ -1,7 +1,7 @@
-import * as I            from 'immutable';
-import * as DS           from './delaney';
-import * as properties   from './properties';
-import permutations      from '../common/permutations';
+import * as I          from 'immutable';
+import * as DS         from './delaney';
+import * as properties from './properties';
+import * as comb       from '../common/combinatorics';
 
 
 export function dual(ds) {
@@ -69,7 +69,7 @@ export function barycentricSubdivision(ds, splitDim) {
     return ds;
   else {
     const dim = DS.dim(ds);
-    const perms = I.List(permutations(splitDim + 1)).map(I.List);
+    const perms = I.List(comb.permutations(splitDim + 1)).map(I.List);
     const pidx = I.Map(I.List(perms).zip(I.Range()));
     const n = DS.size(ds);
     const m = perms.size;
