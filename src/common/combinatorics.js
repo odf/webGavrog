@@ -27,7 +27,26 @@ export function* permutations(n) {
 };
 
 
+export function* combinations(m, k) {
+  if (k == 0) {
+    yield [];
+  }
+  else {
+    for (let i = 1; i <= m - k + 1; ++i) {
+      for (const c of combinations(m - i, k - 1)) {
+        yield [i].concat(c.map(x => x + i));
+      }
+    }
+  }
+};
+
+
 if (require.main == module) {
   for (const p of permutations(4))
     console.log(p);
+
+  console.log();
+
+  for (const c of combinations(6, 3))
+    console.log(c);
 }
