@@ -25,3 +25,9 @@ export function* permutations(n) {
       _swap(p, i, j);
   }
 };
+
+
+if (require.main == module) {
+  for (const p of permutations(4))
+    console.log(p);
+}
