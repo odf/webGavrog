@@ -367,6 +367,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     },
 
     dimension: {
+      Vector: v => v.length,
       Matrix: m => m.length
     },
 
