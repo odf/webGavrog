@@ -2,6 +2,7 @@ import * as I from 'immutable';
 
 import * as pg from './periodic';
 import Partition from '../common/partition';
+import * as comb from '../common/combinatorics';
 import { rationalMethods, rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
@@ -271,6 +272,24 @@ export function minimalImage(
 };
 
 
+const _edgeVector = (e, pos) =>
+  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
+
+
+function* _goodCombinations(edges, pos) {
+  const dim = ops.dimension(edges[0].shift);
+
+  for (const c of comb.combinations(edges.length, dim)) {
+    const vectors = c.map(i => _edgeVector(edges[i - 1], pos));
+    if (ops.rank(vectors) == dim) {
+      for (const p of comb.permutations(dim)) {
+        yield p.map(i => edges[c[i - 1] - 1]);
+      }
+    }
+  }
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -283,11 +302,15 @@ if (require.main == module) {
     console.log('edges:');
     for (const e of g.edges)
       console.log(`  ${e}`);
+    console.log();
+
+    const edges = I.List(g.edges).toJS();
+    const pos = pg.barycentricPlacement(g);
+    for (const c of _goodCombinations(edges, pos))
+      console.log(`${c}`);
+    console.log();
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      const phi = morphism(g, g, 1, 1, ops.identityMatrix(g.dim));
-      console.log();
-
       const minimal = isMinimal(g);
       console.log(`minimal = ${isMinimal(g)}`);
       if (!minimal) {
@@ -338,4 +361,9 @@ if (require.main == module) {
                  [ 3, 4, [ 0, 1, 0 ] ],
                  [ 3, 4, [ 0, 0, 1 ] ],
                  [ 1, 3, [ 0, 0, 0 ] ] ]));
+
+  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 1, 2, [ 1, 0, 0 ] ],
+                 [ 1, 2, [ 0, 1, 0 ] ],
+                 [ 1, 2, [ 0, 0, 1 ] ] ]));
 }
