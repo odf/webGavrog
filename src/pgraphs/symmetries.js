@@ -12,6 +12,23 @@ const encode = value => I.fromJS(ops.repr(value));
 const decode = value => ops.fromRepr(value.toJS());
 
 
+const _allIncidences = (
+  graph, v,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph)
+) => {
+  const result = [];
+
+  for (const { v: w, s } of adj.get(v)) {
+    result.push(pg.makeEdge(v, w, s));
+    if (v == w)
+      result.push(pg.makeEdge(w, v, ops.negative(s)));
+  }
+
+  return result;
+};
+
+
 const _adjacenciesByEdgeVector = (
   graph, v,
   adj = pg.adjacencies(graph),
@@ -306,7 +323,7 @@ if (require.main == module) {
 
     const edges = I.List(g.edges).toJS();
     const pos = pg.barycentricPlacement(g);
-    for (const c of _goodCombinations(edges, pos))
+    for (const c of _goodCombinations(_allIncidences(g, 1), pos))
       console.log(`${c}`);
     console.log();
 
