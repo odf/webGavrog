@@ -18,8 +18,48 @@ const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => adj.get(v)
   .toJS();
 
 
-const directedEdges = graph =>
+const _directedEdges = graph =>
   graph.edges.flatMap(e => [e, e.reverse()]).toJS();
+
+
+function* _goodCombinations(edges, pos) {
+  const dim = ops.dimension(edges[0].shift);
+
+  for (const c of comb.combinations(edges.length, dim)) {
+    const vectors = c.map(i => _edgeVector(edges[i - 1], pos));
+    if (ops.rank(vectors) == dim) {
+      for (const p of comb.permutations(dim)) {
+        yield p.map(i => edges[c[i - 1] - 1]);
+      }
+    }
+  }
+};
+
+
+const _goodEdgeChains = (
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph)
+) => {
+};
+
+
+const _characteristicBases = (
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph)
+) => {
+  const firstAttempt = pg.vertices(graph)
+    .flatMap(v => _goodCombinations(_allIncidences(graph, v, adj), pos));
+  if (firstAttempt.size)
+    return firstAttempt;
+
+  const secondAttempt = _goodEdgeChains(graph, adj, pos);
+  if (secondAttempt.size)
+    return secondAttempt;
+
+  return _goodCombinations(_directedEdges(graph), pos);
+};
 
 
 const _edgeVector = (e, pos) =>
@@ -279,20 +319,6 @@ export function minimalImage(
 };
 
 
-function* _goodCombinations(edges, pos) {
-  const dim = ops.dimension(edges[0].shift);
-
-  for (const c of comb.combinations(edges.length, dim)) {
-    const vectors = c.map(i => _edgeVector(edges[i - 1], pos));
-    if (ops.rank(vectors) == dim) {
-      for (const p of comb.permutations(dim)) {
-        yield p.map(i => edges[c[i - 1] - 1]);
-      }
-    }
-  }
-};
-
-
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -309,10 +335,11 @@ if (require.main == module) {
 
     const edges = I.List(g.edges).toJS();
     const pos = pg.barycentricPlacement(g);
-    for (const c of _goodCombinations(_allIncidences(g, 1), pos))
+    console.log('Characteristic Bases:');
+    const candidates = _characteristicBases(g);
+    for (const c of candidates)
       console.log(`${c}`);
-    console.log();
-    console.log(I.List(_goodCombinations(directedEdges(g), pos)).size);
+    console.log(`(found ${candidates.size} in total)`);
     console.log();
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
