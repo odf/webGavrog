@@ -22,6 +22,10 @@ const _directedEdges = graph =>
   graph.edges.flatMap(e => [e, e.reverse()]).toJS();
 
 
+const _edgeVector = (e, pos) =>
+  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
+
+
 function* _goodCombinations(edges, pos) {
   const dim = ops.dimension(edges[0].shift);
 
@@ -41,6 +45,29 @@ const _goodEdgeChains = (
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph)
 ) => {
+  const dim = graph.dim;
+  const results = [];
+
+  const extend = es => {
+    if (es.length == dim) {
+      results.push(es);
+    }
+    else {
+      for (const e of _allIncidences(graph, e.tail, adj)) {
+        const next = es.concat([e]);
+        const M = next.map(e => _edgeVector(e, pos));
+        if (ops.rank(M) == next.length) {
+          extend(next);
+        }
+      }
+    }
+  };
+
+  for (const e of _directedEdges(graph)) {
+    extend([e]);
+  }
+
+  return I.List(results);
 };
 
 
@@ -60,10 +87,6 @@ const _characteristicBases = (
 
   return _goodCombinations(_directedEdges(graph), pos);
 };
-
-
-const _edgeVector = (e, pos) =>
-  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
 
 
 const _adjacenciesByEdgeVector = (
@@ -361,41 +384,19 @@ if (require.main == module) {
 
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 1, 2, [ 1, 0, 0 ] ],
-                 [ 3, 4, [ 0, 0, 0 ] ],
-                 [ 3, 4, [ 1, 0, 0 ] ],
-                 [ 5, 6, [ 0, 0, 0 ] ],
-                 [ 5, 6, [ 1, 0, 0 ] ],
-                 [ 7, 8, [ 0, 0, 0 ] ],
-                 [ 7, 8, [ 1, 0, 0 ] ],
-                 [ 1, 3, [ 0, 0, 0 ] ],
-                 [ 1, 3, [ 0, 1, 0 ] ],
-                 [ 2, 4, [ 0, 0, 0 ] ],
-                 [ 2, 4, [ 0, 1, 0 ] ],
-                 [ 5, 7, [ 0, 0, 0 ] ],
-                 [ 5, 7, [ 0, 1, 0 ] ],
-                 [ 6, 8, [ 0, 0, 0 ] ],
-                 [ 6, 8, [ 0, 1, 0 ] ],
-                 [ 1, 5, [ 0, 0, 0 ] ],
-                 [ 1, 5, [ 0, 0, 1 ] ],
-                 [ 2, 6, [ 0, 0, 0 ] ],
-                 [ 2, 6, [ 0, 0, 1 ] ],
-                 [ 3, 7, [ 0, 0, 0 ] ],
-                 [ 3, 7, [ 0, 0, 1 ] ],
-                 [ 4, 8, [ 0, 0, 0 ] ],
-                 [ 4, 8, [ 0, 0, 1 ] ] ]));
-
-  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
-                 [ 1, 2, [ 1, 0, 0 ] ],
-                 [ 1, 2, [ 0, 1, 0 ] ],
-                 [ 1, 2, [ 0, 0, 1 ] ],
-                 [ 3, 4, [ 0, 0, 0 ] ],
-                 [ 3, 4, [ 1, 0, 0 ] ],
-                 [ 3, 4, [ 0, 1, 0 ] ],
-                 [ 3, 4, [ 0, 0, 1 ] ],
-                 [ 1, 3, [ 0, 0, 0 ] ] ]));
-
-  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
-                 [ 1, 2, [ 1, 0, 0 ] ],
                  [ 1, 2, [ 0, 1, 0 ] ],
                  [ 1, 2, [ 0, 0, 1 ] ] ]));
+
+  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 2, 3, [ 0, 0, 0 ] ],
+                 [ 3, 4, [ 0, 0, 0 ] ],
+                 [ 4, 5, [ 0, 0, 0 ] ],
+                 [ 5, 6, [ 0, 0, 0 ] ],
+                 [ 6, 1, [ 0, 0, 0 ] ],
+                 [ 1, 2, [ 1, 0, 0 ] ],
+                 [ 2, 3, [ 0, 1, 0 ] ],
+                 [ 3, 4, [ 0, 0, 1 ] ],
+                 [ 4, 5, [ -1, 0, 0 ] ],
+                 [ 5, 6, [ 0, -1, 0 ] ],
+                 [ 6, 1, [ 0, 0, -1 ] ] ]));
 }
