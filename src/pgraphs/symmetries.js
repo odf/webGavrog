@@ -12,6 +12,10 @@ const encode = value => I.fromJS(ops.repr(value));
 const decode = value => ops.fromRepr(value.toJS());
 
 
+const _edgeVector = (e, pos) =>
+  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
+
+
 const _allIncidences = (
   graph, v,
   adj = pg.adjacencies(graph),
@@ -34,16 +38,9 @@ const _adjacenciesByEdgeVector = (
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph)
 ) => {
-  const result = I.Map().asMutable();
-
-  for (const { v: w, s } of adj.get(v)) {
-    const d = ops.plus(s, ops.minus(pos.get(w), pos.get(v)));
-    result.set(encode(d), pg.makeEdge(v, w, s));
-    if (v == w)
-      result.set(encode(ops.negative(d)), pg.makeEdge(w, v, ops.negative(s)));
-  }
-
-  return result.asImmutable();
+  return I.Map(
+    _allIncidences(graph, v, adj, pos)
+      .map(e => [encode(_edgeVector(e, pos)), e]));
 };
 
 
@@ -287,10 +284,6 @@ export function minimalImage(
 
   return pg.make(imgEdges);
 };
-
-
-const _edgeVector = (e, pos) =>
-  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
 
 
 function* _goodCombinations(edges, pos) {
