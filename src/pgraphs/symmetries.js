@@ -24,9 +24,10 @@ const _allIncidences = (
   const result = [];
 
   for (const { v: w, s } of adj.get(v)) {
-    result.push(pg.makeEdge(v, w, s));
+    const e = pg.makeEdge(v, w, s);
+    result.push(e);
     if (v == w)
-      result.push(pg.makeEdge(w, v, ops.negative(s)));
+      result.push(e.reverse());
   }
 
   return result;
