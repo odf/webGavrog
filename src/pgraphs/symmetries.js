@@ -53,7 +53,8 @@ const _goodEdgeChains = (
       results.push(es);
     }
     else {
-      for (const e of _allIncidences(graph, e.tail, adj)) {
+      const v = es[es.length - 1].tail;
+      for (const e of _allIncidences(graph, v, adj)) {
         const next = es.concat([e]);
         const M = next.map(e => _edgeVector(e, pos));
         if (ops.rank(M) == next.length) {
@@ -388,15 +389,9 @@ if (require.main == module) {
                  [ 1, 2, [ 0, 0, 1 ] ] ]));
 
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 2, 1, [ 1, 0, 0 ] ],
                  [ 2, 3, [ 0, 0, 0 ] ],
-                 [ 3, 4, [ 0, 0, 0 ] ],
-                 [ 4, 5, [ 0, 0, 0 ] ],
-                 [ 5, 6, [ 0, 0, 0 ] ],
-                 [ 6, 1, [ 0, 0, 0 ] ],
-                 [ 1, 2, [ 1, 0, 0 ] ],
-                 [ 2, 3, [ 0, 1, 0 ] ],
-                 [ 3, 4, [ 0, 0, 1 ] ],
-                 [ 4, 5, [ -1, 0, 0 ] ],
-                 [ 5, 6, [ 0, -1, 0 ] ],
-                 [ 6, 1, [ 0, 0, -1 ] ] ]));
+                 [ 3, 2, [ 0, 1, 0 ] ],
+                 [ 3, 1, [ 0, 0, 1 ] ],
+                 [ 3, 1, [ 1, 1, -1 ] ] ]));
 }
