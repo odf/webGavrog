@@ -12,22 +12,18 @@ const encode = value => I.fromJS(ops.repr(value));
 const decode = value => ops.fromRepr(value.toJS());
 
 
+const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => adj.get(v)
+  .map(({v: w, s}) => pg.makeEdge(v, w, s))
+  .flatMap(e => e.head == e.tail ? [e, e.reverse()] : [e])
+  .toJS();
+
+
+const directedEdges = graph =>
+  graph.edges.flatMap(e => [e, e.reverse()]).toJS();
+
+
 const _edgeVector = (e, pos) =>
   ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
-
-
-const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => {
-  const result = [];
-
-  for (const { v: w, s } of adj.get(v)) {
-    const e = pg.makeEdge(v, w, s);
-    result.push(e);
-    if (v == w)
-      result.push(e.reverse());
-  }
-
-  return result;
-};
 
 
 const _adjacenciesByEdgeVector = (
@@ -315,6 +311,8 @@ if (require.main == module) {
     const pos = pg.barycentricPlacement(g);
     for (const c of _goodCombinations(_allIncidences(g, 1), pos))
       console.log(`${c}`);
+    console.log();
+    console.log(I.List(_goodCombinations(directedEdges(g), pos)).size);
     console.log();
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
