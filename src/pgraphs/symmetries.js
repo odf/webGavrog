@@ -16,11 +16,7 @@ const _edgeVector = (e, pos) =>
   ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
 
 
-const _allIncidences = (
-  graph, v,
-  adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph)
-) => {
+const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => {
   const result = [];
 
   for (const { v: w, s } of adj.get(v)) {
@@ -40,7 +36,7 @@ const _adjacenciesByEdgeVector = (
   pos = pg.barycentricPlacement(graph)
 ) => {
   return I.Map(
-    _allIncidences(graph, v, adj, pos)
+    _allIncidences(graph, v, adj)
       .map(e => [encode(_edgeVector(e, pos)), e]));
 };
 
