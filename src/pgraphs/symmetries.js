@@ -86,7 +86,7 @@ const _characteristicBases = (
   if (secondAttempt.size)
     return secondAttempt;
 
-  return _goodCombinations(_directedEdges(graph), pos);
+  return I.List(_goodCombinations(_directedEdges(graph), pos));
 };
 
 
@@ -343,6 +343,38 @@ export function minimalImage(
 };
 
 
+const _isUnimodularIntegerMatrix = M => (
+  M.every(row => row.every(x => ops.isInteger(x)))
+    && ops.eq(1, ops.abs(ops.determinant(M)))
+);
+
+
+export function symmetries(
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph),
+  bases = _characteristicBases(graph, adj, pos))
+{
+  const v0 = bases.first()[0].head;
+  const B0 = bases.first().map(e => _edgeVector(e, pos));
+  const gens = [];
+
+  for (const base of bases) {
+    const v = base[0].head;
+    const B = base.map(e => _edgeVector(e, pos));
+    const M = ops.solve(B0, B);
+
+    if (_isUnimodularIntegerMatrix(M)) {
+      const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos);
+      if (iso != null)
+        gens.push(iso);
+    }
+  }
+
+  return gens;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -359,14 +391,13 @@ if (require.main == module) {
 
     const edges = I.List(g.edges).toJS();
     const pos = pg.barycentricPlacement(g);
-    console.log('Characteristic Bases:');
-    const candidates = _characteristicBases(g);
-    for (const c of candidates)
-      console.log(`${c}`);
-    console.log(`(found ${candidates.size} in total)`);
-    console.log();
+    const bases = _characteristicBases(g);
+    console.log(`found ${bases.size} characteristic bases`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
+      const syms = symmetries(g);
+      console.log(`found ${syms.length} symmetries`);
+
       const minimal = isMinimal(g);
       console.log(`minimal = ${isMinimal(g)}`);
       if (!minimal) {
