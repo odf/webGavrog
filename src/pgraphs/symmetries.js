@@ -334,7 +334,7 @@ export function minimalImage(
     const s = e.shift;
     const vShift = ops.minus(pos.get(v), pos.get(vRep));
     const wShift = ops.minus(pos.get(w), pos.get(wRep));
-    const sNew = ops.times(basisChange, ops.plus(s, ops.minus(wShift, vShift)));
+    const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)), basisChange);
 
     imgEdges.push([vNew + 1, wNew + 1, sNew]);
   }
@@ -394,4 +394,17 @@ if (require.main == module) {
                  [ 3, 2, [ 0, 1, 0 ] ],
                  [ 3, 1, [ 0, 0, 1 ] ],
                  [ 3, 1, [ 1, 1, -1 ] ] ]));
+
+  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 2, 3, [ 0, 0, 0 ] ],
+                 [ 3, 4, [ 0, 0, 0 ] ],
+                 [ 4, 5, [ 0, 0, 0 ] ],
+                 [ 5, 6, [ 0, 0, 0 ] ],
+                 [ 6, 1, [ 0, 0, 0 ] ],
+                 [ 1, 2, [ 1, 0, 0 ] ],
+                 [ 2, 3, [ 0, 1, 0 ] ],
+                 [ 3, 4, [ 0, 0, 1 ] ],
+                 [ 4, 5, [ -1, 0, 0 ] ],
+                 [ 5, 6, [ 0, -1, 0 ] ],
+                 [ 6, 1, [ 0, 0, -1 ] ] ]));
 }
