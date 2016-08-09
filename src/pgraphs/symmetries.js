@@ -5,11 +5,27 @@ import Partition from '../common/partition';
 import * as comb from '../common/combinatorics';
 import { rationalMethods, rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
+import * as util from '../common/util';
+
+
+let _timers = null;
+
 
 const ops = pg.ops;
 
-const encode = value => I.fromJS(ops.repr(value));
-const decode = value => ops.fromRepr(value.toJS());
+const encode = value => {
+  _timers && _timers.start('encode');
+  const out = I.fromJS(ops.repr(value));
+  _timers && _timers.stop('encode');
+  return out;
+};
+
+const decode = value => {
+  _timers && _timers.start('decode');
+  const out = ops.fromRepr(value.toJS());
+  _timers && _timers.stop('decode');
+  return out;
+};
 
 
 const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => adj.get(v)
@@ -95,14 +111,20 @@ const _adjacenciesByEdgeVector = (
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph)
 ) => {
-  return I.Map(
+  _timers && _timers.start('_adjacenciesByEdgeVector');
+
+  const out = I.Map(
     _allIncidences(graph, v, adj)
       .map(e => [encode(_edgeVector(e, pos)), e]));
+
+  _timers && _timers.stop('_adjacenciesByEdgeVector');
+  return out;
 };
 
 
 const _checkGraphsForMorphism = (graph1, graph2, transform) => {
   const errors = [];
+  _timers && _timers.start('_checkGraphsForMorphism');
 
   if (graph2.dim != graph1.dim)
     errors.push('graphs have different dimensions');
@@ -119,6 +141,7 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
   else if (!pg.isLocallyStable(graph2))
     errors.push('second graph is not locally stable');
 
+  _timers && _timers.stop('_checkGraphsForMorphism');
   if (errors.length > 0)
     throw new Error(errors.join('\n'));
 };
@@ -129,9 +152,12 @@ export function morphism(
   adj1 = pg.adjacencies(graph1),
   adj2 = pg.adjacencies(graph2),
   pos1 = pg.barycentricPlacement(graph1),
-  pos2 = pg.barycentricPlacement(graph2)
+  pos2 = pg.barycentricPlacement(graph2),
+  skipChecks = false
 ) {
-  _checkGraphsForMorphism(graph1, graph2, transform);
+  _timers && _timers.start('morphism');
+  if (!skipChecks)
+    _checkGraphsForMorphism(graph1, graph2, transform);
 
   const src2img = I.Map().asMutable();
   const img2src = I.Map().asMutable();
@@ -194,6 +220,8 @@ export function morphism(
     if (!img2src.has(encode(e)) || !img2src.has(encode(e.reverse())))
       return null;
 
+  _timers && _timers.stop('morphism');
+
   return {
     src2img,
     img2src,
@@ -228,6 +256,11 @@ const translationalEquivalences = (
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph)
 ) => {
+  if (!pg.isConnected(graph))
+    throw new Error('graph is not connected');
+  else if (!pg.isLocallyStable(graph, pos))
+    throw new Error('graph is not locally stable');
+
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts.first();
@@ -236,7 +269,7 @@ const translationalEquivalences = (
 
   for (const v of verts) {
     if (p.get(start) != p.get(v)) {
-      const iso = morphism(graph, graph, start, v, id, adj, adj, pos, pos);
+      const iso = morphism(graph, graph, start, v, id, adj, adj, pos, pos, true);
       if (iso != null) {
         for (const w of verts) {
           p = p.union(w, iso.src2img.get(w));
@@ -355,6 +388,12 @@ export function symmetries(
   pos = pg.barycentricPlacement(graph),
   bases = _characteristicBases(graph, adj, pos))
 {
+  _timers && _timers.start('symmetries');
+  if (!pg.isConnected(graph))
+    throw new Error('graph is not connected');
+  else if (!pg.isLocallyStable(graph, pos))
+    throw new Error('graph is not locally stable');
+
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => _edgeVector(e, pos));
   const gens = [];
@@ -365,14 +404,21 @@ export function symmetries(
     const M = ops.solve(B0, B);
 
     if (_isUnimodularIntegerMatrix(M)) {
-      const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos);
+      const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos, true);
       if (iso != null)
         gens.push(iso);
     }
   }
 
+  _timers && _timers.stop('symmetries');
+
   return gens;
 };
+
+
+export function useTimers(timers) {
+  _timers = timers;
+}
 
 
 if (require.main == module) {
@@ -414,6 +460,10 @@ if (require.main == module) {
     console.log();
   };
 
+  const symTimers = util.timers();
+  useTimers(symTimers);
+  symTimers.start('total');
+
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 1, 2, [ 1, 0, 0 ] ],
                  [ 1, 2, [ 0, 1, 0 ] ],
@@ -438,4 +488,7 @@ if (require.main == module) {
                  [ 4, 5, [ -1, 0, 0 ] ],
                  [ 5, 6, [ 0, -1, 0 ] ],
                  [ 6, 1, [ 0, 0, -1 ] ] ]));
+
+  symTimers.stop('total');
+  console.log(`${JSON.stringify(symTimers.current(), null, 2)}`);
 }
