@@ -15,14 +15,14 @@ const ops = pg.ops;
 
 const encode = value => {
   _timers && _timers.start('encode');
-  const out = I.fromJS(ops.repr(value));
+  const out = JSON.stringify(ops.repr(value));
   _timers && _timers.stop('encode');
   return out;
 };
 
 const decode = value => {
   _timers && _timers.start('decode');
-  const out = ops.fromRepr(value.toJS());
+  const out = ops.fromRepr(JSON.parse(value));
   _timers && _timers.stop('decode');
   return out;
 };
