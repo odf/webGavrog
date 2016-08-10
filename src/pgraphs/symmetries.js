@@ -28,6 +28,21 @@ const decode = value => {
 };
 
 
+const encodeVector = value => {
+  _timers && _timers.start('encode');
+  const out = JSON.stringify(value.map(x => ops.repr(x)));
+  _timers && _timers.stop('encode');
+  return out;
+};
+
+const decodeVector = value => {
+  _timers && _timers.start('decode');
+  const out = JSON.parse(value).map(x => ops.fromRepr(x));
+  _timers && _timers.stop('decode');
+  return out;
+};
+
+
 const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => adj.get(v)
   .map(({v: w, s}) => pg.makeEdge(v, w, s))
   .flatMap(e => e.head == e.tail ? [e, e.reverse()] : [e])
@@ -382,13 +397,13 @@ const _isUnimodularIntegerMatrix = M => (
 );
 
 
-export function symmetries(
+export function symmetryGenerators(
   graph,
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph),
   bases = _characteristicBases(graph, adj, pos))
 {
-  _timers && _timers.start('symmetries');
+  _timers && _timers.start('symmetryGenerators');
   if (!pg.isConnected(graph))
     throw new Error('graph is not connected');
   else if (!pg.isLocallyStable(graph, pos))
@@ -398,19 +413,28 @@ export function symmetries(
   const B0 = bases.first().map(e => _edgeVector(e, pos));
   const gens = [];
 
-  for (const basis of bases) {
-    const v = basis[0].head;
-    const B = basis.map(e => _edgeVector(e, pos));
-    const M = ops.solve(B0, B);
+  let p = Partition();
 
-    if (_isUnimodularIntegerMatrix(M)) {
-      const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos, true);
-      if (iso != null)
-        gens.push(iso);
+  for (const basis of bases) {
+    if (p.get(encodeVector(basis)) != p.get(encodeVector(bases.first()))) {
+      const v = basis[0].head;
+      const B = basis.map(e => _edgeVector(e, pos));
+      const M = ops.solve(B0, B);
+
+      if (_isUnimodularIntegerMatrix(M)) {
+        const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos, true);
+        if (iso != null) {
+          gens.push(iso);
+          for (const b of bases) {
+            p = p.union(encodeVector(b),
+                        encodeVector(b.map(e => iso.src2img.get(encode(e)))));
+          }
+        }
+      }
     }
   }
 
-  _timers && _timers.stop('symmetries');
+  _timers && _timers.stop('symmetryGenerators');
 
   return gens;
 };
@@ -441,8 +465,11 @@ if (require.main == module) {
     console.log(`found ${bases.size} characteristic bases`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      const syms = symmetries(g);
-      console.log(`found ${syms.length} symmetries`);
+      const syms = symmetryGenerators(g);
+      console.log(`found ${syms.length} symmetry generators:`);
+      for (const sym of syms)
+        console.log(sym.transform);
+      console.log();
 
       const minimal = isMinimal(g);
       console.log(`minimal = ${isMinimal(g)}`);
