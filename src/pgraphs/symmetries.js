@@ -398,9 +398,9 @@ export function symmetries(
   const B0 = bases.first().map(e => _edgeVector(e, pos));
   const gens = [];
 
-  for (const base of bases) {
-    const v = base[0].head;
-    const B = base.map(e => _edgeVector(e, pos));
+  for (const basis of bases) {
+    const v = basis[0].head;
+    const B = basis.map(e => _edgeVector(e, pos));
     const M = ops.solve(B0, B);
 
     if (_isUnimodularIntegerMatrix(M)) {
