@@ -181,8 +181,7 @@ export function morphism(
   let injective = true;
 
   src2img.set(start1, start2);
-  // TODO Seems we need the following, but Java code leaves it out:
-  // img2src.set(start2, start1);
+  img2src.set(start2, start1);
   queue.push(start1);
 
   while (queue.length) {
