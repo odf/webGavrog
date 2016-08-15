@@ -92,7 +92,7 @@ const _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
   let result = I.Map();
 
   cov.elements().forEach(function(D) {
-    const p = pos.get(skel.chamber2node.get(D)).toJS();
+    const p = pos.get(skel.chamber2node.get(D));
     const t = c2s.getIn([D, 0]);
     result = result.setIn([D, 0], ops.plus(p, t));
   });
