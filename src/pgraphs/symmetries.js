@@ -180,50 +180,45 @@ export function morphism(
 
   let injective = true;
 
-  src2img.set(start1, start2);
-  img2src.set(start2, start1);
-  queue.push(start1);
+  const tryPair = (src, img, toKey) => {
+    const oldImg = src2img.get(toKey(src));
+    if (I.is(toKey(img), toKey(oldImg)))
+      return { bad: false, seen: true };
+    else if (oldImg != null)
+      return { bad: true, seen: true };
+
+    if (img2src.has(toKey(img)))
+      injective = false;
+
+    src2img.set(toKey(src), img);
+    img2src.set(toKey(img), src);
+    return { bad: false, seen: false };
+  };
+
+  tryPair(start1, start2, x => x);
+  queue.push([start1, start2]);
 
   while (queue.length) {
-    const w1 = queue.shift();
-    const w2 = src2img.get(w1);
+    const [w1, w2] = queue.shift();
     const n1 = _adjacenciesByEdgeVector(graph1, w1, adj1, pos1);
     const n2 = _adjacenciesByEdgeVector(graph2, w2, adj2, pos2);
 
     for (const [d1, e1] of n1) {
-      const d2 = encode(ops.times(decode(d1), transform));
-      const e2 = n2.get(d2);
+      const e2 = n2.get(encode(ops.times(decode(d1), transform)));
       if (e2 == null)
         return null;
-
-      const e1img = src2img.get(encode(e1));
-      if (I.is(encode(e2), encode(e1img)))
-        continue;
-      else if (e1img != null)
-        return null;
-
-      if (img2src.has(encode(e2)))
-        injective = false;
-
-      src2img.set(encode(e1), e2);
-      img2src.set(encode(e2), e1);
-
-      const u1 = e1.tail;
-      const u2 = e2.tail;
-
-      const u2src = img2src.get(u2);
-      if (u2src == null)
-        img2src.set(u2, u1);
-      else if (u2src != u1)
-        injective = false;
-
-      const u1img = src2img.get(u1);
-      if (u1img == null) {
-        src2img.set(u1, u2);
-        queue.push(u1);
+      else {
+        const { bad, seen } = tryPair(e1, e2, encode);
+        if (bad)
+          return null;
+        else if (!seen) {
+          const { bad, seen } = tryPair(e1.tail, e2.tail, x => x);
+          if (bad)
+            return null;
+          else if (!seen)
+            queue.push([e1.tail, e2.tail]);
+        }
       }
-      else if (u1img != u2)
-        return null;
     }
   }
 
