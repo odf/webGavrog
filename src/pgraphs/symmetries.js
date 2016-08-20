@@ -128,9 +128,9 @@ const _adjacenciesByEdgeVector = (
 ) => {
   _timers && _timers.start('_adjacenciesByEdgeVector');
 
-  const out = I.Map(
-    _allIncidences(graph, v, adj)
-      .map(e => [encode(_edgeVector(e, pos)), e]));
+  const out = {};
+  for (const e of _allIncidences(graph, v, adj))
+    out[encode(_edgeVector(e, pos))] = e;
 
   _timers && _timers.stop('_adjacenciesByEdgeVector');
   return out;
@@ -174,24 +174,24 @@ export function morphism(
   if (!skipChecks)
     _checkGraphsForMorphism(graph1, graph2, transform);
 
-  const src2img = I.Map().asMutable();
-  const img2src = I.Map().asMutable();
+  const src2img = {};
+  const img2src = {};
   const queue = [];
 
   let injective = true;
 
   const tryPair = (src, img, toKey) => {
-    const oldImg = src2img.get(toKey(src));
-    if (I.is(toKey(img), toKey(oldImg)))
+    const oldImg = src2img[toKey(src)];
+    if (toKey(img) == toKey(oldImg))
       return { bad: false, seen: true };
     else if (oldImg != null)
       return { bad: true, seen: true };
 
-    if (img2src.has(toKey(img)))
+    if (img2src[toKey(img)] != null)
       injective = false;
 
-    src2img.set(toKey(src), img);
-    img2src.set(toKey(img), src);
+    src2img[toKey(src)] = img;
+    img2src[toKey(img)] = src;
     return { bad: false, seen: false };
   };
 
@@ -203,8 +203,8 @@ export function morphism(
     const n1 = _adjacenciesByEdgeVector(graph1, w1, adj1, pos1);
     const n2 = _adjacenciesByEdgeVector(graph2, w2, adj2, pos2);
 
-    for (const [d1, e1] of n1) {
-      const e2 = n2.get(encode(ops.times(decode(d1), transform)));
+    for (const [d1, e1] of Object.entries(n1)) {
+      const e2 = n2[encode(ops.times(decode(d1), transform))];
       if (e2 == null)
         return null;
       else {
@@ -223,10 +223,10 @@ export function morphism(
   }
 
   for (const v of pg.vertices(graph2))
-    if (!img2src.has(v))
+    if (img2src[v] == null)
       return null;
   for (const e of graph2.edges)
-    if (!img2src.has(encode(e)) || !img2src.has(encode(e.reverse())))
+    if (img2src[encode(e)] == null || img2src[encode(e.reverse())] == null)
       return null;
 
   _timers && _timers.stop('morphism');
@@ -281,7 +281,7 @@ const translationalEquivalences = (
       const iso = morphism(graph, graph, start, v, id, adj, adj, pos, pos, true);
       if (iso != null) {
         for (const w of verts) {
-          p = p.union(w, iso.src2img.get(w));
+          p = p.union(w, iso.src2img[w]);
         }
       }
     }
@@ -421,7 +421,7 @@ export function symmetryGenerators(
           gens.push(iso);
           for (const b of bases) {
             p = p.union(encodeVector(b),
-                        encodeVector(b.map(e => iso.src2img.get(encode(e)))));
+                        encodeVector(b.map(e => iso.src2img[encode(e)])));
           }
         }
       }
