@@ -181,18 +181,25 @@ export function morphism(
   let injective = true;
 
   const tryPair = (src, img, toKey) => {
-    const oldImg = src2img[toKey(src)];
-    if (toKey(img) == toKey(oldImg))
-      return { bad: false, seen: true };
+    const srcKey = toKey(src);
+    const imgKey = toKey(img);
+    let bad = false;
+    let seen = false;
+
+    const oldImg = src2img[srcKey];
+    if (imgKey == toKey(oldImg))
+      seen = true;
     else if (oldImg != null)
-      return { bad: true, seen: true };
+      bad = true;
+    else {
+      if (img2src[imgKey] != null)
+        injective = false;
 
-    if (img2src[toKey(img)] != null)
-      injective = false;
+      src2img[srcKey] = img;
+      img2src[imgKey] = src;
+    }
 
-    src2img[toKey(src)] = img;
-    img2src[toKey(img)] = src;
-    return { bad: false, seen: false };
+    return { bad, seen };
   };
 
   tryPair(start1, start2, x => x);
