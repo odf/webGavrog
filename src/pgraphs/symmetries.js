@@ -264,12 +264,17 @@ export function isMinimal(
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph))
 {
+  if (!pg.isConnected(graph))
+    throw new Error('graph is not connected');
+  else if (!pg.isLocallyStable(graph, pos))
+    throw new Error('graph is not locally stable');
+
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts.first();
 
   for (const v of verts.rest()) {
-    if (morphism(graph, graph, start, v, id, adj, adj, pos, pos) != null)
+    if (morphism(graph, graph, start, v, id, adj, adj, pos, pos, true) != null)
       return false;
   }
 
