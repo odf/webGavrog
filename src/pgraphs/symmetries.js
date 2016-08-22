@@ -29,16 +29,9 @@ const decode = value => {
 
 
 const encodeVector = value => {
-  _timers && _timers.start('encode');
+  _timers && _timers.start('encodeVector');
   const out = JSON.stringify(value.map(x => ops.repr(x)));
-  _timers && _timers.stop('encode');
-  return out;
-};
-
-const decodeVector = value => {
-  _timers && _timers.start('decode');
-  const out = JSON.parse(value).map(x => ops.fromRepr(x));
-  _timers && _timers.stop('decode');
+  _timers && _timers.stop('encodeVector');
   return out;
 };
 
@@ -425,14 +418,16 @@ export function symmetryGenerators(
   else if (!pg.isLocallyStable(graph, pos))
     throw new Error('graph is not locally stable');
 
+  const keys = bases.map(encodeVector);
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => _edgeVector(e, pos));
   const gens = [];
 
   let p = Partition();
 
-  for (const basis of bases) {
-    if (p.get(encodeVector(basis)) != p.get(encodeVector(bases.first()))) {
+  for (let i = 0; i < bases.size; ++i) {
+    if (p.get(keys.get(i)) != p.get(keys.get(0))) {
+      const basis = bases.get(i);
       const v = basis[0].head;
       const B = basis.map(e => _edgeVector(e, pos));
       const M = ops.solve(B0, B);
@@ -441,9 +436,10 @@ export function symmetryGenerators(
         const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos, true);
         if (iso != null) {
           gens.push(iso);
-          for (const b of bases) {
-            p = p.union(encodeVector(b),
-                        encodeVector(b.map(e => iso.src2img[encode(e)])));
+          for (let i = 0; i < bases.size; ++i) {
+            p = p.union(
+              keys.get(i),
+              encodeVector(bases.get(i).map(e => iso.src2img[encode(e)])));
           }
         }
       }
