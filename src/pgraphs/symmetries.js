@@ -101,15 +101,21 @@ const _characteristicBases = (
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph)
 ) => {
+  _timers && _timers.start('_characteristicBases');
   const firstAttempt = pg.vertices(graph)
     .flatMap(v => _goodCombinations(_allIncidences(graph, v, adj), pos));
-  if (firstAttempt.size)
+  if (firstAttempt.size) {
+    _timers && _timers.stop('_characteristicBases');
     return firstAttempt;
+  }
 
   const secondAttempt = _goodEdgeChains(graph, adj, pos);
-  if (secondAttempt.size)
+  if (secondAttempt.size) {
+    _timers && _timers.stop('_characteristicBases');
     return secondAttempt;
+  }
 
+  _timers && _timers.stop('_characteristicBases');
   return I.List(_goodCombinations(_directedEdges(graph), pos));
 };
 
@@ -462,8 +468,6 @@ if (require.main == module) {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
 
-  const maybeDecode = x => x.constructor.name == 'Number' ? x : decode(x);
-
   const test = function test(g) {
     console.log(`vertices: ${pg.vertices(g)}`);
     console.log('edges:');
@@ -472,26 +476,28 @@ if (require.main == module) {
     console.log();
 
     const edges = I.List(g.edges).toJS();
+    const adj = pg.adjacencies(g);
     const pos = pg.barycentricPlacement(g);
-    const bases = _characteristicBases(g);
+    const bases = _characteristicBases(g, adj, pos);
     console.log(`found ${bases.size} characteristic bases`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      const syms = symmetryGenerators(g);
+      const syms = symmetryGenerators(g, adj, pos, bases);
       console.log(`found ${syms.length} symmetry generators:`);
       for (const sym of syms)
         console.log(sym.transform);
       console.log();
 
-      const minimal = isMinimal(g);
-      console.log(`minimal = ${isMinimal(g)}`);
+      const minimal = isMinimal(g, adj, pos);
+      console.log(`minimal = ${minimal}`);
       if (!minimal) {
-        const p = translationalEquivalences(g);
+        const p = translationalEquivalences(g, adj, pos);
+        const vs = extraTranslationVectors(g, adj, pos, p);
+        const cls = translationalEquivalenceClasses(g, adj, pos, p);
         console.log(`translational equivalences: ${p}`);
-        console.log(`extra translations = ${extraTranslationVectors(g)}`);
-        console.log(
-          `equivalence classes: ${translationalEquivalenceClasses(g)}`);
-        console.log(`minimal image: ${minimalImage(g)}`);
+        console.log(`extra translations = ${vs}`);
+        console.log(`equivalence classes: ${cls}`);
+        console.log(`minimal image: ${minimalImage(g, adj, pos, p)}`);
       }
     }
     console.log();
