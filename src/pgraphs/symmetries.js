@@ -412,13 +412,13 @@ const _isUnimodularIntegerMatrix = M => (
 );
 
 
-export function symmetryGenerators(
+export function symmetries(
   graph,
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph),
   bases = _characteristicBases(graph, adj, pos))
 {
-  _timers && _timers.start('symmetryGenerators');
+  _timers && _timers.start('symmetries');
   if (!pg.isConnected(graph))
     throw new Error('graph is not connected');
   else if (!pg.isLocallyStable(graph, pos))
@@ -427,7 +427,7 @@ export function symmetryGenerators(
   const keys = bases.map(encodeVector);
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => _edgeVector(e, pos));
-  const gens = [];
+  const generators = [];
 
   let p = Partition();
 
@@ -441,7 +441,7 @@ export function symmetryGenerators(
       if (_isUnimodularIntegerMatrix(M)) {
         const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos, true);
         if (iso != null) {
-          gens.push(iso);
+          generators.push(iso);
           for (let i = 0; i < bases.size; ++i) {
             p = p.union(
               keys.get(i),
@@ -452,9 +452,14 @@ export function symmetryGenerators(
     }
   }
 
-  _timers && _timers.stop('symmetryGenerators');
+  const representativeBases = I.Range(0, bases.size)
+    .filter(i => keys.get(i) == p.get(keys.get(i)))
+    .map(i => bases.get(i))
+    .toList();
 
-  return gens;
+  _timers && _timers.stop('symmetries');
+
+  return { generators, representativeBases };
 };
 
 
@@ -482,10 +487,15 @@ if (require.main == module) {
     console.log(`found ${bases.size} characteristic bases`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      const syms = symmetryGenerators(g, adj, pos, bases);
-      console.log(`found ${syms.length} symmetry generators:`);
-      for (const sym of syms)
+      const syms = symmetries(g, adj, pos, bases);
+      const gens = syms.generators;
+      const bases = syms.representativeBases;
+      console.log(`found ${gens.length} symmetry generators:`);
+      for (const sym of gens)
         console.log(sym.transform);
+      console.log(`found ${bases.size} representative base(s):`);
+      for (const basis of bases)
+        console.log(`${basis}`);
       console.log();
 
       const minimal = isMinimal(g, adj, pos);
