@@ -248,6 +248,31 @@ export function morphism(
 };
 
 
+export function productMorphism(phi, psi) {
+  const compose = (f, g) => {
+    const h = {};
+    for (const x of Object.keys(f)) {
+      h[x] = g[f[x]];
+      if (h[x] == null)
+        throw new Error('morphism do not compose');
+    }
+    return h;
+  };
+
+  const src2img = compose(phi.src2img, psi.src2img);
+  const img2src = compose(psi.img2src, phi.img2src);
+
+  return {
+    src2img,
+    img2src,
+    transform: ops.times(phi.transform, psi.transform),
+    injective: phi.injective && psi.injective,
+    sourceGraph: phi.sourceGraph,
+    imageGraph: psi.imageGraph
+  };
+};
+
+
 export function isMinimal(
   graph,
   adj = pg.adjacencies(graph),
