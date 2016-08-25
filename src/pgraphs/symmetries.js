@@ -28,14 +28,6 @@ const decode = value => {
 };
 
 
-const encodeVector = value => {
-  _timers && _timers.start('encodeVector');
-  const out = JSON.stringify(value.map(x => ops.repr(x)));
-  _timers && _timers.stop('encodeVector');
-  return out;
-};
-
-
 const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => adj.get(v)
   .map(({v: w, s}) => pg.makeEdge(v, w, s))
   .flatMap(e => e.head == e.tail ? [e, e.reverse()] : [e])
@@ -179,29 +171,27 @@ export function morphism(
 
   let injective = true;
 
-  const tryPair = (src, img, toKey) => {
-    const srcKey = toKey(src);
-    const imgKey = toKey(img);
+  const tryPair = (src, img) => {
     let bad = false;
     let seen = false;
 
-    const oldImg = src2img[srcKey];
-    if (imgKey == toKey(oldImg))
+    const oldImg = src2img[src];
+    if (img == oldImg)
       seen = true;
     else if (oldImg != null)
       bad = true;
     else {
-      if (img2src[imgKey] != null)
+      if (img2src[img] != null)
         injective = false;
 
-      src2img[srcKey] = img;
-      img2src[imgKey] = src;
+      src2img[src] = img;
+      img2src[img] = src;
     }
 
     return { bad, seen };
   };
 
-  tryPair(start1, start2, x => x);
+  tryPair(start1, start2);
   queue.push([start1, start2]);
 
   while (queue.length) {
@@ -216,13 +206,13 @@ export function morphism(
         return null;
       }
       else {
-        const { bad, seen } = tryPair(e1, e2, encode);
+        const { bad, seen } = tryPair(encode(e1), encode(e2));
         if (bad) {
           _timers && _timers.stop('morphism');
           return null;
         }
         else if (!seen) {
-          const { bad, seen } = tryPair(e1.tail, e2.tail, x => x);
+          const { bad, seen } = tryPair(e1.tail, e2.tail);
           if (bad) {
             _timers && _timers.stop('morphism');
             return null;
@@ -424,7 +414,7 @@ export function symmetries(
   else if (!pg.isLocallyStable(graph, pos))
     throw new Error('graph is not locally stable');
 
-  const keys = bases.map(encodeVector);
+  const keys = bases.map(b => b.map(encode).join(','));
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => _edgeVector(e, pos));
   const generators = [];
@@ -445,7 +435,7 @@ export function symmetries(
           for (let i = 0; i < bases.size; ++i) {
             p = p.union(
               keys.get(i),
-              encodeVector(bases.get(i).map(e => iso.src2img[encode(e)])));
+              bases.get(i).map(e => iso.src2img[encode(e)]).join(','));
           }
         }
       }
