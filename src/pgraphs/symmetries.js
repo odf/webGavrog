@@ -273,6 +273,30 @@ export function productMorphism(phi, psi) {
 };
 
 
+export function groupOfMorphisms(generators) {
+  const keyFor = phi => JSON.stringify(Object.entries(phi.src2img).sort());
+
+  const result = generators.slice();
+  const seen = {};
+  generators.forEach(gen => seen[keyFor(gen)] = true);
+
+  for (let next = 0; next < result.length; ++next) {
+    const phi = result[next];
+    for (const psi of generators) {
+      const product = productMorphism(phi, psi);
+      const key = keyFor(product);
+
+      if (!seen[key]) {
+        result.push(product);
+        seen[key] = true;
+      }
+    }
+  }
+
+  return result;
+};
+
+
 export function isMinimal(
   graph,
   adj = pg.adjacencies(graph),
@@ -474,7 +498,11 @@ export function symmetries(
 
   _timers && _timers.stop('symmetries');
 
-  return { generators, representativeBases };
+  return {
+    generators,
+    representativeBases,
+    symmetries: groupOfMorphisms(generators)
+  };
 };
 
 
@@ -505,7 +533,8 @@ if (require.main == module) {
       const syms = symmetries(g, adj, pos, bases);
       const gens = syms.generators;
       const bases = syms.representativeBases;
-      console.log(`found ${gens.length} symmetry generators:`);
+      console.log(`found ${syms.symmetries.length} symmetries in total`
+                  + ` from ${gens.length} generators:`);
       for (const sym of gens)
         console.log(sym.transform);
       console.log(`found ${bases.size} representative base(s):`);
