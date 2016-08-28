@@ -28,25 +28,15 @@ const decode = value => {
 };
 
 
-const _allIncidences = (graph, v, adj = pg.adjacencies(graph)) => adj.get(v)
-  .map(({v: w, s}) => pg.makeEdge(v, w, s))
-  .flatMap(e => e.head == e.tail ? [e, e.reverse()] : [e])
-  .toJS();
-
-
 const _directedEdges = graph =>
   graph.edges.flatMap(e => [e, e.reverse()]).toJS();
-
-
-const _edgeVector = (e, pos) =>
-  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
 
 
 function* _goodCombinations(edges, pos) {
   const dim = ops.dimension(edges[0].shift);
 
   for (const c of comb.combinations(edges.length, dim)) {
-    const vectors = c.map(i => _edgeVector(edges[i - 1], pos));
+    const vectors = c.map(i => pg.edgeVector(edges[i - 1], pos));
     if (ops.rank(vectors) == dim) {
       for (const p of comb.permutations(dim)) {
         yield p.map(i => edges[c[i - 1] - 1]);
@@ -70,9 +60,9 @@ const _goodEdgeChains = (
     }
     else {
       const v = es[es.length - 1].tail;
-      for (const e of _allIncidences(graph, v, adj)) {
+      for (const e of pg.allIncidences(graph, v, adj)) {
         const next = es.concat([e]);
-        const M = next.map(e => _edgeVector(e, pos));
+        const M = next.map(e => pg.edgeVector(e, pos));
         if (ops.rank(M) == next.length) {
           extend(next);
         }
@@ -95,7 +85,7 @@ const _characteristicBases = (
 ) => {
   _timers && _timers.start('_characteristicBases');
   const firstAttempt = pg.vertices(graph)
-    .flatMap(v => _goodCombinations(_allIncidences(graph, v, adj), pos));
+    .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
   if (firstAttempt.size) {
     _timers && _timers.stop('_characteristicBases');
     return firstAttempt;
@@ -120,8 +110,8 @@ const _adjacenciesByEdgeVector = (
   _timers && _timers.start('_adjacenciesByEdgeVector');
 
   const out = {};
-  for (const e of _allIncidences(graph, v, adj))
-    out[encode(_edgeVector(e, pos))] = e;
+  for (const e of pg.allIncidences(graph, v, adj))
+    out[encode(pg.edgeVector(e, pos))] = e;
 
   _timers && _timers.stop('_adjacenciesByEdgeVector');
   return out;
@@ -465,7 +455,7 @@ export function symmetries(
 
   const keys = bases.map(b => b.map(encode).join(','));
   const v0 = bases.first()[0].head;
-  const B0 = bases.first().map(e => _edgeVector(e, pos));
+  const B0 = bases.first().map(e => pg.edgeVector(e, pos));
   const generators = [];
 
   let p = Partition();
@@ -474,7 +464,7 @@ export function symmetries(
     if (p.get(keys.get(i)) != p.get(keys.get(0))) {
       const basis = bases.get(i);
       const v = basis[0].head;
-      const B = basis.map(e => _edgeVector(e, pos));
+      const B = basis.map(e => pg.edgeVector(e, pos));
       const M = ops.solve(B0, B);
 
       if (_isUnimodularIntegerMatrix(M)) {

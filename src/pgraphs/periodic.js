@@ -307,6 +307,19 @@ export function isLocallyStable(graph, pos=barycentricPlacement(graph)) {
 };
 
 
+export function allIncidences(graph, v, adj = adjacencies(graph)) {
+  return adj.get(v)
+    .map(({v: w, s}) => makeEdge(v, w, s))
+    .flatMap(e => e.head == e.tail ? [e, e.reverse()] : [e])
+    .toJS();
+};
+
+
+export function edgeVector(e, pos) {
+  return ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
