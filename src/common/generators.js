@@ -45,23 +45,18 @@ export function backtracker(spec, stack) {
 };
 
 
-export function results(gen, pred) {
+export function* results(gen, pred) {
   let g = gen;
 
-  return I.Seq({
-    next() {
-      while (g) {
-        if (!pred || pred(g.current())) {
-          const val = g.result();
-          g = g.step();
-          if (val !== undefined)
-            return { done: false, value: val };
-        } else
-          g = g.skip();
-      }
-      return { done: true };
-    }
-  });
+  while (g) {
+    if (!pred || pred(g.current())) {
+      const val = g.result();
+      g = g.step();
+      if (val !== undefined)
+        yield val;
+    } else
+      g = g.skip();
+  }
 };
 
 
@@ -84,7 +79,7 @@ export function singleton(x) {
 
 
 if (require.main == module) {
-  const n = parseInt(process.argv[2]);
+  const n = parseInt(process.argv[2]) || 4;
 
   const gen = backtracker({
     root: {
@@ -110,5 +105,5 @@ if (require.main == module) {
     }
   });
 
-  console.log(JSON.stringify(results(gen)));
+  console.log(JSON.stringify(I.Seq(results(gen))));
 }

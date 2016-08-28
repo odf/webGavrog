@@ -80,7 +80,7 @@ export function typePartition(ds) {
 };
 
 
-const Traversal = function Traversal(ds, indices, seeds) {
+const Traversal = function* Traversal(ds, indices, seeds) {
   const seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
   const todo = {};
   const seen = {};
@@ -88,46 +88,42 @@ const Traversal = function Traversal(ds, indices, seeds) {
   indices.forEach(i => { seen[i] = {}; todo[i] = [] });
   seen[root] = {};
 
-  return {
-    next() {
-      while (true) {
-        let i = null;
-        let D = null;
-        for (const k in indices) {
-          if (todo[indices[k]].length > 0) {
-            i = indices[k];
-            D = todo[i].shift();
-            break;
-          }
-        }
-
-        if (D == null && seedsLeft.length > 0)
-          D = seedsLeft.pop();
-
-        if (D == null)
-          return { done: true };
-
-        if (!seen[i][D]) {
-          const Di = (i == root) ? D : ds.s(i, D);
-
-          indices.forEach(i => {
-            if (!seen[i][Di]) {
-              if (i < 2)
-                todo[i].unshift(Di);
-              else
-                todo[i].push(Di);
-            }
-          });
-
-          seen[root][Di] = true;
-          seen[i][D]     = true;
-          seen[i][Di]    = true;
-
-          return { done: false, value: [D, i, Di] };
-        }
+  while (true) {
+    let i = null;
+    let D = null;
+    for (const k in indices) {
+      if (todo[indices[k]].length > 0) {
+        i = indices[k];
+        D = todo[i].shift();
+        break;
       }
     }
-  };
+
+    if (D == null && seedsLeft.length > 0)
+      D = seedsLeft.pop();
+
+    if (D == null)
+      return;
+
+    if (!seen[i][D]) {
+      const Di = (i == root) ? D : ds.s(i, D);
+
+      indices.forEach(i => {
+        if (!seen[i][Di]) {
+          if (i < 2)
+            todo[i].unshift(Di);
+          else
+            todo[i].push(Di);
+        }
+      });
+
+      seen[root][Di] = true;
+      seen[i][D]     = true;
+      seen[i][Di]    = true;
+
+      yield [D, i, Di];
+    }
+  }
 };
 
 export function traversal(ds, indices, seeds) {

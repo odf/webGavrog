@@ -408,8 +408,8 @@ if (require.main == module) {
   const tablesTimers = util.timers();
   useTimers(tablesTimers);
 
-  generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8))
-    .forEach(x => console.log(JSON.stringify(x)));
+  for (const x of generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8)))
+    console.log(JSON.stringify(x));
   console.log(`timing detail for coset table generation:`);
   console.log(`${JSON.stringify(tablesTimers.current(), null, 2)}`);
 
