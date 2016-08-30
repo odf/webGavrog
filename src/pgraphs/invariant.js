@@ -3,6 +3,10 @@ import * as pg from './periodic';
 const ops = pg.ops;
 
 
+const _solveInRows = (v, M) =>
+  ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
+
+
 const _traversal = function* _traversal(
   graph,
   v0,
@@ -39,7 +43,28 @@ const _traversal = function* _traversal(
         newPos[wo] = s;
         queue.push(wo);
       }
-      else{
+      else if (wn < vn) {
+        continue;
+      }
+      else {
+        const rawShift = ops.minus(s, newPos[wo]);
+        let shift;
+        if (basisAdjustment != null) {
+          shift = rawShift.times(basisAdjustment);
+        }
+        else {
+          shift = _solveInRows(rawShift, essentialShifts);
+          if (shift == null) {
+            essentialShifts.push(rawShift);
+            shift = ops.unitVector(graph.dim, essentialShifts.length);
+            if (essentialShifts.length == graph.dim) {
+              basisAdjustment = ops.inverse(ops.transposed(essentialShifts));
+            }
+          }
+        }
+        if (vn < wn || (vn == wn && ops.sgn(shift) < 0)) {
+          yield pg.makeEdge(vn, wn, shift);
+        }
       }
     }
   }
