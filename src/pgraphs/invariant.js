@@ -1,4 +1,5 @@
 import * as pg from './periodic';
+import * as ps from './symmetries';
 
 const ops = pg.ops;
 
@@ -77,6 +78,26 @@ const _traversal = function* _traversal(
 };
 
 
+export function invariant(
+  graph,
+  adj = pg.adjacencies(graph),
+  pos = pg.barycentricPlacement(graph),
+  bases = ps.characteristicBases(graph, adj, pos),
+  sym = ps.symmetries(graph, adj, pos, bases))
+{
+  for (const basis of sym.representativeBases) {
+    const v = basis[0].head;
+    const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
+    const trav = _traversal(graph, v, transform, adj, pos);
+    console.log(`basis = ${basis}`);
+    console.log(`transform = ${transform}`);
+    for (const e of trav)
+      console.log(e);
+    console.log();
+  }
+}
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -87,6 +108,5 @@ if (require.main == module) {
                       [ 1, 2, [ 0, 1, 0 ] ],
                       [ 1, 2, [ 0, 0, 1 ] ] ]);
 
-  for (const e of _traversal(g, 1, ops.identityMatrix(3)))
-    console.log(e);
+  invariant(g);
 }
