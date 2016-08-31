@@ -78,26 +78,26 @@ const _goodEdgeChains = (
 };
 
 
-const _characteristicBases = (
+export function characteristicBases(
   graph,
   adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph)
-) => {
-  _timers && _timers.start('_characteristicBases');
+  pos = pg.barycentricPlacement(graph))
+{
+  _timers && _timers.start('characteristicBases');
   const firstAttempt = pg.vertices(graph)
     .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
   if (firstAttempt.size) {
-    _timers && _timers.stop('_characteristicBases');
+    _timers && _timers.stop('characteristicBases');
     return firstAttempt;
   }
 
   const secondAttempt = _goodEdgeChains(graph, adj, pos);
   if (secondAttempt.size) {
-    _timers && _timers.stop('_characteristicBases');
+    _timers && _timers.stop('characteristicBases');
     return secondAttempt;
   }
 
-  _timers && _timers.stop('_characteristicBases');
+  _timers && _timers.stop('characteristicBases');
   return I.List(_goodCombinations(_directedEdges(graph), pos));
 };
 
@@ -445,7 +445,7 @@ export function symmetries(
   graph,
   adj = pg.adjacencies(graph),
   pos = pg.barycentricPlacement(graph),
-  bases = _characteristicBases(graph, adj, pos))
+  bases = characteristicBases(graph, adj, pos))
 {
   _timers && _timers.start('symmetries');
   if (!pg.isConnected(graph))
@@ -516,7 +516,7 @@ if (require.main == module) {
     const edges = I.List(g.edges).toJS();
     const adj = pg.adjacencies(g);
     const pos = pg.barycentricPlacement(g);
-    const bases = _characteristicBases(g, adj, pos);
+    const bases = characteristicBases(g, adj, pos);
     console.log(`found ${bases.size} characteristic bases`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
