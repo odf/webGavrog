@@ -134,4 +134,15 @@ if (require.main == module) {
 
   testRepr(ops.div([1, 2, 3], 3));
   testRepr([[1.1, 2.2, ops.integer('-12_345_678_901_234_567_890')]]);
+
+  console.log(ops.cmp([1, 2, 3], [1, 2, 2]));
+  console.log(ops.cmp([1, 2, 3], [1, 2, 3]));
+  console.log(ops.cmp([1, 2, 3], [1, 2, 4]));
+  console.log(ops.cmp([1, 2, 3], [1, 2, 3, 4]));
+  console.log(ops.cmp([1, 2, 3], [1, 2, 3, 0]));
+
+  console.log(ops.sgn([1, 2, 3]));
+  console.log(ops.sgn([0, 2, 3]));
+  console.log(ops.sgn([0, -2, 3]));
+  console.log(ops.sgn([0, 0, 0]));
 }

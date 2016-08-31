@@ -36,6 +36,26 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
 
 
+  const compareV = (v, w) => {
+    for (let i = 0; i < v.length || i < w.length; ++i) {
+      const d = scalarOps.cmp(v[i] || 0, w[i] || 0);
+      if (d)
+        return d;
+    }
+    return 0;
+  };
+
+
+  const signV = v => {
+    for (const x of v) {
+      const s = scalarOps.sgn(x);
+      if (s)
+        return s;
+    }
+    return 0;
+  };
+
+
   const transposedMatrix = m => {
     const [nrows, ncols] = shapeOfMatrix(m);
     return array(ncols).map((_, j) => array(nrows).map((_, i) => m[i][j]));
@@ -374,6 +394,14 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     negative: {
       Vector: map.V(s.negative),
       Matrix: map.M(s.negative)
+    },
+
+    cmp: {
+      Vector: { Vector: compareV }
+    },
+
+    sgn: {
+      Vector: signV
     },
 
     squareNorm: {
