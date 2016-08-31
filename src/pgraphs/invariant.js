@@ -3,7 +3,7 @@ import * as pg from './periodic';
 const ops = pg.ops;
 
 
-const _solveInRows = (v, M) =>
+const _solveInRows = (v, M) => 
   ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
 
 
@@ -16,19 +16,20 @@ const _traversal = function* _traversal(
 {
   const zero = ops.vector(graph.dim);
 
-  let next = 2;
-  const old2new = {v0: 1};
-  const newPos = {v0: zero};
+  const old2new = {[v0]: 1};
+  const newPos = {[v0]: zero};
   const queue = [v0];
-  const basisAdjustment = null;
   const essentialShifts = [];
+
+  let next = 2;
+  let basisAdjustment = null;
 
   while (queue.length) {
     const vo = queue.shift();
     const vn = old2new[vo];
     const pv = newPos[vo];
 
-    const incident = pg.allIncidences(vo);
+    const incident = pg.allIncidences(graph, vo, adj);
     const M = ops.times(incident.map(e => pg.edgeVector(e, pos)), transform);
 
     const neighbors = incident
@@ -52,11 +53,16 @@ const _traversal = function* _traversal(
         if (basisAdjustment != null) {
           shift = rawShift.times(basisAdjustment);
         }
+        else if (ops.sgn(rawShift) == 0) {
+          shift = rawShift;
+        }
         else {
-          shift = _solveInRows(rawShift, essentialShifts);
-          if (shift == null) {
-            essentialShifts.push(rawShift);
+          if (essentialShifts.length) {
+            shift = _solveInRows(rawShift, essentialShifts)[0];
+          }
+          if (shift == null || ops.sgn(shift) == 0) {
             shift = ops.unitVector(graph.dim, essentialShifts.length);
+            essentialShifts.push(rawShift);
             if (essentialShifts.length == graph.dim) {
               basisAdjustment = ops.inverse(ops.transposed(essentialShifts));
             }
@@ -69,3 +75,18 @@ const _traversal = function* _traversal(
     }
   }
 };
+
+
+if (require.main == module) {
+  Array.prototype.toString = function() {
+    return `[ ${this.map(x => x.toString()).join(', ')} ]`;
+  };
+
+  const g = pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                      [ 1, 2, [ 1, 0, 0 ] ],
+                      [ 1, 2, [ 0, 1, 0 ] ],
+                      [ 1, 2, [ 0, 0, 1 ] ] ]);
+
+  for (const e of _traversal(g, 1, ops.identityMatrix(3)))
+    console.log(e);
+}
