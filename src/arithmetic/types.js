@@ -84,10 +84,14 @@ if (require.main == module) {
   console.log(ops.rank(A));
   console.log(ops.determinant(A));
 
+  const testSolve = (A, b) => {
+    const v = ops.solve(A, b);
+    console.log(`${A} *\n${v} =\n${ops.times(A, v)}\n`);
+  };
+
   console.log();
-  const b = [1, 1, 1];
-  const v = ops.solve(A, b);
-  console.log(`${A} *\n${v} =\n${ops.times(A, v)}\n`);
+  testSolve(A, [1, 1, 1]);
+  testSolve(A, [1, 1, 2]);
 
   const Ainv = ops.inverse(A);
   console.log(`${A} *\n${Ainv} =\n${ops.times(A, Ainv)}\n`);
