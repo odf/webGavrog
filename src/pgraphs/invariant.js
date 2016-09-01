@@ -4,8 +4,12 @@ import * as ps from './symmetries';
 const ops = pg.ops;
 
 
-const _solveInRows = (v, M) => 
-  ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
+const _solveInRows = (v, M) => {
+  console.log(`_solveInRows(${v}, ${M})`);
+  const out = ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
+  console.log(`  = ${out}`);
+  return out;
+};
 
 
 const _traversal = function* _traversal(
@@ -61,7 +65,7 @@ const _traversal = function* _traversal(
           if (essentialShifts.length) {
             shift = _solveInRows(rawShift, essentialShifts)[0];
           }
-          if (shift == null || ops.sgn(shift) == 0) {
+          if (shift == null) {
             shift = ops.unitVector(graph.dim, essentialShifts.length);
             essentialShifts.push(rawShift);
             if (essentialShifts.length == graph.dim) {
@@ -103,10 +107,19 @@ if (require.main == module) {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
 
-  const g = pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
-                      [ 1, 2, [ 1, 0, 0 ] ],
-                      [ 1, 2, [ 0, 1, 0 ] ],
-                      [ 1, 2, [ 0, 0, 1 ] ] ]);
+  const test = g => {
+    invariant(g);
+  };
 
-  invariant(g);
+  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 1, 2, [ 1, 0, 0 ] ],
+                 [ 1, 2, [ 0, 1, 0 ] ],
+                 [ 1, 2, [ 0, 0, 1 ] ] ]));
+
+  test(pg.make([ [ 1, 2, [ 0, 0 ] ],
+                 [ 1, 2, [ 1, 0 ] ],
+                 [ 2, 3, [ 0, 0 ] ],
+                 [ 2, 3, [ 0, 1 ] ],
+                 [ 1, 3, [ 0, 0 ] ],
+                 [ 1, 3, [-1, 1 ] ] ]));
 }
