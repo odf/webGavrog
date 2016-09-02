@@ -578,6 +578,13 @@ if (require.main == module) {
                  [ 5, 6, [ 0, -1, 0 ] ],
                  [ 6, 1, [ 0, 0, -1 ] ] ]));
 
+  test(pg.make([ [ 1, 2, [ 0, 0 ] ],
+                 [ 1, 2, [ 1, 0 ] ],
+                 [ 2, 3, [ 0, 0 ] ],
+                 [ 2, 3, [ 0, 1 ] ],
+                 [ 1, 3, [ 0, 0 ] ],
+                 [ 1, 3, [ 1, 1 ] ] ]));
+
   symTimers.stop('total');
   console.log(`${JSON.stringify(symTimers.current(), null, 2)}`);
 }
