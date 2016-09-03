@@ -42,7 +42,7 @@ const _traversal = function* _traversal(
     for (const [s, wo] of neighbors) {
       const wn = old2new[wo];
       if (wn == null) {
-        yield pg.makeEdge(vn, next, zero);
+        yield [vn, next, zero];
         old2new[wo] = next++;
         newPos[wo] = s;
         queue.push(wo);
@@ -72,7 +72,7 @@ const _traversal = function* _traversal(
           }
         }
         if (vn < wn || (vn == wn && ops.sgn(shift) < 0)) {
-          yield pg.makeEdge(vn, wn, shift);
+          yield [vn, wn, shift];
         }
       }
     }
