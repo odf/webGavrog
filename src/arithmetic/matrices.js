@@ -302,6 +302,54 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
+  const _solution = (A, b, modZ) => {
+    const [n, m] = shapeOfMatrix(A);
+    const [_, k] = shapeOfMatrix(b);
+
+    const { P, D, Q } = smithNormalForm(A);
+    const v = matrixProduct(P, b);
+    const y = matrix(m, k);
+
+    for (let i = 0; i < n; ++i) {
+      const d = i < m ? D[i][i] : 0;
+      for (let j = 0; j < k; ++j) {
+        const r = v[i][j];
+        if (scalarOps.eq(d, 0)) {
+          if (!(scalarOps.eq(r, 0)
+                || (modZ
+                    && scalarOps.isInteger(r))
+                || (!scalarOps.isRational(r)
+                    && scalarOps.le(scalarOps.abs(r), epsilon))))
+          {
+            return null;
+          }
+        }
+        else if (i < m) {
+          y[i][j] = scalarOps.div(r, d);
+        }
+      }
+    }
+
+    return matrixProduct(Q, y);
+  };
+
+
+  const solution = (A, b) => {
+    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
+      throw new Error('matrix shapes must match');
+
+    return _solution(A, b, false);
+  };
+
+
+  const solutionModZ = (A, b) => {
+    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
+      throw new Error('matrix shapes must match');
+
+    return _solution(A, b, true);
+  };
+
+
   const _rowProduct = (A, i, j) => {
     const [nrows, ncols] = shapeOfMatrix(A)
     return array(ncols)
@@ -448,6 +496,14 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
     nullSpace: {
       Matrix: nullSpace
+    },
+
+    solution: {
+      Matrix: { Matrix: solution }
+    },
+
+    solutionModZ: {
+      Matrix: { Matrix: solutionModZ }
     },
 
     crossProduct: {
