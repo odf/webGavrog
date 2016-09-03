@@ -5,10 +5,8 @@ const ops = pg.ops;
 
 
 const _solveInRows = (v, M) => {
-  console.log(`_solveInRows(${v}, ${M})`);
-  const out = ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
-  console.log(`  = ${out}`);
-  return out;
+  const tmp = ops.solution(ops.transposed(M), ops.transposed(v));
+  return tmp && ops.transposed(tmp);
 };
 
 
@@ -56,14 +54,14 @@ const _traversal = function* _traversal(
         const rawShift = ops.minus(s, newPos[wo]);
         let shift;
         if (basisAdjustment != null) {
-          shift = rawShift.times(basisAdjustment);
+          shift = ops.times(rawShift, basisAdjustment);
         }
         else if (ops.sgn(rawShift) == 0) {
           shift = rawShift;
         }
         else {
           if (essentialShifts.length) {
-            shift = _solveInRows(rawShift, essentialShifts)[0];
+            shift = _solveInRows(rawShift, essentialShifts);
           }
           if (shift == null) {
             shift = ops.unitVector(graph.dim, essentialShifts.length);
