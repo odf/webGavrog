@@ -111,10 +111,11 @@ coordinate
 
 operator
   = first:coordinate _ "," _ rest:operator { return [first].concat(rest); }
-  / only:coordinate { return [only]; }
 
 field
   = op:operator { return fixOperator(op); }
+  / number
+  / "-" val:nat { return -val; }
   / string
   / name
 
