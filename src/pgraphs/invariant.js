@@ -79,6 +79,9 @@ const _traversal = function* _traversal(
               basisAdjustment = ops.inverse(essentialShifts);
             }
           }
+          else {
+            shift = shift[0].concat(ops.vector(graph.dim - shift[0].length));
+          }
         }
         if (vn < wn || (vn == wn && ops.sgn(shift) < 0)) {
           yield [vn, wn, shift];
