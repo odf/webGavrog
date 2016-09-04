@@ -324,7 +324,7 @@ const reportError = (text, ex) => {
   if (ex.location) {
     var n = ex.location.start.line - 1;
     var m = ex.location.start.column || 0;
-    var lines = txt.split('\n');
+    var lines = text.split('\n');
     var pre  = lines.slice(Math.max(n-5, 0), n);
     var line = lines[n];
     var post = lines.slice(n+1, n+6);
@@ -348,6 +348,7 @@ export function* structures(text) {
     blocks = parser.parse(text);
   } catch(ex) {
     reportError(text, ex);
+    blocks = []
   }
 
   for (const b of blocks) {
