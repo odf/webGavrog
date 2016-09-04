@@ -1,3 +1,5 @@
+import * as I from 'immutable';
+
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
@@ -80,6 +82,10 @@ const _traversal = function* _traversal(
 };
 
 
+const _cmpSteps = ([hdA, tlA, shA], [hdB, tlB, shB]) =>
+  (hdA - hdB) || (tlA - tlB) || ops.cmp(shA, shB);
+
+
 export function invariant(
   graph,
   adj = pg.adjacencies(graph),
@@ -87,16 +93,37 @@ export function invariant(
   bases = ps.characteristicBases(graph, adj, pos),
   sym = ps.symmetries(graph, adj, pos, bases))
 {
+  let best = null;
+
   for (const basis of sym.representativeBases) {
     const v = basis[0].head;
     const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
-    const trav = _traversal(graph, v, transform, adj, pos);
-    console.log(`basis = ${basis}`);
-    console.log(`transform = ${transform}`);
-    for (const e of trav)
-      console.log(e);
-    console.log();
+    const trav = I.Seq(_traversal(graph, v, transform, adj, pos));
+
+    if (best == null) {
+      best = trav;
+    }
+    else {
+      for (let i = 0; ; ++i) {
+        const next = trav.get(i);
+        if (next == null) {
+          break;
+        }
+
+        const d = _cmpSteps(next, best.get(i));
+        if (d < 0) {
+          best = trav;
+        }
+        else if (d > 0) {
+          break;
+        }
+      }
+    }
   }
+
+  for (const e of I.List(best).sort(_cmpSteps))
+    console.log(e);
+  console.log();
 }
 
 
