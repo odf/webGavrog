@@ -82,8 +82,25 @@ const _traversal = function* _traversal(
 };
 
 
-const _cmpSteps = ([hdA, tlA, shA], [hdB, tlB, shB]) =>
-  (hdA - hdB) || (tlA - tlB) || ops.cmp(shA, shB);
+const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
+  (headA - headB) || (tailA - tailB) || ops.cmp(shiftA, shiftB);
+
+
+const _postprocessTraversal = trav => {
+  const A = trav.map(([head, tail, shift]) => shift);
+  const basis = ops.triangulation(A).R.slice(0, A[0].length);
+  const basisChange = ops.inverse(basis);
+
+  return trav.map(([head, tail, shift]) => {
+    const newShift = ops.times(shift, basisChange);
+    if (head == tail && ops.sgn(shift) > 0) {
+      return [head, tail, ops.negative(newShift)];
+    }
+    else {
+      return [head, tail, newShift];
+    }
+  });
+};
 
 
 export function invariant(
@@ -121,9 +138,7 @@ export function invariant(
     }
   }
 
-  for (const e of I.List(best).sort(_cmpSteps))
-    console.log(e);
-  console.log();
+  return _postprocessTraversal(I.List(best).toArray()).sort(_cmpSteps);
 }
 
 
@@ -133,7 +148,11 @@ if (require.main == module) {
   };
 
   const test = g => {
-    invariant(g);
+    const trav = invariant(g);
+
+    for (const e of trav)
+      console.log(e);
+    console.log();
   };
 
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
