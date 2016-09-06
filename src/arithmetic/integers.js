@@ -29,6 +29,8 @@ export function methods(baseLength = 0) {
 
   class LongInt {
     constructor(sign, digits) {
+      if (digits.some(d => d < 0 || d >= BASE))
+        throw new Error(`illegal long integer digits ${digits}`);
       this.sign = sign;
       this.digits = digits;
     }
@@ -223,8 +225,8 @@ export function methods(baseLength = 0) {
     let carry = 0;
     for (let i = 0; i < s.length; ++i) {
       const t = _digitByDigit(d, s[i]);
-      result.push(t[0] + carry);
-      carry = t[1];
+      result.push((t[0] + carry) % BASE);
+      carry = t[1] + (t[0] + carry >= BASE);
     }
     if (carry)
       result.push(carry);
