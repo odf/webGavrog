@@ -21,7 +21,7 @@ process.argv.slice(2).forEach(file => {
         console.log(`  ${head} ${tail} ${shift}`);
       }
     } catch(ex) {
-      console.log(ex);
+      console.log(ex.stack);
     }
     console.log();
   }
