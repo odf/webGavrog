@@ -258,7 +258,7 @@ export function methods(baseLength = 0) {
 
 
   const _idiv = function _idiv(r, s) {
-    const scale = Math.floor(BASE / (_last(s) + 1));
+    const scale = Math.floor((BASE - 1) / _last(s));
     const rs = _seqByDigit(r, scale);
     const ss = _seqByDigit(s, scale);
     const m = ss.length;
