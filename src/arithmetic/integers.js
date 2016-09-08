@@ -268,7 +268,7 @@ export function methods(baseLength = 0) {
     let h = [];
     let t = rs;
 
-    let f, n;
+    let f, n, ssf;
 
     while (true) {
       while (_last(q) == 0)
@@ -277,8 +277,13 @@ export function methods(baseLength = 0) {
       if (_cmp(h, ss) >= 0) {
         n = _last(h) * (h.length > m ? BASE : 1);
         f = Math.floor(n / d) || 1;
+        ssf = _seqByDigit(ss, f);
+        if (_cmp(h, ssf) < 0) {
+          --f;
+          ssf = _minus(ssf, ss);
+        }
         q = _plus(q, [f]);
-        h = _minus(h, _seqByDigit(ss, f));
+        h = _minus(h, ssf);
       } else if (t.length) {
         q.unshift(0);
         h.unshift(_last(t))
