@@ -103,7 +103,10 @@ const _postprocessTraversal = trav => {
 
   return trav.map(([head, tail, shift]) => {
     const newShift = ops.times(shift, basisChange);
-    if (head == tail && ops.sgn(shift) > 0) {
+    if (newShift.some(x => !ops.isInteger(x))) {
+      throw new Error("panic: produced non-integer shift");
+    }
+    if (head == tail && ops.sgn(newShift) > 0) {
       return [head, tail, ops.negative(newShift)];
     }
     else {
