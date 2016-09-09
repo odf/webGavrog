@@ -175,8 +175,8 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
             if (overField)
               R[k][col] = 0;
-            else
-              cleared = s.sgn(R[k][col]) == 0;
+            else if (s.ne(0, R[k][col]))
+              cleared = false;
           }
         }
 
