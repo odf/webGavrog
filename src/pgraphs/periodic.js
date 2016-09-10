@@ -308,10 +308,7 @@ export function isLocallyStable(graph, pos=barycentricPlacement(graph)) {
 
 
 export function allIncidences(graph, v, adj = adjacencies(graph)) {
-  return adj.get(v)
-    .map(({v: w, s}) => makeEdge(v, w, s))
-    .flatMap(e => e.head == e.tail ? [e, e.reverse()] : [e])
-    .toJS();
+  return adj.get(v).map(({v: w, s}) => makeEdge(v, w, s)).toJS();
 };
 
 
