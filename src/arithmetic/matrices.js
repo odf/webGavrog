@@ -158,7 +158,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
           sign *= -1;
         }
 
-        if (s.lt(R[pivotRow][col], 0)) {
+        if (s.lt(R[row][col], 0)) {
           _negateRowInPlace(R, row);
           _negateRowInPlace(U, row);
           sign *= -1;
