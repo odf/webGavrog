@@ -132,7 +132,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
       row[j] = fn(j);
   };
 
-  const triangulation = A => {
+  const triangulation = (A, clearAboveDiagonal = false) => {
     const divide = overField ? s.div : s.idiv;
     const [nrows, ncols] = shapeOfMatrix(A);
 
@@ -182,6 +182,25 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
 
         if (cleared)
           ++col;
+      }
+    }
+
+    if (clearAboveDiagonal) {
+      col = 0;
+
+      for (let row = 0; row < nrows; ++row) {
+        while (col < ncols && s.eq(R[row][col], 0))
+          ++col;
+        if (col >= ncols)
+          break;
+
+        for (let i = 0; i < row; ++i) {
+          if (s.eq(R[i][col], 0))
+            continue;
+          const f = s.negative(divide(R[i][col], R[row][col]));
+          _adjustRowInPlace(R, i, row, f);
+          _adjustRowInPlace(U, i, row, f);
+        }
       }
     }
 
@@ -281,10 +300,10 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     let t;
 
     do {
-      t = triangulation(D);
+      t = triangulation(D, true);
       P = matrixProduct(t.U, P);
       D = transposedMatrix(t.R);
-      t = triangulation(D);
+      t = triangulation(D, true);
       Q = matrixProduct(t.U, Q);
       D = transposedMatrix(t.R);
     } while (!(overField || isDiagonal(D)))
