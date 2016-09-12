@@ -185,7 +185,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
       }
     }
 
-    if (clearAboveDiagonal) {
+    if (clearAboveDiagonal == true) {
       col = 0;
 
       for (let row = 0; row < nrows; ++row) {
@@ -487,7 +487,7 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     },
 
     triangulation: {
-      Matrix: triangulation
+      Matrix: M => triangulation(M, false)
     },
 
     rank: {
