@@ -452,7 +452,7 @@ export function methods(baseLength = 0) {
 
 
 if (require.main == module) {
-  const ops = require('./base').arithmetic().register(methods()).ops();
+  const ops = require('./base').arithmetic().register(methods());
   const timer = require('../common/util').timer();
 
   const N = 59;

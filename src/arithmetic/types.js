@@ -2,37 +2,34 @@ const base = require('./base');
 const mats = require('./matrices');
 
 
-export const integerMethods = base.arithmetic().register(
+export const integers = base.arithmetic().register(
   require('./integers').methods()
 );
-export const integers = integerMethods.ops();
 
-export const rationalMethods = integerMethods.register(
+export const rationals = integers.register(
   require('./fractions').methods(integers, ['Integer', 'LongInt'], 'Fraction')
 );
-export const rationals = rationalMethods.ops();
 
-export const realMethods = rationalMethods.register(
+export const reals = rationals.register(
   require('./floats').methods(rationals)
 );
-export const reals = realMethods.ops();
 
-
-export const intMatrixMethods = integerMethods.register(
+export const intMatrices = integers.register(
   mats.methods(integers, ['Integer', 'LongInt'], false)
 );
-export const intMatrices = intMatrixMethods.ops();
 
-export const rationalMatrixMethods = rationalMethods.register(
+export const rationalMatrices = rationals.register(
   mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], true)
 );
-export const rationalMatrices = rationalMatrixMethods.ops();
 
-export const matrixMethods = realMethods.register(
+export const rationalMatricesAsModule = rationals.register(
+  mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], true)
+);
+
+export const matrices = reals.register(
   mats.methods(reals, ['Integer', 'LongInt', 'Float', 'Fraction'],
                true, Math.pow(2, -50))
 );
-export const matrices = matrixMethods.ops();
 
 
 if (require.main == module) {

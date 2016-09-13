@@ -1,23 +1,22 @@
 import { typeOf } from '../arithmetic/base';
-import { rationalMethods, rationals } from '../arithmetic/types';
+import { rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
 import { coordinateChanges } from './types';
 import * as parms from './parameterVectors';
 
-const parameterVectorMethods = rationalMethods.register(
+const parameterVectors = rationals.register(
   parms.methods(rationals, ['Integer', 'LongInt', 'Fraction'])
 );
-const parameterVectors = parameterVectorMethods.ops();
 
-const X = rationalMethods.register(
+const X = rationals.register(
   mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
-).ops();
+);
 
-const P = parameterVectorMethods.register(
+const P = parameterVectors.register(
   mats.methods(parameterVectors,
                ['Integer', 'LongInt', 'Fraction', 'ParameterVector'], false)
-).ops();
+);
 
 const V = coordinateChanges;
 
@@ -244,7 +243,7 @@ if (require.main == module) {
         console.log(`Operator ${op} is okay`);
       }
     } catch(ex) {
-      console.log(ex);
+      console.log(`${ex}`);
     }
   };
 

@@ -1,10 +1,9 @@
 import * as I from 'immutable';
 
 import * as pg from './periodic';
+import { rationalMatricesAsModule } from '../arithmetic/types';
 import Partition from '../common/partition';
 import * as comb from '../common/combinatorics';
-import { rationalMethods, rationals } from '../arithmetic/types';
-import * as mats from '../arithmetic/matrices';
 import * as util from '../common/util';
 
 
@@ -386,13 +385,9 @@ const translationalEquivalenceClasses = (
 
 
 const fullTranslationBasis = vectors => {
-  const ops = rationalMethods.register(
-    mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
-  ).ops();
-
   const dim = vectors[0].length;
   const M = ops.identityMatrix(dim).concat(vectors);
-  const T = ops.triangulation(M).R;
+  const T = rationalMatricesAsModule.triangulation(M).R;
   return T.slice(0, dim);
 };
 

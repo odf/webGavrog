@@ -1,5 +1,6 @@
 import * as I from 'immutable';
 
+import { rationalMatricesAsModule } from '../arithmetic/types';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
@@ -91,7 +92,8 @@ const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
 
 const _postprocessTraversal = trav => {
   const A = trav.map(([head, tail, shift]) => shift);
-  const basis = pg.xops.triangulation(A).R.slice(0, A[0].length);
+  const basis = rationalMatricesAsModule
+    .triangulation(A).R.slice(0, A[0].length);
   const basisChange = ops.inverse(basis);
 
   return trav.map(([head, tail, shift]) => {

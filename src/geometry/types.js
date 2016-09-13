@@ -1,21 +1,17 @@
-const matrixMethods = require('../arithmetic/types').matrixMethods;
-const matrices = matrixMethods.ops();
+const matrices = require('../arithmetic/types').matrices;
 
-export const pointMethods = matrixMethods.register(
+export const points = matrices.register(
   require('./points')
     .methods(matrices, ['Integer', 'LongInt', 'Fraction', 'Float'])
 );
-export const points = pointMethods.ops();
 
-export const affineTransformationMethods = pointMethods.register(
+export const affineTransformations = points.register(
   require('./affineTransformations').methods(points)
 );
-export const affineTransformations = affineTransformationMethods.ops();
 
-export const coordinateChangeMethods = affineTransformationMethods.register(
+export const coordinateChanges = affineTransformations.register(
   require('./coordinateChanges').methods(affineTransformations)
 );
-export const coordinateChanges = coordinateChangeMethods.ops();
 
 
 if (require.main == module) {

@@ -187,7 +187,7 @@ if (require.main == module) {
   const a = require('./base').arithmetic()
     .register(require('./integers').methods());
 
-  const ops = a.register(methods(a.ops(), ['Integer', 'LongInt'])).ops();
+  const ops = a.register(methods(a, ['Integer', 'LongInt']));
   const timer = require('../common/util').timer();
 
   const N = 128;

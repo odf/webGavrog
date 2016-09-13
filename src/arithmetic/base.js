@@ -80,19 +80,15 @@ const defaults = {
 
 
 export function arithmetic(registry = I.Map().mergeDeep(defaults)) {
-  return {
+  const result = {
     register(specs) {
       return arithmetic(registry.mergeDeep(specs));
-    },
-
-    ops() {
-      const result = {};
-      registry.forEach(
-        (dispatch, op) => result[op] = call(dispatch, op, result)
-      );
-      return result;
     }
   };
+  registry.forEach(
+    (dispatch, op) => result[op] = call(dispatch, op, result)
+  );
+  return result;
 };
 
 
@@ -109,8 +105,7 @@ if (require.main == module) {
       test: {
         __default__: (x, y, ops) => `<${ops.add(x, y)}>`
       }
-    })
-    .ops();
+    });
 
   console.log(`add(3, 4) = ${ops.add(3, 4)}`);
   console.log(`add(5, "Olaf") = ${ops.add(5, "Olaf")}`);
