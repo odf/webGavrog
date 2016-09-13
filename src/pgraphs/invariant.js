@@ -1,16 +1,9 @@
 import * as I from 'immutable';
 
-import { rationalMethods, rationals } from '../arithmetic/types';
-import * as mats from '../arithmetic/matrices';
-
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
 const ops = pg.ops;
-
-const X = rationalMethods.register(
-  mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
-).ops();
 
 
 const _solveInRows = (v, M) => {
@@ -98,7 +91,7 @@ const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
 
 const _postprocessTraversal = trav => {
   const A = trav.map(([head, tail, shift]) => shift);
-  const basis = X.triangulation(A).R.slice(0, A[0].length);
+  const basis = pg.xops.triangulation(A).R.slice(0, A[0].length);
   const basisChange = ops.inverse(basis);
 
   return trav.map(([head, tail, shift]) => {

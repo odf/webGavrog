@@ -1,6 +1,9 @@
 import * as I from 'immutable';
 
-import { rationalMatrixMethods, rationalMatrices } from '../arithmetic/types';
+import { rationalMethods, rationals, rationalMatrixMethods, rationalMatrices
+       } from '../arithmetic/types';
+
+import * as mats from '../arithmetic/matrices';
 
 
 class VectorLabeledEdge {
@@ -48,6 +51,11 @@ export const ops = rationalMatrixMethods.register({
         ops.fromRepr(obj.shift))
   }
 }).ops();
+
+
+export const xops = rationalMethods.register(
+  mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
+).ops();
 
 
 const Graph = I.Record({
@@ -178,7 +186,7 @@ const _isConnectedOrbitGraph = (graph) => {
 
 
 const _basis = M => {
-  const T = ops.triangulation(M).R;
+  const T = xops.triangulation(M).R;
   return T.slice(0, ops.rank(T));
 };
 
