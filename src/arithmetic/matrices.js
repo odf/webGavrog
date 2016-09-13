@@ -1,4 +1,4 @@
-export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
+export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
   const s = scalarOps;
 
@@ -583,5 +583,5 @@ export function methods(scalarOps, scalarTypes, overField, epsilon = null) {
     }
   }
 
-  return methods;
+  return s.register(methods);
 };

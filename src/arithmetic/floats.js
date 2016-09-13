@@ -1,4 +1,4 @@
-export function methods(rationals) {
+export function extend(rationals) {
   const ops = rationals;
 
 
@@ -64,5 +64,5 @@ export function methods(rationals) {
     };
   }
 
-  return methods;
+  return ops.register(methods);
 }

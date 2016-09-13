@@ -7,7 +7,7 @@ const findBaseLength = () => {
 };
 
 
-export function methods(baseLength = 0) {
+export function extend(baseOps, baseLength = 0) {
 
   const BASE_LENGTH = (baseLength & ~1) || findBaseLength();
 
@@ -334,7 +334,7 @@ export function methods(baseLength = 0) {
   };
 
 
-  return {
+  return baseOps.register({
     isInteger: {
       LongInt: x => true,
       Integer: x => true
@@ -447,12 +447,12 @@ export function methods(baseLength = 0) {
     __repr__: { LongInt: x => ({ sign: x.sign, digits: x.digits }) },
     __Integer__: { Object: ({ Integer: n }) => n },
     __LongInt__: { Object: ({ LongInt: obj }) => make(obj.sign, obj.digits) }
-  }
+  });
 };
 
 
 if (require.main == module) {
-  const ops = require('./base').arithmetic().register(methods());
+  const ops = extend(require('./base').arithmetic());
   const timer = require('../common/util').timer();
 
   const N = 59;

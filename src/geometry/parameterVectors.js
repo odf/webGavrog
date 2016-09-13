@@ -1,4 +1,4 @@
-export function methods(scalarOps, scalarTypes) {
+export function extend(scalarOps, scalarTypes) {
 
   const s = scalarOps;
 
@@ -78,5 +78,5 @@ export function methods(scalarOps, scalarTypes) {
     methods[name].ParameterVector.ParameterVector = map.VV(s[name]);
   }
 
-  return methods;
+  return s.register(methods);
 };

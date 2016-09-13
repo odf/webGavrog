@@ -1,4 +1,4 @@
-export function methods(pointAndVectorOps) {
+export function extend(pointAndVectorOps) {
 
   const V = pointAndVectorOps;
 
@@ -107,5 +107,5 @@ export function methods(pointAndVectorOps) {
     }
   };
 
-  return methods;
+  return V.register(methods);
 };

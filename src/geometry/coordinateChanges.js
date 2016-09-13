@@ -1,4 +1,4 @@
-export function methods(transformationOps) {
+export function extend(transformationOps) {
 
   const V = transformationOps;
 
@@ -54,5 +54,5 @@ export function methods(transformationOps) {
     }
   };
 
-  return methods;
+  return V.register(methods);
 };

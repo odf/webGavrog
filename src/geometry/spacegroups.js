@@ -5,18 +5,14 @@ import * as mats from '../arithmetic/matrices';
 import { coordinateChanges } from './types';
 import * as parms from './parameterVectors';
 
-const parameterVectors = rationals.register(
-  parms.methods(rationals, ['Integer', 'LongInt', 'Fraction'])
-);
+const parameterVectors = parms.extend(
+  rationals, ['Integer', 'LongInt', 'Fraction']);
 
-const X = rationals.register(
-  mats.methods(rationals, ['Integer', 'LongInt', 'Fraction'], false)
-);
+const X = mats.extend(rationals, ['Integer', 'LongInt', 'Fraction'], false);
 
-const P = parameterVectors.register(
-  mats.methods(parameterVectors,
-               ['Integer', 'LongInt', 'Fraction', 'ParameterVector'], false)
-);
+const P = mats.extend(
+  parameterVectors,
+  ['Integer', 'LongInt', 'Fraction', 'ParameterVector'], false);
 
 const V = coordinateChanges;
 

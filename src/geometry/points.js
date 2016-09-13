@@ -1,4 +1,4 @@
-export function methods(vectorOps, scalarTypes) {
+export function extend(vectorOps, scalarTypes) {
 
   const V = vectorOps;
 
@@ -90,5 +90,5 @@ export function methods(vectorOps, scalarTypes) {
     }
   }
 
-  return methods;
+  return V.register(methods);
 };
