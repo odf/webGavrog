@@ -19,21 +19,21 @@ process.argv.slice(2).forEach(file => {
 
     const G = b.graph;
 
-    if (!pgr.isConnected(G)) {
-      console.log(`  Error: net '${b.name}' is not connected`);
-    }
-    else if (!pgr.isLocallyStable(G)) {
-      console.log(`  Error: net '${b.name}' is not locally stable`);
-    }
-    else {
-      try {
+    try {
+      if (!pgr.isConnected(G)) {
+        console.log(`  Error: net '${b.name}' is not connected`);
+      }
+      else if (!pgr.isLocallyStable(G)) {
+        console.log(`  Error: net '${b.name}' is not locally stable`);
+      }
+      else {
         const key = inv.invariant(sym.minimalImage(G));
         for (const [head, tail, shift] of key) {
           console.log(`  ${head} ${tail} ${shift}`);
         }
-      } catch(ex) {
-        console.log(ex.stack);
       }
+    } catch(ex) {
+      console.log(ex.stack);
     }
 
     console.log();
