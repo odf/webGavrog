@@ -398,6 +398,9 @@ export function minimalImage(
   pos = pg.barycentricPlacement(graph),
   equivs = translationalEquivalences(graph, adj, pos))
 {
+  if (isMinimal(graph))
+    return graph;
+
   const classes = translationalEquivalenceClasses(graph, adj, pos, equivs);
   const vectors = extraTranslationVectors(graph, adj, pos, equivs);
   const basisChange = ops.inverse(fullTranslationBasis(vectors));
