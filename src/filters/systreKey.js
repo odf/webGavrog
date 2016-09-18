@@ -1,4 +1,6 @@
 import * as io from '../io/cgd';
+import * as pgr from '../pgraphs/periodic';
+import * as sym from '../pgraphs/symmetries';
 import * as inv from '../pgraphs/invariant';
 
 
@@ -15,14 +17,25 @@ process.argv.slice(2).forEach(file => {
   for (const b of io.structures(text)) {
     console.log(b.name);
 
-    try {
-      const key = inv.invariant(b.graph);
-      for (const [head, tail, shift] of key) {
-        console.log(`  ${head} ${tail} ${shift}`);
-      }
-    } catch(ex) {
-      console.log(ex.stack);
+    const G = b.graph;
+
+    if (!pgr.isConnected(G)) {
+      console.log(`  Error: net '${b.name}' is not connected`);
     }
+    else if (!pgr.isLocallyStable(G)) {
+      console.log(`  Error: net '${b.name}' is not locally stable`);
+    }
+    else {
+      try {
+        const key = inv.invariant(sym.minimalImage(G));
+        for (const [head, tail, shift] of key) {
+          console.log(`  ${head} ${tail} ${shift}`);
+        }
+      } catch(ex) {
+        console.log(ex.stack);
+      }
+    }
+
     console.log();
   }
 });
