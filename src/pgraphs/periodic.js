@@ -178,16 +178,31 @@ const _isConnectedOrbitGraph = (graph) => {
 };
 
 
-const _basis = M => {
+const _makeBasis = M => {
   const T = rationalMatricesAsModule.triangulation(M).R;
   return T.slice(0, ops.rank(T));
 };
 
 
+const _makeCoordinateTransform = (B, dim) => {
+  if (B.length < dim) {
+    B = B.slice();
+    for (const vec of ops.identityMatrix(dim)) {
+      if (ops.rank(B.concat([vec])) > ops.rank(B)) {
+        B.push(vec);
+      }
+    }
+  }
+
+  return ops.inverse(B);
+};
+
+
 const _componentInCoverGraph = (graph, start) => {
   const { nodes, nodeShifts, bridges } = _componentInOrbitGraph(graph, start);
-  const basis = _basis(bridges.map(b => b.s));
-  const transform = ops.inverse(basis);
+  const basis = _makeBasis(bridges.map(b => b.s));
+  const thisDim = basis.length;
+  const transform = _makeCoordinateTransform(basis, graph.dim);
   const old2new = I.Map(I.List(nodes).zip(I.Range(1, nodes.size+1)));
 
   const newEdges = graph.edges
@@ -197,13 +212,16 @@ const _componentInCoverGraph = (graph, start) => {
       const [v, w] = [old2new.get(head), old2new.get(tail)];
       const [av, aw] = [nodeShifts.get(head), nodeShifts.get(tail)];
       const t = ops.times(ops.plus(shift, ops.minus(aw, av)), transform);
-      return [v, w, t];
+      return [v, w, t.slice(0, thisDim)];
     });
+
+  const multiplicity =
+    thisDim == graph.dim ? ops.abs(ops.determinant(basis)) : 0;
 
   return {
     basis,
+    multiplicity,
     nodes: nodes.toArray(),
-    multiplicity: ops.abs(ops.determinant(basis)),
     graph: make(newEdges)
   };
 };
@@ -343,6 +361,19 @@ if (require.main == module) {
     console.log();
   };
 
+  test(make([ [ 1, 2, [ 0, 0 ] ],
+              [ 1, 2, [ 1, 0 ] ],
+              [ 1, 2, [ 0, 1 ] ] ]));
+
+  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
+              [ 1, 2, [ 0, 1, 0 ] ],
+              [ 1, 2, [ 0, 0, 1 ] ] ]));
+
+  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
+              [ 1, 2, [ 1, 0, 0 ] ],
+              [ 1, 2, [ 0, 1, 0 ] ],
+              [ 1, 2, [ 0, 0, 1 ] ] ]));
+
   test(make([ [ 1, 1, [ 1, 0 ] ],
               [ 1, 1, [ 0, 1 ] ],
               [ 1, 2, [ 0, 0 ] ],
@@ -362,15 +393,6 @@ if (require.main == module) {
   test(make([ [ 1, 1, [ -1,  1,  1 ] ],
               [ 1, 1, [  0, -1,  1 ] ],
               [ 1, 1, [  0,  0, -1 ] ] ]));
-
-  test(make([ [ 1, 2, [ 0, 0 ] ],
-              [ 1, 2, [ 1, 0 ] ],
-              [ 1, 2, [ 0, 1 ] ] ]));
-
-  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
-              [ 1, 2, [ 1, 0, 0 ] ],
-              [ 1, 2, [ 0, 1, 0 ] ],
-              [ 1, 2, [ 0, 0, 1 ] ] ]));
 
   test(make([ [ 1, 2, [ 0, 0, 0 ] ],
               [ 1, 2, [ 2, 0, 0 ] ],
