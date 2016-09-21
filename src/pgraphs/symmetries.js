@@ -445,11 +445,12 @@ export function symmetries(
   pos = pg.barycentricPlacement(graph),
   bases = characteristicBases(graph, adj, pos))
 {
-  _timers && _timers.start('symmetries');
   if (!pg.isConnected(graph))
     throw new Error('graph is not connected');
   else if (!pg.isLocallyStable(graph, pos))
     throw new Error('graph is not locally stable');
+
+  _timers && _timers.start('symmetries');
 
   const keys = bases.map(b => b.map(encode).join(','));
   const v0 = bases.first()[0].head;
@@ -484,12 +485,14 @@ export function symmetries(
     .map(i => bases.get(i))
     .toList();
 
+  const syms = groupOfMorphisms(generators);
+
   _timers && _timers.stop('symmetries');
 
   return {
     generators,
     representativeBases,
-    symmetries: groupOfMorphisms(generators)
+    symmetries: syms
   };
 };
 
