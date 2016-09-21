@@ -58,7 +58,6 @@ class Graph {
   constructor(dim, edges) {
     this.dim = dim;
     this.edges = edges;
-    this.pos = undefined;
   }
 
   toString() {
@@ -262,8 +261,8 @@ export function barycentricPlacement(graph) {
   if (!isConnected(graph))
     throw new Error('must have a connected orbit graph');
 
-  if (graph.pos != undefined)
-    return graph.pos;
+  if (graph._$pos != undefined)
+    return graph._$pos;
 
   _timers && _timers.start('barycentricPlacement');
 
@@ -294,7 +293,7 @@ export function barycentricPlacement(graph) {
 
   _timers && _timers.stop('barycentricPlacement');
 
-  graph.pos = result;
+  graph._$pos = result;
 
   return result;
 };
