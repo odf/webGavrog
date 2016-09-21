@@ -28,11 +28,13 @@ export function timer() {
 export function timers() {
   const _accumulated = {};
   const _start = {};
+  const _count = {};
 
   return {
     start(key) {
       if (key != null && _start[key] == null) {
         _start[key] = now();
+        _count[key] = (_count[key] || 0) + 1
       }
     },
     stop(key) {
@@ -59,7 +61,7 @@ export function timers() {
 
       const result = {};
       for (const k in _accumulated)
-        result[k] = _accumulated[k];
+        result[k] = [_accumulated[k], _count[k]];
       return result;
     }
   };
