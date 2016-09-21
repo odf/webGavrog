@@ -54,13 +54,16 @@ export const ops = rationalMatrices.register({
 });
 
 
-const Graph = I.Record({
-  dim  : undefined,
-  edges: undefined
-});
+class Graph {
+  constructor(dim, edges) {
+    this.dim = dim;
+    this.edges = edges;
+    this.pos = undefined;
+  }
 
-Graph.prototype.toString = function toString() {
-  return 'PGraph('+this.edges+')';
+  toString() {
+    return `PGraph(${this.edges})`;
+  }
 };
 
 
@@ -84,7 +87,7 @@ export function make(data) {
   if (edges.some(e => e.shift.length != dim))
     throw new Error('must have consistent shift dimensions');
 
-  return new Graph({ dim: dim, edges: edges });
+  return new Graph(dim, edges);
 };
 
 
@@ -259,6 +262,9 @@ export function barycentricPlacement(graph) {
   if (!isConnected(graph))
     throw new Error('must have a connected orbit graph');
 
+  if (graph.pos != undefined)
+    return graph.pos;
+
   _timers && _timers.start('barycentricPlacement');
 
   const adj   = adjacencies(graph);
@@ -287,6 +293,8 @@ export function barycentricPlacement(graph) {
   const result = I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
 
   _timers && _timers.stop('barycentricPlacement');
+
+  graph.pos = result;
 
   return result;
 };
