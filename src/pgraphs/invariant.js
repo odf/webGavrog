@@ -4,6 +4,9 @@ import { rationalMatricesAsModule } from '../arithmetic/types';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
+
+let _timers = null;
+
 const ops = pg.ops;
 
 
@@ -118,6 +121,8 @@ export function invariant(
   bases = ps.characteristicBases(graph, adj, pos),
   sym = ps.symmetries(graph, adj, pos, bases))
 {
+  _timers && _timers.start('invariant');
+
   let best = null;
 
   for (const basis of sym.representativeBases) {
@@ -146,7 +151,16 @@ export function invariant(
     }
   }
 
-  return _postprocessTraversal(I.List(best).toArray()).sort(_cmpSteps);
+  const result = _postprocessTraversal(I.List(best).toArray()).sort(_cmpSteps);
+
+  _timers && _timers.stop('invariant');
+
+  return result;
+}
+
+
+export function useTimers(timers) {
+  _timers = timers;
 }
 
 

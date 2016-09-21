@@ -1,3 +1,4 @@
+import * as util from '../common/util';
 import * as io from '../io/cgd';
 import * as pgr from '../pgraphs/periodic';
 import * as sym from '../pgraphs/symmetries';
@@ -9,6 +10,14 @@ const fs = require('fs');
 Array.prototype.toString = function() {
   return `${this.map(x => x.toString()).join(' ')}`;
 };
+
+
+const timers = util.timers();
+sym.useTimers(timers);
+inv.useTimers(timers);
+pgr.useTimers(timers);
+
+timers.start('total');
 
 
 process.argv.slice(2).forEach(file => {
@@ -39,3 +48,6 @@ process.argv.slice(2).forEach(file => {
     console.log();
   }
 });
+
+timers.stop('total');
+console.log(`${JSON.stringify(timers.current(), null, 2)}`);

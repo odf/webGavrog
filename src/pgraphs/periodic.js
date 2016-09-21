@@ -4,6 +4,9 @@ import { rationalMatrices, rationalMatricesAsModule
        } from '../arithmetic/types';
 
 
+let _timers = null;
+
+
 class VectorLabeledEdge {
   constructor(head, tail, shift) {
     this.head = head;
@@ -256,6 +259,8 @@ export function barycentricPlacement(graph) {
   if (!isConnected(graph))
     throw new Error('must have a connected orbit graph');
 
+  _timers && _timers.start('barycentricPlacement');
+
   const adj   = adjacencies(graph);
   const verts = vertices(graph);
   const vIdcs = I.Map(I.Range(0, verts.size).map(i => [verts.get(i), i]));
@@ -279,7 +284,11 @@ export function barycentricPlacement(graph) {
 
   const p = ops.solve(A, t);
 
-  return I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
+  const result = I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
+
+  _timers && _timers.stop('barycentricPlacement');
+
+  return result;
 };
 
 
@@ -334,6 +343,11 @@ export function allIncidences(graph, v, adj = adjacencies(graph)) {
 export function edgeVector(e, pos) {
   return ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
 };
+
+
+export function useTimers(timers) {
+  _timers = timers;
+}
 
 
 if (require.main == module) {
