@@ -45,11 +45,8 @@ function* _goodCombinations(edges, pos) {
 };
 
 
-const _goodEdgeChains = (
-  graph,
-  adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph)
-) => {
+const _goodEdgeChains = (graph, adj = pg.adjacencies(graph)) => {
+  const pos = pg.barycentricPlacement(graph);
   const dim = graph.dim;
   const results = [];
 
@@ -77,49 +74,38 @@ const _goodEdgeChains = (
 };
 
 
-export function characteristicBases(
-  graph,
-  adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph))
+export function characteristicBases(graph, adj = pg.adjacencies(graph))
 {
-  _timers && _timers.start('characteristicBases');
+  const pos = pg.barycentricPlacement(graph);
+
   const firstAttempt = pg.vertices(graph)
     .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
   if (firstAttempt.size) {
-    _timers && _timers.stop('characteristicBases');
     return firstAttempt;
   }
 
-  const secondAttempt = _goodEdgeChains(graph, adj, pos);
+  const secondAttempt = _goodEdgeChains(graph, adj);
   if (secondAttempt.size) {
-    _timers && _timers.stop('characteristicBases');
     return secondAttempt;
   }
 
-  _timers && _timers.stop('characteristicBases');
   return I.List(_goodCombinations(_directedEdges(graph), pos));
 };
 
 
-const _adjacenciesByEdgeVector = (
-  graph, v,
-  adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph)
-) => {
-  _timers && _timers.start('_adjacenciesByEdgeVector');
+const _adjacenciesByEdgeVector = (graph, v, adj = pg.adjacencies(graph)) => {
+  const pos = pg.barycentricPlacement(graph);
 
   const out = {};
   for (const e of pg.allIncidences(graph, v, adj))
     out[encode(pg.edgeVector(e, pos))] = e;
 
-  _timers && _timers.stop('_adjacenciesByEdgeVector');
   return out;
 };
 
 
 const _checkGraphsForMorphism = (graph1, graph2, transform) => {
   const errors = [];
-  _timers && _timers.start('_checkGraphsForMorphism');
 
   if (graph2.dim != graph1.dim)
     errors.push('graphs have different dimensions');
@@ -136,23 +122,20 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
   else if (!pg.isLocallyStable(graph2))
     errors.push('second graph is not locally stable');
 
-  _timers && _timers.stop('_checkGraphsForMorphism');
   if (errors.length > 0)
     throw new Error(errors.join('\n'));
 };
 
 
 export function morphism(
-  graph1, graph2, start1, start2, transform,
-  adj1 = pg.adjacencies(graph1),
-  adj2 = pg.adjacencies(graph2),
-  pos1 = pg.barycentricPlacement(graph1),
-  pos2 = pg.barycentricPlacement(graph2),
-  skipChecks = false
+  graph1, graph2, start1, start2, transform, skipChecks = false
 ) {
   _timers && _timers.start('morphism');
   if (!skipChecks)
     _checkGraphsForMorphism(graph1, graph2, transform);
+
+  const adj1 = pg.adjacencies(graph1);
+  const adj2 = pg.adjacencies(graph2);
 
   const src2img = {};
   const img2src = {};
@@ -185,8 +168,8 @@ export function morphism(
 
   while (queue.length) {
     const [w1, w2] = queue.shift();
-    const n1 = _adjacenciesByEdgeVector(graph1, w1, adj1, pos1);
-    const n2 = _adjacenciesByEdgeVector(graph2, w2, adj2, pos2);
+    const n1 = _adjacenciesByEdgeVector(graph1, w1, adj1);
+    const n2 = _adjacenciesByEdgeVector(graph2, w2, adj2);
 
     for (const [d1, e1] of Object.entries(n1)) {
       const e2 = n2[encode(ops.times(decode(d1), transform))];
@@ -286,14 +269,11 @@ export function groupOfMorphisms(generators) {
 };
 
 
-export function isMinimal(
-  graph,
-  adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph))
+export function isMinimal(graph, adj = pg.adjacencies(graph))
 {
   if (!pg.isConnected(graph))
     throw new Error('graph is not connected');
-  else if (!pg.isLocallyStable(graph, pos))
+  else if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable');
 
   const id = ops.identityMatrix(graph.dim);
@@ -301,7 +281,7 @@ export function isMinimal(
   const start = verts.first();
 
   for (const v of verts.rest()) {
-    if (morphism(graph, graph, start, v, id, adj, adj, pos, pos, true) != null)
+    if (morphism(graph, graph, start, v, id, true) != null)
       return false;
   }
 
@@ -309,14 +289,10 @@ export function isMinimal(
 }
 
 
-const translationalEquivalences = (
-  graph,
-  adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph)
-) => {
+const translationalEquivalences = (graph, adj = pg.adjacencies(graph)) => {
   if (!pg.isConnected(graph))
     throw new Error('graph is not connected');
-  else if (!pg.isLocallyStable(graph, pos))
+  else if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable');
 
   const id = ops.identityMatrix(graph.dim);
@@ -327,7 +303,7 @@ const translationalEquivalences = (
 
   for (const v of verts) {
     if (p.get(start) != p.get(v)) {
-      const iso = morphism(graph, graph, start, v, id, adj, adj, pos, pos, true);
+      const iso = morphism(graph, graph, start, v, id, true);
       if (iso != null) {
         for (const w of verts) {
           p = p.union(w, iso.src2img[w]);
@@ -343,9 +319,9 @@ const translationalEquivalences = (
 const extraTranslationVectors = (
   graph,
   adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph),
-  equivs = translationalEquivalences(graph, adj, pos)
+  equivs = translationalEquivalences(graph, adj)
 ) => {
+  const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
   const class0 = equivs.get(verts.first());
   const pos0 = pos.get(verts.first());
@@ -364,8 +340,7 @@ const extraTranslationVectors = (
 const translationalEquivalenceClasses = (
   graph,
   adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph),
-  equivs = translationalEquivalences(graph, adj, pos)
+  equivs = translationalEquivalences(graph, adj)
 ) => {
   const repToClass = {};
   const classes = [];
@@ -395,14 +370,14 @@ const fullTranslationBasis = vectors => {
 export function minimalImage(
   graph,
   adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph),
-  equivs = translationalEquivalences(graph, adj, pos))
+  equivs = translationalEquivalences(graph, adj))
 {
-  if (isMinimal(graph, adj, pos))
+  if (isMinimal(graph, adj))
     return graph;
 
-  const classes = translationalEquivalenceClasses(graph, adj, pos, equivs);
-  const vectors = extraTranslationVectors(graph, adj, pos, equivs);
+  const pos = pg.barycentricPlacement(graph);
+  const classes = translationalEquivalenceClasses(graph, adj, equivs);
+  const vectors = extraTranslationVectors(graph, adj, equivs);
   const basisChange = ops.inverse(fullTranslationBasis(vectors));
 
   const old2new = {};
@@ -442,16 +417,16 @@ const _isUnimodularIntegerMatrix = M => (
 export function symmetries(
   graph,
   adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph),
-  bases = characteristicBases(graph, adj, pos))
+  bases = characteristicBases(graph, adj))
 {
   if (!pg.isConnected(graph))
     throw new Error('graph is not connected');
-  else if (!pg.isLocallyStable(graph, pos))
+  else if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable');
 
   _timers && _timers.start('symmetries');
 
+  const pos = pg.barycentricPlacement(graph);
   const keys = bases.map(b => b.map(encode).join(','));
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => pg.edgeVector(e, pos));
@@ -467,7 +442,7 @@ export function symmetries(
       const M = ops.solve(B0, B);
 
       if (_isUnimodularIntegerMatrix(M)) {
-        const iso = morphism(graph, graph, v0, v, M, adj, adj, pos, pos, true);
+        const iso = morphism(graph, graph, v0, v, M, true);
         if (iso != null) {
           generators.push(iso);
           for (let i = 0; i < bases.size; ++i) {
@@ -517,11 +492,11 @@ if (require.main == module) {
     const edges = I.List(g.edges).toJS();
     const adj = pg.adjacencies(g);
     const pos = pg.barycentricPlacement(g);
-    const bases = characteristicBases(g, adj, pos);
+    const bases = characteristicBases(g, adj);
     console.log(`found ${bases.size} characteristic bases`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      const syms = symmetries(g, adj, pos, bases);
+      const syms = symmetries(g, adj, bases);
       const gens = syms.generators;
       const bases = syms.representativeBases;
       console.log(`found ${syms.symmetries.length} symmetries in total`
@@ -533,16 +508,16 @@ if (require.main == module) {
         console.log(`${basis}`);
       console.log();
 
-      const minimal = isMinimal(g, adj, pos);
+      const minimal = isMinimal(g, adj);
       console.log(`minimal = ${minimal}`);
       if (!minimal) {
-        const p = translationalEquivalences(g, adj, pos);
-        const vs = extraTranslationVectors(g, adj, pos, p);
-        const cls = translationalEquivalenceClasses(g, adj, pos, p);
+        const p = translationalEquivalences(g, adj);
+        const vs = extraTranslationVectors(g, adj, p);
+        const cls = translationalEquivalenceClasses(g, adj, p);
         console.log(`translational equivalences: ${p}`);
         console.log(`extra translations = ${vs}`);
         console.log(`equivalence classes: ${cls}`);
-        console.log(`minimal image: ${minimalImage(g, adj, pos, p)}`);
+        console.log(`minimal image: ${minimalImage(g, adj, p)}`);
       }
     }
     console.log();

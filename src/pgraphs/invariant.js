@@ -20,11 +20,11 @@ const _traversal = function* _traversal(
   graph,
   v0,
   transform,
-  adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph))
+  adj = pg.adjacencies(graph))
 {
   const zero = ops.vector(graph.dim);
 
+  const pos = pg.barycentricPlacement(graph);
   const old2new = {[v0]: 1};
   const newPos = {[v0]: zero};
   const queue = [v0];
@@ -117,18 +117,18 @@ const _postprocessTraversal = trav => {
 export function invariant(
   graph,
   adj = pg.adjacencies(graph),
-  pos = pg.barycentricPlacement(graph),
-  bases = ps.characteristicBases(graph, adj, pos),
-  sym = ps.symmetries(graph, adj, pos, bases))
+  bases = ps.characteristicBases(graph, adj),
+  sym = ps.symmetries(graph, adj, bases))
 {
   _timers && _timers.start('invariant');
 
+  const pos = pg.barycentricPlacement(graph);
   let best = null;
 
   for (const basis of sym.representativeBases) {
     const v = basis[0].head;
     const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
-    const trav = I.Seq(_traversal(graph, v, transform, adj, pos));
+    const trav = I.Seq(_traversal(graph, v, transform, adj));
 
     if (best == null) {
       best = trav;

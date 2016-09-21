@@ -304,7 +304,8 @@ export function barycentricPlacementAsFloat(graph) {
 };
 
 
-export function isStable(graph, pos=barycentricPlacement(graph)) {
+export function isStable(graph) {
+  const pos = barycentricPlacement(graph);
   const verts = vertices(graph);
   const seen = I.Set().asMutable();
 
@@ -321,7 +322,8 @@ export function isStable(graph, pos=barycentricPlacement(graph)) {
 };
 
 
-export function isLocallyStable(graph, pos=barycentricPlacement(graph)) {
+export function isLocallyStable(graph) {
+  const pos = barycentricPlacement(graph);
   const adj = adjacencies(graph);
   const verts = vertices(graph);
 

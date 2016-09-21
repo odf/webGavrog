@@ -22,12 +22,11 @@ timers.start('total');
 
 const invariant = G => {
   const adj = pgr.adjacencies(G);
-  const pos = pgr.barycentricPlacement(G);
 
-  if (sym.isMinimal(G, adj, pos))
-    return inv.invariant(G, adj, pos);
+  if (sym.isMinimal(G, adj))
+    return inv.invariant(G, adj);
   else
-    return inv.invariant(sym.minimalImage(G, adj, pos));
+    return inv.invariant(sym.minimalImage(G, adj));
 };
 
 
