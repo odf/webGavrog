@@ -31,17 +31,20 @@ const _directedEdges = graph =>
   graph.edges.flatMap(e => [e, e.reverse()]).toJS();
 
 
-function* _goodCombinations(edges, pos) {
+const _goodCombinations = (edges, pos) => {
   const dim = ops.dimension(edges[0].shift);
+  const results = [];
 
   for (const c of comb.combinations(edges.length, dim)) {
     const vectors = c.map(i => pg.edgeVector(edges[i - 1], pos));
     if (ops.rank(vectors) == dim) {
       for (const p of comb.permutations(dim)) {
-        yield p.map(i => edges[c[i - 1] - 1]);
+        results.push(p.map(i => edges[c[i - 1] - 1]));
       }
     }
   }
+
+  return I.List(results);
 };
 
 
@@ -80,18 +83,20 @@ export function characteristicBases(graph)
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
-  const firstAttempt = pg.vertices(graph)
+  _timers && _timers.start('characteristicBases');
+
+  let results = pg.vertices(graph)
     .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
-  if (firstAttempt.size) {
-    return firstAttempt;
-  }
 
-  const secondAttempt = _goodEdgeChains(graph);
-  if (secondAttempt.size) {
-    return secondAttempt;
-  }
+  if (results.size == 0)
+    results = _goodEdgeChains(graph);
 
-  return I.List(_goodCombinations(_directedEdges(graph), pos));
+  if (results.size == 0)
+    results = _goodCombinations(_directedEdges(graph), pos);
+
+  _timers && _timers.stop('characteristicBases');
+
+  return results;
 };
 
 
@@ -413,10 +418,11 @@ export function symmetries(graph)
   else if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable');
 
-  _timers && _timers.start('symmetries');
-
   const pos = pg.barycentricPlacement(graph);
   const bases = characteristicBases(graph);
+
+  _timers && _timers.start('symmetries');
+
   const keys = bases.map(b => b.map(encode).join(','));
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => pg.edgeVector(e, pos));
