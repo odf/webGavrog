@@ -95,7 +95,7 @@ export function characteristicBases(graph)
 };
 
 
-const _adjacenciesByEdgeVector = (graph, v, adj = pg.adjacencies(graph)) => {
+const _adjacenciesByEdgeVector = (graph, v, adj) => {
   const pos = pg.barycentricPlacement(graph);
 
   const out = {};
@@ -318,9 +318,7 @@ const translationalEquivalences = graph => {
 };
 
 
-const extraTranslationVectors = (
-  graph, equivs = translationalEquivalences(graph)
-) => {
+const extraTranslationVectors = (graph, equivs) => {
   const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
   const class0 = equivs.get(verts.first());
@@ -337,9 +335,7 @@ const extraTranslationVectors = (
 };
 
 
-const translationalEquivalenceClasses = (
-  graph, equivs = translationalEquivalences(graph)
-) => {
+const translationalEquivalenceClasses = (graph, equivs) => {
   const repToClass = {};
   const classes = [];
 
@@ -365,13 +361,13 @@ const fullTranslationBasis = vectors => {
 };
 
 
-export function minimalImage(
-  graph, equivs = translationalEquivalences(graph))
+export function minimalImage(graph)
 {
   if (isMinimal(graph))
     return graph;
 
   const pos = pg.barycentricPlacement(graph);
+  const equivs = translationalEquivalences(graph);
   const classes = translationalEquivalenceClasses(graph, equivs);
   const vectors = extraTranslationVectors(graph, equivs);
   const basisChange = ops.inverse(fullTranslationBasis(vectors));
@@ -508,7 +504,7 @@ if (require.main == module) {
         console.log(`translational equivalences: ${p}`);
         console.log(`extra translations = ${vs}`);
         console.log(`equivalence classes: ${cls}`);
-        console.log(`minimal image: ${minimalImage(g, p)}`);
+        console.log(`minimal image: ${minimalImage(g)}`);
       }
     }
     console.log();
