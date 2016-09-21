@@ -258,11 +258,11 @@ export function connectedComponents(graph) {
 
 
 export function barycentricPlacement(graph) {
-  if (!isConnected(graph))
-    throw new Error('must have a connected orbit graph');
-
   if (graph._$pos != undefined)
     return graph._$pos;
+
+  if (!isConnected(graph))
+    throw new Error('must have a connected orbit graph');
 
   _timers && _timers.start('barycentricPlacement');
 
