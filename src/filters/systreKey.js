@@ -21,12 +21,10 @@ timers.start('total');
 
 
 const invariant = G => {
-  const adj = pgr.adjacencies(G);
-
-  if (sym.isMinimal(G, adj))
-    return inv.invariant(G, adj);
+  if (sym.isMinimal(G))
+    return inv.invariant(G);
   else
-    return inv.invariant(sym.minimalImage(G, adj));
+    return inv.invariant(sym.minimalImage(G));
 };
 
 
