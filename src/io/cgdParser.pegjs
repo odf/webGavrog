@@ -109,8 +109,11 @@ coordinate
   / "-" first:summand rest:furtherSummand*
     { return [negate(first)].concat(rest); }
 
+furtherCoordinate
+  = _ "," _ c:coordinate { return c; }
+
 operator
-  = first:coordinate _ "," _ rest:operator { return [first].concat(rest); }
+  = first:coordinate rest:furtherCoordinate* { return [first].concat(rest); }
 
 field
   = op:operator { return fixOperator(op); }
