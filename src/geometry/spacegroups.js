@@ -1,23 +1,15 @@
 import { typeOf } from '../arithmetic/base';
-import { rationals } from '../arithmetic/types';
+import { rationals, rationalMatricesAsModule } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
 import { coordinateChanges } from './types';
 import * as parms from './parameterVectors';
 
-const parameterVectors = parms.extend(
-  rationals, ['Integer', 'LongInt', 'Fraction']);
-
-const X = mats.extend(rationals, ['Integer', 'LongInt', 'Fraction'], false);
-
 const P = mats.extend(
-  parameterVectors,
+  parms.extend(rationals, ['Integer', 'LongInt', 'Fraction']),
   ['Integer', 'LongInt', 'Fraction', 'ParameterVector'], false);
 
 const V = coordinateChanges;
-
-
-const modZ = q => V.minus(q, V.floor(q));
 
 
 const isIdentity = M => {
@@ -42,7 +34,7 @@ const checkInteger = x => {
 const checkShiftCoordinate = x => {
   if (!V.isRational(x))
     throw new Error(`expected a rational number, got ${x}`);
-  if (!V.eq(x, modZ(x)))
+  if (!V.eq(x, V.mod(x, 1)))
     throw new Error(`expected a number in [0,1), got ${x}`);
 };
 
@@ -111,7 +103,7 @@ const opModZ = op => {
   if (typeOf(op) == 'Matrix')
     return op;
   else
-    return V.affineTransformation(op.linear, op.shift.map(modZ));
+    return V.affineTransformation(op.linear, V.mod(op.shift, 1));
 };
 
 
@@ -158,7 +150,7 @@ const primitiveCell = ops => {
 
   const B = V.identityMatrix(d).concat(vs);
 
-  return X.triangulation(B).R.slice(0, d);
+  return rationalMatricesAsModule.triangulation(B).R.slice(0, d);
 };
 
 
