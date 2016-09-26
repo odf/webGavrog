@@ -8,6 +8,7 @@ import * as delaney3d   from './delaney3d';
 import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
+import * as spacegroups from '../geometry/spacegroups';
 
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
@@ -137,19 +138,6 @@ const _symmetries = function _symmetries(ds, cov, pos) {
 };
 
 
-const _resymmetrizedGramMatrix = function _resymmetrizedGramMatrix(G, syms) {
-  let A = ops.times(0, G);
-
-  syms.forEach(S => {
-    A = ops.plus(A, ops.times(S, ops.times(G, ops.transposed(S))));
-  });
-
-  A = ops.times(ops.div(1, syms.size), A);
-
-  return A;
-};
-
-
 const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G), w);
 
 
@@ -188,7 +176,8 @@ export default function tiling(ds, cover) {
   const pos  = _chamberPositions(cov, e2t, c2s, skel, vpos);
   const syms = _symmetries(ds, cov, pos);
 
-  const G = _resymmetrizedGramMatrix(ops.identityMatrix(delaney.dim(ds)), syms);
+  const I = ops.identityMatrix(delaney.dim(ds));
+  const G = spacegroups.resymmetrizedGramMatrix(I, syms);
   const basis = ops.inverse(_orthonormalBasis(G));
 
   return {
