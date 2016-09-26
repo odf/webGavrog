@@ -4,6 +4,7 @@ const ops = require('../geometry/types').affineTransformations;
 
 import * as pg from '../pgraphs/periodic';
 import * as sg from './sgtable';
+import * as cr from './crystal';
 
 
 const translation = {
@@ -291,16 +292,16 @@ const processCrystal = data => {
       state.warnings.push(`Unknown keyword '${key}'`);
   }
 
-  return {
+  return cr.netFromCrystal({
     name : output.name,
-    group: output.group.name,
+    group: output.group,
     cell : output.cell,
     nodes,
     edgeCenters,
     edges,
     warnings,
     errors
-  };
+  });
 };
 
 

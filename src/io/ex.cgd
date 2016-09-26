@@ -31,6 +31,14 @@ END
 
 
 CRYSTAL
+  ID    diamond-with-cell-error
+  GROUP Fd-3m
+  CELL  2.3094 2.3094 2.3094  90.00000   90.00000   95.00000
+  ATOM  1  4   5/8 5/8 5/8
+END
+
+
+CRYSTAL
   NAME  real CdSO4
   GROUP Pmn21
   CELL  6.558 4.698 4.719 90.0 90.0 90.0
