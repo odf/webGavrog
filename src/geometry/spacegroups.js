@@ -167,7 +167,7 @@ const dedupe = as => {
 };
 
 
-const primitiveSetting = stdOps => {
+export function primitiveSetting(stdOps) {
   const cell    = primitiveCell(stdOps);
   const fromStd = V.coordinateChange(V.inverse(V.transposed(cell)));
   const ops     = dedupe(stdOps.map(op => opModZ(V.times(fromStd, op))));

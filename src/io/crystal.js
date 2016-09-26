@@ -25,10 +25,15 @@ export function netFromCrystal(spec) {
   if (gramMatrixError(operators, cell) > 0.01)
     warnings.push('Unit cell parameters do not match group symmetries');
 
+  const primitive = spacegroups.primitiveSetting(operators);
+  const toPrimitive = primitive.fromStd.oldToNew;
+
   return {
     name,
     group: group.name,
     cell,
+    primitiveCell: primitive.cell,
+    toPrimitive,
     nodes,
     edgeCenters,
     edges,
