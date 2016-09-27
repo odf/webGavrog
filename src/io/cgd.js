@@ -293,9 +293,9 @@ const processCrystal = data => {
   }
 
   return cr.netFromCrystal({
-    name : output.name,
+    name: output.name,
     group: output.group,
-    cell : output.cell,
+    cellGram: output.cell,
     nodes,
     edgeCenters,
     edges,
