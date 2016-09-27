@@ -20,6 +20,13 @@ const mapValues = (obj, fn) => {
 };
 
 
+const mapNode = coordinateChange => ({ coordination, position }) => ({
+  coordination,
+  originalPosition: position,
+  position: V.mod(V.times(coordinateChange, position), 1)
+});
+
+
 const unitCellParameters = G => {
   if (V.dimension(G) == 2) {
     const a = Math.sqrt(G[0][0]);
@@ -57,11 +64,8 @@ export function netFromCrystal(spec) {
   const primitive = spacegroups.primitiveSetting(operators);
   const toPrimitive = primitive.fromStd.oldToNew;
 
-  const nodesMapped = mapValues(nodes, ({ coordination, position }) => ({
-    coordination,
-    originalPosition: position,
-    position: V.mod(V.times(toPrimitive, position), 1)
-  }));
+  const nodesMapped = mapValues(nodes, mapNode(toPrimitive));
+  const edgeCentersMapped = mapValues(edgeCenters, mapNode(toPrimitive));
 
   return {
     name,
@@ -70,7 +74,7 @@ export function netFromCrystal(spec) {
     primitiveCell: primitive.cell,
     toPrimitive,
     nodes: nodesMapped,
-    edgeCenters,
+    edgeCenters: edgeCentersMapped,
     edges,
     warnings,
     errors
