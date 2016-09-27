@@ -11,6 +11,15 @@ const trim = x => Math.abs(x) < eps ? 0 : x;
 const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
 
 
+const mapValues = (obj, fn) => {
+  const result = {};
+  for (const key in obj) {
+    result[key] = fn(obj[key]);
+  }
+  return result;
+};
+
+
 const unitCellParameters = G => {
   if (V.dimension(G) == 2) {
     const a = Math.sqrt(G[0][0]);
@@ -48,13 +57,19 @@ export function netFromCrystal(spec) {
   const primitive = spacegroups.primitiveSetting(operators);
   const toPrimitive = primitive.fromStd.oldToNew;
 
+  const nodesMapped = mapValues(nodes, ({ coordination, position }) => ({
+    coordination,
+    originalPosition: position,
+    position: V.mod(V.times(toPrimitive, position), 1)
+  }));
+
   return {
     name,
     group: group.name,
     cellGram,
     primitiveCell: primitive.cell,
     toPrimitive,
-    nodes,
+    nodes: nodesMapped,
     edgeCenters,
     edges,
     warnings,
