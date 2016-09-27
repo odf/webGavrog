@@ -551,11 +551,11 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     __Matrix__: { Object: ({ Matrix: m }) => map.M(s.fromRepr)(m) },
   };
 
-  for (const name of ['plus', 'minus', 'div', 'idiv']) {
+  for (const name of ['plus', 'minus', 'div', 'idiv', 'mod']) {
     methods[name] = { Vector: {}, Matrix: {} };
   };
 
-  for (const name of ['plus', 'minus', 'times', 'div', 'idiv']) {
+  for (const name of ['plus', 'minus', 'times', 'div', 'idiv', 'mod']) {
     for (const sType of scalarTypes) {
       methods[name]['Vector'][sType] = map.VS(s[name]);
       methods[name]['Matrix'][sType] = map.MS(s[name]);

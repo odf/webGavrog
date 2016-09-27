@@ -20,6 +20,16 @@ export function extend(rationals) {
   };
 
 
+  const mod = (x, y) => {
+    if (x == 0)
+      return 0;
+    else {
+      const t = x % y;
+      return make(t < 0 ? t + 1 : t);
+    }
+  };
+
+
   const methods = {
     isReal  : { Float: x => true },
     toJS    : { Float: x => x },
@@ -43,7 +53,8 @@ export function extend(rationals) {
     [ 'plus' , (x, y) => make(x + y)                          ],
     [ 'minus', (x, y) => make(x - y)                          ],
     [ 'times', (x, y) => (x == 0 || y == 0) ? 0 : make(x * y) ],
-    [ 'div'  , (x, y) => x == 0 ? 0 : make(x / y)             ]
+    [ 'div'  , (x, y) => x == 0 ? 0 : make(x / y)             ],
+    [ 'mod'  , mod ]
   ]) {
     methods[name] = {
       Float: {
