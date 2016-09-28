@@ -27,15 +27,16 @@ const mapNode = coordinateChange => ({ coordination, position }) => ({
 });
 
 
-const mapEdge = coordinateChange => ends => ends.map(p => {
-  if (V.typeOf(p) == 'Integer') {
-    return p;
-  }
-  else {
+const mapEdge = (coordinateChange, nodes) => ends => ends.map(p => {
+  if (V.typeOf(p) == 'Vector') {
     return {
       originalPosition: p,
       position: V.times(coordinateChange, p)
     }
+  }
+  else {
+    const { originalPosition, position } = nodes[p] || {};
+    return { nodeGiven: p, originalPosition, position };
   };
 });
 
@@ -79,7 +80,7 @@ export function netFromCrystal(spec) {
 
   const nodesMapped = mapValues(nodes, mapNode(toPrimitive));
   const edgeCentersMapped = mapValues(edgeCenters, mapNode(toPrimitive));
-  const edgesMapped = edges.map(mapEdge(toPrimitive));
+  const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
 
   return {
     name,
