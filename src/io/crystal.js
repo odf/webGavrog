@@ -77,6 +77,8 @@ export function netFromCrystal(spec) {
 
   const primitive = spacegroups.primitiveSetting(operators);
   const toPrimitive = primitive.fromStd.oldToNew;
+  const primitiveGram =
+    V.times(primitive.cell, V.times(cellGram, V.transposed(primitive.cell)));
 
   const nodesMapped = mapValues(nodes, mapNode(toPrimitive));
   const edgeCentersMapped = mapValues(edgeCenters, mapNode(toPrimitive));
@@ -87,6 +89,7 @@ export function netFromCrystal(spec) {
     group: group.name,
     cellGram,
     primitiveCell: primitive.cell,
+    primitiveGram,
     toPrimitive,
     nodes: nodesMapped,
     edgeCenters: edgeCentersMapped,
