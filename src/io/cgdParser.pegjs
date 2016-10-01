@@ -132,8 +132,12 @@ contentLine
     { return { args: [first].concat(rest) }; }
 
 block
-  = type:keyword nl content:contentLine* end nl
+  = type:keyword nl content:contentLine* end
     { return { type: type, content: fixBlockContent(content) }; }
 
+furtherBlock
+  = nl b:block { return b; }
+
 file
-  = nl? blocks:block* { return blocks; }
+  = first:block rest:furtherBlock* nl? _ { return first.concat(rest); }
+  / blocks:furtherBlock* nl? _ { return blocks; }
