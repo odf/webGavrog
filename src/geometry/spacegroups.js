@@ -193,8 +193,7 @@ const gramMatrixConfigurationSpace = ops => {
   const eqns = [];
   for (const op of ops) {
     const S = V.linearPart(op);
-    //TODO should transpose on the left instead?
-    const A = P.minus(P.times(S, P.times(M, P.transposed(S))), M);
+    const A = P.minus(P.times(P.transposed(S), P.times(M, S)), M);
     A.forEach(row => row.forEach(x => eqns.push(x.coords)));
   }
 
