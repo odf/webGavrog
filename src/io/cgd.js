@@ -280,7 +280,8 @@ const processCrystal = data => {
     }
     else if (key == 'edge') {
       if (args.length == 2 * dim)
-        edges.push([makeOperator(args.slice(0,3)), makeOperator(args.slice(3))]);
+        edges.push([makeOperator(args.slice(0, dim)),
+                    makeOperator(args.slice(dim))]);
       else if (args.length == 1 + dim)
         edges.push([args[0], makeOperator(args.slice(1))]);
       else if (args.length == 2)
