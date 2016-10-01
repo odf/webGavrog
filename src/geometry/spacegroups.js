@@ -205,7 +205,7 @@ const gramMatrixConfigurationSpace = ops => {
 export function resymmetrizedGramMatrix(G, ops) {
   const M = ops
     .map(S => V.linearPart(S))
-    .map(S => V.times(S, V.times(G, V.transposed(S))))
+    .map(S => V.times(V.transposed(S), V.times(G, S)))
     .reduce((A, B) => V.plus(A, B));
 
   return V.div(M, ops.length);
