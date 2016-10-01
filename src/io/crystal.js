@@ -98,3 +98,24 @@ export function netFromCrystal(spec) {
     errors
   };
 };
+
+
+if (require.main == module) {
+  const cgd = require('./cgd');
+
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
+  const input = `
+CRYSTAL
+  ID    diamond
+  GROUP Fd-3m
+  CELL  2.3094 2.3094 2.3094  90.00000   90.00000   90.00000
+  ATOM  1  4   5/8 5/8 5/8
+END
+  `;
+
+  for (const b of cgd.structures(input))
+    console.log(JSON.stringify(b, null, 2));
+};
