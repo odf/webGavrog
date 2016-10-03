@@ -65,7 +65,7 @@ export function netFromCrystal(spec) {
   const errors = spec.errors.slice();
 
   if (group.error) {
-    errors.push(groupSpec.error);
+    errors.push(group.error);
     return { warnings, errors };
   }
 
