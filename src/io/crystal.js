@@ -1,4 +1,5 @@
 import * as spacegroups from '../geometry/spacegroups';
+import * as lattices from '../geometry/lattices';
 import * as sgtable from './sgtable';
 
 import { coordinateChanges } from '../geometry/types';
@@ -56,6 +57,35 @@ const unitCellParameters = G => {
     const gamma = acosdeg(G[0][1] / a / b);
     return [a, b, c, alpha, beta, gamma].map(trim);
   }
+};
+
+
+const pointsAreCloseModZ = (gram, maxDist) => {
+  const n = V.dimension(gram);
+  const limit = V.times(maxDist, maxDist);
+  const dot = (v, w) => V.times(v, V.times(gram, w));
+  const vecs = lattices.dirichletVectors(V.identityMatrix(n), dot);
+  const shortest = p => lattices.shiftIntoDirichletDomain(p, vecs, dot);
+
+  return (p, q) => {
+    const d = shortest(V.mod(V.minus(p, q), 1));
+    return V.le(dot(d, d), limit);
+  };
+};
+
+
+const pointStabilizer(point, ops, areEqualFn) => {
+  const stabilizer = ops.filter(op => areEqualFn(point, V.times(op, point)));
+
+  for (const A of stabilizer) {
+    for (const B of stabilizer) {
+      if (!areEqualFn(point, V.times(V.times(A, V.inverse(B)), point))) {
+        return null;
+      }
+    }
+  }
+
+  return stabilizer.map(op => V.mod(op, 1));
 };
 
 
