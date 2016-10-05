@@ -86,7 +86,7 @@ const pointStabilizer = (point, ops, areEqualFn) => {
     }
   }
 
-  return stabilizer.map(op => V.mod(op, 1));
+  return stabilizer;
 };
 
 
