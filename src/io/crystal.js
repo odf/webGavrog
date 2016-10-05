@@ -65,7 +65,8 @@ const pointsAreCloseModZ = (gram, maxDist) => {
   const limit = V.times(maxDist, maxDist);
   const dot = (v, w) => V.times(v, V.times(gram, w));
   const vecs = lattices.dirichletVectors(V.identityMatrix(n), dot);
-  const shortest = p => lattices.shiftIntoDirichletDomain(p, vecs, dot);
+  const shortest = p =>
+    V.plus(p, lattices.shiftIntoDirichletDomain(p, vecs, dot));
 
   return (p, q) => {
     const d = shortest(V.mod(V.minus(p, q), 1));
@@ -74,7 +75,7 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 };
 
 
-const pointStabilizer(point, ops, areEqualFn) => {
+const pointStabilizer = (point, ops, areEqualFn) => {
   const stabilizer = ops.filter(op => areEqualFn(point, V.times(op, point)));
 
   for (const A of stabilizer) {
