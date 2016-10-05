@@ -99,7 +99,7 @@ const checkOperatorList = ops => {
 };
 
 
-const opModZ = op => {
+export const opModZ = op => {
   if (typeOf(op) == 'Matrix')
     return op;
   else

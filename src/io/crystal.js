@@ -75,6 +75,23 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 };
 
 
+const operatorCosets = (ops, subgroup) => {
+  const seen = {};
+  const result = [];
+
+  for (const op of ops) {
+    if (!seen[spacegroups.opModZ(op)]) {
+      result.push(op);
+      for (const t of subgroup) {
+        seen[spacegroups.opModZ(V.times(op, t))] = true;
+      }
+    }
+  }
+
+  return result;
+};
+
+
 const pointStabilizer = (point, ops, areEqualFn) => {
   const stabilizer = ops.filter(op => areEqualFn(point, V.times(op, point)));
 
@@ -86,7 +103,22 @@ const pointStabilizer = (point, ops, areEqualFn) => {
     }
   }
 
-  return stabilizer;
+  return stabilizer.map(spacegroups.opModZ);
+};
+
+
+const applyOpsToNodes = (nodes, ops, areEqualFn) => {
+  for (const k of Object.keys(nodes)) {
+    const v = nodes[k];
+    const p = v.position;
+    const s = pointStabilizer(p, ops, areEqualFn);
+    const c = operatorCosets(ops, s);
+    const o = c.map(op => V.times(op, p));
+    console.log(`Node ${k} at ${p}:`);
+    console.log(`    stabilizer = ${s}`);
+    console.log(`    cosets     = ${c}`);
+    console.log(`    orbit      = ${o}`);
+  }
 };
 
 
@@ -115,6 +147,9 @@ export function netFromCrystal(spec) {
   const nodesMapped = mapValues(nodes, mapNode(toPrimitive));
   const edgeCentersMapped = mapValues(edgeCenters, mapNode(toPrimitive));
   const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
+
+  const allPoints = applyOpsToNodes(
+    nodesMapped, primitive.ops, pointsAreCloseModZ(primitiveGram, 0.001));
 
   return {
     name,
