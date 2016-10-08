@@ -99,19 +99,21 @@ const pointStabilizer = (point, ops, areEqualFn) => {
 };
 
 
-const applyOpsToNodes = (nodes, ops, areEqualFn) => {
-  for (const k of Object.keys(nodes)) {
-    const v = nodes[k];
-    const p = v.positionPrimitive;
-    const s = pointStabilizer(p, ops, areEqualFn);
-    const c = operatorCosets(ops, s);
-    const o = c.map(op => V.times(op, p));
-    console.log(`Node ${k} at ${p}:`);
-    console.log(`    stabilizer = ${s}`);
-    console.log(`    cosets     = ${c}`);
-    console.log(`    orbit      = ${o}`);
-  }
-};
+const applyOpsToNodes = (nodes, ops, equalFn) => nodes.map(v => {
+  const { name, coordination, positionInput, positionPrimitive: pos } = v;
+  const stabilizer = pointStabilizer(pos, ops, equalFn);
+  const cosetReps = operatorCosets(ops, stabilizer);
+
+  return {
+    name,
+    coordination,
+    positionInput,
+    positionPrimitive: pos,
+    stabilizer,
+    cosetReps,
+    allPositions: cosetReps.map(op => V.mod(V.times(op, pos), 1))
+  };
+});
 
 
 export function netFromCrystal(spec) {
@@ -140,8 +142,9 @@ export function netFromCrystal(spec) {
   const edgeCentersMapped = edgeCenters.map(mapNode(toPrimitive));
   const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
 
-  const allPoints = applyOpsToNodes(
-    nodesMapped, primitive.ops, pointsAreCloseModZ(primitiveGram, 0.001));
+  const testFn = pointsAreCloseModZ(primitiveGram, 0.001);
+  const allNodes = applyOpsToNodes(nodesMapped, primitive.ops, testFn);
+  const allCenters = applyOpsToNodes(edgeCentersMapped, primitive.ops, testFn);
 
   return {
     name,
@@ -150,8 +153,8 @@ export function netFromCrystal(spec) {
     primitiveCell: primitive.cell,
     primitiveGram,
     toPrimitive,
-    nodes: nodesMapped,
-    edgeCenters: edgeCentersMapped,
+    nodes: allNodes,
+    edgeCenters: allCenters,
     edges: edgesMapped,
     warnings,
     errors
