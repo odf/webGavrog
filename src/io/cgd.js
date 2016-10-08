@@ -241,9 +241,10 @@ const processSymmetricNet = data => {
 const processCrystal = data => {
   const state = initialState(data.content);
   const { errors, warnings, output } = state;
-  const nodes = {};
-  const edgeCenters = {};
+  const nodes = [];
+  const edgeCenters = [];
   const edges = [];
+  const seen = {};
   let dim = null;
 
   extractSingleValue(state, 'name' , { fn: joinArgs });
@@ -271,11 +272,16 @@ const processCrystal = data => {
       if (typeof coordination != 'number' || coordination < 0)
         errors.push(`${location}: coordination must be a non-negative number`);
 
-      if (nodes[name] != null)
+      if (seen[name])
         errors.push(`${location} specified twice`);
       else {
         const target = key == 'node' ? nodes : edgeCenters;
-        target[name] = { coordination, position: makeOperator(position) };
+        target.push({
+          name,
+          coordination,
+          position: makeOperator(position)
+        });
+        seen[name] = true;
       }
     }
     else if (key == 'edge') {

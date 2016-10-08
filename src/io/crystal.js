@@ -12,16 +12,8 @@ const trim = x => Math.abs(x) < eps ? 0 : x;
 const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
 
 
-const mapValues = (obj, fn) => {
-  const result = {};
-  for (const key in obj) {
-    result[key] = fn(obj[key]);
-  }
-  return result;
-};
-
-
-const mapNode = coordinateChange => ({ coordination, position }) => ({
+const mapNode = coordinateChange => ({ name, coordination, position }) => ({
+  name,
   coordination,
   originalPosition: position,
   position: V.mod(V.times(coordinateChange, position), 1)
@@ -144,8 +136,8 @@ export function netFromCrystal(spec) {
     V.times(primitive.cell, V.times(cellGram, V.transposed(primitive.cell))),
     primitive.ops);
 
-  const nodesMapped = mapValues(nodes, mapNode(toPrimitive));
-  const edgeCentersMapped = mapValues(edgeCenters, mapNode(toPrimitive));
+  const nodesMapped = nodes.map(mapNode(toPrimitive));
+  const edgeCentersMapped = edgeCenters.map(mapNode(toPrimitive));
   const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
 
   const allPoints = applyOpsToNodes(
@@ -179,13 +171,13 @@ CRYSTAL
   NAME cem
   GROUP c2mm
   CELL 1.00000 3.73205 90.0000
-  NODE 1 5  0.00000 0.13397
+  NODE V1 5  0.00000 0.13397
   EDGE  0.00000 0.13397   0.00000 -0.13397
   EDGE  0.00000 0.13397   1.00000 0.13397
   EDGE  0.00000 0.13397   0.50000 0.36603
-# EDGE_CENTER  0.00000 -0.00000
-# EDGE_CENTER  0.50000 0.13397
-# EDGE_CENTER  0.25000 0.25000
+  EDGE_CENTER E1 2  0.00000 -0.00000
+  EDGE_CENTER E2 2  0.50000 0.13397
+  EDGE_CENTER E3 2  0.25000 0.25000
 END
   `;
 
