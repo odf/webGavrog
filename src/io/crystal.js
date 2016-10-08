@@ -15,21 +15,21 @@ const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
 const mapNode = coordinateChange => ({ name, coordination, position }) => ({
   name,
   coordination,
-  originalPosition: position,
-  position: V.mod(V.times(coordinateChange, position), 1)
+  positionInput: position,
+  positionPrimitive: V.mod(V.times(coordinateChange, position), 1)
 });
 
 
 const mapEdge = (coordinateChange, nodes) => ends => ends.map(p => {
   if (V.typeOf(p) == 'Vector') {
     return {
-      originalPosition: p,
-      position: V.times(coordinateChange, p)
+      positionInput: p,
+      positionPrimitive: V.times(coordinateChange, p)
     }
   }
   else {
-    const { originalPosition, position } = nodes[p] || {};
-    return { nodeGiven: p, originalPosition, position };
+    const { positionInput, positionPrimitive } = nodes[p] || {};
+    return { nodeGiven: p, positionInput, positionPrimitive };
   };
 });
 
@@ -102,7 +102,7 @@ const pointStabilizer = (point, ops, areEqualFn) => {
 const applyOpsToNodes = (nodes, ops, areEqualFn) => {
   for (const k of Object.keys(nodes)) {
     const v = nodes[k];
-    const p = v.position;
+    const p = v.positionPrimitive;
     const s = pointStabilizer(p, ops, areEqualFn);
     const c = operatorCosets(ops, s);
     const o = c.map(op => V.times(op, p));
