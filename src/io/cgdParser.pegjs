@@ -139,5 +139,5 @@ furtherBlock
   = nl b:block { return b; }
 
 file
-  = first:block rest:furtherBlock* nl? _ { return first.concat(rest); }
+  = first:block rest:furtherBlock* nl? _ { return [first].concat(rest); }
   / blocks:furtherBlock* nl? _ { return blocks; }
