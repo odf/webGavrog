@@ -117,7 +117,7 @@ const applyOpsToNodes = (nodes, ops, equalFn) => nodes.map(v => {
 
 
 export function netFromCrystal(spec) {
-  const { name, group, cellGram: G0, nodes, edgeCenters, edges } = spec;
+  const { name, group, cellGram: G0, nodes, edges } = spec;
   const warnings = spec.warnings.slice();
   const errors = spec.errors.slice();
 
@@ -139,12 +139,10 @@ export function netFromCrystal(spec) {
     primitive.ops);
 
   const nodesMapped = nodes.map(mapNode(toPrimitive));
-  const edgeCentersMapped = edgeCenters.map(mapNode(toPrimitive));
   const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
 
   const testFn = pointsAreCloseModZ(primitiveGram, 0.001);
   const allNodes = applyOpsToNodes(nodesMapped, primitive.ops, testFn);
-  const allCenters = applyOpsToNodes(edgeCentersMapped, primitive.ops, testFn);
 
   return {
     name,
@@ -154,7 +152,6 @@ export function netFromCrystal(spec) {
     primitiveGram,
     toPrimitive,
     nodes: allNodes,
-    edgeCenters: allCenters,
     edges: edgesMapped,
     warnings,
     errors
@@ -178,9 +175,6 @@ CRYSTAL
   EDGE  0.00000 0.13397   0.00000 -0.13397
   EDGE  0.00000 0.13397   1.00000 0.13397
   EDGE  0.00000 0.13397   0.50000 0.36603
-  EDGE_CENTER E1 2  0.00000 -0.00000
-  EDGE_CENTER E2 2  0.50000 0.13397
-  EDGE_CENTER E3 2  0.25000 0.25000
 END
   `;
 

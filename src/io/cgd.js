@@ -26,13 +26,6 @@ const translation = {
   bodies  : "tile",
   spacegroup  : "group",
   space_group : "group",
-  edge_centers: "edge_center",
-  edge_centre : "edge_center",
-  edge_centres: "edge_center",
-  edgecenter  : "edge_center",
-  edgecenters : "edge_center",
-  edgecentre  : "edge_center",
-  edgecentres : "edge_center",
   coordination_sequences: "coordination_sequence",
   coordinationsequence  : "coordination_sequence",
   coordinationsequences : "coordination_sequence",
@@ -242,7 +235,6 @@ const processCrystal = data => {
   const state = initialState(data.content);
   const { errors, warnings, output } = state;
   const nodes = [];
-  const edgeCenters = [];
   const edges = [];
   const seen = {};
   let dim = null;
@@ -262,7 +254,7 @@ const processCrystal = data => {
     errors.push("Inconsistent dimensions");
 
   for (const { key, args } of state.input) {
-    if (key == 'node' || key == 'edge_center') {
+    if (key == 'node') {
       const location = `${capitalize(key)} '${name}'`;
       const [name, coordination, ...position] = args;
 
@@ -275,8 +267,7 @@ const processCrystal = data => {
       if (seen[name])
         errors.push(`${location} specified twice`);
       else {
-        const target = key == 'node' ? nodes : edgeCenters;
-        target.push({
+        nodes.push({
           name,
           coordination,
           position: makeOperator(position)
@@ -304,7 +295,6 @@ const processCrystal = data => {
     group: output.group,
     cellGram: output.cell,
     nodes,
-    edgeCenters,
     edges,
     warnings,
     errors
