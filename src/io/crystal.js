@@ -2,6 +2,8 @@ import * as spacegroups from '../geometry/spacegroups';
 import * as lattices from '../geometry/lattices';
 import * as sgtable from './sgtable';
 
+import fromPointCloud from '../pgraphs/fromPointCloud';
+
 import { coordinateChanges } from '../geometry/types';
 const V = coordinateChanges;
 
@@ -10,6 +12,7 @@ const matrixError = (A, B) => V.div(V.norm(V.minus(A, B)), V.norm(A));
 const eps = Math.pow(2, -50);
 const trim = x => Math.abs(x) < eps ? 0 : x;
 const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
+const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
 
 
 const mapNode = coordinateChange => ({ name, coordination, position }) => ({
@@ -116,6 +119,17 @@ const applyOpsToNodes = (nodes, ops, equalFn) => nodes.map(v => {
 });
 
 
+const pointsForNode = v =>
+  v.allPositions.map((p, i) => ({ pos: p, degree: v.coordination }));
+
+
+const withInducedEdges = (nodes, givenEdges, gram) => {
+  const points = flatMap(pointsForNode, nodes)
+    .map(({ pos, degree }, i) => ({ pos, degree, id: i }));
+  return fromPointCloud(points, givenEdges, gram);
+};
+
+
 export function netFromCrystal(spec) {
   const { name, group, cellGram: G0, nodes, edges } = spec;
   const warnings = spec.warnings.slice();
@@ -141,8 +155,13 @@ export function netFromCrystal(spec) {
   const nodesMapped = nodes.map(mapNode(toPrimitive));
   const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
 
+  if (edgesMapped.length)
+    warnings.push('explicit edges given, but not yet supported');
+
   const testFn = pointsAreCloseModZ(primitiveGram, 0.001);
   const allNodes = applyOpsToNodes(nodesMapped, primitive.ops, testFn);
+
+  const allEdges = withInducedEdges(allNodes, [], primitiveGram);
 
   return {
     name,
@@ -152,7 +171,8 @@ export function netFromCrystal(spec) {
     primitiveGram,
     toPrimitive,
     nodes: allNodes,
-    edges: edgesMapped,
+    edges: allEdges,
+    explicitEdges: edgesMapped,
     warnings,
     errors
   };
