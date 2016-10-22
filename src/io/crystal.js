@@ -181,23 +181,67 @@ export function netFromCrystal(spec) {
 
 if (require.main == module) {
   const cgd = require('./cgd');
+  const pgr = require('../pgraphs/periodic');
+  const sym = require('../pgraphs/symmetries');
+  const inv = require('../pgraphs/invariant');
 
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
+  const invariant = G => {
+    if (sym.isMinimal(G))
+      return inv.invariant(G);
+    else
+      return inv.invariant(sym.minimalImage(G));
+  };
+
   const input = `
 CRYSTAL
-  NAME cem
-  GROUP c2mm
-  CELL 1.00000 3.73205 90.0000
-  NODE V1 5  0.00000 0.13397
-  EDGE  0.00000 0.13397   0.00000 -0.13397
-  EDGE  0.00000 0.13397   1.00000 0.13397
-  EDGE  0.00000 0.13397   0.50000 0.36603
+  NAME sql
+  GROUP p4mm
+  CELL 1.00000 1.00000 90.0000
+  NODE 1 4  0.00000 0.00000
+  EDGE  0.00000 0.00000   0.00000 1.00000
+# EDGE_CENTER  0.00000 0.50000
+END
+
+CRYSTAL
+  NAME hxl
+  GROUP p6mm
+  CELL 1.00000 1.00000 120.0000
+  NODE 1 6  0.00000 0.00000
+  EDGE  0.00000 0.00000   0.00000 1.00000
+# EDGE_CENTER  0.00000 0.50000
+END
+
+CRYSTAL
+  NAME hcb
+  GROUP p6mm
+  CELL 1.73205 1.73205 120.0000
+  NODE 1 3  0.33333 0.66667
+  EDGE  0.33333 0.66667   0.66667 0.33333
+# EDGE_CENTER  0.50000 0.50000
+END
+
+CRYSTAL
+  NAME kgm
+  GROUP p6mm
+  CELL 2.00000 2.00000 120.0000
+  NODE 1 4  0.00000 0.50000
+  EDGE  0.00000 0.50000   0.50000 0.50000
+# EDGE_CENTER  0.25000 0.50000
 END
   `;
 
-  for (const b of cgd.structures(input))
-    console.log(JSON.stringify(b, null, 2));
+  for (const b of cgd.structures(input)) {
+    console.log(b.name);
+
+    const key = invariant(pgr.make(b.edges));
+    for (const [head, tail, shift] of key) {
+      console.log(`  ${head} ${tail} ${shift.join(' ')}`);
+    }
+
+    console.log();
+  }
 };
