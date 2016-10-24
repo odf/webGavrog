@@ -102,32 +102,24 @@ const pointStabilizer = (point, ops, areEqualFn) => {
 };
 
 
-const applyOpsToNodes = (nodes, ops, equalFn) => nodes.map(v => {
-  const { name, coordination, positionInput, positionPrimitive: pos } = v;
-  const stabilizer = pointStabilizer(pos, ops, equalFn);
+const applyOpsToNodes = (nodes, ops, equalFn) => flatMap(v => {
+  const { name, coordination, positionInput, positionPrimitive } = v;
+  const stabilizer = pointStabilizer(positionPrimitive, ops, equalFn);
   const cosetReps = operatorCosets(ops, stabilizer);
 
-  return {
-    name,
-    coordination,
-    positionInput,
-    positionPrimitive: pos,
-    stabilizer,
-    cosetReps,
-    allPositions: cosetReps.map(op => V.mod(V.times(op, pos), 1))
-  };
-});
+  return cosetReps.map(op => ({
+    pos: V.mod(V.times(op, positionPrimitive), 1),
+    degree: coordination,
+    representative: name,
+    operator: op
+  })).map(({ representative, operator, pos, degree }, id) => ({
+    id, pos, degree, representative, operator
+  }));
+}, nodes);
 
 
-const pointsForNode = v =>
-  v.allPositions.map((p, i) => ({ pos: p, degree: v.coordination }));
-
-
-const withInducedEdges = (nodes, givenEdges, gram) => {
-  const points = flatMap(pointsForNode, nodes)
-    .map(({ pos, degree }, i) => ({ pos, degree, id: i }));
-  return fromPointCloud(points, givenEdges, gram);
-};
+const withInducedEdges = (nodes, givenEdges, gram) =>
+  fromPointCloud(nodes, givenEdges, gram);
 
 
 export function netFromCrystal(spec) {
@@ -170,9 +162,10 @@ export function netFromCrystal(spec) {
     primitiveCell: primitive.cell,
     primitiveGram,
     toPrimitive,
+    nodeReps: nodesMapped,
+    explicitEdgeReps: edgesMapped,
     nodes: allNodes,
     edges: allEdges,
-    explicitEdges: edgesMapped,
     warnings,
     errors
   };
@@ -235,12 +228,13 @@ END
   `;
 
   for (const b of cgd.structures(input)) {
-    console.log(b.name);
+    console.log(JSON.stringify(b, null, 4));
+    // console.log(b.name);
 
-    const key = invariant(pgr.make(b.edges));
-    for (const [head, tail, shift] of key) {
-      console.log(`  ${head} ${tail} ${shift.join(' ')}`);
-    }
+    // const key = invariant(pgr.make(b.edges));
+    // for (const [head, tail, shift] of key) {
+    //   console.log(`  ${head} ${tail} ${shift.join(' ')}`);
+    // }
 
     console.log();
   }
