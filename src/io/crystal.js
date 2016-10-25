@@ -70,6 +70,16 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 };
 
 
+const lookupPointModZ = (p, nodes, areEqualFn) => {
+  for (const i in nodes) {
+    const q = nodes[i].pos;
+    if (areEqualFn(p, q)) {
+      return [i, V.minus(p, q).map(x => V.round(x))];
+    }
+  }
+};
+
+
 const operatorCosets = (ops, subgroup) => {
   const seen = {};
   const result = [];
