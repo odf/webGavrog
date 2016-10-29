@@ -12,18 +12,19 @@ const matrixError = (A, B) => V.div(V.norm(V.minus(A, B)), V.norm(A));
 const eps = Math.pow(2, -50);
 const trim = x => Math.abs(x) < eps ? 0 : x;
 const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
-const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
+const flatMap   = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
 
 
-const mapNode = coordinateChange => ({ name, coordination, position }) => ({
+const mapNode = coordinateChange => ({ name, coordination, position }, i) => ({
   name,
+  index: i,
   coordination,
   positionInput: position,
   positionPrimitive: V.mod(V.times(coordinateChange, position), 1)
 });
 
 
-const mapEdge = (coordinateChange, nodes) => ends => ends.map(p => {
+const mapEnd = (coordinateChange, nodes) => p => {
   if (V.typeOf(p) == 'Vector') {
     return {
       positionInput: p,
@@ -34,7 +35,18 @@ const mapEdge = (coordinateChange, nodes) => ends => ends.map(p => {
     const { positionInput, positionPrimitive } = nodes[p] || {};
     return { nodeGiven: p, positionInput, positionPrimitive };
   };
-});
+};
+
+
+const mapEdge = (coordinateChange, nodes) => {
+  const emap = mapEnd(coordinateChange, nodes);
+
+  return ([from, to], index) => ({
+    index,
+    from: emap(from),
+    to: emap(to)
+  });
+};
 
 
 const unitCellParameters = G => {
@@ -112,7 +124,7 @@ const pointStabilizer = (point, ops, areEqualFn) => {
 };
 
 
-const applyOpsToNodes = (nodes, ops, equalFn) => flatMap(v => {
+const applyOpsToNodes = (nodes, ops, equalFn) => flatMap((v, index) => {
   const { name, coordination, positionInput, positionPrimitive } = v;
   const stabilizer = pointStabilizer(positionPrimitive, ops, equalFn);
   const cosetReps = operatorCosets(ops, stabilizer);
@@ -120,10 +132,9 @@ const applyOpsToNodes = (nodes, ops, equalFn) => flatMap(v => {
   return cosetReps.map(op => ({
     pos: V.mod(V.times(op, positionPrimitive), 1),
     degree: coordination,
-    representative: name,
     operator: op
-  })).map(({ representative, operator, pos, degree }, id) => ({
-    id, pos, degree, representative, operator
+  })).map(({ operator, pos, degree }, id) => ({
+    id, pos, degree, repIndex: index, operator
   }));
 }, nodes);
 
