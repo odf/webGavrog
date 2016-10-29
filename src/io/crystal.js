@@ -124,7 +124,7 @@ const pointStabilizer = (point, ops, areEqualFn) => {
 };
 
 
-const applyOpsToNodes = (nodes, ops, equalFn) => flatMap((v, index) => {
+const nodeImages = (ops, equalFn) => (v, index) => {
   const { name, coordination, positionInput, positionPrimitive } = v;
   const stabilizer = pointStabilizer(positionPrimitive, ops, equalFn);
   const cosetReps = operatorCosets(ops, stabilizer);
@@ -136,7 +136,11 @@ const applyOpsToNodes = (nodes, ops, equalFn) => flatMap((v, index) => {
   })).map(({ operator, pos, degree }, id) => ({
     id, pos, degree, repIndex: index, operator
   }));
-}, nodes);
+};
+
+
+const applyOpsToNodes = (nodes, ops, equalFn) =>
+  flatMap(nodeImages(ops, equalFn), nodes);
 
 
 const withInducedEdges = (nodes, givenEdges, gram) =>
