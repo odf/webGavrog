@@ -82,6 +82,18 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 };
 
 
+const vectorsAreClose = (gram, maxDist) => {
+  const n = V.dimension(gram);
+  const limit = V.times(maxDist, maxDist);
+  const dot = (v, w) => V.times(v, V.times(gram, w));
+
+  return (v, w) => {
+    const d = V.minus(v, w);
+    return V.le(dot(d, d), limit);
+  };
+};
+
+
 const lookupPointModZ = (p, nodes, areEqualFn) => {
   for (const i in nodes) {
     const q = nodes[i].pos;
@@ -124,6 +136,25 @@ const pointStabilizer = (point, ops, areEqualFn) => {
 };
 
 
+const edgeStabilizer = (pos, vec, ops, pointsEqualFn, vectorsEqualFn) => {
+  const goodOp = op => (
+    pointsEqualFn(pos, V.times(op, pos))
+      && vectorsEqualFn(vec, V.times(V.linearPart(op), vec)));
+
+  const stabilizer = ops.filter(goodOp);
+
+  for (const A of stabilizer) {
+    for (const B of stabilizer) {
+      if (!goodOp(V.times(A, V.inverse(B)))) {
+        return null;
+      }
+    }
+  }
+
+  return stabilizer.map(spacegroups.opModZ);
+};
+
+
 const nodeImages = (ops, equalFn) => (v, index) => {
   const { name, coordination, positionInput, positionPrimitive } = v;
   const stabilizer = pointStabilizer(positionPrimitive, ops, equalFn);
@@ -136,6 +167,29 @@ const nodeImages = (ops, equalFn) => (v, index) => {
   })).map(({ operator, pos, degree }, id) => ({
     id, pos, degree, repIndex: index, operator
   }));
+};
+
+
+const edgeImages = (ops, pointsEqualFn, vectorsEqualFn) => (e, index) => {
+  const { from: { positionPrimitive: src },
+          to: { positionPrimitive: dst } } = edge;
+  const vec = V.minus(dst, src);
+
+  const stabilizer = edgeStabilizer(
+    src, vec, ops, pointsEqualFn, vectorsEqualFn)
+
+  const cosetReps = operatorCosets(ops, stabilizer);
+
+  return cosetReps
+    .map(operator => {
+      const from = V.mod(V.times(operator, src), 1);
+      const to = V.plus(from, V.times(V.linearPart(operator), vec));
+
+      return { from, to, operator };
+    })
+    .map(({ from, to, operator }, id) => ({
+      id, from, to, repIndex: index, operator
+    }));
 };
 
 
