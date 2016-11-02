@@ -172,7 +172,7 @@ const nodeImages = (ops, equalFn) => (v, index) => {
 
 const edgeImages = (ops, pointsEqualFn, vectorsEqualFn) => (e, index) => {
   const { from: { positionPrimitive: src },
-          to: { positionPrimitive: dst } } = edge;
+          to: { positionPrimitive: dst } } = e;
   const vec = V.minus(dst, src);
 
   const stabilizer = edgeStabilizer(
@@ -195,6 +195,10 @@ const edgeImages = (ops, pointsEqualFn, vectorsEqualFn) => (e, index) => {
 
 const applyOpsToNodes = (nodes, ops, equalFn) =>
   flatMap(nodeImages(ops, equalFn), nodes);
+
+
+const applyOpsToEdges = (edges, ops, pointsEqFn, vectorsEqFn) =>
+  flatMap(edgeImages(ops, pointsEqFn, vectorsEqFn), edges);
 
 
 const withInducedEdges = (nodes, givenEdges, gram) =>
@@ -229,8 +233,13 @@ export function netFromCrystal(spec) {
   if (edgesMapped.length)
     warnings.push('explicit edges given, but not yet supported');
 
-  const testFn = pointsAreCloseModZ(primitiveGram, 0.001);
-  const allNodes = applyOpsToNodes(nodesMapped, primitive.ops, testFn);
+  const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
+  const vectorsEq = vectorsAreClose(primitiveGram, 0.001);
+
+  const allNodes = applyOpsToNodes(
+    nodesMapped, primitive.ops, pointsEq);
+  const explicitEdges = applyOpsToEdges(
+    edgesMapped, primitive.ops, pointsEq, vectorsEq);
 
   const allEdges = withInducedEdges(allNodes, [], primitiveGram);
 
@@ -244,6 +253,7 @@ export function netFromCrystal(spec) {
     nodeReps: nodesMapped,
     explicitEdgeReps: edgesMapped,
     nodes: allNodes,
+    explicitEdges,
     edges: allEdges,
     warnings,
     errors
