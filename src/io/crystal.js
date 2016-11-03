@@ -98,7 +98,7 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
   for (const i in nodes) {
     const q = nodes[i].pos;
     if (areEqualFn(p, q)) {
-      return [i, V.minus(p, q).map(x => V.round(x))];
+      return { node: i, shift: V.minus(p, q).map(x => V.round(x)) };
     }
   }
 };
@@ -170,13 +170,13 @@ const nodeImages = (ops, equalFn) => (v, index) => {
 };
 
 
-const edgeImages = (ops, pointsEqualFn, vectorsEqualFn) => (e, index) => {
+const edgeImages = (ops, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
   const { from: { positionPrimitive: src },
           to: { positionPrimitive: dst } } = e;
   const vec = V.minus(dst, src);
 
   const stabilizer = edgeStabilizer(
-    src, vec, ops, pointsEqualFn, vectorsEqualFn)
+    src, vec, ops, pntsEqualFn, vecsEqualFn)
 
   const cosetReps = operatorCosets(ops, stabilizer);
 
@@ -185,7 +185,11 @@ const edgeImages = (ops, pointsEqualFn, vectorsEqualFn) => (e, index) => {
       const from = V.mod(V.times(operator, src), 1);
       const to = V.plus(from, V.times(V.linearPart(operator), vec));
 
-      return { from, to, operator };
+      return {
+        from: lookupPointModZ(from, nodes, pntsEqualFn),
+        to: lookupPointModZ(to, nodes, pntsEqualFn),
+        operator
+      };
     })
     .map(({ from, to, operator }, id) => ({
       id, from, to, repIndex: index, operator
@@ -197,8 +201,8 @@ const applyOpsToNodes = (nodes, ops, equalFn) =>
   flatMap(nodeImages(ops, equalFn), nodes);
 
 
-const applyOpsToEdges = (edges, ops, pointsEqFn, vectorsEqFn) =>
-  flatMap(edgeImages(ops, pointsEqFn, vectorsEqFn), edges);
+const applyOpsToEdges = (edges, nodes, ops, pointsEqFn, vectorsEqFn) =>
+  flatMap(edgeImages(ops, nodes, pointsEqFn, vectorsEqFn), edges);
 
 
 const withInducedEdges = (nodes, givenEdges, gram) =>
@@ -239,7 +243,7 @@ export function netFromCrystal(spec) {
   const allNodes = applyOpsToNodes(
     nodesMapped, primitive.ops, pointsEq);
   const explicitEdges = applyOpsToEdges(
-    edgesMapped, primitive.ops, pointsEq, vectorsEq);
+    edgesMapped, allNodes, primitive.ops, pointsEq, vectorsEq);
 
   const allEdges = withInducedEdges(allNodes, [], primitiveGram);
 
