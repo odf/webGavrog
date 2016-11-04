@@ -1,5 +1,6 @@
 import * as spacegroups from '../geometry/spacegroups';
 import * as lattices from '../geometry/lattices';
+import * as pg from '../pgraphs/periodic';
 import * as sgtable from './sgtable';
 
 import fromPointCloud from '../pgraphs/fromPointCloud';
@@ -263,7 +264,7 @@ export function netFromCrystal(spec) {
     explicitEdgeReps: edgesMapped,
     nodes: allNodes,
     explicitEdges,
-    edges: allEdges,
+    graph: pg.make(allEdges),
     warnings,
     errors
   };
