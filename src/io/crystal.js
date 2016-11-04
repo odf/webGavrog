@@ -98,7 +98,7 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
   for (const i in nodes) {
     const q = nodes[i].pos;
     if (areEqualFn(p, q)) {
-      return { node: i, shift: V.minus(p, q).map(x => V.round(x)) };
+      return { node: nodes[i].id, shift: V.minus(p, q).map(x => V.round(x)) };
     }
   }
 };
@@ -205,6 +205,10 @@ const applyOpsToEdges = (edges, nodes, ops, pointsEqFn, vectorsEqFn) =>
   flatMap(edgeImages(ops, nodes, pointsEqFn, vectorsEqFn), edges);
 
 
+const convertEdge = ({ from, to }) =>
+  [from.node, to.node, V.minus(to.shift, from.shift)];
+
+
 const withInducedEdges = (nodes, givenEdges, gram) =>
   fromPointCloud(nodes, givenEdges, gram);
 
@@ -245,7 +249,8 @@ export function netFromCrystal(spec) {
   const explicitEdges = applyOpsToEdges(
     edgesMapped, allNodes, primitive.ops, pointsEq, vectorsEq);
 
-  const allEdges = withInducedEdges(allNodes, [], primitiveGram);
+  const allEdges = withInducedEdges(
+    allNodes, explicitEdges.map(convertEdge), primitiveGram);
 
   return {
     name,
