@@ -25,6 +25,13 @@ const mapNode = coordinateChange => ({ name, coordination, position }, i) => ({
 });
 
 
+const findNode = (nodes, name) => {
+  for (const v of nodes)
+    if (v.name == name)
+      return v;
+};
+
+
 const mapEnd = (coordinateChange, nodes) => p => {
   if (V.typeOf(p) == 'Vector') {
     return {
@@ -33,7 +40,7 @@ const mapEnd = (coordinateChange, nodes) => p => {
     }
   }
   else {
-    const { positionInput, positionPrimitive } = nodes[p] || {};
+    const { positionInput, positionPrimitive } = findNode(nodes, p) || {};
     return { nodeGiven: p, positionInput, positionPrimitive };
   };
 };
@@ -99,9 +106,15 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
   for (const i in nodes) {
     const q = nodes[i].pos;
     if (areEqualFn(p, q)) {
-      return { node: nodes[i].id, shift: V.minus(p, q).map(x => V.round(x)) };
+      return {
+        pos: p,
+        node: nodes[i].id,
+        shift: V.minus(p, q).map(x => V.round(x))
+      };
     }
   }
+
+  return { pos: p };
 };
 
 
@@ -164,9 +177,8 @@ const nodeImages = (ops, equalFn) => (v, index) => {
   return cosetReps.map(op => ({
     pos: V.mod(V.times(op, positionPrimitive), 1),
     degree: coordination,
+    repIndex: index,
     operator: op
-  })).map(({ operator, pos, degree }, id) => ({
-    id, pos, degree, repIndex: index, operator
   }));
 };
 
@@ -189,21 +201,25 @@ const edgeImages = (ops, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
       return {
         from: lookupPointModZ(from, nodes, pntsEqualFn),
         to: lookupPointModZ(to, nodes, pntsEqualFn),
+        repIndex: index,
         operator
       };
-    })
-    .map(({ from, to, operator }, id) => ({
-      id, from, to, repIndex: index, operator
-    }));
+    });
 };
 
 
 const applyOpsToNodes = (nodes, ops, equalFn) =>
-  flatMap(nodeImages(ops, equalFn), nodes);
+  flatMap(nodeImages(ops, equalFn), nodes)
+  .map(({ pos, degree, repIndex, operator }, id) => ({
+    id, pos, degree, repIndex, operator
+  }))
 
 
 const applyOpsToEdges = (edges, nodes, ops, pointsEqFn, vectorsEqFn) =>
-  flatMap(edgeImages(ops, nodes, pointsEqFn, vectorsEqFn), edges);
+  flatMap(edgeImages(ops, nodes, pointsEqFn, vectorsEqFn), edges)
+  .map(({ from, to, repIndex, operator }, id) => ({
+    id, from, to, repIndex, operator
+  }));
 
 
 const convertEdge = ({ from, to }) =>
