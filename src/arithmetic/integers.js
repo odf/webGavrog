@@ -436,7 +436,7 @@ export function extend(baseOps, baseLength = 0) {
     },
     mod: {
       Integer: {
-        Integer: (x, y) => x % y + (x < 0 ? y : 0)
+        Integer: (x, y) => x % y + (x % y < 0 ? y : 0)
       }
     },
     gcd: {
