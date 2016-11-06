@@ -113,7 +113,7 @@ furtherCoordinate
   = _ "," _ c:coordinate { return c; }
 
 operator
-  = first:coordinate rest:furtherCoordinate* { return [first].concat(rest); }
+  = first:coordinate rest:furtherCoordinate+ { return [first].concat(rest); }
 
 field
   = op:operator { return fixOperator(op); }
