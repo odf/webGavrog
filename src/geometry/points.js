@@ -68,6 +68,10 @@ export function extend(vectorOps, scalarTypes) {
       }
     },
 
+    modZ: {
+      Point: p => new Point(V.mod(p.coords, 1))
+    },
+
     __repr__: {
       Point: p => p.coords.map(x => vectorOps.repr(x))
     },

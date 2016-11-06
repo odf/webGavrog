@@ -21,7 +21,7 @@ const mapNode = coordinateChange => ({ name, coordination, position }, i) => ({
   index: i,
   coordination,
   positionInput: position,
-  positionPrimitive: V.mod(V.times(coordinateChange, position), 1)
+  positionPrimitive: V.modZ(V.times(coordinateChange, V.point(position)))
 });
 
 
@@ -36,7 +36,7 @@ const mapEnd = (coordinateChange, nodes) => p => {
   if (V.typeOf(p) == 'Vector') {
     return {
       positionInput: p,
-      positionPrimitive: V.times(coordinateChange, p)
+      positionPrimitive: V.times(coordinateChange, V.point(p))
     }
   }
   else {
@@ -174,7 +174,7 @@ const nodeImages = (ops, equalFn) => (v, index) => {
   const cosetReps = operatorCosets(ops, stabilizer);
 
   return cosetReps.map(op => ({
-    pos: V.mod(V.times(op, positionPrimitive), 1),
+    pos: V.modZ(V.times(op, positionPrimitive)),
     degree: coordination,
     repIndex: index,
     operator: op
@@ -194,7 +194,7 @@ const edgeImages = (ops, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
 
   return cosetReps
     .map(operator => {
-      const from = V.mod(V.times(operator, src), 1);
+      const from = V.modZ(V.times(operator, src));
       const to = V.plus(from, V.times(V.linearPart(operator), vec));
 
       return {
@@ -262,8 +262,15 @@ export function netFromCrystal(spec) {
   const explicitEdges = applyOpsToEdges(
     edgesMapped, allNodes, primitive.ops, pointsEq, vectorsEq);
 
-  const allEdges = withInducedEdges(
-    allNodes, explicitEdges.map(convertEdge), primitiveGram);
+  let convertedEdges;
+  try {
+    convertedEdges = explicitEdges.map(convertEdge);
+  } catch(ex) {
+    errors.push(ex.message);
+    convertedEdges = [];
+  }
+
+  const allEdges = withInducedEdges(allNodes, convertedEdges, primitiveGram);
 
   return {
     name,

@@ -83,7 +83,7 @@ export default function fromPointCloud(rawPoints, explicitEdges, gram) {
   const points = cartesian(rawPoints, [origin].concat(dvs))
     .map(([{ id, pos, degree }, shift], i) => {
       const p = ops.plus(pos, shift);
-      const s = lattices.shiftIntoDirichletDomain(p, dvs2, dot);
+      const s = lattices.shiftIntoDirichletDomain(ops.vector(p), dvs2, dot);
       return {
         id: i,
         pos: ops.plus(p, s),
