@@ -255,9 +255,6 @@ export function netFromCrystal(spec) {
   const nodesMapped = nodes.map(mapNode(toPrimitive));
   const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
 
-  if (edgesMapped.length)
-    warnings.push('explicit edges given, but not yet supported');
-
   const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
   const vectorsEq = vectorsAreClose(primitiveGram, 0.001);
 
