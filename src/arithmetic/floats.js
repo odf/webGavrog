@@ -25,10 +25,9 @@ export function extend(rationals) {
       return 0;
     else {
       const t = x % y;
-      return make(t < 0 ? t + 1 : t);
+      return make(t < 0 ? t + y : t);
     }
   };
-
 
   const methods = {
     isReal  : { Float: x => true },
