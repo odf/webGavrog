@@ -107,7 +107,6 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
     const q = nodes[i].pos;
     if (areEqualFn(p, q)) {
       return {
-        pos: p,
         node: nodes[i].id,
         shift: V.minus(p, q).map(x => V.round(x))
       };
@@ -285,6 +284,7 @@ export function netFromCrystal(spec) {
 
 
 if (require.main == module) {
+  const fs = require('fs');
   const cgd = require('./cgd');
   const pgr = require('../pgraphs/periodic');
   const sym = require('../pgraphs/symmetries');
@@ -301,53 +301,51 @@ if (require.main == module) {
       return inv.invariant(sym.minimalImage(G));
   };
 
-  const input = `
+  const input = (process.argv.length > 2
+                 ? fs.readFileSync(process.argv[2], { encoding: 'utf8' })
+                 : `
 CRYSTAL
-  NAME sql
-  GROUP p4mm
-  CELL 1.00000 1.00000 90.0000
-  NODE 1 4  0.00000 0.00000
-  EDGE  0.00000 0.00000   0.00000 1.00000
-# EDGE_CENTER  0.00000 0.50000
+  NAME cem
+  GROUP c2mm
+  CELL 1.00000 3.73205 90.0000
+  NODE 1 5  0.00000 0.13397
+  EDGE  0.00000 0.13397   0.00000 -0.13397
+  EDGE  0.00000 0.13397   1.00000 0.13397
+  EDGE  0.00000 0.13397   0.50000 0.36603
 END
-
-CRYSTAL
-  NAME hxl
-  GROUP p6mm
-  CELL 1.00000 1.00000 120.0000
-  NODE 1 6  0.00000 0.00000
-  EDGE  0.00000 0.00000   0.00000 1.00000
-# EDGE_CENTER  0.00000 0.50000
-END
-
-CRYSTAL
-  NAME hcb
-  GROUP p6mm
-  CELL 1.73205 1.73205 120.0000
-  NODE 1 3  0.33333 0.66667
-  EDGE  0.33333 0.66667   0.66667 0.33333
-# EDGE_CENTER  0.50000 0.50000
-END
-
-CRYSTAL
-  NAME kgm
-  GROUP p6mm
-  CELL 2.00000 2.00000 120.0000
-  NODE 1 4  0.00000 0.50000
-  EDGE  0.00000 0.50000   0.50000 0.50000
-# EDGE_CENTER  0.25000 0.50000
-END
-  `;
+`);
 
   for (const b of cgd.structures(input)) {
-    console.log(JSON.stringify(b, null, 4));
-    // console.log(b.name);
+    for (const key in b) {
+      console.log(`${key}:`);
 
-    // const key = invariant(pgr.make(b.edges));
-    // for (const [head, tail, shift] of key) {
-    //   console.log(`  ${head} ${tail} ${shift.join(' ')}`);
-    // }
+      const val = b[key];
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          if (item.constructor == Object) {
+            for (const k in item) {
+              console.log(`    ${k}: ${JSON.stringify(item[k])}`);
+            }
+            console.log();
+          }
+          else {
+            console.log(`    ${JSON.stringify(item)}`);
+          }
+        }
+      }
+      else {
+        console.log(`    ${JSON.stringify(val)}`);
+      }
+      console.log();
+    }
 
+    console.log('invariant:');
+    const inv = invariant(b.graph);
+    for (const [head, tail, shift] of inv) {
+      console.log(`    ${head} ${tail} ${shift.join(' ')}`);
+    }
+
+    console.log();
     console.log();
   }
 };
