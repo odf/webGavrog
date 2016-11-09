@@ -1,7 +1,7 @@
 import { matrices } from '../arithmetic/types';
 
 const ops = matrices;
-const eps = Math.pow(2, -50);
+const eps = Math.pow(2, -49);
 
 const trim = x => Math.abs(x) < eps ? 0 : x;
 const lift = op => (...args) => args.reduce((a, b) => op(a, b));
