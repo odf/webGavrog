@@ -262,14 +262,7 @@ export function netFromCrystal(spec) {
   const explicitEdges = applyOpsToEdges(
     edgesMapped, allNodes, primitive.ops, pointsEq, vectorsEq);
 
-  let convertedEdges;
-  try {
-    convertedEdges = explicitEdges.map(convertEdge);
-  } catch(ex) {
-    errors.push(ex.message);
-    convertedEdges = [];
-  }
-
+  const convertedEdges = explicitEdges.map(convertEdge);
   const allEdges = withInducedEdges(allNodes, convertedEdges, primitiveGram);
 
   return {
