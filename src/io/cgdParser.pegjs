@@ -48,10 +48,10 @@ __ "mandatory whitespace"
   = [ \t]+
 
 comment
-  = "#" $[^\n]*
+  = "#" $[^\n\r]*
 
 nl "new line"
-  = (_ comment? "\n")+
+  = (_ comment? "\r"? "\n")+
 
 end
   = [eE][nN][dD]
@@ -65,13 +65,14 @@ stringChunk
   / "\\\'" { return "\'"; }
   / "\\\\" { return "\\"; }
   / "\\n"  { return "\n"; }
+  / "\\r"  { return "\r"; }
   / "\\t"  { return "\t"; }
 
 string
   = "\"" chunks:stringChunk* "\"" { return chunks.join(''); }
 
 name
-  = !end val:$([A-Za-z][^\t\n "]*) { return val; }
+  = !end val:$([A-Za-z][^\t\n\r "]*) { return val; }
 
 nat
   = digits:$[0-9]+ { return parseInt(digits); }
