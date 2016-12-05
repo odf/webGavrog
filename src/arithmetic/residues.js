@@ -14,54 +14,53 @@ const _inverse = (a, m) => {
 
 
 const _canon    = (a, m) => a < 0 ? (a % m) + m : a % m;
-const _negative = (a, m) => m - a;
-const _cmp      = (a, b) => (a > b) - (a < b);
 const _plus     = (a, b, m) => (a + b) % m;
 const _minus    = (a, b, m) => (m - b + a) % m;
 const _times    = (a, b, m) => (a * b) % m;
 const _div      = (a, b, m) => (_inverse(b) * a) % m;
 
 
-export function extend(baseOps, m) {
-  return {
-    toJS:     { Integer: a => _canon(a, m) },
-    negative: { Integer: a => _negative(_canon(a, m)) },
-    sgn:      { Integer: a => 1 },
-    abs:      { Integer: a => _canon(a, m) },
-    floor:    { Integer: a => _canon(a, m) },
-    ceil:     { Integer: a => _canon(a, m) },
-    round:    { Integer: a => _canon(a, m) },
+const _rowEchelonForm = (M, m) => {
+  const A = M.map(row => row.slice());
+  const nrows = A.length;
+  const ncols = A[0].length;
 
-    cmp: {
-      Integer: {
-        Integer: (a, b) => _cmp(_canon(a, m), _canon(b, m))
-      }
-    },
-    plus: {
-      Integer: {
-        Integer: (a, b) => _plus(_canon(a, m), _canon(b, m), m)
-      }
-    },
-    minus: {
-      Integer: {
-        Integer: (a, b) => _minus(_canon(a, m), _canon(b, m), m)
-      }
-    },
-    times: {
-      Integer: {
-        Integer: (a, b) => _times(_canon(a, m), _canon(b, m), m)
-      }
-    },
-    div: {
-      Integer: {
-        Integer: (a, b) => _div(_canon(a, m), _canon(b, m), m)
-      }
-    },
-    mod: {
-      Integer: {
-        Integer: (a, b) => _canon(a, m) % _canon(b, m)
+  let k = 0;
+
+  for (let c = 0; c < ncols; ++c) {
+    let r = 0;
+    while (r < nrows && A[r][c] == 0)
+      ++r;
+    if (r >= nrows)
+      continue;
+
+    const p = A[r][c];
+    for (let j = c; j < ncols; ++j) {
+      const t = A[k][j];
+      A[k][j] = _div(A[r][j], p);
+      A[r][j] = t;
+    }
+
+    for (let i = 0; r < nrows; ++i) {
+      if (i == k)
+        continue;
+      const f = A[i][c];
+      for (let j = c; j < ncols; ++j) {
+        A[i][j] = _minus(A[i][j], _times(A[k][j], f));
       }
     }
+  }
+
+  return A;
+};
+
+
+export default function ops(m) {
+  return {
+    plus : (a, b) => _plus (_canon(a, m), _canon(b, m), m),
+    minus: (a, b) => _minus(_canon(a, m), _canon(b, m), m),
+    times: (a, b) => _times(_canon(a, m), _canon(b, m), m),
+    div  : (a, b) => _div  (_canon(a, m), _canon(b, m), m)
   };
 };
 
