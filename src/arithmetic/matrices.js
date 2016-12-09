@@ -208,6 +208,49 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
+  const _rowEchelonForm = M => {
+    const A = _clone(M);
+    const [nrows, ncols] = shapeOfMatrix(A);
+
+    let row = 0;
+
+    for (let col = 0; col < ncols; ++col) {
+      let r = row;
+      while (r < nrows && s.eq(A[r][col], 0)) {
+        ++r;
+      }
+      if (r >= nrows) {
+        continue;
+      }
+
+      const p = A[r][col];
+      A[r][col] = 1;
+      for (let j = col + 1; j < ncols; ++j) {
+        const t = A[row][j];
+        A[row][j] = s.div(A[r][j], p);
+        if (r != row) {
+          A[r][j] = t;
+        }
+      }
+
+      for (let i = 0; i < nrows; ++i) {
+        if (i == row) {
+          continue;
+        }
+        const f = A[i][col];
+        A[i][col] = 0;
+        for (let j = col + 1; j < ncols; ++j) {
+          A[i][j] = s.minus(A[i][j], s.times(A[row][j], f));
+        }
+      }
+
+      ++row;
+    }
+
+    return A;
+  };
+
+
   const _rank = A => {
     const [nrows, ncols] = shapeOfMatrix(A);
     let row = 0;
@@ -488,6 +531,10 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
     triangulation: {
       Matrix: M => triangulation(M, false)
+    },
+
+    rowEchelonForm: {
+      Matrix: _rowEchelonForm
     },
 
     rank: {

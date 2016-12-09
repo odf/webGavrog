@@ -139,4 +139,19 @@ if (require.main == module) {
   console.log(ops.sgn([0, 2, 3]));
   console.log(ops.sgn([0, -2, 3]));
   console.log(ops.sgn([0, 0, 0]));
+
+  const testEchelon = (M, ops) => {
+    console.log();
+    console.log(`M = ${M}`);
+    const n = M.length;
+    const A = M.map((row, i) => row.concat(ops.unitVector(n, i)));
+    console.log(`A = ${A}`);
+    const E = ops.rowEchelonForm(A);
+    console.log(`E = ${E}`);
+    const Mi = E.map(row => row.slice(n));
+    console.log(`Mi = ${Mi}`);
+    console.log(`M * Mi = ${ops.times(M, Mi)}`);
+  };
+
+  testEchelon(A, ops);
 }
