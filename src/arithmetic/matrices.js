@@ -224,8 +224,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
       }
 
       const p = A[r][col];
-      A[r][col] = 1;
-      for (let j = col + 1; j < ncols; ++j) {
+      for (let j = 0; j < ncols; ++j) {
         const t = A[row][j];
         A[row][j] = s.div(A[r][j], p);
         if (r != row) {
@@ -238,8 +237,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
           continue;
         }
         const f = A[i][col];
-        A[i][col] = 0;
-        for (let j = col + 1; j < ncols; ++j) {
+        for (let j = 0; j < ncols; ++j) {
           A[i][j] = s.minus(A[i][j], s.times(A[row][j], f));
         }
       }
