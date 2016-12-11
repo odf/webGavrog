@@ -18,7 +18,7 @@ const _plus  = (a, b, m) => (a + b) % m;
 const _minus = (a, b, m) => (m - b + a) % m;
 const _times = (a, b, m) => (a * b) % m;
 const _div   = (a, b, m) => (_inverse(b, m) * a) % m;
-const _cmp   = (a, b) => (a > b) - (a > b);
+const _cmp   = (a, b) => (a > b) - (a < b);
 
 
 export function extend(basis, m) {
