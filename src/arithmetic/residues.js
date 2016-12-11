@@ -13,74 +13,52 @@ const _inverse = (a, m) => {
 };
 
 
-const _canon    = (a, m) => a < 0 ? (a % m) + m : a % m;
-const _plus     = (a, b, m) => (a + b) % m;
-const _minus    = (a, b, m) => (m - b + a) % m;
-const _times    = (a, b, m) => (a * b) % m;
-const _div      = (a, b, m) => (_inverse(b) * a) % m;
+const _make  = (a, m) => a < 0 ? (a % m) + m : a % m;
+const _plus  = (a, b, m) => (a + b) % m;
+const _minus = (a, b, m) => (m - b + a) % m;
+const _times = (a, b, m) => (a * b) % m;
+const _div   = (a, b, m) => (_inverse(b, m) * a) % m;
+const _cmp   = (a, b) => (a > b) - (a > b);
 
 
-const _rowEchelonForm = (M, m) => {
-  const A = M.map(row => row.slice());
-  const nrows = A.length;
-  const ncols = A[0].length;
+export function extend(basis, m) {
+  const methods = {
+    toJS : { Integer: a => _make(a, m) },
+    abs  : { Integer: a => _make(a, m) },
+    floor: { Integer: a => _make(a, m) },
+    ceil : { Integer: a => _make(a, m) },
+    round: { Integer: a => _make(a, m) },
 
-  let k = 0;
+    negative: { Integer: a => _minus(0, _make(a, m)) },
+    sgn     : { Integer: a => a % m != 0 },
+    isEven  : { Integer: a => _make(a, m) % 2 == 0 },
 
-  for (let c = 0; c < ncols; ++c) {
-    let r = 0;
-    while (r < nrows && A[r][c] == 0)
-      ++r;
-    if (r >= nrows)
-      continue;
-
-    const p = A[r][c];
-    for (let j = c; j < ncols; ++j) {
-      const t = A[k][j];
-      A[k][j] = _div(A[r][j], p);
-      A[r][j] = t;
-    }
-
-    for (let i = 0; r < nrows; ++i) {
-      if (i == k)
-        continue;
-      const f = A[i][c];
-      for (let j = c; j < ncols; ++j) {
-        A[i][j] = _minus(A[i][j], _times(A[k][j], f));
+    cmp: {
+      Integer: {
+        Integer: (a, b) => _cmp(_make(a, m), _make(b, m), m)
+      }
+    },
+    plus: {
+      Integer: {
+        Integer: (a, b) => _plus(_make(a, m), _make(b, m), m)
+      }
+    },
+    minus: {
+      Integer: {
+        Integer: (a, b) => _minus(_make(a, m), _make(b, m), m)
+      }
+    },
+    times: {
+      Integer: {
+        Integer: (a, b) => _times(_make(a, m), _make(b, m), m)
+      }
+    },
+    div: {
+      Integer: {
+        Integer: (a, b) => _div(_make(a, m), _make(b, m), m)
       }
     }
-  }
-
-  return A;
-};
-
-
-export default function ops(m) {
-  return {
-    plus : (a, b) => _plus (_canon(a, m), _canon(b, m), m),
-    minus: (a, b) => _minus(_canon(a, m), _canon(b, m), m),
-    times: (a, b) => _times(_canon(a, m), _canon(b, m), m),
-    div  : (a, b) => _div  (_canon(a, m), _canon(b, m), m)
   };
+
+  return basis.register(methods);
 };
-
-
-if (require.main == module) {
-  const test = (a, m) => {
-    const ainv = _inverse(a, m);
-    console.log(`1 / ${a} = ${ainv} (mod ${m})`);
-    
-    if (ainv >= m)
-      console.log(`ERROR: ${ainv} is too large`);
-    else if ((a * ainv) % m != 1)
-      console.log(
-        `ERROR: ${a} * ${ainv} = ${a * ainv} = ${(a * ainv) % m} (mod ${m})`);
-  }
-
-  for (const p of [3, 5, 7, 11, 13]) {
-    console.log();
-    for (let a = 2; a < p; ++a) {
-      test(a, p);
-    }
-  }
-}
