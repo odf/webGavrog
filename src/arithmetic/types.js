@@ -168,8 +168,7 @@ if (require.main == module) {
     else {
       const t = ops.times(a, ainv);
       if (ops.ne(t, 1)) {
-        console.log(
-          `ERROR: ${a} * ${ainv} = ${t} (mod ${m})`);
+        console.log(`ERROR: ${a} * ${ainv} = ${t} (mod ${m})`);
       }
     }
   }
@@ -180,4 +179,6 @@ if (require.main == module) {
       inverseTest(a, p);
     }
   }
+
+  testEchelon(A, mats.extend(residueClassRing(11), ['Integer'], true));
 }
