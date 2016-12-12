@@ -9,10 +9,9 @@ const pops = mats.extend(residueClassRing(p), ['Integer'], true);
 
 
 const invModP = M => {
-  const ops = pops;
   const n = M.length;
-  const A = M.map((row, i) => row.concat(ops.unitVector(n, i)));
-  const E = ops.rowEchelonForm(A);
+  const A = M.map((row, i) => row.concat(pops.unitVector(n, i)));
+  const E = pops.rowEchelonForm(A);
 
   return E.map(row => row.slice(n));
 };
@@ -32,20 +31,19 @@ const numberOfPAdicStepsNeeded = (A, b) => {
 
 
 const rationalReconstruction = (s, h) => {
-  const ops = iops;
   let u = [h, s];
   let v = [0, 1];
   let sign = 1;
 
-  while (ops.gt(ops.times(u[1], u[1]), h)) {
-    const q = ops.idiv(u[0], u[1]);
+  while (iops.gt(iops.times(u[1], u[1]), h)) {
+    const q = iops.idiv(u[0], u[1]);
 
-    u = [u[1], ops.minus(u[0], ops.times(q, u[1]))];
-    v = [v[1], ops.plus(v[0], ops.times(q, v[1]))];
+    u = [u[1], iops.minus(u[0], iops.times(q, u[1]))];
+    v = [v[1], iops.plus(v[0], iops.times(q, v[1]))];
     sign *= -1;
   }
 
-  return fops.div(ops.times(sign, u[1]), v[1]);
+  return fops.div(iops.times(sign, u[1]), v[1]);
 };
 
 
