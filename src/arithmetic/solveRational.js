@@ -33,6 +33,24 @@ const numberOfPAdicStepsNeeded = (A, b) => {
 };
 
 
+const rationalReconstruction = (s, h) => {
+  const limit = Math.sqrt(h);
+  let u = [h, s];
+  let v = [0, 1];
+  let sign = 1;
+
+  while (u[1] >= limit) {
+    const q = Math.floor(u[0] / u[1]);
+
+    u = [u[1], u[0] - q * u[1]];
+    v = [v[1], v[0] + q * v[1]];
+    sign *= -1;
+  }
+
+  return fops.div(sign * u[1], v[1]);
+};
+
+
 export default function solve(A, b) {
   console.log(`solve(${A}, ${b})`);
   const C = invModP(A);
@@ -53,7 +71,12 @@ export default function solve(A, b) {
     pi = iops.times(pi, p);
   }
   const s = si;
-  console.log(`  s <- ${s}`);
+  console.log(`  s = ${s}`);
+
+  const r = s.map(row => row.map(x => rationalReconstruction(x, pi)));
+  console.log(`  r = ${r}`);
+
+  return r;
 };
 
 
@@ -63,11 +86,9 @@ if (require.main == module) {
   };
 
   solve(
-    [ [  4, -4,  1 ],
-      [ -4,  4,  0 ],
-      [  1,  0,  0 ] ],
+    [ [  4, -4 ],
+      [  1,  0 ] ],
     [ [  1,  1,  1 ],
-      [ -1, -1, -1 ],
       [  0,  0,  0 ] ]
   );
 }
