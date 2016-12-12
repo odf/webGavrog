@@ -50,13 +50,8 @@ const rationalReconstruction = (s, h) => {
 
 
 export default function solve(A, b) {
-  console.log(`solve(${A}, ${b})`);
   const C = invModP(A);
-  console.log(`  C = ${C}`);
-  console.log(`  A * C = ${pops.times(A, C)}`);
-
   const nrSteps = numberOfPAdicStepsNeeded(A, b);
-  console.log(`  nrSteps = ${nrSteps}`);
 
   let bi = b;
   let pi = 1;
@@ -68,13 +63,8 @@ export default function solve(A, b) {
     si = iops.plus(si, iops.times(pi, xi));
     pi = iops.times(pi, p);
   }
-  const s = si;
-  console.log(`  s = ${s}`);
 
-  const r = s.map(row => row.map(x => rationalReconstruction(x, pi)));
-  console.log(`  r = ${r}`);
-
-  return r;
+  return si.map(row => row.map(x => rationalReconstruction(x, pi)));
 };
 
 
@@ -83,7 +73,15 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  solve(
+  const testSolver = (A, b) => {
+    console.log();
+    console.log(`solving ${A} * x = ${b}`);
+    const x = solve(A, b);
+    console.log(`  x = ${x}`);
+    console.log(`  A * x = ${fops.times(A, x)}`);
+  };
+
+  testSolver(
     [ [  4, -4 ],
       [  1,  0 ] ],
     [ [  1,  1,  1 ],
