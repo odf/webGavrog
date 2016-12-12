@@ -16,6 +16,7 @@ const timers = util.timers();
 sym.useTimers(timers);
 inv.useTimers(timers);
 pgr.useTimers(timers);
+pgr.useModularSolver(true);
 
 timers.start('total');
 

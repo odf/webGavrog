@@ -3,6 +3,8 @@ import * as I from 'immutable';
 import { rationalMatrices, rationalMatricesAsModule
        } from '../arithmetic/types';
 
+import modularSolver from '../arithmetic/solveRational';
+
 
 let _timers = null;
 
@@ -257,6 +259,14 @@ export function connectedComponents(graph) {
 };
 
 
+let _useModularSolver = false;
+
+
+export function useModularSolver(yesNo) {
+  _useModularSolver = yesNo;
+};
+
+
 export function barycentricPlacement(graph) {
   if (graph._$pos != undefined)
     return graph._$pos;
@@ -287,7 +297,9 @@ export function barycentricPlacement(graph) {
   });
   A[n][0] = 1;
 
-  const p = ops.solve(A, t);
+  const p = (_useModularSolver
+             ? modularSolver(A.slice(1), t.slice(1))
+             : ops.solve(A, t));
 
   const result = I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
 
