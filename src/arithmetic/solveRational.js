@@ -19,9 +19,7 @@ const invModP = M => {
 
 
 const numberOfPAdicStepsNeeded = (A, b) => {
-  const ops = fops;
-
-  const lengths = M => ops.transposed(M).map(r => ops.norm(r));
+  const lengths = M => fops.transposed(M).map(r => fops.norm(r));
   const max = v => v.reduce((x, y) => x > y ? x : y);
   const product = v => v.reduce((x, y) => x * y);
 
@@ -29,25 +27,25 @@ const numberOfPAdicStepsNeeded = (A, b) => {
   const delta = product(ls.sort().slice(A[0].length));
   const golden = (1 + Math.sqrt(5)) / 2;
 
-  return ops.ceil(2 * Math.log(delta * golden) / Math.log(p));
+  return Math.ceil(2 * Math.log(delta * golden) / Math.log(p));
 };
 
 
 const rationalReconstruction = (s, h) => {
-  const limit = Math.sqrt(h);
+  const ops = iops;
   let u = [h, s];
   let v = [0, 1];
   let sign = 1;
 
-  while (u[1] >= limit) {
-    const q = Math.floor(u[0] / u[1]);
+  while (ops.gt(ops.times(u[1], u[1]), h)) {
+    const q = ops.idiv(u[0], u[1]);
 
-    u = [u[1], u[0] - q * u[1]];
-    v = [v[1], v[0] + q * v[1]];
+    u = [u[1], ops.minus(u[0], ops.times(q, u[1]))];
+    v = [v[1], ops.plus(v[0], ops.times(q, v[1]))];
     sign *= -1;
   }
 
-  return fops.div(sign * u[1], v[1]);
+  return fops.div(ops.times(sign, u[1]), v[1]);
 };
 
 
