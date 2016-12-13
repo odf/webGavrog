@@ -48,12 +48,19 @@ const rationalReconstruction = (s, h) => {
 };
 
 
-export default function solve(A, b) {
+export default function solve(A, b, verbose=false) {
+  if (verbose) console.log(`solve(${A}, ${b})`);
+
   const C = invModP(A);
+  if (verbose) console.log(`  C = ${C}`);
+
   if (C == null)
     return null;
 
+  if (verbose) console.log(`  A * C = ${pops.times(A, C)} (mod p)`);
+
   const nrSteps = numberOfPAdicStepsNeeded(A, b);
+  if (verbose) console.log(`  nrSteps = ${nrSteps}`);
 
   let bi = b;
   let pi = 1;
@@ -66,7 +73,17 @@ export default function solve(A, b) {
     pi = iops.times(pi, p);
   }
 
-  return si.map(row => row.map(x => rationalReconstruction(x, pi)));
+  if (verbose) {
+    console.log(`  si = ${si}, pi = ${pi}`);
+    const piOps = mats.extend(residueClassRing(pi), ['Integer'], true);
+    console.log(`  A * si = ${piOps.times(A, si)} (mod pi)`);
+  }
+
+  const x = si.map(row => row.map(x => rationalReconstruction(x, pi)));
+
+  if (verbose) console.log(`  x = ${x}, A * x = ${fops.times(A, x)}`);
+
+  return x;
 };
 
 
@@ -75,19 +92,12 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const testSolver = (A, b) => {
-    console.log();
-    console.log(`solving ${A} * x = ${b}`);
-    const x = solve(A, b);
-    console.log(`  x = ${x}`);
-    console.log(`  A * x = ${fops.times(A, x)}`);
-  };
-
-  testSolver(
+  solve(
     [ [  4, -4 ],
       [  1,  0 ] ],
     [ [  1,  1,  1 ],
-      [  0,  0,  0 ] ]
+      [  0,  0,  0 ] ],
+    true
   );
 
   console.log();
@@ -116,22 +126,27 @@ if (require.main == module) {
     "nearray nat",
     M => {
       const [A, b] = splitArray(M);
-      let x;
+
+      let ok = false;
+
       try {
-        x = solve(A, b);
+        const x = solve(A, b);
+
+        if (x == null)
+          ok = true;
+        else {
+          const Ax = fops.times(A, x);
+          ok = fops.eq(Ax, b);
+        }
       } catch(e) {
-        console.log(`A = ${A}, b = ${b} => ${e}`);
-        return false;
+        console.log(e);
       }
 
-      if (x == null)
-        return true;
+      if (!ok) {
+        solve(A, b, true);
+        console.log();
+      }
 
-      const Ax = fops.times(A, x);
-      const ok = fops.eq(Ax, b);
-
-      if (!ok)
-        console.log(`A = ${A}, b = ${b}, x = ${x}, A * x = ${Ax}`);
       return ok;
     })
 
