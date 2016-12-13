@@ -24,7 +24,7 @@ const numberOfPAdicStepsNeeded = (A, b) => {
   const product = v => v.reduce((x, y) => x * y);
 
   const ls = lengths(A).concat(max(lengths(b)));
-  const delta = product(ls.sort().slice(A[0].length));
+  const delta = product(ls.sort().reverse().slice(0, A[0].length));
   const golden = (1 + Math.sqrt(5)) / 2;
 
   return Math.ceil(2 * Math.log(delta * golden) / Math.log(p));
