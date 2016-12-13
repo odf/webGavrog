@@ -46,6 +46,16 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
 
+  const compareM = (A, B) => {
+    for (let i = 0; i < A.length || i < B.length; ++i) {
+      const d = compareV(A[i] || [], B[i] || []);
+      if (d)
+        return d;
+    }
+    return 0;
+  };
+
+
   const signV = v => {
     for (const x of v) {
       const s = scalarOps.sgn(x);
@@ -505,7 +515,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     },
 
     cmp: {
-      Vector: { Vector: compareV }
+      Vector: { Vector: compareV },
+      Matrix: { Matrix: compareM }
     },
 
     sgn: {
