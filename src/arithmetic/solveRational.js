@@ -13,7 +13,8 @@ const invModP = M => {
   const A = M.map((row, i) => row.concat(pops.unitVector(n, i)));
   const E = pops.rowEchelonForm(A);
 
-  return E.map(row => row.slice(n));
+  if (fops.eq(E.map(row => row.slice(0, n)), fops.identityMatrix(n)))
+    return E.map(row => row.slice(n));
 };
 
 
@@ -49,6 +50,9 @@ const rationalReconstruction = (s, h) => {
 
 export default function solve(A, b) {
   const C = invModP(A);
+  if (C == null)
+    return null;
+
   const nrSteps = numberOfPAdicStepsNeeded(A, b);
 
   let bi = b;
