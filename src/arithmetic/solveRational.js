@@ -89,4 +89,51 @@ if (require.main == module) {
     [ [  1,  1,  1 ],
       [  0,  0,  0 ] ]
   );
+
+  console.log();
+
+  const toRows = (m, A) => {
+    const r = [];
+    for (let k = 0; k < A.length; k += m)
+      r.push(A.slice(k, k + m));
+    return r;
+  };
+
+  const splitArray = M => {
+    const m = Math.floor(Math.sqrt(M.length));
+
+    const A = M.slice(0, m * m);
+
+    const b = M.slice(m * m);
+    while (b.length == 0 || b.length % m)
+      b.push(0);
+
+    return [toRows(m, A), toRows(b.length / m, b)];
+  };
+
+  var jsc = require("jsverify");
+  var solveReturnsASolution = jsc.forall(
+    "nearray nat",
+    M => {
+      const [A, b] = splitArray(M);
+      let x;
+      try {
+        x = solve(A, b);
+      } catch(e) {
+        console.log(`A = ${A}, b = ${b} => ${e}`);
+        return false;
+      }
+
+      if (x == null)
+        return true;
+
+      const Ax = fops.times(A, x);
+      const ok = fops.eq(Ax, b);
+
+      if (!ok)
+        console.log(`A = ${A}, b = ${b}, x = ${x}, A * x = ${Ax}`);
+      return ok;
+    })
+
+  jsc.check(solveReturnsASolution, { tests: 1000, size: 100 });
 }
