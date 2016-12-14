@@ -49,19 +49,12 @@ const rationalReconstruction = (s, h) => {
 };
 
 
-export default function solve(A, b, verbose=false) {
-  if (verbose) console.log(`solve(${A}, ${b})`);
-
+export default function solve(A, b) {
   const C = invModP(A);
-  if (verbose) console.log(`  C = ${C}`);
-
   if (C == null)
     return null;
 
-  if (verbose) console.log(`  A * C = ${pops.times(A, C)} (mod p)`);
-
   const nrSteps = numberOfPAdicStepsNeeded(A, b);
-  if (verbose) console.log(`  nrSteps = ${nrSteps}`);
 
   let bi = b;
   let pi = 1;
@@ -74,17 +67,7 @@ export default function solve(A, b, verbose=false) {
     pi = iops.times(pi, p);
   }
 
-  if (verbose) {
-    console.log(`  si = ${si}, pi = ${pi}`);
-    const piOps = mats.extend(residueClassRing(pi), ['Integer'], true);
-    console.log(`  A * si = ${piOps.times(A, si)} (mod pi)`);
-  }
-
-  const x = si.map(row => row.map(x => rationalReconstruction(x, pi)));
-
-  if (verbose) console.log(`  x = ${x}, A * x = ${fops.times(A, x)}`);
-
-  return x;
+  return si.map(row => row.map(x => rationalReconstruction(x, pi)));
 };
 
 
@@ -97,8 +80,7 @@ if (require.main == module) {
     [ [  4, -4 ],
       [  1,  0 ] ],
     [ [  1,  1,  1 ],
-      [  0,  0,  0 ] ],
-    true
+      [  0,  0,  0 ] ]
   );
 
   console.log();
@@ -141,11 +123,6 @@ if (require.main == module) {
         }
       } catch(e) {
         console.log(e);
-      }
-
-      if (!ok) {
-        solve(A, b, true);
-        console.log();
       }
 
       return ok;
