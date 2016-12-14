@@ -109,23 +109,8 @@ if (require.main == module) {
     "nearray nat",
     M => {
       const [A, b] = splitArray(M);
-
-      let ok = false;
-
-      try {
-        const x = solve(A, b);
-
-        if (x == null)
-          ok = true;
-        else {
-          const Ax = fops.times(A, x);
-          ok = fops.eq(Ax, b);
-        }
-      } catch(e) {
-        console.log(e);
-      }
-
-      return ok;
+      const x = solve(A, b);
+      return x == null || fops.eq(fops.times(A, x), b);
     })
 
   jsc.check(solveReturnsASolution, { tests: 1000, size: 100 });
