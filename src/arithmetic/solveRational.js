@@ -76,42 +76,64 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  solve(
-    [ [  4, -4 ],
-      [  1,  0 ] ],
-    [ [  1,  1,  1 ],
-      [  0,  0,  0 ] ]
-  );
+  const jsc = require("jsverify");
+  const seq = require("lazy-seq");
 
-  console.log();
+  const range = (a, b) =>
+    a >= b ? seq.nil : seq.cons(a, () => range(a + 1, b));
 
-  const toRows = (m, A) => {
-    const r = [];
-    for (let k = 0; k < A.length; k += m)
-      r.push(A.slice(k, k + m));
-    return r;
+  const concat = (s1, s2) =>
+    s1.isNil ? s2 : seq.cons(s1.head(), () => concat(s1.tail(), s2));
+
+  const flatten = s =>
+    s.isNil ? s : concat(s.head(), flatten(s.tail()));
+
+  const flatMap = (s, f) =>
+    flatten(s.map(f));
+
+  const skip = (v, i) => v.slice(0, i).concat(v.slice(i + 1));
+
+
+  const linearEquations = arb => {
+    const generator = jsc.generator.bless(size => {
+      const n = jsc.random(1, Math.max(1, Math.floor(Math.sqrt(size))));
+
+      const A = new Array(n + 1);
+      for (let i = 0; i < n + 1; ++i) {
+        const row = A[i] = new Array(n);
+        for (let j = 0; j < n; ++j) {
+          row[j] = arb.generator(size);
+        }
+      }
+      return [A.slice(0, n), A[n].map(x => [x])];
+    });
+
+    const shrink = jsc.shrink.bless(([A, b]) => {
+      const n = A.length;
+
+      if (n <= 1)
+        return seq.nil;
+      else
+        return flatMap(
+          range(0, n).map(i => [skip(A, i), skip(b, i)]),
+          ([A, b]) => range(0, n).map(j => [A.map(row => skip(row, j)), b]));
+    });
+
+    const show = ([A, b]) => `${JSON.stringify(A)} * x = ${JSON.stringify(b)}`;
+
+    return {
+      generator: jsc.utils.curried2(generator, arguments),
+      shrink: jsc.utils.curried2(shrink, arguments),
+      show: jsc.utils.curried2(show, arguments)
+    };
   };
 
-  const splitArray = M => {
-    const m = Math.floor(Math.sqrt(M.length));
-
-    const A = M.slice(0, m * m);
-
-    const b = M.slice(m * m);
-    while (b.length == 0 || b.length % m)
-      b.push(0);
-
-    return [toRows(m, A), toRows(b.length / m, b)];
-  };
-
-  var jsc = require("jsverify");
   var solveReturnsASolution = jsc.forall(
-    "nearray nat",
-    M => {
-      const [A, b] = splitArray(M);
+    linearEquations(jsc.nat),
+    ([A, b]) => {
       const x = solve(A, b);
       return x == null || fops.eq(fops.times(A, x), b);
-    })
+    });
 
   jsc.check(solveReturnsASolution, { tests: 1000, size: 100 });
 }
