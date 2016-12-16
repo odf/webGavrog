@@ -39,10 +39,50 @@ class Cons {
     return this.toArray().join(' -> ');
   }
 
+  reverse() {
+    let rev = null;
+    for (const x of this) {
+      const r = rev;
+      rev = cons(x, () => r);
+    }
+    return rev;
+  }
+
+  concat(s) {
+    const next = this.rest() ? this.rest().concat(s) : s;
+    return cons(this.first(), () => next);
+  }
+
+  map(fn) {
+    return cons(fn(this.first()), () => this.rest() && this.rest().map(fn));
+  }
+
+  reduce(fn, z) {
+    if (z === undefined)
+      return this.rest() ? this.rest().reduce(fn, this.first()) : this.first();
+
+    let out = z;
+    for (const x of this)
+      out = fn(out, x);
+    return out;
+  }
+
   take(n) {
     if (n <= 0)
       return null;
-    return cons(this.first(), () => this.rest() && this.rest().take(n - 1));
+
+    return cons(
+      this.first(),
+      () => this.rest() && this.rest().take(n - 1));
+  }
+
+  takeWhile(pred) {
+    if (!pred(this.first()))
+      return null;
+
+    return cons(
+      this.first(),
+      () => this.rest() && this.rest().takeWhile(pred));
   }
 
   drop(n) {
@@ -52,6 +92,17 @@ class Cons {
       --n;
     }
     return s;
+  }
+
+  dropUntil(pred) {
+    let s = this;
+    while (s && !pred(s.first()))
+      s = s.rest();
+    return s;
+  }
+
+  pick(n) {
+    return this.drop(n).first();
   }
 };
 
@@ -78,9 +129,24 @@ export const iterate = (x, f) => cons(x, () => iterate(f(x), f));
 
 
 if (require.main == module) {
-  console.log(`${fromArray([5, 3, 7, 1])}`);
-  console.log(`${range(5, 15)} (length ${range(5, 15).length})`);
-  console.log(`${constant(4).take(10)}`);
-  console.log(`${iterate(2, x => x*x).take(6)}`);
-  console.log(`${iterate(2, x => x*x).drop(2).take(5)}`);
+  const test = t => {
+    const s = eval(t);
+    console.log(`${t}: ${s} (length ${s.length})`);
+  };
+
+  test('fromArray([5, 3, 7, 1])');
+  test('range(5, 15)');
+  test('constant(4).take(8)');
+  test('iterate(2, x => x*x).take(5)');
+  test('iterate(2, x => x*x).drop(2).take(3)');
+  test('iterate(2, x => x*x).takeWhile(x => x < 10000)');
+  test('iterate(2, x => x*x).dropUntil(x => x > 100).take(2)');
+  test('range(5, 14).reverse()');
+  test('range(0, 3).concat(range(1, 4).reverse())');
+  test('upFrom(10).pick(5)');
+  test('range(1, 5).map(x => 1 / x)');
+  test('range(1, 5).reduce((x, y) => x * y)');
+  test('range(1, 5).reduce((x, y) => x * y, 0.1)');
+  test('range(4, 5).reduce((x, y) => x * y)');
+  test('range(4, 5).reduce((x, y) => x * y, 0.1)');
 }
