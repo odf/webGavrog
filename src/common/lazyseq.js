@@ -1,9 +1,9 @@
-const identity = x => x;
-const defined  = x => x != null;
-const compose  = (f, g) => x => f(g(x));
-const option   = f => x => defined(x) ? f(x) : x;
-const curry    = (f, x) => y => f(x, y);
-const rcurry   = (f, y) => x => f(x, y);
+const identity  = x => x;
+const defined   = x => x != null;
+const onDefined = f => x => defined(x) ? f(x) : x;
+const compose   = (f, g) => x => f(g(x));
+const curry     = (f, x) => y => f(x, y);
+const rcurry    = (f, y) => x => f(x, y);
 
 
 class Cons {
@@ -67,6 +67,18 @@ class Cons {
     return out;
   }
 
+  fold(z, fn) {
+    return this.reduce(fn, z);
+  }
+
+  filter(pred) {
+    if (pred(this.first()))
+      return cons(this.first(), () => this.rest() && this.rest().filter(pred));
+
+    const r = this.rest().dropUntil(pred);
+    return r && r.filter(pred);
+  }
+
   take(n) {
     if (n <= 0)
       return null;
@@ -104,6 +116,14 @@ class Cons {
   pick(n) {
     return this.drop(n).first();
   }
+
+  some(pred) {
+    return this.dropUntil(pred) != null;
+  }
+
+  every(pred) {
+    return !this.some(x => !pred(x));
+  }
 };
 
 
@@ -131,7 +151,8 @@ export const iterate = (x, f) => cons(x, () => iterate(f(x), f));
 if (require.main == module) {
   const test = t => {
     const s = eval(t);
-    console.log(`${t}: ${s} (length ${s.length})`);
+    const n = s.constructor == Cons ? ` (length ${s.length})` : '';
+    console.log(`${t}: ${s}${n}`);
   };
 
   test('fromArray([5, 3, 7, 1])');
@@ -149,4 +170,9 @@ if (require.main == module) {
   test('range(1, 5).reduce((x, y) => x * y, 0.1)');
   test('range(4, 5).reduce((x, y) => x * y)');
   test('range(4, 5).reduce((x, y) => x * y, 0.1)');
+  test('range(0, 20).filter(x => x % 3 == 2)');
+  test('range(1, 5).some(x => x % 7 == 2)');
+  test('range(1, 5).some(x => x % 7 == 6)');
+  test('range(1, 5).every(x => x % 7 == 2)');
+  test('range(1, 5).every(x => x < 5)');
 }
