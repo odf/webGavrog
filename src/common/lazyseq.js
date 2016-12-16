@@ -48,8 +48,8 @@ class Cons {
     return rev;
   }
 
-  concat(s) {
-    const next = this.rest() ? this.rest().concat(s) : s;
+  append(s) {
+    const next = this.rest() ? this.rest().append(s) : s;
     return cons(this.first(), () => next);
   }
 
@@ -147,12 +147,25 @@ export const range = (start, limit) => upFrom(start).take(limit - start);
 export const constant = x => cons(x, () => constant(x));
 export const iterate = (x, f) => cons(x, () => iterate(f(x), f));
 
+export const zip = (...seqs) => {
+  const firsts = seqs.map(s => s && s.first());
+  if (firsts.some(defined))
+    return cons(firsts, () => zip(...seqs.map(s => s && s.rest())));
+}
+
+export const zipWith = (fn, ...seqs) => zip(...seqs).map(s => fn(...s));
+
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x && x.toString()).join(', ') + ' ]';
+  };
+
   const test = t => {
     const s = eval(t);
     const n = s.constructor == Cons ? ` (length ${s.length})` : '';
-    console.log(`${t}: ${s}${n}`);
+    console.log(`${t}:\n    ${s}${n}`);
+    console.log();
   };
 
   test('fromArray([5, 3, 7, 1])');
@@ -163,7 +176,7 @@ if (require.main == module) {
   test('iterate(2, x => x*x).takeWhile(x => x < 10000)');
   test('iterate(2, x => x*x).dropUntil(x => x > 100).take(2)');
   test('range(5, 14).reverse()');
-  test('range(0, 3).concat(range(1, 4).reverse())');
+  test('range(0, 3).append(range(1, 4).reverse())');
   test('upFrom(10).pick(5)');
   test('range(1, 5).map(x => 1 / x)');
   test('range(1, 5).reduce((x, y) => x * y)');
@@ -175,4 +188,11 @@ if (require.main == module) {
   test('range(1, 5).some(x => x % 7 == 6)');
   test('range(1, 5).every(x => x % 7 == 2)');
   test('range(1, 5).every(x => x < 5)');
+  test('zip(range(1, 5), range(4, 6), range(2, 5))');
+  test('zipWith((x, y) => x * 10 + y, range(1, 5), range(4, 8).reverse())');
+
+  const fib = cons(0, () =>
+                   cons(1, () =>
+                        zipWith((x, y) => x + y, fib, fib.rest())));
+  test('fib.take(12)');
 }
