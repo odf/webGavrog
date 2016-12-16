@@ -195,4 +195,8 @@ if (require.main == module) {
                    cons(1, () =>
                         zipWith((x, y) => x + y, fib, fib.rest())));
   test('fib.take(12)');
+
+  const primes = upFrom(2).filter(
+    n => n < 4 || primes.takeWhile(m => m * m <= n).every(m => n % m));
+  test('primes.take(12)');
 }
