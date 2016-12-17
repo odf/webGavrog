@@ -1,13 +1,4 @@
-class Cons {
-  constructor(firstVal, restFn) {
-    this.first = () => firstVal;
-    this.rest = () => {
-      const val = restFn && restFn();
-      this.rest = () => val;
-      return val;
-    }
-  }
-
+class Seq {
   force() {
     for (const x of this)
       ;
@@ -32,7 +23,7 @@ class Cons {
   }
 
   reverse() {
-    let rev = null;
+    let rev = nil;
     for (const x of this) {
       const r = rev;
       rev = cons(x, () => r);
@@ -41,20 +32,22 @@ class Cons {
   }
 
   append(s) {
-    return cons(this.first(), () => this.rest() ? this.rest().append(s) : s);
+    return this.isNil ? s : cons(this.first(), () => this.rest().append(s));
   }
 
   appendLazy(s) {
-    return cons(this.first(),
-                () => this.rest() ? this.rest().appendLazy(s) : s());
+    return this.isNil ? s() : cons(this.first(),
+                                   () => this.rest().appendLazy(s));
   }
 
   flatten() {
-    return this.first().appendLazy(() => this.rest() && this.rest().flatten());
+    return this.isNil ? nil :
+      this.first().appendLazy(() => this.rest().flatten())
   }
 
   map(fn) {
-    return cons(fn(this.first()), () => this.rest() && this.rest().map(fn));
+    return this.isNil ? nil :
+      cons(fn(this.first()), () => this.rest().map(fn));
   }
 
   flatMap(fn) {
@@ -62,48 +55,39 @@ class Cons {
   }
 
   reduce(fn, z) {
-    if (z === undefined)
-      return this.rest() ? this.rest().reduce(fn, this.first()) : this.first();
-
-    let out = z;
-    for (const x of this)
-      out = fn(out, x);
-    return out;
+    if (this.isNil)
+      return z;
+    else if (z === undefined)
+      return this.rest().reduce(fn, this.first());
+    else {
+      let out = z;
+      for (const x of this)
+        out = fn(out, x);
+      return out;
+    }
   }
 
   fold(z, fn) {
     return this.reduce(fn, z);
   }
 
-  filter(pred) {
-    if (pred(this.first()))
-      return cons(this.first(), () => this.rest() && this.rest().filter(pred));
-
-    const r = this.rest().dropUntil(pred);
-    return r && r.filter(pred);
-  }
-
   take(n) {
-    if (n <= 0)
-      return null;
-
-    return cons(
-      this.first(),
-      () => this.rest() && this.rest().take(n - 1));
+    if (this.isNil || n <= 0)
+      return nil;
+    else
+      return cons(this.first(), () => this.rest().take(n - 1));
   }
 
   takeWhile(pred) {
-    if (!pred(this.first()))
-      return null;
-
-    return cons(
-      this.first(),
-      () => this.rest() && this.rest().takeWhile(pred));
+    if (this.isNil || !pred(this.first()))
+      return nil;
+    else
+      return cons(this.first(), () => this.rest().takeWhile(pred));
   }
 
   drop(n) {
     let s = this;
-    while (n > 0 && s.rest()) {
+    while (!(s.isNil || n <= 0)) {
       s = s.rest();
       --n;
     }
@@ -112,9 +96,20 @@ class Cons {
 
   dropUntil(pred) {
     let s = this;
-    while (s && !pred(s.first()))
+    while (!(s.isNil || pred(s.first())))
       s = s.rest();
     return s;
+  }
+
+  filter(pred) {
+    if (this.isNil)
+      return nil;
+    else if (pred(this.first()))
+      return cons(this.first(), () => this.rest().filter(pred));
+    else {
+      const r = this.rest().dropUntil(pred);
+      return r && r.filter(pred);
+    }
   }
 
   pick(n) {
@@ -122,7 +117,7 @@ class Cons {
   }
 
   some(pred) {
-    return this.dropUntil(pred) != null;
+    return !this.dropUntil(pred).isNil;
   }
 
   every(pred) {
@@ -130,7 +125,7 @@ class Cons {
   }
 
   subseqs() {
-    return cons(this, () => this.rest() && this.rest().subseqs());
+    return this.isNil ? nil : cons(this, () => this.rest().subseqs());
   }
 
   consec(n) {
@@ -139,9 +134,31 @@ class Cons {
 };
 
 
+const nil = new Seq();
+
+nil.isNil = true;
+nil.first = () => { throw new Error('empty sequence has no first element'); };
+nil.rest  = () => nil;
+nil[Symbol.iterator] = function*() {};
+
+
+class Cons extends Seq {
+  constructor(firstVal, restFn) {
+    super();
+
+    this.isNil = false;
+    this.first = () => firstVal;
+    this.rest = () => {
+      const val = restFn && restFn();
+      this.rest = () => val;
+      return val;
+    }
+  }
+}
+
 Cons.prototype[Symbol.iterator] = function*() {
   let s = this;
-  while (s) {
+  while (!s.isNil) {
     yield s.first();
     s = s.rest();
   }
@@ -151,7 +168,7 @@ Cons.prototype[Symbol.iterator] = function*() {
 export const cons = (firstVal, restFn) => new Cons(firstVal, restFn);
 
 export const fromArray = (a, start=0) => 
-  start < a.length ? cons(a[start], () => fromArray(a, start + 1)) : null;
+  start < a.length ? cons(a[start], () => fromArray(a, start + 1)) : nil;
 
 export const upFrom = start => cons(start, () => upFrom(start + 1));
 export const downFrom = start => cons(start, () => downFrom(start - 1));
@@ -160,9 +177,11 @@ export const constant = x => cons(x, () => constant(x));
 export const iterate = (x, f) => cons(x, () => iterate(f(x), f));
 
 export const zip = (...seqs) => {
-  const firsts = seqs.map(s => s && s.first());
-  if (firsts.some(x => x != null))
-    return cons(firsts, () => zip(...seqs.map(s => s && s.rest())));
+  if (seqs.every(x => x.isNil))
+    return nil;
+  else
+    return cons(seqs.map(s => s.isNil ? null : s.first()),
+                () => zip(...seqs.map(s => s.rest())));
 }
 
 export const zipWith = (fn, ...seqs) => zip(...seqs).map(s => fn(...s));
