@@ -134,12 +134,20 @@ class Seq {
 };
 
 
-const nil = new Seq();
+Seq.prototype[Symbol.iterator] = function*() {
+  let s = this;
+  while (!s.isNil) {
+    yield s.first();
+    s = s.rest();
+  }
+};
+
+
+export const nil = new Seq();
 
 nil.isNil = true;
 nil.first = () => { throw new Error('empty sequence has no first element'); };
 nil.rest  = () => nil;
-nil[Symbol.iterator] = function*() {};
 
 
 class Cons extends Seq {
@@ -155,14 +163,6 @@ class Cons extends Seq {
     }
   }
 }
-
-Cons.prototype[Symbol.iterator] = function*() {
-  let s = this;
-  while (!s.isNil) {
-    yield s.first();
-    s = s.rest();
-  }
-};
 
 
 export const cons = (firstVal, restFn) => new Cons(firstVal, restFn);
@@ -194,11 +194,12 @@ if (require.main == module) {
 
   const test = t => {
     const s = eval(t);
-    const n = s.constructor == Cons ? ` (length ${s.length})` : '';
+    const n = s instanceof Seq ? ` (length ${s.length})` : '';
     console.log(`${t}:\n    ${s}${n}`);
     console.log();
   };
 
+  test('nil');
   test('fromArray([5, 3, 7, 1])');
   test('range(5, 15)');
   test('constant(4).take(8)');
