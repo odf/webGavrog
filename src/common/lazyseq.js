@@ -1,11 +1,3 @@
-const identity  = x => x;
-const defined   = x => x != null;
-const onDefined = f => x => defined(x) ? f(x) : x;
-const compose   = (f, g) => x => f(g(x));
-const curry     = (f, x) => y => f(x, y);
-const rcurry    = (f, y) => x => f(x, y);
-
-
 class Cons {
   constructor(firstVal, restFn) {
     this.first = () => firstVal;
@@ -49,12 +41,24 @@ class Cons {
   }
 
   append(s) {
-    const next = this.rest() ? this.rest().append(s) : s;
-    return cons(this.first(), () => next);
+    return cons(this.first(), () => this.rest() ? this.rest().append(s) : s);
+  }
+
+  appendLazy(s) {
+    return cons(this.first(),
+                () => this.rest() ? this.rest().appendLazy(s) : s());
+  }
+
+  flatten() {
+    return this.first().appendLazy(() => this.rest() && this.rest().flatten());
   }
 
   map(fn) {
     return cons(fn(this.first()), () => this.rest() && this.rest().map(fn));
+  }
+
+  flatMap(fn) {
+    return this.map(fn).flatten();
   }
 
   reduce(fn, z) {
@@ -149,7 +153,7 @@ export const iterate = (x, f) => cons(x, () => iterate(f(x), f));
 
 export const zip = (...seqs) => {
   const firsts = seqs.map(s => s && s.first());
-  if (firsts.some(defined))
+  if (firsts.some(x => x != null))
     return cons(firsts, () => zip(...seqs.map(s => s && s.rest())));
 }
 
@@ -199,4 +203,6 @@ if (require.main == module) {
   const primes = upFrom(2).filter(
     n => n < 4 || primes.takeWhile(m => m * m <= n).every(m => n % m));
   test('primes.take(12)');
+
+  test('range(1, 4).flatMap(i => range(10 * i, 10 * i + 3))');
 }
