@@ -128,6 +128,14 @@ class Cons {
   every(pred) {
     return !this.some(x => !pred(x));
   }
+
+  subseqs() {
+    return cons(this, () => this.rest() && this.rest().subseqs());
+  }
+
+  consec(n) {
+    return this.subseqs().map(s => s.take(n));
+  }
 };
 
 
@@ -194,6 +202,9 @@ if (require.main == module) {
   test('range(1, 5).every(x => x < 5)');
   test('zip(range(1, 5), range(4, 6), range(2, 5))');
   test('zipWith((x, y) => x * 10 + y, range(1, 5), range(4, 8).reverse())');
+  test('range(1, 4).flatMap(i => range(10 * i, 10 * i + 3))');
+  test('range(1, 4).subseqs().map(s => cons(0, () => s))');
+  test('range(1, 5).consec(3).map(s => cons(0, () => s))');
 
   const fib = cons(0, () =>
                    cons(1, () =>
@@ -203,6 +214,4 @@ if (require.main == module) {
   const primes = upFrom(2).filter(
     n => n < 4 || primes.takeWhile(m => m * m <= n).every(m => n % m));
   test('primes.take(12)');
-
-  test('range(1, 4).flatMap(i => range(10 * i, 10 * i + 3))');
 }
