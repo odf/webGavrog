@@ -81,6 +81,8 @@ if (require.main == module) {
 
   const skip = (v, i) => v.slice(0, i).concat(v.slice(i + 1));
   const skip2 = (A, i, j) => skip(A, i).map(row => skip(row, j));
+  const set = (v, i, x) => v.slice(0, i).concat([x], v.slice(i + 1));
+  const set2 = (A, i, j, x) => set(A, i, set(A[i], j, x));
 
 
   const linearEquations = arb => {
@@ -102,9 +104,12 @@ if (require.main == module) {
 
       if (n <= 1)
         return seq.nil;
-      else
-        return seq.range(0, n).flatMap(
-          i => seq.range(0, n).map(j => [skip2(A, i, j), skip(b, i)]));
+      else {
+        const idcs = seq.range(0, n);
+        const idxPairs = idcs.flatMap(i => idcs.map(j => [i, j]));
+        const skips = idxPairs.map(([i, j]) => [skip2(A, i, j), skip(b, i)]);
+        return skips;
+      }
     });
 
     const show = ([A, b]) => `${JSON.stringify(A)} * x = ${JSON.stringify(b)}`;
