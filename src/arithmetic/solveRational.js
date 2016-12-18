@@ -77,19 +77,7 @@ if (require.main == module) {
   };
 
   const jsc = require("jsverify");
-  const seq = require("lazy-seq");
-
-  const range = (a, b) =>
-    a >= b ? seq.nil : seq.cons(a, () => range(a + 1, b));
-
-  const concat = (s1, s2) =>
-    s1.isNil ? s2 : seq.cons(s1.head(), () => concat(s1.tail(), s2));
-
-  const flatten = s =>
-    s.isNil ? s : concat(s.head(), flatten(s.tail()));
-
-  const flatMap = (s, f) =>
-    flatten(s.map(f));
+  const seq = require("../common/lazyseq");
 
   const skip = (v, i) => v.slice(0, i).concat(v.slice(i + 1));
 
@@ -111,12 +99,17 @@ if (require.main == module) {
     const shrink = jsc.shrink.bless(([A, b]) => {
       const n = A.length;
 
+      let shrinks;
       if (n <= 1)
-        return seq.nil;
+        shrinks = seq.nil;
       else
-        return flatMap(
-          range(0, n).map(i => [skip(A, i), skip(b, i)]),
-          ([A, b]) => range(0, n).map(j => [A.map(row => skip(row, j)), b]));
+        shrinks =
+          seq.range(0, n)
+          .map(i => [skip(A, i), skip(b, i)])
+          .flatMap(([A, b]) =>
+                   seq.range(0, n).map(j => [A.map(row => skip(row, j)), b]));
+
+      return shrinks;
     });
 
     const show = ([A, b]) => `${JSON.stringify(A)} * x = ${JSON.stringify(b)}`;
@@ -131,6 +124,8 @@ if (require.main == module) {
   var solveReturnsASolution = jsc.forall(
     linearEquations(jsc.nat),
     ([A, b]) => {
+      if (A.some(r => r.some(x => x == 42)))
+        return false;
       const x = solve(A, b);
       return x == null || fops.eq(fops.times(A, x), b);
     });
