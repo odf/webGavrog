@@ -54,11 +54,11 @@ class Seq {
     return this.map(fn).flatten();
   }
 
-  reduce(fn, z) {
+  foldL(fn, z) {
     if (this.isNil)
       return z;
     else if (z === undefined)
-      return this.rest().reduce(fn, this.first());
+      return this.rest().foldL(fn, this.first());
     else {
       let out = z;
       for (const x of this)
@@ -67,8 +67,11 @@ class Seq {
     }
   }
 
-  fold(z, fn) {
-    return this.reduce(fn, z);
+  foldR(z, fn) {
+    if (this.isNil)
+      return z;
+    else
+      return fn(this.first(), () => this.rest().foldR(z, fn));
   }
 
   take(n) {
@@ -141,6 +144,9 @@ Seq.prototype[Symbol.iterator] = function*() {
     s = s.rest();
   }
 };
+
+Seq.prototype.reduce = Seq.prototype.foldL;
+Seq.prototype.fold = Seq.prototype.foldR;
 
 
 export const nil = new Seq();
