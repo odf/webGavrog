@@ -80,6 +80,7 @@ if (require.main == module) {
   const seq = require("../common/lazyseq");
 
   const skip = (v, i) => v.slice(0, i).concat(v.slice(i + 1));
+  const skip2 = (A, i, j) => skip(A, i).map(row => skip(row, j));
 
 
   const linearEquations = arb => {
@@ -99,17 +100,11 @@ if (require.main == module) {
     const shrink = jsc.shrink.bless(([A, b]) => {
       const n = A.length;
 
-      let shrinks;
       if (n <= 1)
-        shrinks = seq.nil;
+        return seq.nil;
       else
-        shrinks =
-          seq.range(0, n)
-          .map(i => [skip(A, i), skip(b, i)])
-          .flatMap(([A, b]) =>
-                   seq.range(0, n).map(j => [A.map(row => skip(row, j)), b]));
-
-      return shrinks;
+        return seq.range(0, n).flatMap(
+          i => seq.range(0, n).map(j => [skip2(A, i, j), skip(b, i)]));
     });
 
     const show = ([A, b]) => `${JSON.stringify(A)} * x = ${JSON.stringify(b)}`;
