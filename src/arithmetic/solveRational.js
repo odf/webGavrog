@@ -71,6 +71,22 @@ const modularMatrixInverse = (M, m) => {
 };
 
 
+const modularMatrixProduct = (A, B, m) => {
+  const [nrowsA, ncolsA] = [A.length, A[0].length];
+  const [nrowsB, ncolsB] = [B.length, B[0].length];
+
+  if (ncolsA != nrowsB)
+    throw new Error('shapes do not match');
+
+  return (
+    Array(nrowsA).fill(0).map((_, i) => (
+      Array(ncolsB).fill(0).map((_, j) => (
+        Array(ncolsA).fill(0)
+          .map((_, k) => (A[i][k] * B[k][j]) % m)
+          .reduce((a, x) => (a + x) % m))))));
+};
+
+
 const numberOfPAdicStepsNeeded = (A, b) => {
   const lengths = M => fops.transposed(M).map(r => fops.norm(r));
   const max = v => v.reduce((x, y) => x > y ? x : y);
@@ -118,7 +134,7 @@ export default function solve(A, b, timers=null) {
 
   timers && timers.start('bootstrap');
   for (let i = 0; i < nrSteps; ++i) {
-    const xi = pops.times(C, bi);
+    const xi = modularMatrixProduct(C, bi, p);
     bi = iops.idiv(iops.minus(bi, iops.times(A, xi)), p);
     si = iops.plus(si, iops.times(pi, xi));
     pi = iops.times(pi, p);
