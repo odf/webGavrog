@@ -1,5 +1,6 @@
 import * as mats from './matrices';
 import { intMatrices, matrices, residueClassRing } from './types';
+import * as util from '../common/util';
 
 const iops = intMatrices;
 const fops = matrices;
@@ -49,8 +50,11 @@ const rationalReconstruction = (s, h) => {
 };
 
 
-export default function solve(A, b) {
+export default function solve(A, b, timers=null) {
+  timers && timers.start('invModP');
   const C = invModP(A);
+  timers && timers.stop('invModP');
+
   if (C == null)
     return null;
 
@@ -60,14 +64,20 @@ export default function solve(A, b) {
   let pi = 1;
   let si = 0;
 
+  timers && timers.start('bootstrap');
   for (let i = 0; i < nrSteps; ++i) {
     const xi = pops.times(C, bi);
     bi = iops.idiv(iops.minus(bi, iops.times(A, xi)), p);
     si = iops.plus(si, iops.times(pi, xi));
     pi = iops.times(pi, p);
   }
+  timers && timers.stop('bootstrap');
 
-  return si.map(row => row.map(x => rationalReconstruction(x, pi)));
+  timers && timers.start('rationalReconstruction');
+  const result = si.map(row => row.map(x => rationalReconstruction(x, pi)));
+  timers && timers.stop('rationalReconstruction');
+
+  return result;
 };
 
 
@@ -121,14 +131,28 @@ if (require.main == module) {
     };
   };
 
+  const timers = util.timers();
+  timers.start('total');
+
   var solveReturnsASolution = jsc.forall(
     linearEquations(jsc.nat),
     ([A, b]) => {
-      if (A.some(r => r.some(x => x == 42)))
-        return false;
-      const x = solve(A, b);
-      return x == null || fops.eq(fops.times(A, x), b);
+      timers.start('solve total');
+      const x = solve(A, b, timers);
+      timers.stop('solve total');
+
+      if (x == null)
+        return true;
+
+      timers.start('check solutions');
+      const good = fops.eq(fops.times(A, x), b);
+      timers.stop('check solutions');
+
+      return good;
     });
 
   jsc.check(solveReturnsASolution, { tests: 1000, size: 100 });
+
+  timers.stop('total');
+  console.log(timers.current());
 }
