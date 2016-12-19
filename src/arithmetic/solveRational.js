@@ -9,10 +9,62 @@ const p = 9999991;
 const pops = mats.extend(residueClassRing(p), ['Integer'], true);
 
 
-const invModP = M => {
+const modularInverse = (a, m) => {
+  let [t, t1] = [0, 1];
+  let [r, r1] = [m, a];
+
+  while (r1 != 0) {
+    const q = Math.floor(r / r1);
+    [t, t1] = [t1, t - q * t1];
+    [r, r1] = [r1, r - q * r1];
+  }
+
+  if (r == 1)
+    return t < 0 ? t + m : t;
+};
+
+
+const modularRowEchelonForm = (M, m) => {
+  const A = M.map(row => row.map(a => a < 0 ? (a % m) + m : a % m));
+  const [nrows, ncols] = [A.length, A[0].length];
+
+  let row = 0;
+
+  for (let col = 0; col < ncols; ++col) {
+    let r = row;
+    while (r < nrows && A[r][col] == 0)
+      ++r;
+
+    if (r >= nrows)
+      continue;
+
+    if (r != row)
+      [A[row], A[r]] = [A[r], A[row]];
+
+    const f = modularInverse(A[row][col], m);
+    for (let j = col; j < ncols; ++j)
+      A[row][j] = (A[row][j] * f) % m;
+
+    for (let i = 0; i < nrows; ++i) {
+      if (i == row)
+        continue;
+
+      const f = A[i][col];
+      for (let j = col; j < ncols; ++j)
+        A[i][j] = (m - (A[row][j] * f) % m + A[i][j]) % m;
+    }
+
+    ++row;
+  }
+
+  return A;
+};
+
+
+const modularMatrixInverse = (M, m) => {
   const n = M.length;
   const A = M.map((row, i) => row.concat(pops.unitVector(n, i)));
-  const E = pops.rowEchelonForm(A);
+  const E = modularRowEchelonForm(A, m);
 
   if (fops.eq(E.map(row => row.slice(0, n)), fops.identityMatrix(n)))
     return E.map(row => row.slice(n));
@@ -51,9 +103,9 @@ const rationalReconstruction = (s, h) => {
 
 
 export default function solve(A, b, timers=null) {
-  timers && timers.start('invModP');
-  const C = invModP(A);
-  timers && timers.stop('invModP');
+  timers && timers.start('modularMatrixInverse');
+  const C = modularMatrixInverse(A, p);
+  timers && timers.stop('modularMatrixInverse');
 
   if (C == null)
     return null;
