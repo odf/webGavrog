@@ -132,14 +132,25 @@ export default function solve(A, b, timers=null) {
   let pi = 1;
   let si = 0;
 
-  timers && timers.start('bootstrap');
+  timers && timers.start('bootstrap total');
   for (let i = 0; i < nrSteps; ++i) {
+    timers && timers.start('modularMatrixProduct');
     const xi = modularMatrixProduct(C, bi, p);
+    timers && timers.stop('modularMatrixProduct');
+
+    timers && timers.start('update bi');
     bi = iops.idiv(iops.minus(bi, iops.times(A, xi)), p);
+    timers && timers.stop('update bi');
+
+    timers && timers.start('update si');
     si = iops.plus(si, iops.times(pi, xi));
+    timers && timers.stop('update si');
+
+    timers && timers.start('update pi');
     pi = iops.times(pi, p);
+    timers && timers.stop('update pi');
   }
-  timers && timers.stop('bootstrap');
+  timers && timers.stop('bootstrap total');
 
   timers && timers.start('rationalReconstruction');
   const result = si.map(row => row.map(x => rationalReconstruction(x, pi)));
