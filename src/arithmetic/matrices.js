@@ -226,30 +226,26 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
     for (let col = 0; col < ncols; ++col) {
       let r = row;
-      while (r < nrows && s.eq(A[r][col], 0)) {
+      while (r < nrows && s.eq(A[r][col], 0))
         ++r;
-      }
-      if (r >= nrows) {
-        continue;
-      }
 
-      const p = A[r][col];
-      for (let j = 0; j < ncols; ++j) {
-        const t = A[row][j];
-        A[row][j] = s.div(A[r][j], p);
-        if (r != row) {
-          A[r][j] = t;
-        }
-      }
+      if (r >= nrows)
+        continue;
+
+      if (r != row)
+        [A[row], A[r]] = [A[r], A[row]];
+
+      const p = A[row][col];
+      for (let j = col; j < ncols; ++j)
+        A[row][j] = s.div(A[row][j], p);
 
       for (let i = 0; i < nrows; ++i) {
-        if (i == row) {
+        if (i == row)
           continue;
-        }
+
         const f = A[i][col];
-        for (let j = 0; j < ncols; ++j) {
+        for (let j = col; j < ncols; ++j)
           A[i][j] = s.minus(A[i][j], s.times(A[row][j], f));
-        }
       }
 
       ++row;
