@@ -87,6 +87,36 @@ const modularMatrixProduct = (A, B, m) => {
 };
 
 
+const integerMatrixProduct = (A, B) => {
+  const [nrowsA, ncolsA] = [A.length, A[0].length];
+  const [nrowsB, ncolsB] = [B.length, B[0].length];
+
+  if (ncolsA != nrowsB)
+    throw new Error('shapes do not match');
+
+  const result = Array(nrowsA);
+
+  for (let i = 0; i < nrowsA; ++i) {
+    const row = Array(ncolsB).fill(0);
+
+    for (let j = 0; j < ncolsB; ++j) {
+      let t = 0;
+
+      for (let k = 0; k < ncolsA; ++k) {
+        if (A[i][k] != 0 && B[k][j] != 0)
+          t = iops.plus(t, iops.times(A[i][k], B[k][j]));
+      }
+
+      row[j] = t;
+    }
+
+    result[i] = row;
+  }
+
+  return result;
+};
+
+
 const numberOfPAdicStepsNeeded = (A, b) => {
   const lengths = M => fops.transposed(M).map(r => fops.norm(r));
   const max = v => v.reduce((x, y) => x > y ? x : y);
@@ -133,19 +163,21 @@ export default function solve(A, b, timers=null) {
   let si = 0;
 
   for (let i = 0; i < nrSteps; ++i) {
-    timers && timers.start('bootstrap: compute C * bi (mod p)');
+    timers && timers.start('bootstrap: compute xi = C * bi (mod p)');
     const xi = modularMatrixProduct(C, bi, p);
-    timers && timers.stop('bootstrap: compute C * bi (mod p)');
+    timers && timers.stop('bootstrap: compute xi = C * bi (mod p)');
 
-    timers && timers.start('bootstrap: compute A * xi');
-    const Axi = iops.times(A, xi);
-    timers && timers.stop('bootstrap: compute A * xi');
-
-    timers && timers.start('bootstrap: other updates');
-    bi = iops.idiv(iops.minus(bi, Axi), p);
+    timers && timers.start('bootstrap: update si and pi');
     si = iops.plus(si, iops.times(pi, xi));
     pi = iops.times(pi, p);
-    timers && timers.stop('bootstrap: other updates');
+    timers && timers.stop('bootstrap: update si and pi');
+
+    if (i + 1 < nrSteps) {
+      timers && timers.start('bootstrap: update bi');
+      const Axi = integerMatrixProduct(A, xi);
+      bi = iops.idiv(iops.minus(bi, Axi), p);
+      timers && timers.stop('bootstrap: update bi');
+    }
   }
 
 
