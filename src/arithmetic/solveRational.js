@@ -1,12 +1,11 @@
 import * as mats from './matrices';
-import { intMatrices, matrices, residueClassRing } from './types';
+import { intMatrices, matrices } from './types';
 import * as util from '../common/util';
 
 const iops = intMatrices;
 const fops = matrices;
 
 const p = 9999991;
-const pops = mats.extend(residueClassRing(p), ['Integer'], true);
 
 
 const modularInverse = (a, m) => {
@@ -63,10 +62,10 @@ const modularRowEchelonForm = (M, m) => {
 
 const modularMatrixInverse = (M, m) => {
   const n = M.length;
-  const A = M.map((row, i) => row.concat(pops.unitVector(n, i)));
+  const A = M.map((row, i) => row.concat(iops.unitVector(n, i)));
   const E = modularRowEchelonForm(A, m);
 
-  if (fops.eq(E.map(row => row.slice(0, n)), fops.identityMatrix(n)))
+  if (iops.eq(E.map(row => row.slice(0, n)), iops.identityMatrix(n)))
     return E.map(row => row.slice(n));
 };
 
