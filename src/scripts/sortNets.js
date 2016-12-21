@@ -1,9 +1,5 @@
-import * as util from '../common/util';
 import * as io from '../io/cgd';
 import * as pgr from '../pgraphs/periodic';
-import * as sym from '../pgraphs/symmetries';
-import * as inv from '../pgraphs/invariant';
-
 
 const fs = require('fs');
 
@@ -28,6 +24,7 @@ graphs.sort(({graph: g1, name: n1}, {graph: g2, name: n2}) =>
 for (const { graph, name } of graphs) {
   console.log('PERIODIC_GRAPH');
   console.log(`  NAME ${name}`);
+  console.log('  EDGES');
   for (const e of graph.edges)
     console.log(`    ${e.head} ${e.tail} ${e.shift}`);
   console.log('END');
