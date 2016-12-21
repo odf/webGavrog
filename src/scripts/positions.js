@@ -16,7 +16,7 @@ process.argv.slice(2).forEach(file => {
   for (const { graph, name } of io.structures(text)) {
     console.log(name);
     const pos = pgr.barycentricPlacement(graph);
-    for (const v of pgr.vertices(graph))
+    for (const v of pgr.vertices(graph).sort((v, w) => v - w))
       console.log(`  ${v} ${pos.get(v)}`);
     console.log();
   }
