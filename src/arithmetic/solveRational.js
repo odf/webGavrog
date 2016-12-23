@@ -117,16 +117,16 @@ const integerMatrixProduct = (A, B) => {
 
 
 const numberOfPAdicStepsNeeded = (A, b) => {
-  const lengths = M => fops.transposed(M).map(r => fops.norm(r));
+  const logLengths = M => fops.transposed(M).map(r => Math.log(fops.norm(r)));
   const max = v => v.reduce((x, y) => x > y ? x : y);
-  const product = v => v.reduce((x, y) => x * y);
+  const sum = v => v.reduce((x, y) => x + y);
 
-  const ls = lengths(A).concat(max(lengths(b)));
+  const ls = logLengths(A).concat(max(logLengths(b)));
   const lsSorted = ls.sort((a, b) => - fops.cmp(a, b));
-  const delta = product(lsSorted.slice(0, A[0].length));
+  const logDelta = sum(lsSorted.slice(0, A[0].length));
   const golden = (1 + Math.sqrt(5)) / 2;
 
-  return Math.ceil(2 * Math.log(delta * golden) / Math.log(p));
+  return Math.ceil(2 * (logDelta + Math.log(golden)) / Math.log(p));
 };
 
 
@@ -178,7 +178,6 @@ export default function solve(A, b, timers=null) {
       timers && timers.stop('bootstrap: update bi');
     }
   }
-
 
   timers && timers.start('rationalReconstruction');
   const result = si.map(row => row.map(x => rationalReconstruction(x, pi)));
