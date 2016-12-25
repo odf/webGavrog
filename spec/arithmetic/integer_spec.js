@@ -8,8 +8,7 @@ const ops = integers;
 
 
 JS.Test.describe('a pair a,b of integers', function() {
-  this.describe('', spec.property(
-    'satisfies (a + b)^2 = a^2 + 2ab + b^2',
+  this.it('satisfies (a + b)^2 = a^2 + 2ab + b^2', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
     (sa, sb) => {
       const a = ops.integer(sa);
@@ -19,8 +18,7 @@ JS.Test.describe('a pair a,b of integers', function() {
                              ops.times(2, ops.times(a, b))));
     }));
 
-  this.describe('', spec.property(
-    'satisfies (a - b)^2 = a^2 - 2ab + b^2',
+  this.it('satisfies (a - b)^2 = a^2 - 2ab + b^2', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
     (sa, sb) => {
       const a = ops.integer(sa);
@@ -30,8 +28,7 @@ JS.Test.describe('a pair a,b of integers', function() {
                               ops.times(2, ops.times(a, b))));
     }));
 
-  this.describe('', spec.property(
-    'satisfies (a + b) * (a - b) = a^2 - b^2',
+  this.it('satisfies (a + b) * (a - b) = a^2 - b^2', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
     (sa, sb) => {
       const a = ops.integer(sa);
@@ -40,8 +37,7 @@ JS.Test.describe('a pair a,b of integers', function() {
                     ops.minus(ops.times(a, a), ops.times(b, b)));
     }));
 
-  this.describe('', spec.property(
-    'satisfies [a / b] * b = a - a % b unless b = 0',
+  this.it('satisfies [a / b] * b = a - a % b unless b = 0', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
     (sa, sb) => {
       const a = ops.integer(sa);

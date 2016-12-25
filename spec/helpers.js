@@ -83,6 +83,5 @@ export const verify = (property, options) => function() {
 };
 
 
-export const property = (name, gens, cond, options) => function() {
-  this.it(name, verify(jsc.forall(...gens, cond), options));
-};
+export const property = (gens, cond, options) =>
+  verify(jsc.forall(...gens, cond), options);
