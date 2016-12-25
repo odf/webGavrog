@@ -54,3 +54,8 @@ export const verify = (property, options) => function() {
   else
     this.flunk(`counterexample: ${result.counterexamplestr}`);
 };
+
+
+export const property = (name, gens, cond, options) => function() {
+  this.it(name, verify(jsc.forall(...gens, cond), options));
+};

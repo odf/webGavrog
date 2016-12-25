@@ -6,19 +6,15 @@ import solve from '../../src/arithmetic/solveRational';
 import { matrices } from '../../src/arithmetic/types';
 
 
-const solveReturnsASolution = jsc.forall(
-  spec.generators.linearEquations(jsc.nat),
+JS.Test.describe('solveRational', spec.property(
+  'returnsASolution',
+  [spec.generators.linearEquations(jsc.nat)],
   ([A, b]) => {
     const x = solve(A, b);
     return x == null || matrices.eq(matrices.times(A, x), b);
-  }
-);
-
-
-JS.Test.describe('solveRational', function() {
-  const options = { tests: 1000, size: 100 };
-  this.it('returnsASolution', spec.verify(solveReturnsASolution, options));
-});
+  },
+  { tests: 1000, size: 100 }
+));
 
 
 if (require.main == module) {
