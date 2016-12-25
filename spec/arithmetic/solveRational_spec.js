@@ -66,7 +66,7 @@ JS.Test.describe('solveRational', function() {
     if (result === true)
       this.assert(true);
     else
-      this.assert(false, `counterexample: ${result.counterexamplestr}`);
+      this.flunk(`counterexample: ${result.counterexamplestr}`);
   });
 });
 
