@@ -1,9 +1,6 @@
-import * as mats from './matrices';
-import { intMatrices, matrices } from './types';
-import * as util from '../common/util';
+import { matrices } from './types';
 
-const iops = intMatrices;
-const fops = matrices;
+const ops = matrices;
 
 const p = 9999991;
 
@@ -62,10 +59,10 @@ const modularRowEchelonForm = (M, m) => {
 
 const modularMatrixInverse = (M, m) => {
   const n = M.length;
-  const A = M.map((row, i) => row.concat(iops.unitVector(n, i)));
+  const A = M.map((row, i) => row.concat(ops.unitVector(n, i)));
   const E = modularRowEchelonForm(A, m);
 
-  if (iops.eq(E.map(row => row.slice(0, n)), iops.identityMatrix(n)))
+  if (ops.eq(E.map(row => row.slice(0, n)), ops.identityMatrix(n)))
     return E.map(row => row.slice(n));
 };
 
@@ -103,7 +100,7 @@ const integerMatrixProduct = (A, B) => {
 
       for (let k = 0; k < ncolsA; ++k) {
         if (A[i][k] != 0 && B[k][j] != 0)
-          t = iops.plus(t, iops.times(A[i][k], B[k][j]));
+          t = ops.plus(t, ops.times(A[i][k], B[k][j]));
       }
 
       row[j] = t;
@@ -117,12 +114,12 @@ const integerMatrixProduct = (A, B) => {
 
 
 const numberOfPAdicStepsNeeded = (A, b) => {
-  const logLengths = M => fops.transposed(M).map(r => Math.log(fops.norm(r)));
+  const logLengths = M => ops.transposed(M).map(r => Math.log(ops.norm(r)));
   const max = v => v.reduce((x, y) => x > y ? x : y);
   const sum = v => v.reduce((x, y) => x + y);
 
   const ls = logLengths(A).concat(max(logLengths(b)));
-  const lsSorted = ls.sort((a, b) => - fops.cmp(a, b));
+  const lsSorted = ls.sort((a, b) => - ops.cmp(a, b));
   const logDelta = sum(lsSorted.slice(0, A[0].length));
   const golden = (1 + Math.sqrt(5)) / 2;
 
@@ -135,15 +132,15 @@ const rationalReconstruction = (s, h) => {
   let v = [0, 1];
   let sign = 1;
 
-  while (iops.gt(iops.times(u[1], u[1]), h)) {
-    const q = iops.idiv(u[0], u[1]);
+  while (ops.gt(ops.times(u[1], u[1]), h)) {
+    const q = ops.idiv(u[0], u[1]);
 
-    u = [u[1], iops.minus(u[0], iops.times(q, u[1]))];
-    v = [v[1], iops.plus(v[0], iops.times(q, v[1]))];
+    u = [u[1], ops.minus(u[0], ops.times(q, u[1]))];
+    v = [v[1], ops.plus(v[0], ops.times(q, v[1]))];
     sign *= -1;
   }
 
-  return fops.div(iops.times(sign, u[1]), v[1]);
+  return ops.div(ops.times(sign, u[1]), v[1]);
 };
 
 
@@ -167,14 +164,14 @@ export default function solve(A, b, timers=null) {
     timers && timers.stop('bootstrap: compute xi = C * bi (mod p)');
 
     timers && timers.start('bootstrap: update si and pi');
-    si = iops.plus(si, iops.times(pi, xi));
-    pi = iops.times(pi, p);
+    si = ops.plus(si, ops.times(pi, xi));
+    pi = ops.times(pi, p);
     timers && timers.stop('bootstrap: update si and pi');
 
     if (i + 1 < nrSteps) {
       timers && timers.start('bootstrap: update bi');
       const Axi = integerMatrixProduct(A, xi);
-      bi = iops.idiv(iops.minus(bi, Axi), p);
+      bi = ops.idiv(ops.minus(bi, Axi), p);
       timers && timers.stop('bootstrap: update bi');
     }
   }
