@@ -18,15 +18,6 @@ export function extend(baseOps, baseLength = 0) {
 
   const zeroFill = s => ZEROES.slice(s.length) + s;
 
-  const _toString = function _toString(r) {
-    return r
-      .map(d => zeroFill(''+d))
-      .reverse()
-      .join('')
-      .replace(/^0+/, '');
-  };
-
-
   class LongInt {
     constructor(sign, digits) {
       if (digits.some(d => d < 0 || d >= BASE))
@@ -38,8 +29,19 @@ export function extend(baseOps, baseLength = 0) {
     toString() {
       if (_isZero(this))
         return '0';
-      else
-        return (this.sign < 0 ? '-' : '') + _toString(this.digits);
+      else if (this.sign < 0)
+        return '-' + negative(this).toString();
+      else {
+        const s = [];
+        let t = this.digits;
+        while (t.length > 0) {
+          const q = _idiv(t, [10]);
+          const r = _minus(t, _times(q, [10]));
+          s.push(r[0] || 0);
+          t = q;
+        }
+        return s.reverse().join('');
+      }
     }
   };
 
@@ -86,13 +88,9 @@ export function extend(baseOps, baseLength = 0) {
 
     const s = literal.replace(/^[+-]/, '').replace(/_/g, '');
 
-    const digits = [];
-    let n = s.length;
-    while (n > 0) {
-      const m = Math.max(n - BASE_LENGTH, 0);
-      digits.push(parseInt(s.slice(m, n)));
-      n = m;
-    }
+    let digits = [];
+    for (let i = 0; i < s.length; ++i)
+      digits = _plus(_times(digits, [10]), [parseInt(s[i])]);
 
     while (digits.length > 0 && _last(digits) == 0)
       digits.pop();
