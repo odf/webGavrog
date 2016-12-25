@@ -42,6 +42,33 @@ export const generators = {
       shrink: jsc.utils.curried2(shrink, arguments),
       show: jsc.utils.curried2(show, arguments)
     };
+  },
+
+  digitStrings() {
+    const digits = jsc.nat(9);
+
+    const generator = jsc.generator.bless(size => {
+      const n = jsc.random(1, Math.max(1, size));
+      const v = new Array(n);
+      for (let i = 0; i < n; ++i)
+        v[i] = digits.generator();
+      return v.join('');
+    });
+
+    const shrink = jsc.shrink.bless(s => {
+      if (s.length <= 1)
+        return [];
+      else
+        return seq.range(0, s.length).map(i => skip(s, i)).toArray();
+    });
+
+    const show = s => s;
+
+    return {
+      generator: jsc.utils.curried2(generator, arguments),
+      shrink: jsc.utils.curried2(shrink, arguments),
+      show: jsc.utils.curried2(show, arguments)
+    };
   }
 };
 
