@@ -7,6 +7,13 @@ import { integers } from '../../src/arithmetic/types';
 const ops = integers;
 
 
+JS.Test.describe('a digit string not starting with a zero', function() {
+  this.it('stays the same when parsed and then formatted', spec.property(
+    [spec.generators.digitStrings()],
+    s => s[0] == '0' || s == ops.integer(s).toString()));
+});
+
+
 JS.Test.describe('a pair a,b of integers', function() {
   this.it('satisfies (a + b)^2 = a^2 + 2ab + b^2', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
