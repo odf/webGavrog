@@ -1,12 +1,9 @@
+import * as JS from 'jstest';
 import * as jsc from 'jsverify';
 
 import * as seq from '../../src/common/lazyseq';
 import solve from '../../src/arithmetic/solveRational';
-
-
-Array.prototype.toString = function() {
-  return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
-};
+import { matrices } from '../../src/arithmetic/types';
 
 
 const skip = (v, i) => v.slice(0, i).concat(v.slice(i + 1));
@@ -52,31 +49,28 @@ const linearEquations = arb => {
 };
 
 
+const solveReturnsASolutionOrNull = jsc.forall(
+  linearEquations(jsc.nat),
+  ([A, b]) => {
+    const x = solve(A, b);
+    return x == null || matrices.eq(matrices.times(A, x), b);
+  }
+);
+
+
+JS.Test.describe('solveRational', function() {
+  this.it('returnASolutionOrNull', function() {
+    const options = { tests: 1000, size: 100, quiet: true };
+    const result  = jsc.check(solveReturnsASolutionOrNull, options);
+
+    if (result === true)
+      this.assert(true);
+    else
+      this.assert(false, `counterexample: ${result.counterexamplestr}`);
+  });
+});
+
+
 if (require.main == module) {
-  const fops = require('../../src/arithmetic/types').matrices;
-  const util = require('../../src/common/util');
-  const timers = util.timers();
-  timers.start('total');
-
-  var solveReturnsASolution = jsc.forall(
-    linearEquations(jsc.nat),
-    ([A, b]) => {
-      timers.start('solve total');
-      const x = solve(A, b, timers);
-      timers.stop('solve total');
-
-      if (x == null)
-        return true;
-
-      timers.start('check solutions');
-      const good = fops.eq(fops.times(A, x), b);
-      timers.stop('check solutions');
-
-      return good;
-    });
-
-  jsc.check(solveReturnsASolution, { tests: 1000, size: 100 });
-
-  timers.stop('total');
-  console.log(timers.current());
+  JS.Test.autorun();
 }
