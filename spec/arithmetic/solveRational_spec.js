@@ -58,16 +58,19 @@ const solveReturnsASolutionOrNull = jsc.forall(
 );
 
 
-JS.Test.describe('solveRational', function() {
-  this.it('returnASolutionOrNull', function() {
-    const options = { tests: 1000, size: 100, quiet: true };
-    const result  = jsc.check(solveReturnsASolutionOrNull, options);
+const verify = (property, options) => function() {
+  const result = jsc.check(property, Object.assign({ quiet: true }, options));
 
-    if (result === true)
-      this.assert(true);
-    else
-      this.flunk(`counterexample: ${result.counterexamplestr}`);
-  });
+  if (result === true)
+    this.assert(true);
+  else
+    this.flunk(`counterexample: ${result.counterexamplestr}`);
+};
+
+
+JS.Test.describe('solveRational', function() {
+  const options = { tests: 1000, size: 100 };
+  this.it('returnsASolution', verify(solveReturnsASolutionOrNull, options));
 });
 
 
