@@ -223,8 +223,10 @@ export function extend(baseOps, baseLength = 0) {
 
     const m = alo * bhi + blo * ahi;
     const lo = alo * blo + _lo(m) * HALFBASE;
+    const hi = ahi * bhi + _hi(m);
+    const carry = lo >= BASE;
 
-    return [lo % BASE, ahi * bhi + _hi(m) + (lo >= BASE)];
+    return [carry ? lo - BASE : lo, hi + carry];
   };
 
 
