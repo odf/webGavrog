@@ -227,6 +227,49 @@ export function extend(baseOps, baseLength = 0) {
     return [lo % BASE, ahi * bhi + _hi(m) + (lo >= BASE)];
   };
 
+
+  const _times = function _times(r, s) {
+    const result = new Array(r.length + s.length).fill(0);
+
+    for (let i = 0; i < r.length; ++i) {
+      let carry;
+
+      for (let j = 0; j < s.length; ++j) {
+        const [lo, hi] = _digitByDigit(r[i], s[j]);
+
+        const slo = lo + result[i + j];
+        carry = slo >= BASE;
+        result[i + j] = carry ? slo - BASE : slo;
+
+        const shi = hi + result[i + j + 1] + carry;
+        carry = shi >= BASE;
+        result[i + j + 1] = carry ? shi - BASE : shi;
+
+        for (let k = i + j + 2; carry && k < result.length; ++k) {
+          const sum = result[k] + carry;
+          carry = sum >= BASE;
+          result[k] = carry ? sum - BASE : sum;
+        }
+      }
+    }
+
+    while (_last(result) == 0)
+      result.pop();
+
+    return result;
+  };
+
+
+  const times = function times(a, b) {
+    if (_isZero(a))
+      return a;
+    else if (_isZero(b))
+      return b;
+    else
+      return make(a.sign * b.sign, _times(a.digits, b.digits));
+  };
+
+
   const _seqByDigit = function _seqByDigit(s, d) {
     const result = [];
     let carry = 0;
@@ -240,29 +283,6 @@ export function extend(baseOps, baseLength = 0) {
     if (carry)
       result.push(carry);
     return result;
-  };
-
-
-  const _times = function _times(r, s) {
-    const result = [];
-    let tmp = [];
-    for (let i = 0; i < r.length; ++i) {
-      tmp = _plus(tmp, _seqByDigit(s, r[i]));
-      result.push(tmp.shift());
-    }
-    for (let i = 0; i < tmp.length; ++i)
-      result.push(tmp[i]);
-    return result;
-  };
-
-
-  const times = function times(a, b) {
-    if (_isZero(a))
-      return a;
-    else if (_isZero(b))
-      return b;
-    else
-      return make(a.sign * b.sign, _times(a.digits, b.digits));
   };
 
 
