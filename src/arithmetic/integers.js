@@ -141,20 +141,27 @@ export function extend(baseOps, baseLength = 0) {
 
 
   const _minus = function _minus(r, s) {
-    const result = [];
+    const result = r.slice();
     let borrow = 0;
-    let i = 0;
-    while (i < r.length || i < s.length) {
-      const digit = (r[i] || 0) - (s[i] || 0) - borrow;
-      borrow = digit < 0;
-      result.push((digit + BASE) % BASE);
-      ++i;
+
+    for (let i = 0; i < s.length; ++i) {
+      const dif = r[i] - s[i] - borrow;
+      borrow = dif < 0;
+      result[i] = (dif + BASE) % BASE;
     }
+
+    for (let i = s.length; borrow && i < r.length; ++i) {
+      const dif = r[i] - borrow;
+      borrow = dif < 0;
+      result[i] = (dif + BASE) % BASE;
+    }
+
     if (borrow)
       throw new Error("panic: internal function called with bad arguments");
 
     while (_last(result) == 0)
       result.pop();
+
     return result;
   };
 
