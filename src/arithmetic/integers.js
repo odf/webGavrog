@@ -1,6 +1,6 @@
 const findBaseLength = () => {
   for (let n = 2; ; n += 2) {
-    const b = Math.pow(10, n);
+    const b = Math.pow(2, n);
     if (2 * b - 2 == 2 * b - 1 || -2 * b + 2 == -2 * b + 1)
       return n - 2;
   }
@@ -11,7 +11,7 @@ export function extend(baseOps, baseLength = 0) {
 
   const BASE_LENGTH = (baseLength & ~1) || findBaseLength();
 
-  const BASE = Math.pow(10, BASE_LENGTH);
+  const BASE = Math.pow(2, BASE_LENGTH);
   const HALFBASE = Math.sqrt(BASE);
 
   const ZEROES = ('' + BASE).slice(1);
