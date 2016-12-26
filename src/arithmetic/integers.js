@@ -8,15 +8,9 @@ const findBaseLength = () => {
 
 
 export function extend(baseOps, baseLength = 0) {
-
-  const BASE_LENGTH = (baseLength & ~1) || findBaseLength();
-
-  const BASE = Math.pow(2, BASE_LENGTH);
+  const BASE = Math.pow(2, (baseLength & ~1) || findBaseLength());
   const HALFBASE = Math.sqrt(BASE);
 
-  const ZEROES = ('' + BASE).slice(1);
-
-  const zeroFill = s => ZEROES.slice(s.length) + s;
 
   class LongInt {
     constructor(sign, digits) {
