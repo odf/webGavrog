@@ -115,15 +115,27 @@ export function extend(baseOps, baseLength = 0) {
 
 
   const _plus = function _plus(r, s) {
-    const result = [];
+    if (s.length > r.length)
+      return _plus(s, r);
+
+    const result = r.slice();
     let carry = 0;
-    let i = 0;
-    while (i < r.length || i < s.length || carry) {
-      const digit = (r[i] || 0) + (s[i] || 0) + carry;
-      carry = digit >= BASE;
-      result.push(digit % BASE);
-      ++i;
+
+    for (let i = 0; i < s.length; ++i) {
+      const sum = r[i] + s[i] + carry;
+      carry = sum >= BASE;
+      result[i] = sum % BASE;
     }
+
+    for (let i = s.length; carry && i < r.length; ++i) {
+      const sum = r[i] + carry;
+      carry = sum >= BASE;
+      result[i] = sum % BASE;
+    }
+
+    if (carry)
+      result.push(1);
+
     return result;
   };
 
