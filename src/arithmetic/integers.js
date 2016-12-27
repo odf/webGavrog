@@ -289,9 +289,9 @@ export function extend(baseOps, baseLength = 0) {
 
 
   const _idiv = function _idiv(r, s) {
-    const scale = Math.floor((BASE - 1) / _last(s));
-    const rs = _seqByDigit(r, scale);
-    const ss = _seqByDigit(s, scale);
+    const scale = Math.floor(BASE / (_last(s) + 1));
+    const rs = scale > 1 ? _seqByDigit(r, scale) : r.slice();
+    const ss = scale > 1 ? _seqByDigit(s, scale) : s;
     const m = ss.length;
     const d = _last(ss) + 1;
 
