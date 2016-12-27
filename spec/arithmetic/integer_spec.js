@@ -6,6 +6,8 @@ import { integers } from '../../src/arithmetic/types';
 
 const ops = integers;
 
+const options = { tests: 1000, size: 100 };
+
 
 JS.Test.describe('a digit string not starting with a zero', function() {
   this.it('stays the same when parsed and then formatted', spec.property(
@@ -23,7 +25,8 @@ JS.Test.describe('a pair a,b of integers', function() {
       return ops.eq(ops.times(ops.plus(a, b), ops.plus(a, b)),
                     ops.plus(ops.plus(ops.times(a, a), ops.times(b, b)),
                              ops.times(2, ops.times(a, b))));
-    }));
+    },
+    options));
 
   this.it('satisfies (a - b)^2 = a^2 - 2ab + b^2', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
@@ -33,7 +36,8 @@ JS.Test.describe('a pair a,b of integers', function() {
       return ops.eq(ops.times(ops.minus(a, b), ops.minus(a, b)),
                     ops.minus(ops.plus(ops.times(a, a), ops.times(b, b)),
                               ops.times(2, ops.times(a, b))));
-    }));
+    },
+    options));
 
   this.it('satisfies (a + b) * (a - b) = a^2 - b^2', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
@@ -42,7 +46,8 @@ JS.Test.describe('a pair a,b of integers', function() {
       const b = ops.integer(sb);
       return ops.eq(ops.times(ops.plus(a, b), ops.minus(a, b)),
                     ops.minus(ops.times(a, a), ops.times(b, b)));
-    }));
+    },
+    options));
 
   this.it('satisfies [a / b] * b = a - a % b unless b = 0', spec.property(
     [spec.generators.digitStrings(), spec.generators.digitStrings()],
@@ -51,7 +56,8 @@ JS.Test.describe('a pair a,b of integers', function() {
       const b = ops.integer(sb);
       return ops.eq(0, b) || ops.eq(ops.times(ops.idiv(a, b), b),
                                     ops.minus(a, ops.mod(a, b)));
-    }));
+    },
+    options));
 });
 
 
