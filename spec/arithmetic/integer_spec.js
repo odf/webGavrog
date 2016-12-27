@@ -6,7 +6,7 @@ import { integers } from '../../src/arithmetic/types';
 
 const ops = integers;
 
-const options = { tests: 1000, size: 100 };
+const options = { tests: 100, size: 100 };
 
 
 JS.Test.describe('a digit string not starting with a zero', function() {
@@ -46,6 +46,20 @@ JS.Test.describe('a pair a,b of integers', function() {
       const b = ops.integer(sb);
       return ops.eq(ops.times(ops.plus(a, b), ops.minus(a, b)),
                     ops.minus(ops.times(a, a), ops.times(b, b)));
+    },
+    options));
+
+  this.it('satisfies (a^2 - b^2) / (a - b) = a + b', spec.property(
+    [spec.generators.digitStrings(), spec.generators.digitStrings()],
+    (sa, sb) => {
+      const a = ops.integer(sa);
+      const b = ops.integer(sb);
+      if (ops.eq(a, b))
+        return true;
+
+      return ops.eq(ops.idiv(ops.minus(ops.times(a, a), ops.times(b, b)),
+                             ops.minus(a, b)),
+                    ops.plus(a, b));
     },
     options));
 
