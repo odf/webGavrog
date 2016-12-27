@@ -288,7 +288,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _idiv = function _idiv(r, s) {
+  const _divmod = function _idiv(r, s) {
     let q = [];
     let h = [];
     let t = r.slice();
@@ -312,9 +312,13 @@ export function extend(baseOps, baseLength = 0) {
         h.unshift(_last(t))
         t.pop();
       } else
-        return q;
+        return [q, h];
     }
   };
+
+
+  const _idiv = (r, s) => _divmod(r, s)[0];
+  const _imod = (r, s) => _divmod(r, s)[1];
 
 
   const idiv = function idiv(a, b) {
@@ -334,6 +338,23 @@ export function extend(baseOps, baseLength = 0) {
       else
         return make(s, _idiv(_plus(a.digits, _minus(b.digits, [1])), b.digits));
     }
+  };
+
+
+  const imod = function imod(a, b) {
+    if (b.sign == 0)
+      throw new Error('division by zero');
+
+    const d = _cmp(a.digits, b.digits);
+
+    if (d < 0)
+      return a;
+    else if (d == 0)
+      return 0;
+    else if (a.sign == b.sign)
+      return make(b.sign, _imod(a.digits, b.digits));
+    else
+      return make(b.sign, _minus(b.digits, _imod(a.digits, b.digits)));
   };
 
 
@@ -458,7 +479,12 @@ export function extend(baseOps, baseLength = 0) {
       }
     },
     mod: {
+      LongInt: {
+        LongInt: imod,
+        Integer: (x, y) => imod(x, promote(y))
+      },
       Integer: {
+        LongInt: (x, y) => imod(promote(x), y),
         Integer: (x, y) => x % y + (x % y < 0 ? y : 0)
       }
     },
