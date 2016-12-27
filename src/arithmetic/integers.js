@@ -289,32 +289,29 @@ export function extend(baseOps, baseLength = 0) {
 
 
   const _idiv = function _idiv(r, s) {
-    const scale = Math.floor(BASE / (_last(s) + 1));
-    const rs = scale > 1 ? _seqByDigit(r, scale) : r.slice();
-    const ss = scale > 1 ? _seqByDigit(s, scale) : s;
-    const m = ss.length;
-    const d = _last(ss) + 1;
+    const m = s.length;
+    const d = _last(s) + 1;
 
     let q = [];
     let h = [];
-    let t = rs;
+    let t = r.slice();
 
-    let f, n, ssf;
+    let f, n, sf;
 
     while (true) {
       while (_last(q) == 0)
         q.pop();
 
-      if (_cmp(h, ss) >= 0) {
+      if (_cmp(h, s) >= 0) {
         n = _last(h) * (h.length > m ? BASE : 1);
         f = Math.floor(n / d) || 1;
-        ssf = _seqByDigit(ss, f);
-        if (_cmp(h, ssf) < 0) {
+        sf = _seqByDigit(s, f);
+        if (_cmp(h, sf) < 0) {
           --f;
-          ssf = _minus(ssf, ss);
+          sf = _minus(sf, s);
         }
         q = _plus(q, [f]);
-        h = _minus(h, ssf);
+        h = _minus(h, sf);
       } else if (t.length) {
         q.unshift(0);
         h.unshift(_last(t))
