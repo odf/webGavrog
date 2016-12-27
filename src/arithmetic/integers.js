@@ -339,7 +339,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const imod = function imod(a, b) {
+  const mod = function mod(a, b) {
     if (b.sign == 0)
       throw new Error('division by zero');
     else if (a.sign == 0)
@@ -358,6 +358,29 @@ export function extend(baseOps, baseLength = 0) {
         return make(b.sign, r);
       else
         return make(b.sign, _minus(b.digits, r));
+    }
+  };
+
+
+  const divmod = function divmod(a, b) {
+    if (b.sign == 0)
+      throw new Error('division by zero');
+    else if (a.sign == 0)
+      return a;
+
+    const s = a.sign * b.sign;
+    const d = _cmp(a.digits, b.digits);
+
+    if (d == 0)
+      return [s, 0];
+    else if (d < 0)
+      return s > 0 ? [0, a] : [s, make(b.sign, _minus(b.digits, a.digits))];
+    else {
+      const [q, r] = _divmod(a.digits, b.digits);
+      if (s > 0 || r.length == 0)
+        return [make(s, q), make(b.sign, r)];
+      else
+        return [make(s, _plus(q, [1])), make(b.sign, _minus(b.digits, r))];
     }
   };
 
@@ -484,12 +507,22 @@ export function extend(baseOps, baseLength = 0) {
     },
     mod: {
       LongInt: {
-        LongInt: imod,
-        Integer: (x, y) => imod(x, promote(y))
+        LongInt: mod,
+        Integer: (x, y) => mod(x, promote(y))
       },
       Integer: {
-        LongInt: (x, y) => imod(promote(x), y),
-        Integer: (x, y) => x % y + (x % y < 0 ? y : 0)
+        LongInt: (x, y) => mod(promote(x), y),
+        Integer: (x, y) => x - Math.floor(x / y) * y
+      }
+    },
+    divmod: {
+      LongInt: {
+        LongInt: divmod,
+        Integer: (x, y) => divmod(x, promote(y))
+      },
+      Integer: {
+        LongInt: (x, y) => divmod(promote(x), y),
+        Integer: (x, y) => [Math.floor(x / y), x - Math.floor(x / y) * y]
       }
     },
     gcd: {

@@ -133,9 +133,9 @@ const rationalReconstruction = (s, h) => {
   let sign = 1;
 
   while (ops.gt(ops.times(u[1], u[1]), h)) {
-    const q = ops.idiv(u[0], u[1]);
+    const [q, r] = ops.divmod(u[0], u[1]);
 
-    u = [u[1], ops.minus(u[0], ops.times(q, u[1]))];
+    u = [u[1], r];
     v = [v[1], ops.plus(v[0], ops.times(q, v[1]))];
     sign *= -1;
   }
