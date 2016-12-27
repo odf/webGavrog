@@ -29,8 +29,7 @@ export function extend(baseOps, baseLength = 0) {
         const s = [];
         let t = this.digits;
         while (t.length > 0) {
-          const q = _idiv(t, [10]);
-          const r = _minus(t, _times(q, [10]));
+          const [q, r] = _divmod(t, [10]);
           s.push(r[0] || 0);
           t = q;
         }
@@ -317,26 +316,25 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _idiv = (r, s) => _divmod(r, s)[0];
-  const _imod = (r, s) => _divmod(r, s)[1];
-
-
   const idiv = function idiv(a, b) {
     if (b.sign == 0)
       throw new Error('division by zero');
+    else if (a.sign == 0)
+      return a;
 
+    const s = a.sign * b.sign;
     const d = _cmp(a.digits, b.digits);
 
-    if (d < 0)
-      return 0;
-    else if (d == 0)
-      return a.sign * b.sign;
+    if (d == 0)
+      return s;
+    else if (d < 0)
+      return s > 0 ? 0 : s;
     else {
-      const s = a.sign * b.sign;
-      if (s > 0)
-        return make(s, _idiv(a.digits, b.digits));
+      const [q, r] = _divmod(a.digits, b.digits);
+      if (s > 0 || r.length == 0)
+        return make(s, q);
       else
-        return make(s, _idiv(_plus(a.digits, _minus(b.digits, [1])), b.digits));
+        return make(s, _plus(q, [1]));
     }
   };
 
@@ -344,17 +342,23 @@ export function extend(baseOps, baseLength = 0) {
   const imod = function imod(a, b) {
     if (b.sign == 0)
       throw new Error('division by zero');
+    else if (a.sign == 0)
+      return a;
 
+    const s = a.sign * b.sign;
     const d = _cmp(a.digits, b.digits);
 
-    if (d < 0)
-      return a;
-    else if (d == 0)
+    if (d == 0)
       return 0;
-    else if (a.sign == b.sign)
-      return make(b.sign, _imod(a.digits, b.digits));
-    else
-      return make(b.sign, _minus(b.digits, _imod(a.digits, b.digits)));
+    else if (d < 0)
+      return s > 0 ? a : make(b.sign, _minus(b.digits, a.digits));
+    else {
+      const [q, r] = _divmod(a.digits, b.digits);
+      if (s > 0 || r.length == 0)
+        return make(b.sign, r);
+      else
+        return make(b.sign, _minus(b.digits, r));
+    }
   };
 
 
