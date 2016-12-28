@@ -9,10 +9,54 @@ const ops = integers;
 const options = { tests: 100, size: 100 };
 
 
+const pow = (x, n) => {
+  if (ops.cmp(n, 0) == 0)
+    return 1;
+
+  let y = x;
+  let r = 1;
+  let m = n;
+
+  if (ops.cmp(m, 0) < 0) {
+    m = ops.negative(m);
+    y = ops.div(1, y);
+  }
+
+  while (ops.cmp(m, 0) > 0) {
+    if (!ops.isEven(m))
+      r = ops.times(y, r);
+
+    y = ops.times(y, y);
+    m = ops.idiv(m, 2);
+  }
+
+  return r;
+};
+
+
 JS.Test.describe('a digit string not starting with a zero', function() {
   this.it('stays the same when parsed and then formatted', spec.property(
     [spec.generators.digitStrings()],
     s => s[0] == '0' || s == ops.integer(s).toString()));
+});
+
+
+JS.Test.describe('a long integer a and a shift amount n', function() {
+  this.it('satisfies a >> n = [a / 2^n]', spec.property(
+    [spec.generators.digitStrings(), jsc.nat()],
+    (sa, n) => {
+      const a = ops.integer(sa);
+      return ops.eq(ops.shiftRight(a, n), ops.idiv(a, pow(2, n)));
+    },
+    options));
+
+  this.it('satisfies a << n = a * 2^n', spec.property(
+    [spec.generators.digitStrings(), jsc.nat()],
+    (sa, n) => {
+      const a = ops.integer(sa);
+      return ops.eq(ops.shiftLeft(a, n), ops.times(a, pow(2, n)));
+    },
+    options));
 });
 
 

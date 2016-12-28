@@ -8,8 +8,15 @@ const findBaseLength = () => {
 
 
 export function extend(baseOps, baseLength = 0) {
-  const BASE = Math.pow(2, (baseLength & ~1) || findBaseLength());
+  const defaultBaseLength = findBaseLength();
+  const b = baseLength & ~1;
+
+  const BASELENGTH = (b > 0 && b <= defaultBaseLength) ? b : defaultBaseLength;
+  const BASE = Math.pow(2, BASELENGTH);
   const HALFBASE = Math.sqrt(BASE);
+
+  const powersOfTwo =
+    new Array(BASELENGTH).fill(0).map((_, i) => Math.pow(2, i));
 
 
   class LongInt {
@@ -40,6 +47,9 @@ export function extend(baseOps, baseLength = 0) {
 
 
   const make = (s, d) => {
+    while (_last(d) == 0)
+      d.pop();
+
     if (d.length > 1)
       return new LongInt(s, d);
     else if (d.length == 1)
@@ -385,6 +395,63 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
+  const _shiftRight = (r, n) => {
+    const t = r.slice(Math.floor(n / BASELENGTH));
+    const m = n % BASELENGTH;
+
+    if (m > 0) {
+      const fr = powersOfTwo[m];
+      const fl = powersOfTwo[BASELENGTH - m];
+
+      for (let i = 0; i < t.length - 1; ++i)
+        t[i] = Math.floor(t[i] / fr) + t[i + 1] % fr * fl;
+
+      t[t.length - 1] = Math.floor(t[t.length -1] / fr);
+    }
+
+    return t;
+  };
+
+
+  const _shiftLeft = (r, n) => {
+    const t = r.slice();
+    const m = n % BASELENGTH;
+
+    if (m > 0) {
+      const fl = powersOfTwo[m];
+      const fr = powersOfTwo[BASELENGTH - m];
+
+      for (let i = t.length - 1; i > 0; --i)
+        t[i] = t[i] % fr * fl + Math.floor(t[i - 1] / fr);
+
+      t[0] = t[0] % fr * fl;
+      t.push(Math.floor(_last(r) / fr));
+    }
+
+    return new Array(Math.floor(n / BASELENGTH)).fill(0).concat(t);
+  };
+
+
+  const shiftRight = (a, n) => {
+    if (a.sign == 0 || n == 0)
+      return make(a.sign, a.digits);
+    else if (n < 0)
+      return make(a.sign, _shiftLeft(a.digits, -n));
+    else
+      return make(a.sign, _shiftRight(a.digits, n));
+  };
+
+
+  const shiftLeft = (a, n) => {
+    if (a.sign == 0 || n == 0)
+      return make(a.sign, a.digits);
+    else if (n < 0)
+      return make(a.sign, _shiftRight(a.digits, -n));
+    else
+      return make(a.sign, _shiftLeft(a.digits, n));
+  };
+
+
   const gcd = (a, b) => {
     a = Math.abs(a);
     b = Math.abs(b);
@@ -524,6 +591,14 @@ export function extend(baseOps, baseLength = 0) {
         LongInt: (x, y) => divmod(promote(x), y),
         Integer: (x, y) => [Math.floor(x / y), x - Math.floor(x / y) * y]
       }
+    },
+    shiftRight: {
+      Integer: { Integer: (x, n) => shiftRight(promote(x), n) },
+      LongInt: { Integer: shiftRight }
+    },
+    shiftLeft: {
+      Integer: { Integer: (x, n) => shiftLeft(promote(x), n) },
+      LongInt: { Integer: shiftLeft }
     },
     gcd: {
       Integer: {
