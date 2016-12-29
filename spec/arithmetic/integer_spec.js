@@ -34,6 +34,22 @@ const pow = (x, n) => {
 };
 
 
+const fib = n => {
+  if (n <= 0)
+    return 0;
+  else if (n == 1)
+    return 1;
+  else {
+    let [a, b] = [0, 1];
+
+    for (let i = 1; i < n; ++i)
+      [a, b]  = [b, ops.plus(a, b)];
+
+    return b;
+  }
+};
+
+
 JS.Test.describe('a digit string not starting with a zero', function() {
   this.it('stays the same when parsed and then formatted', spec.property(
     [spec.generators.digitStrings()],
@@ -41,8 +57,8 @@ JS.Test.describe('a digit string not starting with a zero', function() {
 });
 
 
-JS.Test.describe('a long integer a and a shift amount n', function() {
-  this.it('satisfies a >> n = [a / 2^n]', spec.property(
+JS.Test.describe('a long integer a and a natural number n', function() {
+  this.it('satisfy a >> n = [a / 2^n]', spec.property(
     [spec.generators.digitStrings(), jsc.nat()],
     (sa, n) => {
       const a = ops.integer(sa);
@@ -50,11 +66,19 @@ JS.Test.describe('a long integer a and a shift amount n', function() {
     },
     options));
 
-  this.it('satisfies a << n = a * 2^n', spec.property(
+  this.it('satisfy a << n = a * 2^n', spec.property(
     [spec.generators.digitStrings(), jsc.nat()],
     (sa, n) => {
       const a = ops.integer(sa);
       return ops.eq(ops.shiftLeft(a, n), ops.times(a, pow(2, n)));
+    },
+    options));
+
+  this.it('satisfy gcd(a*fib(n), a*fib(n+1)) == a', spec.property(
+    [spec.generators.digitStrings(), jsc.nat()],
+    (sa, n) => {
+      const a = ops.integer(sa);
+      return ops.eq(ops.gcd(ops.times(a, fib(n)), ops.times(a, fib(n+1))), a);
     },
     options));
 });
