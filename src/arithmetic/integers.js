@@ -658,12 +658,7 @@ export function extend(baseOps, baseLength = 0) {
     },
     gcd: {
       Integer: {
-        Integer: gcdInt
-      }
-    },
-    gcdBinary: {
-      Integer: {
-        Integer: (x, y) => gcdBinary(promote(x), promote(y)),
+        Integer: gcdInt,
         LongInt: (x, y) => gcdBinary(promote(x), y)
       },
       LongInt: {

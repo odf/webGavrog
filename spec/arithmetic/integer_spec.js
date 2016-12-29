@@ -116,15 +116,6 @@ JS.Test.describe('a pair a,b of integers', function() {
                                     ops.minus(a, ops.mod(a, b)));
     },
     options));
-
-  this.it('has the same binary as euclidean gcd', spec.property(
-    [spec.generators.digitStrings(), spec.generators.digitStrings()],
-    (sa, sb) => {
-      const a = ops.integer(sa);
-      const b = ops.integer(sb);
-      return ops.eq(ops.gcd(a, b), ops.gcdBinary(a, b));
-    },
-    options));
 });
 
 
