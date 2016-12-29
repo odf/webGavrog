@@ -405,10 +405,40 @@ export function minimalImage(graph)
 };
 
 
-const _isUnimodularIntegerMatrix = M => (
-  M.every(row => row.every(x => ops.isInteger(x)))
-    && ops.eq(1, ops.abs(ops.determinant(M)))
-);
+const _matrixProductIfUnimodular = (A, B) => {
+  const [nrowsA, ncolsA] = [A.length, A[0].length];
+  const [nrowsB, ncolsB] = [B.length, B[0].length];
+
+  if (ncolsA != nrowsB)
+    throw new Error('shapes do not match');
+
+  const result = Array(nrowsA);
+
+  for (let i = 0; i < nrowsA; ++i) {
+    const row = Array(ncolsB).fill(0);
+
+    for (let j = 0; j < ncolsB; ++j) {
+      let t = 0;
+
+      for (let k = 0; k < ncolsA; ++k) {
+        if (ops.ne(A[i][k], 0) && ops.ne(B[k][j], 0))
+          t = ops.plus(t, ops.times(A[i][k], B[k][j]));
+      }
+
+      if (!ops.isInteger(t))
+        return null;
+
+      row[j] = t;
+    }
+
+    result[i] = row;
+  }
+
+  if (ops.eq(1, ops.abs(ops.determinant(result))))
+    return result;
+  else
+    return null;
+};
 
 
 export function symmetries(graph)
@@ -426,30 +456,44 @@ export function symmetries(graph)
   const keys = bases.map(b => b.map(encode).join(','));
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => pg.edgeVector(e, pos));
+  const invB0 = ops.inverse(B0);
   const generators = [];
 
   let p = Partition();
+
+  _timers && _timers.start('symmetries: main loop');
 
   for (let i = 0; i < bases.size; ++i) {
     if (p.get(keys.get(i)) != p.get(keys.get(0))) {
       const basis = bases.get(i);
       const v = basis[0].head;
       const B = basis.map(e => pg.edgeVector(e, pos));
-      const M = ops.solve(B0, B);
 
-      if (_isUnimodularIntegerMatrix(M)) {
+      _timers && _timers.start('symmetries: compute basis transfer matrix');
+      const M = _matrixProductIfUnimodular(invB0, B);
+      _timers && _timers.stop('symmetries: compute basis transfer matrix');
+
+      if (M) {
         const iso = morphism(graph, graph, v0, v, M, true);
         if (iso != null) {
           generators.push(iso);
+
+          _timers && _timers.start('symmetries: update partition');
+
           for (let i = 0; i < bases.size; ++i) {
             p = p.union(
               keys.get(i),
               bases.get(i).map(e => iso.src2img[encode(e)]).join(','));
           }
+
+          _timers && _timers.stop('symmetries: update partition');
+
         }
       }
     }
   }
+
+  _timers && _timers.stop('symmetries: main loop');
 
   const representativeBases = I.Range(0, bases.size)
     .filter(i => keys.get(i) == p.get(keys.get(i)))
