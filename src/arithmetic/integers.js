@@ -416,19 +416,6 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _shiftRightOneInplace = r => {
-    const f = BASE / 2;
-
-    for (let i = 0; i < r.length - 1; ++i)
-      r[i] = Math.floor(r[i] / 2) + (r[i + 1] % 2 ? f : 0);
-
-    r[r.length - 1] = Math.floor(r[r.length - 1] / 2);
-
-    while (_last(r) == 0)
-      r.pop();
-  };
-
-
   const _shiftLeft = (r, n) => {
     const t = r.slice();
     const m = n % BASELENGTH;
@@ -487,6 +474,19 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
+  const _divideByTwoInPlace = r => {
+    const f = BASE / 2;
+
+    for (let i = 0; i < r.length - 1; ++i)
+      r[i] = Math.floor(r[i] / 2) + (r[i + 1] % 2 ? f : 0);
+
+    r[r.length - 1] = Math.floor(r[r.length - 1] / 2);
+
+    while (_last(r) == 0)
+      r.pop();
+  };
+
+
   const gcdBinary = (a, b) => {
     if (_isZero(a))
       return b;
@@ -505,13 +505,17 @@ export function extend(baseOps, baseLength = 0) {
         break;
 
       if (r[0] % 2 == 0)
-        _shiftRightOneInplace(r);
+        _divideByTwoInPlace(r);
       else if (s[0] % 2 == 0)
-        _shiftRightOneInplace(s);
-      else if (d > 0)
+        _divideByTwoInPlace(s);
+      else if (d > 0) {
         _minus(r, s, true);
-      else
+        _divideByTwoInPlace(r);
+      }
+      else {
         _minus(s, r, true);
+        _divideByTwoInPlace(s);
+      }
     }
 
     return make(1, _shiftLeft(r, k));
