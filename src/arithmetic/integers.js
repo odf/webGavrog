@@ -149,8 +149,8 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _minus = function _minus(r, s) {
-    const result = r.slice();
+  const _minus = function _minus(r, s, inplace=false) {
+    const result = inplace ? r : r.slice();
     let borrow = 0;
 
     for (let i = 0; i < s.length; ++i) {
@@ -406,13 +406,26 @@ export function extend(baseOps, baseLength = 0) {
       for (let i = 0; i < t.length - 1; ++i)
         t[i] = Math.floor(t[i] / fr) + t[i + 1] % fr * fl;
 
-      t[t.length - 1] = Math.floor(t[t.length -1] / fr);
+      t[t.length - 1] = Math.floor(t[t.length - 1] / fr);
     }
 
     while (_last(t) == 0)
       t.pop();
 
     return t;
+  };
+
+
+  const _shiftRightOneInplace = r => {
+    const f = BASE / 2;
+
+    for (let i = 0; i < r.length - 1; ++i)
+      r[i] = Math.floor(r[i] / 2) + (r[i + 1] % 2 ? f : 0);
+
+    r[r.length - 1] = Math.floor(r[r.length - 1] / 2);
+
+    while (_last(r) == 0)
+      r.pop();
   };
 
 
@@ -491,17 +504,14 @@ export function extend(baseOps, baseLength = 0) {
       if (d == 0)
         break;
 
-      const vr = _trailingZeroCount(r);
-      const vs = _trailingZeroCount(s);
-
-      if (vr > 0)
-        r = _shiftRight(r, vr);
-      else if (vs > 0)
-        s = _shiftRight(s, vs);
+      if (r[0] % 2 == 0)
+        _shiftRightOneInplace(r);
+      else if (s[0] % 2 == 0)
+        _shiftRightOneInplace(s);
       else if (d > 0)
-        r = _minus(r, s);
+        _minus(r, s, true);
       else
-        s = _minus(s, r);
+        _minus(s, r, true);
     }
 
     return make(1, _shiftLeft(r, k));
