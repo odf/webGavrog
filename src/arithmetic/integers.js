@@ -409,6 +409,9 @@ export function extend(baseOps, baseLength = 0) {
       t[t.length - 1] = Math.floor(t[t.length -1] / fr);
     }
 
+    while (_last(t) == 0)
+      t.pop();
+
     return t;
   };
 
@@ -427,6 +430,9 @@ export function extend(baseOps, baseLength = 0) {
       t[0] = t[0] % fr * fl;
       t.push(Math.floor(_last(r) / fr));
     }
+
+    while (_last(t) == 0)
+      t.pop();
 
     return new Array(Math.floor(n / BASELENGTH)).fill(0).concat(t);
   };
@@ -452,7 +458,57 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const gcd = (a, b) => {
+  const _trailingZeroCount = r => {
+    let i = 0;
+    while (i < r.length && r[i] == 0)
+      ++i;
+
+    const x = r[i];
+    let k = x % HALFBASE == 0 ? 3 * BASELENGTH / 4 : BASELENGTH / 4;
+    while (k + 1 < BASELENGTH && x % powersOfTwo[k + 1] == 0)
+      ++k;
+    while (k > 0 && x % powersOfTwo[k] != 0)
+      --k;
+
+    return k + i * BASELENGTH;
+  };
+
+
+  const gcdBinary = (a, b) => {
+    if (_isZero(a))
+      return b;
+    if (_isZero(b))
+      return a;
+
+    const k = Math.min(_trailingZeroCount(a.digits),
+                       _trailingZeroCount(b.digits));
+
+    let r = _shiftRight(a.digits, k);
+    let s = _shiftRight(b.digits, k);
+
+    while (true) {
+      const d = _cmp(r, s);
+      if (d == 0)
+        break;
+
+      const vr = _trailingZeroCount(r);
+      const vs = _trailingZeroCount(s);
+
+      if (vr > 0)
+        r = _shiftRight(r, vr);
+      else if (vs > 0)
+        s = _shiftRight(s, vs);
+      else if (d > 0)
+        r = _minus(r, s);
+      else
+        s = _minus(s, r);
+    }
+
+    return make(1, _shiftLeft(r, k));
+  };
+
+
+  const gcdInt = (a, b) => {
     a = Math.abs(a);
     b = Math.abs(b);
 
@@ -602,7 +658,17 @@ export function extend(baseOps, baseLength = 0) {
     },
     gcd: {
       Integer: {
-        Integer: gcd
+        Integer: gcdInt
+      }
+    },
+    gcdBinary: {
+      Integer: {
+        Integer: (x, y) => gcdBinary(promote(x), promote(y)),
+        LongInt: (x, y) => gcdBinary(promote(x), y)
+      },
+      LongInt: {
+        Integer: (x, y) => gcdBinary(x, promote(y)),
+        LongInt: gcdBinary
       }
     },
     __repr__: { LongInt: x => ({ sign: x.sign, digits: x.digits }) },
