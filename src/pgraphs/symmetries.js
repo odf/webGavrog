@@ -12,19 +12,8 @@ let _timers = null;
 
 const ops = pg.ops;
 
-const encode = value => {
-  _timers && _timers.start('encode');
-  const out = JSON.stringify(ops.repr(value));
-  _timers && _timers.stop('encode');
-  return out;
-};
-
-const decode = value => {
-  _timers && _timers.start('decode');
-  const out = ops.fromRepr(JSON.parse(value));
-  _timers && _timers.stop('decode');
-  return out;
-};
+const encode = value => JSON.stringify(ops.repr(value));
+const decode = value => ops.fromRepr(JSON.parse(value));
 
 
 const _directedEdges = graph =>
@@ -83,8 +72,6 @@ export function characteristicBases(graph)
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
-  _timers && _timers.start('characteristicBases');
-
   let results = pg.vertices(graph)
     .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
 
@@ -93,8 +80,6 @@ export function characteristicBases(graph)
 
   if (results.size == 0)
     results = _goodCombinations(_directedEdges(graph), pos);
-
-  _timers && _timers.stop('characteristicBases');
 
   return results;
 };
@@ -461,39 +446,28 @@ export function symmetries(graph)
 
   let p = Partition();
 
-  _timers && _timers.start('symmetries: main loop');
-
   for (let i = 0; i < bases.size; ++i) {
     if (p.get(keys.get(i)) != p.get(keys.get(0))) {
       const basis = bases.get(i);
       const v = basis[0].head;
       const B = basis.map(e => pg.edgeVector(e, pos));
 
-      _timers && _timers.start('symmetries: compute basis transfer matrix');
       const M = _matrixProductIfUnimodular(invB0, B);
-      _timers && _timers.stop('symmetries: compute basis transfer matrix');
 
       if (M) {
         const iso = morphism(graph, graph, v0, v, M, true);
         if (iso != null) {
           generators.push(iso);
 
-          _timers && _timers.start('symmetries: update partition');
-
           for (let i = 0; i < bases.size; ++i) {
             p = p.union(
               keys.get(i),
               bases.get(i).map(e => iso.src2img[encode(e)]).join(','));
           }
-
-          _timers && _timers.stop('symmetries: update partition');
-
         }
       }
     }
   }
-
-  _timers && _timers.stop('symmetries: main loop');
 
   const representativeBases = I.Range(0, bases.size)
     .filter(i => keys.get(i) == p.get(keys.get(i)))
