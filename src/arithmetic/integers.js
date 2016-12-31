@@ -458,22 +458,6 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _trailingZeroCount = r => {
-    let i = 0;
-    while (i < r.length && r[i] == 0)
-      ++i;
-
-    const x = r[i];
-    let k = x % HALFBASE == 0 ? 3 * BASELENGTH / 4 : BASELENGTH / 4;
-    while (k + 1 < BASELENGTH && x % powersOfTwo[k + 1] == 0)
-      ++k;
-    while (k > 0 && x % powersOfTwo[k] != 0)
-      --k;
-
-    return k + i * BASELENGTH;
-  };
-
-
   const _divideByTwoInPlace = r => {
     const f = BASE / 2;
 
@@ -490,32 +474,38 @@ export function extend(baseOps, baseLength = 0) {
   const gcdBinary = (a, b) => {
     if (_isZero(a))
       return b;
-    if (_isZero(b))
+    else if (_isZero(b))
+      return a;
+    else if (cmp(a, b) == 0)
       return a;
 
-    const k = Math.min(_trailingZeroCount(a.digits),
-                       _trailingZeroCount(b.digits));
+    let r = a.digits.slice();
+    let s = b.digits.slice();
+    let k = 0;
 
-    let r = _shiftRight(a.digits, k);
-    let s = _shiftRight(b.digits, k);
+    while (r[0] % 2 == 0 && s[0] % 2 == 0) {
+      _divideByTwoInPlace(r);
+      _divideByTwoInPlace(s);
+      ++k;
+    }
+
+    while (r[0] % 2 == 0)
+      _divideByTwoInPlace(r);
+
+    while (s[0] % 2 == 0)
+      _divideByTwoInPlace(s);
 
     while (true) {
       const d = _cmp(r, s);
       if (d == 0)
         break;
 
-      if (r[0] % 2 == 0)
+      if (d < 0)
+        [r, s] = [s, r];
+
+      _minus(r, s, true);
+      while (r[0] % 2 == 0)
         _divideByTwoInPlace(r);
-      else if (s[0] % 2 == 0)
-        _divideByTwoInPlace(s);
-      else if (d > 0) {
-        _minus(r, s, true);
-        _divideByTwoInPlace(r);
-      }
-      else {
-        _minus(s, r, true);
-        _divideByTwoInPlace(s);
-      }
     }
 
     return make(1, _shiftLeft(r, k));
