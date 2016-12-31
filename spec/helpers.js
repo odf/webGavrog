@@ -73,13 +73,24 @@ export const generators = {
 };
 
 
+const _formatResult = result => {
+  const s = `counterexample ${result.counterexamplestr}` +
+    ` found after ${result.tests} tests and ${result.shrinks} shrinks`;
+
+  if (result.exc)
+    return s + '\n' + result.exc.stack;
+  else
+    return s;
+};
+
+
 export const verify = (property, options) => function() {
-  const result = jsc.check(property, Object.assign({ quiet: true }, options));
+  let result = jsc.check(property, Object.assign({ quiet: true }, options));
 
   if (result === true)
     this.assert(true);
   else
-    this.flunk(`counterexample: ${result.counterexamplestr}`);
+    this.flunk(_formatResult(result));
 };
 
 
