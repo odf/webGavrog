@@ -111,13 +111,13 @@ export function extend(baseOps, baseLength = 0) {
   const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
 
 
-  const _cmp = function _cmp(r, s) {
-    if (r.length != s.length)
-      return r.length - s.length;
+  const _cmp = function _cmp(r, s, k=0) {
+    if (r.length != s.length + k)
+      return r.length - s.length + k;
 
-    for (let i = r.length - 1; i >= 0; --i)
-      if (r[i] != s[i])
-        return r[i] - s[i];
+    for (let i = s.length - 1; i >= 0; --i)
+      if (r[i + k] != s[i])
+        return r[i + k] - s[i];
 
     return 0;
   };
@@ -297,32 +297,39 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _divmod = function _idiv(r, s) {
-    let q = [];
-    let h = [];
-    let t = r.slice();
+  const _quotient2by1 = (ahi, alo, b) => Math.floor(ahi * BASE / b + alo / b);
 
-    while (true) {
-      while (_last(q) == 0)
-        q.pop();
 
-      if (_cmp(h, s) >= 0) {
-        const n = _last(h) * (h.length > s.length ? BASE : 1);
-        let f = Math.floor(n / (_last(s) + 1)) || 1;
-        let sf = _seqByDigit(s, f);
-        if (_cmp(h, sf) < 0) {
-          --f;
-          sf = _minus(sf, s);
-        }
-        q = _plus(q, [f]);
-        h = _minus(h, sf);
-      } else if (t.length) {
-        q.unshift(0);
-        h.unshift(_last(t))
-        t.pop();
-      } else
-        return [q, h];
+  const _divmod = (r, s) => {
+    const k = BASELENGTH - 1 - Math.floor(Math.log(_last(s)) / Math.log(2));
+    r = _shiftLeft(r, k);
+    s = _shiftLeft(s, k);
+
+    const n = s.length;
+    const m = r.length - s.length;
+    const q = new Array(m + 1).fill(0);
+
+    if (_cmp(r, s, m) >= 0) {
+      q[m] = 1;
+      _minus(r, _shiftLeft(s, m * BASELENGTH), true);
     }
+
+    for (let j = m - 1; j >= 0; --j) {
+      q[j] = Math.min(_quotient2by1(r[n + j], r[n + j - 1], s[n - 1]),
+                      BASE - 1);
+
+      let t = _seqByDigit(s, q[j]);
+      while (_cmp(r, t, j) < 0) {
+        --q[j];
+        t = _minus(t, s, true);
+      }
+      r = _minus(r, _shiftLeft(t, j * BASELENGTH), true);
+    }
+
+    while (_last(q) == 0)
+      q.pop();
+
+    return [q, _shiftRight(r, k)];
   };
 
 
