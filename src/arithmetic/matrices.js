@@ -1,3 +1,10 @@
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
+
+
 export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
   const s = scalarOps;
@@ -84,18 +91,24 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const matrixProduct = (A, B) => {
+    _timers && _timers.start('matrix multiplication');
+
     const [nrowsA, ncolsA] = shapeOfMatrix(A);
     const [nrowsB, ncolsB] = shapeOfMatrix(B);
 
     if (ncolsA != nrowsB)
       throw new Error('shapes do not match');
 
-    return (
+    const out =
       array(nrowsA).map((_, i) => (
         array(ncolsB).map((_, j) => (
           array(ncolsA)
             .map((_, k) => s.times(A[i][k], B[k][j]))
-            .reduce((a, x) => s.plus(a, x)))))));
+            .reduce((a, x) => s.plus(a, x))))));
+
+    _timers && _timers.stop('matrix multiplication');
+
+    return out;
   };
 
 
@@ -143,6 +156,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
   };
 
   const triangulation = (A, clearAboveDiagonal = false) => {
+    _timers && _timers.start('matrix triangulation');
+
     const divide = overField ? s.div : s.idiv;
     const [nrows, ncols] = shapeOfMatrix(A);
 
@@ -214,6 +229,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
       }
     }
 
+    _timers && _timers.stop('matrix triangulation');
+
     return { R, U, sign };
   };
 
@@ -282,6 +299,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const _solve = (R, v) => {
+    _timers && _timers.start('linear equation system solve');
+
     const [n, m] = shapeOfMatrix(R);
     const [_, k] = shapeOfMatrix(v);
     const top = Math.min(n, m);
@@ -303,6 +322,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
           X[i][j] = s.div(right, R[i][i]);
       }
     }
+
+    _timers && _timers.stop('linear equation system solve');
 
     return X;
   };
