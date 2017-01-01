@@ -224,45 +224,52 @@ export function extend(baseOps, baseLength = 0) {
   const _hi = d => Math.floor(d / HALFBASE);
 
 
-  const _digitByDigit = function _digitByDigit(a, b) {
-    const alo = _lo(a);
-    const ahi = _hi(a);
-    const blo = _lo(b);
-    const bhi = _hi(b);
+  const _timesSingleDigit = (s, d, target=null, offset=0) => {
+    if (target == null)
+      target = new Array(s.length + offset + 1);
 
-    const m = alo * bhi + blo * ahi;
-    const lo = alo * blo + _lo(m) * HALFBASE;
-    const hi = ahi * bhi + _hi(m);
-    const carry = lo >= BASE;
+    const dlo = _lo(d);
+    const dhi = _hi(d);
 
-    return [carry ? lo - BASE : lo, hi + carry];
+    let carry = 0;
+
+    for (let i = 0; i < s.length; ++i) {
+      const slo = _lo(s[i]);
+      const shi = _hi(s[i]);
+
+      const m = dlo * shi + dhi * slo;
+      let lo = dlo * slo + _lo(m) * HALFBASE;
+      let hi = dhi * shi + _hi(m);
+
+      if (lo >= BASE) {
+        lo -= BASE;
+        hi += 1;
+      }
+
+      const tlo = target[i + offset] + lo;
+      carry = tlo >= BASE;
+      target[i + offset] = carry ? tlo - BASE : tlo;
+
+      const thi = target[i + offset + 1] + hi + carry;
+      carry = thi >= BASE;
+      target[i + offset + 1] = carry ? thi - BASE : thi;
+
+      for (let j = i + offset + 2; carry && j < target.length; ++j) {
+        const t = target[j] + carry;
+        carry = t >= BASE;
+        target[j] = carry ? t - BASE : t;
+      }
+    }
+
+    return target;
   };
 
 
   const _times = function _times(r, s) {
     const result = new Array(r.length + s.length).fill(0);
 
-    for (let i = 0; i < r.length; ++i) {
-      let carry;
-
-      for (let j = 0; j < s.length; ++j) {
-        const [lo, hi] = _digitByDigit(r[i], s[j]);
-
-        const slo = lo + result[i + j];
-        carry = slo >= BASE;
-        result[i + j] = carry ? slo - BASE : slo;
-
-        const shi = hi + result[i + j + 1] + carry;
-        carry = shi >= BASE;
-        result[i + j + 1] = carry ? shi - BASE : shi;
-
-        for (let k = i + j + 2; carry && k < result.length; ++k) {
-          const sum = result[k] + carry;
-          carry = sum >= BASE;
-          result[k] = carry ? sum - BASE : sum;
-        }
-      }
-    }
+    for (let i = 0; i < r.length; ++i)
+      _timesSingleDigit(s, r[i], result, i);
 
     while (_last(result) == 0)
       result.pop();
@@ -278,6 +285,21 @@ export function extend(baseOps, baseLength = 0) {
       return b;
     else
       return make(a.sign * b.sign, _times(a.digits, b.digits));
+  };
+
+
+  const _digitByDigit = function _digitByDigit(a, b) {
+    const alo = _lo(a);
+    const ahi = _hi(a);
+    const blo = _lo(b);
+    const bhi = _hi(b);
+
+    const m = alo * bhi + blo * ahi;
+    const lo = alo * blo + _lo(m) * HALFBASE;
+    const hi = ahi * bhi + _hi(m);
+    const carry = lo >= BASE;
+
+    return [carry ? lo - BASE : lo, hi + carry];
   };
 
 
@@ -319,6 +341,7 @@ export function extend(baseOps, baseLength = 0) {
                       BASE - 1);
 
       let t = _seqByDigit(s, q[j]);
+
       while (_cmp(r, t, j) < 0) {
         --q[j];
         t = _minus(t, s, true);
