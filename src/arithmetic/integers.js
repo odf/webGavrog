@@ -226,7 +226,7 @@ export function extend(baseOps, baseLength = 0) {
 
   const _timesSingleDigit = (s, d, target=null, offset=0) => {
     if (target == null)
-      target = new Array(s.length + offset + 1);
+      target = new Array(s.length + offset + 1).fill(0);
 
     const dlo = _lo(d);
     const dhi = _hi(d);
@@ -288,37 +288,6 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _digitByDigit = function _digitByDigit(a, b) {
-    const alo = _lo(a);
-    const ahi = _hi(a);
-    const blo = _lo(b);
-    const bhi = _hi(b);
-
-    const m = alo * bhi + blo * ahi;
-    const lo = alo * blo + _lo(m) * HALFBASE;
-    const hi = ahi * bhi + _hi(m);
-    const carry = lo >= BASE;
-
-    return [carry ? lo - BASE : lo, hi + carry];
-  };
-
-
-  const _seqByDigit = function _seqByDigit(s, d) {
-    const result = [];
-    let carry = 0;
-    for (let i = 0; i < s.length; ++i) {
-      let [lo, hi] = _digitByDigit(d, s[i]);
-      lo += carry;
-      carry = lo >= BASE;
-      result.push(carry ? lo - BASE : lo);
-      carry += hi;
-    }
-    if (carry)
-      result.push(carry);
-    return result;
-  };
-
-
   const _quotient2by1 = (ahi, alo, b) => Math.floor(ahi * BASE / b + alo / b);
 
 
@@ -340,7 +309,9 @@ export function extend(baseOps, baseLength = 0) {
       q[j] = Math.min(_quotient2by1(r[n + j], r[n + j - 1], s[n - 1]),
                       BASE - 1);
 
-      let t = _seqByDigit(s, q[j]);
+      let t = _timesSingleDigit(s, q[j]);
+      while (_last(t) == 0)
+        t.pop();
 
       while (_cmp(r, t, j) < 0) {
         --q[j];
