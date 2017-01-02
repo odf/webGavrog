@@ -1,13 +1,4 @@
-let _timers = null;
-
-export function useTimers(timers) {
-  _timers = timers;
-};
-
-
 export const typeOf = x => {
-  _timers && _timers.start('arithmetic: type determination');
-
   let t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
 
   if (t == 'Number') {
@@ -19,22 +10,16 @@ export const typeOf = x => {
       ? 'Matrix' : 'Vector';
   }
 
-  _timers && _timers.stop('arithmetic: type determination');
-
   return t;
 };
 
 
 const call = (dispatch, op, ops) => (...args) => {
-  _timers && _timers.start('arithmetic: dispatch');
-
   let next = dispatch;
   for (let i = 0; i < args.length && next; ++i)
     next = next[typeOf(args[i])];
 
   const method = next || dispatch['__default__'];
-
-  _timers && _timers.stop('arithmetic: dispatch');
 
   if (method)
     return method(...args, ops);
