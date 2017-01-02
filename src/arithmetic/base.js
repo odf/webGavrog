@@ -1,28 +1,40 @@
-import * as I from 'immutable';
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
 
 
 export const typeOf = x => {
-  const t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
+  _timers && _timers.start('arithmetic: type determination');
+
+  let t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
 
   if (t == 'Number') {
-    if (Number.isSafeInteger(x))
-      return 'Integer';
-    else
-      return 'Float';
+    t = Number.isSafeInteger(x)
+      ? 'Integer' : 'Float';
   }
   else if (t == 'Array') {
-    if (x.length > 0 && x[0].constructor.name == 'Array')
-      return 'Matrix';
-    else
-      return 'Vector';
+    t = (x.length > 0 && x[0].constructor.name == 'Array')
+      ? 'Matrix' : 'Vector';
   }
-  else
-    return t;
+
+  _timers && _timers.stop('arithmetic: type determination');
+
+  return t;
 };
 
 
 const call = (dispatch, op, ops) => (...args) => {
-  const method = dispatch.getIn(args.map(typeOf)) || dispatch.get('__default__')
+  _timers && _timers.start('arithmetic: dispatch');
+
+  let next = dispatch;
+  for (let i = 0; i < args.length && next; ++i)
+    next = next[typeOf(args[i])];
+
+  const method = next || dispatch['__default__'];
+
+  _timers && _timers.stop('arithmetic: dispatch');
 
   if (method)
     return method(...args, ops);
@@ -30,6 +42,23 @@ const call = (dispatch, op, ops) => (...args) => {
     const msg = `Operator '${op}' not defined on [${args.map(typeOf)}]`;
     throw new Error(msg);
   }
+};
+
+
+const _isObject = o => o != null && o.constructor == Object;
+
+
+const mergeDeep = (obj, mods) => {
+  const out = Object.assign({}, obj);
+
+  for (const k in mods) {
+    if (_isObject(out[k]) && _isObject(mods[k]))
+      out[k] = mergeDeep(out[k], mods[k]);
+    else
+      out[k] = mods[k];
+  }
+
+  return out;
 };
 
 
@@ -79,15 +108,15 @@ const defaults = {
 };
 
 
-export function arithmetic(registry = I.Map().mergeDeep(defaults)) {
+export function arithmetic(registry = mergeDeep({}, defaults)) {
   const result = {
     register(specs) {
-      return arithmetic(registry.mergeDeep(specs));
+      return arithmetic(mergeDeep(registry, specs));
     }
   };
-  registry.forEach(
-    (dispatch, op) => result[op] = call(dispatch, op, result)
-  );
+  for (const op in registry)
+    result[op] = call(registry[op], op, result);
+
   return result;
 };
 

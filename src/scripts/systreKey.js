@@ -19,6 +19,7 @@ pgr.useTimers(timers);
 pgr.useModularSolver(true);
 
 require('../arithmetic/matrices').useTimers(timers);
+require('../arithmetic/base').useTimers(timers);
 
 timers.start('total');
 
