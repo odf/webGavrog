@@ -25,8 +25,9 @@ const _traversal = function* _traversal(graph, v0, transform)
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
   const old2new = {[v0]: 1};
-  const newPos = {[v0]: zero};
-  const queue = [v0];
+  const mappedPos = {[v0]: ops.times(pos.get(v0), transform)};
+  const newPos = {[v0]: mappedPos[v0]};
+  const queue = [[v0, zero]];
   const essentialShifts = [];
 
   let next = 2;
@@ -34,35 +35,43 @@ const _traversal = function* _traversal(graph, v0, transform)
   _timers && _timers.stop('_traversal: preparations');
 
   while (queue.length) {
-    const vo = queue.shift();
+    const [vo, vShift] = queue.shift();
     const vn = old2new[vo];
-    const pv = newPos[vo];
 
     _timers && _timers.start('_traversal: compute neighbors');
-    const incident = pg.allIncidences(graph, vo, adj);
-    const M = ops.times(incident.map(e => pg.edgeVector(e, pos)), transform);
+    const neighbors = [];
 
-    const neighbors = incident
-      .map((e, i) => [ops.plus(pv, M[i]), e.tail])
-      .sort(([sa, wa], [sb, wb]) => ops.cmp(sa, sb));
+    for (const e of pg.allIncidences(graph, vo, adj)) {
+      const w = e.tail;
+      if (mappedPos[w] == null)
+        mappedPos[w] = ops.times(pos.get(w), transform);
+
+      let s = vShift;
+      if (ops.ne(zero, e.shift))
+        s = ops.plus(s, ops.times(e.shift, transform));
+
+      neighbors.push([w, s, ops.plus(s, mappedPos[w])]);
+    }
+
+    neighbors.sort(([wa, sa, pa], [wb, sb, pb]) => ops.cmp(pa, pb));
     _timers && _timers.stop('_traversal: compute neighbors');
 
-    for (const [s, wo] of neighbors) {
+    for (const [wo, s, p] of neighbors) {
       const wn = old2new[wo];
       if (wn == null) {
         _timers && _timers.stop('_traversal');
         yield [vn, next, zero];
         _timers && _timers.start('_traversal');
         old2new[wo] = next++;
-        newPos[wo] = s;
-        queue.push(wo);
+        newPos[wo] = p;
+        queue.push([wo, s]);
       }
       else if (wn < vn) {
         continue;
       }
       else {
         _timers && _timers.start('_traversal: compute shift');
-        const rawShift = ops.minus(s, newPos[wo]);
+        const rawShift = ops.minus(p, newPos[wo]);
         let shift;
         if (basisAdjustment != null) {
           shift = ops.times(rawShift, basisAdjustment);
