@@ -75,16 +75,25 @@ const unitCellParameters = G => {
 };
 
 
+const dotProduct = gram => (v, w) => {
+  let s = 0;
+  for (const i in v)
+    for (const j in w)
+      s += v[i] * gram[i][j] * w[j];
+  return s;
+};
+
+
 const pointsAreCloseModZ = (gram, maxDist) => {
   const n = V.dimension(gram);
   const limit = V.times(maxDist, maxDist);
-  const dot = (v, w) => V.times(v, V.times(gram, w));
+  const dot = dotProduct(gram);
   const vecs = lattices.dirichletVectors(V.identityMatrix(n), dot);
   const shortest = p =>
     V.plus(p, lattices.shiftIntoDirichletDomain(p, vecs, dot));
 
   return (p, q) => {
-    const d = shortest(V.mod(V.minus(p, q), 1));
+    const d = shortest(V.toJS(V.mod(V.minus(p, q), 1)));
     return V.le(dot(d, d), limit);
   };
 };
@@ -93,10 +102,10 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 const vectorsAreClose = (gram, maxDist) => {
   const n = V.dimension(gram);
   const limit = V.times(maxDist, maxDist);
-  const dot = (v, w) => V.times(v, V.times(gram, w));
+  const dot = dotProduct(gram);
 
   return (v, w) => {
-    const d = V.minus(v, w);
+    const d = V.toJS(V.minus(v, w));
     return V.le(dot(d, d), limit);
   };
 };
@@ -226,7 +235,7 @@ const convertEdge = ({ from, to }) =>
 
 
 const withInducedEdges = (nodes, givenEdges, gram) =>
-  fromPointCloud(nodes, givenEdges, gram);
+  fromPointCloud(nodes, givenEdges, dotProduct(gram));
 
 
 export function netFromCrystal(spec) {

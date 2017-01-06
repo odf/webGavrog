@@ -73,9 +73,8 @@ const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
 const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x, y]), xs);
 
 
-export default function fromPointCloud(rawPoints, explicitEdges, gram) {
-  const dot    = (v, w) => ops.times(v, ops.times(gram, w));
-  const basis  = ops.identityMatrix(gram.length);
+export default function fromPointCloud(rawPoints, explicitEdges, dot) {
+  const basis  = ops.identityMatrix(ops.dimension(rawPoints[0].pos));
   const dvs    = lattices.dirichletVectors(basis, dot);
   const dvs2   = ops.times(2, dvs);
   const origin = ops.times(0, dvs[0]);
@@ -99,21 +98,3 @@ export default function fromPointCloud(rawPoints, explicitEdges, gram) {
   induceEdges(points, G, dot);
   return G.edges();
 };
-
-
-if (require.main == module) {
-  const sqrt2 = Math.sqrt(2);
-
-  const points = [
-    { id: 1, pos: [  0.125,  0.125,  0.125 ], degree: 4 },
-    { id: 2, pos: [ -0.125, -0.125, -0.125 ], degree: 4 }
-  ];
-
-  const gram = [
-    [sqrt2, 1.0, 1.0],
-    [1.0, sqrt2, 1.0],
-    [1.0, 1.0, sqrt2]
-  ];
-
-  console.log(fromPointCloud(points, [[1, 2, [0, 0, 0]]], gram));
-}
