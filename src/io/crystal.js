@@ -75,12 +75,16 @@ const unitCellParameters = G => {
 };
 
 
-const dotProduct = gram => (v, w) => {
-  let s = 0;
-  for (const i in v)
-    for (const j in w)
-      s += v[i] * gram[i][j] * w[j];
-  return s;
+const dotProduct = gram => {
+  const G = V.toJS(gram);
+
+  return (v, w) => {
+    let s = 0;
+    for (const i in v)
+      for (const j in w)
+        s += v[i] * G[i][j] * w[j];
+    return s;
+  };
 };
 
 
