@@ -18,8 +18,6 @@ inv.useTimers(timers);
 pgr.useTimers(timers);
 pgr.useModularSolver(true);
 
-require('../arithmetic/matrices').useTimers(timers);
-
 timers.start('total');
 
 

@@ -122,7 +122,6 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
 export function morphism(
   graph1, graph2, start1, start2, transform, skipChecks = false
 ) {
-  _timers && _timers.start('morphism');
   if (!skipChecks)
     _checkGraphsForMorphism(graph1, graph2, transform);
 
@@ -166,19 +165,16 @@ export function morphism(
     for (const [d1, e1] of Object.entries(n1)) {
       const e2 = n2[encode(ops.times(decode(d1), transform))];
       if (e2 == null) {
-        _timers && _timers.stop('morphism');
         return null;
       }
       else {
         const { bad, seen } = tryPair(encode(e1), encode(e2));
         if (bad) {
-          _timers && _timers.stop('morphism');
           return null;
         }
         else if (!seen) {
           const { bad, seen } = tryPair(e1.tail, e2.tail);
           if (bad) {
-            _timers && _timers.stop('morphism');
             return null;
           }
           else if (!seen)
@@ -189,17 +185,12 @@ export function morphism(
   }
 
   for (const v of pg.vertices(graph2))
-    if (img2src[v] == null) {
-      _timers && _timers.stop('morphism');
+    if (img2src[v] == null)
       return null;
-    }
-  for (const e of graph2.edges)
-    if (img2src[encode(e)] == null || img2src[encode(e.reverse())] == null) {
-      _timers && _timers.stop('morphism');
-      return null;
-    }
 
-  _timers && _timers.stop('morphism');
+  for (const e of graph2.edges)
+    if (img2src[encode(e)] == null || img2src[encode(e.reverse())] == null)
+      return null;
 
   return {
     src2img,

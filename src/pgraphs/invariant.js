@@ -18,8 +18,6 @@ const _solveInRows = (v, M) => {
 
 const _traversal = function* _traversal(graph, v0, transform)
 {
-  _timers && _timers.start('_traversal');
-  _timers && _timers.start('_traversal: preparations');
   const zero = ops.vector(graph.dim);
 
   const adj = pg.adjacencies(graph);
@@ -32,13 +30,11 @@ const _traversal = function* _traversal(graph, v0, transform)
 
   let next = 2;
   let basisAdjustment = null;
-  _timers && _timers.stop('_traversal: preparations');
 
   while (queue.length) {
     const [vo, vShift] = queue.shift();
     const vn = old2new[vo];
 
-    _timers && _timers.start('_traversal: compute neighbors');
     const neighbors = [];
 
     for (const e of pg.allIncidences(graph, vo, adj)) {
@@ -54,14 +50,11 @@ const _traversal = function* _traversal(graph, v0, transform)
     }
 
     neighbors.sort(([wa, sa, pa], [wb, sb, pb]) => ops.cmp(pa, pb));
-    _timers && _timers.stop('_traversal: compute neighbors');
 
     for (const [wo, s, p] of neighbors) {
       const wn = old2new[wo];
       if (wn == null) {
-        _timers && _timers.stop('_traversal');
         yield [vn, next, zero];
-        _timers && _timers.start('_traversal');
         old2new[wo] = next++;
         newPos[wo] = p;
         queue.push([wo, s]);
@@ -70,7 +63,6 @@ const _traversal = function* _traversal(graph, v0, transform)
         continue;
       }
       else {
-        _timers && _timers.start('_traversal: compute shift');
         const rawShift = ops.minus(p, newPos[wo]);
         let shift;
         if (basisAdjustment != null) {
@@ -94,16 +86,12 @@ const _traversal = function* _traversal(graph, v0, transform)
             shift = shift[0].concat(ops.vector(graph.dim - shift[0].length));
           }
         }
-        _timers && _timers.stop('_traversal: compute shift');
         if (vn < wn || (vn == wn && ops.sgn(shift) < 0)) {
-          _timers && _timers.stop('_traversal');
           yield [vn, wn, shift];
-          _timers && _timers.start('_traversal');
         }
       }
     }
   }
-  _timers && _timers.stop('_traversal');
 };
 
 
@@ -159,18 +147,16 @@ const _goodBases = (graph, bases) => {
 
 export function invariant(graph)
 {
-  _timers && _timers.start('invariant');
-
   const pos = pg.barycentricPlacement(graph);
   const sym = ps.symmetries(graph);
+
+  _timers && _timers.start('invariant');
 
   let best = null;
 
   for (const basis of _goodBases(graph, sym.representativeBases)) {
     const v = basis[0].head;
-    _timers && _timers.start('invariant: compute basis transformation');
     const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
-    _timers && _timers.stop('invariant: compute basis transformation');
     const trav = I.Seq(_traversal(graph, v, transform));
 
     if (best == null) {
@@ -194,9 +180,7 @@ export function invariant(graph)
     }
   }
 
-  _timers && _timers.start('invariant: postprocess traversal')
   const result = _postprocessTraversal(I.List(best).toArray()).sort(_cmpSteps);
-  _timers && _timers.stop('invariant: postprocess traversal')
 
   _timers && _timers.stop('invariant');
 
