@@ -52,10 +52,11 @@ export function timers() {
       this.start(key);
     },
     current() {
+      const t = now();
       for (const k in _start) {
         if (_start[k] != null) {
-          this.stop(k);
-          this.start(k);
+          _accumulated[k] = (_accumulated[k] || 0.0) + t - _start[k];
+          _start[k] = null;
         }
       }
 
