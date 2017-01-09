@@ -238,6 +238,17 @@ const convertEdge = ({ from, to }) =>
   [from.node, to.node, V.minus(to.shift, from.shift)];
 
 
+const degreesSatisfied = (nodes, edges) => {
+  const left = nodes.map(v => v.degree);
+  for (const [i, j, _] of edges) {
+    --left[i];
+    --left[j];
+  }
+
+  return left.every(n => n <= 0);
+};
+
+
 const withInducedEdges = (nodes, givenEdges, gram) =>
   fromPointCloud(nodes, givenEdges, dotProduct(gram));
 
@@ -276,7 +287,9 @@ export function netFromCrystal(spec) {
     edgesMapped, allNodes, primitive.ops, pointsEq, vectorsEq);
 
   const convertedEdges = explicitEdges.map(convertEdge);
-  const allEdges = withInducedEdges(allNodes, convertedEdges, primitiveGram);
+  const allEdges = degreesSatisfied(allNodes, convertedEdges)
+    ? convertedEdges
+    : withInducedEdges(allNodes, convertedEdges, primitiveGram);
 
   return {
     name,
