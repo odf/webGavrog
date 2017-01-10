@@ -235,8 +235,10 @@ const _componentInCoverGraph = (graph, start) => {
 
 
 export function isConnected(graph) {
+  _timers && _timers.start('isConnected');
   const verts = vertices(graph);
   const comp = _componentInCoverGraph(graph, verts.first());
+  _timers && _timers.stop('isConnected');
 
   return comp.nodes.length >= verts.size && comp.multiplicity == 1;
 };
@@ -270,9 +272,6 @@ export function useModularSolver(yesNo) {
 export function barycentricPlacement(graph) {
   if (graph._$pos != undefined)
     return graph._$pos;
-
-  if (!isConnected(graph))
-    throw new Error('must have a connected orbit graph');
 
   _timers && _timers.start('barycentricPlacement');
 
@@ -336,6 +335,8 @@ export function isStable(graph) {
 
 export function isLocallyStable(graph) {
   const pos = barycentricPlacement(graph);
+
+  _timers && _timers.start('isLocallyStable');
   const adj = adjacencies(graph);
   const verts = vertices(graph);
 
@@ -345,13 +346,16 @@ export function isLocallyStable(graph) {
     for (const w of adj.get(v)) {
       const p = ops.plus(pos.get(w.v), w.s);
       const key = encode(p);
-      if (seen.contains(key))
+      if (seen.contains(key)) {
+        _timers && _timers.stop('isLocallyStable');
         return false;
+      }
       else
         seen.add(key);
     }
   }
 
+  _timers && _timers.stop('isLocallyStable');
   return true;
 };
 

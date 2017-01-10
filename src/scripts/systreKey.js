@@ -13,20 +13,15 @@ Array.prototype.toString = function() {
 
 
 const timers = util.timers();
+io.useTimers(timers);
 sym.useTimers(timers);
 inv.useTimers(timers);
 pgr.useTimers(timers);
 pgr.useModularSolver(true);
 
+require('../io/crystal').useTimers(timers);
+
 timers.start('total');
-
-
-const invariant = G => {
-  if (sym.isMinimal(G))
-    return inv.invariant(G);
-  else
-    return inv.invariant(sym.minimalImage(G));
-};
 
 
 process.argv.slice(2).forEach(file => {
@@ -45,10 +40,12 @@ process.argv.slice(2).forEach(file => {
         console.log(`  Error: net '${b.name}' is not locally stable`);
       }
       else {
-        const key = invariant(G);
+        const key = inv.invariant(sym.minimalImage(G));
+        timers.start('printing results');
         for (const [head, tail, shift] of key) {
           console.log(`  ${head} ${tail} ${shift}`);
         }
+        timers.stop('printing results');
       }
     } catch(ex) {
       console.log(ex.stack);

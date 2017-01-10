@@ -9,6 +9,13 @@ import { coordinateChanges } from '../geometry/types';
 const V = coordinateChanges;
 
 
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
+
+
 const matrixError = (A, B) => V.div(V.norm(V.minus(A, B)), V.norm(A));
 const eps = Math.pow(2, -50);
 const trim = x => Math.abs(x) < eps ? 0 : x;
@@ -254,6 +261,8 @@ const withInducedEdges = (nodes, givenEdges, gram) =>
 
 
 export function netFromCrystal(spec) {
+  _timers && _timers.start('netFromCrystal');
+
   const { name, group, cellGram: G0, nodes, edges } = spec;
   const warnings = spec.warnings.slice();
   const errors = spec.errors.slice();
@@ -290,6 +299,9 @@ export function netFromCrystal(spec) {
   const allEdges = degreesSatisfied(allNodes, convertedEdges)
     ? convertedEdges
     : withInducedEdges(allNodes, convertedEdges, primitiveGram);
+  const graph = pg.make(allEdges);
+
+  _timers && _timers.stop('netFromCrystal');
 
   return {
     name,
@@ -302,7 +314,7 @@ export function netFromCrystal(spec) {
     explicitEdgeReps: edgesMapped,
     nodes: allNodes,
     explicitEdges,
-    graph: pg.make(allEdges),
+    graph,
     warnings,
     errors
   };

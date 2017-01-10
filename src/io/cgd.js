@@ -7,6 +7,13 @@ import * as sg from './sgtable';
 import * as cr from './crystal';
 
 
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
+
+
 const translation = {
   id      : "name",
   vertex  : "node",
@@ -342,12 +349,16 @@ const reportError = (text, ex) => {
 export function* structures(text) {
   let blocks;
 
+  _timers && _timers.start('cgd parsing');
+
   try {
     blocks = parser.parse(text);
   } catch(ex) {
     reportError(text, ex);
     blocks = []
   }
+
+  _timers && _timers.stop('cgd parsing');
 
   for (const b of blocks) {
     const data = preprocessBlock(b);

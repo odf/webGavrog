@@ -104,16 +104,6 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
   if (transform != null && ops.dimension(transform) != graph1.dim)
     errors.push('coordinate transformation has the wrong dimension');
 
-  if (!pg.isConnected(graph1))
-    errors.push('first graph is not connected');
-  else if (!pg.isLocallyStable(graph1))
-    errors.push('first graph is not locally stable');
-
-  if (!pg.isConnected(graph2))
-    errors.push('second graph is not connected');
-  else if (!pg.isLocallyStable(graph2))
-    errors.push('second graph is not locally stable');
-
   if (errors.length > 0)
     throw new Error(errors.join('\n'));
 };
@@ -254,11 +244,6 @@ export function groupOfMorphisms(generators) {
 
 export function isMinimal(graph)
 {
-  if (!pg.isConnected(graph))
-    throw new Error('graph is not connected');
-  else if (!pg.isLocallyStable(graph))
-    throw new Error('graph is not locally stable');
-
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts.first();
@@ -273,11 +258,6 @@ export function isMinimal(graph)
 
 
 const translationalEquivalences = graph => {
-  if (!pg.isConnected(graph))
-    throw new Error('graph is not connected');
-  else if (!pg.isLocallyStable(graph))
-    throw new Error('graph is not locally stable');
-
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts.first();
@@ -344,40 +324,49 @@ const fullTranslationBasis = vectors => {
 
 export function minimalImage(graph)
 {
+  let result;
+
+  _timers && _timers.start('minimalImage');
+
   if (isMinimal(graph))
-    return graph;
+    result = graph;
+  else {
+    const pos = pg.barycentricPlacement(graph);
+    const equivs = translationalEquivalences(graph);
+    const classes = translationalEquivalenceClasses(graph, equivs);
+    const vectors = extraTranslationVectors(graph, equivs);
+    const basisChange = ops.inverse(fullTranslationBasis(vectors));
 
-  const pos = pg.barycentricPlacement(graph);
-  const equivs = translationalEquivalences(graph);
-  const classes = translationalEquivalenceClasses(graph, equivs);
-  const vectors = extraTranslationVectors(graph, equivs);
-  const basisChange = ops.inverse(fullTranslationBasis(vectors));
-
-  const old2new = {};
-  for (let i = 0; i < classes.length; ++i) {
-    for (const v of classes[i]) {
-      old2new[v] = i;
+    const old2new = {};
+    for (let i = 0; i < classes.length; ++i) {
+      for (const v of classes[i]) {
+        old2new[v] = i;
+      }
     }
+
+    const imgEdges = [];
+    for (const e of graph.edges) {
+      const v = e.head;
+      const w = e.tail;
+      const vNew = old2new[v];
+      const wNew = old2new[w];
+      const vRep = classes[vNew][0];
+      const wRep = classes[wNew][0];
+
+      const s = e.shift;
+      const vShift = ops.minus(pos.get(v), pos.get(vRep));
+      const wShift = ops.minus(pos.get(w), pos.get(wRep));
+      const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)), basisChange);
+
+      imgEdges.push([vNew + 1, wNew + 1, sNew]);
+    }
+
+    result = pg.make(imgEdges);
   }
 
-  const imgEdges = [];
-  for (const e of graph.edges) {
-    const v = e.head;
-    const w = e.tail;
-    const vNew = old2new[v];
-    const wNew = old2new[w];
-    const vRep = classes[vNew][0];
-    const wRep = classes[wNew][0];
+  _timers && _timers.stop('minimalImage');
 
-    const s = e.shift;
-    const vShift = ops.minus(pos.get(v), pos.get(vRep));
-    const wShift = ops.minus(pos.get(w), pos.get(wRep));
-    const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)), basisChange);
-
-    imgEdges.push([vNew + 1, wNew + 1, sNew]);
-  }
-
-  return pg.make(imgEdges);
+  return result;
 };
 
 
@@ -419,11 +408,6 @@ const _matrixProductIfUnimodular = (A, B) => {
 
 export function symmetries(graph)
 {
-  if (!pg.isConnected(graph))
-    throw new Error('graph is not connected');
-  else if (!pg.isLocallyStable(graph))
-    throw new Error('graph is not locally stable');
-
   const pos = pg.barycentricPlacement(graph);
   const bases = characteristicBases(graph);
 
