@@ -17,7 +17,6 @@ io.useTimers(timers);
 sym.useTimers(timers);
 inv.useTimers(timers);
 pgr.useTimers(timers);
-pgr.useModularSolver(true);
 
 require('../io/crystal').useTimers(timers);
 

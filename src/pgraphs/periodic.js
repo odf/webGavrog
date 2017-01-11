@@ -261,14 +261,6 @@ export function connectedComponents(graph) {
 };
 
 
-let _useModularSolver = false;
-
-
-export function useModularSolver(yesNo) {
-  _useModularSolver = yesNo;
-};
-
-
 export function barycentricPlacement(graph) {
   if (graph._$pos != undefined)
     return graph._$pos;
@@ -281,24 +273,25 @@ export function barycentricPlacement(graph) {
 
   const n = verts.size;
   const d = graph.dim;
-  let A = ops.matrix(n+1, n);
-  let t = ops.matrix(n+1, d);
+  let A = ops.matrix(n, n);
+  let t = ops.matrix(n, d);
+
+  A[0][0] = 1;
 
   verts.forEach((v, i) => {
-    adj.get(v).forEach(c => {
-      if (c.v != v) {
-        const j = vIdcs.get(c.v);
-        A[i][j] -= 1;
-        A[i][i] += 1;
-        t[i] = ops.plus(t[i], c.s);
-      }
-    });
+    if (i > 0) {
+      adj.get(v).forEach(c => {
+        if (c.v != v) {
+          const j = vIdcs.get(c.v);
+          A[i][j] -= 1;
+          A[i][i] += 1;
+          t[i] = ops.plus(t[i], c.s);
+        }
+      });
+    }
   });
-  A[n][0] = 1;
 
-  const p = (_useModularSolver
-             ? modularSolver(A.slice(1), t.slice(1))
-             : ops.solve(A, t));
+  const p = modularSolver(A, t);
 
   const result = I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
 
