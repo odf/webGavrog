@@ -96,6 +96,7 @@ const dotProduct = gram => {
 
 
 const shiftIntoDirichletDomain = (pos, dirichletVecs, dot) => {
+  const eps = Math.pow(2, -40);
   const adjust = (p, v, f) => p.map((x, i) => x - f * v[i]);
   const vecsWithLengths = dirichletVecs.map(v => [v, dot(v, v)]);
 
