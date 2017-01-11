@@ -20,7 +20,7 @@ const matrixError = (A, B) => V.div(V.norm(V.minus(A, B)), V.norm(A));
 const eps = Math.pow(2, -50);
 const trim = x => Math.abs(x) < eps ? 0 : x;
 const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
-const flatMap   = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
+const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
 
 
 const mapNode = coordinateChange => ({ name, coordination, position }, i) => ({
@@ -95,17 +95,39 @@ const dotProduct = gram => {
 };
 
 
+const shiftIntoDirichletDomain = (pos, dirichletVecs, dot) => {
+  const adjust = (p, v, f) => p.map((x, i) => x - f * v[i]);
+  const vecsWithLengths = dirichletVecs.map(v => [v, dot(v, v)]);
+
+  let p = pos.slice();
+  let changed;
+
+  do {
+    changed = false;
+
+    for (const [v, lv] of vecsWithLengths) {
+      const t = dot(p, v) / lv;
+      if (t < -0.5 || t > 0.5+eps) {
+        p = adjust(p, v, Math.round(t));
+        changed = true;
+      }
+    }
+  } while (changed);
+
+  return p;
+};
+
+
 const pointsAreCloseModZ = (gram, maxDist) => {
   const n = V.dimension(gram);
   const limit = V.times(maxDist, maxDist);
   const dot = dotProduct(gram);
   const vecs = lattices.dirichletVectors(V.identityMatrix(n), dot);
-  const shortest = p =>
-    V.plus(p, lattices.shiftIntoDirichletDomain(p, vecs, dot));
 
   return (p, q) => {
-    const d = shortest(V.toJS(V.mod(V.minus(p, q), 1)));
-    return V.le(dot(d, d), limit);
+    const d0 = p.coords.map((x, i) => (V.toJS(x) - V.toJS(q.coords[i])) % 1);
+    const d = shiftIntoDirichletDomain(d0, vecs, dot);
+    return dot(d, d) < limit;
   };
 };
 
