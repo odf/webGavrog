@@ -385,10 +385,8 @@ const _matrixProductIfUnimodular = (A, B) => {
     for (let j = 0; j < ncolsB; ++j) {
       let t = 0;
 
-      for (let k = 0; k < ncolsA; ++k) {
-        if (ops.ne(A[i][k], 0) && ops.ne(B[k][j], 0))
-          t = ops.plus(t, ops.times(A[i][k], B[k][j]));
-      }
+      for (let k = 0; k < ncolsA; ++k)
+        t = ops.plus(t, ops.times(A[i][k], B[k][j]));
 
       if (!ops.isInteger(t))
         return null;
