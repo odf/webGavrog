@@ -411,7 +411,11 @@ export function symmetries(graph)
 
   _timers && _timers.start('symmetries');
 
-  const keys = bases.map(b => b.map(encode).join(','));
+  const adj = pg.adjacencies(graph);
+  const deg = v => adj.get(v).size;
+
+  const keys = bases.map(b => b.map(encode).join(',')).toArray();
+  const degs = bases.map(b => b.map(e => [deg(e.head), deg(e.tail)])).toArray();
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => pg.edgeVector(e, pos));
   const invB0 = ops.inverse(B0);
@@ -420,7 +424,7 @@ export function symmetries(graph)
   let p = Partition();
 
   for (let i = 0; i < bases.size; ++i) {
-    if (p.get(keys.get(i)) != p.get(keys.get(0))) {
+    if (ops.eq(degs[i], degs[0]) && p.get(keys[i]) != p.get(keys[0])) {
       const basis = bases.get(i);
       const v = basis[0].head;
       const B = basis.map(e => pg.edgeVector(e, pos));
@@ -434,7 +438,7 @@ export function symmetries(graph)
 
           for (let i = 0; i < bases.size; ++i) {
             p = p.union(
-              keys.get(i),
+              keys[i],
               bases.get(i).map(e => iso.src2img[encode(e)]).join(','));
           }
         }
@@ -443,7 +447,7 @@ export function symmetries(graph)
   }
 
   const representativeBases = I.Range(0, bases.size)
-    .filter(i => keys.get(i) == p.get(keys.get(i)))
+    .filter(i => keys[i] == p.get(keys[i]))
     .map(i => bases.get(i))
     .toList();
 
