@@ -60,11 +60,13 @@ const operatorAxis = M => {
 
 
 const operatorType = op => {
-  const M = linearPart(op);
-  const t = shiftPart(op);
   const dimension = V.dimension(op);
-  const direct = detSgn(M) >= 0;
+  const A = linearPart(op);
+  const direct = detSgn(A) >= 0;
+  const M = (dimension % 2 == 1 && !direct) ? V.negative(A) : A;
+  const t = shiftPart(op);
   const order = matrixOrder(M, 6);
+
   let clockwise = true;
 
   if (dimension == 2) {
@@ -132,6 +134,37 @@ const crystalSystemAndBasis2d = ops => {
 };
 
 
+const isIn = (val, expected) =>
+  expected.constructor == Array ? expected.indexOf(val) >= 0 : val == expected;
+
+
+const crystalSystemAndBasis3d = ops => {
+  const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
+  const ofType = (order, direct, clockwise) => opsWithTypes.filter(op => (
+    isIn(op.order, order)
+      && isIn(op.direct, direct)
+      && isIn(op.clockwise, clockwise)));
+
+  const mirrors    = ofType([2, 3, 4, 6], false, true);
+  const inversions = ofType(1, false, true);
+  const directGood = inversions.length ? true : [true, false];
+
+  const twoFold    = ofType(2, directGood, true);
+  const threeFold  = ofType(3, true, true);
+  const fourFold   = ofType(4, directGood, true);
+  const sixFold    = ofType(6, directGood, true);
+
+  let crystalSystem, x, y, z, R;
+
+  if (sixFold.length > 0) {
+    crystalSystem = CS_3D_HEXAGONAL;
+    const A = linearPart(sixFold[0].op)
+    z = operatorAxis(A);
+    R = V.times(A, A);
+  }
+};
+
+
 if (require.main == module) {
   const testOp = A => {
     console.log(`A = ${JSON.stringify(A)}`);
@@ -158,14 +191,16 @@ if (require.main == module) {
   testOp([[0, -1], [1, 0]]);
   testOp([[0, 1], [-1, 0]]);
   testOp([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
+  testOp([[-1, 0, 0], [0, -1, 0], [0, 0, -1]]);
   testOp([[0, 0, 1], [1, 0, 0], [0, 1, 0]]);
   testOp([[0, 1, 0], [0, 0, 1], [1, 0, 0]]);
   testOp([[0, 0, -1], [-1, 0, 0], [0, -1, 0]]);
+  testOp([[0, -1, 0], [0, 0, -1], [-1, 0, 0]]);
 
-  testGroup2d([[[1, 0], [0, 1]]]);
+  testGroup2d([V.affineTransformation([[1, 0], [0, 1]], [1, 0])]);
 
   testGroup2d([[[ 1, 0], [0,  1]],
-               [[-1, 0], [0, -1]]]);
+               V.affineTransformation([[-1, 0], [0, -1]], [1, 0])]);
 
   testGroup2d([[[ 1, 0], [0,  1]],
                [[ 1, 0], [0, -1]]]);
