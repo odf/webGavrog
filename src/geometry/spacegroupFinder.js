@@ -157,10 +157,48 @@ const crystalSystemAndBasis3d = ops => {
   let crystalSystem, x, y, z, R;
 
   if (sixFold.length > 0) {
-    crystalSystem = CS_3D_HEXAGONAL;
     const A = linearPart(sixFold[0].op)
+    crystalSystem = CS_3D_HEXAGONAL;
     z = operatorAxis(A);
     R = V.times(A, A);
+  }
+  else if (fourFold.length > 1) {
+    crystalSystem = CS_3D_CUBIC;
+    z = operatorAxis(linearPart(fourFold[0].op));
+    R = linearPart(threeFold[0].op);
+    x = V.times(R, z);
+    y = V.times(R, x);
+  }
+  else if (fourFold.length > 0) {
+    crystalSystem = CS_3D_TETRAGONAL;
+    R = linearPart(fourFold[0].op);
+    z = operatorAxis(R);
+  }
+  else if (threeFold.length > 1) {
+    crystalSystem = CS_3D_CUBIC;
+    z = operatorAxis(linearPart(twoFold[0].op));
+    R = linearPart(threeFold[0].op);
+    x = V.times(R, z);
+    y = V.times(R, x);
+  }
+  else if (threeFold.length > 0) {
+    crystalSystem = CS_3D_TRIGONAL;
+    R = linearPart(threeFold[0].op);
+    z = operatorAxis(R);
+  }
+  else if (twoFold.length > 1) {
+    crystalSystem = CS_3D_ORTHORHOMBIC;
+    x = operatorAxis(linearPart(twoFold[0].op));
+    y = operatorAxis(linearPart(twoFold[1].op));
+    z = operatorAxis(linearPart(twoFold[2].op));
+  }
+  else if (twoFold.length > 0) {
+    crystalSystem = CS_3D_MONOCLINIC;
+    z = operatorAxis(linearPart(twoFold[0].op));
+  }
+  else {
+    crystalSystem = CS_3D_TRICLINIC;
+    z = [0, 0, 1];
   }
 };
 
