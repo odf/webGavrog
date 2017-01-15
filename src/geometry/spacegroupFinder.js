@@ -19,14 +19,6 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const isLinear = op => V.typeOf(op) == 'Matrix';
-
-const linearPart = op => isLinear(op)
-  ? op : V.linearPart(op);
-const shiftPart = op => isLinear(op)
-  ? V.vector(V.dimension(op)) : V.shiftPart(op);
-
-
 const matrixOrder = (M, max) => {
   const I = V.identityMatrix(V.dimension(M));
   let A = M;
@@ -42,11 +34,12 @@ const matrixOrder = (M, max) => {
 const detSgn = M => V.sgn(V.determinant(M));
 
 
-const operatorAxis = M => {
-  const d = V.dimension(M);
+const operatorAxis = op => {
+  const d = V.dimension(op);
 
+  let M = V.linearPart(op);
   if (d % 2 != 0 && detSgn(M) < 0)
-    return operatorAxis(V.negative(M));
+    M = V.negative(M);
 
   const Z = V.transposed(V.nullSpace(V.minus(M, V.identityMatrix(d))));
 
@@ -59,12 +52,17 @@ const operatorAxis = M => {
 };
 
 
+const vectorsCollinear = (v, w) =>
+  V.eq(V.times(V.times(v, w), V.times(v, w)),
+       V.abs(V.times(V.times(v, v), V.times(w, w))));
+
+
 const operatorType = op => {
   const dimension = V.dimension(op);
-  const A = linearPart(op);
+  const A = V.linearPart(op);
   const direct = detSgn(A) >= 0;
   const M = (dimension % 2 == 1 && !direct) ? V.negative(A) : A;
-  const t = shiftPart(op);
+  const t = V.shiftPart(op);
   const order = matrixOrder(M, 6);
 
   let clockwise = true;
@@ -101,7 +99,7 @@ const crystalSystemAndBasis2d = ops => {
     .reduce((op1, op2) => op2.order > op1.order ? op2 : op1);
 
   const n = spin.order;
-  const R = linearPart(spin.op);
+  const R = V.linearPart(spin.op);
 
   let crystalSystem;
 
@@ -125,7 +123,7 @@ const crystalSystemAndBasis2d = ops => {
     y = operatorAxis(mirrors[1].op);
   else {
     const t = x[0] == 0 ? [1, 0] : [0, 1];
-    y = mirrors.length ? V.div(V.minus(t, V.times(mirrors[0].op, t)), 2) : t;
+    y = mirrors.length ? V.minus(t, V.times(mirrors[0].op, t)) : t;
   }
 
   const basis = detSgn([x, y]) < 0 ? [x, V.negative(y)] : [x, y];
@@ -157,49 +155,85 @@ const crystalSystemAndBasis3d = ops => {
   let crystalSystem, x, y, z, R;
 
   if (sixFold.length > 0) {
-    const A = linearPart(sixFold[0].op)
+    const A = V.linearPart(sixFold[0].op)
     crystalSystem = CS_3D_HEXAGONAL;
     z = operatorAxis(A);
     R = V.times(A, A);
   }
   else if (fourFold.length > 1) {
     crystalSystem = CS_3D_CUBIC;
-    z = operatorAxis(linearPart(fourFold[0].op));
-    R = linearPart(threeFold[0].op);
+    z = operatorAxis(fourFold[0].op);
+    R = V.linearPart(threeFold[0].op);
     x = V.times(R, z);
     y = V.times(R, x);
   }
   else if (fourFold.length > 0) {
     crystalSystem = CS_3D_TETRAGONAL;
-    R = linearPart(fourFold[0].op);
+    R = V.linearPart(fourFold[0].op);
     z = operatorAxis(R);
   }
   else if (threeFold.length > 1) {
     crystalSystem = CS_3D_CUBIC;
-    z = operatorAxis(linearPart(twoFold[0].op));
-    R = linearPart(threeFold[0].op);
+    z = operatorAxis(twoFold[0].op);
+    R = V.linearPart(threeFold[0].op);
     x = V.times(R, z);
     y = V.times(R, x);
   }
   else if (threeFold.length > 0) {
     crystalSystem = CS_3D_TRIGONAL;
-    R = linearPart(threeFold[0].op);
+    R = V.linearPart(threeFold[0].op);
     z = operatorAxis(R);
   }
   else if (twoFold.length > 1) {
     crystalSystem = CS_3D_ORTHORHOMBIC;
-    x = operatorAxis(linearPart(twoFold[0].op));
-    y = operatorAxis(linearPart(twoFold[1].op));
-    z = operatorAxis(linearPart(twoFold[2].op));
+    x = operatorAxis(twoFold[0].op);
+    y = operatorAxis(twoFold[1].op);
+    z = operatorAxis(twoFold[2].op);
   }
   else if (twoFold.length > 0) {
     crystalSystem = CS_3D_MONOCLINIC;
-    z = operatorAxis(linearPart(twoFold[0].op));
+    z = operatorAxis(twoFold[0].op);
   }
   else {
     crystalSystem = CS_3D_TRICLINIC;
     z = [0, 0, 1];
   }
+
+  if (x == null) {
+    for (const { op } of twoFold) {
+      const t = operatorAxis(op);
+      if (!vectorsCollinear(z, t)) {
+        x = t;
+        break;
+      }
+    }
+  }
+
+  if (x == null) {
+    x = vectorsCollinear(z, [1, 0, 0]) ? [0, 1, 0] : [1, 0, 0];
+    if (mirrors.length > 0)
+      x = V.plus(x, V.times(V.linearPart(mirrors[0].op), x));
+    else if (twoFold.length > 0)
+      x = V.minus(x, V.times(V.linearPart(twoFold[0].op), x));
+    else if (crystalSystem == CS_3D_TRIGONAL)
+      x = V.minus(x, V.times(R, x));
+  }
+
+  if (y == null) {
+    if (R != null)
+      y = V.times(R, x);
+    else {
+      y = V.crossProduct(z, x);
+      if (mirrors.length > 0)
+        y = V.plus(y, V.times(V.linearPart(mirrors[0].op), y));
+      else if (twoFold.length > 0)
+        y = V.minus(y, V.times(V.linearPart(twoFold[0].op), y));
+    }
+  }
+
+  const basis = detSgn([x, y, z]) < 0 ? [x, y, V.negative(z)] : [x, y, z];
+
+  return { crystalSystem, basis };
 };
 
 
@@ -219,6 +253,14 @@ if (require.main == module) {
   const testGroup2d = ops => {
     console.log(`ops = ${JSON.stringify(ops)}`);
     const { crystalSystem, basis } = crystalSystemAndBasis2d(ops);
+    console.log(`  ${crystalSystem}`);
+    console.log(`  basis: ${ JSON.stringify(basis) }`);
+    console.log();
+  };
+
+  const testGroup3d = ops => {
+    console.log(`ops = ${JSON.stringify(ops)}`);
+    const { crystalSystem, basis } = crystalSystemAndBasis3d(ops);
     console.log(`  ${crystalSystem}`);
     console.log(`  basis: ${ JSON.stringify(basis) }`);
     console.log();
@@ -263,4 +305,24 @@ if (require.main == module) {
                [[-1,  0], [ 0, -1]],
                [[-1,  1], [-1,  0]],
                [[ 0,  1], [-1,  1]]]);
+
+  testGroup3d([[[ 1, 0, 0], [0,  1, 0], [0, 0,  1]],
+               [[-1, 0, 0], [0, -1, 0], [0, 0, -1]]]);
+
+  testGroup3d([[[1, 0, 0], [0, 1, 0], [0, 0,  1]],
+               [[1, 0, 0], [0, 1, 0], [0, 0, -1]]]);
+
+  testGroup3d([[[1, 0, 0], [0,  1, 0], [0, 0,  1]],
+               [[1, 0, 0], [0,  1, 0], [0, 0, -1]],
+               [[1, 0, 0], [0, -1, 0], [0, 0,  1]],
+               [[1, 0, 0], [0, -1, 0], [0, 0, -1]]]);
+
+  testGroup3d([[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+               [[0, 1, 0], [0, 0, 1], [1, 0, 0]],
+               [[0, 0, 1], [1, 0, 0], [0, 1, 0]]]);
+
+  testGroup3d([[[ 1,  0, 0], [ 0,  1, 0], [0, 0, 1]],
+               [[ 0, -1, 0], [ 1,  0, 0], [0, 0, 1]],
+               [[-1,  0, 0], [ 0, -1, 0], [0, 0, 1]],
+               [[ 0,  1, 0], [-1,  0, 0], [0, 0, 1]]]);
 }
