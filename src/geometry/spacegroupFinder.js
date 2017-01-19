@@ -237,6 +237,56 @@ const crystalSystemAndBasis3d = ops => {
 };
 
 
+const basisNormalizer = {};
+
+
+basisNormalizer[CS_0D] =
+basisNormalizer[CS_1D] =
+basisNormalizer[CS_2D_OBLIQUE] = b => ({ basis: b, centering: 'p' });
+
+
+basisNormalizer[CS_2D_RECTANGULAR] = b => {
+  if (V.ne(0, b[0][0]) && V.ne(0, b[0][1]))
+    return {
+      basis: [ V.times([[0, 0], [0, 2]], b[0]),
+               V.times([[2, 0], [0, 0]], b[0]) ],
+      centering: 'c'
+    };
+  else if (V.ne(0, b[1][0]) && V.ne(0, b[1][1]))
+    return {
+      basis: [ V.times([[0, 0], [0, 2]], b[1]),
+               V.times([[2, 0], [0, 0]], b[1]) ],
+      centering: 'c'
+    };
+  else if (V.eq(0, b[0][1]))
+    return {
+      basis: [ b[1], V.negative(b[0]) ],
+      centering: 'p'
+    };
+  else
+    return {
+      basis: [ b[0], b[1] ],
+      centering: 'p'
+    };
+};
+
+
+basisNormalizer[CS_2D_SQUARE] = b => ({
+  basis: [ b[0], V.times([[0, -1], [1, 0]], b[0]) ],
+  centering: 'p'
+});
+
+
+basisNormalizer[CS_2D_HEXAGONAL] = b => ({
+  basis: [ b[0], V.times([[0, -1], [1, -1]], b[0]) ],
+  centering: 'p'
+});
+
+
+basisNormalizer[CS_3D_CUBIC] = b => {
+};
+
+
 if (require.main == module) {
   const testOp = A => {
     console.log(`A = ${JSON.stringify(A)}`);
