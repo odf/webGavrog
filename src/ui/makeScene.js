@@ -36,7 +36,7 @@ const graphPortion = function graphPortion(graph, start, dist) {
       const i = vertices.get(v);
 
       adj.get(v.v).forEach(function(t) {
-        const w = new CoverVertex({ v: t.v, s: ops.plus(v.s, t.s.toJS()) });
+        const w = new CoverVertex({ v: t.v, s: ops.plus(v.s, t.s) });
 
         if (vertices.get(w) == null) {
           vertices = vertices.set(w, vertices.size);
