@@ -17,6 +17,10 @@ import * as webworkers from '../common/webworkers';
 const _normalized = v => ops.div(v, ops.norm(v));
 
 
+const encode = value => JSON.stringify(ops.repr(value));
+const decode = value => ops.fromRepr(JSON.parse(value));
+
+
 const CoverVertex = I.Record({
   v: undefined,
   s: undefined
@@ -25,7 +29,7 @@ const CoverVertex = I.Record({
 const graphPortion = function graphPortion(graph, start, dist) {
   const adj  = periodic.adjacencies(graph);
 
-  const v0 = new CoverVertex({ v: start, s: ops.vector(graph.dim) });
+  const v0 = new CoverVertex({ v: start, s: encode(ops.vector(graph.dim)) });
   let vertices = I.Map([[v0, 0]]);
   let edges = I.Set();
   let thisShell = I.List([v0]);
@@ -36,7 +40,10 @@ const graphPortion = function graphPortion(graph, start, dist) {
       const i = vertices.get(v);
 
       adj.get(v.v).forEach(function(t) {
-        const w = new CoverVertex({ v: t.v, s: ops.plus(v.s, t.s) });
+        const w = new CoverVertex({
+          v: t.v,
+          s: encode(ops.plus(decode(v.s), t.s))
+        });
 
         if (vertices.get(w) == null) {
           vertices = vertices.set(w, vertices.size);
@@ -53,12 +60,14 @@ const graphPortion = function graphPortion(graph, start, dist) {
     thisShell = nextShell;
   });
 
-  let verts = I.List();
-  vertices.keySeq().forEach(v => { verts = verts.set(vertices.get(v), v); });
+  let verts = I.List().asMutable();
+  vertices.keySeq().forEach(v => {
+    verts.set(vertices.get(v), { v: v.v, s: decode(v.s) });
+  });
 
   return {
-    vertices: verts,
-    edges   : edges.map(e => e.toArray())
+    vertices: verts.asImmutable(),
+    edges   : edges.sort().map(e => e.toArray())
   };
 };
 
@@ -88,7 +97,7 @@ const stick = function stick(p, q, radius, segments) {
   const d = _normalized(ops.minus(q, p));
   const ex = [1,0,0];
   const ey = [0,1,0];
-  const t = ops.times(d, ex) > 0.9 ? ey : ex;
+  const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
   const u = _normalized(ops.crossProduct(d, t));
   const v = _normalized(ops.crossProduct(d, u));
   const a = Math.PI * 2 / n;
