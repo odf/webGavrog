@@ -114,7 +114,21 @@ if (require.main == module) {
   const P = fops.cleanup(fops.times(O, fops.transposed(O)));
   console.log(`O = ${O}`);
   console.log(`O * O.T = ${P}`);
+  console.log();
 
+  const testFloatInverse = A => {
+    const B = fops.cleanup(fops.inverse(A));
+    console.log(`${A} *\n${B} =\n${B ? fops.cleanup(fops.times(A, B)) : B}\n`);
+  };
+
+  testFloatInverse(fops.cleanup(
+    [[0.8164965809277261,0,0],
+     [0.577350269189626,0.8660254037844387,0],
+     [-5.5511151231257815e-17,-0.5,0.9999999999999998]]));
+
+  testFloatInverse([[0.8164965809277261,0,0],
+                    [0.577350269189626,0.8660254037844387,0],
+                    [0,-0.5,0.9999999999999998]]);
 
   const iops = intMatrices;
 
