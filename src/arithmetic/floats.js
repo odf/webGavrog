@@ -30,6 +30,12 @@ export function extend(rationals) {
   };
 
   const methods = {
+    float: {
+      Float   : x => make(x),
+      Integer : x => make(x),
+      LongInt : x => make(opt.toJS(x)),
+      Fraction: x => make(opt.toJS(x))
+    },
     isReal  : { Float: x => true },
     toJS    : { Float: x => x },
     negative: { Float: x => -x },
