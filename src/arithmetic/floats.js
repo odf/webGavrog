@@ -33,8 +33,8 @@ export function extend(rationals) {
     float: {
       Float   : x => make(x),
       Integer : x => make(x),
-      LongInt : x => make(opt.toJS(x)),
-      Fraction: x => make(opt.toJS(x))
+      LongInt : x => make(ops.toJS(x)),
+      Fraction: x => make(ops.toJS(x))
     },
     isReal  : { Float: x => true },
     toJS    : { Float: x => x },
