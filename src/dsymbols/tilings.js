@@ -157,7 +157,7 @@ const _orthonormalBasis = function _orthonormalBasis(G) {
     e[i] = v;
   });
 
-  return e;
+  return ops.cleanup(e);
 };
 
 
@@ -178,7 +178,7 @@ export default function tiling(ds, cover) {
 
   const I = ops.identityMatrix(delaney.dim(ds));
   const G = spacegroups.resymmetrizedGramMatrix(I, syms.toArray());
-  const basis = ops.inverse(_orthonormalBasis(G));
+  const basis = ops.cleanup(ops.inverse(_orthonormalBasis(G)));
 
   return {
     cover       : cov,
