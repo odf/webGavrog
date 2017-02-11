@@ -178,7 +178,8 @@ export default function tiling(ds, cover) {
 
   const I = ops.identityMatrix(delaney.dim(ds));
   const G = spacegroups.resymmetrizedGramMatrix(I, syms.toArray());
-  const basis = ops.cleanup(ops.inverse(_orthonormalBasis(G)));
+  const O = ops.cleanup(_orthonormalBasis(G));
+  const basis = ops.cleanup(ops.inverse(O));
 
   return {
     cover       : cov,
