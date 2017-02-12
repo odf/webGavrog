@@ -30,6 +30,36 @@ const mainMenu = [
 ];
 
 
+const Uploader = React.createClass({
+  displayName: 'Uploader',
+
+  loadFile(event) {
+    const files = event.target.files;
+    const handleData = this.props.handleData;
+
+    if (files[0]) {
+      const reader = new FileReader();
+
+      reader.onload = e => handleData(e.target.result);
+
+      if (this.props.isBinary)
+        reader.readAsArrayBuffer(files[0]);
+      else
+        reader.readAsText(files[0]);
+    }
+  },
+
+  render() {
+    return (
+      <div>
+        <p>{this.props.prompt || ""}</p>
+        <input type="file" onChange={this.loadFile}/>
+      </div>
+    );
+  }
+});
+
+
 const App = React.createClass({
   displayName: 'App',
 
@@ -83,6 +113,10 @@ const App = React.createClass({
       );
   },
 
+  makeScene(data) {
+    console.log(data);
+  },
+
   renderTrigger() {
     return (
       <div className="infoBoxTrigger"
@@ -108,6 +142,7 @@ const App = React.createClass({
           <img width="48" className="infoBoxLogo" src="3dt.ico"/>
           <h3 className="infoBoxHeader">Gavrog</h3>
           <span className="clearFix">{message}</span>
+          <Uploader handleData={this.makeScene}/>
           {this.renderMenu()}
         </Floatable>
       </div>
