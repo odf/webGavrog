@@ -2,6 +2,8 @@ import * as React from 'react';
 import * as csp   from 'plexus-csp';
 
 import * as delaney  from '../dsymbols/delaney';
+import ds from '../io/ds';
+
 import Display3d from './Display3d';
 import Floatable from './Floatable';
 import Menu      from './Menu';
@@ -78,19 +80,22 @@ const App = React.createClass({
     this.setState({ log: s });
   },
 
-  componentDidMount() {
-    this.handleResize();
-    window.addEventListener('resize', this.handleResize);
-
+  setTiling(ds) {
     csp.go(function*() {
       try {
-        const scene = yield makeScene(delaney.parse(tilings.fcu), this.log);
+        const scene = yield makeScene(ds, this.log);
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
         this.setState({ scene, camera, cameraParameters });
       } catch(ex) { console.error(ex); }
     }.bind(this));
+  },
+
+  componentDidMount() {
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
+    this.setTiling(delaney.parse(tilings.fcu));
   },
 
   componentWillUnmount() {
@@ -114,7 +119,9 @@ const App = React.createClass({
   },
 
   makeScene(data) {
-    console.log(data);
+    const sym = ds(data.split(/\r?\n/)).next().value.symbol;
+    console.log('' + sym);
+    this.setTiling(sym);
   },
 
   renderTrigger() {
