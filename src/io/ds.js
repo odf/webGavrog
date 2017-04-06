@@ -1,12 +1,12 @@
 import * as delaney  from '../dsymbols/delaney';
 
 
-export default function* symbols(lines) {
+export default function* symbols(text) {
   let i = 0;
   let buffer = [];
   let attributes = {};
 
-  for (const line of lines) {
+  for (const line of text.split(/\r?\n/)) {
     const lineNr = ++i;
     const m = line.match(/\s*#\s*@\s*(.*)/);
 
@@ -31,7 +31,7 @@ export default function* symbols(lines) {
 
 
 if (require.main == module) {
-  const txt = `
+  const text = `
 #@ name test
 <1.1:
 1:
@@ -42,7 +42,6 @@ if (require.main == module) {
     <1:1,1,1:6,3>
 `;
 
-  const lines = txt.split(/\r?\n/);
-  for (const s of symbols(lines))
+  for (const s of symbols(text))
     console.log(`${s.symbol} ${JSON.stringify(s.attributes)}`);
 }

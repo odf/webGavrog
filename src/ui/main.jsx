@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as csp   from 'plexus-csp';
 
 import * as delaney  from '../dsymbols/delaney';
-import ds from '../io/ds';
+import parseDSymbols from '../io/ds';
 
 import Display3d from './Display3d';
 import Floatable from './Floatable';
@@ -118,10 +118,9 @@ const App = React.createClass({
       );
   },
 
-  makeScene(data) {
-    const sym = ds(data.split(/\r?\n/)).next().value.symbol;
-    console.log('' + sym);
-    this.setTiling(sym);
+  handleFileData(data) {
+    const syms = Array.from(parseDSymbols(data))
+    this.setTiling(syms[0].symbol);
   },
 
   renderTrigger() {
@@ -149,7 +148,7 @@ const App = React.createClass({
           <img width="48" className="infoBoxLogo" src="3dt.ico"/>
           <h3 className="infoBoxHeader">Gavrog</h3>
           <span className="clearFix">{message}</span>
-          <Uploader handleData={this.makeScene}/>
+          <Uploader handleData={this.handleFileData}/>
           {this.renderMenu()}
         </Floatable>
       </div>
