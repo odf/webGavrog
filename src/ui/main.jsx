@@ -23,15 +23,6 @@ const tilings = {
 };
 
 
-const mainMenu = [
-  { label: 'File' },
-  { label: 'Tiling' },
-  { label: 'View' },
-  { label: 'Options' },
-  { label: 'Help' }
-];
-
-
 const Uploader = React.createClass({
   displayName: 'Uploader',
 
@@ -133,8 +124,22 @@ const App = React.createClass({
   },
 
   renderMenu() {
+    const tilingMenu = [
+      { label: 'First' },
+      { label: 'Prev' },
+      { label: 'Next' },
+      { label: 'Last' }];
+
+    const mainMenu = [
+      { label: 'File' },
+      { label: 'Tiling', submenu: tilingMenu },
+      { label: 'View' },
+      { label: 'Options' },
+      { label: 'Help' }];
+
     if (this.state.showMenu)
-      return <Menu className="infoBoxMenu" spec={mainMenu}/>;
+      return (
+        <Menu className="infoBoxMenu" spec={mainMenu}/>);
   },
 
   render() {

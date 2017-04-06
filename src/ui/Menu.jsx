@@ -3,7 +3,7 @@ import * as React from 'react';
 import Selection from './Selection';
 
 
-export default React.createClass({
+const Menu = React.createClass({
   getInitialState() {
     return { active: null };
   },
@@ -28,9 +28,10 @@ export default React.createClass({
     const baseClass = this.props.className || 'Menu';
     const activeClass = `${baseClass}Active`;
 
-    const entries = this.props.spec.map(({ label }, i) => (
+    const entries = this.props.spec.map(({ label, submenu }, i) => (
       <span key={i} className={this.state.active == i ? activeClass : ""}>
         {label}
+        {(this.state.active == i && submenu) ? <Menu className="infoBoxMenu" spec={submenu}/> : ''}
       </span>
     ));
 
@@ -44,3 +45,6 @@ export default React.createClass({
     );
   }
 });
+
+
+export default Menu;
