@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import * as I     from 'immutable';
 
 import { matrices } from '../arithmetic/types';
@@ -185,7 +186,7 @@ export default React.createClass({
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     const canvas = renderer.domElement;
     canvas.style.display = 'block';
-    React.findDOMNode(this).appendChild(canvas);
+    ReactDOM.findDOMNode(this).appendChild(canvas);
 
     renderer.domElement.addEventListener('contextmenu', this.preventDefault);
 
@@ -236,7 +237,7 @@ export default React.createClass({
   },
 
   handleMouseEnter(event) {
-    React.findDOMNode(this.refs.container).focus();
+    this.refs.container.focus();
   },
 
   handleWheel(event) {

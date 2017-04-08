@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 
 
 const clamp = (val, lo, hi) => Math.max(lo, Math.min(hi, val));
@@ -18,7 +19,7 @@ export default React.createClass({
     document.addEventListener('mousemove', this.handleMouseMove, false);
     document.addEventListener('mouseup'  , this.handleMouseUp  , false);
 
-    const element = React.findDOMNode(this);
+    const element = ReactDOM.findDOMNode(this);
 
     this.setState({
       mouseDown: true,

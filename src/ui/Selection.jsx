@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 
 
 export default React.createClass({
@@ -15,7 +16,7 @@ export default React.createClass({
   },
 
   handleMouseDown(event) {
-    const node = React.findDOMNode(this);
+    const node = ReactDOM.findDOMNode(this);
     const { left, right, top, bottom } = node.getBoundingClientRect();
     const { pageX: x, pageY: y } = event;
 
@@ -58,7 +59,7 @@ export default React.createClass({
   },
 
   focus() {
-    React.findDOMNode(this.refs.container).focus();
+    this.refs.container.focus();
   },
 
   highlight(i) {
@@ -121,7 +122,6 @@ export default React.createClass({
 
     const wrapItem = (item, i) => (
       <li key          = {i}
-          index        = {i}
           className    = {classes(i)}
           onMouseEnter = {event => this.highlight(i)}
           onClick      = {event => this.select(i)}

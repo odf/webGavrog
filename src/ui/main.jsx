@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import * as csp   from 'plexus-csp';
 
 import * as delaney  from '../dsymbols/delaney';
@@ -162,4 +163,4 @@ const App = React.createClass({
 });
 
 
-React.render(<App/>, document.getElementById('react-main'));
+ReactDOM.render(<App/>, document.getElementById('react-main'));
