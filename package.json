@@ -7,12 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "dependencies": {
-    "immutable": "~3.6.2",
+    "immutable": "~3.8.1",
     "plexus-csp": "^0.2.0",
     "react": "~0.13.1",
-    "three": "~0.70.0"
+    "three": "~0.84.0"
   },
   "devDependencies": {
     "babel-core": "^6.4.0",
