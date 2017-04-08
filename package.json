@@ -22,11 +22,11 @@
     "babel-preset-react": "^6.3.13",
     "json-loader": "^0.5.2",
     "jstest": "^1.0.5",
-    "jsverify": "^0.7.4",
-    "node-libs-browser": "^0.5.2",
-    "pegjs": "^0.9.0",
-    "pegjs-loader": "^0.2.2",
-    "source-map-support": "^0.3.2",
-    "webpack": "^1.12.10"
+    "jsverify": "^0.8.2",
+    "node-libs-browser": "^2.0.0",
+    "pegjs": "^0.10.0",
+    "pegjs-loader": "^0.5.1",
+    "source-map-support": "^0.4.14",
+    "webpack": "^2.3.3"
   }
 }
