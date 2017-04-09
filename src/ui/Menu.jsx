@@ -3,26 +3,27 @@ import * as React from 'react';
 import Selection from './Selection';
 
 
-const Menu = React.createClass({
-  getInitialState() {
-    return { active: null };
-  },
+export default class Menu extends React.Component {
+  constructor() {
+    super();
+    this.state = { active: null };
+  }
 
   handleSelect(i) {
     this.setState((state, props) => (
       { active: state.active == null ? i : null }
     ));
-  },
+  }
 
   handleHighlight(i) {
     this.setState((state, props) =>
       state.active == null ? {} : { active: i }
     );
-  },
+  }
 
   handleCancel() {
     this.setState({ active: null });
-  },
+  }
 
   render() {
     const baseClass = this.props.className || 'Menu';
@@ -37,14 +38,11 @@ const Menu = React.createClass({
 
     return (
       <Selection className={this.props.className || "Menu"}
-                 onSelect={this.handleSelect}
-                 onHighlight={this.handleHighlight}
-                 onCancel={this.handleCancel}>
+                 onSelect={i => this.handleSelect(i)}
+                 onHighlight={i => this.handleHighlight(i)}
+                 onCancel={() => this.handleCancel()}>
         {entries}
       </Selection>
     );
   }
-});
-
-
-export default Menu;
+}
