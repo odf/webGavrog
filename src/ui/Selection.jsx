@@ -2,18 +2,19 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
 
-export default React.createClass({
-  getInitialState() {
-    return {};
-  },
+export default class Selection extends React.Component {
+  constructor() {
+    super();
+    this.state = {};
+  }
 
   componentDidMount() {
     document.addEventListener('mousedown', this.handleMouseDown);
-  },
+  }
 
   componentWillUnmount() {
     document.removeEventListener('mousedown', this.handleMouseDown);
-  },
+  }
 
   handleMouseDown(event) {
     const node = ReactDOM.findDOMNode(this);
@@ -24,11 +25,11 @@ export default React.createClass({
       this.cancel();
     else
       event.preventDefault();
-  },
+  }
 
   handleMouseEnter(event) {
     this.focus();
-  },
+  }
 
   handleKeyDown(event) {
     const { key, keyCode } = event;
@@ -56,18 +57,18 @@ export default React.createClass({
     else if (key == 'Tab' || keyCode == 9) {
       this.select();
     }
-  },
+  }
 
   focus() {
     this.refs.container.focus();
-  },
+  }
 
   highlight(i) {
     this.focus();
     this.setState({ highlighted: i });
     if (this.props.onHighlight)
       this.props.onHighlight(i);
-  },
+  }
 
   next() {
     const n = this.props.children.length;
@@ -80,7 +81,7 @@ export default React.createClass({
       this.props.onMenuLeave();
     } else
       this.highlight(0);
-  },
+  }
 
   previous() {
     const n = this.props.children.length;
@@ -93,19 +94,19 @@ export default React.createClass({
       this.props.onMenuLeave();
     } else
       this.highlight(n-1);
-  },
+  }
 
   select(i) {
     const selected = i == null ? this.state.highlighted : i;
     this.setState({ selected: selected, highlighted: selected });
     if (this.props.onSelect)
       this.props.onSelect(selected);
-  },
+  }
 
   cancel() {
     if (this.props.onCancel)
       this.props.onCancel();
-  },
+  }
 
   render() {
     const baseClass = this.props.className || 'Selection';
@@ -134,10 +135,10 @@ export default React.createClass({
       <ul className = {baseClass}
           tabIndex     = {0}
           ref          = "container"
-          onMouseEnter = {this.handleMouseEnter}
-          onKeyDown    = {this.handleKeyDown}>
+          onMouseEnter = {event => this.handleMouseEnter(event)}
+          onKeyDown    = {event => this.handleKeyDown(event)}>
         {this.props.children.map(wrapItem)}
       </ul>
     );
   }
-});
+}
