@@ -272,17 +272,18 @@ export default class Display3d extends React.Component {
   render() {
     render3d(this.state.value, this.props);
 
-    return React.DOM.div({
-      className   : this.props.className,
-      style       : { outline: 'none' },
-      ref         : 'container',
-      tabIndex    : 0,
-      onMouseDown : event => this.handleMouseDown(event),
-      onMouseMove : event => this.handleMouseMove(event),
-      onMouseUp   : event => this.handleMouseUp(event),
-      onMouseEnter: event => this.handleMouseEnter(event),
-      onWheel     : event => this.handleWheel(event),
-      onKeyDown   : event => this.handleKeyDown(event)
-    });
+    return (
+      <div className   = {this.props.className}
+           style       = {{ outline: 'none' }}
+           ref         = "container"
+           tabIndex    = {0}
+           onMouseDown = {event => this.handleMouseDown(event)}
+           onMouseMove = {event => this.handleMouseMove(event)}
+           onMouseUp   = {event => this.handleMouseUp(event)}
+           onMouseEnter= {event => this.handleMouseEnter(event)}
+           onWheel     = {event => this.handleWheel(event)}
+           onKeyDown   = {event => this.handleKeyDown(event)}>
+      </div>
+    );
   }
 }
