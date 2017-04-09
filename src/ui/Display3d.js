@@ -144,17 +144,16 @@ const render3d = (function makeRender() {
 })();
 
 
-export default React.createClass({
-  displayName: 'Display3d',
-
-  getInitialState() {
-    return {
+export default class Display3d extends React.Component {
+  constructor() {
+    super();
+    this.state = {
       value: new DisplayState()
     };
-  },
+  }
 
   update(mods) {
-    this.setState(function(state, props) {
+    this.setState((state, props) => {
       const value = state.value.merge(mods);
 
       const params = newCameraParameters(
@@ -176,11 +175,11 @@ export default React.createClass({
         })
       };
     });
-  },
+  }
 
   preventDefault(event) {
     event.preventDefault();
-  },
+  }
 
   componentDidMount() {
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -188,23 +187,28 @@ export default React.createClass({
     canvas.style.display = 'block';
     ReactDOM.findDOMNode(this).appendChild(canvas);
 
-    renderer.domElement.addEventListener('contextmenu', this.preventDefault);
+    renderer.domElement.addEventListener(
+      'contextmenu', event => this.preventDefault(event));
 
     this.update({
       renderer: renderer,
     });
-  },
+  }
 
   componentWillUnmount() {
-    renderer.domElement.removeEventListener('contextmenu', this.preventDefault);
-  },
+    renderer.domElement.removeEventListener(
+      'contextmenu', event => this.preventDefault(event));
+  }
 
   handleMouseDown(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    document.addEventListener('mousemove', this.handleMouseMove, false);
-    document.addEventListener('mouseup', this.handleMouseUp, false);
+    this.mouseMoveListener = event => this.handleMouseMove(event);
+    this.mouseUpListener = event => this.handleMouseUp(event);
+
+    document.addEventListener('mousemove', this.mouseMoveListener, false);
+    document.addEventListener('mouseup', this.mouseUpListener, false);
 
     this.update({
       mouseDown  : true,
@@ -212,7 +216,7 @@ export default React.createClass({
       ndcOldX    : 2 * (event.clientX / this.props.width) - 1,
       ndcOldY    : 1 - 2 * (event.clientY / this.props.height)
     });
-  },
+  }
 
   handleMouseMove(event) {
     event.preventDefault();
@@ -222,23 +226,23 @@ export default React.createClass({
       ndcX: 2 * (event.clientX / this.props.width) - 1,
       ndcY: 1 - 2 * (event.clientY / this.props.height)
     });
-  },
+  }
 
   handleMouseUp(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    document.removeEventListener('mousemove', this.handleMouseMove);
-    document.removeEventListener('mouseup', this.handleMouseUp);
+    document.removeEventListener('mousemove', this.mouseMoveListener);
+    document.removeEventListener('mouseup', this.mouseUpListener);
 
     this.update({
       mouseDown: false
     });
-  },
+  }
 
   handleMouseEnter(event) {
     this.refs.container.focus();
-  },
+  }
 
   handleWheel(event) {
     let d = ops.sgn(event.deltaY);
@@ -246,7 +250,7 @@ export default React.createClass({
     this.update({
       wheel: this.state.value.wheel + d
     });
-  },
+  }
 
   handleKeyDown(event) {
     event.preventDefault();
@@ -263,7 +267,7 @@ export default React.createClass({
       if (fn)
         fn(event);
     }
-  },
+  }
 
   render() {
     render3d(this.state.value, this.props);
@@ -273,12 +277,12 @@ export default React.createClass({
       style       : { outline: 'none' },
       ref         : 'container',
       tabIndex    : 0,
-      onMouseDown : this.handleMouseDown,
-      onMouseMove : this.handleMouseMove,
-      onMouseUp   : this.handleMouseUp,
-      onMouseEnter: this.handleMouseEnter,
-      onWheel     : this.handleWheel,
-      onKeyDown   : this.handleKeyDown
+      onMouseDown : event => this.handleMouseDown(event),
+      onMouseMove : event => this.handleMouseMove(event),
+      onMouseUp   : event => this.handleMouseUp(event),
+      onMouseEnter: event => this.handleMouseEnter(event),
+      onWheel     : event => this.handleWheel(event),
+      onKeyDown   : event => this.handleKeyDown(event)
     });
   }
-});
+}
