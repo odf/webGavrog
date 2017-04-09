@@ -24,9 +24,7 @@ const tilings = {
 };
 
 
-const Uploader = React.createClass({
-  displayName: 'Uploader',
-
+class Uploader extends React.Component {
   loadFile(event) {
     const files = event.target.files;
     const handleData = this.props.handleData;
@@ -41,62 +39,61 @@ const Uploader = React.createClass({
       else
         reader.readAsText(files[0]);
     }
-  },
+  }
 
   render() {
     return (
       <div>
         <p>{this.props.prompt || ""}</p>
-        <input type="file" onChange={this.loadFile}/>
+        <input type="file" onChange={event => this.loadFile(event)}/>
       </div>
     );
   }
-});
+}
 
 
-const App = React.createClass({
-  displayName: 'App',
-
-  getInitialState() {
-    return {};
-  },
+class App extends React.Component {
+  constructor() {
+    super();
+    this.state = {};
+  }
 
   handleResize(data) {
     this.setState({
       width: window.innerWidth,
       height: window.innerHeight
     });
-  },
+  }
 
   log(s) {
     this.setState({ log: s });
-  },
+  }
 
   setTiling(ds) {
     csp.go(function*() {
       try {
-        const scene = yield makeScene(ds, this.log);
+        const scene = yield makeScene(ds, s => this.log(s));
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
         this.setState({ scene, camera, cameraParameters });
       } catch(ex) { console.error(ex); }
     }.bind(this));
-  },
+  }
 
   componentDidMount() {
     this.handleResize();
-    window.addEventListener('resize', this.handleResize);
+    window.addEventListener('resize', data => this.handleResize(data));
     this.setTiling(delaney.parse(tilings.fcu));
-  },
+  }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
-  },
+    window.removeEventListener('resize', data => this.handleResize(data));
+  }
 
   toggleMenu() {
     this.setState({ showMenu: !this.state.showMenu });
-  },
+  }
 
   render3d() {
     if (this.state.scene != null)
@@ -108,21 +105,21 @@ const App = React.createClass({
                    height           = {this.state.height}
                    />
       );
-  },
+  }
 
   handleFileData(data) {
     const syms = Array.from(parseDSymbols(data))
     this.setTiling(syms[0].symbol);
-  },
+  }
 
   renderTrigger() {
     return (
       <div className="infoBoxTrigger"
-           onClick={this.toggleMenu}>
+           onClick={() => this.toggleMenu()}>
         {this.state.showMenu ? triangleUp : triangleDown}
       </div>
     );
-  },
+  }
 
   renderMenu() {
     const tilingMenu = [
@@ -139,9 +136,8 @@ const App = React.createClass({
       { label: 'Help' }];
 
     if (this.state.showMenu)
-      return (
-        <Menu className="infoBoxMenu" spec={mainMenu}/>);
-  },
+      return <Menu className="infoBoxMenu" spec={mainMenu}/>;
+  }
 
   render() {
     const message = this.state.log || "Welcome!";
@@ -154,13 +150,13 @@ const App = React.createClass({
           <img width="48" className="infoBoxLogo" src="3dt.ico"/>
           <h3 className="infoBoxHeader">Gavrog</h3>
           <span className="clearFix">{message}</span>
-          <Uploader handleData={this.handleFileData}/>
+          <Uploader handleData={data => this.handleFileData(data)}/>
           {this.renderMenu()}
         </Floatable>
       </div>
     );
   }
-});
+}
 
 
 ReactDOM.render(<App/>, document.getElementById('react-main'));
