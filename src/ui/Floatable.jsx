@@ -5,19 +5,23 @@ import * as ReactDOM from 'react-dom';
 const clamp = (val, lo, hi) => Math.max(lo, Math.min(hi, val));
 
 
-export default React.createClass({
-  getInitialState() {
-    return {
+export default class Floatable extends React.Component {
+  constructor() {
+    super();
+    this.state = {
       posX: 10,
       posY: 10
     };
-  },
+  }
 
   handleMouseDown(event) {
     event.preventDefault();
 
-    document.addEventListener('mousemove', this.handleMouseMove, false);
-    document.addEventListener('mouseup'  , this.handleMouseUp  , false);
+    this.mouseMoveListener = event => this.handleMouseMove(event);
+    this.mouseUpListener = event => this.handleMouseUp(event);
+
+    document.addEventListener('mousemove', this.mouseMoveListener, false);
+    document.addEventListener('mouseup', this.mouseUpListener, false);
 
     const element = ReactDOM.findDOMNode(this);
 
@@ -28,7 +32,7 @@ export default React.createClass({
       maxX   : window.innerWidth  - element.offsetWidth,
       maxY   : window.innerHeight - element.offsetHeight
     });
-  },
+  }
 
   handleMouseMove(event) {
     event.preventDefault();
@@ -37,18 +41,18 @@ export default React.createClass({
       posX: clamp(event.clientX + this.state.offsetX, 0, this.state.maxX),
       posY: clamp(event.clientY + this.state.offsetY, 0, this.state.maxY)
     });
-  },
+  }
 
   handleMouseUp(event) {
     event.preventDefault();
 
-    document.removeEventListener('mousemove', this.handleMouseMove);
-    document.removeEventListener('mouseup'  , this.handleMouseUp);
+    document.removeEventListener('mousemove', this.mouseMoveListener);
+    document.removeEventListener('mouseup', this.mouseUpListener);
 
     this.setState({
       mouseDown: false
     });
-  },
+  }
 
   render() {
     return (
@@ -56,9 +60,9 @@ export default React.createClass({
            style={{ left  : `${this.state.posX}px`,
                     top   : `${this.state.posY}px`,
                     cursor: this.state.mouseDown ? 'grabbing' : 'grab' }}
-           onMouseDown={this.handleMouseDown}>
+           onMouseDown={event => this.handleMouseDown(event)}>
         {this.props.children}
       </div>
     );
   }
-});
+}
