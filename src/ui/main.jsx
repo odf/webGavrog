@@ -83,12 +83,13 @@ class App extends React.Component {
 
   componentDidMount() {
     this.handleResize();
-    window.addEventListener('resize', data => this.handleResize(data));
+    this.resizeListener = data => this.handleResize(data);
+    window.addEventListener('resize', this.resizeListener);
     this.setTiling(delaney.parse(tilings.fcu));
   }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', data => this.handleResize(data));
+    window.removeEventListener('resize', this.resizeListener);
   }
 
   toggleMenu() {

@@ -9,11 +9,12 @@ export default class Selection extends React.Component {
   }
 
   componentDidMount() {
-    document.addEventListener('mousedown', this.handleMouseDown);
+    this.mouseDownListener = event => this.handleMouseDown(event)
+    document.addEventListener('mousedown', this.mouseDownListener);
   }
 
   componentWillUnmount() {
-    document.removeEventListener('mousedown', this.handleMouseDown);
+    document.removeEventListener('mousedown', this.mouseDownListener);
   }
 
   handleMouseDown(event) {
