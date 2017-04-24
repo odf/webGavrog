@@ -123,18 +123,32 @@ class App extends React.Component {
   }
 
   renderMenu() {
+    const fileMenu = [
+      { label: 'Open...' }];
+
     const tilingMenu = [
       { label: 'First' },
       { label: 'Prev' },
       { label: 'Next' },
-      { label: 'Last' }];
+      { label: 'Last' },
+      { label: 'Search...' }];
+
+    const viewMenu = [
+      { label: 'View along X' },
+      { label: 'View along Y' },
+      { label: 'View along Z' }
+    ];
+
+    const helpMenu = [
+      { label: 'About Gavrog...' }
+    ];
 
     const mainMenu = [
-      { label: 'File' },
+      { label: 'File', submenu: fileMenu },
       { label: 'Tiling', submenu: tilingMenu },
-      { label: 'View' },
+      { label: 'View', submenu: viewMenu },
       { label: 'Options' },
-      { label: 'Help' }];
+      { label: 'Help', submenu: helpMenu }];
 
     if (this.state.showMenu)
       return <Menu className="infoBoxMenu" spec={mainMenu}/>;

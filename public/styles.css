@@ -83,15 +83,14 @@ body {
     display: inline-block;
     position: absolute;
     top: 100%;
-    left: 0;
+    left: -1px;
     z-index: 5;
     background-color: white;
     box-shadow: 4px 4px 10px rgba(0,0,0,0.2);
-    width: 100%;
 }
 
 .infoBoxMenuSubmenuItem {
-    width: 100%;
+    white-space: nowrap;
     padding: 2px 5px;
     border: 1px solid lightgray;
     margin-bottom: -1px;
