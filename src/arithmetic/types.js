@@ -29,8 +29,6 @@ export const residueClassRing = m => residues.extend(base.arithmetic(), m);
 
 
 if (require.main == module) {
-  const I = require('immutable');
-
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
@@ -139,7 +137,6 @@ if (require.main == module) {
     const xr = fops.repr(x);
     console.log();
     console.log(JSON.stringify(xr));
-    console.log(I.fromJS(xr));
     console.log(JSON.stringify(fops.fromRepr(xr)));
   };
 
