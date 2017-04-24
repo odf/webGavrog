@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import * as I     from 'immutable';
 
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
@@ -47,11 +46,11 @@ const MODE = {
 };
 
 
-const CameraParameters = I.Record({
+const defaultCameraParameters = {
   matrix  : ops.identityMatrix(3),
   distance: undefined,
   target  : ops.vector(3)
-});
+};
 
 
 const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
@@ -60,26 +59,25 @@ const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
   const t = params.target;
 
   if (pos) {
-    return params.merge({
+    return Object.assign({}, params, {
       distance: ops.norm(ops.minus(pos, ops.plus(t, ops.times(d, m[2])))),
       target  : pos
     });
   } else if (wheel) {
-    return params.set('distance', d * Math.pow(0.9, -wheel))
+    return Object.assign({}, params, { distance: d * Math.pow(0.9, -wheel) });
   } else if (button == MODE.PAN) {
-    return params.set(
-      'target',
-      ops.plus(t, ops.plus(ops.times(-0.2 * d * dx, m[0]),
-                           ops.times(-0.2 * d * dy, m[1]))));
+    return Object.assign({}, params, {
+      target: ops.plus(t, ops.plus(ops.times(-0.2 * d * dx, m[0]),
+                                   ops.times(-0.2 * d * dy, m[1]))) });
   } else {
     const rot = rotation(-dx, -dy, button == MODE.TILT);
-    return params.set('matrix',
-                      ops.orthonormalized(ops.times(rot, params.matrix)));
+    return Object.assign({}, params, {
+      matrix: ops.orthonormalized(ops.times(rot, params.matrix)) });
   }
 };
 
 
-const DisplayState = I.Record({
+const defaultDisplayState = {
   mouseDown        : false,
   mouseButton      : null,
   ndcX             : 0,
@@ -90,7 +88,7 @@ const DisplayState = I.Record({
   centeringPosition: null,
   cameraParameters : null,
   renderer         : null
-});
+};
 
 
 const render3d = (function makeRender() {
@@ -147,16 +145,17 @@ export default class Display3d extends React.Component {
   constructor() {
     super();
     this.state = {
-      value: new DisplayState()
+      value: Object.assign({}, defaultDisplayState)
     };
   }
 
   update(mods) {
     this.setState((state, props) => {
-      const value = state.value.merge(mods);
+      const value = Object.assign({}, state.value, mods);
 
       const params = newCameraParameters(
-        value.cameraParameters || new CameraParameters(props.cameraParameters),
+        value.cameraParameters || Object.assign(
+          {}, defaultCameraParameters, props.cameraParameters),
         value.ndcOldX == null ? 0 : value.ndcX - value.ndcOldX,
         value.ndcOldY == null ? 0 : value.ndcY - value.ndcOldY,
         value.mouseButton,
@@ -165,7 +164,7 @@ export default class Display3d extends React.Component {
       );
 
       return {
-        value: value.merge({
+        value: Object.assign({}, value, {
           ndcOldX: value.mouseDown ? value.ndcX : null,
           ndcOldY: value.mouseDown ? value.ndcY : null,
           wheel: 0,
