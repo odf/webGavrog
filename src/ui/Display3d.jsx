@@ -88,7 +88,6 @@ const DisplayState = I.Record({
   ndcOldY          : null,
   wheel            : 0,
   centeringPosition: null,
-  pickedPosition   : null,
   cameraParameters : null,
   renderer         : null
 });
@@ -260,7 +259,7 @@ export default class Display3d extends React.Component {
 
     if (key == 'c') {
       this.update({
-        centeringPosition: this.state.value.pickedPosition || [0,0,0]
+        centeringPosition: [0,0,0]
       });
     } else {
       const fn = (this.props.keyHandlers || {})[key];
