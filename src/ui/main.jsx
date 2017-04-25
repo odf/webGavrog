@@ -154,20 +154,28 @@ class App extends React.Component {
       return <Menu className="infoBoxMenu" spec={mainMenu}/>;
   }
 
+  renderMainDialog() {
+    const message = this.state.log || "Welcome!";
+
+    return (
+      <Floatable className="infoBox">
+        {this.renderTrigger()}
+        <img width="48" className="infoBoxLogo" src="3dt.ico"/>
+        <h3 className="infoBoxHeader">Gavrog</h3>
+        <span className="clearFix">{message}</span>
+        <Uploader handleData={data => this.handleFileData(data)}/>
+        {this.renderMenu()}
+      </Floatable>
+    );
+  }
+
   render() {
     const message = this.state.log || "Welcome!";
 
     return (
       <div>
         {this.render3d()}
-        <Floatable className="infoBox">
-          {this.renderTrigger()}
-          <img width="48" className="infoBoxLogo" src="3dt.ico"/>
-          <h3 className="infoBoxHeader">Gavrog</h3>
-          <span className="clearFix">{message}</span>
-          <Uploader handleData={data => this.handleFileData(data)}/>
-          {this.renderMenu()}
-        </Floatable>
+        {this.renderMainDialog()}
       </div>
     );
   }
