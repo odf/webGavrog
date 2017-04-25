@@ -10,9 +10,14 @@ export default class Menu extends React.Component {
   }
 
   handleSelect(i) {
-    this.setState((state, props) => (
-      { active: state.active == null ? i : null }
-    ));
+    const { action } = this.props.spec[i];
+
+    if (action)
+      action();
+    else
+      this.setState((state, props) => (
+        { active: state.active == null ? i : null }
+      ));
   }
 
   handleHighlight(i) {

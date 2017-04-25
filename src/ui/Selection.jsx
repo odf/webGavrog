@@ -126,7 +126,7 @@ export default class Selection extends React.Component {
       <li key          = {i}
           className    = {classes(i)}
           onMouseEnter = {event => this.highlight(i)}
-          onClick      = {event => this.select(i)}
+          onMouseDown  = {event => this.select(i)}
           >
         {item}
       </li>

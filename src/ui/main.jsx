@@ -124,31 +124,31 @@ class App extends React.Component {
 
   renderMenu() {
     const fileMenu = [
-      { label: 'Open...' }];
+      { label: 'Open...', action: () => this.log('File -> Open...') }];
 
     const tilingMenu = [
-      { label: 'First' },
-      { label: 'Prev' },
-      { label: 'Next' },
-      { label: 'Last' },
-      { label: 'Search...' }];
+      { label: 'First', action: () => this.log('Tiling -> First') },
+      { label: 'Prev', action: () => this.log('Tiling -> Prev') },
+      { label: 'Next', action: () => this.log('Tiling -> Next') },
+      { label: 'Last', action: () => this.log('Tiling -> Last') },
+      { label: 'Search...', action: () => this.log('Tiling -> Search...') }];
 
     const viewMenu = [
-      { label: 'View along X' },
-      { label: 'View along Y' },
-      { label: 'View along Z' }
+      { label: 'Along X', action: () => this.log('View -> Along X') },
+      { label: 'Along Y', action: () => this.log('View -> Along Y') },
+      { label: 'Along Z', action: () => this.log('View -> Along Z') }
     ];
 
     const helpMenu = [
-      { label: 'About Gavrog...' }
+      { label: 'About Gavrog...', action: () => this.log('Help -> About') }
     ];
 
     const mainMenu = [
-      { label: 'File', submenu: fileMenu },
+      { label: 'File',   submenu: fileMenu },
       { label: 'Tiling', submenu: tilingMenu },
-      { label: 'View', submenu: viewMenu },
-      { label: 'Options' },
-      { label: 'Help', submenu: helpMenu }];
+      { label: 'View',   submenu: viewMenu },
+      { label: 'Options...', action: () => this.log('Options...') },
+      { label: 'Help',   submenu: helpMenu }];
 
     if (this.state.showMenu)
       return <Menu className="infoBoxMenu" spec={mainMenu}/>;
