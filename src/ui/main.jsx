@@ -25,28 +25,37 @@ const tilings = {
 
 
 class Uploader extends React.Component {
+  componentDidMount() {
+    const input = document.createElement('input');
+
+    input.type = 'file';
+    input.accept = this.props.accept;
+    input.multiple = this.props.multiple;
+    input.addEventListener('change', event => this.loadFile(event));
+
+    this._input = input;
+  }
+
   loadFile(event) {
-    const files = event.target.files;
     const handleData = this.props.handleData;
 
-    if (files[0]) {
+    for (const file of event.target.files) {
       const reader = new FileReader();
 
-      reader.onload = e => handleData(e.target.result);
+      reader.onload = event => handleData(file, event.target.result);
 
       if (this.props.isBinary)
-        reader.readAsArrayBuffer(files[0]);
+        reader.readAsDataURL(file);
       else
-        reader.readAsText(files[0]);
+        reader.readAsText(file);
     }
   }
 
   render() {
     return (
-      <div>
-        <p>{this.props.prompt || ""}</p>
-        <input type="file" onChange={event => this.loadFile(event)}/>
-      </div>
+      <button onClick={() => this._input.click()}>
+        {this.props.prompt || 'Load'}
+      </button>
     );
   }
 }
@@ -163,7 +172,7 @@ class App extends React.Component {
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
         <h3 className="infoBoxHeader">Gavrog</h3>
         <span className="clearFix">{message}</span>
-        <Uploader handleData={data => this.handleFileData(data)}/>
+        <Uploader handleData={(file, data) => this.handleFileData(data)}/>
         {this.renderMenu()}
       </Floatable>
     );
