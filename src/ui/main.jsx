@@ -105,6 +105,10 @@ class App extends React.Component {
     this.setState({ showMenu: !this.state.showMenu });
   }
 
+  setLoaderState(onOff) {
+    this.setState({ showLoader: onOff });
+  }
+
   render3d() {
     if (this.state.scene != null)
       return (
@@ -118,7 +122,8 @@ class App extends React.Component {
   }
 
   handleFileData(data) {
-    const syms = Array.from(parseDSymbols(data))
+    const syms = Array.from(parseDSymbols(data));
+    this.setLoaderState(false);
     this.setTiling(syms[0].symbol);
   }
 
@@ -133,7 +138,7 @@ class App extends React.Component {
 
   renderMenu() {
     const fileMenu = [
-      { label: 'Open...', action: () => this.log('File -> Open...') }];
+      { label: 'Open...', action: () => this.setLoaderState(true) }];
 
     const tilingMenu = [
       { label: 'First', action: () => this.log('Tiling -> First') },
@@ -172,10 +177,17 @@ class App extends React.Component {
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
         <h3 className="infoBoxHeader">Gavrog</h3>
         <span className="clearFix">{message}</span>
-        <Uploader handleData={(file, data) => this.handleFileData(data)}/>
         {this.renderMenu()}
+        {this.renderLoader()}
       </Floatable>
     );
+  }
+
+  renderLoader() {
+    if (this.state.showLoader)
+      return (
+        <Uploader handleData={(file, data) => this.handleFileData(data)}/>
+      );
   }
 
   render() {
