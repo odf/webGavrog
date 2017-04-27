@@ -9,15 +9,15 @@ export default class Selection extends React.Component {
   }
 
   componentDidMount() {
-    this.mouseDownListener = event => this.handleMouseDown(event)
-    document.addEventListener('mousedown', this.mouseDownListener);
+    this.clickListener = event => this.handleClick(event)
+    document.addEventListener('click', this.clickListener);
   }
 
   componentWillUnmount() {
-    document.removeEventListener('mousedown', this.mouseDownListener);
+    document.removeEventListener('click', this.clickListener);
   }
 
-  handleMouseDown(event) {
+  handleClick(event) {
     const node = ReactDOM.findDOMNode(this);
     const { left, right, top, bottom } = node.getBoundingClientRect();
     const { pageX: x, pageY: y } = event;
@@ -126,7 +126,7 @@ export default class Selection extends React.Component {
       <li key          = {i}
           className    = {classes(i)}
           onMouseEnter = {event => this.highlight(i)}
-          onMouseDown  = {event => this.select(i)}
+          onClick      = {event => this.select(i)}
           >
         {item}
       </li>
