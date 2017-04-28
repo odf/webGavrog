@@ -24,39 +24,51 @@ const tilings = {
 };
 
 
-class Uploader extends React.Component {
-  componentDidMount() {
-    const input = document.createElement('input');
+class FileLoader {
+  constructor(onData, accept, multiple=false, binary=false)
+  {
+    this.onData = onData;
+    this.accept = accept;
+    this.multiple = multiple;
+    this.binary = binary;
+  }
 
-    input.type = 'file';
-    input.accept = this.props.accept;
-    input.multiple = this.props.multiple;
-    input.addEventListener('change', event => this.loadFile(event));
+  getInputElement() {
+    if (!this.input) {
+      this.input = document.createElement('input');
 
-    this._input = input;
+      this.input.type = 'file';
+      this.input.accept = this.accept;
+      this.input.multiple = this.multiple;
+      this.input.addEventListener('change', event => this.loadFile(event));
+    }
+
+    return this.input;
   }
 
   loadFile(event) {
-    const handleData = this.props.handleData;
+    const onData = this.onData;
 
     for (const file of event.target.files) {
       const reader = new FileReader();
 
-      reader.onload = event => handleData(file, event.target.result);
+      reader.onload = event => onData(file, event.target.result);
 
-      if (this.props.isBinary)
+      if (this.binary)
         reader.readAsDataURL(file);
       else
         reader.readAsText(file);
     }
   }
 
-  render() {
-    return (
-      <button onClick={() => this._input.click()}>
-        {this.props.prompt || 'Load'}
-      </button>
-    );
+  select() {
+    this.getInputElement().click();
+  }
+
+  destroy() {
+    if (this.input)
+      document.body.removeChild(this.input);
+    this.input = null;
   }
 }
 
@@ -65,6 +77,7 @@ class App extends React.Component {
   constructor() {
     super();
     this.state = {};
+    this.loader = new FileLoader((file, data) => this.handleFileData(data));
   }
 
   handleResize(data) {
@@ -105,10 +118,6 @@ class App extends React.Component {
     this.setState({ showMenu: !this.state.showMenu });
   }
 
-  setLoaderState(onOff) {
-    this.setState({ showLoader: onOff });
-  }
-
   render3d() {
     if (this.state.scene != null)
       return (
@@ -123,7 +132,6 @@ class App extends React.Component {
 
   handleFileData(data) {
     const syms = Array.from(parseDSymbols(data));
-    this.setLoaderState(false);
     this.setTiling(syms[0].symbol);
   }
 
@@ -138,7 +146,7 @@ class App extends React.Component {
 
   renderMenu() {
     const fileMenu = [
-      { label: 'Open...', action: () => this.setLoaderState(true) }];
+      { label: 'Open...', action: () => this.loader.select() }];
 
     const tilingMenu = [
       { label: 'First', action: () => this.log('Tiling -> First') },
@@ -178,16 +186,8 @@ class App extends React.Component {
         <h3 className="infoBoxHeader">Gavrog</h3>
         <span className="clearFix">{message}</span>
         {this.renderMenu()}
-        {this.renderLoader()}
       </Floatable>
     );
-  }
-
-  renderLoader() {
-    if (this.state.showLoader)
-      return (
-        <Uploader handleData={(file, data) => this.handleFileData(data)}/>
-      );
   }
 
   render() {
