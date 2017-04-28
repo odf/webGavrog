@@ -33,20 +33,20 @@ class FileLoader {
     this.binary = binary;
   }
 
-  getInputElement() {
+  _getInputElement() {
     if (!this.input) {
       this.input = document.createElement('input');
 
       this.input.type = 'file';
       this.input.accept = this.accept;
       this.input.multiple = this.multiple;
-      this.input.addEventListener('change', event => this.loadFile(event));
+      this.input.addEventListener('change', event => this._loadFile(event));
     }
 
     return this.input;
   }
 
-  loadFile(event) {
+  _loadFile(event) {
     const onData = this.onData;
 
     for (const file of event.target.files) {
@@ -62,7 +62,7 @@ class FileLoader {
   }
 
   select() {
-    this.getInputElement().click();
+    this._getInputElement().click();
   }
 
   destroy() {
