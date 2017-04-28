@@ -25,8 +25,7 @@ const tilings = {
 
 
 class FileLoader {
-  constructor(onData, accept, multiple=false, binary=false)
-  {
+  constructor(onData, accept, multiple=false, binary=false) {
     this.onData = onData;
     this.accept = accept;
     this.multiple = multiple;
@@ -73,11 +72,42 @@ class FileLoader {
 }
 
 
+class FileSaver {
+  constructor() {
+  }
+
+  _getDownloadLink() {
+    if (!this.link) {
+      this.link = document.createElement('a');
+      this.link.style.display = 'none';
+      document.body.appendChild(this.link);
+    }
+    return this.link;
+  }
+
+  save(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = this._getDownloadLink();
+
+    link.download = filename;
+    link.href = url;
+    link.click();
+  }
+
+  destroy() {
+    if (this.link)
+      document.body.removeChild(this.link);
+    this.link = null;
+  }
+}
+
+
 class App extends React.Component {
   constructor() {
     super();
     this.state = {};
     this.loader = new FileLoader((file, data) => this.handleFileData(data));
+    this.saver = new FileSaver();
   }
 
   handleResize(data) {
@@ -98,7 +128,7 @@ class App extends React.Component {
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
-        this.setState({ scene, camera, cameraParameters });
+        this.setState({ ds, scene, camera, cameraParameters });
       } catch(ex) { console.error(ex); }
     }.bind(this));
   }
@@ -135,6 +165,12 @@ class App extends React.Component {
     this.setTiling(syms[0].symbol);
   }
 
+  saveTiling() {
+    const text = this.state.ds.toString();
+    const blob = new Blob([text], { type: 'text/plain' });
+    this.saver.save(blob, 'tiling.ds');
+  }
+
   renderTrigger() {
     return (
       <div className="infoBoxTrigger"
@@ -146,7 +182,8 @@ class App extends React.Component {
 
   renderMenu() {
     const fileMenu = [
-      { label: 'Open...', action: () => this.loader.select() }];
+      { label: 'Open...', action: () => this.loader.select() },
+      { label: 'Save...', action: () => this.saveTiling() }];
 
     const tilingMenu = [
       { label: 'First', action: () => this.log('Tiling -> First') },
