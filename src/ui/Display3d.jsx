@@ -180,9 +180,14 @@ export default class Display3d extends React.Component {
   }
 
   componentDidMount() {
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      preserveDrawingBuffer: true
+    });
     const canvas = renderer.domElement;
     canvas.style.display = 'block';
+    canvas.id = 'main-3d-canvas';
     ReactDOM.findDOMNode(this).appendChild(canvas);
 
     renderer.domElement.addEventListener(

@@ -168,7 +168,14 @@ class App extends React.Component {
   saveTiling() {
     const text = this.state.ds.toString();
     const blob = new Blob([text], { type: 'text/plain' });
-    this.saver.save(blob, 'tiling.ds');
+    this.saver.save(blob, 'gavrog.ds');
+  }
+
+  saveScreenshot() {
+    const canvas = document.getElementById('main-3d-canvas');
+
+    if (canvas)
+      canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
   }
 
   renderTrigger() {
@@ -183,7 +190,8 @@ class App extends React.Component {
   renderMenu() {
     const fileMenu = [
       { label: 'Open...', action: () => this.loader.select() },
-      { label: 'Save...', action: () => this.saveTiling() }];
+      { label: 'Save Tiling...', action: () => this.saveTiling() },
+      { label: 'Save Screenshot...', action: () => this.saveScreenshot() }];
 
     const tilingMenu = [
       { label: 'First', action: () => this.log('Tiling -> First') },
