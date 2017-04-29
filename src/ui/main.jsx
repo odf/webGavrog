@@ -17,11 +17,11 @@ const triangleDown  = '\u25bc';
 const triangleLeft  = '\u25c0';
 
 
-const tilings = {
-  pcu: '<1.1:1 3:1,1,1,1:4,3,4>',
-  dia: '<1.1:2 3:2,1 2,1 2,2:6,3 2,6>',
-  fcu: '<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>'
-};
+const tilings = [
+  { name: 'pcu', symbol: delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>') },
+  { name: 'dia', symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>') },
+  { name: 'fcu', symbol: delaney.parse('<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>') }
+];
 
 
 class FileLoader {
@@ -121,14 +121,17 @@ class App extends React.Component {
     this.setState({ log: s });
   }
 
-  setTiling(ds) {
+  setTiling(i, symbolList) {
     csp.go(function*() {
       try {
+        const syms = symbolList || this.state.syms;
+        const index = i < 0 ? syms.length + i : i;
+        const ds = syms[index].symbol;
         const scene = yield makeScene(ds, s => this.log(s));
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
-        this.setState({ ds, scene, camera, cameraParameters });
+        this.setState({ syms, index, scene, camera, cameraParameters });
       } catch(ex) { console.error(ex); }
     }.bind(this));
   }
@@ -137,7 +140,8 @@ class App extends React.Component {
     this.handleResize();
     this.resizeListener = data => this.handleResize(data);
     window.addEventListener('resize', this.resizeListener);
-    this.setTiling(delaney.parse(tilings.fcu));
+
+    this.setTiling(0, tilings);
   }
 
   componentWillUnmount() {
@@ -161,12 +165,11 @@ class App extends React.Component {
   }
 
   handleFileData(data) {
-    const syms = Array.from(parseDSymbols(data));
-    this.setTiling(syms[0].symbol);
+    this.setTiling(0, Array.from(parseDSymbols(data)));
   }
 
   saveTiling() {
-    const text = this.state.ds.toString();
+    const text = this.state.syms[this.state.index].symbol.toString();
     const blob = new Blob([text], { type: 'text/plain' });
     this.saver.save(blob, 'gavrog.ds');
   }
@@ -194,10 +197,10 @@ class App extends React.Component {
       { label: 'Save Screenshot...', action: () => this.saveScreenshot() }];
 
     const tilingMenu = [
-      { label: 'First', action: () => this.log('Tiling -> First') },
-      { label: 'Prev', action: () => this.log('Tiling -> Prev') },
-      { label: 'Next', action: () => this.log('Tiling -> Next') },
-      { label: 'Last', action: () => this.log('Tiling -> Last') },
+      { label: 'First', action: () => this.setTiling(0) },
+      { label: 'Prev', action: () => this.setTiling(this.state.index - 1) },
+      { label: 'Next', action: () => this.setTiling(this.state.index + 1) },
+      { label: 'Last', action: () => this.setTiling(-1) },
       { label: 'Search...', action: () => this.log('Tiling -> Search...') }];
 
     const viewMenu = [
