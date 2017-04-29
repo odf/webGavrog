@@ -256,19 +256,23 @@ export default class Display3d extends React.Component {
   }
 
   handleKeyDown(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
     const key = String.fromCharCode(event.keyCode).toLowerCase();
 
     if (key == 'c') {
+      event.preventDefault();
+      event.stopPropagation();
+
       this.update({
         centeringPosition: [0,0,0]
       });
     } else {
       const fn = (this.props.keyHandlers || {})[key];
-      if (fn)
+      if (fn) {
+        event.preventDefault();
+        event.stopPropagation();
+
         fn(event);
+      }
     }
   }
 
