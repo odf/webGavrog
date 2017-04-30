@@ -191,7 +191,8 @@ const tiles = t => {
   const ori = props.partialOrientation(cov);
   const pos = t.positions;
   const sgn = ori.get(D0) *
-    ops.sgn(ops.determinant(ops.times(chamberBasis(pos, D0).toJS(), t.basis)));
+    ops.sgn(ops.determinant(ops.cleanup(
+      ops.times(chamberBasis(pos, D0).toJS(), t.basis))));
 
   const cornerOrbits =
     props.orbitReps(cov, [1, 2]).map(D => props.orbit(cov, [1, 2], D));
