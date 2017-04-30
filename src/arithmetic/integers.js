@@ -43,6 +43,8 @@ export function extend(baseOps, baseLength = 0) {
         return s.reverse().join('');
       }
     }
+
+    get __typeName() { return 'LongInt'; }
   };
 
 
