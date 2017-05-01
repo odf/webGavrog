@@ -247,7 +247,7 @@ const makeScene = function*(ds, log) {
 
   log('Generating the subgraph...');
   const net = t.graph;
-  const g   = graphPortion(net, 0, 2);
+  const g   = graphPortion(net, 0, 1);
   const pos = t.positions;
   let verts = g.vertices.map(function(v) {
     const p = ops.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
