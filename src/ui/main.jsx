@@ -127,6 +127,7 @@ class App extends React.Component {
         const syms = symbolList || this.state.syms;
         const index = i < 0 ? syms.length + i : i;
         const ds = syms[index].symbol;
+        console.log(ds.toString());
         const scene = yield makeScene(ds, s => this.log(s));
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };

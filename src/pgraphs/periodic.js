@@ -303,11 +303,6 @@ export function barycentricPlacement(graph) {
 };
 
 
-export function barycentricPlacementAsFloat(graph) {
-  return barycentricPlacement(graph).map(p => p.map(x => ops.toJS(x)));
-};
-
-
 export function isStable(graph) {
   const pos = barycentricPlacement(graph);
   const verts = vertices(graph);
@@ -378,7 +373,6 @@ if (require.main == module) {
     console.log('  cs  = '+coordinationSeq(g, 1, 10));
     if (isConnected(g)) {
       console.log('  pos = '+barycentricPlacement(g));
-      console.log('      = '+barycentricPlacementAsFloat(g));
       console.log('  stable: '+isStable(g));
       console.log('  locally stable: '+isLocallyStable(g));
     }

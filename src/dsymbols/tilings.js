@@ -172,7 +172,7 @@ export default function tiling(ds, cover) {
   const e2t  = _edgeTranslations(cov);
   const c2s  = _cornerShifts(cov, e2t);
   const skel = _skeleton(cov, e2t, c2s);
-  const vpos = periodic.barycentricPlacementAsFloat(skel.graph);
+  const vpos = periodic.barycentricPlacement(skel.graph);
   const pos  = _chamberPositions(cov, e2t, c2s, skel, vpos);
   const syms = _symmetries(ds, cov, pos);
 
