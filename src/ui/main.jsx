@@ -122,12 +122,14 @@ class App extends React.Component {
   }
 
   setTiling(i, symbolList) {
+    const syms = symbolList || this.state.syms;
+    const n = syms.length;
+    const index = i < 0 ? n + i % n : i % n;
+    const ds = syms[index].symbol;
+    console.log(ds.toString());
+
     csp.go(function*() {
       try {
-        const syms = symbolList || this.state.syms;
-        const index = i < 0 ? syms.length + i : i;
-        const ds = syms[index].symbol;
-        console.log(ds.toString());
         const scene = yield makeScene(ds, s => this.log(s));
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
@@ -154,6 +156,11 @@ class App extends React.Component {
   }
 
   render3d() {
+    const keyHandlers = {
+      'p': () => this.setTiling(this.state.index - 1),
+      'n': () => this.setTiling(this.state.index + 1)
+    };
+
     if (this.state.scene != null)
       return (
         <Display3d scene            = {this.state.scene}
@@ -161,6 +168,7 @@ class App extends React.Component {
                    cameraParameters = {this.state.cameraParameters}
                    width            = {this.state.width}
                    height           = {this.state.height}
+                   keyHandlers      = {keyHandlers}
                    />
       );
   }
