@@ -18,9 +18,23 @@ const triangleLeft  = '\u25c0';
 
 
 const tilings = [
-  { name: 'pcu', symbol: delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>') },
-  { name: 'dia', symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>') },
-  { name: 'fcu', symbol: delaney.parse('<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>') }
+  { name: 'bcu',
+    symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:4,4 2,6>')
+  },
+  { name: 'pcu',
+    symbol: delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>')
+  },
+  { name: 'nbo',
+    symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,4 2,4>')
+  },
+  { name: 'dia',
+    symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>')
+  },
+  { name: 'srs',
+    symbol: delaney.parse(`
+      <1.1:10 3:2 4 6 8 10,10 3 5 7 9,10 9 8 7 6,4 3 10 9 8:10,3 2 2 2 2 3,10>
+      `)
+  }
 ];
 
 
