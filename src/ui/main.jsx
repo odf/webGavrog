@@ -158,7 +158,7 @@ class App extends React.Component {
   }
 
   toggleMenu() {
-    this.setState({ showMenu: !this.state.showMenu });
+    this.setState({ hideMenu: !this.state.hideMenu });
   }
 
   render3d() {
@@ -201,7 +201,7 @@ class App extends React.Component {
     return (
       <div className="infoBoxTrigger"
            onClick={() => this.toggleMenu()}>
-        {this.state.showMenu ? triangleUp : triangleDown}
+        {this.state.hideMenu ? triangleDown : triangleUp}
       </div>
     );
   }
@@ -236,7 +236,7 @@ class App extends React.Component {
       { label: 'Options...', action: () => this.log('Options...') },
       { label: 'Help',   submenu: helpMenu }];
 
-    if (this.state.showMenu)
+    if (!this.state.hideMenu)
       return <Menu className="infoBoxMenu" spec={mainMenu}/>;
   }
 
