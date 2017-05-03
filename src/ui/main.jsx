@@ -106,7 +106,7 @@ class App extends React.Component {
   constructor() {
     super();
     this.state = {};
-    this.loader = new FileLoader((file, data) => this.handleFileData(data));
+    this.loader = new FileLoader(this.handleFileData.bind(this));
     this.saver = new FileSaver();
   }
 
@@ -121,12 +121,18 @@ class App extends React.Component {
     this.setState({ log: s });
   }
 
+  title(fname, index) {
+    const prefix = fname ? `File "${fname}"` : 'Tiling';
+    this.setState({ title: `${prefix} #${index}` });
+  }
+
   setTiling(i, symbolList) {
     const syms = symbolList || this.state.syms;
     const n = syms.length;
     const index = i < 0 ? n + i % n : i % n;
     const ds = syms[index].symbol;
-    console.log(ds.toString());
+
+    this.title(this.state.filename, index + 1);
 
     csp.go(function*() {
       try {
@@ -173,7 +179,8 @@ class App extends React.Component {
       );
   }
 
-  handleFileData(data) {
+  handleFileData(file, data) {
+    this.setState({ filename: file.name });
     this.setTiling(0, Array.from(parseDSymbols(data)));
   }
 
@@ -234,14 +241,16 @@ class App extends React.Component {
   }
 
   renderMainDialog() {
-    const message = this.state.log || "Welcome!";
-
     return (
       <Floatable className="infoBox">
         {this.renderTrigger()}
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
         <h3 className="infoBoxHeader">Gavrog</h3>
-        <span className="clearFix">{message}</span>
+        <span className="clearFix">
+          {this.state.title}
+          <br/>
+          {this.state.log || "Welcome!"}
+        </span>
         {this.renderMenu()}
       </Floatable>
     );
