@@ -226,11 +226,11 @@ const makeScene = function*(ds, log) {
   const scene  = new THREE.Scene();
 
   const ballMaterial = new THREE.MeshPhongMaterial({
-    color: 0xff4040
+    color: 0xe8d880
   });
 
   const stickMaterial = new THREE.MeshPhongMaterial({
-    color: 0x4040ff,
+    color: 0x404080,
   });
 
   const tileMaterial = new THREE.MeshPhongMaterial({
@@ -247,7 +247,7 @@ const makeScene = function*(ds, log) {
 
   log('Generating the subgraph...');
   const net = t.graph;
-  const g   = graphPortion(net, 0, 1);
+  const g   = graphPortion(net, 0, 2);
   const pos = t.positions;
   let verts = g.vertices.map(function(v) {
     const p = ops.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
@@ -261,8 +261,8 @@ const makeScene = function*(ds, log) {
     'cube',
     verts,
     g.edges,
-    0.06,
-    0.03,
+    0.04,
+    0.01,
     ballMaterial,
     stickMaterial
   );
