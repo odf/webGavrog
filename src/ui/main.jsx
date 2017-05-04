@@ -135,10 +135,10 @@ class App extends React.Component {
     this.setState({ log: s });
   }
 
-  title(fname, index, name) {
+  title(fname, index, len, name) {
     const prefix = fname ? `File "${fname}" ` : 'Tiling ';
     const postfix = name ? `: ${name}` : '';
-    this.setState({ title: `${prefix}#${index}${postfix}` });
+    this.setState({ title: `${prefix}#${index} (of ${len})${postfix}` });
   }
 
   setTiling(i, symbolList) {
@@ -147,7 +147,7 @@ class App extends React.Component {
     const index = i < 0 ? n + i % n : i % n;
     const ds = syms[index].symbol;
 
-    this.title(this.state.filename, index + 1, syms[index].name);
+    this.title(this.state.filename, index + 1, syms.length, syms[index].name);
 
     csp.go(function*() {
       try {
