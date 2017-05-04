@@ -18,11 +18,11 @@ const processedSolid = (t0, timers) => {
   timers && timers.stop('subdividing the faces');
 
   timers && timers.start('insetting');
-  const t3 = surface.insetAt(t2, 0.03, t2.isFixed);
+  const t3 = surface.insetAt(t2, 0.01, t2.isFixed);
   timers && timers.stop('insetting');
 
   timers && timers.start('beveling');
-  const t4 = surface.beveledAt(t3, 0.015, t2.isFixed);
+  const t4 = surface.beveledAt(t3, 0.005, t2.isFixed);
   timers && timers.stop('beveling');
 
   surface.useTimers(null);
