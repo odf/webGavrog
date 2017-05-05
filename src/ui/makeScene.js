@@ -218,36 +218,7 @@ const tiles = t => {
 };
 
 
-const worker = webworkers.create('js/sceneWorker.js');
-const callWorker = csp.nbind(worker, null);
-
-
-const makeScene = function*(ds, log) {
-  const scene  = new THREE.Scene();
-
-  const ballMaterial = new THREE.MeshPhongMaterial({
-    color: 0xe8d880,
-    shininess: 50
-  });
-
-  const stickMaterial = new THREE.MeshPhongMaterial({
-    color: 0x404080,
-    shininess: 50
-  });
-
-  const tileMaterial = new THREE.MeshPhongMaterial({
-    color: 0x00ffff,
-    shininess: 5
-  });
-
-  log('Finding the pseudo-toroidal cover...');
-  const cov = delaney.parse(
-    yield callWorker({ cmd: 'dsCover', val: `${ds}` }));
-
-  log('Building the tiling object...');
-  const t = tiling(ds, cov);
-
-  log('Generating the subgraph...');
+const netModel = (t, ballMaterial, stickMaterial) => {
   const net = t.graph;
   const g   = graphPortion(net, 0, 2);
   const pos = t.positions;
@@ -255,11 +226,10 @@ const makeScene = function*(ds, log) {
     const p = ops.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
     return apply(p, t.basis);
   }).toArray();
-  if (delaney.dim(ds) == 2)
+  if (delaney.dim(t.cover) == 2)
     verts = verts.map(p => [p[0], p[1], 0]);
 
-  log('Building a ball-and-stick model...');
-  const model = ballAndStick(
+  return ballAndStick(
     'cube',
     verts,
     g.edges,
@@ -268,6 +238,41 @@ const makeScene = function*(ds, log) {
     ballMaterial,
     stickMaterial
   );
+};
+
+
+const worker = webworkers.create('js/sceneWorker.js');
+const callWorker = csp.nbind(worker, null);
+
+
+const ballMaterial = new THREE.MeshPhongMaterial({
+  color: 0xe8d880,
+  shininess: 50
+});
+
+const stickMaterial = new THREE.MeshPhongMaterial({
+  color: 0x404080,
+  shininess: 50
+});
+
+const tileMaterial = new THREE.MeshPhongMaterial({
+  color: 0x00ffff,
+  shininess: 5
+});
+
+
+const makeScene = function*(ds, log) {
+  const scene  = new THREE.Scene();
+
+  log('Finding the pseudo-toroidal cover...');
+  const cov = delaney.parse(
+    yield callWorker({ cmd: 'dsCover', val: `${ds}` }));
+
+  log('Building the tiling object...');
+  const t = tiling(ds, cov);
+
+  log('Generating the net geometry...');
+  const model = netModel(t, ballMaterial, stickMaterial);
 
   log('Making the tile geometries...');
   const surf = yield callWorker({ cmd: 'processSolid', val: tiles(t) });
