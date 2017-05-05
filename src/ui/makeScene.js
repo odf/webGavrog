@@ -226,11 +226,13 @@ const makeScene = function*(ds, log) {
   const scene  = new THREE.Scene();
 
   const ballMaterial = new THREE.MeshPhongMaterial({
-    color: 0xe8d880
+    color: 0xe8d880,
+    shininess: 50
   });
 
   const stickMaterial = new THREE.MeshPhongMaterial({
     color: 0x404080,
+    shininess: 50
   });
 
   const tileMaterial = new THREE.MeshPhongMaterial({
