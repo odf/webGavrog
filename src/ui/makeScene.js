@@ -26,7 +26,8 @@ const CoverVertex = I.Record({
   s: undefined
 });
 
-const graphPortion = function graphPortion(graph, start, dist) {
+
+const graphPortion = (graph, start, dist) => {
   const adj  = periodic.adjacencies(graph);
 
   const v0 = new CoverVertex({ v: start, s: encode(ops.vector(graph.dim)) });
@@ -34,12 +35,12 @@ const graphPortion = function graphPortion(graph, start, dist) {
   let edges = I.Set();
   let thisShell = I.List([v0]);
 
-  I.Range(1, dist+1).forEach(function(i) {
+  I.Range(1, dist+1).forEach(i => {
     let nextShell = I.Set();
-    thisShell.forEach(function(v) {
+    thisShell.forEach(v => {
       const i = vertices.get(v);
 
-      adj.get(v.v).forEach(function(t) {
+      adj.get(v.v).forEach(t => {
         const w = new CoverVertex({
           v: t.v,
           s: encode(ops.plus(decode(v.s), t.s))
@@ -72,15 +73,15 @@ const graphPortion = function graphPortion(graph, start, dist) {
 };
 
 
-const geometry = function geometry(vertices, faces) {
+const geometry = (vertices, faces) => {
   const geom = new THREE.Geometry();
 
   vertices.forEach(v => {
     geom.vertices.push(new THREE.Vector3(v[0], v[1], v[2]));
   });
 
-  faces.forEach(function(f) {
-    f.forEach(function(v, i) {
+  faces.forEach(f => {
+    f.forEach((v, i) => {
       if (i > 0 && i+1 < f.length)
         geom.faces.push(new THREE.Face3(f[0], f[i], f[i+1]));
     });
@@ -92,7 +93,7 @@ const geometry = function geometry(vertices, faces) {
 };
 
 
-const stick = function stick(p, q, radius, segments) {
+const stick = (p, q, radius, segments) => {
   const n = segments;
   const d = _normalized(ops.minus(q, p));
   const ex = [1,0,0];
@@ -102,7 +103,7 @@ const stick = function stick(p, q, radius, segments) {
   const v = _normalized(ops.crossProduct(d, u));
   const a = Math.PI * 2 / n;
 
-  const section = I.Range(0, n).map(function(i) {
+  const section = I.Range(0, n).map(i => {
     const x = a * i;
     const c = Math.cos(x) * radius;
     const s = Math.sin(x) * radius;
@@ -112,7 +113,7 @@ const stick = function stick(p, q, radius, segments) {
   return geometry(
     I.List().concat(section.map(c => ops.plus(c, p)),
                     section.map(c => ops.plus(c, q))),
-    I.Range(0, n).map(function(i) {
+    I.Range(0, n).map(i => {
       const j = (i + 1) % n;
       return [i, j, j+n, i+n];
     })
@@ -120,23 +121,13 @@ const stick = function stick(p, q, radius, segments) {
 };
 
 
-const shrunk = function shrunk(f, vertices) {
-  const n = vertices.size;
-  const last = vertices.get(n-1);
-  return I.List(
-    vertices.take(n-1).map(v => ops.plus(ops.times(f, v),
-                                         ops.times(1-f, last)))
-  ).push(last);
-};
-
-
-const ballAndStick = function ballAndStick(
-  name, positions, edges, ballRadius, stickRadius, ballMaterial, stickMaterial)
-{
+const ballAndStick = (
+  name, positions, edges, ballRadius, stickRadius, ballMaterial, stickMaterial
+) => {
   const model = new THREE.Object3D();
   const ball  = new THREE.SphereGeometry(ballRadius, 16, 8);
 
-  positions.forEach(function(p) {
+  positions.forEach(p => {
     const s = new THREE.Mesh(ball, ballMaterial);
     s.position.x = p[0];
     s.position.y = p[1];
@@ -144,7 +135,7 @@ const ballAndStick = function ballAndStick(
     model.add(s);
   });
 
-  edges.forEach(function(e) {
+  edges.forEach(e => {
     const u = positions[e[0]];
     const v = positions[e[1]];
     const s = stick(u, v, stickRadius, 8);
@@ -156,7 +147,7 @@ const ballAndStick = function ballAndStick(
 };
 
 
-const light = function(color, x, y, z) {
+const light = (color, x, y, z) => {
   const light = new THREE.PointLight(color);
 
   light.position.set(x, y, z);
@@ -165,21 +156,10 @@ const light = function(color, x, y, z) {
 };
 
 
-const apply = function(v, A) {
-  return ops.times(v, A);
-};
+const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
-const combine = (f1, v1, f2, v2) => ops.plus(ops.times(f1, v1),
-                                             ops.times(f2, v2));
-
-
-const mapElementsToOrbitIndices = (ds, indices) => I.Map(
-  props.orbitReps(ds, indices)
-    .flatMap((D, k) => props.orbit(ds, indices, D).zip(I.Repeat(k))));
-
-
-const chamberBasis = function chamberBasis(pos, D) {
+const chamberBasis = (pos, D) => {
   const t = pos.get(D).valueSeq();
   return t.rest().map(v => ops.minus(v, t.get(0)));
 };
@@ -196,19 +176,21 @@ const tiles = t => {
 
   const cornerOrbits =
     props.orbitReps(cov, [1, 2]).map(D => props.orbit(cov, [1, 2], D));
+
   const cornerPositions = I.List(cornerOrbits.map(orb => {
     const ps = pos.get(orb.first());
-    return apply(combine(0.8, ps.get(0), 0.2, ps.get(3)), t.basis);
+    return ops.times(interpolate(0.8, ps.get(0), ps.get(3)), t.basis);
   }));
-  const positionIndexForElement =
-    I.Map(cornerOrbits.flatMap((orb, i) => orb.map(D => [D, i])));
+
+  const cornerIndex = I.Map(cornerOrbits.flatMap(
+    (orb, i) => orb.map(D => [D, i])));
 
   const faces = I.List(props.orbitReps(cov, [0, 1])
     .map(D => sgn * ori.get(D) < 0 ? D : cov.s(0, D))
     .map(D => (
       props.orbit(cov, [0, 1], D)
         .filter((D, i) => i % 2 == 0)
-        .map(D => positionIndexForElement.get(D)))));
+        .map(D => cornerIndex.get(D)))));
 
   return {
     pos    : cornerPositions.map(p => ops.toJS(p)).toJS(),
@@ -222,9 +204,9 @@ const netModel = (t, ballMaterial, stickMaterial) => {
   const net = t.graph;
   const g   = graphPortion(net, 0, 2);
   const pos = t.positions;
-  let verts = g.vertices.map(function(v) {
+  let verts = g.vertices.map(v => {
     const p = ops.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
-    return apply(p, t.basis);
+    return ops.times(p, t.basis);
   }).toArray();
   if (delaney.dim(t.cover) == 2)
     verts = verts.map(p => [p[0], p[1], 0]);
@@ -241,10 +223,6 @@ const netModel = (t, ballMaterial, stickMaterial) => {
 };
 
 
-const worker = webworkers.create('js/sceneWorker.js');
-const callWorker = csp.nbind(worker, null);
-
-
 const ballMaterial = new THREE.MeshPhongMaterial({
   color: 0xe8d880,
   shininess: 50
@@ -259,6 +237,10 @@ const tileMaterial = new THREE.MeshPhongMaterial({
   color: 0x00ffff,
   shininess: 5
 });
+
+
+const worker = webworkers.create('js/sceneWorker.js');
+const callWorker = csp.nbind(worker, null);
 
 
 const makeScene = function*(ds, log) {
