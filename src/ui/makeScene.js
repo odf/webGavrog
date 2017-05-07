@@ -165,11 +165,12 @@ const chamberBasis = (pos, D) => {
 };
 
 
-const tiles = t => {
+const tileGeometries = t => {
   const cov = t.cover;
-  const D0  = cov.elements().first();
   const ori = props.partialOrientation(cov);
   const pos = t.positions;
+
+  const D0  = cov.elements().first();
   const sgn = ori.get(D0) *
     ops.sgn(ops.determinant(ops.cleanup(
       ops.times(chamberBasis(pos, D0).toJS(), t.basis))));
@@ -247,17 +248,22 @@ const makeScene = function*(ds, log) {
   const scene  = new THREE.Scene();
 
   log('Finding the pseudo-toroidal cover...');
-  const cov = delaney.parse(
-    yield callWorker({ cmd: 'dsCover', val: `${ds}` }));
+  const cov = delaney.parse(yield callWorker({
+    cmd: 'dsCover',
+    val: `${ds}`
+  }));
 
   log('Building the tiling object...');
-  const t = tiling(ds, cov);
+  const til = tiling(ds, cov);
 
   log('Generating the net geometry...');
-  const model = netModel(t, ballMaterial, stickMaterial);
+  const model = netModel(til, ballMaterial, stickMaterial);
 
   log('Making the tile geometries...');
-  const surf = yield callWorker({ cmd: 'processSolid', val: tiles(t) });
+  const surf = yield callWorker({
+    cmd: 'processSolid',
+    val: tileGeometries(til)
+  });
 
   const geom = geometry(surf.pos, surf.faces);
   const tilesMesh = new THREE.Mesh(geom, tileMaterial);
