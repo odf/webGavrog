@@ -13,6 +13,9 @@ import tiling from '../dsymbols/tilings';
 
 import * as webworkers from '../common/webworkers';
 
+const worker = webworkers.create('js/sceneWorker.js');
+const callWorker = csp.nbind(worker, null);
+
 
 const _normalized = v => ops.div(v, ops.norm(v));
 
@@ -147,15 +150,6 @@ const ballAndStick = (
 };
 
 
-const light = (color, x, y, z) => {
-  const light = new THREE.PointLight(color);
-
-  light.position.set(x, y, z);
-
-  return light;
-};
-
-
 const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
@@ -165,28 +159,28 @@ const chamberBasis = (pos, D) => {
 };
 
 
-const tileGeometries = t => {
-  const cov = t.cover;
+const tileSurface = (til, D0) => {
+  const cov = til.cover;
   const ori = props.partialOrientation(cov);
-  const pos = t.positions;
+  const pos = til.positions;
+  const elms = props.orbit(cov, [0, 1, 2], D0);
 
-  const D0  = cov.elements().first();
   const sgn = ori.get(D0) *
     ops.sgn(ops.determinant(ops.cleanup(
-      ops.times(chamberBasis(pos, D0).toJS(), t.basis))));
+      ops.times(chamberBasis(pos, D0).toJS(), til.basis))));
 
   const cornerOrbits =
-    props.orbitReps(cov, [1, 2]).map(D => props.orbit(cov, [1, 2], D));
+    props.orbitReps(cov, [1, 2], elms).map(D => props.orbit(cov, [1, 2], D));
 
   const cornerPositions = I.List(cornerOrbits.map(orb => {
     const ps = pos.get(orb.first());
-    return ops.times(interpolate(0.8, ps.get(0), ps.get(3)), t.basis);
+    return ops.times(interpolate(0.8, ps.get(0), ps.get(3)), til.basis);
   }));
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
     (orb, i) => orb.map(D => [D, i])));
 
-  const faces = I.List(props.orbitReps(cov, [0, 1])
+  const faces = I.List(props.orbitReps(cov, [0, 1], elms)
     .map(D => sgn * ori.get(D) < 0 ? D : cov.s(0, D))
     .map(D => (
       props.orbit(cov, [0, 1], D)
@@ -198,6 +192,27 @@ const tileGeometries = t => {
     faces  : faces.toJS(),
     isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS()
   };
+};
+
+
+const tileSurfaces = til => {
+  return props.orbitReps(til.cover, [0, 1, 2])
+    .map(D => tileSurface(til, D))
+    .toJS();
+};
+
+
+const tilingModel = (surfaces, tileMaterial) => {
+  const model = new THREE.Object3D();
+
+  for (const { pos, faces } of surfaces) {
+    const geom = geometry(pos, faces);
+    const tileMesh = new THREE.Mesh(geom, tileMaterial);
+    model.add(tileMesh);
+    //model.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
+  }
+
+  return model;
 };
 
 
@@ -224,6 +239,15 @@ const netModel = (t, ballMaterial, stickMaterial) => {
 };
 
 
+const light = (color, x, y, z) => {
+  const light = new THREE.PointLight(color);
+
+  light.position.set(x, y, z);
+
+  return light;
+};
+
+
 const ballMaterial = new THREE.MeshPhongMaterial({
   color: 0xe8d880,
   shininess: 50
@@ -240,13 +264,7 @@ const tileMaterial = new THREE.MeshPhongMaterial({
 });
 
 
-const worker = webworkers.create('js/sceneWorker.js');
-const callWorker = csp.nbind(worker, null);
-
-
 const makeScene = function*(ds, log) {
-  const scene  = new THREE.Scene();
-
   log('Finding the pseudo-toroidal cover...');
   const cov = delaney.parse(yield callWorker({
     cmd: 'dsCover',
@@ -257,18 +275,16 @@ const makeScene = function*(ds, log) {
   const til = tiling(ds, cov);
 
   log('Generating the net geometry...');
-  const model = netModel(til, ballMaterial, stickMaterial);
+  const netObject3D = netModel(til, ballMaterial, stickMaterial);
 
-  log('Making the tile geometries...');
-  const surf = yield callWorker({
-    cmd: 'processSolid',
-    val: tileGeometries(til)
+  log('Making the tiling geometry...');
+  const surfaces = yield callWorker({
+    cmd: 'processSolids',
+    val: tileSurfaces(til)
   });
+  const tilingObject3D = tilingModel(surfaces, tileMaterial);
 
-  const geom = geometry(surf.pos, surf.faces);
-  const tilesMesh = new THREE.Mesh(geom, tileMaterial);
-
-  log('Adding lights and a camera...');
+  log('Composing the scene...');
   const distance = 6;
   const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
   camera.name = 'camera';
@@ -278,9 +294,10 @@ const makeScene = function*(ds, log) {
   camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
   camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
 
-  scene.add(model);
-  scene.add(tilesMesh);
-  //scene.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
+  const scene = new THREE.Scene();
+
+  scene.add(netObject3D);
+  scene.add(tilingObject3D);
   scene.add(camera);
 
   log('Scene complete!');

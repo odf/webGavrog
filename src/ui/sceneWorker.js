@@ -55,6 +55,10 @@ const handlers = {
     };
   },
 
+  processSolids(solids) {
+    return solids.map(this.processSolid);
+  },
+
   dsCover(dsTxt) {
     const ds = delaney.parse(dsTxt);
 
