@@ -202,12 +202,21 @@ const tileSurfaces = til => {
 };
 
 
-const tilingModel = (surfaces, tileMaterial) => {
+const tilingModel = surfaces => {
   const model = new THREE.Object3D();
+  const hue0 = Math.random();
+  const n = surfaces.length;
 
-  for (const { pos, faces } of surfaces) {
+  for (const i in surfaces) {
+    const { pos, faces } = surfaces[i];
     const geom = geometry(pos, faces);
-    const tileMesh = new THREE.Mesh(geom, tileMaterial);
+    const c = new THREE.Color();
+    c.setHSL((hue0 + i / n) % 1, 1.0, 0.7);
+    const mat = new THREE.MeshPhongMaterial({
+      color: c,
+      shininess: 15
+    });
+    const tileMesh = new THREE.Mesh(geom, mat);
     model.add(tileMesh);
     //model.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
   }
@@ -258,11 +267,6 @@ const stickMaterial = new THREE.MeshPhongMaterial({
   shininess: 50
 });
 
-const tileMaterial = new THREE.MeshPhongMaterial({
-  color: 0x00ffff,
-  shininess: 5
-});
-
 
 const makeScene = function*(ds, log) {
   log('Finding the pseudo-toroidal cover...');
@@ -282,7 +286,7 @@ const makeScene = function*(ds, log) {
     cmd: 'processSolids',
     val: tileSurfaces(til)
   });
-  const tilingObject3D = tilingModel(surfaces, tileMaterial);
+  const tilingObject3D = tilingModel(surfaces);
 
   log('Composing the scene...');
   const distance = 6;
