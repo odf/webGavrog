@@ -6,12 +6,40 @@ const clamp = (val, lo, hi) => Math.max(lo, Math.min(hi, val));
 
 
 export default class Floatable extends React.Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
-      posX: 10,
-      posY: 10
+      posX: props.x || 10,
+      posY: props.y || 10
     };
+  }
+
+  maxX() {
+    return window.innerWidth - ReactDOM.findDOMNode(this).offsetWidth;
+  }
+
+  maxY() {
+    return window.innerHeight - ReactDOM.findDOMNode(this).offsetHeight;
+  }
+
+  componentDidMount() {
+    let { posX: x, posY: y } = this.state;
+
+    switch (x) {
+      case 'l': x = 0; break;
+      case 'c': x = this.maxX() / 2; break;
+      case 'r': x = this.maxX(); break;
+      default: break;
+    }
+
+    switch (y) {
+      case 't': y = 0; break;
+      case 'c': y = this.maxY() / 2; break;
+      case 'b': y = this.maxY(); break;
+      default: break;
+    }
+
+    this.setState({ posX: x, posY: y });
   }
 
   handleMouseDown(event) {
@@ -23,14 +51,10 @@ export default class Floatable extends React.Component {
     document.addEventListener('mousemove', this.mouseMoveListener, false);
     document.addEventListener('mouseup', this.mouseUpListener, false);
 
-    const element = ReactDOM.findDOMNode(this);
-
     this.setState({
       mouseDown: true,
       offsetX: this.state.posX - event.clientX,
-      offsetY: this.state.posY - event.clientY,
-      maxX   : window.innerWidth  - element.offsetWidth,
-      maxY   : window.innerHeight - element.offsetHeight
+      offsetY: this.state.posY - event.clientY
     });
   }
 
@@ -38,8 +62,8 @@ export default class Floatable extends React.Component {
     event.preventDefault();
 
     this.setState({
-      posX: clamp(event.clientX + this.state.offsetX, 0, this.state.maxX),
-      posY: clamp(event.clientY + this.state.offsetY, 0, this.state.maxY)
+      posX: clamp(event.clientX + this.state.offsetX, 0, this.maxX()),
+      posY: clamp(event.clientY + this.state.offsetY, 0, this.maxY())
     });
   }
 
