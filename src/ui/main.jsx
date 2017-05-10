@@ -12,12 +12,6 @@ import Menu      from './Menu';
 import makeScene from './makeScene';
 
 
-const triangleUp    = '\u25b2';
-const triangleRight = '\u25ba';
-const triangleDown  = '\u25bc';
-const triangleLeft  = '\u25c0';
-
-
 const tilings = [
   { name: 'bcu',
     symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:4,4 2,6>')
@@ -173,10 +167,6 @@ class App extends React.Component {
     window.removeEventListener('resize', this.resizeListener);
   }
 
-  toggleMenu() {
-    this.setState({ hideMenu: !this.state.hideMenu });
-  }
-
   render3d() {
     const keyHandlers = {
       'p': () => this.setTiling(this.state.index - 1),
@@ -213,15 +203,6 @@ class App extends React.Component {
       canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
   }
 
-  renderTrigger() {
-    return (
-      <div className="infoBoxTrigger"
-           onClick={() => this.toggleMenu()}>
-        {this.state.hideMenu ? triangleDown : triangleUp}
-      </div>
-    );
-  }
-
   showAbout(trueOrFalse) {
     this.setState({ showAbout: trueOrFalse });
   }
@@ -256,14 +237,12 @@ class App extends React.Component {
       { label: 'Options...', action: () => this.log('Options...') },
       { label: 'Help',   submenu: helpMenu }];
 
-    if (!this.state.hideMenu)
-      return <Menu className="infoBoxMenu" spec={mainMenu}/>;
+    return <Menu className="infoBoxMenu" spec={mainMenu}/>;
   }
 
   renderMainDialog() {
     return (
       <Floatable className="infoBox">
-        {this.renderTrigger()}
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
         <h3 className="infoBoxHeader">Gavrog</h3>
         <span className="clearFix">
