@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as csp   from 'plexus-csp';
 
+import * as version  from '../version';
 import * as delaney  from '../dsymbols/delaney';
 import parseDSymbols from '../io/ds';
 
@@ -221,6 +222,10 @@ class App extends React.Component {
     );
   }
 
+  showAbout(trueOrFalse) {
+    this.setState({ showAbout: trueOrFalse });
+  }
+
   renderMenu() {
     const fileMenu = [
       { label: 'Open...', action: () => this.loader.select() },
@@ -241,7 +246,7 @@ class App extends React.Component {
     ];
 
     const helpMenu = [
-      { label: 'About Gavrog...', action: () => this.log('Help -> About') }
+      { label: 'About Gavrog...', action: () => this.showAbout(true) }
     ];
 
     const mainMenu = [
@@ -262,13 +267,32 @@ class App extends React.Component {
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
         <h3 className="infoBoxHeader">Gavrog</h3>
         <span className="clearFix">
-          {this.state.title}
-          <br/>
+          {this.state.title}<br/>
           {this.state.log || "Welcome!"}
         </span>
         {this.renderMenu()}
       </Floatable>
     );
+  }
+
+  renderAbout() {
+    if (this.state.showAbout)
+      return (
+        <Floatable className="infoBox" x="c" y="c">
+          <img width="48" className="infoBoxLogo" src="3dt.ico"/>
+          <h3 className="infoBoxHeader">Gavrog for Web</h3>
+          <span className="clearFix">
+            by Olaf Delgado-Friedrichs 2017<br/>
+            The Australian National University
+          </span>
+          <p>
+            <b>Version:</b> 0.0.0 (pre-alpha)<br/>
+            <b>Revision:</b> {version.gitRev}<br/>
+            <b>Timestamp:</b> {version.gitDate}
+          </p>
+          <button onClick={() => this.showAbout(false)}>Close</button>
+        </Floatable>
+      );
   }
 
   render() {
@@ -278,6 +302,7 @@ class App extends React.Component {
       <div>
         {this.render3d()}
         {this.renderMainDialog()}
+        {this.renderAbout()}
       </div>
     );
   }

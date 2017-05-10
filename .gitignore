@@ -2,3 +2,4 @@ node_modules/
 public/js/
 /data/
 log
+/src/version.js
