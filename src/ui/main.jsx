@@ -1,6 +1,6 @@
-import * as React from 'react';
+import * as React    from 'react';
 import * as ReactDOM from 'react-dom';
-import * as csp   from 'plexus-csp';
+import * as csp      from 'plexus-csp';
 
 import * as version  from '../version';
 import * as delaney  from '../dsymbols/delaney';
@@ -119,6 +119,18 @@ class App extends React.Component {
     this.saver = new FileSaver();
   }
 
+  componentDidMount() {
+    this.handleResize();
+    this.resizeListener = data => this.handleResize(data);
+    window.addEventListener('resize', this.resizeListener);
+
+    this.setTiling(0, tilings);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.resizeListener);
+  }
+
   handleResize(data) {
     this.setState({
       width: window.innerWidth,
@@ -155,36 +167,6 @@ class App extends React.Component {
     }.bind(this));
   }
 
-  componentDidMount() {
-    this.handleResize();
-    this.resizeListener = data => this.handleResize(data);
-    window.addEventListener('resize', this.resizeListener);
-
-    this.setTiling(0, tilings);
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.resizeListener);
-  }
-
-  render3d() {
-    const keyHandlers = {
-      'p': () => this.setTiling(this.state.index - 1),
-      'n': () => this.setTiling(this.state.index + 1)
-    };
-
-    if (this.state.scene != null)
-      return (
-        <Display3d scene            = {this.state.scene}
-                   camera           = {this.state.camera}
-                   cameraParameters = {this.state.cameraParameters}
-                   width            = {this.state.width}
-                   height           = {this.state.height}
-                   keyHandlers      = {keyHandlers}
-                   />
-      );
-  }
-
   handleFileData(file, data) {
     this.setState({ filename: file.name });
     this.setTiling(0, Array.from(parseDSymbols(data)));
@@ -203,8 +185,26 @@ class App extends React.Component {
       canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
   }
 
-  showAbout(trueOrFalse) {
-    this.setState({ showAbout: trueOrFalse });
+  enableAbout(trueOrFalse) {
+    this.setState({ aboutEnabled: trueOrFalse });
+  }
+
+  render3dScene() {
+    const keyHandlers = {
+      'p': () => this.setTiling(this.state.index - 1),
+      'n': () => this.setTiling(this.state.index + 1)
+    };
+
+    if (this.state.scene != null)
+      return (
+        <Display3d scene            = {this.state.scene}
+                   camera           = {this.state.camera}
+                   cameraParameters = {this.state.cameraParameters}
+                   width            = {this.state.width}
+                   height           = {this.state.height}
+                   keyHandlers      = {keyHandlers}
+                   />
+      );
   }
 
   renderMenu() {
@@ -227,7 +227,7 @@ class App extends React.Component {
     ];
 
     const helpMenu = [
-      { label: 'About Gavrog...', action: () => this.showAbout(true) }
+      { label: 'About Gavrog...', action: () => this.enableAbout(true) }
     ];
 
     const mainMenu = [
@@ -254,13 +254,13 @@ class App extends React.Component {
     );
   }
 
-  renderAbout() {
-    if (this.state.showAbout)
+  renderAboutDialog() {
+    if (this.state.aboutEnabled)
       return (
         <Floatable className="infoBox"
                    x="c"
                    y="c"
-                   onClick={() => this.showAbout(false)}>
+                   onClick={() => this.enableAbout(false)}>
           <img width="48" className="infoBoxLogo" src="3dt.ico"/>
           <h3 className="infoBoxHeader">Gavrog for Web</h3>
           <span className="clearFix">
@@ -281,9 +281,9 @@ class App extends React.Component {
 
     return (
       <div>
-        {this.render3d()}
+        {this.render3dScene()}
         {this.renderMainDialog()}
-        {this.renderAbout()}
+        {this.renderAboutDialog()}
       </div>
     );
   }
