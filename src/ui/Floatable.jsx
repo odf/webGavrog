@@ -53,6 +53,7 @@ export default class Floatable extends React.Component {
 
     this.setState({
       mouseDown: true,
+      moved: false,
       offsetX: this.state.posX - event.clientX,
       offsetY: this.state.posY - event.clientY
     });
@@ -62,6 +63,7 @@ export default class Floatable extends React.Component {
     event.preventDefault();
 
     this.setState({
+      moved: true,
       posX: clamp(event.clientX + this.state.offsetX, 0, this.maxX()),
       posY: clamp(event.clientY + this.state.offsetY, 0, this.maxY())
     });
@@ -73,8 +75,12 @@ export default class Floatable extends React.Component {
     document.removeEventListener('mousemove', this.mouseMoveListener);
     document.removeEventListener('mouseup', this.mouseUpListener);
 
+    if (!this.state.moved && this.props.onClick)
+      this.props.onClick();
+
     this.setState({
-      mouseDown: false
+      mouseDown: false,
+      moved: false
     });
   }
 

@@ -278,7 +278,10 @@ class App extends React.Component {
   renderAbout() {
     if (this.state.showAbout)
       return (
-        <Floatable className="infoBox" x="c" y="c">
+        <Floatable className="infoBox"
+                   x="c"
+                   y="c"
+                   onClick={() => this.showAbout(false)}>
           <img width="48" className="infoBoxLogo" src="3dt.ico"/>
           <h3 className="infoBoxHeader">Gavrog for Web</h3>
           <span className="clearFix">
@@ -290,7 +293,6 @@ class App extends React.Component {
             <b>Revision:</b> {version.gitRev}<br/>
             <b>Timestamp:</b> {version.gitDate}
           </p>
-          <button onClick={() => this.showAbout(false)}>Close</button>
         </Floatable>
       );
   }
