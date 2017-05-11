@@ -65,7 +65,9 @@ export default class Selection extends React.Component {
   }
 
   highlight(i) {
-    this.focus();
+    if (i != null)
+      this.focus();
+
     this.setState({ highlighted: i });
     if (this.props.onHighlight)
       this.props.onHighlight(i);
@@ -99,7 +101,7 @@ export default class Selection extends React.Component {
 
   select(i) {
     const selected = i == null ? this.state.highlighted : i;
-    this.setState({ selected: selected, highlighted: selected });
+    this.setState({ selected: selected, highlighted: null });
     if (this.props.onSelect)
       this.props.onSelect(selected);
   }
@@ -126,6 +128,7 @@ export default class Selection extends React.Component {
       <li key          = {i}
           className    = {classes(i)}
           onMouseEnter = {event => this.highlight(i)}
+          onMouseLeave = {event => this.highlight(null)}
           onClick      = {event => this.select(i)}
           >
         {item}
