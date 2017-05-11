@@ -71,10 +71,6 @@ body {
     background-color: lightgray;
 }
 
-.infoBoxMenuActive, .infoBoxMenuSubmenuActive {
-    color: green;
-}
-
 .infoBoxMenuSubmenu {
     list-style: none;
     padding: 0;

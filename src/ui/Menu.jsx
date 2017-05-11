@@ -14,16 +14,10 @@ export default class Menu extends React.Component {
 
     if (action)
       action();
-    else
-      this.setState((state, props) => (
-        { active: state.active == null ? i : null }
-      ));
   }
 
   handleHighlight(i) {
-    this.setState((state, props) =>
-      state.active == null ? {} : { active: i }
-    );
+    this.setState({ active: i });
   }
 
   handleCancel() {
@@ -32,11 +26,10 @@ export default class Menu extends React.Component {
 
   render() {
     const baseClass = this.props.className || 'Menu';
-    const activeClass = `${baseClass}Active`;
     const submenuClass = `${baseClass}Submenu`;
 
     const entries = this.props.spec.map(({ label, submenu }, i) => (
-      <span key={i} className={this.state.active == i ? activeClass : ""}>
+      <span key={i}>
         {label}
         {(this.state.active == i && submenu)
            ? <Menu className={submenuClass} spec={submenu}/> : ''}
