@@ -296,6 +296,8 @@ class App extends React.Component {
       const i = this.state.syms.findIndex(s => s.name == data.name);
       if (i >= 0)
         this.setTiling(i);
+      else
+        this.log(`Name "${data.name}" not found.`);
     }
   }
 
