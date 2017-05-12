@@ -258,6 +258,7 @@ class App extends React.Component {
     if (this.state.aboutEnabled)
       return (
         <Floatable className="infoBox"
+                   fixed={true}
                    x="c"
                    y="c"
                    onClick={() => this.enableAbout(false)}>

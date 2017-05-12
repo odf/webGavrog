@@ -51,26 +51,23 @@ export default class Floatable extends React.Component {
 
     this.setState({
       mouseDown: true,
-      moved: false,
       offsetX: this.state.posX - event.clientX,
       offsetY: this.state.posY - event.clientY
     });
   }
 
   handleMouseMove(event) {
-    this.setState({
-      moved: true,
-      posX: clamp(event.clientX + this.state.offsetX, 0, this.maxX()),
-      posY: clamp(event.clientY + this.state.offsetY, 0, this.maxY())
-    });
+    if (!this.props.fixed) {
+      this.setState({
+        posX: clamp(event.clientX + this.state.offsetX, 0, this.maxX()),
+        posY: clamp(event.clientY + this.state.offsetY, 0, this.maxY())
+      });
+    }
   }
 
   handleMouseUp(event) {
     document.removeEventListener('mousemove', this.mouseMoveListener);
     document.removeEventListener('mouseup', this.mouseUpListener);
-
-    if (!this.state.moved && this.props.onClick)
-      this.props.onClick();
 
     this.setState({
       mouseDown: false,
@@ -84,7 +81,8 @@ export default class Floatable extends React.Component {
            style={{ left  : `${this.state.posX}px`,
                     top   : `${this.state.posY}px`,
                     cursor: this.state.mouseDown ? 'grabbing' : 'grab' }}
-           onMouseDown={event => this.handleMouseDown(event)}>
+           onMouseDown={event => this.handleMouseDown(event)}
+           onClick={this.props.onClick}>
         {this.props.children}
       </div>
     );
