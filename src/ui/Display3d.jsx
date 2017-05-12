@@ -243,7 +243,7 @@ export default class Display3d extends React.Component {
     });
   }
 
-  handleMouseEnter(event) {
+  handleClick(event) {
     this.refs.container.focus();
   }
 
@@ -287,7 +287,7 @@ export default class Display3d extends React.Component {
            onMouseDown = {event => this.handleMouseDown(event)}
            onMouseMove = {event => this.handleMouseMove(event)}
            onMouseUp   = {event => this.handleMouseUp(event)}
-           onMouseEnter= {event => this.handleMouseEnter(event)}
+           onClick     = {event => this.handleClick(event)}
            onWheel     = {event => this.handleWheel(event)}
            onKeyDown   = {event => this.handleKeyDown(event)}>
       </div>
