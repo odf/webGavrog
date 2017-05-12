@@ -1,6 +1,9 @@
 import * as React    from 'react';
 import * as ReactDOM from 'react-dom';
 import * as csp      from 'plexus-csp';
+import validate      from 'plexus-validate';
+
+import Form          from '../plexus-form';
 
 import * as version  from '../version';
 import * as delaney  from '../dsymbols/delaney';
@@ -189,6 +192,10 @@ class App extends React.Component {
     this.setState({ aboutEnabled: trueOrFalse });
   }
 
+  enableSearch(trueOrFalse) {
+    this.setState({ searchEnabled: trueOrFalse });
+  }
+
   render3dScene() {
     const keyHandlers = {
       'p': () => this.setTiling(this.state.index - 1),
@@ -218,7 +225,7 @@ class App extends React.Component {
       { label: 'Prev', action: () => this.setTiling(this.state.index - 1) },
       { label: 'Next', action: () => this.setTiling(this.state.index + 1) },
       { label: 'Last', action: () => this.setTiling(-1) },
-      { label: 'Search...', action: () => this.log('Tiling -> Search...') }];
+      { label: 'Jump...', action: () => this.enableSearch(true) }];
 
     const viewMenu = [
       { label: 'Along X', action: () => this.log('View -> Along X') },
@@ -277,6 +284,52 @@ class App extends React.Component {
       );
   }
 
+  handleSearchSubmit(data, value) {
+    this.enableSearch(false);
+
+    if (value == "Cancel")
+      return;
+
+    if (data.number)
+      this.setTiling(data.number - (data.number > 0));
+    else if (data.name) {
+      const i = this.state.syms.findIndex(s => s.name == data.name);
+      if (i >= 0)
+        this.setTiling(i);
+    }
+  }
+
+  renderSearchDialog() {
+    if (!this.state.searchEnabled)
+      return;
+
+    const searchSchema = {
+      title: 'Search Tiling',
+      type: 'object',
+      properties: {
+        name: {
+          title: 'Name of tiling',
+          type: 'string'
+        },
+        number: {
+          title: 'Index in file',
+          type: 'integer'
+        }
+      }
+    };
+
+    return (
+      <Floatable className="infoBox" x="c" y="c">
+        <Form buttons={['Search', 'Cancel']}
+              enterKeySubmits="Search"
+              onSubmit={(data, val) => this.handleSearchSubmit(data, val)}
+              validate={validate}
+              schema={searchSchema}>
+        </Form>
+      </Floatable>
+    );
+  }
+
   render() {
     const message = this.state.log || "Welcome!";
 
@@ -285,6 +338,7 @@ class App extends React.Component {
         {this.render3dScene()}
         {this.renderMainDialog()}
         {this.renderAboutDialog()}
+        {this.renderSearchDialog()}
       </div>
     );
   }
