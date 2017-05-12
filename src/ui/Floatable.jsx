@@ -43,8 +43,6 @@ export default class Floatable extends React.Component {
   }
 
   handleMouseDown(event) {
-    event.preventDefault();
-
     this.mouseMoveListener = event => this.handleMouseMove(event);
     this.mouseUpListener = event => this.handleMouseUp(event);
 
@@ -60,8 +58,6 @@ export default class Floatable extends React.Component {
   }
 
   handleMouseMove(event) {
-    event.preventDefault();
-
     this.setState({
       moved: true,
       posX: clamp(event.clientX + this.state.offsetX, 0, this.maxX()),
@@ -70,8 +66,6 @@ export default class Floatable extends React.Component {
   }
 
   handleMouseUp(event) {
-    event.preventDefault();
-
     document.removeEventListener('mousemove', this.mouseMoveListener);
     document.removeEventListener('mouseup', this.mouseUpListener);
 
