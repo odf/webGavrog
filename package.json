@@ -16,6 +16,7 @@
   "dependencies": {
     "immutable": "~3.8.1",
     "plexus-csp": "^0.2.0",
+    "plexus-validate": "0.0.4",
     "prop-types": "^15.5.4",
     "react": "~15.5.3",
     "react-dom": "^15.5.3",
