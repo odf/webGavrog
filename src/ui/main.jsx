@@ -117,7 +117,7 @@ class FileSaver {
 class App extends React.Component {
   constructor() {
     super();
-    this.state = {};
+    this.state = { windowsActive: {} };
     this.loader = new FileLoader(this.handleFileData.bind(this));
     this.saver = new FileSaver();
   }
@@ -188,12 +188,16 @@ class App extends React.Component {
       canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
   }
 
-  enableAbout(trueOrFalse) {
-    this.setState({ aboutEnabled: trueOrFalse });
+  showWindow(key) {
+    this.setState((state, props) => ({
+      windowsActive: { ...state.windowsActive, [key]: true }
+    }));
   }
 
-  enableSearch(trueOrFalse) {
-    this.setState({ searchEnabled: trueOrFalse });
+  hideWindow(key) {
+    this.setState((state, props) => ({
+      windowsActive: { ...state.windowsActive, [key]: false }
+    }));
   }
 
   render3dScene() {
@@ -218,14 +222,17 @@ class App extends React.Component {
     const fileMenu = [
       { label: 'Open...', action: () => this.loader.select() },
       { label: 'Save Tiling...', action: () => this.saveTiling() },
-      { label: 'Save Screenshot...', action: () => this.saveScreenshot() }];
+      { label: 'Save Screenshot...', action: () => this.saveScreenshot() }
+    ];
 
     const tilingMenu = [
       { label: 'First', action: () => this.setTiling(0) },
       { label: 'Prev', action: () => this.setTiling(this.state.index - 1) },
       { label: 'Next', action: () => this.setTiling(this.state.index + 1) },
       { label: 'Last', action: () => this.setTiling(-1) },
-      { label: 'Jump...', action: () => this.enableSearch(true) }];
+      { label: 'Jump...', action: () => this.showWindow('jump') },
+      { label: 'Search...', action: () => this.showWindow('search') }
+    ];
 
     const viewMenu = [
       { label: 'Along X', action: () => this.log('View -> Along X') },
@@ -234,7 +241,7 @@ class App extends React.Component {
     ];
 
     const helpMenu = [
-      { label: 'About Gavrog...', action: () => this.enableAbout(true) }
+      { label: 'About Gavrog...', action: () => this.showWindow('about') }
     ];
 
     const mainMenu = [
@@ -242,7 +249,8 @@ class App extends React.Component {
       { label: 'Tiling', submenu: tilingMenu },
       { label: 'View',   submenu: viewMenu },
       { label: 'Options...', action: () => this.log('Options...') },
-      { label: 'Help',   submenu: helpMenu }];
+      { label: 'Help',   submenu: helpMenu }
+    ];
 
     return <Menu className="infoBoxMenu" spec={mainMenu}/>;
   }
@@ -262,37 +270,71 @@ class App extends React.Component {
   }
 
   renderAboutDialog() {
-    if (this.state.aboutEnabled)
-      return (
-        <Floatable className="infoBox"
-                   fixed={true}
-                   x="c"
-                   y="c"
-                   onClick={() => this.enableAbout(false)}>
-          <img width="48" className="infoBoxLogo" src="3dt.ico"/>
-          <h3 className="infoBoxHeader">Gavrog for Web</h3>
-          <span className="clearFix">
-            by Olaf Delgado-Friedrichs 2017<br/>
-            The Australian National University
-          </span>
-          <p>
-            <b>Version:</b> 0.0.0 (pre-alpha)<br/>
-            <b>Revision:</b> {version.gitRev}<br/>
-            <b>Timestamp:</b> {version.gitDate}
-          </p>
-        </Floatable>
-      );
+    if (!this.state.windowsActive.about)
+      return;
+
+    return (
+      <Floatable className="infoBox"
+                 fixed={true}
+                 x="c"
+                 y="c"
+                 onClick={() => this.hideWindow('about')}>
+        <img width="48" className="infoBoxLogo" src="3dt.ico"/>
+        <h3 className="infoBoxHeader">Gavrog for Web</h3>
+        <span className="clearFix">
+          by Olaf Delgado-Friedrichs 2017<br/>
+          The Australian National University
+        </span>
+        <p>
+          <b>Version:</b> 0.0.0 (pre-alpha)<br/>
+          <b>Revision:</b> {version.gitRev}<br/>
+          <b>Timestamp:</b> {version.gitDate}
+        </p>
+      </Floatable>
+    );
+  }
+
+  handleJumpSubmit(data) {
+    this.hideWindow('jump');
+
+    if (data.number)
+      this.setTiling(data.number - (data.number > 0));
+  }
+
+  renderJumpDialog() {
+    if (!this.state.windowsActive.jump)
+      return;
+
+    const schema = {
+      title: 'Jump to Tiling',
+      type: 'object',
+      properties: {
+        number: {
+          title: 'Index in file',
+          type: 'integer'
+        }
+      }
+    };
+
+    return (
+      <Floatable className="infoBox" x="c" y="c">
+        <Form buttons={[]}
+              enterKeySubmits="Jump"
+              onSubmit={(data, val) => this.handleJumpSubmit(data, val)}
+              validate={validate}
+              schema={schema}>
+        </Form>
+      </Floatable>
+    );
   }
 
   handleSearchSubmit(data, value) {
-    this.enableSearch(false);
+    this.hideWindow('search');
 
     if (value == "Cancel")
       return;
 
-    if (data.number)
-      this.setTiling(data.number - (data.number > 0));
-    else if (data.name) {
+    if (data.name) {
       const i = this.state.syms.findIndex(s => s.name == data.name);
       if (i >= 0)
         this.setTiling(i);
@@ -302,7 +344,7 @@ class App extends React.Component {
   }
 
   renderSearchDialog() {
-    if (!this.state.searchEnabled)
+    if (!this.state.windowsActive.search)
       return;
 
     const searchSchema = {
@@ -312,10 +354,6 @@ class App extends React.Component {
         name: {
           title: 'Name of tiling',
           type: 'string'
-        },
-        number: {
-          title: 'Index in file',
-          type: 'integer'
         }
       }
     };
@@ -340,6 +378,7 @@ class App extends React.Component {
         {this.render3dScene()}
         {this.renderMainDialog()}
         {this.renderAboutDialog()}
+        {this.renderJumpDialog()}
         {this.renderSearchDialog()}
       </div>
     );
