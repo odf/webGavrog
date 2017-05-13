@@ -163,6 +163,9 @@ export default class Display3d extends React.Component {
         value.centeringPosition
       );
 
+      if (mods.matrix)
+        params.matrix = mods.matrix;
+
       return {
         value: Object.assign({}, value, {
           ndcOldX: value.mouseDown ? value.ndcX : null,
@@ -172,6 +175,30 @@ export default class Display3d extends React.Component {
           cameraParameters: params
         })
       };
+    });
+  }
+
+  viewAlongX() {
+    this.update({
+      matrix: [[ 0, 0, 1],
+               [ 0, 1, 0],
+               [-1, 0, 0]]
+    });
+  }
+
+  viewAlongY() {
+    this.update({
+      matrix: [[1,  0, 0],
+               [0,  0, 1],
+               [0, -1, 0]]
+    });
+  }
+
+  viewAlongZ() {
+    this.update({
+      matrix: [[1, 0, 0],
+               [0, 1, 0],
+               [0, 0, 1]]
     });
   }
 

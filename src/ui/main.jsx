@@ -214,6 +214,7 @@ class App extends React.Component {
                    width            = {this.state.width}
                    height           = {this.state.height}
                    keyHandlers      = {keyHandlers}
+                   ref              = {d => this.display = d}
                    />
       );
   }
@@ -235,9 +236,9 @@ class App extends React.Component {
     ];
 
     const viewMenu = [
-      { label: 'Along X', action: () => this.log('View -> Along X') },
-      { label: 'Along Y', action: () => this.log('View -> Along Y') },
-      { label: 'Along Z', action: () => this.log('View -> Along Z') }
+      { label: 'Along X', action: () => this.display.viewAlongX() },
+      { label: 'Along Y', action: () => this.display.viewAlongY() },
+      { label: 'Along Z', action: () => this.display.viewAlongZ() }
     ];
 
     const helpMenu = [
