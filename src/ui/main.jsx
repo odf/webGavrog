@@ -117,7 +117,7 @@ class FileSaver {
 class App extends React.Component {
   constructor() {
     super();
-    this.state = { windowsActive: {} };
+    this.state = { windowsActive: {}, options: {} };
     this.loader = new FileLoader(this.handleFileData.bind(this));
     this.saver = new FileSaver();
   }
@@ -161,7 +161,7 @@ class App extends React.Component {
 
     csp.go(function*() {
       try {
-        const scene = yield makeScene(ds, s => this.log(s));
+        const scene = yield makeScene(ds, this.state.options, s => this.log(s));
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
@@ -249,7 +249,7 @@ class App extends React.Component {
       { label: 'File',   submenu: fileMenu },
       { label: 'Tiling', submenu: tilingMenu },
       { label: 'View',   submenu: viewMenu },
-      { label: 'Options...', action: () => this.log('Options...') },
+      { label: 'Options...', action: () => this.showWindow('options') },
       { label: 'Help',   submenu: helpMenu }
     ];
 
@@ -371,6 +371,45 @@ class App extends React.Component {
     );
   }
 
+  handleOptionsSubmit(data, value) {
+    this.hideWindow('options');
+
+    if (value == "Cancel")
+      return;
+
+    this.setState((state, props) => ({ options: data }));
+    this.setTiling(this.state.index);
+  }
+
+  renderOptionsDialog() {
+    if (!this.state.windowsActive.options)
+      return;
+
+    const schema = {
+      title: 'Options',
+      description: 'Options',
+      type: 'object',
+      properties: {
+        showNet: {
+          title: 'Show Net',
+          type: 'boolean'
+        }
+      }
+    };
+
+    return (
+      <Floatable className="infoBox" x="c" y="c">
+        <Form buttons={['Apply', 'Cancel']}
+              enterKeySubmits="Apply"
+              onSubmit={(data, val) => this.handleOptionsSubmit(data, val)}
+              validate={validate}
+              schema={schema}
+              values={this.state.options}>
+        </Form>
+      </Floatable>
+    );
+  }
+
   render() {
     const message = this.state.log || "Welcome!";
 
@@ -381,6 +420,7 @@ class App extends React.Component {
         {this.renderAboutDialog()}
         {this.renderJumpDialog()}
         {this.renderSearchDialog()}
+        {this.renderOptionsDialog()}
       </div>
     );
   }

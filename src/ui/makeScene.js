@@ -268,47 +268,42 @@ const stickMaterial = new THREE.MeshPhongMaterial({
 });
 
 
-const makeScene = function*(ds, log) {
-  log('Finding the pseudo-toroidal cover...');
-  const cov = delaney.parse(yield callWorker({
-    cmd: 'dsCover',
-    val: `${ds}`
-  }));
+export default function makeScene(ds, options, log=console.log) {
+  return csp.go(function*() {
+    log('Finding the pseudo-toroidal cover...');
+    const cov = delaney.parse(yield callWorker({
+      cmd: 'dsCover',
+      val: `${ds}`
+    }));
 
-  log('Building the tiling object...');
-  const til = tiling(ds, cov);
+    log('Building the tiling object...');
+    const til = tiling(ds, cov);
 
-  log('Generating the net geometry...');
-  const netObject3D = netModel(til, ballMaterial, stickMaterial);
+    const scene = new THREE.Scene();
 
-  log('Making the tiling geometry...');
-  const surfaces = yield callWorker({
-    cmd: 'processSolids',
-    val: tileSurfaces(til)
+    if (options.showNet) {
+      log('Generating the net geometry...');
+      scene.add(netModel(til, ballMaterial, stickMaterial));
+    }
+
+    log('Making the tiling geometry...');
+    scene.add(tilingModel(yield callWorker({
+      cmd: 'processSolids',
+      val: tileSurfaces(til)
+    })));
+
+    const distance = 6;
+    const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
+    camera.name = 'camera';
+    camera.position.z = distance;
+
+    camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
+    camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
+    camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
+
+    scene.add(camera);
+
+    log('Scene complete!');
+    return scene;
   });
-  const tilingObject3D = tilingModel(surfaces);
-
-  log('Composing the scene...');
-  const distance = 6;
-  const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
-  camera.name = 'camera';
-  camera.position.z = distance;
-
-  camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
-  camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
-  camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
-
-  const scene = new THREE.Scene();
-
-  scene.add(netObject3D);
-  scene.add(tilingObject3D);
-  scene.add(camera);
-
-  log('Scene complete!');
-  return scene;
-};
-
-
-export default function(ds, log = console.log) {
-  return csp.go(makeScene, ds, log);
 };
