@@ -393,6 +393,10 @@ class App extends React.Component {
         showNet: {
           title: 'Show Net',
           type: 'boolean'
+        },
+        extraSmooth: {
+          title: 'Extra-Smooth Faces',
+          type: 'boolean'
         }
       }
     };

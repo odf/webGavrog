@@ -6,7 +6,7 @@ import * as delaney3d from '../dsymbols/delaney3d';
 import * as util      from '../common/util';
 
 
-const processedSolid = (t0, timers) => {
+const processedSolid = (t0, subDLevel, timers) => {
   surface.useTimers(timers);
 
   timers && timers.start('adding flattened center faces');
@@ -14,7 +14,7 @@ const processedSolid = (t0, timers) => {
   timers && timers.stop('adding flattened center faces');
 
   timers && timers.start('subdividing the faces');
-  const t2 = I.Range(0, 2).reduce(s => surface.subD(s), t1);
+  const t2 = I.Range(0, subDLevel).reduce(s => surface.subD(s), t1);
   timers && timers.stop('subdividing the faces');
 
   timers && timers.start('insetting');
@@ -32,7 +32,7 @@ const processedSolid = (t0, timers) => {
 
 
 const handlers = {
-  processSolid({ pos, faces, isFixed }) {
+  processSolid({ pos, faces, isFixed, subDLevel }) {
     const surfIn = {
       pos    : I.List(pos),
       faces  : I.fromJS(faces),
@@ -42,7 +42,7 @@ const handlers = {
     const timer = util.timer();
     const timers = util.timers();
 
-    const surfOut = processedSolid(surfIn, timers);
+    const surfOut = processedSolid(surfIn, subDLevel, timers);
 
     console.log(`${Math.round(timer())} msec in total to process the surfaces`);
     console.log(`  surface processing details:`);

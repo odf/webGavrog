@@ -159,7 +159,7 @@ const chamberBasis = (pos, D) => {
 };
 
 
-const tileSurface = (til, D0) => {
+const tileSurface = (til, D0, options) => {
   const cov = til.cover;
   const ori = props.partialOrientation(cov);
   const pos = til.positions;
@@ -190,14 +190,15 @@ const tileSurface = (til, D0) => {
   return {
     pos    : cornerPositions.map(p => ops.toJS(p)).toJS(),
     faces  : faces.toJS(),
-    isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS()
+    isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS(),
+    subDLevel: options.extraSmooth ? 3 : 2
   };
 };
 
 
-const tileSurfaces = til => {
+const tileSurfaces = (til, options) => {
   return props.orbitReps(til.cover, [0, 1, 2])
-    .map(D => tileSurface(til, D))
+    .map(D => tileSurface(til, D, options))
     .toJS();
 };
 
@@ -289,7 +290,7 @@ export default function makeScene(ds, options, log=console.log) {
     log('Making the tiling geometry...');
     scene.add(tilingModel(yield callWorker({
       cmd: 'processSolids',
-      val: tileSurfaces(til)
+      val: tileSurfaces(til, options)
     })));
 
     const distance = 6;
