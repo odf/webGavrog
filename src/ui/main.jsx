@@ -236,6 +236,7 @@ class App extends React.Component {
     ];
 
     const viewMenu = [
+      { label: 'Center', action: () => this.display.center() },
       { label: 'Along X', action: () => this.display.viewAlongX() },
       { label: 'Along Y', action: () => this.display.viewAlongY() },
       { label: 'Along Z', action: () => this.display.viewAlongZ() }

@@ -178,6 +178,12 @@ export default class Display3d extends React.Component {
     });
   }
 
+  center() {
+    this.update({
+      centeringPosition: [0,0,0]
+    });
+  }
+
   viewAlongX() {
     this.update({
       matrix: [[ 0, 0, 1],
@@ -289,9 +295,7 @@ export default class Display3d extends React.Component {
       event.preventDefault();
       event.stopPropagation();
 
-      this.update({
-        centeringPosition: [0,0,0]
-      });
+      this.center();
     } else {
       const fn = (this.props.keyHandlers || {})[key];
       if (fn) {
