@@ -280,18 +280,24 @@ export default function makeScene(ds, options, log=console.log) {
     log('Building the tiling object...');
     const til = tiling(ds, cov);
 
-    const scene = new THREE.Scene();
+    const model = new THREE.Object3D();
 
     if (options.showNet) {
       log('Generating the net geometry...');
-      scene.add(netModel(til, ballMaterial, stickMaterial));
+      model.add(netModel(til, ballMaterial, stickMaterial));
     }
 
     log('Making the tiling geometry...');
-    scene.add(tilingModel(yield callWorker({
+    model.add(tilingModel(yield callWorker({
       cmd: 'processSolids',
       val: tileSurfaces(til, options)
     })));
+
+    const bbox = new THREE.Box3();
+    bbox.setFromObject(model);
+    model.position.sub(bbox.getCenter());
+
+    log('Composing the scene...');
 
     const distance = 6;
     const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
@@ -302,6 +308,9 @@ export default function makeScene(ds, options, log=console.log) {
     camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
     camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
 
+    const scene = new THREE.Scene();
+
+    scene.add(model);
     scene.add(camera);
 
     log('Scene complete!');
