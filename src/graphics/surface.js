@@ -166,12 +166,27 @@ const scaled = (f, vs) => {
 };
 
 
+const faceIsFlat = vs => {
+  const ws = flattened(vs);
+
+  for (let i = 0; i < vs.size; ++i) {
+    if (ops.norm(ops.minus(vs.get(i), ws.get(i))) > 0.01 * ops.norm(ws.get(i)))
+      return false;
+  }
+
+  return true;
+};
+
+
 const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
   const centerFaces = faces.map(corners(pos)).map(fn);
   const offsets = reductions(centerFaces, (a, vs) => a + vs.size, pos.size);
   const extraPositions = centerFaces.flatten(1);
 
   const newFaces = faces.flatMap((is, f) => {
+    if (faceIsFlat(corners(pos)(is))) // include test in fn, skip empty here
+      return I.List([is]);
+
     const k = offsets.get(f);
     const m = is.size;
     const center = I.List(I.Range(k, k+m));
