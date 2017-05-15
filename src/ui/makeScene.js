@@ -203,23 +203,32 @@ const tileSurfaces = (til, options) => {
 };
 
 
-const tilingModel = surfaces => {
+const colorHSL = (hue, saturation, lightness) => {
+  const c = new THREE.Color();
+  c.setHSL(hue, saturation, lightness);
+  return c;
+};
+
+
+const tilingModel = (surfaces, options) => {
   const model = new THREE.Object3D();
   const hue0 = Math.random();
   const n = surfaces.length;
 
   for (const i in surfaces) {
     const { pos, faces } = surfaces[i];
+
     const geom = geometry(pos, faces);
-    const c = new THREE.Color();
-    c.setHSL((hue0 + i / n) % 1, 1.0, 0.7);
     const mat = new THREE.MeshPhongMaterial({
-      color: c,
+      color: colorHSL((hue0 + i / n) % 1, 1.0, 0.7),
       shininess: 15
     });
+
     const tileMesh = new THREE.Mesh(geom, mat);
     model.add(tileMesh);
-    //model.add(new THREE.WireframeHelper(tilesMesh, 0x00ff00));
+
+    if (options.showSurfaceMesh)
+      model.add(new THREE.WireframeHelper(tileMesh, colorHSL(0.0, 0.0, 0.0)));
   }
 
   return model;
@@ -288,10 +297,13 @@ export default function makeScene(ds, options, log=console.log) {
     }
 
     log('Making the tiling geometry...');
-    model.add(tilingModel(yield callWorker({
-      cmd: 'processSolids',
-      val: tileSurfaces(til, options)
-    })));
+    model.add(tilingModel(
+      yield callWorker({
+        cmd: 'processSolids',
+        val: tileSurfaces(til, options)
+      }),
+      options
+    ));
 
     const bbox = new THREE.Box3();
     bbox.setFromObject(model);

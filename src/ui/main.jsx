@@ -398,6 +398,10 @@ class App extends React.Component {
         extraSmooth: {
           title: 'Extra-Smooth Faces',
           type: 'boolean'
+        },
+        showSurfaceMesh: {
+          title: 'Show Surface Mesh',
+          type: 'boolean'
         }
       }
     };
