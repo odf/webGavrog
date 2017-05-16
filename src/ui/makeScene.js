@@ -210,6 +210,16 @@ const colorHSL = (hue, saturation, lightness) => {
 };
 
 
+const wireframe = (geometry, color) => {
+  const wireframe = new THREE.WireframeGeometry(geometry);
+
+  const line = new THREE.LineSegments(wireframe);
+  line.material.color = color;
+
+  return line;
+};
+
+
 const tilingModel = (surfaces, options) => {
   const model = new THREE.Object3D();
   const hue0 = Math.random();
@@ -228,7 +238,7 @@ const tilingModel = (surfaces, options) => {
     model.add(tileMesh);
 
     if (options.showSurfaceMesh)
-      model.add(new THREE.WireframeHelper(tileMesh, colorHSL(0.0, 0.0, 0.0)));
+      model.add(wireframe(geom, colorHSL(0.0, 0.0, 0.0)));
   }
 
   return model;
