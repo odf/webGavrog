@@ -159,15 +159,28 @@ const chamberBasis = (pos, D) => {
 };
 
 
+const tilingSgn = (cov, pos, ori, basis) => {
+  const elms = I.List(cov.elements());
+  for (let i = 0; i < elms.size; ++i) {
+    const D = elms.get(i);
+    const sgn = ori.get(D) *
+      ops.sgn(ops.determinant(ops.cleanup(
+        ops.times(chamberBasis(pos, D).toJS(), basis))));
+
+    if (sgn)
+      return sgn;
+  }
+
+  return 1;
+};
+
+
 const tileSurface = (til, D0, options) => {
   const cov = til.cover;
   const ori = props.partialOrientation(cov);
   const pos = til.positions;
   const elms = props.orbit(cov, [0, 1, 2], D0);
-
-  const sgn = ori.get(D0) *
-    ops.sgn(ops.determinant(ops.cleanup(
-      ops.times(chamberBasis(pos, D0).toJS(), til.basis))));
+  const sgn = tilingSgn(cov, pos, ori, til.basis);
 
   const cornerOrbits =
     props.orbitReps(cov, [1, 2], elms).map(D => props.orbit(cov, [1, 2], D));
