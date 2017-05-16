@@ -158,33 +158,13 @@ export function smooth({ faces, pos, isFixed }) {
 };
 
 
-const flattened = vs => vs.map(projection(faceNormal(vs), centroid(vs)));
-
-const scaled = (f, vs) => {
-  const c = centroid(vs);
-  return vs.map(v => ops.plus(ops.times(f, v), ops.times(1-f, c)));
-};
-
-
-const faceIsFlat = vs => {
-  const ws = flattened(vs);
-
-  for (let i = 0; i < vs.size; ++i) {
-    if (ops.norm(ops.minus(vs.get(i), ws.get(i))) > 0.01 * ops.norm(ws.get(i)))
-      return false;
-  }
-
-  return true;
-};
-
-
 const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
   const centerFaces = faces.map(corners(pos)).map(fn);
   const offsets = reductions(centerFaces, (a, vs) => a + vs.size, pos.size);
   const extraPositions = centerFaces.flatten(1);
 
   const newFaces = faces.flatMap((is, f) => {
-    if (faceIsFlat(corners(pos)(is))) // include test in fn, skip empty here
+    if (centerFaces.get(f).size == 0)
       return I.List([is]);
 
     const k = offsets.get(f);
@@ -205,8 +185,31 @@ const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
 };
 
 
+const scaled = (f, vs) => {
+  if (vs.size == 0)
+    return vs;
+
+  const c = centroid(vs);
+  return vs.map(v => ops.plus(ops.times(f, v), ops.times(1-f, c)));
+};
+
+
+const flattenedOrSuppressedFace = vs => {
+  const ws = vs.map(projection(faceNormal(vs), centroid(vs)));
+
+  for (let i = 0; i < vs.size; ++i) {
+    if (ops.norm(ops.minus(vs.get(i), ws.get(i))) > 0.01 * ops.norm(ws.get(i)))
+      return ws;
+  }
+
+  return I.List();
+};
+
+
 export function withFlattenedCenterFaces(surface) {
-  return withCenterFaces(surface, vs => scaled(0.5, flattened(vs)));
+  return withCenterFaces(
+    surface,
+    vs => scaled(0.5, flattenedOrSuppressedFace(vs)));
 };
 
 
