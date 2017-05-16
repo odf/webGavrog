@@ -39,14 +39,7 @@ const handlers = {
       isFixed: I.fromJS(isFixed)
     };
 
-    const timer = util.timer();
-    const timers = util.timers();
-
-    const surfOut = processedSolid(surfIn, subDLevel, timers);
-
-    console.log(`${Math.round(timer())} msec in total to process the surfaces`);
-    console.log(`  surface processing details:`);
-    console.log(`${JSON.stringify(timers.current(), null, 2)}`);
+    const surfOut = processedSolid(surfIn, subDLevel);
 
     return {
       pos    : surfOut.pos.toJS(),
@@ -55,8 +48,12 @@ const handlers = {
     };
   },
 
-  processSolids(solids) {
-    return solids.map(this.processSolid);
+  processSolids(solidsIn) {
+    const t = util.timer();
+    const solidsOut = solidsIn.map(this.processSolid);
+    console.log(`${Math.round(t())} msec in total to process the surfaces`);
+
+    return solidsOut;
   },
 
   dsCover(dsTxt) {
