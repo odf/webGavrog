@@ -223,6 +223,9 @@ const insetPoint = (corner, wd, left, right, center) => {
     const t = projection(lft)(s);
     return ops.plus(corner, ops.times(wd / ops.norm(t), s));
   }
+  else if (ops.norm(ops.crossProduct(lft, rgt)) < 0.01) {
+    return ops.plus(corner, ops.times(wd, lft));
+  }
   else {
     const len = wd * ops.norm(dia) / ops.norm(projection(lft)(dia));
     const s   = normalized(ops.crossProduct(dia, ops.crossProduct(lft, rgt)));
