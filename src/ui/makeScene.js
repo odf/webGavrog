@@ -125,13 +125,18 @@ const stick = (p, q, radius, segments) => {
 
 
 const ballAndStick = (
-  name, positions, edges, ballRadius, stickRadius, ballMaterial, stickMaterial
+  name, positions, edges, ballRadius, stickRadius, ballColor, stickColor
 ) => {
   const model = new THREE.Object3D();
   const ball  = new THREE.SphereGeometry(ballRadius, 16, 8);
 
   positions.forEach(p => {
-    const s = new THREE.Mesh(ball, ballMaterial);
+    const mat = new THREE.MeshPhongMaterial({
+      color: ballColor,
+      shininess: 50
+    });
+
+    const s = new THREE.Mesh(ball, mat);
     s.position.x = p[0];
     s.position.y = p[1];
     s.position.z = p[2];
@@ -143,7 +148,13 @@ const ballAndStick = (
     const v = positions[e[1]];
     const s = stick(u, v, stickRadius, 8);
     s.computeVertexNormals();
-    model.add(new THREE.Mesh(s, stickMaterial));
+
+    const mat = new THREE.MeshPhongMaterial({
+      color: stickColor,
+      shininess: 50
+    });
+
+    model.add(new THREE.Mesh(s, mat));
   });
 
   return model;
@@ -258,7 +269,7 @@ const tilingModel = (surfaces, options) => {
 };
 
 
-const netModel = (t, ballMaterial, stickMaterial) => {
+const netModel = (t, ballColor, stickColor) => {
   const net = t.graph;
   const g   = graphPortion(net, 0, 2);
   const pos = t.positions;
@@ -275,8 +286,8 @@ const netModel = (t, ballMaterial, stickMaterial) => {
     g.edges,
     0.04,
     0.01,
-    ballMaterial,
-    stickMaterial
+    ballColor,
+    stickColor
   );
 };
 
@@ -290,15 +301,8 @@ const light = (color, x, y, z) => {
 };
 
 
-const ballMaterial = new THREE.MeshPhongMaterial({
-  color: 0xe8d880,
-  shininess: 50
-});
-
-const stickMaterial = new THREE.MeshPhongMaterial({
-  color: 0x404080,
-  shininess: 50
-});
+const ballColor = 0xe8d880;
+const stickColor = 0x404080;
 
 
 export default function makeScene(ds, options, log=console.log) {
@@ -316,7 +320,7 @@ export default function makeScene(ds, options, log=console.log) {
 
     if (options.showNet) {
       log('Generating the net geometry...');
-      model.add(netModel(til, ballMaterial, stickMaterial));
+      model.add(netModel(til, ballColor, stickColor));
     }
 
     log('Making the tiling geometry...');
