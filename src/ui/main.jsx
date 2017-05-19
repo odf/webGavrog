@@ -214,6 +214,7 @@ class App extends React.Component {
                    width            = {this.state.width}
                    height           = {this.state.height}
                    keyHandlers      = {keyHandlers}
+                   options          = {this.state.options}
                    ref              = {d => this.display = d}
                    />
       );
@@ -401,6 +402,10 @@ class App extends React.Component {
         },
         showSurfaceMesh: {
           title: 'Show Surface Mesh',
+          type: 'boolean'
+        },
+        highlightPicked: {
+          title: 'Highlight On Mouseover',
           type: 'boolean'
         }
       }

@@ -95,6 +95,9 @@ const render3d = (function makeRender() {
   let _value;
   let _props;
   let _scheduled;
+  let _intersected = null;
+  const _raycaster = new THREE.Raycaster();
+  const _mouse = new THREE.Vector2();
 
   const doRender = function doRender() {
     if (_value && _value.renderer) {
@@ -121,6 +124,28 @@ const render3d = (function makeRender() {
       _value.renderer.setSize(_props.width, _props.height);
       _props.camera.aspect = _props.width / _props.height;
       _props.camera.updateProjectionMatrix();
+
+      _mouse.x = _value.ndcX;
+      _mouse.y = _value.ndcY;
+      _raycaster.setFromCamera(_mouse, _props.camera);
+
+      const intersects = _raycaster.intersectObjects(
+        _props.scene.children, true);
+
+      if (_props.options.highlightPicked && intersects.length > 0) {
+	if (_intersected != intersects[ 0 ].object) {
+	  if (_intersected)
+            _intersected.material.emissive.setHex(_intersected.currentHex);
+
+	  _intersected = intersects[ 0 ].object;
+	  _intersected.currentHex = _intersected.material.emissive.getHex();
+	  _intersected.material.emissive.setHex(0xff0000);
+	}
+      } else {
+	if (_intersected)
+          _intersected.material.emissive.setHex(_intersected.currentHex);
+	_intersected = null;
+      }
 
       _value.renderer.render(_props.scene, _props.camera);
       _scheduled = false;
