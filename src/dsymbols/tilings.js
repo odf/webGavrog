@@ -182,6 +182,7 @@ export default function tiling(ds, cover) {
   const basis = ops.cleanup(ops.inverse(O));
 
   return {
+    ds          : ds,
     cover       : cov,
     graph       : skel.graph,
     node2chamber: skel.node2chamber,
