@@ -129,22 +129,30 @@ const render3d = (function makeRender() {
       _mouse.y = _value.ndcY;
       _raycaster.setFromCamera(_mouse, _props.camera);
 
-      const intersects = _raycaster.intersectObjects(
-        _props.scene.children, true);
+      let newIntersected = null;
 
-      if (_props.options.highlightPicked && intersects.length > 0) {
-	if (_intersected != intersects[ 0 ].object) {
-	  if (_intersected)
-            _intersected.material.emissive.setHex(_intersected.currentHex);
+      if (_props.options.highlightPicked) {
+        const intersects = _raycaster.intersectObjects(
+          _props.scene.children, true);
 
-	  _intersected = intersects[ 0 ].object;
-	  _intersected.currentHex = _intersected.material.emissive.getHex();
-	  _intersected.material.emissive.setHex(0xff0000);
-	}
-      } else {
+        let i = 0;
+        while (i < intersects.length && intersects[i].object.isLineSegments)
+          ++i;
+
+        if (i < intersects.length)
+          newIntersected = intersects[i].object;
+      }
+
+      if (newIntersected != _intersected) {
 	if (_intersected)
           _intersected.material.emissive.setHex(_intersected.currentHex);
-	_intersected = null;
+
+	_intersected = newIntersected;
+
+        if (_intersected) {
+	  _intersected.currentHex = _intersected.material.emissive.getHex();
+	  _intersected.material.emissive.setHex(0xff0000);
+        }
       }
 
       _value.renderer.render(_props.scene, _props.camera);
