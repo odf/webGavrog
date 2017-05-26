@@ -309,10 +309,77 @@ const processCrystal = data => {
 };
 
 
+const processFaceListData = data => {
+  const state = initialState(data.content);
+  const { errors, warnings, output } = state;
+  const faces = [];
+  const tiles = [];
+  let dim = null;
+  let currentFaceSize = null;
+  let currentFaceData = null;
+
+  extractSingleValue(state, 'name' , { fn: joinArgs });
+  extractSingleValue(state, 'group', { fn: findGroup });
+  extractSingleValue(state, 'cell' , { fn: makeGramMatrix });
+
+  if (output.group == null)
+    output.group = findGroup(['P1']);
+
+  dim = ops.dimension(output.group.transform);
+
+  if (output.cell == null)
+    output.cell = identity(dim);
+  else if (output.cell.length != dim)
+    errors.push("Inconsistent dimensions");
+
+  for (const { key, args } of state.input) {
+    if (key == 'face') {
+      for (const item of args) {
+        if (currentFaceSize == null) {
+          if (ops.typeOf(item) == 'Integer' && item > 0) {
+            currentFaceSize = item;
+            currentFaceData = [];
+          } else
+            errors.push("Face size must be a positive integer");
+        } else {
+          currentFaceData.push(item);
+          if (currentFaceData.length == currentFaceSize * dim) {
+            const face = [];
+            for (let i = 0; i < currentFaceData.length; i += dim)
+              face.push(makeOperator(currentFaceData.slice(i, i + dim)));
+
+            if (tiles.length)
+              tiles[tiles.length - 1].push(faces.length);
+            faces.push(face);
+
+            currentFaceSize = null;
+            currentFaceData = null;
+          }
+        }
+      }
+    } else if (key == 'tile') {
+      tiles.push([]);
+    } else
+      state.warnings.push(`Unknown keyword '${key}'`);
+  }
+
+  return {
+    name: output.name,
+    group: output.group,
+    cellGram: output.cell,
+    faces,
+    tiles,
+    warnings,
+    errors
+  };
+};
+
+
 const makeStructure = {
   periodic_graph: processPeriodicGraphData,
   net           : processSymmetricNet,
-  crystal       : processCrystal
+  crystal       : processCrystal,
+  tiling        : processFaceListData
 };
 
 

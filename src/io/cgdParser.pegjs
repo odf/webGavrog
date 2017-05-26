@@ -28,7 +28,7 @@
       var line = content[i];
       if (line.key != null)
         k = line.key;
-      if (line.args.length > 0)
+      if (k != null || line.args.length > 0)
         t.push({ key: k, args: line.args });
     }
 
