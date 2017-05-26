@@ -363,7 +363,7 @@ const processFaceListData = data => {
       state.warnings.push(`Unknown keyword '${key}'`);
   }
 
-  return {
+  return cr.tilingFromFacelist({
     name: output.name,
     group: output.group,
     cellGram: output.cell,
@@ -371,7 +371,7 @@ const processFaceListData = data => {
     tiles,
     warnings,
     errors
-  };
+  });
 };
 
 

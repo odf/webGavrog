@@ -264,6 +264,91 @@ const applyOpsToEdges = (edges, nodes, ops, pointsEqFn, vectorsEqFn) =>
   }));
 
 
+const applyOpsToCorners = (faces, ops, pointsEqFn) => {
+  const corners = [];
+
+  for (const f of faces) {
+    for (const p of f) {
+      if (corners.findIndex(q => pointsEqFn(p, q)) < 0) {
+        const stabilizer = pointStabilizer(p, ops, pointsEqFn);
+        for (const op of operatorCosets(ops, stabilizer))
+          corners.push(V.modZ(V.times(op, p)));
+      }
+    }
+  }
+
+  return corners;
+};
+
+
+const normalizedFace = face => {
+  let best = null;
+  let bestShift = null;
+
+  const less = (f1, f2) => {
+    for (const i in f1) {
+      const d = f1[i].index - f2[i].index;
+      if (d != 0)
+        return d < 0;
+
+      for (const j in f1[i].shift) {
+        const d = f1[i].shift[j] - f2[i].shift[j];
+        if (d != 0)
+          return d < 0;
+      }
+    }
+    return false;
+  };
+
+  for (const i in face) {
+    const s = face[i].shift;
+    const fa = face.slice(i).concat(face.slice(0, i))
+      .map(({ index, shift }) => ({ index, shift: V.minus(shift, s) }));
+    const fb = [fa[0]].concat(fa.slice(1).reverse());
+
+    if (best == null || less(fa, best)) {
+      best = fa;
+      bestShift = s;
+    }
+    if (less(fb, best)) {
+      best = fb;
+      bestShift = s;
+    }
+  }
+
+  return { face: best, shift: bestShift };
+};
+
+
+const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
+  const seen = {};
+  const result = [];
+
+  const lookup = p => {
+    for (const i in corners) {
+      const q = corners[i];
+      if (pointsEqFn(p, q))
+        return { index: i, shift: V.minus(p, q).map(x => V.round(x)) };
+    }
+    return [];
+  };
+
+  for (const f of faces) {
+    for (const op of ops) {
+      const fMapped = f.map(p => lookup(V.times(op, p)));
+      const fNormal = normalizedFace(fMapped);
+      const key = JSON.stringify(fNormal);
+      if (!seen[key]) {
+        seen[key] = true;
+        result.push(fNormal);
+      }
+    }
+  }
+
+  return result;
+};
+
+
 const convertEdge = ({ from, to }) =>
   [from.node, to.node, V.minus(to.shift, from.shift)];
 
@@ -341,6 +426,47 @@ export function netFromCrystal(spec) {
     warnings,
     errors
   };
+};
+
+
+export const tilingFromFacelist = spec => {
+  _timers && _timers.start('tilingFromFacelist');
+
+  const { name, group, cellGram: G0, faces, tiles } = spec;
+  const warnings = spec.warnings.slice();
+  const errors = spec.errors.slice();
+
+  if (group.error) {
+    errors.push(group.error);
+    return { warnings, errors };
+  }
+
+  const { name: groupName, transform, operators } = group;
+  const cellGram = spacegroups.resymmetrizedGramMatrix(G0, operators);
+  if (matrixError(cellGram, G0) > 0.01) {
+    warnings.push(`Unit cell resymmetrized to ${unitCellParameters(cellGram)}`);
+  }
+
+  const primitive = spacegroups.primitiveSetting(operators);
+  const toPrimitive = primitive.fromStd.oldToNew;
+  const primitiveGram = spacegroups.resymmetrizedGramMatrix(
+    V.times(primitive.cell, V.times(cellGram, V.transposed(primitive.cell))),
+    primitive.ops);
+
+  const facesMapped = faces.map(
+    f => f.map(p => V.times(toPrimitive, V.point(p))));
+
+  const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
+  const allCorners = applyOpsToCorners(facesMapped, primitive.ops, pointsEq);
+  const allFaces = applyOpsToFaces(
+    facesMapped, allCorners, primitive.ops, pointsEq);
+
+  // TODO map tiles if any
+  // TODO construct the D-symbol
+
+  _timers && _timers.stop('tilingFromFacelist');
+
+  return spec;
 };
 
 
