@@ -2,6 +2,7 @@ import * as spacegroups from '../geometry/spacegroups';
 import * as lattices from '../geometry/lattices';
 import * as pg from '../pgraphs/periodic';
 import * as sgtable from './sgtable';
+import * as delaney from '../dsymbols/delaney';
 
 import fromPointCloud from '../pgraphs/fromPointCloud';
 
@@ -349,6 +350,74 @@ const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
 };
 
 
+const projection = (dir, origin) => p => {
+  const d = V.minus(p, origin);
+  return V.plus(origin, V.minus(d, V.times(V.times(dir, d), dir)));
+};
+
+
+const sectorNormals = vs => {
+  const n = vs.length;
+  const edges = vs.map((v, i) => [v, vs[(i + 1) % n]]);
+  const plus = (v, w) => V.plus(v, w);
+  const tmp = edges.map(([v, w]) => V.crossProduct(v, w)).reduce(plus);
+
+  const faceNormal = V.div(tmp, V.norm(tmp));
+  const centroid = V.div(vs.reduce(plus), vs.length);
+
+  const proj = projection(faceNormal, centroid);
+  const midPoint = (v, w) => V.div(V.plus(v, w), 2);
+
+  return edges.map(([v, w]) => {
+    const c = midPoint(v, w);
+    const d = proj(midPoint(c, proj(c)));
+    return V.crossProduct(V.minus(w, v), V.minus(d, c));
+  });
+};
+
+
+const op2PairingsForPlainMode = (corners, faces, offsets) => {
+  for (const f of faces) {
+    const vs = f.face.map(item => V.plus(V.vector(corners[item.index]),
+                                         item.shift));
+    console.log(`face = ${JSON.stringify(vs)}`);
+    console.log(`normals = ${JSON.stringify(sectorNormals(vs))}`);
+    console.log();
+  }
+  return [];
+};
+
+
+const buildTiling = (corners, faces) => {
+  const pairings = [[], [], [], []];
+  const faceOffsets = [];
+  let offset = 1;
+
+  for (const { face } of faces) {
+    const n = face.length;
+
+    for (let i = 0; i < 4 * n; i += 2)
+      pairings[0].push([offset + i, offset + i + 1]);
+
+    for (let i = 1; i < 2 * n; i += 2) {
+      const i1 = (i + 1) % (2 * n);
+      pairings[1].push([offset + i, offset + i1]);
+      pairings[1].push([offset + i + 2 * n, offset + i1 + 2 * n]);
+    }
+
+    for (let i = 0; i < 2 * n; ++i)
+      pairings[3].push([offset + i, offset + i + 2 * n]);
+
+    faceOffsets.push(offset);
+    offset += 4 * n;
+  }
+
+  pairings[2] = op2PairingsForPlainMode(corners, faces, faceOffsets);
+
+  return delaney.build(3, offset - 1, (ds, i) => pairings[i], (ds, i) => []);
+};
+
+
 const convertEdge = ({ from, to }) =>
   [from.node, to.node, V.minus(to.shift, from.shift)];
 
@@ -461,12 +530,14 @@ export const tilingFromFacelist = spec => {
   const allFaces = applyOpsToFaces(
     facesMapped, allCorners, primitive.ops, pointsEq);
 
-  // TODO map tiles if any
-  // TODO construct the D-symbol
+  const ds = buildTiling(allCorners, allFaces);
+
+  // TODO also support the case were tiles are given explicitly
 
   _timers && _timers.stop('tilingFromFacelist');
 
-  return spec;
+  console.log(`ds = ${ds}`);
+  return ds;
 };
 
 
