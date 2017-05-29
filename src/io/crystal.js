@@ -370,8 +370,9 @@ const sectorNormals = vs => {
 
   return edges.map(([v, w]) => {
     const c = midPoint(v, w);
-    const d = proj(midPoint(c, proj(c)));
-    return V.crossProduct(V.minus(w, v), V.minus(d, c));
+    const d = midPoint(centroid, proj(c));
+    const e = V.crossProduct(V.minus(w, v), V.minus(d, c));
+    return V.div(e, V.norm(e));
   });
 };
 
