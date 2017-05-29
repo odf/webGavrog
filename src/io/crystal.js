@@ -377,14 +377,41 @@ const sectorNormals = vs => {
 };
 
 
+const collectEdges = faces => {
+  const facesAtEdge = {};
+
+  faces.forEach(({ face, shift }, i) => {
+    const n = face.length;
+    const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
+
+    edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
+      const key = JSON.stringify([v1, v2, V.minus(s2, s1)]);
+      const keyInv = JSON.stringify([v2, v1, V.minus(s1, s2)]);
+
+      if (facesAtEdge[key])
+        facesAtEdge[key].push([i, j, false]);
+      else if (facesAtEdge[keyInv])
+        facesAtEdge[keyInv].push([i, j, true]);
+      else
+        facesAtEdge[key] = [[i, j, false]];
+    });
+  });
+
+  return facesAtEdge;
+};
+
+
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
-  for (const f of faces) {
-    const vs = f.face.map(item => V.plus(V.vector(corners[item.index]),
-                                         item.shift));
-    console.log(`face = ${JSON.stringify(vs)}`);
-    console.log(`normals = ${JSON.stringify(sectorNormals(vs))}`);
-    console.log();
-  }
+  const explicitFaces = faces.map(f => f.face.map(
+    item => V.plus(V.vector(corners[item.index]), item.shift)));
+  console.log(`explicitFaces = ${JSON.stringify(explicitFaces)}`);
+
+  const normals = explicitFaces.map(sectorNormals)
+  console.log(`normals = ${JSON.stringify(normals)}`);
+
+  const facesAtEdge = collectEdges(faces);
+  console.log(`facesAtEdge = ${JSON.stringify(facesAtEdge)}`);
+
   return [];
 };
 
