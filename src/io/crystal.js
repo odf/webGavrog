@@ -356,13 +356,16 @@ const projection = (dir, origin) => p => {
 };
 
 
+const normalized = v => V.div(v, V.norm(v));
+
+
 const sectorNormals = vs => {
   const n = vs.length;
   const edges = vs.map((v, i) => [v, vs[(i + 1) % n]]);
   const plus = (v, w) => V.plus(v, w);
-  const tmp = edges.map(([v, w]) => V.crossProduct(v, w)).reduce(plus);
 
-  const faceNormal = V.div(tmp, V.norm(tmp));
+  const faceNormal = normalized(
+    edges.map(([v, w]) => V.crossProduct(v, w)).reduce(plus));
   const centroid = V.div(vs.reduce(plus), vs.length);
 
   const proj = projection(faceNormal, centroid);
@@ -371,8 +374,7 @@ const sectorNormals = vs => {
   return edges.map(([v, w]) => {
     const c = midPoint(v, w);
     const d = midPoint(centroid, proj(c));
-    const e = V.crossProduct(V.minus(w, v), V.minus(d, c));
-    return V.div(e, V.norm(e));
+    return normalized(V.crossProduct(V.minus(w, v), V.minus(d, c)));
   });
 };
 
@@ -404,15 +406,63 @@ const collectEdges = faces => {
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
   const explicitFaces = faces.map(f => f.face.map(
     item => V.plus(V.vector(corners[item.index]), item.shift)));
-  console.log(`explicitFaces = ${JSON.stringify(explicitFaces)}`);
 
   const normals = explicitFaces.map(sectorNormals)
-  console.log(`normals = ${JSON.stringify(normals)}`);
-
   const facesAtEdge = collectEdges(faces);
-  console.log(`facesAtEdge = ${JSON.stringify(facesAtEdge)}`);
+  const getNormal = ([i, j, rev]) => V.times(normals[i][j], rev ? -1 : 1);
 
-  return [];
+  const result = [];
+  for (const key of Object.keys(facesAtEdge)) {
+    const [v, w, s] = JSON.parse(key);
+    const d = normalized(V.minus(V.plus(corners[w], s), corners[v]));
+    const n0 = getNormal(facesAtEdge[key][0]);
+
+    const incidences = facesAtEdge[key].map(([i, j, reverse]) => {
+      const n = getNormal([i, j, reverse]);
+      const angle = Math.acos(Math.max(-1, Math.min(1, V.times(n0, n))));
+
+      if (V.lt(V.determinant([d, n0, n]), 0))
+        return [i, j, reverse, 2 * Math.PI - angle];
+      else
+        return [i, j, reverse, angle];
+    });
+
+    incidences.sort((a, b) => a[3] - b[3]);
+    const m = incidences.length;
+
+    incidences.forEach(([face1, edge1, rev1, angle1], i) => {
+      const [face2, edge2, rev2, angle2] = incidences[(i + 1) % m];
+      const [offset1, size1] = [offsets[face1], faces[face1].face.length];
+      const [offset2, size2] = [offsets[face2], faces[face2].face.length];
+
+      let a, b, c, d;
+
+      if (rev1) {
+        const k = offset1 + 2 * (size1 + edge1);
+        a = k + 1;
+        b = k;
+      } else {
+        const k = offset1 + 2 * edge1;
+        a = k;
+        b = k + 1;
+      }
+
+      if (rev2) {
+        const k = offset2 + 2 * edge2;
+        c = k + 1;
+        d = k;
+      } else {
+        const k = offset2 + 2 * (size2 + edge2);
+        c = k;
+        d = k + 1;
+      }
+
+      result.push([a, c]);
+      result.push([b, d]);
+    });
+  }
+
+  return result;
 };
 
 
