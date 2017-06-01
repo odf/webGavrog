@@ -170,7 +170,8 @@ const _fromData = function _fromData(dim, sData, vData) {
     withPairings  : (i, data) => _withPairings(_ds, i, data),
     withBranchings: (i, data) => _withBranchings(_ds, i, data),
 
-    toString() { return stringify(this); }
+    toString() { return stringify(this); },
+    toJSON() { return stringify(this); }
   }
 };
 
