@@ -8,6 +8,7 @@ import Form          from '../plexus-form';
 import * as version  from '../version';
 import * as delaney  from '../dsymbols/delaney';
 import parseDSymbols from '../io/ds';
+import parseCgdData  from '../io/cgd';
 
 import Display3d from './Display3d';
 import Floatable from './Floatable';
@@ -34,6 +35,16 @@ const tilings = [
       `)
   }
 ];
+
+
+const parseTilings = (filename, data) => {
+  if (filename.match(/\.cgd$/))
+    return Array.from(parseCgdData(data));
+  else if (filename.match(/\.ds$/))
+    return Array.from(parseDSymbols(data));
+  else
+    return [];
+};
 
 
 class FileLoader {
@@ -172,7 +183,7 @@ class App extends React.Component {
 
   handleFileData(file, data) {
     this.setState({ filename: file.name });
-    this.setTiling(0, Array.from(parseDSymbols(data)));
+    this.setTiling(0, parseTilings(file.name, data));
   }
 
   saveTiling() {
