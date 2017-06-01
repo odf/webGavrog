@@ -413,7 +413,7 @@ const reportError = (text, ex) => {
 };
 
 
-export function* structures(text) {
+export default function* structures(text) {
   let blocks;
 
   _timers && _timers.start('cgd parsing');
@@ -435,12 +435,97 @@ export function* structures(text) {
 
 
 if (require.main == module) {
-  const fs = require('fs');
+  const input = `
+PERIODIC_GRAPH
+ID diamond
+EDGES
+  1 2 0 0 0
+  1 2 1 0 0
+  1 2 0 1 0
+  1 2 0 0 1
+END
 
-  process.argv.slice(2).forEach(file => {
-    const text = fs.readFileSync(file, { encoding: 'utf8' });
 
-    for (const b of structures(text))
-      console.log(JSON.stringify(b, null, 2));
-  });
+NET # the diamond net
+  Group Fd-3m
+  Node 1 3/8,3/8,3/8
+  Edge 1 1 1-x,1-y,1-z
+END
+
+
+# The type of data to expect
+CRYSTAL
+  # Structure id (optional; ID and NAME both work)
+  ID    diamond
+  # The space group
+  GROUP Fd-3m
+  # Cell parameters: a b c alpha beta gamma
+  CELL         2.3094 2.3094 2.3094  90.00000   90.00000   90.00000
+  # Atom specification: name coordination x y z
+  #   (decimal numbers or fractions can be used for coordinates)
+  ATOM  1  4   5/8 5/8 5/8
+# This ends the structure description
+END
+
+
+CRYSTAL
+  ID    diamond-with-cell-error
+  GROUP Fd-3m
+  CELL  2.3094 2.3094 2.3094  90.00000   90.00000   95.00000
+  ATOM  1  4   5/8 5/8 5/8
+END
+
+
+CRYSTAL
+  NAME  real CdSO4
+  GROUP Pmn21
+  CELL  6.558 4.698 4.719 90.0 90.0 90.0
+  # First kind of atom
+  ATOM  1 4  0.0000  0.6657  0.7306
+  # Edges can be specified by giving the names of the endpoints
+  EDGE  1 2
+  # or by giving a number for the first and coordinates for the second. 
+  EDGE  1    0.0000  0.1416  0.2500
+  # or by giving coordinates for both
+  EDGE  0.0000  0.6657  0.7306    0.0000  1.1416  1.2500
+  # The Keyword EDGE may be missing on consecutive lines.
+        1   -0.5000  0.8584  0.7500
+  # Second kind of atom.
+  ATOM  2 4  0.5000  0.8584  0.7500
+  # Second group of edge specifications.
+  EDGE  2    0.0000  0.6657  0.7306
+        2    1.0000  0.6657  0.7306
+        2    0.5000  1.3343  0.2306
+        2    0.5000  0.3343  1.2306
+END
+
+
+CRYSTAL
+  ID    LTN
+  # Group Fd-3m with first origin choice instead of second
+  #     (likewise, use ":R" for rhombohedral setting, where applicable)
+  GROUP "Fd-3m:1"
+  CELL  35.622 35.622 35.622 90.000 90.000 90.000
+  ATOM
+    # If the first field in a line starts with a letter, it is assumed
+    # to be a keyword, so in this example, the atom names need to be quoted.
+    "SI1" 4 0.3112 0.2500 0.3727
+    "SI2" 4 0.4345 0.2481 0.3721
+    "SI3" 4 0.3897 0.3285 0.4532
+    "SI4" 4 0.5396 0.3394 0.3996
+END
+
+
+TILING
+  NAME primitive-cubic
+  CELL  1.0 2.0 3.0  90.0 75.0 60.0
+  FACES
+    4  0 0 0  1 0 0  1 1 0  0 1 0
+    4  0 0 0  1 0 0  1 0 1  0 0 1
+    4  0 0 0  0 1 0  0 1 1  0 0 1
+END
+`;
+
+  for (const b of structures(input))
+    console.log(JSON.stringify(b, null, 2));
 }

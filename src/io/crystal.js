@@ -616,13 +616,21 @@ export const tilingFromFacelist = spec => {
 
   _timers && _timers.stop('tilingFromFacelist');
 
-  console.log(`ds = ${ds}`);
-  return ds;
+  return {
+    name,
+    group: group.name,
+    cellGram,
+    primitiveCell: primitive.cell,
+    primitiveGram,
+    toPrimitive,
+    symbol: ds,
+    warnings,
+    errors
+  };
 };
 
 
 if (require.main == module) {
-  const fs = require('fs');
   const cgd = require('./cgd');
   const pgr = require('../pgraphs/periodic');
   const sym = require('../pgraphs/symmetries');
@@ -639,9 +647,7 @@ if (require.main == module) {
       return inv.invariant(sym.minimalImage(G));
   };
 
-  const input = (process.argv.length > 2
-                 ? fs.readFileSync(process.argv[2], { encoding: 'utf8' })
-                 : `
+  const input = `
 CRYSTAL
   NAME srs
   GROUP I4132
@@ -681,9 +687,9 @@ CRYSTAL
   NODE 1 4  0.00000 0.00000 0.50000
   EDGE  0.00000 0.00000 0.50000   0.00000 0.50000 0.50000
 END
-`);
+`;
 
-  for (const b of cgd.structures(input)) {
+  for (const b of cgd.default(input)) {
     for (const key in b) {
       console.log(`${key}:`);
 
