@@ -492,7 +492,9 @@ const buildTiling = (corners, faces) => {
 
   pairings[2] = op2PairingsForPlainMode(corners, faces, faceOffsets);
 
-  return delaney.build(3, offset - 1, (ds, i) => pairings[i], (ds, i) => []);
+  return delaney.build(3, offset - 1,
+                       (ds, i) => pairings[i],
+                       (ds, i) => ds.elements().map(D => [D, 1]));
 };
 
 
