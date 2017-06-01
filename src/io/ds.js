@@ -19,7 +19,7 @@ export default function* symbols(text) {
       buffer.push(content);
       if (line.match(/>/)) {
         yield {
-          attributes,
+          ...attributes,
           symbol: delaney.parse(buffer.join(' ') + '>')
         }
         attributes = {};
@@ -43,5 +43,5 @@ if (require.main == module) {
 `;
 
   for (const s of symbols(text))
-    console.log(`${s.symbol} ${JSON.stringify(s.attributes)}`);
+    console.log(JSON.stringify(s));
 }
