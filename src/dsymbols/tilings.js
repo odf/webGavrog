@@ -168,6 +168,7 @@ const makeCover = ds =>
 
 
 export default function tiling(ds, cover) {
+  console.log(`tiling(\n  ${ds},\n  ${cover}\n)`);
   const cov  = cover || makeCover(ds);
   const e2t  = _edgeTranslations(cov);
   const c2s  = _cornerShifts(cov, e2t);

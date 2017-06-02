@@ -624,6 +624,7 @@ export const tilingFromFacelist = spec => {
     primitiveGram,
     toPrimitive,
     symbol: ds,
+    cover: ds,
     warnings,
     errors
   };

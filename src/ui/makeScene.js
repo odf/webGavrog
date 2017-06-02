@@ -305,13 +305,15 @@ const ballColor = 0xe8d880;
 const stickColor = 0x404080;
 
 
-export default function makeScene(ds, options, log=console.log) {
+export default function makeScene(ds, cov, options, log=console.log) {
   return csp.go(function*() {
-    log('Finding the pseudo-toroidal cover...');
-    const cov = delaney.parse(yield callWorker({
-      cmd: 'dsCover',
-      val: `${ds}`
-    }));
+    if (cov == null) {
+      log('Finding the pseudo-toroidal cover...');
+      cov = delaney.parse(yield callWorker({
+        cmd: 'dsCover',
+        val: `${ds}`
+      }));
+    }
 
     log('Building the tiling object...');
     const til = tiling(ds, cov);

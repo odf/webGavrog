@@ -166,13 +166,16 @@ class App extends React.Component {
     const syms = symbolList || this.state.syms;
     const n = syms.length;
     const index = i < 0 ? n + i % n : i % n;
-    const ds = syms[index].symbol;
 
     this.title(this.state.filename, index + 1, syms.length, syms[index].name);
 
     csp.go(function*() {
       try {
-        const scene = yield makeScene(ds, this.state.options, s => this.log(s));
+        const scene = yield makeScene(
+          syms[index].symbol,
+          syms[index].cover,
+          this.state.options,
+          s => this.log(s));
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
