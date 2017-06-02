@@ -338,8 +338,10 @@ const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
     for (const op of ops) {
       const fMapped = f.map(p => lookup(V.times(op, p)));
       const fNormal = normalizedFace(fMapped);
-      const key = JSON.stringify(fNormal);
+      const key = JSON.stringify(fNormal.face);
+      console.log(`key = ${key}`);
       if (!seen[key]) {
+        console.log(`  NEW`);
         seen[key] = true;
         result.push(fNormal);
       }
