@@ -651,7 +651,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
   if (epsilon) {
     methods.cleanup = {
-      Vector: v => cleanup([v]),
+      Vector: v => cleanup([v])[0],
       Matrix: m => cleanup(m)
     }
   }
