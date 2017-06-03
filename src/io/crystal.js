@@ -3,6 +3,7 @@ import * as lattices from '../geometry/lattices';
 import * as pg from '../pgraphs/periodic';
 import * as sgtable from './sgtable';
 import * as delaney from '../dsymbols/delaney';
+import * as derived from '../dsymbols/derived';
 
 import fromPointCloud from '../pgraphs/fromPointCloud';
 
@@ -339,9 +340,8 @@ const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
       const fMapped = f.map(p => lookup(V.times(op, p)));
       const fNormal = normalizedFace(fMapped);
       const key = JSON.stringify(fNormal.face);
-      console.log(`key = ${key}`);
+
       if (!seen[key]) {
-        console.log(`  NEW`);
         seen[key] = true;
         result.push(fNormal);
       }
@@ -423,7 +423,7 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
       const n = getNormal([i, j, reverse]);
       const angle = Math.acos(Math.max(-1, Math.min(1, V.times(n0, n))));
 
-      if (V.lt(V.determinant([d, n0, n]), 0))
+      if (V.lt(V.determinant(V.cleanup([d, n0, n])), 0))
         return [i, j, reverse, 2 * Math.PI - angle];
       else
         return [i, j, reverse, angle];
@@ -625,8 +625,7 @@ export const tilingFromFacelist = spec => {
     primitiveCell: primitive.cell,
     primitiveGram,
     toPrimitive,
-    symbol: ds,
-    cover: ds,
+    symbol: derived.minimal(ds),
     warnings,
     errors
   };
