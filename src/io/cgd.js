@@ -413,24 +413,25 @@ const reportError = (text, ex) => {
 };
 
 
-export default function* structures(text) {
-  let blocks;
-
-  _timers && _timers.start('cgd parsing');
-
+export const blocks = text => {
   try {
-    blocks = parser.parse(text);
+    return parser.parse(text);
   } catch(ex) {
     reportError(text, ex);
-    blocks = []
+    throw ex;
   }
+};
 
-  _timers && _timers.stop('cgd parsing');
 
-  for (const b of blocks) {
-    const data = preprocessBlock(b);
-    yield (makeStructure[data.type] || unknown)(data);
-  }
+export const processed = block => {
+  const data = preprocessBlock(block);
+  return (makeStructure[data.type] || unknown)(data);
+};
+
+
+export default function* structures(text) {
+  for (const b of blocks(text))
+    yield processed(b);
 };
 
 
@@ -500,6 +501,23 @@ CRYSTAL
 END
 
 
+TILING
+  NAME srs
+  GROUP I4132
+  FACES 10
+     0.12500  0.12500 0.12500
+    -0.12500  0.37500 0.12500
+    -0.12500  0.62500 0.37500
+    -0.37500  0.62500 0.62500
+    -0.37500  0.37500 0.87500
+    -0.12500  0.37500 1.12500
+     0.12500  0.12500 1.12500
+     0.37500  0.12500 0.87500
+     0.37500 -0.12500 0.62500
+     0.12500 -0.12500 0.37500
+END
+
+
 CRYSTAL
   ID    LTN
   # Group Fd-3m with first origin choice instead of second
@@ -513,16 +531,6 @@ CRYSTAL
     "SI2" 4 0.4345 0.2481 0.3721
     "SI3" 4 0.3897 0.3285 0.4532
     "SI4" 4 0.5396 0.3394 0.3996
-END
-
-
-TILING
-  NAME primitive-cubic
-  CELL  1.0 2.0 3.0  90.0 75.0 60.0
-  FACES
-    4  0 0 0  1 0 0  1 1 0  0 1 0
-    4  0 0 0  1 0 0  1 0 1  0 0 1
-    4  0 0 0  0 1 0  0 1 1  0 0 1
 END
 `;
 
