@@ -1,20 +1,19 @@
-import * as React     from 'react';
-import * as ReactDOM  from 'react-dom';
-import * as csp       from 'plexus-csp';
-import validate       from 'plexus-validate';
+import * as React    from 'react';
+import * as ReactDOM from 'react-dom';
+import * as csp      from 'plexus-csp';
+import validate      from 'plexus-validate';
 
-import Form           from '../plexus-form';
+import Form          from '../plexus-form';
 
-import * as version   from '../version';
-import * as delaney   from '../dsymbols/delaney';
-import parseDSymbols  from '../io/ds';
-import * as cgdParser from '../io/cgdParser';
-import * as cgd       from '../io/cgd';
+import * as version  from '../version';
+import * as delaney  from '../dsymbols/delaney';
+import parseDSymbols from '../io/ds';
+import * as cgd      from '../io/cgd';
 
-import Display3d      from './Display3d';
-import Floatable      from './Floatable';
-import Menu           from './Menu';
-import makeScene      from './makeScene';
+import Display3d     from './Display3d';
+import Floatable     from './Floatable';
+import Menu          from './Menu';
+import makeScene     from './makeScene';
 
 
 const tilings = [
@@ -41,7 +40,7 @@ const tilings = [
 const parseTilings = (filename, data, log) => {
   if (filename.match(/\.cgd$/)) {
     log('Parsing .cgd data...');
-    return cgdParser.parse(data).filter(block => block.type == 'tiling');
+    return cgd.blocks(data).filter(block => block.type == 'tiling');
   }
   else if (filename.match(/\.ds$/))
     return Array.from(parseDSymbols(data));
