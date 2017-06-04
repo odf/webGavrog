@@ -1,19 +1,20 @@
-import * as React    from 'react';
-import * as ReactDOM from 'react-dom';
-import * as csp      from 'plexus-csp';
-import validate      from 'plexus-validate';
+import * as React     from 'react';
+import * as ReactDOM  from 'react-dom';
+import * as csp       from 'plexus-csp';
+import validate       from 'plexus-validate';
 
-import Form          from '../plexus-form';
+import Form           from '../plexus-form';
 
-import * as version  from '../version';
-import * as delaney  from '../dsymbols/delaney';
-import parseDSymbols from '../io/ds';
-import parseCgdData  from '../io/cgd';
+import * as version   from '../version';
+import * as delaney   from '../dsymbols/delaney';
+import parseDSymbols  from '../io/ds';
+import * as cgdParser from '../io/cgdParser';
+import * as cgd       from '../io/cgd';
 
-import Display3d from './Display3d';
-import Floatable from './Floatable';
-import Menu      from './Menu';
-import makeScene from './makeScene';
+import Display3d      from './Display3d';
+import Floatable      from './Floatable';
+import Menu           from './Menu';
+import makeScene      from './makeScene';
 
 
 const tilings = [
@@ -37,9 +38,11 @@ const tilings = [
 ];
 
 
-const parseTilings = (filename, data) => {
-  if (filename.match(/\.cgd$/))
-    return Array.from(parseCgdData(data));
+const parseTilings = (filename, data, log) => {
+  if (filename.match(/\.cgd$/)) {
+    log('Parsing .cgd data...');
+    return cgdParser.parse(data).filter(block => block.type == 'tiling');
+  }
   else if (filename.match(/\.ds$/))
     return Array.from(parseDSymbols(data));
   else
@@ -163,13 +166,18 @@ class App extends React.Component {
   }
 
   setTiling(i, symbolList) {
-    const syms = symbolList || this.state.syms;
-    const n = syms.length;
-    const index = i < 0 ? n + i % n : i % n;
-
-    this.title(this.state.filename, index + 1, syms.length, syms[index].name);
-
     csp.go(function*() {
+      const syms = symbolList || this.state.syms;
+      const n = syms.length;
+      const index = i < 0 ? n + i % n : i % n;
+
+      if (syms[index].symbol == null) {
+        this.log('Converting face list data...');
+        syms[index] = cgd.processed(syms[index]);
+      }
+
+      this.title(this.state.filename, index + 1, syms.length, syms[index].name);
+
       try {
         const scene = yield makeScene(
           syms[index].symbol,
@@ -186,7 +194,7 @@ class App extends React.Component {
 
   handleFileData(file, data) {
     this.setState({ filename: file.name });
-    this.setTiling(0, parseTilings(file.name, data));
+    this.setTiling(0, parseTilings(file.name, data, s => this.log(s)));
   }
 
   saveTiling() {
