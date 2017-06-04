@@ -122,19 +122,22 @@ const _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
 
 const _chamberBasis = function _chamberBasis(pos, D) {
   const t = pos.get(D).valueSeq().toArray();
-  return t.slice(1).map(v => ops.minus(v, t[0]));
+  return ops.cleanup(t.slice(1).map(v => ops.minus(v, t[0])));
 };
 
 
 const _symmetries = function _symmetries(ds, cov, pos) {
-  const n = delaney.size(ds);
-  const m = delaney.size(cov) / n;
+  const D0 = cov.elements()
+    .find(D => ops.ne(ops.determinant(_chamberBasis(pos, D)), 0));
+  const A = ops.inverse(_chamberBasis(pos, D0));
 
-  const D = ds.elements()
-    .find(D => ops.sgn(ops.determinant(_chamberBasis(pos, D))) != 0);
-  const A = ops.inverse(_chamberBasis(pos, D));
+  const phi = properties.morphism(cov, 1, ds, 1);
+  const E0 = phi.get(D0);
 
-  return I.Range(0, m).map(i => ops.times(A, _chamberBasis(pos, D + i*n)));
+  return I.List(
+    cov.elements()
+      .filter(D => phi.get(D) == E0)
+      .map(D => ops.times(A, _chamberBasis(pos, D))));
 };
 
 
