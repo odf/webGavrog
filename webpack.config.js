@@ -30,7 +30,7 @@ module.exports = [ "main", "sceneWorker" ].map(function(name) {
       ]
     },
     resolve: {
-      extensions: [ ".js", ".jsx", ".json" ]
+      extensions: [ ".js", ".jsx", ".pegjs", ".json" ]
     }
   };
 });
