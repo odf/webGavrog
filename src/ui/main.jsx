@@ -37,10 +37,16 @@ const tilings = [
 ];
 
 
+const findName = data => (
+  ((data.find(s => s.key == 'name') || {}).args || [])[0]);
+
+
 const parseTilings = (filename, data, log) => {
   if (filename.match(/\.cgd$/)) {
     log('Parsing .cgd data...');
-    return cgd.blocks(data).filter(block => block.type == 'tiling');
+    return cgd.blocks(data)
+              .filter(block => block.type == 'tiling')
+              .map(block => ({ ...block, name: findName(block.content) }));
   }
   else if (filename.match(/\.ds$/))
     return Array.from(parseDSymbols(data));
