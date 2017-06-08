@@ -69,7 +69,12 @@ const stick = (p, q, radius, segments) => {
 
 
 const ballAndStick = (
-  name, positions, edges, ballRadius, stickRadius, ballColor, stickColor
+  positions,
+  edges,
+  ballRadius=0.04,
+  stickRadius=0.01,
+  ballColor=0xe8d880,
+  stickColor=0x404080
 ) => {
   const model = new THREE.Object3D();
   const ball  = new THREE.SphereGeometry(ballRadius, 16, 8);
@@ -222,33 +227,36 @@ const light = (color, x, y, z) => {
 };
 
 
-const ballColor = 0xe8d880;
-const stickColor = 0x404080;
+const makeTilingModel = (ds, cov, options, log) => csp.go(function*() {
+  if (cov == null) {
+    log('Finding the pseudo-toroidal cover...');
+    cov = delaney.parse(yield callWorker({
+      cmd: 'dsCover',
+      val: `${ds}`
+    }));
+  }
+
+  log('Building the tiling object...');
+  const til = tiling(ds, cov);
+
+  const model = new THREE.Object3D();
+
+  log('Making the tiling geometry...');
+  model.add(tilingModel(
+    yield callWorker({
+      cmd: 'processSolids',
+      val: tileSurfaces(til, options)
+    }),
+    options
+  ));
+
+  return model;
+});
 
 
 export default function makeScene(ds, cov, options, log=console.log) {
   return csp.go(function*() {
-    if (cov == null) {
-      log('Finding the pseudo-toroidal cover...');
-      cov = delaney.parse(yield callWorker({
-        cmd: 'dsCover',
-        val: `${ds}`
-      }));
-    }
-
-    log('Building the tiling object...');
-    const til = tiling(ds, cov);
-
-    const model = new THREE.Object3D();
-
-    log('Making the tiling geometry...');
-    model.add(tilingModel(
-      yield callWorker({
-        cmd: 'processSolids',
-        val: tileSurfaces(til, options)
-      }),
-      options
-    ));
+    const model = yield makeTilingModel(ds, cov, options, log);
 
     const bbox = new THREE.Box3();
     bbox.setFromObject(model);
