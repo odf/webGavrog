@@ -20,62 +20,6 @@ const callWorker = csp.nbind(worker, null);
 const _normalized = v => ops.div(v, ops.norm(v));
 
 
-const encode = value => JSON.stringify(ops.repr(value));
-const decode = value => ops.fromRepr(JSON.parse(value));
-
-
-const CoverVertex = I.Record({
-  v: undefined,
-  s: undefined
-});
-
-
-const graphPortion = (graph, start, dist) => {
-  const adj  = periodic.adjacencies(graph);
-
-  const v0 = new CoverVertex({ v: start, s: encode(ops.vector(graph.dim)) });
-  let vertices = I.Map([[v0, 0]]);
-  let edges = I.Set();
-  let thisShell = I.List([v0]);
-
-  I.Range(1, dist+1).forEach(i => {
-    let nextShell = I.Set();
-    thisShell.forEach(v => {
-      const i = vertices.get(v);
-
-      adj.get(v.v).forEach(t => {
-        const w = new CoverVertex({
-          v: t.v,
-          s: encode(ops.plus(decode(v.s), t.s))
-        });
-
-        if (vertices.get(w) == null) {
-          vertices = vertices.set(w, vertices.size);
-          nextShell = nextShell.add(w);
-        }
-
-        const j = vertices.get(w);
-
-        if (!edges.contains(I.List([i, j])) && !edges.contains(I.List([j, i])))
-          edges = edges.add(I.List([i, j]));
-      });
-    });
-
-    thisShell = nextShell;
-  });
-
-  let verts = I.List().asMutable();
-  vertices.keySeq().forEach(v => {
-    verts.set(vertices.get(v), { v: v.v, s: decode(v.s) });
-  });
-
-  return {
-    vertices: verts.asImmutable(),
-    edges   : edges.sort().map(e => e.toArray())
-  };
-};
-
-
 const geometry = (vertices, faces) => {
   const geom = new THREE.Geometry();
 
@@ -269,29 +213,6 @@ const tilingModel = (surfaces, options) => {
 };
 
 
-const netModel = (t, ballColor, stickColor) => {
-  const net = t.graph;
-  const g   = graphPortion(net, 0, 2);
-  const pos = t.positions;
-  let verts = g.vertices.map(v => {
-    const p = ops.plus(pos.getIn([t.node2chamber.get(v.v), 0]), v.s);
-    return ops.times(p, t.basis);
-  }).toArray();
-  if (delaney.dim(t.cover) == 2)
-    verts = verts.map(p => [p[0], p[1], 0]);
-
-  return ballAndStick(
-    'cube',
-    verts,
-    g.edges,
-    0.04,
-    0.01,
-    ballColor,
-    stickColor
-  );
-};
-
-
 const light = (color, x, y, z) => {
   const light = new THREE.PointLight(color);
 
@@ -319,11 +240,6 @@ export default function makeScene(ds, cov, options, log=console.log) {
     const til = tiling(ds, cov);
 
     const model = new THREE.Object3D();
-
-    if (options.showNet) {
-      log('Generating the net geometry...');
-      model.add(netModel(til, ballColor, stickColor));
-    }
 
     log('Making the tiling geometry...');
     model.add(tilingModel(

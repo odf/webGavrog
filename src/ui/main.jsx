@@ -419,10 +419,6 @@ class App extends React.Component {
       description: 'Options',
       type: 'object',
       properties: {
-        showNet: {
-          title: 'Show Net',
-          type: 'boolean'
-        },
         extraSmooth: {
           title: 'Extra-Smooth Faces',
           type: 'boolean'
