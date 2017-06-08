@@ -20,6 +20,7 @@ export default function* symbols(text) {
       if (line.match(/>/)) {
         yield {
           ...attributes,
+          type: 'tiling',
           symbol: delaney.parse(buffer.join(' ') + '>')
         }
         attributes = {};

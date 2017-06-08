@@ -254,8 +254,16 @@ const makeTilingModel = (ds, cov, options, log) => csp.go(function*() {
 });
 
 
-export default function makeScene(ds, cov, options, log=console.log) {
+export default function makeScene(structure, options, log=console.log) {
   return csp.go(function*() {
+    const type = structure.type;
+
+    if (type != 'tiling')
+      throw new Error(`rendering not implemented for type ${type}`);
+
+    const ds = structure.symbol;
+    const cov = structure.cover;
+
     const model = yield makeTilingModel(ds, cov, options, log);
 
     const bbox = new THREE.Box3();

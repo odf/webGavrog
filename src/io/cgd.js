@@ -364,6 +364,7 @@ const processFaceListData = data => {
   }
 
   return cr.tilingFromFacelist({
+    type: data.type,
     name: output.name,
     group: output.group,
     cellGram: output.cell,
@@ -415,7 +416,7 @@ const reportError = (text, ex) => {
 
 export const blocks = text => {
   try {
-    return parser.parse(text);
+    return parser.parse(text).map(s => ({ ...s, isRaw: true }));
   } catch(ex) {
     reportError(text, ex);
     throw ex;
@@ -425,7 +426,8 @@ export const blocks = text => {
 
 export const processed = block => {
   const data = preprocessBlock(block);
-  return (makeStructure[data.type] || unknown)(data);
+  const output = (makeStructure[data.type] || unknown)(data);
+  return { ...output, type: block.type };
 };
 
 

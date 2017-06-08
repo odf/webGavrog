@@ -16,20 +16,25 @@ import Menu          from './Menu';
 import makeScene     from './makeScene';
 
 
-const tilings = [
+const structures = [
   { name: 'bcu',
+    type: 'tiling',
     symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:4,4 2,6>')
   },
   { name: 'pcu',
+    type: 'tiling',
     symbol: delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>')
   },
   { name: 'nbo',
+    type: 'tiling',
     symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,4 2,4>')
   },
   { name: 'dia',
+    type: 'tiling',
     symbol: delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>')
   },
   { name: 'srs',
+    type: 'tiling',
     symbol: delaney.parse(`
       <1.1:10 3:2 4 6 8 10,10 3 5 7 9,10 9 8 7 6,4 3 10 9 8:10,3 2 2 2 2 3,10>
       `)
@@ -41,11 +46,10 @@ const findName = data => (
   ((data.find(s => s.key == 'name') || {}).args || [])[0]);
 
 
-const parseTilings = (filename, data, log) => {
+const parseStructures = (filename, data, log) => {
   if (filename.match(/\.cgd$/)) {
     log('Parsing .cgd data...');
     return cgd.blocks(data)
-              .filter(block => block.type == 'tiling')
               .map(block => ({ ...block, name: findName(block.content) }));
   }
   else if (filename.match(/\.ds$/))
@@ -146,7 +150,7 @@ class App extends React.Component {
     this.resizeListener = data => this.handleResize(data);
     window.addEventListener('resize', this.resizeListener);
 
-    this.setTiling(0, tilings);
+    this.setStructure(0, structures);
   }
 
   componentWillUnmount() {
@@ -165,47 +169,61 @@ class App extends React.Component {
   }
 
   title(fname, index, len, name) {
-    const prefix = fname ? `File "${fname}" ` : 'Tiling ';
+    const prefix = fname ? `File "${fname}" ` : 'Structure ';
     const postfix = name ? `: ${name}` : '';
     this.setState({ title: `${prefix}#${index} (of ${len})${postfix}` });
   }
 
-  setTiling(i, symbolList) {
+  setStructure(i, structures) {
     csp.go(function*() {
-      const syms = symbolList || this.state.syms;
-      const n = syms.length;
+      structures = structures || this.state.structures;
+      const n = structures.length;
       const index = i < 0 ? n + i % n : i % n;
 
-      if (syms[index].symbol == null) {
-        this.log('Converting face list data...');
-        syms[index] = cgd.processed(syms[index]);
+      if (structures[index].isRaw) {
+        this.log('Converting structure data...');
+        structures[index] = cgd.processed(structures[index]);
       }
 
-      this.title(this.state.filename, index + 1, syms.length, syms[index].name);
+      this.title(
+        this.state.filename,
+        index + 1,
+        structures.length,
+        structures[index].name);
 
       try {
         const scene = yield makeScene(
-          syms[index].symbol,
-          syms[index].cover,
+          structures[index],
           this.state.options,
           s => this.log(s));
+
         const camera = scene.getObjectByName('camera');
         const cameraParameters = { distance: camera.position.z };
 
-        this.setState({ syms, index, scene, camera, cameraParameters });
+        this.setState({ structures, index, scene, camera, cameraParameters });
       } catch(ex) { console.error(ex); }
     }.bind(this));
   }
 
   handleFileData(file, data) {
     this.setState({ filename: file.name });
-    this.setTiling(0, parseTilings(file.name, data, s => this.log(s)));
+
+    csp.go(function*() {
+      const list = parseStructures(file.name, data, s => this.log(s));
+      this.setStructure(0, list);
+    }.bind(this));
   }
 
-  saveTiling() {
-    const text = this.state.syms[this.state.index].symbol.toString();
-    const blob = new Blob([text], { type: 'text/plain' });
-    this.saver.save(blob, 'gavrog.ds');
+  saveStructure() {
+    const structure = this.state.structures[this.state.index];
+
+    if (structure.type == 'tiling') {
+      const text = structure.symbol.toString();
+      const blob = new Blob([text], { type: 'text/plain' });
+      this.saver.save(blob, 'gavrog.ds');
+    }
+    else
+      throw new Error(`save not yet implemented for '${structure.type}'`);
   }
 
   saveScreenshot() {
@@ -229,8 +247,8 @@ class App extends React.Component {
 
   render3dScene() {
     const keyHandlers = {
-      'p': () => this.setTiling(this.state.index - 1),
-      'n': () => this.setTiling(this.state.index + 1)
+      'p': () => this.setStructure(this.state.index - 1),
+      'n': () => this.setStructure(this.state.index + 1)
     };
 
     if (this.state.scene != null)
@@ -250,15 +268,15 @@ class App extends React.Component {
   renderMenu() {
     const fileMenu = [
       { label: 'Open...', action: () => this.loader.select() },
-      { label: 'Save Tiling...', action: () => this.saveTiling() },
+      { label: 'Save Structure...', action: () => this.saveStructure() },
       { label: 'Save Screenshot...', action: () => this.saveScreenshot() }
     ];
 
-    const tilingMenu = [
-      { label: 'First', action: () => this.setTiling(0) },
-      { label: 'Prev', action: () => this.setTiling(this.state.index - 1) },
-      { label: 'Next', action: () => this.setTiling(this.state.index + 1) },
-      { label: 'Last', action: () => this.setTiling(-1) },
+    const structureMenu = [
+      { label: 'First', action: () => this.setStructure(0) },
+      { label: 'Prev', action: () => this.setStructure(this.state.index - 1) },
+      { label: 'Next', action: () => this.setStructure(this.state.index + 1) },
+      { label: 'Last', action: () => this.setStructure(-1) },
       { label: 'Jump...', action: () => this.showWindow('jump') },
       { label: 'Search...', action: () => this.showWindow('search') }
     ];
@@ -276,7 +294,7 @@ class App extends React.Component {
 
     const mainMenu = [
       { label: 'File',   submenu: fileMenu },
-      { label: 'Tiling', submenu: tilingMenu },
+      { label: 'Structure', submenu: structureMenu },
       { label: 'View',   submenu: viewMenu },
       { label: 'Options...', action: () => this.showWindow('options') },
       { label: 'Help',   submenu: helpMenu }
@@ -328,7 +346,7 @@ class App extends React.Component {
     this.hideWindow('jump');
 
     if (data.number)
-      this.setTiling(data.number - (data.number > 0));
+      this.setStructure(data.number - (data.number > 0));
   }
 
   renderJumpDialog() {
@@ -336,7 +354,7 @@ class App extends React.Component {
       return;
 
     const schema = {
-      title: 'Jump to Tiling',
+      title: 'Jump to Structure',
       type: 'object',
       properties: {
         number: {
@@ -365,11 +383,13 @@ class App extends React.Component {
       return;
 
     if (data.name) {
-      const i = this.state.syms.findIndex(s => s.name == data.name);
-      if (i >= 0)
-        this.setTiling(i);
-      else
-        this.log(`Name "${data.name}" not found.`);
+      csp.go(function*() {
+        const i = this.state.structures.findIndex(s => s.name == data.name);
+        if (i >= 0)
+          this.setStructure(i);
+        else
+          this.log(`Name "${data.name}" not found.`);
+      });
     }
   }
 
@@ -378,11 +398,11 @@ class App extends React.Component {
       return;
 
     const searchSchema = {
-      title: 'Search Tiling',
+      title: 'Search Structure',
       type: 'object',
       properties: {
         name: {
-          title: 'Name of tiling',
+          title: 'Name of structure',
           type: 'string'
         }
       }
@@ -407,7 +427,7 @@ class App extends React.Component {
       return;
 
     this.setState((state, props) => ({ options: data }));
-    this.setTiling(this.state.index);
+    this.setStructure(this.state.index);
   }
 
   renderOptionsDialog() {
