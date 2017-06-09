@@ -227,66 +227,66 @@ const light = (color, x, y, z) => {
 };
 
 
-const makeTilingModel = (ds, cov, options, log) => csp.go(function*() {
-  if (cov == null) {
-    log('Finding the pseudo-toroidal cover...');
-    cov = delaney.parse(yield callWorker({
-      cmd: 'dsCover',
-      val: `${ds}`
-    }));
-  }
+const makeTilingModel = (structure, options, log) => csp.go(function*() {
+  const ds = structure.symbol;
+
+  log('Finding the pseudo-toroidal cover...');
+  const cov = structure.cover || delaney.parse(yield callWorker({
+    cmd: 'dsCover',
+    val: `${ds}`
+  }));
 
   log('Building the tiling object...');
   const til = tiling(ds, cov);
 
-  const model = new THREE.Object3D();
-
   log('Making the tiling geometry...');
-  model.add(tilingModel(
+  return tilingModel(
     yield callWorker({
       cmd: 'processSolids',
       val: tileSurfaces(til, options)
     }),
     options
-  ));
-
-  return model;
+  );
 });
 
 
-export default function makeScene(structure, options, log=console.log) {
-  return csp.go(function*() {
-    const type = structure.type;
-
-    if (type != 'tiling')
-      throw new Error(`rendering not implemented for type ${type}`);
-
-    const ds = structure.symbol;
-    const cov = structure.cover;
-
-    const model = yield makeTilingModel(ds, cov, options, log);
-
-    const bbox = new THREE.Box3();
-    bbox.setFromObject(model);
-    model.position.sub(bbox.getCenter());
-
-    log('Composing the scene...');
-
-    const distance = 6;
-    const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
-    camera.name = 'camera';
-    camera.position.z = distance;
-
-    camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
-    camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
-    camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
-
-    const scene = new THREE.Scene();
-
-    scene.add(model);
-    scene.add(camera);
-
-    log('Scene complete!');
-    return scene;
-  });
+const builders = {
+  tiling: makeTilingModel
 };
+
+
+const makeScene = (structure, options, log) => csp.go(function*() {
+  const type = structure.type;
+  const builder = builders[type];
+
+  if (builder == null)
+    throw new Error(`rendering not implemented for type ${type}`);
+
+  const model = yield builder(structure, options, log);
+
+  const bbox = new THREE.Box3();
+  bbox.setFromObject(model);
+  model.position.sub(bbox.getCenter());
+
+  log('Composing the scene...');
+
+  const distance = 6;
+  const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
+  camera.name = 'camera';
+  camera.position.z = distance;
+
+  camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
+  camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
+  camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
+
+  const scene = new THREE.Scene();
+
+  scene.add(model);
+  scene.add(camera);
+
+  log('Scene complete!');
+  return scene;
+});
+
+
+export default makeScene;
