@@ -5,9 +5,11 @@ import * as csp   from 'plexus-csp';
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
+import * as groups   from '../geometry/spacegroups';
 import * as delaney  from '../dsymbols/delaney';
 import * as props    from '../dsymbols/properties';
 import * as periodic from '../pgraphs/periodic';
+import * as netSyms  from '../pgraphs/symmetries';
 
 import tiling from '../dsymbols/tilings';
 
@@ -108,6 +110,68 @@ const ballAndStick = (
 
   return model;
 };
+
+
+const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G), w);
+
+
+const _orthonormalBasis = function _orthonormalBasis(G) {
+  const [n, m] = ops.shape(G);
+  let e = ops.identityMatrix(n);
+
+  I.Range(0, n).forEach(function(i) {
+    let v = e[i];
+    I.Range(0, i).forEach(function(j) {
+      const w = e[j];
+      const f = _scalarProduct(v, w, G);
+      v = ops.minus(v, ops.times(f, w));
+    });
+    const d = _scalarProduct(v, v, G);
+    v = ops.times(ops.div(1, ops.sqrt(d)), v);
+    e[i] = v;
+  });
+
+  return ops.cleanup(e);
+};
+
+
+const makeNetModel = (structure, options, log) => csp.go(function*() {
+  const graph = structure.graph;
+  const syms = netSyms.symmetries(graph).symmetries.map(s => s.transform);
+  const pos = periodic.barycentricPlacement(graph);
+
+  // TODO move invariant basis code into geometry package
+  const I = ops.identityMatrix(graph.dim);
+  const G = groups.resymmetrizedGramMatrix(I, syms);
+  const O = ops.cleanup(_orthonormalBasis(G));
+  const basis = ops.cleanup(ops.inverse(O));
+
+  const nodeIndex = {};
+  const points = [];
+  const edges = [];
+
+  for (const e of graph.edges) {
+    const kv = JSON.stringify([e.head, [0, 0, 0]]);
+    const iv = nodeIndex[kv] || points.length;
+    if (iv == points.length) {
+      const pv = ops.times(pos.get(e.head), basis);
+      points.push(ops.toJS(pv));
+      nodeIndex[kv] = iv;
+    }
+
+    const kw = JSON.stringify([e.tail, e.shift]);
+    const iw = nodeIndex[kw] || points.length;
+    if (iw == points.length) {
+      const pw = ops.times(ops.plus(pos.get(e.tail), e.shift), basis);
+      points.push(ops.toJS(pw));
+      nodeIndex[kw] = iw;
+    }
+
+    edges.push([iv, iw]);
+  }
+
+  return ballAndStick(points, edges);
+});
 
 
 const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
@@ -251,7 +315,10 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
 
 
 const builders = {
-  tiling: makeTilingModel
+  tiling        : makeTilingModel,
+  periodic_graph: makeNetModel,
+  net           : makeNetModel,
+  crystal       : makeNetModel
 };
 
 
