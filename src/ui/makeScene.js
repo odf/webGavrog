@@ -73,7 +73,7 @@ const stick = (p, q, radius, segments) => {
 const ballAndStick = (
   positions,
   edges,
-  ballRadius=0.04,
+  ballRadius=0.025,
   stickRadius=0.01,
   ballColor=0xe8d880,
   stickColor=0x404080
@@ -150,24 +150,33 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
   const points = [];
   const edges = [];
 
-  for (const e of graph.edges) {
-    const kv = JSON.stringify([e.head, [0, 0, 0]]);
-    const iv = nodeIndex[kv] || points.length;
-    if (iv == points.length) {
-      const pv = ops.times(pos.get(e.head), basis);
-      points.push(ops.toJS(pv));
-      nodeIndex[kv] = iv;
-    }
+  for (const x of [0, 1]) {
+    for (const y of [0, 1]) {
+      for (const z of [0, 1]) {
+        for (const e of graph.edges) {
+          const sv = [x, y, z];
+          const sw = ops.plus(sv, e.shift);
 
-    const kw = JSON.stringify([e.tail, e.shift]);
-    const iw = nodeIndex[kw] || points.length;
-    if (iw == points.length) {
-      const pw = ops.times(ops.plus(pos.get(e.tail), e.shift), basis);
-      points.push(ops.toJS(pw));
-      nodeIndex[kw] = iw;
-    }
+          const kv = JSON.stringify([e.head, sv]);
+          const iv = nodeIndex[kv] || points.length;
+          if (iv == points.length) {
+            const pv = ops.times(ops.plus(pos.get(e.head), sv), basis);
+            points.push(ops.toJS(pv));
+            nodeIndex[kv] = iv;
+          }
 
-    edges.push([iv, iw]);
+          const kw = JSON.stringify([e.tail, sw]);
+          const iw = nodeIndex[kw] || points.length;
+          if (iw == points.length) {
+            const pw = ops.times(ops.plus(pos.get(e.tail), sw), basis);
+            points.push(ops.toJS(pw));
+            nodeIndex[kw] = iw;
+          }
+
+          edges.push([iv, iw]);
+        }
+      }
+    }
   }
 
   return ballAndStick(points, edges);
