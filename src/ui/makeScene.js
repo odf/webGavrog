@@ -153,27 +153,20 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
   for (const x of [0, 1]) {
     for (const y of [0, 1]) {
       for (const z of [0, 1]) {
+        const s = [x, y, z];
+
         for (const e of graph.edges) {
-          const sv = [x, y, z];
-          const sw = ops.plus(sv, e.shift);
-
-          const kv = JSON.stringify([e.head, sv]);
-          const iv = nodeIndex[kv] || points.length;
-          if (iv == points.length) {
-            const pv = ops.times(ops.plus(pos.get(e.head), sv), basis);
-            points.push(ops.toJS(pv));
-            nodeIndex[kv] = iv;
-          }
-
-          const kw = JSON.stringify([e.tail, sw]);
-          const iw = nodeIndex[kw] || points.length;
-          if (iw == points.length) {
-            const pw = ops.times(ops.plus(pos.get(e.tail), sw), basis);
-            points.push(ops.toJS(pw));
-            nodeIndex[kw] = iw;
-          }
-
-          edges.push([iv, iw]);
+          edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
+            ([node, shift]) => {
+              const key = JSON.stringify([node, shift]);
+              const idx = nodeIndex[key] || points.length;
+              if (idx == points.length) {
+                const p = ops.times(ops.plus(pos.get(node), shift), basis);
+                points.push(ops.toJS(p));
+                nodeIndex[key] = idx;
+              }
+              return idx;
+            }));
         }
       }
     }
