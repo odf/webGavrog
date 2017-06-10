@@ -135,8 +135,35 @@ const _orthonormalBasis = function _orthonormalBasis(G) {
 };
 
 
+const _graphWithNormalizedShifts = graph => {
+  const v0 = graph.edges.first().head;
+  const adj = periodic.adjacencies(graph);
+  const shifts = { [v0]: ops.vector(graph.dim) };
+  const queue = [v0];
+
+  while (queue.length) {
+    const v = queue.shift();
+
+    for (const { v: w, s } of adj.get(v)) {
+      if (shifts[w] == null) {
+        shifts[w] = ops.plus(s, shifts[v]);
+        queue.push(w)
+      }
+    }
+  }
+
+  return periodic.make(graph.edges.map(e => {
+    const h = e.head;
+    const t = e.tail;
+    const s = e.shift;
+
+    return [h, t, ops.minus(shifts[t], ops.plus(shifts[h], s))];
+  }));
+};
+
+
 const makeNetModel = (structure, options, log) => csp.go(function*() {
-  const graph = structure.graph;
+  const graph = _graphWithNormalizedShifts(structure.graph);
   const syms = netSyms.symmetries(graph).symmetries.map(s => s.transform);
   const pos = periodic.barycentricPlacement(graph);
 
