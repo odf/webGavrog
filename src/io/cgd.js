@@ -431,7 +431,7 @@ export const processed = block => {
 };
 
 
-export default function* structures(text) {
+export function* structures(text) {
   for (const b of blocks(text))
     yield processed(b);
 };
