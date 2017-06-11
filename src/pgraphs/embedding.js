@@ -5,27 +5,17 @@ import { affineTransformations } from '../geometry/types';
 const ops = affineTransformations;
 
 
-const _stabilizer = (v, syms) => syms.filter(a => a.src2img[v] == v);
+const _avg = xs => ops.div(xs.reduce((a, b) => ops.plus(a, b)), xs.length);
 
 
 const _nodeSymmetrization = (v, syms, positions) => {
-  const stab = _stabilizer(v, syms);
+  const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const pos = positions.get(v);
   const dim = ops.dimension(pos);
 
-  let m = ops.matrix(dim, dim);
-  let t = ops.vector(dim);
-
-  for (const phi of stab) {
-    const a = phi.transform;
-    const s = ops.minus(pos, ops.times(pos, a));
-
-    m = ops.plus(m, a);
-    t = ops.plus(t, s);
-  }
-
-  m = ops.div(m, stab.length);
-  t = ops.div(t, stab.length);
+  const s = _avg(stab.map(a => a.concat([ops.minus(pos, ops.times(pos, a))])));
+  const m = s.slice(0, dim);
+  const t = s[dim];
 
   if (ops.ne(ops.plus(ops.times(pos, m), t), pos))
     throw Error(`${pos} * ${[m, t]} = ${ops.plus(ops.times(pos, m), t)}`);
