@@ -54,6 +54,16 @@ export function extend(pointAndVectorOps) {
     V.point(V.plus(V.times(t.linear, V.vector(p)), t.shift));
 
 
+  const asProjectiveMatrix = (linear, shift) => {
+    const s = shift || V.vector(V.dimension(linear));
+    const m = linear.map(row => row.concat(0));
+
+    m.push(s.concat(1));
+
+    return m;
+  };
+
+
   const methods = {
     dimension: {
       AffineTransformation: t => V.shape(t.linear)[0]
@@ -67,6 +77,11 @@ export function extend(pointAndVectorOps) {
     shiftPart: {
       AffineTransformation: t => t.shift,
       Matrix: m => V.vector(m.length)
+    },
+
+    asProjectiveMatrix: {
+      AffineTransformation: t => asProjectiveMatrix(t.linear, t.shift),
+      Matrix: m => asProjectiveMatrix(m)
     },
 
     affineTransformation: {
