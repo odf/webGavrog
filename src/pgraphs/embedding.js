@@ -25,25 +25,26 @@ const _nodeSymmetrization = (v, syms, positions) => {
 
 
 const _normalizedInvariantSpace = operator => {
-  const m = ops.asProjectiveMatrix(operator);
-  console.log(`m = ${m}`);
-  const a = ops.transposed(ops.nullSpace(ops.transposed(m)));
+  const I = ops.identityMatrix(ops.dimension(operator) + 1);
+  const P = ops.asProjectiveMatrix(operator);
+  const A = ops.transposed(ops.nullSpace(ops.transposed(ops.minus(P, I))));
 
-  const [nr, nc] = ops.shape(a);
-  const k = a.findIndex(r => ops.ne(r[nc - 1], 0));
-  console.log(`a = ${a}, k = ${k}`);
+  const [nr, nc] = ops.shape(A);
+  const k = A.findIndex(r => ops.ne(r[nc - 1], 0));
 
   if (k >= 0) {
-    const t = a[k];
-    a[k] = a[nr - 1];
-    a[nr - 1] = t;
+    const t = ops.div(A[k], A[k][nc - 1]);
+    A[k] = A[nr - 1];
+    A[nr - 1] = t;
 
-    a[nr - 1] = ops.div(a[nr - 1], a[nr - 1][nc - 1]);
     for (let i = 0; i < nr - 1; ++i)
-      a[i] = ops.minus(a[i], ops.times(a[nr - 1], a[i][nc - 1]));
+      A[i] = ops.minus(A[i], ops.times(A[nr - 1], A[i][nc - 1]));
   }
 
-  return a;
+  if (ops.ne(ops.times(A, P), A))
+    throw Error(`${A} * ${P} = ${ops.times(A, P)}`);
+
+  return A;
 };
 
 
