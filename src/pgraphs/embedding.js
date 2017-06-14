@@ -1,11 +1,15 @@
 import * as pg from './periodic';
 import * as symmetries from './symmetries';
 
-import { affineTransformations } from '../geometry/types';
-const ops = affineTransformations;
+import { matrices } from '../arithmetic/types';
+const ops = matrices;
 
 
 const _avg = xs => ops.div(xs.reduce((a, b) => ops.plus(a, b)), xs.length);
+
+
+const _projectiveMatrix = (linear, shift) =>
+  linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
 
 const _nodeSymmetrization = (v, syms, positions) => {
@@ -20,13 +24,12 @@ const _nodeSymmetrization = (v, syms, positions) => {
   if (ops.ne(ops.plus(ops.times(pos, m), t), pos))
     throw Error(`${pos} * ${[m, t]} = ${ops.plus(ops.times(pos, m), t)}`);
 
-  return ops.affineTransformation(m, t);
+  return _projectiveMatrix(m, t);
 };
 
 
-const _normalizedInvariantSpace = operator => {
-  const I = ops.identityMatrix(ops.dimension(operator) + 1);
-  const P = ops.asProjectiveMatrix(operator);
+const _normalizedInvariantSpace = P => {
+  const I = ops.identityMatrix(ops.dimension(P));
   const A = ops.transposed(ops.nullSpace(ops.transposed(ops.minus(P, I))));
 
   const [nr, nc] = ops.shape(A);
