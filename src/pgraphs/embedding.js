@@ -12,7 +12,7 @@ const _projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
 
-const _nodeSymmetrization = (v, syms, positions) => {
+const _nodeSymmetrizer = (v, syms, positions) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const pos = positions.get(v);
   const dim = ops.dimension(pos);
@@ -51,12 +51,60 @@ const _normalizedInvariantSpace = P => {
 };
 
 
+const _coordinateParametrization = graph => {
+  const syms = symmetries.symmetries(graph).symmetries;
+  const positions = pg.barycentricPlacement(graph);
+
+  const nodeInfo = {};
+  let next = 0;
+
+  for (const v of pg.vertices(graph)) {
+    if (nodeInfo[v] != null)
+      continue;
+
+    const pv = positions.get(v);
+    const sv = _nodeSymmetrizer(v, syms, positions);
+    const cv = _normalizedInvariantSpace(sv);
+
+    nodeInfo[v] = { index: next, configSpace: cv };
+
+    for (const sym of syms) {
+      const w = sym.src2img[v];
+
+      if (nodeInfo[w] != null)
+        continue;
+
+      const pw = positions.get(w);
+
+      const a = sym.transform;
+      const t = _projectiveMatrix(a, ops.minus(pw, ops.times(pv, a)));
+
+      const cw = ops.times(cv, t);
+      const sw = _nodeSymmetrizer(w, syms, positions);
+
+      if (ops.ne(ops.times(cw, sw), cw))
+        throw Error(`${cw} * ${sw} = ${ops.times(cw, sw)}`);
+
+      nodeInfo[w] = { index: next, configSpace: cw };
+    }
+
+    next += cv.length - 1;
+  }
+
+  return nodeInfo;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
 
   const test = g => {
+    console.log('----------------------------------------');
+    console.log();
+    console.log();
+
     console.log(`vertices: ${pg.vertices(g)}`);
     console.log('edges:');
     for (const e of g.edges)
@@ -66,22 +114,30 @@ if (require.main == module) {
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries.symmetries(g).symmetries;
       const positions = pg.barycentricPlacement(g);
+      const configs = _coordinateParametrization(g);
 
       pg.vertices(g).forEach(v => {
-        const s = _nodeSymmetrization(v, syms, positions);
+        const s = _nodeSymmetrizer(v, syms, positions);
         const p = _normalizedInvariantSpace(s);
         console.log(`v = ${v}`);
-        console.log(`  symmetrizer = ${s}`);
+        console.log(`  symmetrizer     = ${s}`);
         console.log(`  invariant space = ${p}`);
+        console.log(`  config index    = ${configs[v].index}`);
+        console.log(`  config space    = ${configs[v].configSpace}`);
       });
     }
+
+    console.log();
+    console.log();
   };
 
+  // dia
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 1, 2, [ 1, 0, 0 ] ],
                  [ 1, 2, [ 0, 1, 0 ] ],
                  [ 1, 2, [ 0, 0, 1 ] ] ]));
 
+  // nbo
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 2, 1, [ 1, 0, 0 ] ],
                  [ 2, 3, [ 0, 0, 0 ] ],
@@ -89,10 +145,23 @@ if (require.main == module) {
                  [ 3, 1, [ 0, 0, 1 ] ],
                  [ 3, 1, [ 1, 1, -1 ] ] ]));
 
+  // ths
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 1, 2, [ 1, 0, 0 ] ],
                  [ 1, 3, [ 0, 0, 0 ] ],
                  [ 2, 4, [ 0, 0, 0 ] ],
                  [ 3, 4, [ 0, 0, 1 ] ],
                  [ 3, 4, [ 0, 1, 0 ] ] ]));
+
+  // flu
+  test(pg.make([ [ 1, 3, [ -1, -1,  1 ] ],
+                 [ 1, 3, [ -1,  0,  1 ] ],
+                 [ 1, 3, [  0, -1,  1 ] ],
+                 [ 1, 3, [  0,  0,  0 ] ],
+                 [ 2, 3, [ -1,  0,  1 ] ],
+                 [ 2, 3, [ -1,  1,  0 ] ],
+                 [ 2, 3, [  0,  0,  0 ] ],
+                 [ 2, 3, [  0,  1,  0 ] ] ]));
+
+  console.log('----------------------------------------');
 }
