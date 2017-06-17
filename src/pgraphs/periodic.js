@@ -68,8 +68,8 @@ class Graph {
 };
 
 
-const encode = value => I.fromJS(ops.repr(value));
-const decode = value => ops.fromRepr(value.toJS());
+const encode = value => ops.serialize(value);
+const decode = value => ops.deserialize(value);
 
 
 export function makeEdge(head, tail, shift) {

@@ -85,9 +85,11 @@ const defaults = {
   mod: { __default__: mod },
   gcd: { __default__: gcd },
 
-  typeOf  : { __default__: x => typeOf(x) },
-  repr    : { __default__: (x, ops) => ({ [typeOf(x)]: ops.__repr__(x) }) },
-  fromRepr: { Object: fromRepr },
+  typeOf     : { __default__: x => typeOf(x) },
+  repr       : { __default__: (x, ops) => ({ [typeOf(x)]: ops.__repr__(x) }) },
+  fromRepr   : { Object: fromRepr },
+  serialize  : { __default__: (x, ops) => JSON.stringify(ops.repr(x)) },
+  deserialize: { String: (x, ops) => fromRepr(JSON.parse(x), ops) },
 
   __repr__: { __default__: x => x }
 };

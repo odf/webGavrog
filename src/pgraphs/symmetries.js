@@ -12,8 +12,8 @@ let _timers = null;
 
 const ops = pg.ops;
 
-const encode = value => JSON.stringify(ops.repr(value));
-const decode = value => ops.fromRepr(JSON.parse(value));
+const encode = value => ops.serialize(value);
+const decode = value => ops.deserialize(value);
 
 
 const _directedEdges = graph =>
