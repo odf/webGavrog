@@ -36,6 +36,24 @@ const union = function union(impl, x, y) {
 };
 
 
+const classes = (impl, elements) => {
+  const repToClass = {};
+  const classes = [];
+
+  for (const v of elements) {
+    const rep = get(impl, v);
+    if (repToClass[rep] == null) {
+      repToClass[rep] = classes.length;
+      classes.push([v]);
+    }
+    else
+      classes[repToClass[rep]].push(v);
+  }
+
+  return classes;
+};
+
+
 const pmake = function pmake(rank, parent) {
   const _impl = {
     rank  : rank,
@@ -45,6 +63,7 @@ const pmake = function pmake(rank, parent) {
   return {
     get      : x      => get(_impl, x),
     union    : (x, y) => union(_impl, x, y),
+    classes  : (elms) => classes(_impl, elms),
     isTrivial: ()     => _impl.parent.size == 0,
     toString : ()     => `partition(${_impl.parent})`
   };

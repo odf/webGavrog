@@ -296,22 +296,8 @@ const extraTranslationVectors = (graph, equivs) => {
 };
 
 
-const translationalEquivalenceClasses = (graph, equivs) => {
-  const repToClass = {};
-  const classes = [];
-
-  for (const v of pg.vertices(graph)) {
-    const rep = equivs.get(v);
-    if (repToClass[rep] == null) {
-      repToClass[rep] = classes.length;
-      classes.push([v]);
-    }
-    else
-      classes[repToClass[rep]].push(v);
-  }
-
-  return classes;
-};
+const translationalEquivalenceClasses = (graph, equivs) =>
+  equivs.classes(pg.vertices(graph));
 
 
 const fullTranslationBasis = vectors => {
