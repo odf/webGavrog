@@ -449,6 +449,20 @@ export function symmetries(graph)
 };
 
 
+export function edgeOrbits(graph, syms=symmetries(graph)) {
+  let p = Partition();
+
+  for (const a of syms) {
+    for (const e of graph.edges) {
+      const ae = decode(a.src2img[encode(e)]);
+      p = p.union(encode(e), encode(ae.canonical()));
+    }
+  }
+
+  return p.classes(graph.edges.map(encode)).map(cl => cl.map(decode));
+}
+
+
 export function useTimers(timers) {
   _timers = timers;
 }
@@ -493,6 +507,10 @@ if (require.main == module) {
         console.log(`equivalence classes: ${cls}`);
         console.log(`minimal image: ${minimalImage(g)}`);
       }
+      console.log();
+
+      const orbits = edgeOrbits(g, syms.symmetries);
+      console.log(`edge orbits: ${JSON.stringify(orbits)}`);
     }
     console.log();
     console.log();
@@ -534,6 +552,12 @@ if (require.main == module) {
                  [ 2, 3, [ 0, 1 ] ],
                  [ 1, 3, [ 0, 0 ] ],
                  [ 1, 3, [ 1, 1 ] ] ]));
+
+  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
+                 [ 1, 2, [ 1, 0, 0 ] ],
+                 [ 1, 2, [ 0, 1, 0 ] ],
+                 [ 1, 1, [ 0, 0, 1 ] ],
+                 [ 2, 2, [ 0, 0, 1 ] ] ]));
 
   symTimers.stop('total');
   console.log(`${JSON.stringify(symTimers.current(), null, 2)}`);
