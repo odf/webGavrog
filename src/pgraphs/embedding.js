@@ -100,6 +100,30 @@ const _coordinateParametrization = graph => {
 };
 
 
+const _last = a => a.slice(-1)[0];
+
+
+const _positionFromParameters = (parms, cfg) => {
+  if (cfg.length > 1) {
+    const M = cfg.slice(0, -1);
+    return ops.plus(_last(cfg), ops.times(parms, M)[0]).slice(0, -1);
+  }
+  else
+    return cfg[0].slice(0, -1);
+};
+
+
+const _parametersForPosition = (pos, cfg, symmetrizer) => {
+  if (cfg.length > 1) {
+    const M = cfg.slice(0, -1);
+    const p = ops.minus(ops.times(pos.concat(1), symmetrizer), _last(cfg));
+    return ops.solution(ops.transposed(M), ops.transposed(p));
+  }
+  else
+    return [];
+};
+
+
 function* _pairs(list) {
   for (const i in list)
     for (const j in list)
@@ -162,12 +186,20 @@ if (require.main == module) {
 
       pg.vertices(g).forEach(v => {
         const s = _nodeSymmetrizer(v, syms, positions);
-        const p = _normalizedInvariantSpace(s);
+        const n = _normalizedInvariantSpace(s);
+        const pos = positions.get(v);
+        const cfg = configs[v].configSpace;
+        const parms = _parametersForPosition(pos, cfg, s);
+        const check = _positionFromParameters(parms, cfg);
+
         console.log(`v = ${v}`);
         console.log(`  symmetrizer     = ${s}`);
-        console.log(`  invariant space = ${p}`);
+        console.log(`  invariant space = ${n}`);
         console.log(`  config index    = ${configs[v].index}`);
-        console.log(`  config space    = ${configs[v].configSpace}`);
+        console.log(`  config space    = ${cfg}`);
+        console.log(`  position        = ${pos}`);
+        console.log(`  parameters      = ${parms}`);
+        console.log(`  check           = ${check}`);
       });
       console.log();
 
