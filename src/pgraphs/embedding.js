@@ -100,36 +100,37 @@ const _coordinateParametrization = graph => {
 };
 
 
+function* _pairs(list) {
+  for (const i in list)
+    for (const j in list)
+      if (j > i)
+        yield [list[i], list[j]];
+};
+
+
 const _angleOrbits = (graph, syms, adj, pos) => {
   const angles = [];
   let p = Partition();
 
   for (const v of pg.vertices(graph)) {
-    const incidences = pg.allIncidences(graph, v, adj);
+    for (const [inc1, inc2] of _pairs(pg.allIncidences(graph, v, adj))) {
+      const u = inc1.tail;
+      const w = inc2.tail;
+      const s = ops.minus(inc2.shift, inc1.shift);
+      const a = pg.makeEdge(u, w, s).canonical();
+      angles.push(a);
 
-    for (const i in incidences) {
-      for (const j in incidences) {
-        if (j > i) {
-          const u = incidences[i].tail;
-          const w = incidences[j].tail;
-          const s = ops.minus(incidences[j].shift, incidences[i].shift);
-          const a = pg.makeEdge(u, w, s).canonical();
-          angles.push(a);
+      for (const phi of syms) {
+        const ux = phi.src2img[u];
+        const wx = phi.src2img[w];
 
-          for (const phi of syms) {
-            const t = phi.transform;
+        const t = phi.transform;
+        const du = ops.minus(ops.times(pos.get(u), t), pos.get(ux));
+        const dw = ops.minus(ops.times(pos.get(w), t), pos.get(wx));
+        const sx = ops.plus(ops.times(s, t), ops.minus(dw, du));
 
-            const ux = phi.src2img[u];
-            const du = ops.minus(ops.times(pos.get(u), t), pos.get(ux));
-            const wx = phi.src2img[w];
-            const dw = ops.minus(ops.times(pos.get(w), t), pos.get(wx));
-
-            const sx = ops.plus(ops.times(s, t), ops.minus(dw, du));
-            const b = pg.makeEdge(ux, wx, sx).canonical();
-
-            p = p.union(encode(a), encode(b));
-          }
-        }
+        const b = pg.makeEdge(ux, wx, sx).canonical();
+        p = p.union(encode(a), encode(b));
       }
     }
   }
