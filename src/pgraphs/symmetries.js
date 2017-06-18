@@ -449,7 +449,7 @@ export function symmetries(graph)
 };
 
 
-export function edgeOrbits(graph, syms=symmetries(graph)) {
+export function edgeOrbits(graph, syms=symmetries(graph).symmetries) {
   let p = Partition();
 
   for (const a of syms) {
