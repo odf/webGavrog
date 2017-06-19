@@ -1,5 +1,6 @@
 import * as pg from './periodic';
 import * as symmetries from './symmetries';
+import * as sg from '../geometry/spacegroups';
 import Partition from '../common/partition';
 
 import { matrices } from '../arithmetic/types';
@@ -117,7 +118,58 @@ const _parametersForPosition = (pos, cfg, symmetrizer) => {
   if (cfg.length > 1) {
     const M = cfg.slice(0, -1);
     const p = ops.minus(ops.times(pos.concat(1), symmetrizer), _last(cfg));
-    return ops.solution(ops.transposed(M), ops.transposed(p));
+    return ops.transposed(ops.solution(ops.transposed(M), ops.transposed(p)));
+  }
+  else
+    return [];
+};
+
+
+const _gramMatrixFromParameters = (parms, cfg) => {
+  const a = ops.times(parms, cfg);
+  const n = Math.sqrt(2 * a.length + 0.25) - 0.5;
+
+  const G = ops.matrix(n, n);
+  let k = 0;
+
+  for (let i = 0; i < n; ++i) {
+    for (let j = i; j < n; ++j) {
+      G[i][j] = G[j][i] = a[k];
+      ++k;
+    }
+  }
+
+  for (let i = 0; i < n; ++i) {
+    if (ops.lt(G[i][i], 0))
+      G[i][i] = 0;
+  }
+
+  for (let i = 0; i < n; ++i) {
+    for (let j = i + 1; j < n; ++j) {
+      const t = ops.sqrt(ops.times(G[i][i], G[j][j]));
+      if (ops.gt(G[i][j], t))
+        G[i][j] = G[j][i] = t;
+    }
+  }
+
+  return G;
+};
+
+
+
+const _parametersForGramMatrix = (gram, cfg, syms) => {
+  if (cfg.length > 1) {
+    const G = sg.resymmetrizedGramMatrix(gram, syms);
+    const n = ops.shape(G)[0];
+
+    const a = [];
+    for (let i = 0; i < n; ++i) {
+      for (let j = i; j < n; ++j) {
+        a.push(G[i][j]);
+      }
+    }
+
+    return ops.transposed(ops.solution(ops.transposed(cfg), ops.transposed(a)));
   }
   else
     return [];
@@ -201,6 +253,18 @@ if (require.main == module) {
         console.log(`  parameters      = ${parms}`);
         console.log(`  check           = ${check}`);
       });
+      console.log();
+
+      const symOps = syms.map(a => a.transform);
+      const cfg = sg.gramMatrixConfigurationSpace(symOps);
+      console.log(`  gram config space = ${cfg}`);
+
+      const parms = _parametersForGramMatrix(
+        ops.identityMatrix(g.dimension), cfg, symOps);
+      console.log(`  gram parameters   = ${parms}`);
+
+      const gram = _gramMatrixFromParameters(parms, cfg);
+      console.log(`  gram matrix       = ${gram}`);
       console.log();
 
       const orbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
