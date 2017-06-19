@@ -176,7 +176,7 @@ export function primitiveSetting(stdOps) {
 };
 
 
-const gramMatrixConfigurationSpace = ops => {
+export const gramMatrixConfigurationSpace = ops => {
   const d = V.dimension(ops[0]);
   const m = (d * (d+1)) / 2;
 
