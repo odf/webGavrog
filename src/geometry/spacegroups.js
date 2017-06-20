@@ -176,6 +176,12 @@ export function primitiveSetting(stdOps) {
 };
 
 
+const _solveInRows = (v, M) => {
+  const tmp = V.solution(V.transposed(M), V.transposed(v));
+  return tmp && V.transposed(tmp);
+};
+
+
 export const gramMatrixConfigurationSpace = ops => {
   const d = V.dimension(ops[0]);
   const m = (d * (d+1)) / 2;
@@ -193,8 +199,15 @@ export const gramMatrixConfigurationSpace = ops => {
   const eqns = [];
   for (const op of ops) {
     const S = V.linearPart(op);
-    const A = P.minus(P.times(P.transposed(S), P.times(M, S)), M);
-    A.forEach(row => row.forEach(x => eqns.push(x.coords)));
+    const A = P.minus(P.times(S, P.times(M, P.transposed(S))), M);
+
+    for (const row of A) {
+      for (const x of row) {
+        const v = x.coords;
+        if (eqns.length == 0 || _solveInRows(v, eqns) == null)
+          eqns.push(v);
+      }
+    }
   }
 
   // -- return the solution space

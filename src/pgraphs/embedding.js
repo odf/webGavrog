@@ -158,21 +158,18 @@ const _gramMatrixFromParameters = (parms, cfg) => {
 
 
 const _parametersForGramMatrix = (gram, cfg, syms) => {
-  if (cfg.length > 1) {
-    const G = sg.resymmetrizedGramMatrix(gram, syms);
-    const n = ops.shape(G)[0];
+  const G = sg.resymmetrizedGramMatrix(gram, syms);
+  const n = ops.shape(G)[0];
 
-    const a = [];
-    for (let i = 0; i < n; ++i) {
-      for (let j = i; j < n; ++j) {
-        a.push(G[i][j]);
-      }
+  const a = [];
+  for (let i = 0; i < n; ++i) {
+    for (let j = i; j < n; ++j) {
+      a.push(G[i][j]);
     }
-
-    return ops.transposed(ops.solution(ops.transposed(cfg), ops.transposed(a)));
   }
-  else
-    return [];
+
+  return ops.transposed(
+    ops.solution(ops.transposed(cfg), ops.transposed(a)))[0];
 };
 
 
@@ -260,7 +257,7 @@ if (require.main == module) {
       console.log(`  gram config space = ${cfg}`);
 
       const parms = _parametersForGramMatrix(
-        ops.identityMatrix(g.dimension), cfg, symOps);
+        ops.identityMatrix(g.dim), cfg, symOps);
       console.log(`  gram parameters   = ${parms}`);
 
       const gram = _gramMatrixFromParameters(parms, cfg);
