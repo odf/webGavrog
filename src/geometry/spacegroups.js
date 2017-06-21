@@ -176,9 +176,39 @@ export function primitiveSetting(stdOps) {
 };
 
 
-const _solveInRows = (v, M) => {
-  const tmp = V.solution(V.transposed(M), V.transposed(v));
-  return tmp && V.transposed(tmp);
+const _reduceVector = (v, bs) => {
+  if (bs.length == 0)
+    return { reduced: v, coefficients: [], index: 0, independent: true };
+
+  const [nrows, ncols] = V.shape(bs);
+  if (v.length != ncols)
+    throw Error("shapes don't match");
+
+  let rowBs = 0;
+  let colBs = 0;
+  let colV = 0;
+  const coefficients = [];
+
+  while (rowBs < nrows && colBs < ncols) {
+    const b = bs[rowBs];
+    while (colBs < ncols && V.eq(b[colBs], 0))
+      ++colBs;
+
+    while (colV < ncols && V.eq(v[colV], 0))
+      ++colV;
+
+    if (colV < colBs || colV >= ncols || colBs >= ncols)
+      break;
+    else if (colV == colBs) {
+      const f = V.div(v[colV], b[colV]);
+      v = V.minus(v, V.times(b, f));
+      coefficients.push(f);
+    }
+
+    ++rowBs;
+  }
+
+  return { reduced: v, coefficients, index: rowBs, independent: colV < ncols };
 };
 
 
@@ -204,8 +234,10 @@ export const gramMatrixConfigurationSpace = ops => {
     for (const row of A) {
       for (const x of row) {
         const v = x.coords;
-        if (eqns.length == 0 || _solveInRows(v, eqns) == null)
-          eqns.push(v);
+
+        const { reduced, index, independent } = _reduceVector(v, eqns);
+        if (independent)
+          eqns.splice(index, 0, reduced);
       }
     }
   }
