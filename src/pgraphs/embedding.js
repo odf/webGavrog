@@ -212,8 +212,25 @@ const _angleOrbits = (graph, syms, adj, pos) => {
 };
 
 
-const _energyEvaluator = (positionSpace, gramSpace, symmetries) => {
+const _energyEvaluator = (
+  positionSpace,
+  gramSpace,
+  edgeOrbits,
+  angleOrbits,
+  symmetries,
+  fixedPositions=null
+) => {
+  const offset = gramSpace.length;
+
   return params => {
+    const gram = _gramMatrixFromParameters(params.slice(0, offset));
+
+    let weightedEdgeLengthsSum = 0;
+    let weightSum = 0;
+    let minEdgeLength = Number.MAX_VALUE;
+
+    for (const orb of edgeOrbits) {
+    }
   };
 };
 
