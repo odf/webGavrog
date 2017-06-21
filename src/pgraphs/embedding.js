@@ -72,7 +72,7 @@ const _coordinateParametrization = graph => {
     const sv = _nodeSymmetrizer(v, syms, positions);
     const cv = _normalizedInvariantSpace(sv);
 
-    nodeInfo[v] = { index: next, configSpace: cv };
+    nodeInfo[v] = { index: next, configSpace: cv, symmetrizer: sv };
 
     for (const sym of syms) {
       const w = sym.src2img[v];
@@ -91,7 +91,7 @@ const _coordinateParametrization = graph => {
       if (ops.ne(ops.times(cw, sw), cw))
         throw Error(`${cw} * ${sw} = ${ops.times(cw, sw)}`);
 
-      nodeInfo[w] = { index: next, configSpace: cw };
+      nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
     }
 
     next += cv.length - 1;
@@ -212,6 +212,12 @@ const _angleOrbits = (graph, syms, adj, pos) => {
 };
 
 
+const _energyEvaluator = (positionSpace, gramSpace, symmetries) => {
+  return params => {
+  };
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -234,7 +240,7 @@ if (require.main == module) {
       const configs = _coordinateParametrization(g);
 
       pg.vertices(g).forEach(v => {
-        const s = _nodeSymmetrizer(v, syms, positions);
+        const s = configs[v].symmetrizer;
         const n = _normalizedInvariantSpace(s);
         const pos = positions.get(v);
         const cfg = configs[v].configSpace;
