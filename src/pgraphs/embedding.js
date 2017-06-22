@@ -212,25 +212,54 @@ const _angleOrbits = (graph, syms, adj, pos) => {
 };
 
 
+const innerProduct = gram => {
+  const G = ops.toJS(gram);
+
+  return (v, w) => {
+    let s = 0;
+    for (const i in v)
+      for (const j in w)
+        s += v[i] * G[i][j] * w[j];
+    return s;
+  };
+};
+
+
 const _energyEvaluator = (
   positionSpace,
   gramSpace,
   edgeOrbits,
   angleOrbits,
-  symmetries,
   fixedPositions=null
 ) => {
-  const offset = gramSpace.length;
-
   return params => {
-    const gram = _gramMatrixFromParameters(params.slice(0, offset));
+    const position = fixedPositions ? v => fixedPositions[v] : v => {
+      const { index, configSpace } = positionSpace[v];
+      const start = gramSpace.length + index;
+      const stop = start + configSpace.length - 1;
 
-    let weightedEdgeLengthsSum = 0;
-    let weightSum = 0;
-    let minEdgeLength = Number.MAX_VALUE;
+      return _positionFromParameters(params.slice(start, stop), configSpace);
+    };
 
-    for (const orb of edgeOrbits) {
-    }
+    const gram = _gramMatrixFromParameters(params.slice(0, gramSpace.length));
+    const dot = innerProduct(gram);
+
+    const nrEdgeOrbits = edgeOrbits.length;
+    const weightedEdgeLengths = [];
+
+    for (const orbitList of [edgeOrbits, angleOrbits]) {
+      for (const orb of orbitList) {
+        const edge = orb[0];
+        const pv = position(edge.head);
+        const pw = position(edge.tail);
+        const diff = ops.minus(ops.plus(pw, edge.shift), pv);
+
+        weightedEdgeLengths.push({
+          length: ops.sqrt(dot(diff, diff)),
+          weight: orb.length
+        });
+      }
+    };
   };
 };
 
