@@ -118,7 +118,8 @@ const _parametersForPosition = (pos, cfg, symmetrizer) => {
   if (cfg.length > 1) {
     const M = cfg.slice(0, -1);
     const p = ops.minus(ops.times(pos.concat(1), symmetrizer), _last(cfg));
-    return ops.transposed(ops.solution(ops.transposed(M), ops.transposed(p)));
+    return ops.transposed(
+      ops.solution(ops.transposed(M), ops.transposed(p)))[0];
   }
   else
     return [];
@@ -178,6 +179,25 @@ function* _pairs(list) {
     for (const j in list)
       if (j > i)
         yield [list[i], list[j]];
+};
+
+
+const _parametersForConfiguration = (
+  gram,
+  positions,
+  gramSpace,
+  positionSpace,
+  symOps
+) => {
+  const pieces = [_parametersForGramMatrix(gram, gramSpace, symOps)];
+
+  for (const v of positions.keys()) {
+    const pos = positions.get(v);
+    const { configSpace, symmetrizer } = positionSpace[v];
+    pieces.push(_parametersForPosition(pos, configSpace, symmetrizer));
+  }
+
+  return Array.concat.apply(null, pieces);
 };
 
 
@@ -314,6 +334,11 @@ if (require.main == module) {
 
       const gram = _gramMatrixFromParameters(parms, cfg);
       console.log(`  gram matrix       = ${gram}`);
+      console.log();
+
+      const fullParams = _parametersForConfiguration(
+        gram, positions, cfg, configs, symOps);
+      console.log(`  parameters for everything: ${fullParams}`);
       console.log();
 
       const orbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
