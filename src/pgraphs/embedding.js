@@ -182,7 +182,31 @@ function* _pairs(list) {
 };
 
 
+const _configurationFromParameters = (
+  graph,
+  params,
+  gramSpace,
+  positionSpace
+) => {
+  const gramParams = params.slice(0, gramSpace.length);
+  const gram = _gramMatrixFromParameters(gramParams, gramSpace);
+
+  const positions = {};
+  for (const v of pg.vertices(graph)) {
+    const { index, configSpace } = positionSpace[v];
+    const start = gramSpace.length + index;
+    const stop = start + configSpace.length - 1;
+    const slice = params.slice(start, stop);
+
+    positions[v] = _positionFromParameters(slice, configSpace);
+  }
+
+  return { gram, positions };
+};
+
+
 const _parametersForConfiguration = (
+  graph,
   gram,
   positions,
   gramSpace,
@@ -191,7 +215,7 @@ const _parametersForConfiguration = (
 ) => {
   const pieces = [_parametersForGramMatrix(gram, gramSpace, symOps)];
 
-  for (const v of positions.keys()) {
+  for (const v of pg.vertices(graph)) {
     const pos = positions.get(v);
     const { configSpace, symmetrizer } = positionSpace[v];
     pieces.push(_parametersForPosition(pos, configSpace, symmetrizer));
@@ -261,7 +285,8 @@ const _energyEvaluator = (
       return _positionFromParameters(params.slice(start, stop), configSpace);
     };
 
-    const gram = _gramMatrixFromParameters(params.slice(0, gramSpace.length));
+    const gramParams = params.slice(0, gramSpace.length);
+    const gram = _gramMatrixFromParameters(gramParams, gramSpace);
     const dot = innerProduct(gram);
 
     const nrEdgeOrbits = edgeOrbits.length;
@@ -319,10 +344,8 @@ if (require.main == module) {
         console.log(`  config index    = ${configs[v].index}`);
         console.log(`  config space    = ${cfg}`);
         console.log(`  position        = ${pos}`);
-        console.log(`  parameters      = ${parms}`);
-        console.log(`  check           = ${check}`);
+        console.log();
       });
-      console.log();
 
       const symOps = syms.map(a => a.transform);
       const cfg = sg.gramMatrixConfigurationSpace(symOps);
@@ -337,8 +360,13 @@ if (require.main == module) {
       console.log();
 
       const fullParams = _parametersForConfiguration(
-        gram, positions, cfg, configs, symOps);
+        g, gram, positions, cfg, configs, symOps);
       console.log(`  parameters for everything: ${fullParams}`);
+      const check = _configurationFromParameters(g, fullParams, cfg, configs);
+      console.log(`  check gram: ${check.gram}`);
+      console.log(`  check positions:`);
+      for (const v of Object.keys(check.positions))
+        console.log(`    ${v} -> ${check.positions[v]}`);
       console.log();
 
       const orbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
