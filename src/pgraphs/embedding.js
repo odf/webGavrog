@@ -269,6 +269,9 @@ const innerProduct = gram => {
 };
 
 
+const sum = v => v.reduce((x, y) => x + y);
+
+
 const _energyEvaluator = (
   positionSpace,
   gramSpace,
@@ -290,7 +293,7 @@ const _energyEvaluator = (
     const dot = innerProduct(gram);
 
     const nrEdgeOrbits = edgeOrbits.length;
-    const weightedEdgeLengths = [];
+    const weightedLengths = [];
 
     for (const orbitList of [edgeOrbits, angleOrbits]) {
       for (const orb of orbitList) {
@@ -299,12 +302,20 @@ const _energyEvaluator = (
         const pw = position(edge.tail);
         const diff = ops.minus(ops.plus(pw, edge.shift), pv);
 
-        weightedEdgeLengths.push({
+        weightedLengths.push({
           length: ops.sqrt(dot(diff, diff)),
           weight: orb.length
         });
       }
     };
+
+    const weightedEdgeLengths = weightedLengths.slice(0, nrEdgeOrbits);
+    const edgeWeightSum = sum(weightedEdgeLengths.map(({ weight }) => weight));
+
+    const avgEdgeLength = 1.0 / edgeWeightSum * sum(
+      weightedEdgeLengths.map(({ length, weight }) => length * weight));
+
+    const scaling = avgEdgeLength > 1e-12 ? 1.01 / avgEdgeLength : 1.01;
   };
 };
 
