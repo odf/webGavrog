@@ -277,6 +277,8 @@ const _energyEvaluator = (
   gramSpace,
   edgeOrbits,
   angleOrbits,
+  volumeWeight,
+  penaltyWeight,
   fixedPositions=null
 ) => {
   return params => {
@@ -316,6 +318,31 @@ const _energyEvaluator = (
       weightedEdgeLengths.map(({ length, weight }) => length * weight));
 
     const scaling = avgEdgeLength > 1e-12 ? 1.01 / avgEdgeLength : 1.01;
+
+    const edgeVariance = sum(weightedEdgeLengths.map(({ length, weight }) => {
+      const scaledLength = length * scaling;
+      const t = 1 - scaledLength * scaledLength;
+      return t * t * weight / edgeWeightSum;
+    }));
+
+    const penalty = sum(weightedLengths.map(({ length, weight }) => {
+      const scaledLength = length * scaling;
+      if (scaledLength < 0.5) {
+        const x = Math.max(scaledLength, 1e-12);
+        return Math.exp(Math.tan((0.25 - x) * 2.0 * Math.PI)) * weight;
+      }
+      else
+        return 0.0;
+    }));
+
+    const nrNodes = Object.keys(positionSpace).length;
+    const gramScaled = ops.times(gram, scaling * scaling);
+    const cellVolumePerNode = ops.sqrt(ops.determinant(gramScaled)) / nrNodes;
+    const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
+
+    return (edgeVariance +
+            volumeWeight * volumePenalty +
+            penaltyWeight * penalty);
   };
 };
 
