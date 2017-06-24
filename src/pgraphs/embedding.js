@@ -365,12 +365,12 @@ if (require.main == module) {
     console.log();
 
 
-
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries.symmetries(g).symmetries;
       const symOps = syms.map(a => a.transform);
       const positions = pg.barycentricPlacement(g);
       const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
+      const edgeOrbits = symmetries.edgeOrbits(g);
 
       const positionSpace = _coordinateParametrization(g);
       const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
@@ -381,9 +381,6 @@ if (require.main == module) {
       const initialParams = ops.toJS(_parametersForConfiguration(
         g, gram, positions, gramSpace, positionSpace, symOps));
 
-      const energy = _energyEvaluator(
-        positionSpace, gramSpace, symmetries.edgeOrbits(g), angleOrbits, 1, 1);
-
       console.log(`  initial parameters: ${initialParams}`);
       const check = _configurationFromParameters(
         g, initialParams, gramSpace, positionSpace);
@@ -393,12 +390,23 @@ if (require.main == module) {
         console.log(`    ${v} -> ${check.positions[v]}`);
       console.log();
 
-      const p = amoeba(
-        energy, initialParams.length, ops.toJS(initialParams), 1000, 1e-6);
+      let params = initialParams;
 
-      console.log(`  relaxed parameters: ${p.position}`);
+      for (let pass = 0; pass < 3; ++pass) {
+        const volumeWeight = Math.pow(10, -pass);
+        const penaltyWeight = pass == 2 ? 1 : 0;
+
+        const energy = _energyEvaluator(
+          positionSpace, gramSpace,
+          edgeOrbits, angleOrbits,
+          volumeWeight, penaltyWeight);
+
+        params = amoeba(energy, params.length, params, 1000, 1e-6).position;
+      }
+
+      console.log(`  relaxed parameters: ${params}`);
       const relaxed = _configurationFromParameters(
-        g, p.position, gramSpace, positionSpace);
+        g, params, gramSpace, positionSpace);
       console.log(`  relaxed gram: ${relaxed.gram}`);
       console.log(`  relaxed positions:`);
       for (const v of Object.keys(relaxed.positions))
