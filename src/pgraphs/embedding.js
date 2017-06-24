@@ -303,10 +303,10 @@ const _energyEvaluator = (
         const edge = orb[0];
         const pv = position(edge.head);
         const pw = position(edge.tail);
-        const diff = ops.minus(ops.plus(pw, edge.shift), pv);
+        const diff = ops.toJS(ops.minus(ops.plus(pw, edge.shift), pv));
 
         weightedLengths.push({
-          length: ops.sqrt(dot(diff, diff)),
+          length: Math.sqrt(Math.max(0, dot(diff, diff))),
           weight: orb.length
         });
       }
@@ -364,67 +364,48 @@ if (require.main == module) {
       console.log(`  ${e}`);
     console.log();
 
+
+
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries.symmetries(g).symmetries;
-      const positions = pg.barycentricPlacement(g);
-      const positionSpace = _coordinateParametrization(g);
-
-      pg.vertices(g).forEach(v => {
-        const s = positionSpace[v].symmetrizer;
-        const n = _normalizedInvariantSpace(s);
-        const pos = positions.get(v);
-        const gramSpace = positionSpace[v].configSpace;
-        const parms = _parametersForPosition(pos, gramSpace, s);
-        const check = _positionFromParameters(parms, gramSpace);
-
-        console.log(`v = ${v}`);
-        console.log(`  symmetrizer     = ${s}`);
-        console.log(`  invariant space = ${n}`);
-        console.log(`  config index    = ${positionSpace[v].index}`);
-        console.log(`  config space    = ${gramSpace}`);
-        console.log(`  position        = ${pos}`);
-        console.log();
-      });
-
       const symOps = syms.map(a => a.transform);
-      const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
-      console.log(`  gram config space = ${gramSpace}`);
-
-      const parms = _parametersForGramMatrix(
-        ops.identityMatrix(g.dim), gramSpace, symOps);
-      console.log(`  gram parameters   = ${parms}`);
-
-      const gram = _gramMatrixFromParameters(parms, gramSpace);
-      console.log(`  gram matrix       = ${gram}`);
-      console.log();
-
-      const fullParams = _parametersForConfiguration(
-        g, gram, positions, gramSpace, positionSpace, symOps);
-      console.log(`  parameters for everything: ${fullParams}`);
-      const check = _configurationFromParameters(
-        g, fullParams, gramSpace, positionSpace);
-      console.log(`  check gram: ${check.gram}`);
-      console.log(`  check positions:`);
-      for (const v of Object.keys(check.positions))
-        console.log(`    ${v} -> ${check.positions[v]}`);
-      console.log();
-
+      const positions = pg.barycentricPlacement(g);
       const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
-      console.log("angle orbits:");
-      for (const orb of angleOrbits) {
-        for (const e of orb)
-          console.log(`  ${e}`);
-        console.log()
-      }
+
+      const positionSpace = _coordinateParametrization(g);
+      const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
+
+      const I = ops.identityMatrix(g.dim);
+      const gram = sg.resymmetrizedGramMatrix(I, symOps);
+
+      const initialParams = ops.toJS(_parametersForConfiguration(
+        g, gram, positions, gramSpace, positionSpace, symOps));
 
       const energy = _energyEvaluator(
         positionSpace, gramSpace, symmetries.edgeOrbits(g), angleOrbits, 1, 1);
 
-      const p = amoeba(energy, fullParams.length, fullParams, 1000, 1e-6);
+      console.log(`  initial parameters: ${initialParams}`);
+      const check = _configurationFromParameters(
+        g, initialParams, gramSpace, positionSpace);
+      console.log(`  initial gram: ${check.gram}`);
+      console.log(`  initial positions:`);
+      for (const v of Object.keys(check.positions))
+        console.log(`    ${v} -> ${check.positions[v]}`);
+      console.log();
+
+      const p = amoeba(
+        energy, initialParams.length, ops.toJS(initialParams), 1000, 1e-6);
+
       console.log(`  relaxed parameters: ${p.position}`);
+      const relaxed = _configurationFromParameters(
+        g, p.position, gramSpace, positionSpace);
+      console.log(`  relaxed gram: ${relaxed.gram}`);
+      console.log(`  relaxed positions:`);
+      for (const v of Object.keys(relaxed.positions))
+        console.log(`    ${v} -> ${relaxed.positions[v]}`);
+      console.log();
     }
 
-    console.log();
     console.log();
   };
 
