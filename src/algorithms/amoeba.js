@@ -84,6 +84,9 @@ const rosenbrock = (a, b) => ([x, y]) =>
   Math.pow(a - x, 2) + b * Math.pow(y - x*x, 2);
 
 
+export default optimize;
+
+
 if (require.main == module) {
   console.log('Himmelblau:');
   console.log(optimize(himmelblau, 2, [-1, -1], 1000, 1e-12));

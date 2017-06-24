@@ -2,6 +2,7 @@ import * as pg from './periodic';
 import * as symmetries from './symmetries';
 import * as sg from '../geometry/spacegroups';
 import Partition from '../common/partition';
+import amoeba from '../algorithms/amoeba';
 
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
@@ -366,54 +367,61 @@ if (require.main == module) {
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries.symmetries(g).symmetries;
       const positions = pg.barycentricPlacement(g);
-      const configs = _coordinateParametrization(g);
+      const positionSpace = _coordinateParametrization(g);
 
       pg.vertices(g).forEach(v => {
-        const s = configs[v].symmetrizer;
+        const s = positionSpace[v].symmetrizer;
         const n = _normalizedInvariantSpace(s);
         const pos = positions.get(v);
-        const cfg = configs[v].configSpace;
-        const parms = _parametersForPosition(pos, cfg, s);
-        const check = _positionFromParameters(parms, cfg);
+        const gramSpace = positionSpace[v].configSpace;
+        const parms = _parametersForPosition(pos, gramSpace, s);
+        const check = _positionFromParameters(parms, gramSpace);
 
         console.log(`v = ${v}`);
         console.log(`  symmetrizer     = ${s}`);
         console.log(`  invariant space = ${n}`);
-        console.log(`  config index    = ${configs[v].index}`);
-        console.log(`  config space    = ${cfg}`);
+        console.log(`  config index    = ${positionSpace[v].index}`);
+        console.log(`  config space    = ${gramSpace}`);
         console.log(`  position        = ${pos}`);
         console.log();
       });
 
       const symOps = syms.map(a => a.transform);
-      const cfg = sg.gramMatrixConfigurationSpace(symOps);
-      console.log(`  gram config space = ${cfg}`);
+      const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
+      console.log(`  gram config space = ${gramSpace}`);
 
       const parms = _parametersForGramMatrix(
-        ops.identityMatrix(g.dim), cfg, symOps);
+        ops.identityMatrix(g.dim), gramSpace, symOps);
       console.log(`  gram parameters   = ${parms}`);
 
-      const gram = _gramMatrixFromParameters(parms, cfg);
+      const gram = _gramMatrixFromParameters(parms, gramSpace);
       console.log(`  gram matrix       = ${gram}`);
       console.log();
 
       const fullParams = _parametersForConfiguration(
-        g, gram, positions, cfg, configs, symOps);
+        g, gram, positions, gramSpace, positionSpace, symOps);
       console.log(`  parameters for everything: ${fullParams}`);
-      const check = _configurationFromParameters(g, fullParams, cfg, configs);
+      const check = _configurationFromParameters(
+        g, fullParams, gramSpace, positionSpace);
       console.log(`  check gram: ${check.gram}`);
       console.log(`  check positions:`);
       for (const v of Object.keys(check.positions))
         console.log(`    ${v} -> ${check.positions[v]}`);
       console.log();
 
-      const orbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
+      const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
       console.log("angle orbits:");
-      for (const orb of orbits) {
+      for (const orb of angleOrbits) {
         for (const e of orb)
           console.log(`  ${e}`);
         console.log()
       }
+
+      const energy = _energyEvaluator(
+        positionSpace, gramSpace, symmetries.edgeOrbits(g), angleOrbits, 1, 1);
+
+      const p = amoeba(energy, fullParams.length, fullParams, 1000, 1e-6);
+      console.log(`  relaxed parameters: ${p.position}`);
     }
 
     console.log();
