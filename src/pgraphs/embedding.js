@@ -401,7 +401,8 @@ if (require.main == module) {
           edgeOrbits, angleOrbits,
           volumeWeight, penaltyWeight);
 
-        params = amoeba(energy, params.length, params, 1000, 1e-6).position;
+        params =
+          amoeba(energy, params.length, params, 1000, 1e-6, 0.1).position;
       }
 
       console.log(`  relaxed parameters: ${params}`);

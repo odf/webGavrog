@@ -55,10 +55,10 @@ const step = (simplex, fn) => {
 };
 
 
-const optimize = (fn, dim, start, maxSteps, tolerance) => {
-  let s = makeSimplex(
-    [start].concat(ops.identityMatrix(dim).map(e => ops.plus(e, start))), fn
-  );
+const optimize = (fn, dim, start, maxSteps, tolerance, initialScale=1.0) => {
+  const m = ops.times(initialScale, ops.identityMatrix(dim));
+
+  let s = makeSimplex([start].concat(m.map(e => ops.plus(e, start))), fn);
   let i = 0;
 
   while (i < maxSteps) {
