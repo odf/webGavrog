@@ -364,9 +364,9 @@ const _energyEvaluator = (
         return 0.0;
     }));
 
-    const nrNodes = Object.keys(positionSpace).length;
-    const gramScaled = ops.times(gram, scaling * scaling);
-    const cellVolumePerNode = ops.sqrt(ops.determinant(gramScaled)) / nrNodes;
+    const cellVolumePerNode = ops.sqrt(ops.determinant(gram)) *
+      Math.pow(scaling, 3) / Object.keys(positionSpace).length;
+
     const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
 
     _timers && _timers.stop('energy');
