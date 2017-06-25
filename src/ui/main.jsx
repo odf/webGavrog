@@ -439,6 +439,10 @@ class App extends React.Component {
       description: 'Options',
       type: 'object',
       properties: {
+        relaxEmbedding: {
+          title: 'Relax Embedding',
+          type: 'boolean'
+        },
         extraSmooth: {
           title: 'Extra-Smooth Faces',
           type: 'boolean'

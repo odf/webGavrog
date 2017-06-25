@@ -10,6 +10,7 @@ import * as delaney  from '../dsymbols/delaney';
 import * as props    from '../dsymbols/properties';
 import * as periodic from '../pgraphs/periodic';
 import * as netSyms  from '../pgraphs/symmetries';
+import embed from '../pgraphs/embedding';
 
 import tiling from '../dsymbols/tilings';
 
@@ -162,16 +163,25 @@ const _graphWithNormalizedShifts = graph => {
 };
 
 
+const simpleEmbedding = graph => {
+  const I = ops.identityMatrix(graph.dim);
+  const syms = netSyms.symmetries(graph).symmetries.map(s => s.transform);
+  const gram = groups.resymmetrizedGramMatrix(I, syms);
+  const positions = periodic.barycentricPlacement(graph);
+
+  return { gram, positions };
+};
+
+
 const makeNetModel = (structure, options, log) => csp.go(function*() {
   const graph = _graphWithNormalizedShifts(structure.graph);
-  const syms = netSyms.symmetries(graph).symmetries.map(s => s.transform);
-  const pos = periodic.barycentricPlacement(graph);
 
-  // TODO move invariant basis code into geometry package
-  const I = ops.identityMatrix(graph.dim);
-  const G = groups.resymmetrizedGramMatrix(I, syms);
-  const O = ops.cleanup(_orthonormalBasis(G));
+  const embedding = options.relaxEmbedding ?
+    embed(graph).relaxed : simpleEmbedding(graph);
+
+  const O = ops.cleanup(_orthonormalBasis(embedding.gram));
   const basis = ops.cleanup(ops.inverse(O));
+  const pos = I.Map(embedding.positions).toJS();
 
   const nodeIndex = {};
   const points = [];
@@ -188,7 +198,7 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
               const key = JSON.stringify([node, shift]);
               const idx = nodeIndex[key] || points.length;
               if (idx == points.length) {
-                const p = ops.times(ops.plus(pos.get(node), shift), basis);
+                const p = ops.times(ops.plus(pos[node], shift), basis);
                 points.push(ops.toJS(p));
                 nodeIndex[key] = idx;
               }

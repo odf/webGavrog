@@ -391,6 +391,9 @@ const embed = g => {
 };
 
 
+export default embed;
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
