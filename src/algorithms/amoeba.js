@@ -2,14 +2,18 @@ import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
 
-const plus = (v, w) => ops.plus(v, w);
-
-
 const newPoint = (simplex, factor, fn) => {
   const dim = simplex.length - 1;
-  const positions = simplex.map(vertex => vertex.pos);
-  const c = ops.div(positions.slice(0, dim).reduce(plus), dim);
-  const p = ops.plus(c, ops.times(factor, ops.minus(positions[dim], c)));
+  const vs = simplex.map(vertex => vertex.pos);
+  const p = new Array(dim);
+
+  for (let i = 0; i < dim; ++i) {
+    let c = 0;
+    for (let j = 0; j < dim; ++j)
+      c += vs[j][i];
+    c /= dim;
+    p[i] = factor * vs[dim][i] + (1 - factor) * c;
+  }
 
   return { pos: p, val: fn(p) }
 };
