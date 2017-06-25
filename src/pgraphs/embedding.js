@@ -8,6 +8,13 @@ import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
 
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
+
+
 const encode = value => pg.ops.serialize(value);
 const decode = value => pg.ops.deserialize(value);
 
@@ -283,8 +290,10 @@ const _edgeLength = (params, positionSpace, gram, fixedPositions) => {
   const dot = innerProduct(gram);
 
   return edge => {
+    _timers && _timers.start('node positions');
     const pv = position(edge.head);
     const pw = position(edge.tail);
+    _timers && _timers.stop('node positions');
     const diff = ops.toJS(ops.minus(ops.plus(pw, edge.shift), pv));
 
     return Math.sqrt(Math.max(0, dot(diff, diff)));
@@ -305,6 +314,8 @@ const _energyEvaluator = (
   fixedPositions=null
 ) => {
   return params => {
+    _timers && _timers.start('energy');
+
     const gramParams = params.slice(0, gramSpace.length);
     const positionParams = params.slice(gramSpace.length);
 
@@ -313,10 +324,14 @@ const _energyEvaluator = (
     const edgeLength = _edgeLength(
       positionParams, positionSpace, gram, fixedPositions);
 
+    _timers && _timers.start('energy: edge lengths');
+
     const weightedLengths = edgeOrbits.concat(angleOrbits).map(orb => ({
       length: edgeLength(orb[0]),
       weight: orb.length
     }));
+
+    _timers && _timers.stop('energy: edge lengths');
 
     const weightedEdgeLengths = weightedLengths.slice(0, edgeOrbits.length);
     const edgeWeightSum = sum(weightedEdgeLengths.map(({ weight }) => weight));
@@ -347,6 +362,8 @@ const _energyEvaluator = (
     const cellVolumePerNode = ops.sqrt(ops.determinant(gramScaled)) / nrNodes;
     const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
 
+    _timers && _timers.stop('energy');
+
     return (edgeVariance +
             volumeWeight * volumePenalty +
             penaltyWeight * penalty);
@@ -355,6 +372,8 @@ const _energyEvaluator = (
 
 
 const embed = g => {
+  _timers && _timers.start('preprocessing');
+
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const positions = pg.barycentricPlacement(g);
@@ -370,6 +389,9 @@ const embed = g => {
   const startParams = ops.toJS(_parametersForConfiguration(
     g, gram, positions, gramSpace, posSpace, symOps));
 
+  _timers && _timers.stop('preprocessing');
+  _timers && _timers.start('optimizing');
+
   let params = startParams;
 
   for (let pass = 0; pass < 3; ++pass) {
@@ -381,13 +403,24 @@ const embed = g => {
       edgeOrbits, angleOrbits,
       volumeWeight, penaltyWeight);
 
-    params = amoeba(energy, params.length, params, 1000, 1e-6, 0.1).position;
-  }
+    const result = amoeba(energy, params.length, params, 1000, 1e-6, 0.1);
+    params = result.position;
 
-  return {
+    console.log(`  pass ${pass} used ${result.steps} iterations`);
+  }
+  console.log();
+
+  _timers && _timers.stop('optimizing');
+  _timers && _timers.start('extracting');
+
+  const result = {
     initial: _configurationFromParameters(g, startParams, gramSpace, posSpace),
     relaxed: _configurationFromParameters(g, params, gramSpace, posSpace)
   };
+
+  _timers && _timers.stop('extracting');
+
+  return result;
 };
 
 
@@ -395,9 +428,18 @@ export default embed;
 
 
 if (require.main == module) {
+  const cgd = require('../io/cgd');
+  const util = require('../common/util');
+
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
+
+  const timers = util.timers();
+
+  useTimers(timers);
+
+  _timers.start('total');
 
   const test = g => {
     console.log('----------------------------------------');
@@ -427,6 +469,10 @@ if (require.main == module) {
       console.log();
     }
 
+    console.log();
+    _timers.stop('total');
+    console.log(`${JSON.stringify(_timers.current(), null, 2)}`);
+    _timers.start('total');
     console.log();
   };
 
@@ -461,6 +507,26 @@ if (require.main == module) {
                  [ 2, 3, [ -1,  1,  0 ] ],
                  [ 2, 3, [  0,  0,  0 ] ],
                  [ 2, 3, [  0,  1,  0 ] ] ]));
+
+  test(cgd.processed(cgd.blocks(
+    `
+CRYSTAL
+  NAME fau
+  GROUP Fd-3m:2
+  CELL 7.96625 7.96625 7.96625 90.0000 90.0000 90.0000
+  NODE 1 4  0.03624 0.12500 0.44747
+  EDGE  0.03624 0.12500 0.44747   0.12500 0.21376 0.44747
+  EDGE  0.03624 0.12500 0.44747   0.12500 0.03624 0.44747
+  EDGE  0.03624 0.12500 0.44747   -0.05253 0.12500 0.53624
+  EDGE  0.03624 0.12500 0.44747   -0.03624 0.05253 0.37500
+# EDGE_CENTER  0.08062 0.16938 0.44747
+# EDGE_CENTER  0.08062 0.08062 0.44747
+# EDGE_CENTER  -0.00814 0.12500 0.49186
+# EDGE_CENTER  0.00000 0.08876 0.41124
+END
+    `
+  )[0]).graph);
+
 
   console.log('----------------------------------------');
 }
