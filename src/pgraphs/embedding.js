@@ -270,6 +270,28 @@ const innerProduct = gram => {
 };
 
 
+const _edgeLength = (params, positionSpace, gram, fixedPositions) => {
+  const position = fixedPositions ?
+    v => fixedPositions[v] :
+    v => {
+      const { index, configSpace } = positionSpace[v];
+      const paramsForV = params.slice(index, index + configSpace.length - 1);
+
+      return _positionFromParameters(paramsForV, configSpace);
+    };
+
+  const dot = innerProduct(gram);
+
+  return edge => {
+    const pv = position(edge.head);
+    const pw = position(edge.tail);
+    const diff = ops.toJS(ops.minus(ops.plus(pw, edge.shift), pv));
+
+    return Math.sqrt(Math.max(0, dot(diff, diff)));
+  };
+};
+
+
 const sum = v => v.reduce((x, y) => x + y);
 
 
@@ -283,36 +305,20 @@ const _energyEvaluator = (
   fixedPositions=null
 ) => {
   return params => {
-    const position = fixedPositions ? v => fixedPositions[v] : v => {
-      const { index, configSpace } = positionSpace[v];
-      const start = gramSpace.length + index;
-      const stop = start + configSpace.length - 1;
-
-      return _positionFromParameters(params.slice(start, stop), configSpace);
-    };
-
     const gramParams = params.slice(0, gramSpace.length);
+    const positionParams = params.slice(gramSpace.length);
+
     const gram = _gramMatrixFromParameters(gramParams, gramSpace);
-    const dot = innerProduct(gram);
 
-    const nrEdgeOrbits = edgeOrbits.length;
-    const weightedLengths = [];
+    const edgeLength = _edgeLength(
+      positionParams, positionSpace, gram, fixedPositions);
 
-    for (const orbitList of [edgeOrbits, angleOrbits]) {
-      for (const orb of orbitList) {
-        const edge = orb[0];
-        const pv = position(edge.head);
-        const pw = position(edge.tail);
-        const diff = ops.toJS(ops.minus(ops.plus(pw, edge.shift), pv));
+    const weightedLengths = edgeOrbits.concat(angleOrbits).map(orb => ({
+      length: edgeLength(orb[0]),
+      weight: orb.length
+    }));
 
-        weightedLengths.push({
-          length: Math.sqrt(Math.max(0, dot(diff, diff))),
-          weight: orb.length
-        });
-      }
-    };
-
-    const weightedEdgeLengths = weightedLengths.slice(0, nrEdgeOrbits);
+    const weightedEdgeLengths = weightedLengths.slice(0, edgeOrbits.length);
     const edgeWeightSum = sum(weightedEdgeLengths.map(({ weight }) => weight));
 
     const avgEdgeLength = 1.0 / edgeWeightSum * sum(
@@ -401,9 +407,12 @@ if (require.main == module) {
           edgeOrbits, angleOrbits,
           volumeWeight, penaltyWeight);
 
-        params =
-          amoeba(energy, params.length, params, 1000, 1e-6, 0.1).position;
+        const out = amoeba(energy, params.length, params, 1000, 1e-6, 0.1);
+        params = out.position;
+
+        console.log(`  optimization pass ${pass} used ${out.steps} steps`);
       }
+      console.log();
 
       console.log(`  relaxed parameters: ${params}`);
       const relaxed = _configurationFromParameters(
