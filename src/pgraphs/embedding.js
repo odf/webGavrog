@@ -80,7 +80,7 @@ const _coordinateParametrization = graph => {
     const sv = _nodeSymmetrizer(v, syms, positions);
     const cv = _normalizedInvariantSpace(sv);
 
-    nodeInfo[v] = { index: next, configSpace: cv, symmetrizer: sv };
+    nodeInfo[v] = { index: next, configSpace: ops.toJS(cv), symmetrizer: sv };
 
     for (const sym of syms) {
       const w = sym.src2img[v];
@@ -99,7 +99,7 @@ const _coordinateParametrization = graph => {
       if (ops.ne(ops.times(cw, sw), cw))
         throw Error(`${cw} * ${sw} = ${ops.times(cw, sw)}`);
 
-      nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
+      nodeInfo[w] = { index: next, configSpace: ops.toJS(cw), symmetrizer: sw };
     }
 
     next += cv.length - 1;
@@ -113,12 +113,21 @@ const _last = a => a.slice(-1)[0];
 
 
 const _positionFromParameters = (parms, cfg) => {
+  _timers && _timers.start('_positionFromParameters');
+
+  const n = parms.length;
+  let p = cfg[n].slice(0, -1);
+
   if (cfg.length > 1) {
-    const M = cfg.slice(0, -1);
-    return ops.plus(_last(cfg), ops.times(parms, M)[0]).slice(0, -1);
+    for (let i = 0; i < n; ++i) {
+      for (let j = 0; j < p.length; ++j)
+        p[j] += parms[i] * cfg[i][j];
+    }
   }
-  else
-    return cfg[0].slice(0, -1);
+
+  _timers && _timers.stop('_positionFromParameters');
+
+  return p;
 };
 
 
@@ -290,10 +299,8 @@ const _edgeLength = (params, positionSpace, gram, fixedPositions) => {
   const dot = innerProduct(gram);
 
   return edge => {
-    _timers && _timers.start('node positions');
     const pv = position(edge.head);
     const pw = position(edge.tail);
-    _timers && _timers.stop('node positions');
     const diff = ops.toJS(ops.minus(ops.plus(pw, edge.shift), pv));
 
     return Math.sqrt(Math.max(0, dot(diff, diff)));
