@@ -301,7 +301,7 @@ const _edgeLength = (params, positionSpace, gram, fixedPositions) => {
   return edge => {
     const pv = position(edge.head);
     const pw = position(edge.tail);
-    const diff = ops.toJS(ops.minus(ops.plus(pw, edge.shift), pv));
+    const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
 
     return Math.sqrt(Math.max(0, dot(diff, diff)));
   };
