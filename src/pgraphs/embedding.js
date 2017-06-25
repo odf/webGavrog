@@ -354,6 +354,43 @@ const _energyEvaluator = (
 };
 
 
+const embed = g => {
+  const syms = symmetries.symmetries(g).symmetries;
+  const symOps = syms.map(a => a.transform);
+  const positions = pg.barycentricPlacement(g);
+  const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
+  const edgeOrbits = symmetries.edgeOrbits(g);
+
+  const posSpace = _coordinateParametrization(g);
+  const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
+
+  const I = ops.identityMatrix(g.dim);
+  const gram = sg.resymmetrizedGramMatrix(I, symOps);
+
+  const startParams = ops.toJS(_parametersForConfiguration(
+    g, gram, positions, gramSpace, posSpace, symOps));
+
+  let params = startParams;
+
+  for (let pass = 0; pass < 3; ++pass) {
+    const volumeWeight = Math.pow(10, -pass);
+    const penaltyWeight = pass == 2 ? 1 : 0;
+
+    const energy = _energyEvaluator(
+      posSpace, gramSpace,
+      edgeOrbits, angleOrbits,
+      volumeWeight, penaltyWeight);
+
+    params = amoeba(energy, params.length, params, 1000, 1e-6, 0.1).position;
+  }
+
+  return {
+    initial: _configurationFromParameters(g, startParams, gramSpace, posSpace),
+    relaxed: _configurationFromParameters(g, params, gramSpace, posSpace)
+  };
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -372,55 +409,18 @@ if (require.main == module) {
 
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      const syms = symmetries.symmetries(g).symmetries;
-      const symOps = syms.map(a => a.transform);
-      const positions = pg.barycentricPlacement(g);
-      const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
-      const edgeOrbits = symmetries.edgeOrbits(g);
+      const embeddings = embed(g);
 
-      const positionSpace = _coordinateParametrization(g);
-      const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
-
-      const I = ops.identityMatrix(g.dim);
-      const gram = sg.resymmetrizedGramMatrix(I, symOps);
-
-      const initialParams = ops.toJS(_parametersForConfiguration(
-        g, gram, positions, gramSpace, positionSpace, symOps));
-
-      console.log(`  initial parameters: ${initialParams}`);
-      const check = _configurationFromParameters(
-        g, initialParams, gramSpace, positionSpace);
-      console.log(`  initial gram: ${check.gram}`);
+      console.log(`  initial gram: ${embeddings.initial.gram}`);
       console.log(`  initial positions:`);
-      for (const v of Object.keys(check.positions))
-        console.log(`    ${v} -> ${check.positions[v]}`);
+      for (const v of Object.keys(embeddings.initial.positions))
+        console.log(`    ${v} -> ${embeddings.initial.positions[v]}`);
       console.log();
 
-      let params = initialParams;
-
-      for (let pass = 0; pass < 3; ++pass) {
-        const volumeWeight = Math.pow(10, -pass);
-        const penaltyWeight = pass == 2 ? 1 : 0;
-
-        const energy = _energyEvaluator(
-          positionSpace, gramSpace,
-          edgeOrbits, angleOrbits,
-          volumeWeight, penaltyWeight);
-
-        const out = amoeba(energy, params.length, params, 1000, 1e-6, 0.1);
-        params = out.position;
-
-        console.log(`  optimization pass ${pass} used ${out.steps} steps`);
-      }
-      console.log();
-
-      console.log(`  relaxed parameters: ${params}`);
-      const relaxed = _configurationFromParameters(
-        g, params, gramSpace, positionSpace);
-      console.log(`  relaxed gram: ${relaxed.gram}`);
+      console.log(`  relaxed gram: ${embeddings.relaxed.gram}`);
       console.log(`  relaxed positions:`);
-      for (const v of Object.keys(relaxed.positions))
-        console.log(`    ${v} -> ${relaxed.positions[v]}`);
+      for (const v of Object.keys(embeddings.relaxed.positions))
+        console.log(`    ${v} -> ${embeddings.relaxed.positions[v]}`);
       console.log();
     }
 
