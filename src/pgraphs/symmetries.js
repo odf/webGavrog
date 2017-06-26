@@ -450,16 +450,27 @@ export function symmetries(graph)
 
 
 export function edgeOrbits(graph, syms=symmetries(graph).symmetries) {
+  const seen = {};
   let p = Partition();
 
-  for (const a of syms) {
-    for (const e of graph.edges) {
-      const ae = decode(a.src2img[encode(e)]);
-      p = p.union(encode(e), encode(ae.canonical()));
+  for (const a of graph.edges) {
+    const ka = encode(a);
+    if (seen[ka])
+      continue;
+    seen[ka] = true;
+
+    for (const phi of syms) {
+      const b = decode(phi.src2img[ka]).canonical();
+      const kb = encode(b);
+      if (seen[kb])
+        continue;
+      seen[kb] = true;
+
+      p = p.union(ka, kb);
     }
   }
 
-  return p.classes(graph.edges.map(encode)).map(cl => cl.map(decode));
+  return p.classes(Object.keys(seen)).map(cl => cl.map(decode));
 }
 
 
