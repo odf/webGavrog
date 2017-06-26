@@ -388,26 +388,14 @@ const embed = g => {
 
   const positions = pg.barycentricPlacement(g);
 
-  _timers && _timers.start('symmetries');
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
-  _timers && _timers.stop('symmetries');
 
-  _timers && _timers.start('angle orbits');
   const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
-  _timers && _timers.stop('angle orbits');
-
-  _timers && _timers.start('edge orbits');
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  _timers && _timers.stop('edge orbits');
 
-  _timers && _timers.start('compute coordinate space');
   const posSpace = _coordinateParametrization(g, syms);
-  _timers && _timers.stop('compute coordinate space');
-
-  _timers && _timers.start('compute gram space');
   const gramSpace = ops.toJS(sg.gramMatrixConfigurationSpace(symOps));
-  _timers && _timers.stop('compute gram space');
 
   const I = ops.identityMatrix(g.dim);
   const gram = sg.resymmetrizedGramMatrix(I, symOps);
@@ -437,16 +425,11 @@ const embed = g => {
   console.log();
 
   _timers && _timers.stop('optimizing');
-  _timers && _timers.start('extracting');
 
-  const result = {
+  return {
     initial: _configurationFromParameters(g, startParams, gramSpace, posSpace),
     relaxed: _configurationFromParameters(g, params, gramSpace, posSpace)
   };
-
-  _timers && _timers.stop('extracting');
-
-  return result;
 };
 
 
@@ -464,6 +447,7 @@ if (require.main == module) {
   const timers = util.timers();
 
   useTimers(timers);
+  symmetries.useTimers(timers);
 
   _timers.start('total');
 

@@ -396,6 +396,7 @@ export function symmetries(graph)
   const bases = characteristicBases(graph);
 
   _timers && _timers.start('symmetries');
+  _timers && _timers.start('symmetries: preparations');
 
   const adj = pg.adjacencies(graph);
   const deg = v => adj.get(v).size;
@@ -406,6 +407,9 @@ export function symmetries(graph)
   const B0 = bases.first().map(e => pg.edgeVector(e, pos));
   const invB0 = ops.inverse(B0);
   const generators = [];
+
+  _timers && _timers.stop('symmetries: preparations');
+  _timers && _timers.start('symmetries: finding generators');
 
   let p = Partition();
 
@@ -432,13 +436,18 @@ export function symmetries(graph)
     }
   }
 
+  _timers && _timers.stop('symmetries: finding generators');
+
   const representativeBases = I.Range(0, bases.size)
     .filter(i => keys[i] == p.get(keys[i]))
     .map(i => bases.get(i))
     .toList();
 
+  _timers && _timers.start('symmetries: group of morphisms');
+
   const syms = groupOfMorphisms(generators);
 
+  _timers && _timers.stop('symmetries: group of morphisms');
   _timers && _timers.stop('symmetries');
 
   return {
