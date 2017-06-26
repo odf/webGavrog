@@ -144,30 +144,28 @@ const _parametersForPosition = (pos, cfg, symmetrizer) => {
 
 
 const _gramMatrixFromParameters = (parms, cfg) => {
-  const a = ops.times(parms, cfg);
-  const n = Math.sqrt(2 * a.length + 0.25) - 0.5;
-
+  const n = Math.sqrt(2 * cfg[0].length + 0.25) - 0.5;
   const G = ops.matrix(n, n);
+
   let k = 0;
 
   for (let i = 0; i < n; ++i) {
     for (let j = i; j < n; ++j) {
-      G[i][j] = G[j][i] = a[k];
+      let x = 0;
+      for (let mu = 0; mu < parms.length; ++mu)
+        x += parms[mu] * cfg[mu][k];
+
+      G[i][j] = G[j][i] = x;
       ++k;
     }
   }
 
-  for (let i = 0; i < n; ++i) {
-    if (ops.lt(G[i][i], 0))
-      G[i][i] = 0;
-  }
+  for (let i = 0; i < n; ++i)
+    G[i][i] = Math.max(G[i][i], 0);
 
   for (let i = 0; i < n; ++i) {
-    for (let j = i + 1; j < n; ++j) {
-      const t = ops.sqrt(ops.times(G[i][i], G[j][j]));
-      if (ops.gt(G[i][j], t))
-        G[i][j] = G[j][i] = t;
-    }
+    for (let j = i + 1; j < n; ++j)
+      G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
   }
 
   return G;
@@ -418,7 +416,7 @@ const embed = g => {
   const edgeOrbits = symmetries.edgeOrbits(g);
 
   const posSpace = _coordinateParametrization(g);
-  const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
+  const gramSpace = ops.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
   const I = ops.identityMatrix(g.dim);
   const gram = sg.resymmetrizedGramMatrix(I, symOps);
