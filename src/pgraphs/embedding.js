@@ -65,8 +65,7 @@ const _normalizedInvariantSpace = P => {
 };
 
 
-const _coordinateParametrization = graph => {
-  const syms = symmetries.symmetries(graph).symmetries;
+const _coordinateParametrization = (graph, syms) => {
   const positions = pg.barycentricPlacement(graph);
 
   const nodeInfo = {};
@@ -399,11 +398,11 @@ const embed = g => {
   _timers && _timers.stop('angle orbits');
 
   _timers && _timers.start('edge orbits');
-  const edgeOrbits = symmetries.edgeOrbits(g);
+  const edgeOrbits = symmetries.edgeOrbits(g, syms);
   _timers && _timers.stop('edge orbits');
 
   _timers && _timers.start('compute coordinate space');
-  const posSpace = _coordinateParametrization(g);
+  const posSpace = _coordinateParametrization(g, syms);
   _timers && _timers.stop('compute coordinate space');
 
   _timers && _timers.start('compute gram space');
