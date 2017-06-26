@@ -237,7 +237,7 @@ const _parametersForConfiguration = (
 
 
 const _angleOrbits = (graph, syms, adj, pos) => {
-  const angles = [];
+  const seen = {};
   let p = Partition();
 
   for (const v of pg.vertices(graph)) {
@@ -245,25 +245,34 @@ const _angleOrbits = (graph, syms, adj, pos) => {
       const u = inc1.tail;
       const w = inc2.tail;
       const s = ops.minus(inc2.shift, inc1.shift);
+
       const a = pg.makeEdge(u, w, s).canonical();
-      angles.push(a);
+      const ka = encode(a);
+
+      if (seen[ka])
+        continue;
+
+      seen[ka] = true;
 
       for (const phi of syms) {
         const ux = phi.src2img[u];
         const wx = phi.src2img[w];
-
         const t = phi.transform;
-        const du = ops.minus(ops.times(pos.get(u), t), pos.get(ux));
-        const dw = ops.minus(ops.times(pos.get(w), t), pos.get(wx));
-        const sx = ops.plus(ops.times(s, t), ops.minus(dw, du));
+
+        const c = ops.plus(s, ops.minus(pos.get(w), pos.get(u)));
+        const d = ops.minus(pos.get(wx), pos.get(ux));
+        const sx = ops.minus(ops.times(c, t), d);
 
         const b = pg.makeEdge(ux, wx, sx).canonical();
-        p = p.union(encode(a), encode(b));
+        const kb = encode(b);
+
+        seen[kb] = true;
+        p = p.union(ka, kb);
       }
     }
   }
 
-  return p.classes(angles.map(encode)).map(cl => cl.map(decode));
+  return p.classes(Object.keys(seen)).map(cl => cl.map(decode));
 };
 
 
@@ -378,14 +387,28 @@ const _energyEvaluator = (
 const embed = g => {
   _timers && _timers.start('preprocessing');
 
+  const positions = pg.barycentricPlacement(g);
+
+  _timers && _timers.start('symmetries');
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
-  const positions = pg.barycentricPlacement(g);
-  const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
-  const edgeOrbits = symmetries.edgeOrbits(g);
+  _timers && _timers.stop('symmetries');
 
+  _timers && _timers.start('angle orbits');
+  const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
+  _timers && _timers.stop('angle orbits');
+
+  _timers && _timers.start('edge orbits');
+  const edgeOrbits = symmetries.edgeOrbits(g);
+  _timers && _timers.stop('edge orbits');
+
+  _timers && _timers.start('compute coordinate space');
   const posSpace = _coordinateParametrization(g);
+  _timers && _timers.stop('compute coordinate space');
+
+  _timers && _timers.start('compute gram space');
   const gramSpace = ops.toJS(sg.gramMatrixConfigurationSpace(symOps));
+  _timers && _timers.stop('compute gram space');
 
   const I = ops.identityMatrix(g.dim);
   const gram = sg.resymmetrizedGramMatrix(I, symOps);
