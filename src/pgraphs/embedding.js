@@ -113,8 +113,6 @@ const _last = a => a.slice(-1)[0];
 
 
 const _positionFromParameters = (parms, cfg) => {
-  _timers && _timers.start('_positionFromParameters');
-
   const n = parms.length;
   let p = cfg[n].slice(0, -1);
 
@@ -124,8 +122,6 @@ const _positionFromParameters = (parms, cfg) => {
         p[j] += parms[i] * cfg[i][j];
     }
   }
-
-  _timers && _timers.stop('_positionFromParameters');
 
   return p;
 };
@@ -271,19 +267,6 @@ const _angleOrbits = (graph, syms, adj, pos) => {
 };
 
 
-const innerProduct = gram => {
-  const G = ops.toJS(gram);
-
-  return (v, w) => {
-    let s = 0;
-    for (const i in v)
-      for (const j in w)
-        s += v[i] * G[i][j] * w[j];
-    return s;
-  };
-};
-
-
 const _edgeLength = (params, positionSpace, gram, fixedPositions) => {
   const position = fixedPositions ?
     v => fixedPositions[v] :
@@ -294,14 +277,19 @@ const _edgeLength = (params, positionSpace, gram, fixedPositions) => {
       return _positionFromParameters(paramsForV, configSpace);
     };
 
-  const dot = innerProduct(gram);
-
   return edge => {
     const pv = position(edge.head);
     const pw = position(edge.tail);
     const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
 
-    return Math.sqrt(Math.max(0, dot(diff, diff)));
+    let s = 0;
+    for (let i = 0; i < diff.length; ++i) {
+      s += gram[i][i] * diff[i] * diff[i];
+      for (let j = i + 1; j < diff.length; ++j)
+        s += 2 * gram[i][j] * diff[i] * diff[j];
+    }
+
+    return Math.sqrt(Math.max(0, s));
   };
 };
 
@@ -339,12 +327,7 @@ const _energyEvaluator = (
     const gramParams = params.slice(0, gramSpace.length);
     const positionParams = params.slice(gramSpace.length);
 
-    _timers && _timers.start('energy: gram matrix');
-
     const gram = _gramMatrixFromParameters(gramParams, gramSpace);
-
-    _timers && _timers.stop('energy: gram matrix');
-    _timers && _timers.start('energy: edge lengths');
 
     const edgeLength = _edgeLength(
       positionParams, positionSpace, gram, fixedPositions);
@@ -354,9 +337,6 @@ const _energyEvaluator = (
       weight: orb.length
     }));
 
-    _timers && _timers.stop('energy: edge lengths');
-    _timers && _timers.start('energy: avg length and scaling');
-
     const weightedEdgeLengths = weightedLengths.slice(0, edgeOrbits.length);
     const edgeWeightSum = sum(weightedEdgeLengths.map(({ weight }) => weight));
 
@@ -365,17 +345,11 @@ const _energyEvaluator = (
 
     const scaling = avgEdgeLength > 1e-12 ? 1.01 / avgEdgeLength : 1.01;
 
-    _timers && _timers.stop('energy: avg length and scaling');
-    _timers && _timers.start('energy: edge variance');
-
     const edgeVariance = sum(weightedEdgeLengths.map(({ length, weight }) => {
       const scaledLength = length * scaling;
       const t = 1 - scaledLength * scaledLength;
       return t * t * weight / edgeWeightSum;
     }));
-
-    _timers && _timers.stop('energy: edge variance');
-    _timers && _timers.start('energy: edge penalty');
 
     const penalty = sum(weightedLengths.map(({ length, weight }) => {
       const scaledLength = length * scaling;
@@ -387,13 +361,8 @@ const _energyEvaluator = (
         return 0.0;
     }));
 
-    _timers && _timers.stop('energy: edge penalty');
-    _timers && _timers.start('energy: cell volume');
-
     const cellVolumePerNode = ops.sqrt(determinant(gram)) *
       Math.pow(scaling, 3) / Object.keys(positionSpace).length;
-
-    _timers && _timers.stop('energy: cell volume');
 
     const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
 
