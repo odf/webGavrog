@@ -450,19 +450,17 @@ export function symmetries(graph)
   const bases = characteristicBases(graph);
 
   _timers && _timers.start('symmetries');
-  _timers && _timers.start('symmetries: preparations');
 
   const adj = pg.adjacencies(graph);
   const deg = v => adj.get(v).size;
 
-  const keys = bases.map(b => b.map(encode).join(',')).toArray();
+  const encodedBases = bases.map(b => b.map(encode)).toArray();
+  const keys = encodedBases.map(b => b.join(','));
   const degs = bases.map(b => b.map(e => [deg(e.head), deg(e.tail)])).toArray();
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => pg.edgeVector(e, pos));
   const invB0 = ops.inverse(B0);
   const generators = [];
-
-  _timers && _timers.stop('symmetries: preparations');
 
   const p = new LabelledPartition((a, b) => a || b);
 
@@ -476,20 +474,15 @@ export function symmetries(graph)
       const B = basis.map(e => pg.edgeVector(e, pos));
 
       const M = _matrixProductIfUnimodular(invB0, B);
-
-      _timers && _timers.start('symmetries: morphism');
       const iso = M && morphism(graph, graph, v0, v, M, true);
-      _timers && _timers.stop('symmetries: morphism');
 
       if (iso) {
         generators.push(iso);
 
         for (let i = 0; i < bases.size; ++i) {
-          _timers && _timers.start('symmetries: updating partition');
           p.union(
             keys[i],
-            bases.get(i).map(e => iso.src2img[encode(e)]).join(','));
-          _timers && _timers.stop('symmetries: updating partition');
+            encodedBases[i].map(e => iso.src2img[e]).join(','));
         }
       }
       else
@@ -502,12 +495,9 @@ export function symmetries(graph)
     .map(i => bases.get(i))
     .toList();
 
-  _timers && _timers.start('symmetries: group of morphisms');
-
-  const keyFn = phi => bases.first().map(e => phi.src2img[encode(e)]).join(',');
+  const keyFn = phi => encodedBases[0].map(e => phi.src2img[e]).join(',');
   const syms = groupOfMorphisms(generators, keyFn);
 
-  _timers && _timers.stop('symmetries: group of morphisms');
   _timers && _timers.stop('symmetries');
 
   return {
