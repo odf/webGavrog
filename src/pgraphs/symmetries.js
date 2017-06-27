@@ -16,6 +16,62 @@ const encode = value => ops.serialize(value);
 const decode = value => ops.deserialize(value);
 
 
+class LabelledPartition {
+  constructor(combineFn) {
+    this._combineFn = combineFn;
+    this._rank = {};
+    this._parent = {};
+    this._label = {};
+  }
+
+  find(x) {
+    let root = x;
+
+    while (this._parent[root] !== undefined)
+      root = this._parent[root];
+
+    while (x != root) {
+      const t = x;
+      x = this._parent[x];
+      this._parent[t] = root;
+    }
+
+    return root;
+  }
+
+  setLabel(x, val) {
+    this._label[this.find(x)] = val;
+  }
+
+  getLabel(x) {
+    return this._label[this.find(x)];
+  }
+
+  union(x, y) {
+    const x0 = this.find(x);
+    const y0 = this.find(y);
+
+    if (x0 != y0) {
+      const rx = this._rank[x0] || 0;
+      const ry = this._rank[y0] || 0;
+      const label = this._combineFn(this._label[x0], this._label[y0]);
+
+      if (rx < ry) {
+        this._parent[x0] = y0;
+        this._label[y0] = label;
+      }
+      else {
+        if (rx == ry)
+          this._rank[x0] = rx + 1;
+
+        this._parent[y0] = x0;
+        this._label[x0] = label;
+      }
+    }
+  }
+};
+
+
 const _directedEdges = graph =>
   graph.edges.flatMap(e => [e, e.reverse()]).toJS();
 
@@ -407,37 +463,42 @@ export function symmetries(graph)
   const generators = [];
 
   _timers && _timers.stop('symmetries: preparations');
-  _timers && _timers.start('symmetries: finding generators');
 
-  let p = Partition();
+  const p = new LabelledPartition((a, b) => a || b);
 
   for (let i = 0; i < bases.size; ++i) {
-    if (ops.eq(degs[i], degs[0]) && p.get(keys[i]) != p.get(keys[0])) {
+    if (ops.eq(degs[i], degs[0]) &&
+        p.find(keys[i]) != p.find(keys[0]) &&
+        !p.getLabel(keys[i]))
+    {
       const basis = bases.get(i);
       const v = basis[0].head;
       const B = basis.map(e => pg.edgeVector(e, pos));
 
       const M = _matrixProductIfUnimodular(invB0, B);
 
-      if (M) {
-        const iso = morphism(graph, graph, v0, v, M, true);
-        if (iso != null) {
-          generators.push(iso);
+      _timers && _timers.start('symmetries: morphism');
+      const iso = M && morphism(graph, graph, v0, v, M, true);
+      _timers && _timers.stop('symmetries: morphism');
 
-          for (let i = 0; i < bases.size; ++i) {
-            p = p.union(
-              keys[i],
-              bases.get(i).map(e => iso.src2img[encode(e)]).join(','));
-          }
+      if (iso) {
+        generators.push(iso);
+
+        for (let i = 0; i < bases.size; ++i) {
+          _timers && _timers.start('symmetries: updating partition');
+          p.union(
+            keys[i],
+            bases.get(i).map(e => iso.src2img[encode(e)]).join(','));
+          _timers && _timers.stop('symmetries: updating partition');
         }
       }
+      else
+        p.setLabel(keys[i], true);
     }
   }
 
-  _timers && _timers.stop('symmetries: finding generators');
-
   const representativeBases = I.Range(0, bases.size)
-    .filter(i => keys[i] == p.get(keys[i]))
+    .filter(i => keys[i] == p.find(keys[i]))
     .map(i => bases.get(i))
     .toList();
 
