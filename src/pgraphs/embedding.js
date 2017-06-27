@@ -417,7 +417,7 @@ const embed = g => {
       edgeOrbits, angleOrbits,
       volumeWeight, penaltyWeight);
 
-    const result = amoeba(energy, params.length, params, 1000, 1e-6, 0.1);
+    const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
     params = result.position;
 
     console.log(`  pass ${pass} used ${result.steps} iterations`);
