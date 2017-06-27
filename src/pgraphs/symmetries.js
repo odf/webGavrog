@@ -218,18 +218,16 @@ export function productMorphism(phi, psi) {
 };
 
 
-export function groupOfMorphisms(generators) {
-  const keyFor = phi => JSON.stringify(Object.entries(phi.src2img).sort());
-
+export function groupOfMorphisms(generators, keyFn) {
   const result = generators.slice();
   const seen = {};
-  generators.forEach(gen => seen[keyFor(gen)] = true);
+  generators.forEach(gen => seen[keyFn(gen)] = true);
 
   for (let next = 0; next < result.length; ++next) {
     const phi = result[next];
     for (const psi of generators) {
       const product = productMorphism(phi, psi);
-      const key = keyFor(product);
+      const key = keyFn(product);
 
       if (!seen[key]) {
         result.push(product);
@@ -445,7 +443,8 @@ export function symmetries(graph)
 
   _timers && _timers.start('symmetries: group of morphisms');
 
-  const syms = groupOfMorphisms(generators);
+  const keyFn = phi => bases.first().map(e => phi.src2img[encode(e)]).join(',');
+  const syms = groupOfMorphisms(generators, keyFn);
 
   _timers && _timers.stop('symmetries: group of morphisms');
   _timers && _timers.stop('symmetries');
