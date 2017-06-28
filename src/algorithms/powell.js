@@ -14,7 +14,7 @@ const bracketMinimum = (fn, start=0, step0=1, tolerance=tiny) => {
   let b = a + step0;
   let fb = fn(b);
 
-  while (areAlmostEqual(fa, fb, tolerance)) {
+  while (step < 100 * step0 && areAlmostEqual(fa, fb, tolerance)) {
     step = 2 * step;
     b = a + step;
     fb = fn(b);
@@ -26,7 +26,7 @@ const bracketMinimum = (fn, start=0, step0=1, tolerance=tiny) => {
   let c = b + step;
   let fc = fn(c);
 
-  while (fc < fb || areAlmostEqual(fb, fc, tolerance)) {
+  while (step < 100 * step0 && (fc < fb || areAlmostEqual(fb, fc, tolerance))) {
     a = b;
     fa = fb;
     b = c;
