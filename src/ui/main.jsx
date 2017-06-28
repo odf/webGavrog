@@ -439,8 +439,8 @@ class App extends React.Component {
       description: 'Options',
       type: 'object',
       properties: {
-        relaxEmbedding: {
-          title: 'Relax Embedding',
+        skipRelaxation: {
+          title: 'Skip Relaxation',
           type: 'boolean'
         },
         extraSmooth: {

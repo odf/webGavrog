@@ -176,8 +176,8 @@ const simpleEmbedding = graph => {
 const makeNetModel = (structure, options, log) => csp.go(function*() {
   const graph = _graphWithNormalizedShifts(structure.graph);
 
-  const embedding = options.relaxEmbedding ?
-    embed(graph).relaxed : simpleEmbedding(graph);
+  const embedding = options.skipRelaxation ?
+    simpleEmbedding(graph) : embed(graph).relaxed;
 
   const O = ops.cleanup(_orthonormalBasis(embedding.gram));
   const basis = ops.cleanup(ops.inverse(O));
@@ -340,7 +340,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   }));
 
   log('Building the tiling object...');
-  const til = tiling(ds, cov, options.relaxEmbedding);
+  const til = tiling(ds, cov, !options.skipRelaxation);
 
   log('Making the tiling geometry...');
   return tilingModel(
