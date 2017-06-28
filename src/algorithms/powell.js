@@ -14,19 +14,13 @@ const bracketMinimum = (fn, start=0, step0=1, tolerance=tiny) => {
   let b = a + step0;
   let fb = fn(b);
 
-  while (step < 100 * step0 && areAlmostEqual(fa, fb, tolerance)) {
-    step = 2 * step;
-    b = a + step;
-    fb = fn(b);
-  }
-
   if (fa < fb)
     return bracketMinimum(fn, b, -step0, tolerance);
 
   let c = b + step;
   let fc = fn(c);
 
-  while (step < 100 * step0 && (fc < fb || areAlmostEqual(fb, fc, tolerance))) {
+  while (step < 100 * step0 && fc < fb) {
     a = b;
     fa = fb;
     b = c;
