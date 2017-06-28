@@ -79,7 +79,12 @@ const _coordinateParametrization = (graph, syms) => {
     const sv = _nodeSymmetrizer(v, syms, positions);
     const cv = _normalizedInvariantSpace(sv);
 
-    nodeInfo[v] = { index: next, configSpace: ops.toJS(cv), symmetrizer: sv };
+    nodeInfo[v] = {
+      index: next,
+      configSpace: ops.toJS(cv),
+      symmetrizer: sv,
+      isRepresentative: true
+    };
 
     for (const sym of syms) {
       const w = sym.src2img[v];
@@ -226,9 +231,11 @@ const _parametersForConfiguration = (
   const pieces = [_parametersForGramMatrix(gram, gramSpace, symOps)];
 
   for (const v of pg.vertices(graph)) {
-    const pos = positions.get(v);
-    const { configSpace, symmetrizer } = positionSpace[v];
-    pieces.push(_parametersForPosition(pos, configSpace, symmetrizer));
+    const { configSpace, symmetrizer, isRepresentative} = positionSpace[v];
+    if (isRepresentative) {
+      const pos = positions.get(v);
+      pieces.push(_parametersForPosition(pos, configSpace, symmetrizer));
+    }
   }
 
   return Array.concat.apply(null, pieces);
