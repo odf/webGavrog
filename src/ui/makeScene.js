@@ -340,7 +340,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   }));
 
   log('Building the tiling object...');
-  const til = tiling(ds, cov);
+  const til = tiling(ds, cov, options.relaxEmbedding);
 
   log('Making the tiling geometry...');
   return tilingModel(

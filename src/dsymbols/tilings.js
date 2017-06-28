@@ -9,6 +9,7 @@ import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
 import * as spacegroups from '../geometry/spacegroups';
+import embed from '../pgraphs/embedding';
 
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
@@ -88,12 +89,12 @@ const _skeleton = function _skeleton(cov, e2t, c2s) {
 };
 
 
-const _chamberPositions = function _chamberPositions(cov, e2t, c2s, skel, pos) {
+const _chamberPositions = (cov, e2t, c2s, skel, pos) => {
   const dim = delaney.dim(cov);
   let result = I.Map();
 
   cov.elements().forEach(function(D) {
-    const p = pos.get(skel.chamber2node.get(D));
+    const p = pos[skel.chamber2node.get(D)];
     const t = c2s.getIn([D, 0]);
     result = result.setIn([D, 0], ops.plus(p, t));
   });
@@ -170,17 +171,24 @@ const makeCover = ds =>
   delaney2d.toroidalCover(ds);
 
 
-export default function tiling(ds, cover) {
+export default function tiling(ds, cover, relax) {
   const cov  = cover || makeCover(ds);
   const e2t  = _edgeTranslations(cov);
   const c2s  = _cornerShifts(cov, e2t);
   const skel = _skeleton(cov, e2t, c2s);
-  const vpos = periodic.barycentricPlacement(skel.graph);
-  const pos  = _chamberPositions(cov, e2t, c2s, skel, vpos);
+  const embedding = relax ? embed(skel.graph).relaxed : {};
+
+  const vpos = embedding.positions ||
+    periodic.barycentricPlacement(skel.graph);
+
+  const pos  = _chamberPositions(cov, e2t, c2s, skel, I.Map(vpos).toJS());
   const syms = _symmetries(ds, cov, pos);
 
-  const I = ops.identityMatrix(delaney.dim(ds));
-  const G = spacegroups.resymmetrizedGramMatrix(I, syms.toArray());
+  const id = ops.identityMatrix(delaney.dim(ds));
+
+  const G = embedding.gram ||
+    spacegroups.resymmetrizedGramMatrix(id, syms.toArray());
+
   const O = ops.cleanup(_orthonormalBasis(G));
   const basis = ops.cleanup(ops.inverse(O));
 
