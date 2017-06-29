@@ -295,10 +295,9 @@ const tileSurface2D = (til, D0, options) => {
   const cornerOrbits =
     props.orbitReps(cov, [1], elms).map(D => props.orbit(cov, [1], D));
 
-  const cornerPositions = I.List(cornerOrbits.map(orb => {
-    const ps = pos.get(orb.first());
-    return ops.times(interpolate(0.99, ps.get(0), ps.get(2)), til.basis).concat(0);
-  })).flatMap(p => [p, p.slice(0, -1).concat(0.1)]);
+  const cornerPositions = I.List(cornerOrbits)
+    .map(orb => ops.times(pos.get(orb.first()).get(0), til.basis).concat(0))
+    .flatMap(p => [p, p.slice(0, -1).concat(0.1)]);
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
     (orb, i) => orb.map(D => [D, i])));
