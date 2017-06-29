@@ -302,7 +302,7 @@ const tileSurface2D = (til, D0, options) => {
   const cornerIndex = I.Map(cornerOrbits.flatMap(
     (orb, i) => orb.map(D => [D, i])));
 
-  const f = props.orbit(cov, [0, 1], D0)
+  const f = props.orbit(cov, [0, 1], sgn * ori.get(D0) < 0 ? D0 : cov.s(0, D0))
     .filter((D, i) => i % 2 == 0)
     .map(D => 2 * cornerIndex.get(D));
 
