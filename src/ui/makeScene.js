@@ -361,12 +361,13 @@ const tilingModel = (surfaces, options, shifts=[[0, 0, 0]]) => {
     const { pos, faces } = surfaces[i];
 
     const geom = geometry(pos, faces);
-    const mat = new THREE.MeshPhongMaterial({
-      color: colorHSL((hue0 + i / n) % 1, 1.0, 0.7),
-      shininess: 15
-    });
 
     for (const s of shifts) {
+      const mat = new THREE.MeshPhongMaterial({
+        color: colorHSL((hue0 + i / n) % 1, 1.0, 0.7),
+        shininess: 15
+      });
+
       const tileMesh = new THREE.Mesh(geom, mat);
       tileMesh.position.x = s[0];
       tileMesh.position.y = s[1];
