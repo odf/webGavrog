@@ -347,7 +347,7 @@ const wireframe = (geometry, color) => {
 };
 
 
-const tilingModel = (surfaces, options) => {
+const tilingModel = (surfaces, options, shifts=[[0, 0, 0]]) => {
   const model = new THREE.Object3D();
   const hue0 = Math.random();
   const n = surfaces.length;
@@ -361,8 +361,13 @@ const tilingModel = (surfaces, options) => {
       shininess: 15
     });
 
-    const tileMesh = new THREE.Mesh(geom, mat);
-    model.add(tileMesh);
+    for (const s of shifts) {
+      const tileMesh = new THREE.Mesh(geom, mat);
+      tileMesh.position.x = s[0];
+      tileMesh.position.y = s[1];
+      tileMesh.position.z = s[2] || 0;
+      model.add(tileMesh);
+    }
 
     if (options.showSurfaceMesh)
       model.add(wireframe(geom, colorHSL(0.0, 0.0, 0.0)));
