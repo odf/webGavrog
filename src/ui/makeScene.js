@@ -292,18 +292,20 @@ const tileSurface2D = (til, D0, options) => {
   const cornerPositions = I.List(cornerOrbits.map(orb => {
     const ps = pos.get(orb.first());
     return ops.times(interpolate(0.99, ps.get(0), ps.get(2)), til.basis).concat(0);
-  }));
+  })).flatMap(p => [p, p.slice(0, -1).concat(0.1)]);
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
     (orb, i) => orb.map(D => [D, i])));
 
-  const faces = I.List(props.orbitReps(cov, [0, 1], elms)
-    .map(D => sgn * ori.get(D) < 0 ? D : cov.s(0, D))
-    .map(D => (
-      props.orbit(cov, [0, 1], D)
-        .filter((D, i) => i % 2 == 0)
-        .map(D => cornerIndex.get(D)))))
-    .flatMap(f => [f, f.reverse()]);
+  const f = props.orbit(cov, [0, 1], D0)
+    .filter((D, i) => i % 2 == 0)
+    .map(D => 2 * cornerIndex.get(D));
+
+  const faces = I.List([f, f.map(x => x + 1).reverse()])
+    .concat(f.map((x, i) => {
+      const y = f.get((i + 1) % f.size);
+      return [y, x, x + 1, y + 1];
+    }));
 
   return {
     pos    : cornerPositions.map(p => ops.toJS(p)).toJS(),
