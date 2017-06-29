@@ -128,6 +128,8 @@ export function characteristicBases(graph)
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
+  _timers && _timers.start('characteristicBases');
+
   let results = pg.vertices(graph)
     .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
 
@@ -136,6 +138,8 @@ export function characteristicBases(graph)
 
   if (results.size == 0)
     results = _goodCombinations(_directedEdges(graph), pos);
+
+  _timers && _timers.stop('characteristicBases');
 
   return results;
 };
@@ -474,7 +478,10 @@ export function symmetries(graph)
       const B = basis.map(e => pg.edgeVector(e, pos));
 
       const M = _matrixProductIfUnimodular(invB0, B);
+
+      _timers && _timers.start('symmetries: morphism');
       const iso = M && morphism(graph, graph, v0, v, M, true);
+      _timers && _timers.stop('symmetries: morphism');
 
       if (iso) {
         generators.push(iso);

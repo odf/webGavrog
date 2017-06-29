@@ -337,8 +337,6 @@ const _energyEvaluator = (
   fixedPositions=null
 ) => {
   return params => {
-    _timers && _timers.start('energy');
-
     const gramParams = params.slice(0, gramSpace.length);
     const positionParams = params.slice(gramSpace.length);
 
@@ -381,8 +379,6 @@ const _energyEvaluator = (
 
     const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
 
-    _timers && _timers.stop('energy');
-
     return (edgeVariance +
             volumeWeight * volumePenalty +
             penaltyWeight * penalty);
@@ -391,27 +387,37 @@ const _energyEvaluator = (
 
 
 const embed = g => {
-  _timers && _timers.start('preprocessing');
-
   const positions = pg.barycentricPlacement(g);
 
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
 
+  _timers && _timers.start('embed');
+
+  _timers && _timers.start('embed: edge and angle orbits');
   const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
+  _timers && _timers.stop('embed: edge and angle orbits');
 
+  _timers && _timers.start('embed: position space');
   const posSpace = _coordinateParametrization(g, syms);
-  const gramSpace = ops.toJS(sg.gramMatrixConfigurationSpace(symOps));
+  _timers && _timers.stop('embed: position space');
 
+  _timers && _timers.start('embed: gram space');
+  const gramSpace = ops.toJS(sg.gramMatrixConfigurationSpace(symOps));
+  _timers && _timers.stop('embed: gram space');
+
+  _timers && _timers.start('embed: gram matrix');
   const I = ops.identityMatrix(g.dim);
   const gram = sg.resymmetrizedGramMatrix(I, symOps);
+  _timers && _timers.stop('embed: gram matrix');
 
+  _timers && _timers.start('embed: start parameters');
   const startParams = ops.toJS(_parametersForConfiguration(
     g, gram, positions, gramSpace, posSpace, symOps));
+  _timers && _timers.stop('embed: start parameters');
 
-  _timers && _timers.stop('preprocessing');
-  _timers && _timers.start('optimizing');
+  _timers && _timers.start('embed: optimizing');
 
   let params = startParams;
 
@@ -431,7 +437,8 @@ const embed = g => {
   }
   console.log();
 
-  _timers && _timers.stop('optimizing');
+  _timers && _timers.stop('embed: optimizing');
+  _timers && _timers.stop('embed');
 
   return {
     initial: _configurationFromParameters(g, startParams, gramSpace, posSpace),
@@ -446,6 +453,7 @@ export default embed;
 if (require.main == module) {
   const cgd = require('../io/cgd');
   const util = require('../common/util');
+  const crystal = require('../io/crystal');
 
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -454,7 +462,9 @@ if (require.main == module) {
   const timers = util.timers();
 
   useTimers(timers);
+  pg.useTimers(timers);
   symmetries.useTimers(timers);
+  crystal.useTimers(timers);
 
   _timers.start('total');
 
@@ -493,53 +503,58 @@ if (require.main == module) {
     console.log();
   };
 
-  // dia
-  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
-                 [ 1, 2, [ 1, 0, 0 ] ],
-                 [ 1, 2, [ 0, 1, 0 ] ],
-                 [ 1, 2, [ 0, 0, 1 ] ] ]));
-
-  // nbo
-  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
-                 [ 2, 1, [ 1, 0, 0 ] ],
-                 [ 2, 3, [ 0, 0, 0 ] ],
-                 [ 3, 2, [ 0, 1, 0 ] ],
-                 [ 3, 1, [ 0, 0, 1 ] ],
-                 [ 3, 1, [ 1, 1, -1 ] ] ]));
-
-  // ths
-  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
-                 [ 1, 2, [ 1, 0, 0 ] ],
-                 [ 1, 3, [ 0, 0, 0 ] ],
-                 [ 2, 4, [ 0, 0, 0 ] ],
-                 [ 3, 4, [ 0, 0, 1 ] ],
-                 [ 3, 4, [ 0, 1, 0 ] ] ]));
-
-  // flu
-  test(pg.make([ [ 1, 3, [ -1, -1,  1 ] ],
-                 [ 1, 3, [ -1,  0,  1 ] ],
-                 [ 1, 3, [  0, -1,  1 ] ],
-                 [ 1, 3, [  0,  0,  0 ] ],
-                 [ 2, 3, [ -1,  0,  1 ] ],
-                 [ 2, 3, [ -1,  1,  0 ] ],
-                 [ 2, 3, [  0,  0,  0 ] ],
-                 [ 2, 3, [  0,  1,  0 ] ] ]));
-
   test(cgd.processed(cgd.blocks(
     `
 CRYSTAL
-  NAME fau
-  GROUP Fd-3m:2
-  CELL 7.96625 7.96625 7.96625 90.0000 90.0000 90.0000
-  NODE 1 4  0.03624 0.12500 0.44747
-  EDGE  0.03624 0.12500 0.44747   0.12500 0.21376 0.44747
-  EDGE  0.03624 0.12500 0.44747   0.12500 0.03624 0.44747
-  EDGE  0.03624 0.12500 0.44747   -0.05253 0.12500 0.53624
-  EDGE  0.03624 0.12500 0.44747   -0.03624 0.05253 0.37500
-# EDGE_CENTER  0.08062 0.16938 0.44747
-# EDGE_CENTER  0.08062 0.08062 0.44747
-# EDGE_CENTER  -0.00814 0.12500 0.49186
-# EDGE_CENTER  0.00000 0.08876 0.41124
+  NAME sig
+  GROUP P42/mnm
+  CELL 8.25860 8.25860 4.36826 90.0000 90.0000 90.0000
+  NODE 1 4  0.00000 0.50000 0.25000
+  NODE 2 4  0.40734 0.59266 0.00000
+  NODE 3 4  0.23973 0.76027 0.00000
+  NODE 4 4  0.29203 0.55570 0.00000
+  NODE 5 4  0.20843 0.64330 0.00000
+  NODE 6 4  0.07192 0.15755 0.00000
+  NODE 7 4  0.10640 0.27362 0.00000
+  NODE 8 4  0.22247 0.30809 0.00000
+  NODE 9 4  0.04281 0.04281 0.31388
+  NODE 10 4  0.31194 0.31194 0.31747
+  NODE 11 4  0.39369 0.39369 0.38554
+  NODE 12 4  0.26435 0.49143 0.18682
+  NODE 13 4  0.13325 0.36497 0.31893
+  NODE 14 4  0.00484 0.13583 0.18611
+  NODE 15 4  0.04825 0.31743 0.18293
+  NODE 16 4  0.02601 0.59405 0.11446
+  NODE 17 4  0.23300 0.37449 0.19040
+  EDGE  0.07192 0.15755 0.00000   0.15755 0.07192 0.00000
+  EDGE  0.23300 0.37449 0.19040   0.13325 0.36497 0.31893
+  EDGE  0.29203 0.55570 0.00000   0.40734 0.59266 0.00000
+  EDGE  0.07192 0.15755 0.00000   0.00484 0.13583 0.18611
+  EDGE  0.02601 0.59405 0.11446   0.02601 0.59405 -0.11446
+  EDGE  0.40734 0.59266 0.00000   0.45719 0.54281 0.18612
+  EDGE  0.22247 0.30809 0.00000   0.23300 0.37449 0.19040
+  EDGE  0.00484 0.13583 0.18611   -0.10631 0.10631 0.11446
+  EDGE  0.13325 0.36497 0.31893   0.09405 0.47399 0.38554
+  EDGE  0.07192 0.15755 0.00000   0.10640 0.27362 0.00000
+  EDGE  0.20843 0.64330 0.00000   0.23973 0.76027 0.00000
+  EDGE  0.00484 0.13583 0.18611   0.04281 0.04281 0.31388
+  EDGE  0.23973 0.76027 0.00000   0.18806 0.81194 0.18253
+  EDGE  0.00484 0.13583 0.18611   -0.00857 0.23565 0.31318
+  EDGE  0.04281 0.04281 0.31388   -0.04281 -0.04281 0.31388
+  EDGE  0.04825 0.31743 0.18293   0.13325 0.36497 0.31893
+  EDGE  0.29203 0.55570 0.00000   0.26435 0.49143 0.18682
+  EDGE  0.23300 0.37449 0.19040   0.31194 0.31194 0.31747
+  EDGE  0.10640 0.27362 0.00000   0.04825 0.31743 0.18293
+  EDGE  0.04825 0.31743 0.18293   -0.00857 0.23565 0.31318
+  EDGE  0.29203 0.55570 0.00000   0.20843 0.64330 0.00000
+  EDGE  0.04825 0.31743 0.18293   -0.02601 0.40595 0.11446
+  EDGE  0.23300 0.37449 0.19040   0.26435 0.49143 0.18682
+  EDGE  0.20843 0.64330 0.00000   0.13503 0.63325 0.18107
+  EDGE  0.31194 0.31194 0.31747   0.39369 0.39369 0.38554
+  EDGE  0.22247 0.30809 0.00000   0.30809 0.22247 0.00000
+  EDGE  0.00000 0.50000 0.25000   0.02601 0.59405 0.11446
+  EDGE  0.39369 0.39369 0.38554   0.39369 0.39369 0.61446
+  EDGE  0.10640 0.27362 0.00000   0.22247 0.30809 0.00000
 END
     `
   )[0]).graph);
