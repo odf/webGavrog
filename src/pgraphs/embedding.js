@@ -375,7 +375,7 @@ const _energyEvaluator = (
     }));
 
     const cellVolumePerNode = ops.sqrt(determinant(gram)) *
-      Math.pow(scaling, 3) / Object.keys(positionSpace).length;
+      Math.pow(scaling, gram.length) / Object.keys(positionSpace).length;
 
     const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
 
@@ -502,6 +502,27 @@ if (require.main == module) {
     _timers.start('total');
     console.log();
   };
+
+  test(cgd.processed(cgd.blocks(
+    `
+CRYSTAL
+  NAME esp
+  GROUP p4gm
+  CELL 7.20976 7.20976 90.0000
+  NODE 1 4  0.08485 0.04918
+  NODE 2 3  0.04872 0.18310
+  NODE 3 3  0.08494 0.31699
+  NODE 4 3  0.04904 0.45096
+  EDGE  0.08485 0.04918   0.18310 -0.04872
+  EDGE  0.08485 0.04918   0.04918 -0.08485
+  EDGE  0.08494 0.31699   0.18301 0.41506
+  EDGE  0.08494 0.31699   0.04904 0.45096
+  EDGE  0.04904 0.45096   -0.04904 0.54904
+  EDGE  0.08485 0.04918   0.04872 0.18310
+  EDGE  0.04872 0.18310   0.08494 0.31699
+END
+    `
+  )[0]).graph);
 
   test(cgd.processed(cgd.blocks(
     `

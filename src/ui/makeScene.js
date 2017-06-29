@@ -44,6 +44,11 @@ const geometry = (vertices, faces) => {
 
 
 const stick = (p, q, radius, segments) => {
+  if (p.length == 2) {
+    p = p.concat(0);
+    q = q.concat(0);
+  }
+
   const n = segments;
   const d = _normalized(ops.minus(q, p));
   const ex = [1,0,0];
@@ -91,7 +96,7 @@ const ballAndStick = (
     const s = new THREE.Mesh(ball, mat);
     s.position.x = p[0];
     s.position.y = p[1];
-    s.position.z = p[2];
+    s.position.z = p[2] || 0;
     model.add(s);
   });
 
@@ -173,6 +178,10 @@ const simpleEmbedding = graph => {
 };
 
 
+const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
+const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x].concat(y)), xs);
+
+
 const makeNetModel = (structure, options, log) => csp.go(function*() {
   const graph = _graphWithNormalizedShifts(structure.graph);
 
@@ -187,25 +196,23 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
   const points = [];
   const edges = [];
 
-  for (const x of [0, 1]) {
-    for (const y of [0, 1]) {
-      for (const z of [0, 1]) {
-        const s = [x, y, z];
+  let shifts = cartesian([0, 1], [0,1]);
+  if (graph.dim == 3)
+    shifts = cartesian([0, 1], shifts);
 
-        for (const e of graph.edges) {
-          edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
-            ([node, shift]) => {
-              const key = JSON.stringify([node, shift]);
-              const idx = nodeIndex[key] || points.length;
-              if (idx == points.length) {
-                const p = ops.times(ops.plus(pos[node], shift), basis);
-                points.push(ops.toJS(p));
-                nodeIndex[key] = idx;
-              }
-              return idx;
-            }));
-        }
-      }
+  for (const s of shifts) {
+    for (const e of graph.edges) {
+      edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
+        ([node, shift]) => {
+          const key = JSON.stringify([node, shift]);
+          const idx = nodeIndex[key] || points.length;
+          if (idx == points.length) {
+            const p = ops.times(ops.plus(pos[node], shift), basis);
+            points.push(ops.toJS(p));
+            nodeIndex[key] = idx;
+          }
+          return idx;
+        }));
     }
   }
 
