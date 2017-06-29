@@ -245,7 +245,7 @@ const tilingSgn = (cov, pos, ori, basis) => {
 };
 
 
-const tileSurface = (til, D0, options) => {
+const tileSurface3D = (til, D0, options) => {
   const cov = til.cover;
   const ori = props.partialOrientation(cov);
   const pos = til.positions;
@@ -279,10 +279,52 @@ const tileSurface = (til, D0, options) => {
 };
 
 
+const tileSurface2D = (til, D0, options) => {
+  const cov = til.cover;
+  const ori = props.partialOrientation(cov);
+  const pos = til.positions;
+  const elms = props.orbit(cov, [0, 1], D0);
+  const sgn = tilingSgn(cov, pos, ori, til.basis);
+
+  const cornerOrbits =
+    props.orbitReps(cov, [1], elms).map(D => props.orbit(cov, [1], D));
+
+  const cornerPositions = I.List(cornerOrbits.map(orb => {
+    const ps = pos.get(orb.first());
+    return ops.times(interpolate(0.99, ps.get(0), ps.get(2)), til.basis).concat(0);
+  }));
+
+  const cornerIndex = I.Map(cornerOrbits.flatMap(
+    (orb, i) => orb.map(D => [D, i])));
+
+  const faces = I.List(props.orbitReps(cov, [0, 1], elms)
+    .map(D => sgn * ori.get(D) < 0 ? D : cov.s(0, D))
+    .map(D => (
+      props.orbit(cov, [0, 1], D)
+        .filter((D, i) => i % 2 == 0)
+        .map(D => cornerIndex.get(D)))))
+    .flatMap(f => [f, f.reverse()]);
+
+  return {
+    pos    : cornerPositions.map(p => ops.toJS(p)).toJS(),
+    faces  : faces.toJS(),
+    isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS(),
+    subDLevel: options.extraSmooth ? 3 : 2
+  };
+};
+
+
 const tileSurfaces = (til, options) => {
-  return props.orbitReps(til.cover, [0, 1, 2])
-    .map(D => tileSurface(til, D, options))
-    .toJS();
+  if (delaney.dim(til.ds) == 3) {
+    return props.orbitReps(til.cover, [0, 1, 2])
+      .map(D => tileSurface3D(til, D, options))
+      .toJS();
+  }
+  else {
+    return props.orbitReps(til.cover, [0, 1])
+      .map(D => tileSurface2D(til, D, options))
+      .toJS();
+  }
 };
 
 

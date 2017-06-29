@@ -3,6 +3,7 @@ import * as I from 'immutable';
 import * as surface   from '../graphics/surface';
 import * as delaney   from '../dsymbols/delaney';
 import * as delaney3d from '../dsymbols/delaney3d';
+import * as delaney2d from '../dsymbols/delaney2d';
 import * as util      from '../common/util';
 
 
@@ -60,7 +61,11 @@ const handlers = {
     const ds = delaney.parse(dsTxt);
 
     const t = util.timer();
-    const cov = delaney3d.pseudoToroidalCover(ds);
+
+    const cov = delaney.dim(ds) == 3 ?
+      delaney3d.pseudoToroidalCover(ds) :
+      delaney2d.toroidalCover(ds);
+
     console.log(`${Math.round(t())} msec in total to compute the cover`);
 
     return `${cov}`;
