@@ -178,8 +178,14 @@ const simpleEmbedding = graph => {
 };
 
 
-const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
-const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x].concat(y)), xs);
+const flatMap   = (fn, xs) => [].concat.apply([], xs.map(fn));
+
+const cartesian = (...vs) => (
+  vs.length == 0 ?
+    [[]] :
+    flatMap(xs => vs[vs.length - 1].map(y => xs.concat(y)),
+            cartesian(...vs.slice(0, -1)))
+);
 
 
 const makeNetModel = (structure, options, log) => csp.go(function*() {
@@ -196,9 +202,9 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
   const points = [];
   const edges = [];
 
-  let shifts = cartesian([0, 1], [0,1]);
-  if (graph.dim == 3)
-    shifts = cartesian([0, 1], shifts);
+  const shifts = graph.dim == 3 ?
+    cartesian([0, 1], [0, 1], [0, 1]) :
+    cartesian([0, 1, 2, 3], [0, 1, 2, 3]);
 
   for (const s of shifts) {
     for (const e of graph.edges) {
@@ -398,13 +404,20 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   log('Building the tiling object...');
   const til = tiling(ds, cov, !options.skipRelaxation);
 
+  console.log(`${JSON.stringify(cartesian([0, 1], [0, 1], [0, 1]))}`);
+
+  const shifts = delaney.dim(ds) == 3 ?
+    cartesian([0, 1], [0, 1], [0, 1]).map(s => ops.times(s, til.basis)) :
+    cartesian([0, 1, 2, 3], [0, 1, 2, 3]).map(s => ops.times(s, til.basis));
+
   log('Making the tiling geometry...');
   return tilingModel(
     yield callWorker({
       cmd: 'processSolids',
       val: tileSurfaces(til, options)
     }),
-    options
+    options,
+    shifts
   );
 });
 
