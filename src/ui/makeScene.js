@@ -372,10 +372,15 @@ const tilingModel = (surfaces, options, shifts=[[0, 0, 0]]) => {
       tileMesh.position.y = s[1];
       tileMesh.position.z = s[2] || 0;
       model.add(tileMesh);
-    }
 
-    if (options.showSurfaceMesh)
-      model.add(wireframe(geom, colorHSL(0.0, 0.0, 0.0)));
+      if (options.showSurfaceMesh) {
+        const tileWire = wireframe(geom, colorHSL(0.0, 0.0, 0.0));
+        tileWire.position.x = s[0];
+        tileWire.position.y = s[1];
+        tileWire.position.z = s[2] || 0;
+        model.add(tileWire);
+      }
+    }
   }
 
   return model;
