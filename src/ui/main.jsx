@@ -175,23 +175,25 @@ class App extends React.Component {
   }
 
   setStructure(i, structures) {
+    structures = structures || this.state.structures;
+    const n = structures.length;
+    const index = i < 0 ? n + i % n : i % n;
+
+    this.setState({ structures, index });
+
+    this.title(
+      this.state.filename,
+      index + 1,
+      structures.length,
+      structures[index].name);
+
     csp.go(function*() {
-      structures = structures || this.state.structures;
-      const n = structures.length;
-      const index = i < 0 ? n + i % n : i % n;
-
-      if (structures[index].isRaw) {
-        this.log('Converting structure data...');
-        structures[index] = cgd.processed(structures[index]);
-      }
-
-      this.title(
-        this.state.filename,
-        index + 1,
-        structures.length,
-        structures[index].name);
-
       try {
+        if (structures[index].isRaw) {
+          this.log('Converting structure data...');
+          structures[index] = cgd.processed(structures[index]);
+        }
+
         const scene = yield makeScene(
           structures[index],
           this.state.options,
@@ -201,7 +203,10 @@ class App extends React.Component {
         const cameraParameters = { distance: camera.position.z };
 
         this.setState({ structures, index, scene, camera, cameraParameters });
-      } catch(ex) { console.error(ex); }
+      } catch(ex) {
+        this.log('ERROR processing the structure!!!');
+        console.error(ex);
+      }
     }.bind(this));
   }
 
