@@ -409,8 +409,6 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   log('Building the tiling object...');
   const til = tiling(ds, cov, !options.skipRelaxation);
 
-  console.log(`${JSON.stringify(cartesian([0, 1], [0, 1], [0, 1]))}`);
-
   const shifts = delaney.dim(ds) == 3 ?
     cartesian([0, 1], [0, 1], [0, 1]).map(s => ops.times(s, til.basis)) :
     cartesian([0, 1, 2, 3], [0, 1, 2, 3]).map(s => ops.times(s, til.basis));
@@ -450,7 +448,7 @@ const makeScene = (structure, options, log) => csp.go(function*() {
 
   log('Composing the scene...');
 
-  const distance = 6;
+  const distance = 12;
   const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
   camera.name = 'camera';
   camera.position.z = distance;
