@@ -21,6 +21,7 @@ const callWorker = csp.nbind(worker, null);
 
 
 const _normalized = v => ops.div(v, ops.norm(v));
+const _range = n => new Array(n).fill(0).map((_, i) => i);
 
 
 const geometry = (vertices, faces) => {
@@ -202,7 +203,7 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
 
   const shifts = graph.dim == 3 ?
     cartesian([0, 1], [0, 1], [0, 1]) :
-    cartesian([0, 1, 2, 3], [0, 1, 2, 3]);
+    cartesian(_range(6), _range(6));
 
   for (const s of shifts) {
     for (const e of graph.edges) {
@@ -409,7 +410,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
 
   const shifts = delaney.dim(ds) == 3 ?
     cartesian([0, 1], [0, 1], [0, 1]).map(s => ops.times(s, til.basis)) :
-    cartesian([0, 1, 2, 3], [0, 1, 2, 3]).map(s => ops.times(s, til.basis));
+    cartesian(_range(6), _range(6)).map(s => ops.times(s, til.basis));
 
   log('Making the tiling geometry...');
   return tilingModel(
