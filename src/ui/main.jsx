@@ -203,6 +203,8 @@ class App extends React.Component {
         const cameraParameters = { distance: camera.position.z };
 
         this.setState({ structures, index, scene, camera, cameraParameters });
+        this.display.viewAlongZ();
+        this.display.center();
       } catch(ex) {
         this.log('ERROR processing the structure!!!');
         console.error(ex);
