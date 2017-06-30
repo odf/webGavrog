@@ -79,8 +79,8 @@ const stick = (p, q, radius, segments) => {
 const ballAndStick = (
   positions,
   edges,
-  ballRadius=0.025,
-  stickRadius=0.01,
+  ballRadius=0.1,
+  stickRadius=0.04,
   ballColor=0xe8d880,
   stickColor=0x404080
 ) => {
