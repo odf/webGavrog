@@ -176,7 +176,7 @@ export default function tiling(ds, cover, relax) {
   const e2t  = _edgeTranslations(cov);
   const c2s  = _cornerShifts(cov, e2t);
   const skel = _skeleton(cov, e2t, c2s);
-  const embedding = relax ? embed(skel.graph).relaxed : {};
+  const embedding = embed(skel.graph, relax);
 
   const vpos = embedding.positions ||
     periodic.barycentricPlacement(skel.graph);

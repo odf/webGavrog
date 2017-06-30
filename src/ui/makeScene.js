@@ -191,9 +191,7 @@ const cartesian = (...vs) => (
 const makeNetModel = (structure, options, log) => csp.go(function*() {
   const graph = _graphWithNormalizedShifts(structure.graph);
 
-  const embedding = options.skipRelaxation ?
-    simpleEmbedding(graph) : embed(graph).relaxed;
-
+  const embedding = embed(graph, !options.skipRelaxation);
   const O = ops.cleanup(_orthonormalBasis(embedding.gram));
   const basis = ops.cleanup(ops.inverse(O));
   const pos = I.Map(embedding.positions).toJS();

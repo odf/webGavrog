@@ -388,7 +388,7 @@ const _energyEvaluator = (
 };
 
 
-const embed = g => {
+const embed = (g, relax=true) => {
   const positions = pg.barycentricPlacement(g);
 
   const syms = symmetries.symmetries(g).symmetries;
@@ -419,33 +419,32 @@ const embed = g => {
     g, gram, positions, gramSpace, posSpace, symOps));
   _timers && _timers.stop('embed: start parameters');
 
-  _timers && _timers.start('embed: optimizing');
-
   let params = startParams;
 
-  for (let pass = 0; pass < 3; ++pass) {
-    const volumeWeight = Math.pow(10, -pass);
-    const penaltyWeight = pass == 2 ? 1 : 0;
+  if (relax) {
+    _timers && _timers.start('embed: optimizing');
 
-    const energy = _energyEvaluator(
-      posSpace, gramSpace,
-      edgeOrbits, angleOrbits,
-      volumeWeight, penaltyWeight);
+    for (let pass = 0; pass < 3; ++pass) {
+      const volumeWeight = Math.pow(10, -pass);
+      const penaltyWeight = pass == 2 ? 1 : 0;
 
-    const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
-    params = result.position;
+      const energy = _energyEvaluator(
+        posSpace, gramSpace,
+        edgeOrbits, angleOrbits,
+        volumeWeight, penaltyWeight);
 
-    console.log(`  pass ${pass} used ${result.steps} iterations`);
+      const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
+      params = result.position;
+
+      console.log(`relaxation pass ${pass} used ${result.steps} amoeba steps`);
+    }
+
+    _timers && _timers.stop('embed: optimizing');
   }
-  console.log();
 
-  _timers && _timers.stop('embed: optimizing');
   _timers && _timers.stop('embed');
 
-  return {
-    initial: _configurationFromParameters(g, startParams, gramSpace, posSpace),
-    relaxed: _configurationFromParameters(g, params, gramSpace, posSpace)
-  };
+  return _configurationFromParameters(g, params, gramSpace, posSpace);
 };
 
 
