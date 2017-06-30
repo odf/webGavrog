@@ -204,19 +204,21 @@ const _configurationFromParameters = (
   positionSpace
 ) => {
   const gramParams = params.slice(0, gramSpace.length);
-  const gram = _gramMatrixFromParameters(gramParams, gramSpace);
+  const positionParams = params.slice(gramSpace.length);
 
   const positions = {};
   for (const v of pg.vertices(graph)) {
     const { index, configSpace } = positionSpace[v];
-    const start = gramSpace.length + index;
-    const stop = start + configSpace.length - 1;
-    const slice = params.slice(start, stop);
-
+    const slice = positionParams.slice(index, index + configSpace.length - 1);
     positions[v] = _positionFromParameters(slice, configSpace);
   }
 
-  return { gram, positions };
+  const gram = _gramMatrixFromParameters(gramParams, gramSpace);
+  const edgeLength = _edgeLength(positionParams, positionSpace, gram, positions);
+  const lengths = graph.edges.map(edgeLength).toArray();
+  const avgEdgeLength = sum(lengths) / lengths.length;
+
+  return { gram: ops.div(gram, avgEdgeLength * avgEdgeLength), positions };
 };
 
 
