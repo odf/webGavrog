@@ -390,13 +390,15 @@ class App extends React.Component {
       return;
 
     if (data.name) {
+      const pattern = new RegExp(`\\b${data.name}\\b`, 'i');
+
       csp.go(function*() {
-        const i = this.state.structures.findIndex(s => s.name == data.name);
+        const i = this.state.structures.findIndex(s => !!pattern.exec(s.name));
         if (i >= 0)
           this.setStructure(i);
         else
           this.log(`Name "${data.name}" not found.`);
-      });
+      }.bind(this));
     }
   }
 
