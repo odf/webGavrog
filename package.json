@@ -19,7 +19,7 @@
     "plexus-validate": "0.0.4",
     "prop-types": "^15.5.4",
     "react": "~15.5.3",
-    "react-dom": "^15.5.3",
+    "react-dom": "~15.5.3",
     "three": "~0.84.0"
   },
   "devDependencies": {
