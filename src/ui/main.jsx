@@ -279,8 +279,10 @@ class FileLoader {
 
   _loadFile(event) {
     const onData = this.onData;
+    const files = event.target.files;
 
-    for (const file of event.target.files) {
+    for (let i = 0; i < files.length; ++i) {
+      const file = files[i];
       const reader = new FileReader();
 
       reader.onload = event => onData(file, event.target.result);
