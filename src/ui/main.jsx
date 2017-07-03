@@ -244,12 +244,12 @@ END
 
 
 const parseStructures = (filename, data, log) => {
-  if (filename.match(/\.cgd$/)) {
+  if (filename.match(/\.(cgd|pgr)$/)) {
     log('Parsing .cgd data...');
     return cgd.blocks(data)
               .map(block => ({ ...block, name: findName(block.content) }));
   }
-  else if (filename.match(/\.ds$/))
+  else if (filename.match(/\.(ds|tgs)$/))
     return Array.from(parseDSymbols(data));
   else
     return [];
