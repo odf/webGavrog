@@ -405,7 +405,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
     val: `${ds}`
   }));
 
-  log('Building the tiling object...');
+  yield log('Building the tiling object...');
   const til = tiling(ds, cov, !options.skipRelaxation);
 
   const shifts = delaney.dim(ds) == 3 ?
