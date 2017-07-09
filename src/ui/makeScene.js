@@ -419,7 +419,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
 
   fundamental.useTimers(timers);
   tilings.useTimers(timers);
-  const til = tilings.default(ds, cov, !options.skipRelaxation);
+  const til = tilings.tiling(ds, cov, !options.skipRelaxation);
   fundamental.useTimers(null);
   console.log(`${Math.round(t())} msec to make the tiling object`);
 

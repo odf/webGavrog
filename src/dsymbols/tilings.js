@@ -63,7 +63,7 @@ const _cornerShifts = function _cornerShifts(cov, e2t) {
 };
 
 
-const _skeleton = function _skeleton(cov, e2t, c2s) {
+export const skeleton = cov => {
   const dim = delaney.dim(cov);
   const zero = ops.vector(dim);
   const chambers = cov.elements();
@@ -74,6 +74,9 @@ const _skeleton = function _skeleton(cov, e2t, c2s) {
     nodeReps
       .zip(I.Range())
       .flatMap(p => properties.orbit(cov, idcs0, p[0]).zip(I.Repeat(p[1]))));
+
+  const e2t = _edgeTranslations(cov);
+  const c2s = _cornerShifts(cov, e2t);
 
   const edges = properties.orbitReps(cov, _remainingIndices(cov, 1), chambers)
     .map(function(D) {
@@ -91,18 +94,20 @@ const _skeleton = function _skeleton(cov, e2t, c2s) {
   return {
     graph: periodic.make(edges),
     node2chamber: node2chamber,
-    chamber2node: chamber2node
+    chamber2node: chamber2node,
+    edgeTranslations: e2t,
+    cornerShifts: c2s
   };
 };
 
 
-const _chamberPositions = (cov, e2t, c2s, skel, pos) => {
+const _chamberPositions = (cov, skel, pos) => {
   const dim = delaney.dim(cov);
   let result = I.Map();
 
   cov.elements().forEach(function(D) {
     const p = pos[skel.chamber2node.get(D)];
-    const t = c2s.getIn([D, 0]);
+    const t = skel.cornerShifts.getIn([D, 0]);
     result = result.setIn([D, 0], ops.plus(p, t));
   });
 
@@ -113,12 +118,12 @@ const _chamberPositions = (cov, e2t, c2s, skel, pos) => {
       let s = ops.vector(dim);
       orb.forEach(function(E) {
         const p = result.getIn([E, 0]);
-        const t = c2s.getIn([E, i]);
+        const t = skel.cornerShifts.getIn([E, i]);
         s = ops.plus(s, ops.minus(p, t));
       });
       s = ops.times(ops.div(1, orb.size), s);
       orb.forEach(function(E) {
-        const t = c2s.getIn([E, i]);
+        const t = skel.cornerShifts.getIn([E, i]);
         result = result.setIn([E, i], ops.plus(s, t));
       });
    });
@@ -172,27 +177,19 @@ const _orthonormalBasis = function _orthonormalBasis(G) {
 };
 
 
-const makeCover = ds =>
+export const makeCover = ds =>
   delaney.dim(ds) == 3 ?
   delaney3d.pseudoToroidalCover(ds) :
   delaney2d.toroidalCover(ds);
 
 
-export default function tiling(ds, cover, relax) {
+export const tiling = (ds, cover, relax) => {
   const cov  = cover || makeCover(ds);
 
   _timers && _timers.start('tiling');
 
-  _timers && _timers.start('tiling: edge translations');
-  const e2t  = _edgeTranslations(cov);
-  _timers && _timers.stop('tiling: edge translations');
-
-  _timers && _timers.start('tiling: corner shifts');
-  const c2s  = _cornerShifts(cov, e2t);
-  _timers && _timers.stop('tiling: corner shifts');
-
   _timers && _timers.start('tiling: skeleton');
-  const skel = _skeleton(cov, e2t, c2s);
+  const skel = skeleton(cov);
   _timers && _timers.stop('tiling: skeleton');
 
   _timers && _timers.start('tiling: embedding');
@@ -202,7 +199,7 @@ export default function tiling(ds, cover, relax) {
   const vpos = embedding.positions;
 
   _timers && _timers.start('tiling: chamber positions');
-  const pos  = _chamberPositions(cov, e2t, c2s, skel, I.Map(vpos).toJS());
+  const pos  = _chamberPositions(cov, skel, I.Map(vpos).toJS());
   _timers && _timers.stop('tiling: chamber positions');
 
   _timers && _timers.start('tiling: symmetries');
@@ -218,41 +215,12 @@ export default function tiling(ds, cover, relax) {
   _timers && _timers.stop('tiling');
 
   return {
-    ds          : ds,
-    cover       : cov,
-    graph       : skel.graph,
-    node2chamber: skel.node2chamber,
-    chamber2node: skel.chamber2node,
-    positions   : pos,
-    symmetries  : syms,
-    gramMatrix  : G,
-    basis       : basis
+    ds        : ds,
+    cover     : cov,
+    skeleton  : skel,
+    positions : pos,
+    symmetries: syms,
+    gramMatrix: G,
+    basis     : basis
   };
 };
-
-
-if (require.main == module) {
-  Array.prototype.toString = function() {
-    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
-  };
-
-  const test = function test(ds) {
-    console.log('ds = '+ds);
-    const til = tiling(ds);
-    Object.keys(til).forEach(k => console.log(`${k}: ${til[k]}`));
-    console.log();
-  }
-
-  const timer = require('../common/util').timer();
-
-  test(delaney.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
-  test(delaney.parse('<1.1:1:1,1,1:6,3>'));
-  test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
-  test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
-  test(delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>'));
-  test(delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
-  test(delaney.parse('<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>'));
-
-  console.log();
-  console.log(`Computation time: ${timer()} msec`);
-}
