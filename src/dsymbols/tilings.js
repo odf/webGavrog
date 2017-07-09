@@ -178,17 +178,11 @@ export default function tiling(ds, cover, relax) {
   const skel = _skeleton(cov, e2t, c2s);
   const embedding = embed(skel.graph, relax);
 
-  const vpos = embedding.positions ||
-    periodic.barycentricPlacement(skel.graph);
-
+  const vpos = embedding.positions;
   const pos  = _chamberPositions(cov, e2t, c2s, skel, I.Map(vpos).toJS());
   const syms = _symmetries(ds, cov, pos);
 
-  const id = ops.identityMatrix(delaney.dim(ds));
-
-  const G = embedding.gram ||
-    spacegroups.resymmetrizedGramMatrix(id, syms.toArray());
-
+  const G = embedding.gram;
   const O = ops.cleanup(_orthonormalBasis(G));
   const basis = ops.cleanup(ops.inverse(O));
 
