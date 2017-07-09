@@ -15,6 +15,13 @@ import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
 
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
+
+
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
@@ -173,18 +180,42 @@ const makeCover = ds =>
 
 export default function tiling(ds, cover, relax) {
   const cov  = cover || makeCover(ds);
+
+  _timers && _timers.start('tiling');
+
+  _timers && _timers.start('tiling: edge translations');
   const e2t  = _edgeTranslations(cov);
+  _timers && _timers.stop('tiling: edge translations');
+
+  _timers && _timers.start('tiling: corner shifts');
   const c2s  = _cornerShifts(cov, e2t);
+  _timers && _timers.stop('tiling: corner shifts');
+
+  _timers && _timers.start('tiling: skeleton');
   const skel = _skeleton(cov, e2t, c2s);
+  _timers && _timers.stop('tiling: skeleton');
+
+  _timers && _timers.start('tiling: embedding');
   const embedding = embed(skel.graph, relax);
+  _timers && _timers.stop('tiling: embedding');
 
   const vpos = embedding.positions;
-  const pos  = _chamberPositions(cov, e2t, c2s, skel, I.Map(vpos).toJS());
-  const syms = _symmetries(ds, cov, pos);
 
+  _timers && _timers.start('tiling: chamber positions');
+  const pos  = _chamberPositions(cov, e2t, c2s, skel, I.Map(vpos).toJS());
+  _timers && _timers.stop('tiling: chamber positions');
+
+  _timers && _timers.start('tiling: symmetries');
+  const syms = _symmetries(ds, cov, pos);
+  _timers && _timers.stop('tiling: symmetries');
+
+  _timers && _timers.start('tiling: basis');
   const G = embedding.gram;
   const O = ops.cleanup(_orthonormalBasis(G));
   const basis = ops.cleanup(ops.inverse(O));
+  _timers && _timers.start('tiling: basis');
+
+  _timers && _timers.stop('tiling');
 
   return {
     ds          : ds,

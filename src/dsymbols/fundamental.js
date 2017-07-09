@@ -55,8 +55,6 @@ const _todoAfterGluing = function _todoAfterGluing(ds, bnd, D, i) {
 
 
 const _glueRecursively = function _glueRecursively(ds, bnd, facets) {
-  _timers && _timers.start('_glueRecursively');
-
   let boundary = bnd;
   let todo = I.List(facets).map(I.List).asMutable();
   let glued = I.List();
@@ -73,26 +71,13 @@ const _glueRecursively = function _glueRecursively(ds, bnd, facets) {
     const opp = boundary.getIn(next);
 
     if (opp && (j == null || opp.count == m)) {
-      _timers && _timers.start('_glueRecursively: new todos after gluing');
-      const newTodos = _todoAfterGluing(ds, boundary, D, i);
-      _timers && _timers.stop('_glueRecursively: new todos after gluing');
-
-      _timers && _timers.start('_glueRecursively: update todo');
-      for (const t of newTodos)
+      for (const t of _todoAfterGluing(ds, boundary, D, i))
         todo.push(t);
-      _timers && _timers.stop('_glueRecursively: update todo');
 
-      _timers && _timers.start('_glueRecursively: glue');
       boundary = _glue(ds, boundary, D, i);
-      _timers && _timers.stop('_glueRecursively: glue');
-
-      _timers && _timers.start('_glueRecursively: update list of glued facets');
       glued = glued.push(next);
-      _timers && _timers.stop('_glueRecursively: update list of glued facets');
     }
   }
-
-  _timers && _timers.stop('_glueRecursively');
 
   return I.Map({ boundary: boundary, glued: glued });
 };
@@ -169,19 +154,10 @@ const _updatedWordMap = function _updatedWordMap(ds, edge2word, D, i, gen, glued
 
 
 const _findGenerators = function _findGenerators(ds) {
-  _timers && _timers.start('_findGenerators');
-
-  _timers && _timers.start('_findGenerators: initial boundary');
   let boundary = _initialBoundary(ds);
-  _timers && _timers.stop('_findGenerators: initial boundary');
-
-  _timers && _timers.start('_findGenerators: spanning tree');
   const tree = _spanningTree(ds);
-  _timers && _timers.stop('_findGenerators: spanning tree');
 
-  _timers && _timers.start('_findGenerators: spanning tree gluing');
   boundary = _glueRecursively(ds, boundary, tree).get('boundary');
-  _timers && _timers.stop('_findGenerators: spanning tree gluing');
 
   let edge2word = I.Map();
   let gen2edge = I.Map();
@@ -189,22 +165,16 @@ const _findGenerators = function _findGenerators(ds) {
   ds.elements().forEach(function(D) {
     ds.indices().forEach(function(i) {
       if (boundary.getIn([D, i])) {
-        _timers && _timers.start('_findGenerators: further gluing');
         const tmp = _glueRecursively(ds, boundary, [[D, i]]);
-        _timers && _timers.stop('_findGenerators: further gluing');
         const glued = tmp.get('glued');
         const gen = gen2edge.size+1;
 
         boundary = tmp.get('boundary');
         gen2edge = gen2edge.set(gen, I.Map({ chamber: D, index: i }));
-        _timers && _timers.start('_findGenerators: update word map');
         edge2word = _updatedWordMap(ds, edge2word, D, i, gen, glued);
-        _timers && _timers.stop('_findGenerators: update word map');
       }
     })
   });
-
-  _timers && _timers.stop('_findGenerators');
 
   return I.Map({ edge2word: edge2word, gen2edge: gen2edge });
 };
@@ -236,48 +206,46 @@ export function fundamentalGroup(ds) {
   _timers && _timers.stop('fundamentalGroup: find generators');
 
   _timers && _timers.start('fundamentalGroup: orbits');
-  const orbits = ds.indices().flatMap(function(i) {
-    return ds.indices().flatMap(function(j) {
-      if (j > i)
-        return properties.orbitReps(ds, [i, j]).flatMap(function(D) {
+  const orbits = [];
+  for (const i of ds.indices()) {
+    for (const j of ds.indices()) {
+      if (j > i) {
+        for (const D of properties.orbitReps(ds, [i, j])) {
           const w = _traceWord(ds, edge2word, i, j, D);
           const v = ds.v(i, j, D);
           if (v && w.size > 0)
-            return [[D, i, j, w, v]];
-        });
-    });
-  });
+            orbits.push([D, i, j, w, v]);
+        }
+      }
+    }
+  }
   _timers && _timers.stop('fundamentalGroup: orbits');
 
-  _timers && _timers.start('fundamentalGroup: orbit relators');
-  const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[4], orb[3]));
-  _timers && _timers.stop('fundamentalGroup: orbit relators');
+  _timers && _timers.start('fundamentalGroup: finishing up');
 
-  _timers && _timers.start('fundamentalGroup: mirrors');
+  const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[4], orb[3]));
+
   const mirrors = gen2edge.entrySeq()
     .filter(function(e) {
       const D = e[1].get('chamber');
       const i = e[1].get('index');
       return ds.s(i, D) == D;
     })
-    .map(e => freeWords.word([e[0], e[0]]));
-  _timers && _timers.stop('fundamentalGroup: mirrors');
+    .map(e => freeWords.word([e[0], e[0]]))
+    .toArray();
 
-  _timers && _timers.start('fundamentalGroup: cones');
   const cones = orbits
     .filter(orb => orb[4] > 1)
     .map(orb => orb.slice(3))
     .sort();
-  _timers && _timers.stop('fundamentalGroup: cones');
 
-  _timers && _timers.start('fundamentalGroup: relators');
   const nGens = gen2edge.size;
-  const rels  = orbitRelators.concat(mirrors)
-    .map(freeWords.relatorRepresentative)
-    .toSet()
+  const rels  = I.Set(
+    orbitRelators.concat(mirrors)
+      .map(freeWords.relatorRepresentative))
     .sort();
-  _timers && _timers.stop('fundamentalGroup: relators');
 
+  _timers && _timers.stop('fundamentalGroup: finishing up');
   _timers && _timers.stop('fundamentalGroup');
 
   return FundamentalGroup({
