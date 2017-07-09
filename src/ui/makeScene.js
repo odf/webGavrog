@@ -396,10 +396,16 @@ const light = (color, x, y, z) => {
 };
 
 
+const baseShifts = dim => dim == 3 ?
+  cartesian([0, 1], [0, 1], [0, 1]) :
+  cartesian(_range(6), _range(6));
+
+
 const makeTilingModel = (structure, options, log) => csp.go(function*() {
   const ds = structure.symbol;
+  const dim = delaney.dim(ds);
 
-  log('Finding the pseudo-toroidal cover...');
+  yield log('Finding the pseudo-toroidal cover...');
   const cov = structure.cover || delaney.parse(yield callWorker({
     cmd: 'dsCover',
     val: `${ds}`
@@ -408,19 +414,18 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   yield log('Building the tiling object...');
   const til = tiling(ds, cov, !options.skipRelaxation);
 
-  const shifts = delaney.dim(ds) == 3 ?
-    cartesian([0, 1], [0, 1], [0, 1]).map(s => ops.times(s, til.basis)) :
-    cartesian(_range(6), _range(6)).map(s => ops.times(s, til.basis));
+  yield log('Making the base tile surfaces...');
+  const baseSurfaces = tileSurfaces(til, options);
 
-  log('Making the tiling geometry...');
-  return tilingModel(
-    yield callWorker({
-      cmd: 'processSolids',
-      val: tileSurfaces(til, options)
-    }),
-    options,
-    shifts
-  );
+  yield log('Refining the tile surfaces...');
+  const refinedSurfaces = yield callWorker({
+    cmd: 'processSolids',
+    val: baseSurfaces
+  });
+
+  yield log('Making the tiling geometry...');
+  const shifts = baseShifts(dim).map(s => ops.times(s, til.basis));
+  return tilingModel(refinedSurfaces, options, shifts);
 });
 
 
