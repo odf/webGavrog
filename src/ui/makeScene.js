@@ -13,6 +13,7 @@ import * as netSyms  from '../pgraphs/symmetries';
 import embed from '../pgraphs/embedding';
 
 import tiling from '../dsymbols/tilings';
+import * as util from '../common/util';
 
 import * as webworkers from '../common/webworkers';
 
@@ -250,9 +251,8 @@ const tilingSgn = (cov, pos, ori, basis) => {
 };
 
 
-const tileSurface3D = (til, D0, options) => {
+const tileSurface3D = (til, D0, ori, options) => {
   const cov = til.cover;
-  const ori = props.partialOrientation(cov);
   const pos = til.positions;
   const elms = props.orbit(cov, [0, 1, 2], D0);
   const sgn = tilingSgn(cov, pos, ori, til.basis);
@@ -284,9 +284,8 @@ const tileSurface3D = (til, D0, options) => {
 };
 
 
-const tileSurface2D = (til, D0, options) => {
+const tileSurface2D = (til, D0, ori, options) => {
   const cov = til.cover;
-  const ori = props.partialOrientation(cov);
   const pos = til.positions;
   const elms = props.orbit(cov, [0, 1], D0);
   const sgn = tilingSgn(cov, pos, ori, til.basis);
@@ -320,15 +319,17 @@ const tileSurface2D = (til, D0, options) => {
 };
 
 
-const tileSurfaces = (til, options) => {
+const tileSurfaces = (til, options, timers=null) => {
+  const ori = props.partialOrientation(til.cover);
+
   if (delaney.dim(til.ds) == 3) {
     return props.orbitReps(til.cover, [0, 1, 2])
-      .map(D => tileSurface3D(til, D, options))
+      .map(D => tileSurface3D(til, D, ori, options, timers))
       .toJS();
   }
   else {
     return props.orbitReps(til.cover, [0, 1])
-      .map(D => tileSurface2D(til, D, options))
+      .map(D => tileSurface2D(til, D, ori, options))
       .toJS();
   }
 };
@@ -415,17 +416,23 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   const til = tiling(ds, cov, !options.skipRelaxation);
 
   yield log('Making the base tile surfaces...');
+  const t = util.timer();
   const baseSurfaces = tileSurfaces(til, options);
+  console.log(`${Math.round(t())} msec to make the base surfaces`);
 
   yield log('Refining the tile surfaces...');
   const refinedSurfaces = yield callWorker({
     cmd: 'processSolids',
     val: baseSurfaces
   });
+  t();
 
   yield log('Making the tiling geometry...');
   const shifts = baseShifts(dim).map(s => ops.times(s, til.basis));
-  return tilingModel(refinedSurfaces, options, shifts);
+  const model = tilingModel(refinedSurfaces, options, shifts);
+  console.log(`${Math.round(t())} msec to make the tiling geometry`);
+
+  return model;
 });
 
 
