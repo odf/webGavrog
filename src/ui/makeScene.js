@@ -14,6 +14,7 @@ import embed from '../pgraphs/embedding';
 
 import tiling from '../dsymbols/tilings';
 import * as util from '../common/util';
+import * as fundamental from '../dsymbols/fundamental';
 
 import * as webworkers from '../common/webworkers';
 
@@ -413,7 +414,14 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   }));
 
   yield log('Building the tiling object...');
+  const timers = util.timers();
+
+  fundamental.useTimers(timers);
   const til = tiling(ds, cov, !options.skipRelaxation);
+  fundamental.useTimers(null);
+
+  console.log('Timings for fundamental group computation:');
+  console.log(`${JSON.stringify(timers.current(), null, 2)}`);
 
   yield log('Making the base tile surfaces...');
   const t = util.timer();
