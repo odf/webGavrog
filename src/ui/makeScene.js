@@ -2,21 +2,19 @@ import * as I     from 'immutable';
 import * as THREE from 'three';
 import * as csp   from 'plexus-csp';
 
-import { matrices } from '../arithmetic/types';
-const ops = matrices;
+import * as util        from '../common/util';
+import * as webworkers  from '../common/webworkers';
+import * as delaney     from '../dsymbols/delaney';
+import * as props       from '../dsymbols/properties';
+import * as tilings     from '../dsymbols/tilings';
+import * as spacegroups from '../geometry/spacegroups';
+import * as periodic    from '../pgraphs/periodic';
+import * as netSyms     from '../pgraphs/symmetries';
 
-import * as groups   from '../geometry/spacegroups';
-import * as delaney  from '../dsymbols/delaney';
-import * as props    from '../dsymbols/properties';
-import * as periodic from '../pgraphs/periodic';
-import * as netSyms  from '../pgraphs/symmetries';
 import embed from '../pgraphs/embedding';
 
-import * as tilings from '../dsymbols/tilings';
-import * as util from '../common/util';
-import * as fundamental from '../dsymbols/fundamental';
-
-import * as webworkers from '../common/webworkers';
+import { matrices } from '../arithmetic/types';
+const ops = matrices;
 
 const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
@@ -121,29 +119,6 @@ const ballAndStick = (
 };
 
 
-const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G), w);
-
-
-const _orthonormalBasis = function _orthonormalBasis(G) {
-  const [n, m] = ops.shape(G);
-  let e = ops.identityMatrix(n);
-
-  I.Range(0, n).forEach(function(i) {
-    let v = e[i];
-    I.Range(0, i).forEach(function(j) {
-      const w = e[j];
-      const f = _scalarProduct(v, w, G);
-      v = ops.minus(v, ops.times(f, w));
-    });
-    const d = _scalarProduct(v, v, G);
-    v = ops.times(ops.div(1, ops.sqrt(d)), v);
-    e[i] = v;
-  });
-
-  return ops.cleanup(e);
-};
-
-
 const _graphWithNormalizedShifts = graph => {
   const v0 = graph.edges.first().head;
   const adj = periodic.adjacencies(graph);
@@ -174,7 +149,7 @@ const _graphWithNormalizedShifts = graph => {
 const simpleEmbedding = graph => {
   const I = ops.identityMatrix(graph.dim);
   const syms = netSyms.symmetries(graph).symmetries.map(s => s.transform);
-  const gram = groups.resymmetrizedGramMatrix(I, syms);
+  const gram = spacegroups.resymmetrizedGramMatrix(I, syms);
   const positions = periodic.barycentricPlacement(graph);
 
   return { gram, positions };
@@ -195,8 +170,7 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
   const graph = _graphWithNormalizedShifts(structure.graph);
 
   const embedding = embed(graph, !options.skipRelaxation);
-  const O = ops.cleanup(_orthonormalBasis(embedding.gram));
-  const basis = ops.cleanup(ops.inverse(O));
+  const basis = spacegroups.invariantBasis(embedding.gram);
   const pos = I.Map(embedding.positions).toJS();
 
   const nodeIndex = {};
@@ -252,18 +226,17 @@ const tilingSgn = (cov, pos, ori, basis) => {
 };
 
 
-const tileSurface3D = (til, D0, ori, options) => {
-  const cov = til.cover;
+const tileSurface3D = (D0, cov, til, basis, ori, options) => {
   const pos = til.positions;
   const elms = props.orbit(cov, [0, 1, 2], D0);
-  const sgn = tilingSgn(cov, pos, ori, til.basis);
+  const sgn = tilingSgn(cov, pos, ori, basis);
 
   const cornerOrbits =
     props.orbitReps(cov, [1, 2], elms).map(D => props.orbit(cov, [1, 2], D));
 
   const cornerPositions = I.List(cornerOrbits.map(orb => {
     const ps = pos.get(orb.first());
-    return ops.times(interpolate(0.8, ps.get(0), ps.get(3)), til.basis);
+    return ops.times(interpolate(0.8, ps.get(0), ps.get(3)), basis);
   }));
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
@@ -285,17 +258,16 @@ const tileSurface3D = (til, D0, ori, options) => {
 };
 
 
-const tileSurface2D = (til, D0, ori, options) => {
-  const cov = til.cover;
+const tileSurface2D = (D0, cov, til, basis, ori, options) => {
   const pos = til.positions;
   const elms = props.orbit(cov, [0, 1], D0);
-  const sgn = tilingSgn(cov, pos, ori, til.basis);
+  const sgn = tilingSgn(cov, pos, ori, basis);
 
   const cornerOrbits =
     props.orbitReps(cov, [1], elms).map(D => props.orbit(cov, [1], D));
 
   const cornerPositions = I.List(cornerOrbits)
-    .map(orb => ops.times(pos.get(orb.first()).get(0), til.basis).concat(0))
+    .map(orb => ops.times(pos.get(orb.first()).get(0), basis).concat(0))
     .flatMap(p => [p, p.slice(0, -1).concat(0.1)]);
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
@@ -320,17 +292,17 @@ const tileSurface2D = (til, D0, ori, options) => {
 };
 
 
-const tileSurfaces = (til, options, timers=null) => {
-  const ori = props.partialOrientation(til.cover);
+const tileSurfaces = (cov, til, basis, options) => {
+  const ori = props.partialOrientation(cov);
 
-  if (delaney.dim(til.ds) == 3) {
-    return props.orbitReps(til.cover, [0, 1, 2])
-      .map(D => tileSurface3D(til, D, ori, options, timers))
+  if (delaney.dim(cov) == 3) {
+    return props.orbitReps(cov, [0, 1, 2])
+      .map(D => tileSurface3D(D, cov, til, basis, ori, options))
       .toJS();
   }
   else {
-    return props.orbitReps(til.cover, [0, 1])
-      .map(D => tileSurface2D(til, D, ori, options))
+    return props.orbitReps(cov, [0, 1])
+      .map(D => tileSurface2D(D, cov, til, basis, ori, options))
       .toJS();
   }
 };
@@ -408,26 +380,31 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   const dim = delaney.dim(ds);
 
   yield log('Finding the pseudo-toroidal cover...');
-  const cov = structure.cover || delaney.parse(yield callWorker({
+  const cov = yield structure.cover || delaney.parse(yield callWorker({
     cmd: 'dsCover',
     val: `${ds}`
   }));
 
-  yield log('Building the tiling object...');
   const t = util.timer();
-  const timers = util.timers();
 
-  fundamental.useTimers(timers);
-  tilings.useTimers(timers);
-  const til = tilings.tiling(ds, cov, !options.skipRelaxation);
-  fundamental.useTimers(null);
-  console.log(`${Math.round(t())} msec to make the tiling object`);
+  yield log('Extracting the skeleton...');
+  const skel = yield tilings.skeleton(cov);
+  console.log(`${Math.round(t())} msec to extract the skeleton`);
 
-  console.log('Timings for fundamental group computation:');
-  console.log(`${JSON.stringify(timers.current(), null, 2)}`);
+  yield log('Computing an embedding...');
+  const embedding = yield embed(skel.graph, !options.skipRelaxation);
+  console.log(`${Math.round(t())} msec to compute the embedding`);
+
+  yield log('Computing a translation basis...');
+  const basis = spacegroups.invariantBasis(embedding.gram);
+  console.log(`${Math.round(t())} msec to compute the translation basis`);
+
+  yield log('Building the tiling object...');
+  const til = yield tilings.tiling(ds, cov, skel, embedding);
+  console.log(`${Math.round(t())} msec to build the tiling object`);
 
   yield log('Making the base tile surfaces...');
-  const baseSurfaces = tileSurfaces(til, options);
+  const baseSurfaces = yield tileSurfaces(cov, til, basis, options);
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 
   yield log('Refining the tile surfaces...');
@@ -438,7 +415,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   t();
 
   yield log('Making the tiling geometry...');
-  const shifts = baseShifts(dim).map(s => ops.times(s, til.basis));
+  const shifts = baseShifts(dim).map(s => ops.times(s, basis));
   const model = tilingModel(refinedSurfaces, options, shifts);
   console.log(`${Math.round(t())} msec to make the tiling geometry`);
 

@@ -8,18 +8,9 @@ import * as delaney3d   from './delaney3d';
 import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
-import * as spacegroups from '../geometry/spacegroups';
-import embed from '../pgraphs/embedding';
 
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
-
-
-let _timers = null;
-
-export function useTimers(timers) {
-  _timers = timers;
-};
 
 
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
@@ -154,73 +145,15 @@ const _symmetries = function _symmetries(ds, cov, pos) {
 };
 
 
-const _scalarProduct = (v, w, G) => ops.times(ops.times(v, G), w);
-
-
-const _orthonormalBasis = function _orthonormalBasis(G) {
-  const [n, m] = ops.shape(G);
-  let e = ops.identityMatrix(n);
-
-  I.Range(0, n).forEach(function(i) {
-    let v = e[i];
-    I.Range(0, i).forEach(function(j) {
-      const w = e[j];
-      const f = _scalarProduct(v, w, G);
-      v = ops.minus(v, ops.times(f, w));
-    });
-    const d = _scalarProduct(v, v, G);
-    v = ops.times(ops.div(1, ops.sqrt(d)), v);
-    e[i] = v;
-  });
-
-  return ops.cleanup(e);
-};
-
-
 export const makeCover = ds =>
   delaney.dim(ds) == 3 ?
   delaney3d.pseudoToroidalCover(ds) :
   delaney2d.toroidalCover(ds);
 
 
-export const tiling = (ds, cover, relax) => {
-  const cov  = cover || makeCover(ds);
-
-  _timers && _timers.start('tiling');
-
-  _timers && _timers.start('tiling: skeleton');
-  const skel = skeleton(cov);
-  _timers && _timers.stop('tiling: skeleton');
-
-  _timers && _timers.start('tiling: embedding');
-  const embedding = embed(skel.graph, relax);
-  _timers && _timers.stop('tiling: embedding');
-
-  const vpos = embedding.positions;
-
-  _timers && _timers.start('tiling: chamber positions');
-  const pos  = _chamberPositions(cov, skel, I.Map(vpos).toJS());
-  _timers && _timers.stop('tiling: chamber positions');
-
-  _timers && _timers.start('tiling: symmetries');
+export const tiling = (ds, cov, skel, embedding) => {
+  const pos  = _chamberPositions(cov, skel, I.Map(embedding.positions).toJS());
   const syms = _symmetries(ds, cov, pos);
-  _timers && _timers.stop('tiling: symmetries');
 
-  _timers && _timers.start('tiling: basis');
-  const G = embedding.gram;
-  const O = ops.cleanup(_orthonormalBasis(G));
-  const basis = ops.cleanup(ops.inverse(O));
-  _timers && _timers.start('tiling: basis');
-
-  _timers && _timers.stop('tiling');
-
-  return {
-    ds        : ds,
-    cover     : cov,
-    skeleton  : skel,
-    positions : pos,
-    symmetries: syms,
-    gramMatrix: G,
-    basis     : basis
-  };
+  return { positions: pos, symmetries: syms };
 };

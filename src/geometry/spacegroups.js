@@ -257,6 +257,34 @@ export function resymmetrizedGramMatrix(G, ops) {
 };
 
 
+const _scalarProduct = (v, w, G) => V.times(V.times(v, G), w);
+
+
+const _orthonormalBasis = function _orthonormalBasis(G) {
+  const [n, m] = V.shape(G);
+  let e = V.identityMatrix(n);
+
+  for (let i = 0; i < n; ++i) {
+    let v = e[i];
+
+    for (let j = 0; j < i; ++j) {
+      const w = e[j];
+      const f = _scalarProduct(v, w, G);
+      v = V.minus(v, V.times(f, w));
+    }
+
+    const d = _scalarProduct(v, v, G);
+    v = V.times(V.div(1, V.sqrt(d)), v);
+    e[i] = v;
+  }
+
+  return V.cleanup(e);
+};
+
+
+export const invariantBasis = G => V.cleanup(V.inverse(_orthonormalBasis(G)));
+
+
 const shiftSpace = ops => {
   const d = V.dimension(ops[0]);
   const I = V.identityMatrix(d);
