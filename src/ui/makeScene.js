@@ -201,22 +201,29 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
 });
 
 
-const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
-
-
-const chamberBasis = (pos, D) => {
-  const t = pos.get(D).valueSeq();
-  return t.rest().map(v => ops.minus(v, t.get(0)));
+const determinant = M => {
+  if (M.length == 2)
+    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
+  else if (M.length == 3)
+    return (+ M[0][0] * M[1][1] * M[2][2]
+            + M[0][1] * M[1][2] * M[2][0]
+            + M[0][2] * M[1][0] * M[2][1]
+            - M[0][2] * M[1][1] * M[2][0]
+            - M[0][1] * M[1][0] * M[2][2]
+            - M[0][0] * M[1][2] * M[2][1]);
+  else
+    return ops.cleanup(ops.determinant(M));
 };
 
 
 const tilingSgn = (cov, pos, ori, basis) => {
   const elms = I.List(cov.elements());
+
   for (let i = 0; i < elms.size; ++i) {
     const D = elms.get(i);
+
     const sgn = ori.get(D) *
-      ops.sgn(ops.determinant(ops.cleanup(
-        ops.times(chamberBasis(pos, D).toJS(), basis))));
+      ops.sgn(determinant(ops.times(tilings.chamberBasis(pos, D), basis)));
 
     if (sgn)
       return sgn;
@@ -224,6 +231,9 @@ const tilingSgn = (cov, pos, ori, basis) => {
 
   return 1;
 };
+
+
+const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
 const tileSurface3D = (D0, cov, til, basis, ori, options) => {

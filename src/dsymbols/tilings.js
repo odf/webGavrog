@@ -124,16 +124,16 @@ const _chamberPositions = (cov, skel, pos) => {
 };
 
 
-const _chamberBasis = function _chamberBasis(pos, D) {
-  const t = pos.get(D).valueSeq().toArray();
-  return ops.cleanup(t.slice(1).map(v => ops.minus(v, t[0])));
+export const chamberBasis = (pos, D) => {
+  const t = pos.get(D).valueSeq();
+  return ops.cleanup(t.rest().map(v => ops.minus(v, t.get(0))).toJS());
 };
 
 
 const _symmetries = function _symmetries(ds, cov, pos) {
   const D0 = cov.elements()
-    .find(D => ops.ne(ops.determinant(_chamberBasis(pos, D)), 0));
-  const A = ops.inverse(_chamberBasis(pos, D0));
+    .find(D => ops.ne(ops.determinant(chamberBasis(pos, D)), 0));
+  const A = ops.inverse(chamberBasis(pos, D0));
 
   const phi = properties.morphism(cov, 1, ds, 1);
   const E0 = phi.get(D0);
@@ -141,7 +141,7 @@ const _symmetries = function _symmetries(ds, cov, pos) {
   return I.List(
     cov.elements()
       .filter(D => phi.get(D) == E0)
-      .map(D => ops.times(A, _chamberBasis(pos, D))));
+      .map(D => ops.times(A, chamberBasis(pos, D))));
 };
 
 
