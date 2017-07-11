@@ -92,6 +92,20 @@ export function make(data) {
 };
 
 
+export const asObject = graph => ({
+  PeriodicGraph: {
+    dim: graph.dim,
+    edges: graph.edges.map(e => ops.repr(e)).toArray()
+  }
+});
+
+
+export const fromObject = ({ PeriodicGraph: obj }) => new Graph(
+  obj.dim,
+  I.OrderedSet(obj.edges.map(e => ops.fromRepr(e)))
+);
+
+
 export function vertices(graph) {
   const result = I.OrderedSet().asMutable();
   for (const e of graph.edges) {

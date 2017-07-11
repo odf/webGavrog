@@ -4,7 +4,10 @@ import * as surface   from '../graphics/surface';
 import * as delaney   from '../dsymbols/delaney';
 import * as delaney3d from '../dsymbols/delaney3d';
 import * as delaney2d from '../dsymbols/delaney2d';
+import * as periodic  from '../pgraphs/periodic';
 import * as util      from '../common/util';
+
+import embed from '../pgraphs/embedding';
 
 
 const processedSolid = (t0, subDLevel, timers) => {
@@ -69,6 +72,10 @@ const handlers = {
     console.log(`${Math.round(t())} msec in total to compute the cover`);
 
     return `${cov}`;
+  },
+
+  embedding({ graphRepr, relax }) {
+    return embed(periodic.fromObject(graphRepr), relax);
   }
 };
 
