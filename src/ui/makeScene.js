@@ -401,16 +401,13 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
     cmd: 'skeleton',
     val: `${cov}`
   });
-  skel.graph = periodic.fromObject(skel.graph);
+  //const graph = periodic.fromObject(skel.graph);
   console.log(`${Math.round(t())} msec to extract the skeleton`);
 
   yield log('Computing an embedding...');
   const embedding = yield callWorker({
     cmd: 'embedding',
-    val: {
-      graphRepr: periodic.asObject(skel.graph),
-      relax: !options.skipRelaxation
-    }
+    val: { graphRepr: skel.graph, relax: !options.skipRelaxation }
   });
   console.log(`${Math.round(t())} msec to compute the embedding`);
 
