@@ -2,8 +2,6 @@ import * as I from 'immutable';
 
 import * as surface   from '../graphics/surface';
 import * as delaney   from '../dsymbols/delaney';
-import * as delaney3d from '../dsymbols/delaney3d';
-import * as delaney2d from '../dsymbols/delaney2d';
 import * as periodic  from '../pgraphs/periodic';
 import * as tilings   from '../dsymbols/tilings';
 
@@ -43,10 +41,7 @@ const handlers = {
 
   dsCover(dsTxt) {
     const ds = delaney.parse(dsTxt);
-
-    const cov = delaney.dim(ds) == 3 ?
-      delaney3d.pseudoToroidalCover(ds) :
-      delaney2d.toroidalCover(ds);
+    const cov = tilings.makeCover(ds);
 
     return `${cov}`;
   },
