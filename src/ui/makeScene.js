@@ -204,65 +204,35 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
 const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
-const tileSurface3D = (D0, cov, pos, ori, options) => {
-  const elms = props.orbit(cov, [0, 1, 2], D0);
+const tileSurface3D = (elms, cornerOrbits, cornerIndex, pos, cov, ori) => {
+  const cornerPositions = cornerOrbits
+    .map(orb => orb[0])
+    .map(D => interpolate(0.8, pos[D][0], pos[D][3]));
 
-  const cornerOrbits =
-    props.orbitReps(cov, [1, 2], elms).map(D => props.orbit(cov, [1, 2], D));
+  const faces = props.orbitReps(cov, [0, 1], elms)
+    .map(D => props.orbit(cov, [0, 1], ori[D] < 0 ? D : cov.s(0, D)))
+    .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cornerIndex[D]));
 
-  const cornerPositions = I.List(cornerOrbits.map(orb => {
-    const D = orb.first();
-    return interpolate(0.8, pos[D][0], pos[D][3]);
-  }));
-
-  const cornerIndex = I.Map(cornerOrbits.flatMap(
-    (orb, i) => orb.map(D => [D, i])));
-
-  const faces = I.List(props.orbitReps(cov, [0, 1], elms)
-    .map(D => ori[D] < 0 ? D : cov.s(0, D))
-    .map(D => (
-      props.orbit(cov, [0, 1], D)
-        .filter((D, i) => i % 2 == 0)
-        .map(D => cornerIndex.get(D)))));
-
-  return {
-    pos    : cornerPositions.map(p => ops.toJS(p)).toJS(),
-    faces  : faces.toJS(),
-    isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS(),
-    subDLevel: options.extraSmooth ? 3 : 2
-  };
+  return [cornerPositions, faces.toJS()];
 };
 
 
-const tileSurface2D = (D0, cov, pos, ori, options) => {
-  const elms = props.orbit(cov, [0, 1], D0);
-
-  const cornerOrbits =
-    props.orbitReps(cov, [1], elms).map(D => props.orbit(cov, [1], D));
-
+const tileSurface2D = (elms, cornerOrbits, cornerIndex, pos) => {
   const cornerPositions = I.List(cornerOrbits)
-    .map(orb => pos[orb.first()][0].concat(0))
-    .flatMap(p => [p, p.slice(0, -1).concat(0.1)]);
+    .map(orb => orb[0])
+    .flatMap(D => [pos[D][0].concat(0), pos[D][0].concat(0.1)]);
 
-  const cornerIndex = I.Map(cornerOrbits.flatMap(
-    (orb, i) => orb.map(D => [D, i])));
-
-  const f = props.orbit(cov, [0, 1], ori[D0] < 0 ? D0 : cov.s(0, D0))
+  const f = elms.toJS()
     .filter((D, i) => i % 2 == 0)
-    .map(D => 2 * cornerIndex.get(D));
+    .map(D => 2 * cornerIndex[D]);
 
-  const faces = I.List([f, f.map(x => x + 1).reverse()])
+  const faces = [f, f.map(x => x + 1).reverse()]
     .concat(f.map((x, i) => {
-      const y = f.get((i + 1) % f.size);
+      const y = f[(i + 1) % f.length];
       return [y, x, x + 1, y + 1];
     }));
 
-  return {
-    pos    : cornerPositions.map(p => ops.toJS(p)).toJS(),
-    faces  : faces.toJS(),
-    isFixed: I.Range(0, cornerPositions.size).map(i => true).toJS(),
-    subDLevel: options.extraSmooth ? 3 : 2
-  };
+  return [cornerPositions.toJS(), faces];
 };
 
 
@@ -296,21 +266,42 @@ const adjustedOrientation = (cov, pos) => {
 };
 
 
+const orbits = (ds, idcs, elms) =>
+  props.orbitReps(ds, idcs, elms).map(D => props.orbit(ds, idcs, D));
+
+
 const tileSurfaces = (cov, positions, basis, options) => {
+  const dim = delaney.dim(cov);
+  const makeSurface = dim == 3 ? tileSurface3D : tileSurface2D;
+
   const pos = {};
   for (const D of cov.elements())
     pos[D] = positions[D].map(p => ops.times(p, basis));
 
   const ori = adjustedOrientation(cov, pos);
 
-  if (delaney.dim(cov) == 3) {
-    return props.orbitReps(cov, [0, 1, 2]).toJS()
-      .map(D => tileSurface3D(D, cov, pos, ori, options));
-  }
-  else {
-    return props.orbitReps(cov, [0, 1]).toJS()
-      .map(D => tileSurface2D(D, cov, pos, ori, options));
-  }
+  const idcs = I.Range(0, dim).toArray();
+  const reps = props.orbitReps(cov, idcs).toJS();
+
+  return reps.map(D0 => {
+    const D = ori[D0] < 0 ? D0 : cov.s(0, D0);
+    const elms = props.orbit(cov, idcs, D);
+    const cOrbs = orbits(cov, idcs.slice(1), elms);
+    const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
+
+    const [cornerPositions, faces] =
+      makeSurface(elms, cOrbs.toJS(), cIdcs.toJS(), pos, cov, ori);
+
+    console.log(`cornerPositions = ${JSON.stringify(cornerPositions)}`);
+    console.log(`faces = ${JSON.stringify(faces)}`);
+
+    return {
+      pos      : cornerPositions,
+      faces    : faces,
+      isFixed  : new Array(cornerPositions.length).fill(true),
+      subDLevel: options.extraSmooth ? 3 : 2
+    };
+  });
 };
 
 
