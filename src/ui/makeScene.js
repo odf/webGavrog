@@ -389,13 +389,14 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   const ds = structure.symbol;
   const dim = delaney.dim(ds);
 
+  const t = util.timer();
+
   yield log('Finding the pseudo-toroidal cover...');
   const cov = yield structure.cover || delaney.parse(yield callWorker({
     cmd: 'dsCover',
     val: `${ds}`
   }));
-
-  const t = util.timer();
+  console.log(`${Math.round(t())} msec to compute the cover`);
 
   yield log('Extracting the skeleton...');
   const skel = yield tilings.skeleton(cov);
@@ -412,7 +413,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   console.log(`${Math.round(t())} msec to compute the embedding`);
 
   yield log('Computing a translation basis...');
-  const basis = spacegroups.invariantBasis(embedding.gram);
+  const basis = yield spacegroups.invariantBasis(embedding.gram);
   console.log(`${Math.round(t())} msec to compute the translation basis`);
 
   yield log('Building the tiling object...');
@@ -428,7 +429,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
     cmd: 'processSolids',
     val: baseSurfaces
   });
-  t();
+  console.log(`${Math.round(t())} msec to refine the surfaces`);
 
   yield log('Making the tiling geometry...');
   const shifts = baseShifts(dim).map(s => ops.times(s, basis));
