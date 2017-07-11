@@ -204,23 +204,21 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
 const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
-const tileSurface3D = (elms, cornerOrbits, cornerIndex, pos, cov, ori) => {
-  const cornerPositions = cornerOrbits
-    .map(orb => orb[0])
-    .map(D => interpolate(0.8, pos[D][0], pos[D][3]));
+const tileSurface3D = (elms, corners, cornerIndex, cov, ori) => {
+  const positions = corners
+    .map(p => interpolate(0.8, p[0], p[3]));
 
   const faces = props.orbitReps(cov, [0, 1], elms)
     .map(D => props.orbit(cov, [0, 1], ori[D] < 0 ? D : cov.s(0, D)))
     .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cornerIndex[D]));
 
-  return [cornerPositions, faces.toJS()];
+  return [positions, faces.toJS()];
 };
 
 
-const tileSurface2D = (elms, cornerOrbits, cornerIndex, pos) => {
-  const cornerPositions = I.List(cornerOrbits)
-    .map(orb => orb[0])
-    .flatMap(D => [pos[D][0].concat(0), pos[D][0].concat(0.1)]);
+const tileSurface2D = (elms, corners, cornerIndex) => {
+  const positions = I.List(corners)
+    .flatMap(p => [p[0].concat(0), p[0].concat(0.1)]);
 
   const f = elms.toJS()
     .filter((D, i) => i % 2 == 0)
@@ -232,7 +230,7 @@ const tileSurface2D = (elms, cornerOrbits, cornerIndex, pos) => {
       return [y, x, x + 1, y + 1];
     }));
 
-  return [cornerPositions.toJS(), faces];
+  return [positions.toJS(), faces];
 };
 
 
@@ -287,13 +285,11 @@ const tileSurfaces = (cov, positions, basis, options) => {
     const D = ori[D0] < 0 ? D0 : cov.s(0, D0);
     const elms = props.orbit(cov, idcs, D);
     const cOrbs = orbits(cov, idcs.slice(1), elms);
+    const cPos = cOrbs.map(orb => pos[orb.first()]);
     const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
 
     const [cornerPositions, faces] =
-      makeSurface(elms, cOrbs.toJS(), cIdcs.toJS(), pos, cov, ori);
-
-    console.log(`cornerPositions = ${JSON.stringify(cornerPositions)}`);
-    console.log(`faces = ${JSON.stringify(faces)}`);
+      makeSurface(elms, cPos.toJS(), cIdcs.toJS(), cov, ori);
 
     return {
       pos      : cornerPositions,
