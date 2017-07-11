@@ -84,10 +84,10 @@ export const skeleton = cov => {
 
   return {
     graph: periodic.make(edges),
-    node2chamber: node2chamber,
-    chamber2node: chamber2node,
-    edgeTranslations: e2t,
-    cornerShifts: c2s
+    node2chamber: node2chamber.toJS(),
+    chamber2node: chamber2node.toJS(),
+    edgeTranslations: e2t.toJS(),
+    cornerShifts: c2s.toJS()
   };
 };
 
@@ -97,8 +97,8 @@ const _chamberPositions = (cov, skel, pos) => {
   let result = I.Map();
 
   cov.elements().forEach(function(D) {
-    const p = pos[skel.chamber2node.get(D)];
-    const t = skel.cornerShifts.getIn([D, 0]);
+    const p = pos[skel.chamber2node[D]];
+    const t = skel.cornerShifts[D][0];
     result = result.setIn([D, 0], ops.plus(p, t));
   });
 
@@ -109,12 +109,12 @@ const _chamberPositions = (cov, skel, pos) => {
       let s = ops.vector(dim);
       orb.forEach(function(E) {
         const p = result.getIn([E, 0]);
-        const t = skel.cornerShifts.getIn([E, i]);
+        const t = skel.cornerShifts[E][i];
         s = ops.plus(s, ops.minus(p, t));
       });
       s = ops.times(ops.div(1, orb.size), s);
       orb.forEach(function(E) {
-        const t = skel.cornerShifts.getIn([E, i]);
+        const t = skel.cornerShifts[E][i];
         result = result.setIn([E, i], ops.plus(s, t));
       });
    });

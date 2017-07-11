@@ -5,6 +5,7 @@ import * as delaney   from '../dsymbols/delaney';
 import * as delaney3d from '../dsymbols/delaney3d';
 import * as delaney2d from '../dsymbols/delaney2d';
 import * as periodic  from '../pgraphs/periodic';
+import * as tilings   from '../dsymbols/tilings';
 
 import embed from '../pgraphs/embedding';
 
@@ -52,6 +53,13 @@ const handlers = {
 
   embedding({ graphRepr, relax }) {
     return embed(periodic.fromObject(graphRepr), relax);
+  },
+
+  skeleton(covTxt) {
+    const cov = delaney.parse(covTxt);
+    const skel = tilings.skeleton(cov);
+
+    return Object.assign(skel, { graph: periodic.asObject(skel.graph) });
   }
 };
 

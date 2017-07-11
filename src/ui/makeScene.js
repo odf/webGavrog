@@ -399,7 +399,11 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   console.log(`${Math.round(t())} msec to compute the cover`);
 
   yield log('Extracting the skeleton...');
-  const skel = yield tilings.skeleton(cov);
+  const skel = yield callWorker({
+    cmd: 'skeleton',
+    val: `${cov}`
+  });
+  skel.graph = periodic.fromObject(skel.graph);
   console.log(`${Math.round(t())} msec to extract the skeleton`);
 
   yield log('Computing an embedding...');
