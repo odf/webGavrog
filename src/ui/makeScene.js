@@ -236,8 +236,7 @@ const tilingSgn = (cov, pos, ori, basis) => {
 const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
-const tileSurface3D = (D0, cov, til, basis, ori, options) => {
-  const pos = til.positions;
+const tileSurface3D = (D0, cov, pos, basis, ori, options) => {
   const elms = props.orbit(cov, [0, 1, 2], D0);
   const sgn = tilingSgn(cov, pos, ori, basis);
 
@@ -245,8 +244,8 @@ const tileSurface3D = (D0, cov, til, basis, ori, options) => {
     props.orbitReps(cov, [1, 2], elms).map(D => props.orbit(cov, [1, 2], D));
 
   const cornerPositions = I.List(cornerOrbits.map(orb => {
-    const ps = pos.get(orb.first());
-    return ops.times(interpolate(0.8, ps.get(0), ps.get(3)), basis);
+    const D = orb.first();
+    return ops.times(interpolate(0.8, pos[D][0], pos[D][3]), basis);
   }));
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
@@ -268,8 +267,7 @@ const tileSurface3D = (D0, cov, til, basis, ori, options) => {
 };
 
 
-const tileSurface2D = (D0, cov, til, basis, ori, options) => {
-  const pos = til.positions;
+const tileSurface2D = (D0, cov, pos, basis, ori, options) => {
   const elms = props.orbit(cov, [0, 1], D0);
   const sgn = tilingSgn(cov, pos, ori, basis);
 
@@ -277,7 +275,7 @@ const tileSurface2D = (D0, cov, til, basis, ori, options) => {
     props.orbitReps(cov, [1], elms).map(D => props.orbit(cov, [1], D));
 
   const cornerPositions = I.List(cornerOrbits)
-    .map(orb => ops.times(pos.get(orb.first()).get(0), basis).concat(0))
+    .map(orb => ops.times(pos[orb.first()][0], basis).concat(0))
     .flatMap(p => [p, p.slice(0, -1).concat(0.1)]);
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
@@ -302,17 +300,17 @@ const tileSurface2D = (D0, cov, til, basis, ori, options) => {
 };
 
 
-const tileSurfaces = (cov, til, basis, options) => {
+const tileSurfaces = (cov, pos, basis, options) => {
   const ori = props.partialOrientation(cov);
 
   if (delaney.dim(cov) == 3) {
     return props.orbitReps(cov, [0, 1, 2])
-      .map(D => tileSurface3D(D, cov, til, basis, ori, options))
+      .map(D => tileSurface3D(D, cov, pos, basis, ori, options))
       .toJS();
   }
   else {
     return props.orbitReps(cov, [0, 1])
-      .map(D => tileSurface2D(D, cov, til, basis, ori, options))
+      .map(D => tileSurface2D(D, cov, pos, basis, ori, options))
       .toJS();
   }
 };
@@ -420,12 +418,12 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   const basis = yield spacegroups.invariantBasis(embedding.gram);
   console.log(`${Math.round(t())} msec to compute the translation basis`);
 
-  yield log('Building the tiling object...');
-  const til = yield tilings.tiling(ds, cov, skel, embedding);
-  console.log(`${Math.round(t())} msec to build the tiling object`);
+  yield log('Computing the chamber corner positions...');
+  const pos = yield tilings.chamberPositions(cov, skel, embedding.positions);
+  console.log(`${Math.round(t())} msec to compute the corner positions`);
 
   yield log('Making the base tile surfaces...');
-  const baseSurfaces = yield tileSurfaces(cov, til, basis, options);
+  const baseSurfaces = yield tileSurfaces(cov, pos, basis, options);
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 
   yield log('Refining the tile surfaces...');

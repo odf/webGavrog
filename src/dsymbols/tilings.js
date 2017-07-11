@@ -92,14 +92,14 @@ export const skeleton = cov => {
 };
 
 
-const _chamberPositions = (cov, skel, pos) => {
+export const chamberPositions = (cov, skel, pos) => {
   const dim = delaney.dim(cov);
-  let result = I.Map();
+  let result = {};
 
   cov.elements().forEach(function(D) {
     const p = pos[skel.chamber2node[D]];
     const t = skel.cornerShifts[D][0];
-    result = result.setIn([D, 0], ops.plus(p, t));
+    result[D] = [ops.plus(p, t)];
   });
 
   I.Range(1, dim+1).forEach(function(i) {
@@ -108,14 +108,14 @@ const _chamberPositions = (cov, skel, pos) => {
       const orb = properties.orbit(cov, idcs, D);
       let s = ops.vector(dim);
       orb.forEach(function(E) {
-        const p = result.getIn([E, 0]);
+        const p = result[E][0];
         const t = skel.cornerShifts[E][i];
         s = ops.plus(s, ops.minus(p, t));
       });
       s = ops.times(ops.div(1, orb.size), s);
       orb.forEach(function(E) {
         const t = skel.cornerShifts[E][i];
-        result = result.setIn([E, i], ops.plus(s, t));
+        result[E].push(ops.plus(s, t));
       });
    });
   });
@@ -125,12 +125,12 @@ const _chamberPositions = (cov, skel, pos) => {
 
 
 export const chamberBasis = (pos, D) => {
-  const t = pos.get(D).valueSeq();
-  return ops.cleanup(t.rest().map(v => ops.minus(v, t.get(0))).toJS());
+  const t = pos[D];
+  return ops.cleanup(t.slice(1).map(v => ops.minus(v, t[0])));
 };
 
 
-const _symmetries = function _symmetries(ds, cov, pos) {
+export const symmetries = (ds, cov, pos) => {
   const D0 = cov.elements()
     .find(D => ops.ne(ops.determinant(chamberBasis(pos, D)), 0));
   const A = ops.inverse(chamberBasis(pos, D0));
@@ -138,10 +138,9 @@ const _symmetries = function _symmetries(ds, cov, pos) {
   const phi = properties.morphism(cov, 1, ds, 1);
   const E0 = phi.get(D0);
 
-  return I.List(
-    cov.elements()
-      .filter(D => phi.get(D) == E0)
-      .map(D => ops.times(A, chamberBasis(pos, D))));
+  return I.List(cov.elements()).toJS()
+    .filter(D => phi.get(D) == E0)
+    .map(D => ops.times(A, chamberBasis(pos, D)));
 };
 
 
@@ -149,11 +148,3 @@ export const makeCover = ds =>
   delaney.dim(ds) == 3 ?
   delaney3d.pseudoToroidalCover(ds) :
   delaney2d.toroidalCover(ds);
-
-
-export const tiling = (ds, cov, skel, embedding) => {
-  const pos  = _chamberPositions(cov, skel, I.Map(embedding.positions).toJS());
-  const syms = _symmetries(ds, cov, pos);
-
-  return { positions: pos, symmetries: syms };
-};
