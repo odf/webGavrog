@@ -201,58 +201,25 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
 });
 
 
-const determinant = M => {
-  if (M.length == 2)
-    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
-  else if (M.length == 3)
-    return (+ M[0][0] * M[1][1] * M[2][2]
-            + M[0][1] * M[1][2] * M[2][0]
-            + M[0][2] * M[1][0] * M[2][1]
-            - M[0][2] * M[1][1] * M[2][0]
-            - M[0][1] * M[1][0] * M[2][2]
-            - M[0][0] * M[1][2] * M[2][1]);
-  else
-    return ops.cleanup(ops.determinant(M));
-};
-
-
-const tilingSgn = (cov, pos, ori, basis) => {
-  const elms = I.List(cov.elements());
-
-  for (let i = 0; i < elms.size; ++i) {
-    const D = elms.get(i);
-
-    const sgn = ori.get(D) *
-      ops.sgn(determinant(ops.times(tilings.chamberBasis(pos, D), basis)));
-
-    if (sgn)
-      return sgn;
-  }
-
-  return 1;
-};
-
-
 const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
-const tileSurface3D = (D0, cov, pos, basis, ori, options) => {
+const tileSurface3D = (D0, cov, pos, ori, options) => {
   const elms = props.orbit(cov, [0, 1, 2], D0);
-  const sgn = tilingSgn(cov, pos, ori, basis);
 
   const cornerOrbits =
     props.orbitReps(cov, [1, 2], elms).map(D => props.orbit(cov, [1, 2], D));
 
   const cornerPositions = I.List(cornerOrbits.map(orb => {
     const D = orb.first();
-    return ops.times(interpolate(0.8, pos[D][0], pos[D][3]), basis);
+    return interpolate(0.8, pos[D][0], pos[D][3]);
   }));
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
     (orb, i) => orb.map(D => [D, i])));
 
   const faces = I.List(props.orbitReps(cov, [0, 1], elms)
-    .map(D => sgn * ori.get(D) < 0 ? D : cov.s(0, D))
+    .map(D => ori[D] < 0 ? D : cov.s(0, D))
     .map(D => (
       props.orbit(cov, [0, 1], D)
         .filter((D, i) => i % 2 == 0)
@@ -267,21 +234,20 @@ const tileSurface3D = (D0, cov, pos, basis, ori, options) => {
 };
 
 
-const tileSurface2D = (D0, cov, pos, basis, ori, options) => {
+const tileSurface2D = (D0, cov, pos, ori, options) => {
   const elms = props.orbit(cov, [0, 1], D0);
-  const sgn = tilingSgn(cov, pos, ori, basis);
 
   const cornerOrbits =
     props.orbitReps(cov, [1], elms).map(D => props.orbit(cov, [1], D));
 
   const cornerPositions = I.List(cornerOrbits)
-    .map(orb => ops.times(pos[orb.first()][0], basis).concat(0))
+    .map(orb => pos[orb.first()][0].concat(0))
     .flatMap(p => [p, p.slice(0, -1).concat(0.1)]);
 
   const cornerIndex = I.Map(cornerOrbits.flatMap(
     (orb, i) => orb.map(D => [D, i])));
 
-  const f = props.orbit(cov, [0, 1], sgn * ori.get(D0) < 0 ? D0 : cov.s(0, D0))
+  const f = props.orbit(cov, [0, 1], ori[D0] < 0 ? D0 : cov.s(0, D0))
     .filter((D, i) => i % 2 == 0)
     .map(D => 2 * cornerIndex.get(D));
 
@@ -300,18 +266,50 @@ const tileSurface2D = (D0, cov, pos, basis, ori, options) => {
 };
 
 
-const tileSurfaces = (cov, pos, basis, options) => {
-  const ori = props.partialOrientation(cov);
+const determinant = M => {
+  if (M.length == 2)
+    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
+  else if (M.length == 3)
+    return (+ M[0][0] * M[1][1] * M[2][2]
+            + M[0][1] * M[1][2] * M[2][0]
+            + M[0][2] * M[1][0] * M[2][1]
+            - M[0][2] * M[1][1] * M[2][0]
+            - M[0][1] * M[1][0] * M[2][2]
+            - M[0][0] * M[1][2] * M[2][1]);
+  else
+    return ops.determinant(ops.cleanup(M));
+};
+
+
+const adjustedOrientation = (cov, pos) => {
+  const bas = D => tilings.chamberBasis(pos, D);
+  const D0 = cov.elements().find(D => ops.ne(determinant(bas(D)), 0));
+  const sgn = ops.sgn(determinant(bas(D0)));
+
+  const ori = props.partialOrientation(cov).toJS();
+  if (sgn * ori[D0] < 0) {
+    for (const D of cov.elements())
+      ori[D] = -ori[D];
+  }
+
+  return ori;
+};
+
+
+const tileSurfaces = (cov, positions, basis, options) => {
+  const pos = {};
+  for (const D of cov.elements())
+    pos[D] = positions[D].map(p => ops.times(p, basis));
+
+  const ori = adjustedOrientation(cov, pos);
 
   if (delaney.dim(cov) == 3) {
-    return props.orbitReps(cov, [0, 1, 2])
-      .map(D => tileSurface3D(D, cov, pos, basis, ori, options))
-      .toJS();
+    return props.orbitReps(cov, [0, 1, 2]).toJS()
+      .map(D => tileSurface3D(D, cov, pos, ori, options));
   }
   else {
-    return props.orbitReps(cov, [0, 1])
-      .map(D => tileSurface2D(D, cov, pos, basis, ori, options))
-      .toJS();
+    return props.orbitReps(cov, [0, 1]).toJS()
+      .map(D => tileSurface2D(D, cov, pos, ori, options));
   }
 };
 
