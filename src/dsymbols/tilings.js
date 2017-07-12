@@ -152,28 +152,19 @@ export const makeCover = ds =>
 const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
 
 
-const tileSurface3D = (elms, corners, cornerIndex, cov, ori) => {
+const tileSurface3D = (corners, faces) => {
   const pos = corners.map(p => interpolate(0.8, p[0], p[3]));
 
-  const faces = properties.orbitReps(cov, [0, 1], elms)
-    .map(D => properties.orbit(cov, [0, 1], ori[D] < 0 ? D : cov.s(0, D)))
-    .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cornerIndex[D]));
-
-  return { pos, faces: faces.toJS() };
+  return { pos, faces };
 };
 
 
-const tileSurface2D = (elms, corners, cornerIndex, cov, ori) => {
+const tileSurface2D = (corners, faces) => {
   const pos = I.List(corners).flatMap(p => [p[0].concat(0), p[0].concat(0.1)]);
 
-  let f = elms.toJS()
-    .filter((D, i) => i % 2 == 0)
-    .map(D => 2 * cornerIndex[D]);
+  const f = faces[0].map(i => 2 * i);
 
-  if (ori[elms.first()] > 0)
-    f = f.reverse();
-
-  const faces = [f, f.map(x => x + 1).reverse()]
+  faces = [f, f.map(x => x + 1).reverse()]
     .concat(f.map((x, i) => {
       const y = f[(i + 1) % f.length];
       return [y, x, x + 1, y + 1];
@@ -233,6 +224,10 @@ export const tileSurfaces = (cov, skel, vertexPos, basis) => {
     const cPos = cOrbs.map(orb => pos[orb.first()]);
     const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
 
-    return makeSurface(elms, cPos.toJS(), cIdcs.toJS(), cov, ori);
+    const faces = properties.orbits(cov, [0, 1], elms)
+      .map(orb => ori[orb.first()] > 0 ? orb.reverse() : orb)
+      .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs.get(D)));
+
+    return makeSurface(cPos.toJS(), faces.toJS());
   });
 };
