@@ -2,7 +2,6 @@ import * as I from 'immutable';
 
 import { stabilizer } from '../fpgroups/stabilizer';
 
-import * as util        from '../common/util';
 import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
 import * as fundamental from './fundamental';
@@ -89,29 +88,17 @@ const _invariants = function _invariants(nrGens, rels) {
 
 
 export function pseudoToroidalCover(ds) {
-  const t = util.timer();
-  const elapsed = () => `${Math.round(t())} msec`;
-
   ds = derived.orientedCover(ds);
-  console.log(`  ${elapsed()} to compute the oriented cover`);
 
   const fg = fundamental.fundamentalGroup(ds);
-  console.log(`  ${elapsed()} to compute the fundamental group`);
   const cones = fg.cones;
 
   if (cones.some(c => c[1] == 5 || c[1] > 6))
     throw new Error('violates the crystallographic restriction');
 
-  const subgroupsTimers = util.timers();
-  cosets.useTimers(subgroupsTimers);
   const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
   const subgroups = I.List(generators.results(tableGen));
-  console.log(`  ${elapsed()} to generate the base subgroups`);
-  console.log(`  subgroup generation timing details:`);
-  console.log(`${JSON.stringify(subgroupsTimers.current(), null, 2)}`);
-
   const base = subgroups.map(cosets.coreTable);
-  console.log(`  ${elapsed()} to compute the cores`);
 
   const cType = ct =>
     ct.size == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.size];
@@ -145,10 +132,6 @@ export function pseudoToroidalCover(ds) {
     .flatMap(type => categorized.get(type) || [])
     .map(([type, table]) => table);
 
-  console.log(`  ${elapsed()} to compile the candidate subgroups list`);
-
-  const stabilizerTimers = util.timers();
-
   const good = candidates.find(function(table) {
     const domain = table.keySeq();
     const stab = stabilizer(
@@ -156,21 +139,14 @@ export function pseudoToroidalCover(ds) {
       fg.nrGenerators,
       fg.relators,
       domain,
-      (...args) => table.getIn(args),
-      stabilizerTimers
+      (...args) => table.getIn(args)
     );
     const inv = _invariants(stab.generators.size, stab.relators);
     return inv.map(x => ops.sgn(x)).equals(I.List([0,0,0]));
   });
-  console.log(`  ${elapsed()} to check for a good subgroup`);
-  console.log(`  stabilizer timing details:`);
-  console.log(`${JSON.stringify(stabilizerTimers.current(), null, 2)}`);
 
-  if (good) {
-    const result = covers.coverForTable(ds, good, fg.edge2word);
-    console.log(`  ${elapsed()} to construct the result D-symbol`);
-    return result;
-  }
+  if (good)
+    return covers.coverForTable(ds, good, fg.edge2word);
 };
 
 
