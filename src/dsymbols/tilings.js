@@ -104,8 +104,7 @@ const chamberPositions = (cov, skel, pos) => {
 
   I.Range(1, dim+1).forEach(function(i) {
     const idcs = I.Range(0, i);
-    properties.orbitReps(cov, idcs, cov.elements()).forEach(function(D) {
-      const orb = properties.orbit(cov, idcs, D);
+    properties.orbits(cov, idcs, cov.elements()).forEach(function(orb) {
       let s = ops.vector(dim);
       orb.forEach(function(E) {
         const p = result[E][0];
