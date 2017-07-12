@@ -301,7 +301,10 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   console.log(`${Math.round(t())} msec to compute the translation basis`);
 
   yield log('Making the base tile surfaces...');
-  const baseSurfaces = yield tilings.tileSurfaces(cov, skel, pos, basis);
+  const baseSurfaces = yield callWorker({
+    cmd: 'tileSurfaces',
+    val: { covTxt: `${cov}`, skel, pos, basis }
+  });
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 
   yield log('Refining the tile surfaces...');
