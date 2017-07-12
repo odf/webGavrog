@@ -6,9 +6,6 @@ import * as util       from '../common/util';
 import partition from '../common/partition';
 
 
-let _timers = null;
-
-
 const mergeRows = (part, ra, rb) => {
   const row    = rb.merge(ra);
   const rowAlt = ra.merge(rb);
@@ -244,7 +241,6 @@ const _scanRecursively = function _scanRecursively(rels, table, index) {
 const _potentialChildren = function _potentialChildren(
   table, gens, rels, maxCosets
 ) {
-  _timers && _timers.switchTo('generating candidates for extending the table');
   const free = _freeInTable(table, gens);
 
   if (!free.isEmpty()) {
@@ -255,7 +251,6 @@ const _potentialChildren = function _potentialChildren(
     const matches = I.Range(k, n).filter(k => table.getIn([k, ginv]) == null);
     const candidates = n < maxCosets ? I.List(matches).push(n) : matches;
 
-    _timers && _timers.switchTo('processing and filtering candidates');
     return candidates
       .map(function(pos) {
         const t = table.setIn([k, g], pos).setIn([pos, ginv], k);
@@ -306,7 +301,6 @@ const _compareRenumberedFom = function _compareRenumberedFom(table, gens, start)
 
 
 const _isCanonical = function _isCanonical(table, gens) {
-  _timers && _timers.switchTo('checking for canonicity');
   return I.Range(1, table.size)
     .every(start => _compareRenumberedFom(table, gens, start) >= 0);
 };
@@ -381,11 +375,6 @@ export function relatorAsVector(rel, nrgens) {
 export function relatorMatrix(nrgens, relators) {
   return relators.map(rel => relatorAsVector(rel, nrgens));
 };
-
-
-export function useTimers(timers) {
-  _timers = timers;
-}
 
 
 if (require.main == module) {

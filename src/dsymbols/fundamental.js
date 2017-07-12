@@ -1,16 +1,8 @@
 import * as I from 'immutable';
 
-import * as util       from '../common/util';
 import * as freeWords  from '../fpgroups/freeWords';
 import * as DS         from './delaney';
 import * as properties from './properties';
-
-
-let _timers = null;
-
-export function useTimers(timers) {
-  _timers = timers;
-};
 
 
 const _other = (a, b, c) => a == c ? b : a;
@@ -197,15 +189,10 @@ export function innerEdges(ds) {
 
 
 export function fundamentalGroup(ds) {
-  _timers && _timers.start('fundamentalGroup');
-
-  _timers && _timers.start('fundamentalGroup: find generators');
   const tmp = _findGenerators(ds);
   const edge2word = tmp.get('edge2word');
   const gen2edge = tmp.get('gen2edge');
-  _timers && _timers.stop('fundamentalGroup: find generators');
 
-  _timers && _timers.start('fundamentalGroup: orbits');
   const orbits = [];
   for (const i of ds.indices()) {
     for (const j of ds.indices()) {
@@ -219,9 +206,6 @@ export function fundamentalGroup(ds) {
       }
     }
   }
-  _timers && _timers.stop('fundamentalGroup: orbits');
-
-  _timers && _timers.start('fundamentalGroup: finishing up');
 
   const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[4], orb[3]));
 
@@ -244,9 +228,6 @@ export function fundamentalGroup(ds) {
     orbitRelators.concat(mirrors)
       .map(freeWords.relatorRepresentative))
     .sort();
-
-  _timers && _timers.stop('fundamentalGroup: finishing up');
-  _timers && _timers.stop('fundamentalGroup');
 
   return FundamentalGroup({
     nrGenerators: nGens,
