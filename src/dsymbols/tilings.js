@@ -164,12 +164,15 @@ const tileSurface3D = (elms, corners, cornerIndex, cov, ori) => {
 };
 
 
-const tileSurface2D = (elms, corners, cornerIndex) => {
+const tileSurface2D = (elms, corners, cornerIndex, cov, ori) => {
   const pos = I.List(corners).flatMap(p => [p[0].concat(0), p[0].concat(0.1)]);
 
-  const f = elms.toJS()
+  let f = elms.toJS()
     .filter((D, i) => i % 2 == 0)
     .map(D => 2 * cornerIndex[D]);
+
+  if (ori[elms.first()] > 0)
+    f = f.reverse();
 
   const faces = [f, f.map(x => x + 1).reverse()]
     .concat(f.map((x, i) => {
@@ -211,10 +214,6 @@ const adjustedOrientation = (cov, pos) => {
 };
 
 
-const orbits = (ds, idcs, elms) =>
-  properties.orbitReps(ds, idcs, elms).map(D => properties.orbit(ds, idcs, D));
-
-
 export const tileSurfaces = (cov, skel, vertexPos, basis) => {
   const dim = delaney.dim(cov);
   const makeSurface = dim == 3 ? tileSurface3D : tileSurface2D;
@@ -228,12 +227,10 @@ export const tileSurfaces = (cov, skel, vertexPos, basis) => {
   const ori = adjustedOrientation(cov, pos);
 
   const idcs = I.Range(0, dim).toArray();
-  const reps = properties.orbitReps(cov, idcs).toJS();
+  const tiles = properties.orbits(cov, idcs).toArray();
 
-  return reps.map(D0 => {
-    const D = ori[D0] < 0 ? D0 : cov.s(0, D0);
-    const elms = properties.orbit(cov, idcs, D);
-    const cOrbs = orbits(cov, idcs.slice(1), elms);
+  return tiles.map(elms => {
+    const cOrbs = properties.orbits(cov, idcs.slice(1), elms);
     const cPos = cOrbs.map(orb => pos[orb.first()]);
     const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
 
