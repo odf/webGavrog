@@ -92,7 +92,7 @@ export const skeleton = cov => {
 };
 
 
-export const chamberPositions = (cov, skel, pos) => {
+const chamberPositions = (cov, skel, pos) => {
   const dim = delaney.dim(cov);
   let result = {};
 
@@ -215,13 +215,15 @@ const orbits = (ds, idcs, elms) =>
   properties.orbitReps(ds, idcs, elms).map(D => properties.orbit(ds, idcs, D));
 
 
-export const tileSurfaces = (cov, positions, basis) => {
+export const tileSurfaces = (cov, skel, vertexPos, basis) => {
   const dim = delaney.dim(cov);
   const makeSurface = dim == 3 ? tileSurface3D : tileSurface2D;
 
+  const chamberPos = chamberPositions(cov, skel, vertexPos);
+
   const pos = {};
   for (const D of cov.elements())
-    pos[D] = positions[D].map(p => ops.times(p, basis));
+    pos[D] = chamberPos[D].map(p => ops.times(p, basis));
 
   const ori = adjustedOrientation(cov, pos);
 

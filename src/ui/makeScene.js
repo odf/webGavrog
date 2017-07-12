@@ -293,18 +293,15 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
     cmd: 'embedding',
     val: { graphRepr: skel.graph, relax: !options.skipRelaxation }
   });
+  const pos = embedding.positions;
   console.log(`${Math.round(t())} msec to compute the embedding`);
 
   yield log('Computing a translation basis...');
   const basis = yield spacegroups.invariantBasis(embedding.gram);
   console.log(`${Math.round(t())} msec to compute the translation basis`);
 
-  yield log('Computing the chamber corner positions...');
-  const cpos = yield tilings.chamberPositions(cov, skel, embedding.positions);
-  console.log(`${Math.round(t())} msec to compute the corner positions`);
-
   yield log('Making the base tile surfaces...');
-  const baseSurfaces = yield tilings.tileSurfaces(cov, cpos, basis);
+  const baseSurfaces = yield tilings.tileSurfaces(cov, skel, pos, basis);
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 
   yield log('Refining the tile surfaces...');
