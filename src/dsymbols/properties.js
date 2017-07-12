@@ -140,6 +140,24 @@ export function orbitReps(ds, indices, seeds) {
 };
 
 
+export const orbits = (ds, indices, seeds) => {
+  const seen = {};
+  const result = [];
+
+  for (const [_, i, D] of traversal(ds, indices, seeds || ds.elements())) {
+    if (i == root)
+      result.push([]);
+
+    if (D && !seen[D]) {
+      seen[D] = true;
+      result[result.length - 1].push(D);
+    }
+  }
+
+  return I.fromJS(result);
+};
+
+
 export function isConnected(ds) {
   return orbitReps(ds, ds.indices()).count() < 2;
 };
@@ -339,6 +357,11 @@ if (require.main == module) {
     console.log('    0,1 orbit reps: '+orbitReps(ds, [0, 1]));
     console.log('    1,2 orbit reps: '+orbitReps(ds, [1, 2]));
     console.log('    0,2 orbit reps: '+orbitReps(ds, [0, 2]));
+    console.log();
+
+    console.log('    0,1 orbits: '+orbits(ds, [0, 1]));
+    console.log('    1,2 orbits: '+orbits(ds, [1, 2]));
+    console.log('    0,2 orbits: '+orbits(ds, [0, 2]));
     console.log();
 
     console.log('    0,1 orbit of 1: '+orbit(ds, [0, 1], 1));
