@@ -4,6 +4,8 @@ import * as sg from '../geometry/spacegroups';
 import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
+import * as util from '../common/util';
+
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
@@ -389,12 +391,19 @@ const _energyEvaluator = (
 
 
 const embed = (g, relax=true) => {
-  const positions = pg.barycentricPlacement(g);
-
-  const syms = symmetries.symmetries(g).symmetries;
-  const symOps = syms.map(a => a.transform);
+  const _timers = util.timers();
+  symmetries.useTimers(_timers);
 
   _timers && _timers.start('embed');
+
+  _timers && _timers.start('embed: barycentric placement');
+  const positions = pg.barycentricPlacement(g);
+  _timers && _timers.stop('embed: barycentric placement');
+
+  _timers && _timers.start('embed: symmetries');
+  const syms = symmetries.symmetries(g).symmetries;
+  const symOps = syms.map(a => a.transform);
+  _timers && _timers.stop('embed: symmetries');
 
   _timers && _timers.start('embed: edge and angle orbits');
   const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
@@ -442,9 +451,15 @@ const embed = (g, relax=true) => {
     _timers && _timers.stop('embed: optimizing');
   }
 
-  _timers && _timers.stop('embed');
+  _timers && _timers.start('embed: extracting result');
+  const result = _configurationFromParameters(g, params, gramSpace, posSpace);
+  _timers && _timers.stop('embed: extracting result');
 
-  return _configurationFromParameters(g, params, gramSpace, posSpace);
+  _timers && _timers.stop('embed');
+  console.log(`Embedding details:`);
+  console.log(`${JSON.stringify(_timers.current(), null, 2)}`);
+
+  return result;
 };
 
 

@@ -170,13 +170,17 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
 
 
 export function morphism(
-  graph1, graph2, start1, start2, transform, skipChecks = false
+  graph1,
+  graph2,
+  start1,
+  start2,
+  transform,
+  adj1=pg.adjacencies(graph1),
+  adj2=pg.adjacencies(graph2)
 ) {
-  if (!skipChecks)
-    _checkGraphsForMorphism(graph1, graph2, transform);
+  _timers && _timers.start('morpism');
 
-  const adj1 = pg.adjacencies(graph1);
-  const adj2 = pg.adjacencies(graph2);
+  _checkGraphsForMorphism(graph1, graph2, transform);
 
   const src2img = {};
   const img2src = {};
@@ -209,22 +213,27 @@ export function morphism(
 
   while (queue.length) {
     const [w1, w2] = queue.shift();
+    _timers && _timers.start('morpism: _adjacenciesByEdgeVector');
     const n1 = _adjacenciesByEdgeVector(graph1, w1, adj1);
     const n2 = _adjacenciesByEdgeVector(graph2, w2, adj2);
+    _timers && _timers.stop('morpism: _adjacenciesByEdgeVector');
 
     for (const [d1, e1] of Object.entries(n1)) {
       const e2 = n2[encode(ops.times(decode(d1), transform))];
       if (e2 == null) {
+        _timers && _timers.stop('morpism');
         return null;
       }
       else {
         const { bad, seen } = tryPair(encode(e1), encode(e2));
         if (bad) {
+          _timers && _timers.stop('morpism');
           return null;
         }
         else if (!seen) {
           const { bad, seen } = tryPair(e1.tail, e2.tail);
           if (bad) {
+            _timers && _timers.stop('morpism');
             return null;
           }
           else if (!seen)
@@ -234,13 +243,21 @@ export function morphism(
     }
   }
 
-  for (const v of pg.vertices(graph2))
-    if (img2src[v] == null)
+  for (const v of pg.vertices(graph2)) {
+    if (img2src[v] == null) {
+      _timers && _timers.stop('morpism');
       return null;
+    }
+  }
 
-  for (const e of graph2.edges)
-    if (img2src[encode(e)] == null || img2src[encode(e.reverse())] == null)
+  for (const e of graph2.edges) {
+    if (img2src[encode(e)] == null || img2src[encode(e.reverse())] == null) {
+      _timers && _timers.stop('morpism');
       return null;
+    }
+  }
+
+  _timers && _timers.stop('morpism');
 
   return {
     src2img,
@@ -478,10 +495,7 @@ export function symmetries(graph)
       const B = basis.map(e => pg.edgeVector(e, pos));
 
       const M = _matrixProductIfUnimodular(invB0, B);
-
-      _timers && _timers.start('symmetries: morphism');
-      const iso = M && morphism(graph, graph, v0, v, M, true);
-      _timers && _timers.stop('symmetries: morphism');
+      const iso = M && morphism(graph, graph, v0, v, M, adj, adj);
 
       if (iso) {
         generators.push(iso);
