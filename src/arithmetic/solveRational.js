@@ -5,7 +5,16 @@ const ops = matrices;
 const p = 9999991;
 
 
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
+
+
 const modularInverse = (a, m) => {
+  _timers && _timers.start('modularInverse');
+
   let [t, t1] = [0, 1];
   let [r, r1] = [m, a];
 
@@ -15,12 +24,16 @@ const modularInverse = (a, m) => {
     [r, r1] = [r1, r - q * r1];
   }
 
+  _timers && _timers.stop('modularInverse');
+
   if (r == 1)
     return t < 0 ? t + m : t;
 };
 
 
 const modularRowEchelonForm = (M, m) => {
+  _timers && _timers.start('modularRowEchelonForm');
+
   const A = M.map(row => row.map(a => a < 0 ? (a % m) + m : a % m));
   const [nrows, ncols] = [A.length, A[0].length];
 
@@ -42,28 +55,42 @@ const modularRowEchelonForm = (M, m) => {
       A[row][j] = (A[row][j] * f) % m;
 
     for (let i = 0; i < nrows; ++i) {
-      if (i == row)
+      if (i == row || A[i][col] == 0)
         continue;
 
       const f = A[i][col];
-      for (let j = col; j < ncols; ++j)
-        A[i][j] = (m - (A[row][j] * f) % m + A[i][j]) % m;
+      _timers && _timers.start('modularRowEchelonForm: inner loop');
+      for (let j = col; j < ncols; ++j) {
+        if (A[row][j] != 0)
+          A[i][j] = (m - (A[row][j] * f) % m + A[i][j]) % m;
+      }
+      _timers && _timers.stop('modularRowEchelonForm: inner loop');
     }
 
     ++row;
   }
+
+  _timers && _timers.stop('modularRowEchelonForm');
 
   return A;
 };
 
 
 const modularMatrixInverse = (M, m) => {
+  _timers && _timers.start('modularMatrixInverse');
+
   const n = M.length;
   const A = M.map((row, i) => row.concat(ops.unitVector(n, i)));
   const E = modularRowEchelonForm(A, m);
 
+  let result = null;
+
   if (ops.eq(E.map(row => row.slice(0, n)), ops.identityMatrix(n)))
-    return E.map(row => row.slice(n));
+    result = E.map(row => row.slice(n));
+
+  _timers && _timers.stop('modularMatrixInverse');
+
+  return result;
 };
 
 
@@ -128,6 +155,8 @@ const numberOfPAdicStepsNeeded = (A, b) => {
 
 
 const rationalReconstruction = (s, h) => {
+  _timers && _timers.start('rationalReconstruction');
+
   let u = [h, s];
   let v = [0, 1];
   let sign = 1;
@@ -140,14 +169,18 @@ const rationalReconstruction = (s, h) => {
     sign *= -1;
   }
 
-  return ops.div(ops.times(sign, u[1]), v[1]);
+  const result = ops.div(ops.times(sign, u[1]), v[1]);
+
+  _timers && _timers.stop('rationalReconstruction');
+
+  return result;
 };
 
 
-export default function solve(A, b, timers=null) {
-  timers && timers.start('modularMatrixInverse');
+export default function solve(A, b) {
+  _timers && _timers.start('solveRational');
+
   const C = modularMatrixInverse(A, p);
-  timers && timers.stop('modularMatrixInverse');
 
   if (C == null)
     return null;
@@ -159,26 +192,26 @@ export default function solve(A, b, timers=null) {
   let si = 0;
 
   for (let i = 0; i < nrSteps; ++i) {
-    timers && timers.start('bootstrap: compute xi = C * bi (mod p)');
+    _timers && _timers.start('bootstrap: compute xi = C * bi (mod p)');
     const xi = modularMatrixProduct(C, bi, p);
-    timers && timers.stop('bootstrap: compute xi = C * bi (mod p)');
+    _timers && _timers.stop('bootstrap: compute xi = C * bi (mod p)');
 
-    timers && timers.start('bootstrap: update si and pi');
+    _timers && _timers.start('bootstrap: update si and pi');
     si = ops.plus(si, ops.times(pi, xi));
     pi = ops.times(pi, p);
-    timers && timers.stop('bootstrap: update si and pi');
+    _timers && _timers.stop('bootstrap: update si and pi');
 
     if (i + 1 < nrSteps) {
-      timers && timers.start('bootstrap: update bi');
+      _timers && _timers.start('bootstrap: update bi');
       const Axi = integerMatrixProduct(A, xi);
       bi = ops.idiv(ops.minus(bi, Axi), p);
-      timers && timers.stop('bootstrap: update bi');
+      _timers && _timers.stop('bootstrap: update bi');
     }
   }
 
-  timers && timers.start('rationalReconstruction');
   const result = si.map(row => row.map(x => rationalReconstruction(x, pi)));
-  timers && timers.stop('rationalReconstruction');
+
+  _timers && _timers.stop('solveRational');
 
   return result;
 };

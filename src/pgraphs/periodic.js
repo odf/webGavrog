@@ -4,6 +4,9 @@ import { rationalMatrices, rationalMatricesAsModule
        } from '../arithmetic/types';
 
 import modularSolver from '../arithmetic/solveRational';
+import * as solveRational from '../arithmetic/solveRational';
+
+import * as util from '../common/util';
 
 
 let _timers = null;
@@ -279,6 +282,9 @@ export function barycentricPlacement(graph) {
   if (graph._$pos != undefined)
     return graph._$pos;
 
+  const _timers = util.timers();
+  solveRational.useTimers(_timers);
+
   _timers && _timers.start('barycentricPlacement');
 
   const adj   = adjacencies(graph);
@@ -310,6 +316,9 @@ export function barycentricPlacement(graph) {
   const result = I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
 
   _timers && _timers.stop('barycentricPlacement');
+
+  console.log(`Barycentric placement details:`);
+  console.log(`${JSON.stringify(_timers.current(), null, 2)}`);
 
   graph._$pos = result;
 

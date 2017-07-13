@@ -4,8 +4,6 @@ import * as sg from '../geometry/spacegroups';
 import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
-import * as util from '../common/util';
-
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
 
@@ -391,9 +389,6 @@ const _energyEvaluator = (
 
 
 const embed = (g, relax=true) => {
-  const _timers = util.timers();
-  symmetries.useTimers(_timers);
-
   _timers && _timers.start('embed');
 
   _timers && _timers.start('embed: barycentric placement');
@@ -456,8 +451,6 @@ const embed = (g, relax=true) => {
   _timers && _timers.stop('embed: extracting result');
 
   _timers && _timers.stop('embed');
-  console.log(`Embedding details:`);
-  console.log(`${JSON.stringify(_timers.current(), null, 2)}`);
 
   return result;
 };
