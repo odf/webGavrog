@@ -188,24 +188,24 @@ export function morphism(
 
   let injective = true;
 
-  const tryPair = (src, img) => {
-    let bad = false;
-    let seen = false;
+  const OKAY = 0;
+  const BAD = -1;
+  const SEEN = 1;
 
+  const tryPair = (src, img) => {
     const oldImg = src2img[src];
     if (img == oldImg)
-      seen = true;
+      return SEEN;
     else if (oldImg != null)
-      bad = true;
-    else {
-      if (img2src[img] != null)
-        injective = false;
+      return BAD;
 
-      src2img[src] = img;
-      img2src[img] = src;
-    }
+    if (img2src[img] != null)
+      injective = false;
 
-    return { bad, seen };
+    src2img[src] = img;
+    img2src[img] = src;
+
+    return OKAY;
   };
 
   tryPair(start1, start2);
@@ -220,53 +220,35 @@ export function morphism(
 
     for (const [d1, e1] of Object.entries(n1)) {
       const e2 = n2[encode(ops.times(decode(d1), transform))];
-      if (e2 == null) {
+
+      const status = (e2 == null ? BAD : OKAY) ||
+        tryPair(encode(e1), encode(e2)) ||
+        tryPair(e1.tail, e2.tail);
+
+      if (status == OKAY)
+        queue.push([e1.tail, e2.tail]);
+      else if (status == BAD) {
         _timers && _timers.stop('morpism');
         return null;
       }
-      else {
-        const { bad, seen } = tryPair(encode(e1), encode(e2));
-        if (bad) {
-          _timers && _timers.stop('morpism');
-          return null;
-        }
-        else if (!seen) {
-          const { bad, seen } = tryPair(e1.tail, e2.tail);
-          if (bad) {
-            _timers && _timers.stop('morpism');
-            return null;
-          }
-          else if (!seen)
-            queue.push([e1.tail, e2.tail]);
-        }
-      }
     }
   }
 
-  for (const v of pg.vertices(graph2)) {
-    if (img2src[v] == null) {
-      _timers && _timers.stop('morpism');
-      return null;
-    }
-  }
-
-  for (const e of graph2.edges) {
-    if (img2src[encode(e)] == null || img2src[encode(e.reverse())] == null) {
-      _timers && _timers.stop('morpism');
-      return null;
-    }
-  }
+  const complete = pg.vertices(graph2).every(v => img2src[v] != null) &&
+    graph2.edges.every(e => (img2src[encode(e)] != null &&
+                             img2src[encode(e.reverse())] != null));
 
   _timers && _timers.stop('morpism');
 
-  return {
-    src2img,
-    img2src,
-    transform,
-    injective,
-    sourceGraph: graph1,
-    imageGraph: graph2
-  };
+  if (complete)
+    return {
+      src2img,
+      img2src,
+      transform,
+      injective,
+      sourceGraph: graph1,
+      imageGraph: graph2
+    };
 };
 
 
