@@ -472,6 +472,7 @@ export function symmetries(graph)
 
   _timers && _timers.start('symmetries');
 
+  _timers && _timers.start('symmetries: preparations');
   const adj = pg.adjacencies(graph);
   const deg = v => adj.get(v).size;
 
@@ -484,7 +485,9 @@ export function symmetries(graph)
   const generators = [];
 
   const p = new LabelledPartition((a, b) => a || b);
+  _timers && _timers.stop('symmetries: preparations');
 
+  _timers && _timers.start('symmetries: main loop');
   for (let i = 0; i < bases.size; ++i) {
     if (ops.eq(degs[i], degs[0]) &&
         p.find(keys[i]) != p.find(keys[0]) &&
@@ -510,14 +513,19 @@ export function symmetries(graph)
         p.setLabel(keys[i], true);
     }
   }
+  _timers && _timers.stop('symmetries: main loop');
 
+  _timers && _timers.start('symmetries: representative bases');
   const representativeBases = I.Range(0, bases.size)
     .filter(i => keys[i] == p.find(keys[i]))
     .map(i => bases.get(i))
     .toList();
+  _timers && _timers.stop('symmetries: representative bases');
 
+  _timers && _timers.start('symmetries: group of morphisms');
   const keyFn = phi => encodedBases[0].map(e => phi.src2img[e]).join(',');
   const syms = groupOfMorphisms(generators, keyFn);
+  _timers && _timers.stop('symmetries: group of morphisms');
 
   _timers && _timers.stop('symmetries');
 
