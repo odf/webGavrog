@@ -9,24 +9,46 @@ import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
 
+import * as util from '../common/util';
+
 import { matrices } from '../arithmetic/types';
 const ops = matrices;
+
+
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+}
 
 
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
 const _edgeTranslations = function _edgeTranslations(cov) {
+  _timers && _timers.start('_edgeTranslations');
+
+  _timers && _timers.start('_edgeTranslations: fundamental group');
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
-  const nul = ops.nullSpace(cosets.relatorMatrix(n, fg.relators).toJS());
+  _timers && _timers.stop('_edgeTranslations: fundamental group');
 
-  return fg.edge2word.map(function(a) {
+  _timers && _timers.start('_edgeTranslations: relator null space');
+  const nul = ops.nullSpace(cosets.relatorMatrix(n, fg.relators).toJS());
+  _timers && _timers.stop('_edgeTranslations: relator null space');
+
+  _timers && _timers.start('_edgeTranslations: assign translations to edges');
+  const result = fg.edge2word.map(function(a) {
     return a.map(function(b) {
       const v = cosets.relatorAsVector(b, n).toJS();
       return ops.times(v, nul);
     });
   });
+  _timers && _timers.stop('_edgeTranslations: assign translations to edges');
+
+  _timers && _timers.stop('_edgeTranslations');
+
+  return result;
 };
 
 
@@ -55,6 +77,11 @@ const _cornerShifts = function _cornerShifts(cov, e2t) {
 
 
 export const skeleton = cov => {
+  useTimers(util.timers());
+
+  _timers && _timers.start('skeleton');
+
+  _timers && _timers.start('skeleton: preparations');
   const dim = delaney.dim(cov);
   const zero = ops.vector(dim);
   const chambers = cov.elements();
@@ -65,10 +92,17 @@ export const skeleton = cov => {
     nodeReps
       .zip(I.Range())
       .flatMap(p => properties.orbit(cov, idcs0, p[0]).zip(I.Repeat(p[1]))));
+  _timers && _timers.stop('skeleton: preparations');
 
+  _timers && _timers.start('skeleton: edge translations');
   const e2t = _edgeTranslations(cov);
-  const c2s = _cornerShifts(cov, e2t);
+  _timers && _timers.stop('skeleton: edge translations');
 
+  _timers && _timers.start('skeleton: corner shifts');
+  const c2s = _cornerShifts(cov, e2t);
+  _timers && _timers.stop('skeleton: corner shifts');
+
+  _timers && _timers.start('skeleton: edges');
   const edges = properties.orbitReps(cov, _remainingIndices(cov, 1), chambers)
     .map(function(D) {
       const E = cov.s(0, D);
@@ -81,9 +115,19 @@ export const skeleton = cov => {
 
       return [v, w, s];
     });
+  _timers && _timers.stop('skeleton: edges');
+
+  _timers && _timers.start('skeleton: make graph');
+  const graph = periodic.make(edges);
+  _timers && _timers.stop('skeleton: make graph');
+
+  _timers && _timers.stop('skeleton');
+
+  console.log(`Skeleton details:`);
+  console.log(`${JSON.stringify(_timers.current(), null, 2)}`);
 
   return {
-    graph: periodic.make(edges),
+    graph,
     node2chamber: node2chamber.toJS(),
     chamber2node: chamber2node.toJS(),
     edgeTranslations: e2t.toJS(),
