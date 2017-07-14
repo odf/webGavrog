@@ -264,16 +264,58 @@ const tileSurface = (cov, pos, ori, elms, idcs) => {
 };
 
 
-export const tileSurfaces = (cov, skel, vertexPos, basis) => {
+const affineSymmetry = (D0, D1, pos) => {
+  const bas = D => chamberBasis(pos, D);
+  const linear = ops.cleanup(ops.times(ops.inverse(bas(D0)), bas(D1)));
+  const shift = ops.minus(pos[D1][0], ops.times(pos[D0][0], linear));
+
+  return linear.map(r => r.concat(0)).concat([shift.concat([1])]);
+};
+
+
+export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
+  const dim = delaney.dim(cov);
   const chamberPos = chamberPositions(cov, skel, vertexPos);
 
   const pos = {};
   for (const D of cov.elements())
     pos[D] = chamberPos[D].map(p => ops.times(p, basis));
 
+  const phi = properties.morphism(cov, 1, ds, 1);
+  const bas = D => chamberBasis(pos, D);
   const ori = adjustedOrientation(cov, pos);
   const idcs = I.Range(0, delaney.dim(cov)).toArray();
-  const tiles = properties.orbits(cov, idcs).toArray();
+  const tileOrbits = properties.orbits(cov, idcs).toArray();
 
-  return tiles.map(elms => tileSurface(cov, pos, ori, elms, idcs));
+  const templates = [];
+  const tileOrbitReps = [];
+  const dsChamberToTemplateIndex = {};
+  const tiles = [];
+
+  for (const elms of tileOrbits) {
+    const D0 = elms.find(D => ops.ne(determinant(bas(D)), 0));
+    const E0 = phi.get(D0);
+
+    let templateIndex = dsChamberToTemplateIndex[E0];
+    let symmetry = ops.identityMatrix(dim + 1);
+
+    if (templateIndex == null) {
+      templateIndex = templates.length;
+
+      for (const E of properties.orbit(ds, idcs, E0))
+        dsChamberToTemplateIndex[E] = templateIndex;
+
+      templates.push(tileSurface(cov, pos, ori, elms, idcs));
+      tileOrbitReps.push(D0);
+    }
+    else {
+      const D0 = tileOrbitReps[templateIndex];
+      const D1 = elms.find(D => phi.get(D) == phi.get(D0));
+      symmetry = affineSymmetry(D0, D1, pos);
+    }
+
+    tiles.push({ templateIndex, symmetry });
+  }
+
+  return { templates, tiles };
 };

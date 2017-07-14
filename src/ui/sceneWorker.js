@@ -57,9 +57,10 @@ const handlers = {
     return Object.assign(skel, { graph: periodic.asObject(skel.graph) });
   },
 
-  tileSurfaces({ covTxt, skel, pos, basis }) {
+  tileSurfaces({ dsTxt, covTxt, skel, pos, basis }) {
+    const ds = delaney.parse(dsTxt);
     const cov = delaney.parse(covTxt);
-    return tilings.tileSurfaces(cov, skel, pos, basis);
+    return tilings.tileSurfaces(ds, cov, skel, pos, basis);
   }
 };
 

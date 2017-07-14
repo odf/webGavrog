@@ -217,15 +217,29 @@ const wireframe = (geometry, color) => {
 };
 
 
-const tilingModel = (surfaces, options, shifts=[[0, 0, 0]]) => {
+const tilingModel = (surfaces, instances, options, shifts=[[0, 0, 0]]) => {
   const model = new THREE.Object3D();
   const hue0 = Math.random();
-  const n = surfaces.length;
+  const n = instances.length;
 
-  for (const i in surfaces) {
-    const { pos, faces } = surfaces[i];
+  const geometries = surfaces.map(({ pos, faces }) => geometry(pos, faces));
 
-    const geom = geometry(pos, faces);
+  for (const i in instances) {
+    const { templateIndex: kind, symmetry } = instances[i];
+    const geom = geometries[kind];
+
+    const matrix = new THREE.Matrix4();
+
+    let A = symmetry;
+    if (A.length == 3)
+      A = [
+        A[0].concat(0),
+        A[1].concat(0),
+        [0, 0, 1, 0],
+        A[2].slice(0, 2).concat(0, 1)
+      ];
+
+    matrix.elements = [].concat.apply([], A);
 
     for (const s of shifts) {
       const mat = new THREE.MeshPhongMaterial({
@@ -234,16 +248,18 @@ const tilingModel = (surfaces, options, shifts=[[0, 0, 0]]) => {
       });
 
       const tileMesh = new THREE.Mesh(geom, mat);
-      tileMesh.position.x = s[0];
-      tileMesh.position.y = s[1];
-      tileMesh.position.z = s[2] || 0;
+      tileMesh.applyMatrix(matrix);
+      tileMesh.position.x += s[0];
+      tileMesh.position.y += s[1];
+      tileMesh.position.z += (s[2] || 0);
       model.add(tileMesh);
 
       if (options.showSurfaceMesh) {
         const tileWire = wireframe(geom, colorHSL(0.0, 0.0, 0.0));
-        tileWire.position.x = s[0];
-        tileWire.position.y = s[1];
-        tileWire.position.z = s[2] || 0;
+        tileWire.applyMatrix(matrix);
+        tileWire.position.x += s[0];
+        tileWire.position.y += s[1];
+        tileWire.position.z += (s[2] || 0);
         model.add(tileWire);
       }
     }
@@ -301,16 +317,16 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   console.log(`${Math.round(t())} msec to compute the translation basis`);
 
   yield log('Making the base tile surfaces...');
-  const baseSurfaces = yield callWorker({
+  const { templates, tiles } = yield callWorker({
     cmd: 'tileSurfaces',
-    val: { covTxt: `${cov}`, skel, pos, basis }
+    val: { dsTxt: `${ds}`, covTxt: `${cov}`, skel, pos, basis }
   });
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 
   yield log('Refining the tile surfaces...');
-  const refinedSurfaces = yield callWorker({
+  const refinedTemplates = yield callWorker({
     cmd: 'processSolids',
-    val: baseSurfaces.map(({ pos, faces }) => ({
+    val: templates.map(({ pos, faces }) => ({
       pos,
       faces,
       isFixed: pos.map(_ => true),
@@ -321,7 +337,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
 
   yield log('Making the tiling geometry...');
   const shifts = baseShifts(dim).map(s => ops.times(s, basis));
-  const model = tilingModel(refinedSurfaces, options, shifts);
+  const model = tilingModel(refinedTemplates, tiles, options, shifts);
   console.log(`${Math.round(t())} msec to make the tiling geometry`);
 
   return model;
