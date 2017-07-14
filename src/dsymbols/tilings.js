@@ -248,10 +248,23 @@ const adjustedOrientation = (cov, pos) => {
 };
 
 
-export const tileSurfaces = (cov, skel, vertexPos, basis) => {
-  const dim = delaney.dim(cov);
-  const makeSurface = dim == 3 ? tileSurface3D : tileSurface2D;
+const tileSurface = (cov, pos, ori, elms, idcs) => {
+  const cOrbs = properties.orbits(cov, idcs.slice(1), elms);
+  const cPos = cOrbs.map(orb => pos[orb.first()]);
+  const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
 
+  const faces = properties.orbits(cov, [0, 1], elms)
+    .map(orb => ori[orb.first()] > 0 ? orb.reverse() : orb)
+    .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs.get(D)));
+
+  if (delaney.dim(cov) == 3)
+    return tileSurface3D(cPos.toJS(), faces.toJS());
+  else
+    return tileSurface2D(cPos.toJS(), faces.toJS());
+};
+
+
+export const tileSurfaces = (cov, skel, vertexPos, basis) => {
   const chamberPos = chamberPositions(cov, skel, vertexPos);
 
   const pos = {};
@@ -259,19 +272,8 @@ export const tileSurfaces = (cov, skel, vertexPos, basis) => {
     pos[D] = chamberPos[D].map(p => ops.times(p, basis));
 
   const ori = adjustedOrientation(cov, pos);
-
-  const idcs = I.Range(0, dim).toArray();
+  const idcs = I.Range(0, delaney.dim(cov)).toArray();
   const tiles = properties.orbits(cov, idcs).toArray();
 
-  return tiles.map(elms => {
-    const cOrbs = properties.orbits(cov, idcs.slice(1), elms);
-    const cPos = cOrbs.map(orb => pos[orb.first()]);
-    const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
-
-    const faces = properties.orbits(cov, [0, 1], elms)
-      .map(orb => ori[orb.first()] > 0 ? orb.reverse() : orb)
-      .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs.get(D)));
-
-    return makeSurface(cPos.toJS(), faces.toJS());
-  });
+  return tiles.map(elms => tileSurface(cov, pos, ori, elms, idcs));
 };
