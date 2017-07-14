@@ -220,7 +220,6 @@ const wireframe = (geometry, color) => {
 const tilingModel = (surfaces, instances, options, shifts=[[0, 0, 0]]) => {
   const model = new THREE.Object3D();
   const hue0 = Math.random();
-  const n = instances.length;
 
   const geometries = surfaces.map(({ pos, faces }) => geometry(pos, faces));
 
@@ -242,8 +241,12 @@ const tilingModel = (surfaces, instances, options, shifts=[[0, 0, 0]]) => {
     matrix.elements = [].concat.apply([], A);
 
     for (const s of shifts) {
+      const a = options.colorByTranslationClass ?
+        i / instances.length :
+        kind / surfaces.length;
+
       const mat = new THREE.MeshPhongMaterial({
-        color: colorHSL((hue0 + i / n) % 1, 1.0, 0.7),
+        color: colorHSL((hue0 + a) % 1, 1.0, 0.7),
         shininess: 15
       });
 

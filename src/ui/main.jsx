@@ -647,6 +647,10 @@ class App extends React.Component {
       description: 'Options',
       type: 'object',
       properties: {
+        colorByTranslationClass: {
+          title: 'Color By Translation',
+          type: 'boolean'
+        },
         skipRelaxation: {
           title: 'Skip Relaxation',
           type: 'boolean'
