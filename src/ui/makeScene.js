@@ -6,6 +6,7 @@ import * as util        from '../common/util';
 import * as webworkers  from '../common/webworkers';
 import * as delaney     from '../dsymbols/delaney';
 import * as tilings     from '../dsymbols/tilings';
+import * as lattices    from '../geometry/lattices';
 import * as spacegroups from '../geometry/spacegroups';
 import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
@@ -217,14 +218,18 @@ const wireframe = (geometry, color) => {
 };
 
 
-const tilingModel = (surfaces, instances, options, shifts=[[0, 0, 0]]) => {
+const tilingModel = (
+  surfaces, instances, options, basis, extensionFactor, shifts=[[0, 0, 0]]
+) => {
   const model = new THREE.Object3D();
   const hue0 = Math.random();
 
   const geometries = surfaces.map(({ pos, faces }) => geometry(pos, faces));
+  const extend = v => ops.times(v, extensionFactor);
+  const dVecs = lattices.dirichletVectors(basis).map(extend);
 
   for (const i in instances) {
-    const { templateIndex: kind, symmetry } = instances[i];
+    const { templateIndex: kind, symmetry, center } = instances[i];
     const geom = geometries[kind];
 
     const matrix = new THREE.Matrix4();
@@ -240,7 +245,7 @@ const tilingModel = (surfaces, instances, options, shifts=[[0, 0, 0]]) => {
 
     matrix.elements = [].concat.apply([], A);
 
-    for (const s of shifts) {
+    for (const s0 of shifts) {
       const a = options.colorByTranslationClass ?
         i / instances.length :
         kind / surfaces.length;
@@ -249,6 +254,9 @@ const tilingModel = (surfaces, instances, options, shifts=[[0, 0, 0]]) => {
         color: colorHSL((hue0 + a) % 1, 1.0, 0.7),
         shininess: 15
       });
+
+      const c = ops.plus(center, s0);
+      const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
       const tileMesh = new THREE.Mesh(geom, mat);
       tileMesh.applyMatrix(matrix);
@@ -289,6 +297,7 @@ const baseShifts = dim => dim == 3 ?
 const makeTilingModel = (structure, options, log) => csp.go(function*() {
   const ds = structure.symbol;
   const dim = delaney.dim(ds);
+  const extensionFactor = dim == 3 ? 2 : 6;
 
   const t = util.timer();
 
@@ -340,7 +349,8 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
 
   yield log('Making the tiling geometry...');
   const shifts = baseShifts(dim).map(s => ops.times(s, basis));
-  const model = tilingModel(refinedTemplates, tiles, options, shifts);
+  const model = tilingModel(
+    refinedTemplates, tiles, options, basis, extensionFactor, shifts);
   console.log(`${Math.round(t())} msec to make the tiling geometry`);
 
   return model;
