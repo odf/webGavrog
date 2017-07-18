@@ -81,19 +81,6 @@ export const skeleton = cov => {
 
   _timers && _timers.start('skeleton');
 
-  _timers && _timers.start('skeleton: preparations');
-  const dim = delaney.dim(cov);
-  const zero = ops.vector(dim);
-  const chambers = cov.elements();
-  const idcs0 = _remainingIndices(cov, 0);
-  const nodeReps = properties.orbitReps(cov, idcs0, chambers);
-  const node2chamber = I.Map(I.Range().zip(nodeReps));
-  const chamber2node = I.Map(
-    nodeReps
-      .zip(I.Range())
-      .flatMap(p => properties.orbit(cov, idcs0, p[0]).zip(I.Repeat(p[1]))));
-  _timers && _timers.stop('skeleton: preparations');
-
   _timers && _timers.start('skeleton: edge translations');
   const e2t = _edgeTranslations(cov);
   _timers && _timers.stop('skeleton: edge translations');
@@ -102,12 +89,23 @@ export const skeleton = cov => {
   const c2s = _cornerShifts(cov, e2t);
   _timers && _timers.stop('skeleton: corner shifts');
 
+  _timers && _timers.start('skeleton: chamber2node');
+  const chamber2node = {};
+  let node = 1;
+  for (const orb of properties.orbits(cov, _remainingIndices(cov, 0))) {
+    for (const D of orb)
+      chamber2node[D] = node;
+    node += 1;
+  }
+  _timers && _timers.stop('skeleton: chamber2node');
+
   _timers && _timers.start('skeleton: edges');
-  const edges = properties.orbitReps(cov, _remainingIndices(cov, 1), chambers)
+  const zero = ops.vector(delaney.dim(cov));
+  const edges = properties.orbitReps(cov, _remainingIndices(cov, 1))
     .map(function(D) {
       const E = cov.s(0, D);
-      const v = chamber2node.get(D);
-      const w = chamber2node.get(E);
+      const v = chamber2node[D];
+      const w = chamber2node[E];
       const t = e2t.getIn([D, 0]) || zero;
       const sD = c2s.getIn([D, 0]);
       const sE = c2s.getIn([E, 0]);
@@ -128,8 +126,7 @@ export const skeleton = cov => {
 
   return {
     graph,
-    node2chamber: node2chamber.toJS(),
-    chamber2node: chamber2node.toJS(),
+    chamber2node: chamber2node,
     edgeTranslations: e2t.toJS(),
     cornerShifts: c2s.toJS()
   };
