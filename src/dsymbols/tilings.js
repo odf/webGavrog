@@ -314,7 +314,8 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
       symmetry = affineSymmetry(D0, D1, pos);
     }
 
-    tiles.push({ templateIndex, symmetry });
+    const center = pos[elms.first()][dim];
+    tiles.push({ templateIndex, symmetry, center });
   }
 
   return { templates, tiles };
