@@ -276,7 +276,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
 
   const pos = {};
   for (const D of cov.elements())
-    pos[D] = chamberPos[D].map(p => ops.times(p, basis));
+    pos[D] = chamberPos[D].map(p => ops.toJS(ops.times(p, basis)));
 
   const phi = properties.morphism(cov, 1, ds, 1);
   const bas = D => chamberBasis(pos, D);
