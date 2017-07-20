@@ -67,5 +67,15 @@ const handlers = {
 
 onmessage = event => {
   const { id, input: { cmd, val } } = event.data;
-  postMessage({ id, output: handlers[cmd](val), ok: true });
+
+  let output = null, ok = false;
+
+  try {
+    output = handlers[cmd](val);
+    ok = true;
+  } catch (ex) {
+    console.error(ex);
+  }
+
+  postMessage({ id, output, ok });
 };
