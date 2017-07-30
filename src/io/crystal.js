@@ -128,9 +128,15 @@ const pointsAreCloseModZ = (gram, maxDist) => {
   const vecs = lattices.dirichletVectors(V.identityMatrix(n), dot);
 
   return (p, q) => {
+    _timers && _timers.start("pointsAreCloseModZ");
+
     const d0 = p.coords.map((x, i) => (V.toJS(x) - V.toJS(q.coords[i])) % 1);
     const d = shiftIntoDirichletDomain(d0, vecs, dot);
-    return dot(d, d) < limit;
+    const result = dot(d, d) < limit;
+
+    _timers && _timers.stop("pointsAreCloseModZ");
+
+    return result;
   };
 };
 
@@ -267,6 +273,8 @@ const applyOpsToEdges = (edges, nodes, ops, pointsEqFn, vectorsEqFn) =>
 
 
 const applyOpsToCorners = (faces, ops, pointsEqFn) => {
+  _timers && _timers.start("applyOpsToCorners");
+
   const corners = [];
 
   for (const f of faces) {
@@ -278,6 +286,8 @@ const applyOpsToCorners = (faces, ops, pointsEqFn) => {
       }
     }
   }
+
+  _timers && _timers.stop("applyOpsToCorners");
 
   return corners;
 };
@@ -323,6 +333,8 @@ const normalizedFace = face => {
 
 
 const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
+  _timers && _timers.start("applyOpsToFaces");
+
   const seen = {};
   const result = [];
 
@@ -347,6 +359,8 @@ const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
       }
     }
   }
+
+  _timers && _timers.stop("applyOpsToFaces");
 
   return result;
 };

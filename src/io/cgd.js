@@ -5,6 +5,7 @@ const ops = require('../geometry/types').affineTransformations;
 import * as pg from '../pgraphs/periodic';
 import * as sg from './sgtable';
 import * as cr from './crystal';
+import * as util from '../common/util';
 
 
 let _timers = null;
@@ -425,8 +426,16 @@ export const blocks = text => {
 
 
 export const processed = block => {
+  const timers = util.timers();
+  useTimers(timers);
+  cr.useTimers(timers);
+
   const data = preprocessBlock(block);
   const output = (makeStructure[data.type] || unknown)(data);
+
+  console.log(`Timing details for cgd structure processing:`);
+  console.log(`${JSON.stringify(timers.current(), null, 2)}`);
+
   return { ...output, type: block.type };
 };
 
