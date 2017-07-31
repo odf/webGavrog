@@ -289,7 +289,7 @@ const applyOpsToCorners = (faces, ops, pointsEqFn) => {
 
   _timers && _timers.stop("applyOpsToCorners");
 
-  return corners;
+  return { pos: corners };
 };
 
 
@@ -339,8 +339,8 @@ const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
   const result = [];
 
   const lookup = p => {
-    for (const i in corners) {
-      const q = corners[i];
+    for (const i in corners.pos) {
+      const q = corners.pos[i];
       if (pointsEqFn(p, q))
         return { index: i, shift: V.minus(p, q).map(x => V.round(x)) };
     }
@@ -506,7 +506,7 @@ const buildTiling = (corners, faces) => {
     offset += 4 * n;
   }
 
-  pairings[2] = op2PairingsForPlainMode(corners, faces, faceOffsets);
+  pairings[2] = op2PairingsForPlainMode(corners.pos, faces, faceOffsets);
 
   return delaney.build(3, offset - 1,
                        (ds, i) => pairings[i],
