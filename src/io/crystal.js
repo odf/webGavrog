@@ -284,21 +284,19 @@ const applyOpsToCorners = (faces, ops, pointsEqFn) => {
         const i = pos.length;
         const stabilizer = pointStabilizer(p, ops, pointsEqFn);
 
-        const reps = {};
+        const reps = [];
         const images = {};
 
         for (const op of operatorCosets(ops, stabilizer)) {
           const j = pos.length;
-          reps[j] = op;
-
           for (const t of stabilizer)
             images[spacegroups.opModZ(V.times(op, t))] = j;
 
           pos.push(V.modZ(V.times(op, p)));
+          reps.push(op);
         }
 
-        for (const j of Object.keys(reps)) {
-          const a = reps[j];
+        for (const a of reps) {
           const m = {};
           for (const op of ops)
             m[op] = images[spacegroups.opModZ(V.times(op, a))];
