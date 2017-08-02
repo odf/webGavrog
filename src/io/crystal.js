@@ -272,20 +272,24 @@ const applyOpsToEdges = (edges, nodes, ops, pointsEqFn, vectorsEqFn) =>
   }));
 
 
-const applyOpsToCorners = (faces, ops, pointsEqFn) => {
+const applyOpsToCorners = (rawFaces, ops, pointsEqFn) => {
   _timers && _timers.start("applyOpsToCorners");
 
   const pos = [];
   const action = [];
+  const faces = [];
 
-  for (const f of faces) {
-    for (const p of f) {
-      if (pos.findIndex(q => pointsEqFn(p, q)) < 0) {
-        const i = pos.length;
-        const stabilizer = pointStabilizer(p, ops, pointsEqFn);
+  for (const rf of rawFaces) {
+    const face = [];
 
+    for (const p of rf) {
+      const found = pos.findIndex(q => pointsEqFn(p, q));
+      const index = found < 0 ? pos.length : found;
+
+      if (found < 0) {
         const reps = [];
         const images = {};
+        const stabilizer = pointStabilizer(p, ops, pointsEqFn);
 
         for (const op of operatorCosets(ops, stabilizer)) {
           const j = pos.length;
@@ -303,13 +307,18 @@ const applyOpsToCorners = (faces, ops, pointsEqFn) => {
           action.push(m);
         }
       }
+
+      const shift = V.minus(p, pos[index]).map(x => V.round(x)); 
+      face.push({ index, shift });
     }
+
+    faces.push(face);
   }
 
-  console.log(`action = ${JSON.stringify(action, null, 2)}`);
+  console.log(`faces = ${JSON.stringify(faces, null, 2)}`);
   _timers && _timers.stop("applyOpsToCorners");
 
-  return { pos, action };
+  return { pos, action, faces };
 };
 
 
