@@ -312,11 +312,7 @@ const applyOpsToCorners = (rawFaces, ops, pointsEqFn) => {
     faces.push(face);
   }
 
-  console.log(`faces:`);
-  for (const f of faces)
-    console.log(`${JSON.stringify(f)}`);
   _timers && _timers.stop("applyOpsToCorners");
-
   return { pos, action, faces };
 };
 
@@ -360,30 +356,31 @@ const normalizedFace = face => {
 };
 
 
-const applyOpsToFaces = (faces, corners, ops, pointsEqFn) => {
+const applyOpsToFaces = (pos, action, faces, ops) => {
   _timers && _timers.start("applyOpsToFaces");
+
+  const apply = (op, { index, shift }) => {
+    const oldPos = V.plus(pos[index], shift);
+    const newPos = V.times(op, oldPos);
+    const newIndex = action[index][op];
+
+    return {
+      index: newIndex,
+      shift: V.minus(newPos, pos[newIndex]).map(x => V.round(x))
+    }
+  };
 
   const seen = {};
   const result = [];
 
-  const lookup = p => {
-    for (const i in corners.pos) {
-      const q = corners.pos[i];
-      if (pointsEqFn(p, q))
-        return { index: i, shift: V.minus(p, q).map(x => V.round(x)) };
-    }
-    return [];
-  };
-
   for (const f of faces) {
     for (const op of ops) {
-      const fMapped = f.map(p => lookup(V.times(op, p)));
-      const fNormal = normalizedFace(fMapped);
-      const key = JSON.stringify(fNormal.face);
+      const fNew = normalizedFace(f.map(e => apply(op, e)));
+      const key = JSON.stringify(fNew.face);
 
       if (!seen[key]) {
         seen[key] = true;
-        result.push(fNormal);
+        result.push(fNew);
       }
     }
   }
@@ -510,7 +507,7 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
 };
 
 
-const buildTiling = (corners, faces) => {
+const buildTiling = (pos, faces) => {
   const pairings = [[], [], [], []];
   const faceOffsets = [];
   let offset = 1;
@@ -534,7 +531,7 @@ const buildTiling = (corners, faces) => {
     offset += 4 * n;
   }
 
-  pairings[2] = op2PairingsForPlainMode(corners.pos, faces, faceOffsets);
+  pairings[2] = op2PairingsForPlainMode(pos, faces, faceOffsets);
 
   return delaney.build(3, offset - 1,
                        (ds, i) => pairings[i],
@@ -650,11 +647,11 @@ export const tilingFromFacelist = spec => {
     f => f.map(p => V.times(toPrimitive, V.point(p))));
 
   const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
-  const allCorners = applyOpsToCorners(facesMapped, primitive.ops, pointsEq);
-  const allFaces = applyOpsToFaces(
-    facesMapped, allCorners, primitive.ops, pointsEq);
+  const { pos, action, faces: codedFaces } =
+    applyOpsToCorners(facesMapped, primitive.ops, pointsEq);
+  const allFaces = applyOpsToFaces(pos, action, codedFaces, primitive.ops);
 
-  const ds = buildTiling(allCorners, allFaces);
+  const ds = buildTiling(pos, allFaces);
 
   // TODO also support the case were tiles are given explicitly
 
