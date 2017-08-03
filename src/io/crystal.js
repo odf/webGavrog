@@ -287,35 +287,34 @@ const applyOpsToCorners = (rawFaces, ops, pointsEqFn) => {
       const index = found < 0 ? pos.length : found;
 
       if (found < 0) {
-        const reps = [];
         const images = {};
         const stabilizer = pointStabilizer(p, ops, pointsEqFn);
+        const reps = operatorCosets(ops, stabilizer);
 
-        for (const op of operatorCosets(ops, stabilizer)) {
-          const j = pos.length;
-          for (const t of stabilizer)
-            images[spacegroups.opModZ(V.times(op, t))] = j;
-
-          pos.push(V.modZ(V.times(op, p)));
-          reps.push(op);
+        for (const r of reps) {
+          for (const op of stabilizer)
+            images[spacegroups.opModZ(V.times(r, op))] = pos.length;
+          pos.push(V.modZ(V.times(r, p)));
         }
 
-        for (const a of reps) {
+        for (const r of reps) {
           const m = {};
           for (const op of ops)
-            m[op] = images[spacegroups.opModZ(V.times(op, a))];
+            m[op] = images[spacegroups.opModZ(V.times(op, r))];
           action.push(m);
         }
       }
 
-      const shift = V.minus(p, pos[index]).map(x => V.round(x)); 
+      const shift = V.minus(p, pos[index]).map(x => V.round(x));
       face.push({ index, shift });
     }
 
     faces.push(face);
   }
 
-  console.log(`faces = ${JSON.stringify(faces, null, 2)}`);
+  console.log(`faces:`);
+  for (const f of faces)
+    console.log(`${JSON.stringify(f)}`);
   _timers && _timers.stop("applyOpsToCorners");
 
   return { pos, action, faces };
