@@ -3,6 +3,7 @@ import * as I from 'immutable';
 import * as cosets      from '../fpgroups/cosets';
 import * as delaney     from './delaney';
 import * as properties  from './properties';
+import * as derived     from './derived';
 import * as delaney2d   from './delaney2d';
 import * as delaney3d   from './delaney3d';
 import * as fundamental from './fundamental';
@@ -133,7 +134,7 @@ export const skeleton = cov => {
 };
 
 
-const chamberPositions = (cov, skel, pos) => {
+const chamberPositions = (cov, skel, pos, basis) => {
   const dim = delaney.dim(cov);
   let result = {};
 
@@ -159,6 +160,9 @@ const chamberPositions = (cov, skel, pos) => {
       });
    });
   });
+
+  for (const D of cov.elements())
+    result[D] = result[D].map(p => ops.toJS(ops.times(p, basis)));
 
   return result;
 };
@@ -272,16 +276,12 @@ const affineSymmetry = (D0, D1, pos) => {
 
 export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
   const dim = delaney.dim(cov);
-  const chamberPos = chamberPositions(cov, skel, vertexPos);
-
-  const pos = {};
-  for (const D of cov.elements())
-    pos[D] = chamberPos[D].map(p => ops.toJS(ops.times(p, basis)));
-
-  const phi = properties.morphism(cov, 1, ds, 1);
+  const pos = chamberPositions(cov, skel, vertexPos, basis);
+  const dso = derived.orientedCover(ds);
+  const phi = properties.morphism(cov, 1, dso, 1);
   const bas = D => chamberBasis(pos, D);
   const ori = adjustedOrientation(cov, pos);
-  const idcs = I.Range(0, delaney.dim(cov)).toArray();
+  const idcs = I.Range(0, dim).toArray();
   const tileOrbits = properties.orbits(cov, idcs).toArray();
 
   const templates = [];
@@ -299,7 +299,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
     if (templateIndex == null) {
       templateIndex = templates.length;
 
-      for (const E of properties.orbit(ds, idcs, E0))
+      for (const E of properties.orbit(dso, idcs, E0))
         dsChamberToTemplateIndex[E] = templateIndex;
 
       templates.push(tileSurface(cov, pos, ori, elms, idcs));
