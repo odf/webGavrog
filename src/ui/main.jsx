@@ -16,6 +16,22 @@ import Menu          from './Menu';
 import makeScene     from './makeScene';
 
 
+if (!HTMLCanvasElement.prototype.toBlob) {
+  Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+    value(callback, type, quality) {
+      const binStr = atob(this.toDataURL(type, quality).split(',')[1]);
+
+      const len = binStr.length;
+      const arr = new Uint8Array(len);
+      for (let i = 0; i < len; i++ )
+        arr[i] = binStr.charCodeAt(i);
+
+      callback(new Blob([arr], { type: type || 'image/png' }));
+    }
+  });
+}
+
+
 const findName = data => (
   ((data.find(s => s.key == 'name') || {}).args || [])[0]);
 
@@ -437,6 +453,8 @@ class App extends React.Component {
 
     if (canvas)
       canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
+    else
+      this.log('ERROR: could not save screenshot - no canvas element found');
   }
 
   showWindow(key) {
