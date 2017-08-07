@@ -44,7 +44,8 @@ export function minimal(ds) {
     return ds;
   else {
     const p = properties.typePartition(ds);
-    const reps = ds.elements().filter(D => p.get(D) == D);
+    const reps = I.List(p.classes(ds.elements()))
+      .map(cl => cl.find(D => p.get(D) == D));
     const emap = I.Map(reps.zip(I.Range(1)));
     const imap = I.Map(I.Range().zip(ds.indices()));
 
