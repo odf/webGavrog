@@ -184,8 +184,7 @@ const _parametersForGramMatrix = (gram, cfg, syms) => {
     }
   }
 
-  return ops.transposed(
-    ops.solution(ops.transposed(cfg), ops.transposed(a)))[0];
+  return ops.transposed(ops.solve(ops.transposed(cfg), ops.transposed(a)))[0];
 };
 
 
