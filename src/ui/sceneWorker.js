@@ -74,7 +74,8 @@ onmessage = event => {
     output = handlers[cmd](val);
     ok = true;
   } catch (ex) {
-    console.error(ex);
+    console.log(ex);
+    console.log(ex.stack);
   }
 
   postMessage({ id, output, ok });
