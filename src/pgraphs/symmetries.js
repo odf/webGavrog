@@ -176,11 +176,15 @@ export function morphism(
   start2,
   transform,
   adj1=pg.adjacencies(graph1),
-  adj2=pg.adjacencies(graph2)
+  adj2=pg.adjacencies(graph2),
+  verbose=false
 ) {
   _timers && _timers.start('morpism');
 
   _checkGraphsForMorphism(graph1, graph2, transform);
+
+  if (verbose)
+    console.log(`morpism(${graph1}, ${graph2}, ${start1}, ${start2}, ${JSON.stringify(transform)})`);
 
   const src2img = {};
   const img2src = {};
@@ -220,6 +224,8 @@ export function morphism(
 
     for (const [d1, e1] of Object.entries(n1)) {
       const e2 = n2[encode(ops.times(decode(d1), transform))];
+      if (verbose && e2 == null)
+        console.log(`  -> no morphism: no mapping for [${d1}, ${e1}]`);
 
       const status = (e2 == null ? BAD : OKAY) ||
         tryPair(encode(e1), encode(e2)) ||
@@ -229,6 +235,8 @@ export function morphism(
         queue.push([e1.tail, e2.tail]);
       else if (status == BAD) {
         _timers && _timers.stop('morpism');
+        if (verbose)
+          console.log(`  -> no morphism: cannot map ${e1} to ${e2}`);
         return null;
       }
     }
@@ -237,6 +245,9 @@ export function morphism(
   const complete = pg.vertices(graph2).every(v => img2src[v] != null) &&
     graph2.edges.every(e => (img2src[encode(e)] != null &&
                              img2src[encode(e.reverse())] != null));
+  if (verbose && !complete) {
+    console.log(`  -> no morphism: mapping incomplete`);
+  }
 
   _timers && _timers.stop('morpism');
 
@@ -464,7 +475,9 @@ export function symmetries(graph)
   const v0 = bases.first()[0].head;
   const B0 = bases.first().map(e => pg.edgeVector(e, pos));
   const invB0 = ops.inverse(B0);
-  const generators = [];
+
+  const id = ops.identityMatrix(graph.dim);
+  const generators = [morphism(graph, graph, v0, v0, id, adj, adj, true)];
 
   const p = new LabelledPartition((a, b) => a || b);
   _timers && _timers.stop('symmetries: preparations');
@@ -512,7 +525,7 @@ export function symmetries(graph)
   _timers && _timers.stop('symmetries');
 
   return {
-    generators,
+    generators: generators.slice(1),
     representativeBases,
     symmetries: syms
   };
