@@ -21,7 +21,7 @@ if (require.main == module) {
   covers.covers(DS.parse('<1.1:1:1,1,1:0,3>'), n * 6)
     .filter(ds => DS.orbitReps2(ds, 1, 2).size == n)
     .filter(DS2D.isProtoEuclidean)
-    .flatMap(ds => generators.results(branch.branchings(ds)))
+    .flatMap(ds => generators.results(branch.branchings(ds, 4)))
     .filter(good)
     .filter(props.isMinimal)
     .filter(DS2D.isEuclidean)
