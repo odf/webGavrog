@@ -18,8 +18,7 @@ if (require.main == module) {
     .filter(ds => DS.orbitReps2(ds, 1, 2).size == n)
     .filter(DS2D.isProtoEuclidean)
     .flatMap(ds => generators.results(branch.branchings(ds)))
-    .filter(ds => allMs(ds, 1, 2).every(r => r == 3))
-    .filter(ds => allMs(ds, 0, 1).every(r => r > 3))
+    .filter(ds => allMs(ds, 0, 1).every(m => m >= 4))
     .filter(props.isMinimal)
     .forEach(ds => console.log(`${ds}`));
 }
