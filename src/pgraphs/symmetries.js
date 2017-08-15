@@ -176,15 +176,11 @@ export function morphism(
   start2,
   transform,
   adj1=pg.adjacencies(graph1),
-  adj2=pg.adjacencies(graph2),
-  verbose=false
+  adj2=pg.adjacencies(graph2)
 ) {
   _timers && _timers.start('morpism');
 
   _checkGraphsForMorphism(graph1, graph2, transform);
-
-  if (verbose)
-    console.log(`morpism(${graph1}, ${graph2}, ${start1}, ${start2}, ${JSON.stringify(transform)})`);
 
   const src2img = {};
   const img2src = {};
@@ -224,8 +220,6 @@ export function morphism(
 
     for (const [d1, e1] of Object.entries(n1)) {
       const e2 = n2[encode(ops.times(decode(d1), transform))];
-      if (verbose && e2 == null)
-        console.log(`  -> no morphism: no mapping for [${d1}, ${e1}]`);
 
       const status = (e2 == null ? BAD : OKAY) ||
         tryPair(encode(e1), encode(e2)) ||
@@ -235,8 +229,6 @@ export function morphism(
         queue.push([e1.tail, e2.tail]);
       else if (status == BAD) {
         _timers && _timers.stop('morpism');
-        if (verbose)
-          console.log(`  -> no morphism: cannot map ${e1} to ${e2}`);
         return null;
       }
     }
@@ -245,9 +237,6 @@ export function morphism(
   const complete = pg.vertices(graph2).every(v => img2src[v] != null) &&
     graph2.edges.every(e => (img2src[encode(e)] != null &&
                              img2src[encode(e.reverse())] != null));
-  if (verbose && !complete) {
-    console.log(`  -> no morphism: mapping incomplete`);
-  }
 
   _timers && _timers.stop('morpism');
 
@@ -317,7 +306,7 @@ export function isMinimal(graph)
   const start = verts.first();
 
   for (const v of verts.rest()) {
-    if (morphism(graph, graph, start, v, id, true) != null)
+    if (morphism(graph, graph, start, v, id) != null)
       return false;
   }
 
@@ -334,7 +323,7 @@ const translationalEquivalences = graph => {
 
   for (const v of verts) {
     if (p.get(start) != p.get(v)) {
-      const iso = morphism(graph, graph, start, v, id, true);
+      const iso = morphism(graph, graph, start, v, id);
       if (iso != null) {
         for (const w of verts) {
           p = p.union(w, iso.src2img[w]);
@@ -461,6 +450,10 @@ const _matrixProductIfUnimodular = (A, B) => {
 export function symmetries(graph)
 {
   const pos = pg.barycentricPlacement(graph);
+
+  if (!pg.isLocallyStable(graph))
+    throw new Error('graph is not locally stable; cannot compute symmetries');
+
   const bases = characteristicBases(graph);
 
   _timers && _timers.start('symmetries');
@@ -477,7 +470,7 @@ export function symmetries(graph)
   const invB0 = ops.inverse(B0);
 
   const id = ops.identityMatrix(graph.dim);
-  const generators = [morphism(graph, graph, v0, v0, id, adj, adj, true)];
+  const generators = [morphism(graph, graph, v0, v0, id, adj, adj)];
 
   const p = new LabelledPartition((a, b) => a || b);
   _timers && _timers.stop('symmetries: preparations');
