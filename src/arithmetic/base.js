@@ -1,32 +1,29 @@
 export const typeOf = x => {
-  let t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
+  const t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
 
   if (t == 'Number') {
-    t = Number.isSafeInteger(x)
-      ? 'Integer' : 'Float';
+    return Number.isSafeInteger(x) ? 'Integer' : 'Float';
   }
   else if (t == 'Array') {
-    t = (x.length > 0 && x[0].constructor.name == 'Array')
-      ? 'Matrix' : 'Vector';
+    const isMatrix = x.length > 0 && x[0].constructor.name == 'Array';
+    return isMatrix ? 'Matrix' : 'Vector';
   }
-
-  return t;
+  else
+    return t;
 };
 
 
 const call = (dispatch, op, ops) => (...args) => {
   let next = dispatch;
-  for (let i = 0; i < args.length && next; ++i)
+  for (let i = 0; next && i < args.length; ++i)
     next = next[typeOf(args[i])];
 
   const method = next || dispatch['__default__'];
 
   if (method)
     return method(...args, ops);
-  else {
-    const msg = `Operator '${op}' not defined on [${args.map(typeOf)}]`;
-    throw new Error(msg);
-  }
+  else
+    throw new Error(`Operator '${op}' not defined on [${args.map(typeOf)}]`);
 };
 
 
