@@ -307,7 +307,7 @@ export function extend(baseOps, baseLength = 0) {
       _minus(r, _shiftLeft(s, m * BASELENGTH), true);
     }
 
-    for (let j = m - 1; j >= 0; --j) {
+    for (let j = m - 1; r.length > 0 && j >= 0; --j) {
       q[j] = Math.min(_quotient2by1(r[n + j], r[n + j - 1], s[n - 1]),
                       BASE - 1);
 
