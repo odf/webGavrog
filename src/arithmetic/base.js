@@ -92,7 +92,7 @@ const defaults = {
 };
 
 
-export function arithmetic(registry = mergeDeep({}, defaults)) {
+export const arithmetic = (registry = mergeDeep({}, defaults)) => {
   const result = {
     register(specs) {
       return arithmetic(mergeDeep(registry, specs));

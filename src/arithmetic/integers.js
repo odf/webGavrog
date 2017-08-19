@@ -7,7 +7,7 @@ const findBaseLength = () => {
 };
 
 
-export function extend(baseOps, baseLength = 0) {
+export const extend = (baseOps, baseLength = 0) => {
   const defaultBaseLength = findBaseLength();
   const b = baseLength & ~1;
 
@@ -58,12 +58,12 @@ export function extend(baseOps, baseLength = 0) {
       return s * d[0];
     else
       return 0;
-  }
+  };
 
 
   const shouldPromote = n => Math.abs(n) >= BASE;
 
-  const promote = function promote(n) {
+  const promote = n => {
     const sign = (n > 0) - (n < 0);
     n = Math.abs(n);
 
@@ -87,7 +87,7 @@ export function extend(baseOps, baseLength = 0) {
   const _last = a => a[a.length - 1];
 
 
-  const parse = function parse(literal) {
+  const parse = literal => {
     if (!literal.match(/^[+-]?\d{1,3}(_?\d{3})*$/))
       throw new Error("expected an integer literal, got "+literal);
 
@@ -113,7 +113,7 @@ export function extend(baseOps, baseLength = 0) {
   const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
 
 
-  const _cmp = function _cmp(r, s, k=0) {
+  const _cmp = (r, s, k=0) => {
     if (r.length != s.length + k)
       return r.length - s.length + k;
 
@@ -125,7 +125,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _plus = function _plus(r, s) {
+  const _plus = (r, s) => {
     if (s.length > r.length)
       return _plus(s, r);
 
@@ -151,7 +151,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _minus = function _minus(r, s, inplace=false) {
+  const _minus = (r, s, inplace=false) => {
     const result = inplace ? r : r.slice();
     let borrow = 0;
 
@@ -177,7 +177,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const cmp = function cmp(a, b) {
+  const cmp = (a, b) => {
     if (_isZero(a))
       return -b.sign;
     else if (_isZero(b))
@@ -191,7 +191,7 @@ export function extend(baseOps, baseLength = 0) {
 
   const _negative = n => new LongInt(-n.sign, n.digits);
 
-  const plus = function plus(a, b) {
+  const plus = (a, b) => {
     if (_isZero(a))
       return b;
     else if (_isZero(b))
@@ -203,7 +203,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const minus = function minus(a, b) {
+  const minus = (a, b) => {
     if (_isZero(a))
       return negative(b);
     else if (_isZero(b))
@@ -219,7 +219,7 @@ export function extend(baseOps, baseLength = 0) {
       else
         return make(a.sign, _minus(a.digits, b.digits));
     }
-  }
+  };
 
 
   const _lo = d => d % HALFBASE;
@@ -267,7 +267,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const _times = function _times(r, s) {
+  const _times = (r, s) => {
     const result = new Array(r.length + s.length).fill(0);
 
     for (let i = 0; i < r.length; ++i)
@@ -280,7 +280,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const times = function times(a, b) {
+  const times = (a, b) => {
     if (_isZero(a))
       return a;
     else if (_isZero(b))
@@ -329,7 +329,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const idiv = function idiv(a, b) {
+  const idiv = (a, b) => {
     if (b.sign == 0)
       throw new Error('division by zero');
     else if (a.sign == 0)
@@ -352,7 +352,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const mod = function mod(a, b) {
+  const mod = (a, b) => {
     if (b.sign == 0)
       throw new Error('division by zero');
     else if (a.sign == 0)
@@ -375,7 +375,7 @@ export function extend(baseOps, baseLength = 0) {
   };
 
 
-  const divmod = function divmod(a, b) {
+  const divmod = (a, b) => {
     if (b.sign == 0)
       throw new Error('division by zero');
     else if (a.sign == 0)

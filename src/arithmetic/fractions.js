@@ -1,4 +1,4 @@
-export function extend(intOps, intTypes, typeName = 'Fraction') {
+export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 
   class Fraction {
     constructor(numer, denom) {
@@ -76,14 +76,10 @@ export function extend(intOps, intTypes, typeName = 'Fraction') {
   const sgn      = q => intOps.sgn(q.numer);
 
 
-  const floor = q => {
-    return intOps.idiv(q.numer, q.denom);
-  };
+  const floor = q => intOps.idiv(q.numer, q.denom);
 
-  const ceil = q => {
-    return intOps.idiv(intOps.plus(q.numer, intOps.minus(q.denom, 1)),
-                       q.denom);
-  };
+  const ceil = q =>
+    intOps.idiv(intOps.plus(q.numer, intOps.minus(q.denom, 1)), q.denom);
 
   const cmp = (q, r) => {
     const d = minus(q, r);
@@ -100,7 +96,7 @@ export function extend(intOps, intTypes, typeName = 'Fraction') {
   };
 
 
-  const plus = function plus(q, r) {
+  const plus = (q, r) => {
     const a = intOps.gcd(q.denom, r.denom);
     const s = intOps.idiv(r.denom, a);
     const t = intOps.idiv(q.denom, a);
@@ -113,7 +109,7 @@ export function extend(intOps, intTypes, typeName = 'Fraction') {
   const minus = (q, r) => plus(q, negative(r));
 
 
-  const times = function times(q, r) {
+  const times = (q, r) => {
     const a = intOps.gcd(q.numer, r.denom);
     const b = intOps.gcd(q.denom, r.numer);
 

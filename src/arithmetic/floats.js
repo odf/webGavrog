@@ -1,4 +1,4 @@
-export function extend(rationals) {
+export const extend = rationals => {
   const ops = rationals;
 
 
@@ -81,4 +81,4 @@ export function extend(rationals) {
   }
 
   return ops.register(methods);
-}
+};
