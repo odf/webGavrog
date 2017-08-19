@@ -24,11 +24,6 @@ const map = {
   MM: f => (a, b) => checkLen(a, b) && a.map((v, i) => map.VV(f)(v, b[i]))
 };
 
-const mapFold = {
-  V : (f, g) => v => v.map(x => f(x)).reduce((a, x) => g(a, x)),
-  M : (f, g) => m => m.map(v => mapFold.V(f, g)(v)).reduce((a, x) => g(a, x))
-};
-
 
 const shapeOfMatrix = m => [m.length, m[0].length];
 
@@ -85,30 +80,26 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
     if (v.length != w.length)
       throw new Error('vectors must have equal length');
 
-    return (
-      array(v.length)
-        .map((_, k) => sops.times(v[k], w[k]))
-        .reduce((a, x) => sops.plus(a, x)));
+    let res = 0;
+    for (let k = 0; k < v.length; ++k)
+      res = sops.plus(res, sops.times(v[k], w[k]));
+
+    return res;
   };
 
 
   const matrixProduct = (A, B) => {
-    _timers && _timers.start('matrix multiplication');
-
     const [nrowsA, ncolsA] = shapeOfMatrix(A);
     const [nrowsB, ncolsB] = shapeOfMatrix(B);
 
     if (ncolsA != nrowsB)
       throw new Error('shapes do not match');
 
-    const out =
-      array(nrowsA).map((_, i) => (
-        array(ncolsB).map((_, j) => (
-          array(ncolsA)
-            .map((_, k) => sops.times(A[i][k], B[k][j]))
-            .reduce((a, x) => sops.plus(a, x))))));
-
-    _timers && _timers.stop('matrix multiplication');
+    const out = matrix(nrowsA, ncolsB);
+    for (let i = 0; i < nrowsA; ++i)
+      for (let j = 0; j < ncolsB; ++j)
+        for (let k = 0; k < ncolsA; ++k)
+          out[i][j] = sops.plus(out[i][j], sops.times(A[i][k], B[k][j]));
 
     return out;
   };
@@ -541,8 +532,9 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
     },
 
     squareNorm: {
-      Vector: mapFold.V(x => sops.times(x, x), sops.plus),
-      Matrix: mapFold.M(x => sops.times(x, x), sops.plus)
+      Vector: v => dotProduct(v, v),
+      Matrix: M =>
+        M.map(v => dotProduct(v, v)).reduce((a, b) => sops.plus(a, b))
     },
 
     norm: {
