@@ -1,51 +1,59 @@
 let _timers = null;
 
-export function useTimers(timers) {
+export const useTimers = timers => {
   _timers = timers;
 };
 
 
-export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
-
-  const s = scalarOps;
-
-  const checkLen = (v, w) => {
-    if (w.length == v.length)
-      return true;
-    else
-      throw new Error('size mismatch');
-  };
+const checkLen = (v, w) => {
+  if (w.length == v.length)
+    return true;
+  else
+    throw new Error('size mismatch');
+};
 
 
-  const map = {
-    V : f => v => v.map(x => f(x)),
-    M : f => m => m.map(v => v.map(x => f(x))),
-    VS: f => (v, s) => v.map(x => f(x, s)),
-    MS: f => (m, s) => m.map(v => v.map(x => f(x, s))),
-    SV: f => (s, v) => v.map(x => f(s, x)),
-    SM: f => (s, m) => m.map(v => v.map(x => f(s, x))),
-    VV: f => (v, w) => checkLen(v, w) && v.map((x, i) => f(x, w[i])),
-    MM: f => (a, b) => checkLen(a, b) && a.map((v, i) => map.VV(f)(v, b[i]))
-  };
+const map = {
+  V : f => v => v.map(x => f(x)),
+  M : f => m => m.map(v => v.map(x => f(x))),
+  VS: f => (v, s) => v.map(x => f(x, s)),
+  MS: f => (m, s) => m.map(v => v.map(x => f(x, s))),
+  SV: f => (s, v) => v.map(x => f(s, x)),
+  SM: f => (s, m) => m.map(v => v.map(x => f(s, x))),
+  VV: f => (v, w) => checkLen(v, w) && v.map((x, i) => f(x, w[i])),
+  MM: f => (a, b) => checkLen(a, b) && a.map((v, i) => map.VV(f)(v, b[i]))
+};
 
-  const mapFold = {
-    V : (f, g) => v => v.map(x => f(x)).reduce((a, x) => g(a, x)),
-    M : (f, g) => m => m.map(v => mapFold.V(f, g)(v)).reduce((a, x) => g(a, x))
-  };
+const mapFold = {
+  V : (f, g) => v => v.map(x => f(x)).reduce((a, x) => g(a, x)),
+  M : (f, g) => m => m.map(v => mapFold.V(f, g)(v)).reduce((a, x) => g(a, x))
+};
 
 
-  const shapeOfMatrix = m => [m.length, m[0].length];
+const shapeOfMatrix = m => [m.length, m[0].length];
 
-  const array = n => Array(n).fill(0);
+const array = n => Array(n).fill(0);
 
-  const matrix = (nrows, ncols) => array(nrows).map(() => array(ncols));
+const matrix = (nrows, ncols) => array(nrows).map(() => array(ncols));
 
-  const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
+const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
+
+const cloneMatrix = A => A.map(row => row.slice());
+
+
+const transposedMatrix = m => {
+  const [nrows, ncols] = shapeOfMatrix(m);
+  return array(ncols).map((_, j) => array(nrows).map((_, i) => m[i][j]));
+};
+
+
+export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
+  const sops = scalarOps;
 
 
   const compareV = (v, w) => {
     for (let i = 0; i < v.length || i < w.length; ++i) {
-      const d = scalarOps.cmp(v[i] || 0, w[i] || 0);
+      const d = sops.cmp(v[i] || 0, w[i] || 0);
       if (d)
         return d;
     }
@@ -65,17 +73,11 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
   const signV = v => {
     for (const x of v) {
-      const s = scalarOps.sgn(x);
+      const s = sops.sgn(x);
       if (s)
         return s;
     }
     return 0;
-  };
-
-
-  const transposedMatrix = m => {
-    const [nrows, ncols] = shapeOfMatrix(m);
-    return array(ncols).map((_, j) => array(nrows).map((_, i) => m[i][j]));
   };
 
 
@@ -85,8 +87,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
     return (
       array(v.length)
-        .map((_, k) => s.times(v[k], w[k]))
-        .reduce((a, x) => s.plus(a, x)));
+        .map((_, k) => sops.times(v[k], w[k]))
+        .reduce((a, x) => sops.plus(a, x)));
   };
 
 
@@ -103,8 +105,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
       array(nrowsA).map((_, i) => (
         array(ncolsB).map((_, j) => (
           array(ncolsA)
-            .map((_, k) => s.times(A[i][k], B[k][j]))
-            .reduce((a, x) => s.plus(a, x))))));
+            .map((_, k) => sops.times(A[i][k], B[k][j]))
+            .reduce((a, x) => sops.plus(a, x))))));
 
     _timers && _timers.stop('matrix multiplication');
 
@@ -117,21 +119,19 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
       throw new Error('both vectors must have length 3');
 
     return [
-      s.minus(s.times(v[1], w[2]), s.times(v[2], w[1])),
-      s.minus(s.times(v[2], w[0]), s.times(v[0], w[2])),
-      s.minus(s.times(v[0], w[1]), s.times(v[1], w[0]))
+      sops.minus(sops.times(v[1], w[2]), sops.times(v[2], w[1])),
+      sops.minus(sops.times(v[2], w[0]), sops.times(v[0], w[2])),
+      sops.minus(sops.times(v[0], w[1]), sops.times(v[1], w[0]))
     ];
   };
-
-
-  const _clone = A => A.map(row => row.slice());
 
 
   const _findPivot = (A, row, col) => {
     let best = null;
     for (let i = row; i < A.length; ++i) {
-      if (s.ne(0, A[i][col])
-          && (best == null || s.lt(s.abs(A[i][col]), s.abs(A[best][col]))))
+      if (sops.ne(0, A[i][col])
+          && (best == null
+              || sops.lt(sops.abs(A[i][col]), sops.abs(A[best][col]))))
       {
           best = i;
       }
@@ -141,13 +141,13 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
   const _swapRowsInPlace = (A, i, j) => { [A[i], A[j]] = [A[j], A[i]]; };
 
-  const _negateRowInPlace = (A, i) => { A[i] = map.V(s.negative)(A[i]); };
+  const _negateRowInPlace = (A, i) => { A[i] = map.V(sops.negative)(A[i]); };
 
   const _truncate = (x, a) =>
-    (s.cmp(s.abs(x), s.abs(s.times(a, epsilon))) <= 0) ? 0 : x;
+    (sops.cmp(sops.abs(x), sops.abs(sops.times(a, epsilon))) <= 0) ? 0 : x;
 
   const _adjustRowInPlace = (A, i, j, f) => {
-    const fn0 = k => s.plus(A[i][k], s.times(A[j][k], f));
+    const fn0 = k => sops.plus(A[i][k], sops.times(A[j][k], f));
     const fn  = epsilon ? k => _truncate(fn0(k), A[i][k]) : fn0;
 
     const row = A[i];
@@ -158,10 +158,10 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
   const triangulation = (A, clearAboveDiagonal = false) => {
     _timers && _timers.start('matrix triangulation');
 
-    const divide = overField ? s.div : s.idiv;
+    const divide = overField ? sops.div : sops.idiv;
     const [nrows, ncols] = shapeOfMatrix(A);
 
-    const R = _clone(A);
+    const R = cloneMatrix(A);
     const U = identity(A.length);
     let col = 0;
     let sign = 1;
@@ -183,7 +183,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
           sign *= -1;
         }
 
-        if (s.lt(R[row][col], 0)) {
+        if (sops.lt(R[row][col], 0)) {
           _negateRowInPlace(R, row);
           _negateRowInPlace(U, row);
           sign *= -1;
@@ -192,15 +192,15 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
         cleared = true;
 
         for (let k = row + 1; k < nrows; ++k) {
-          if (s.sgn(R[k][col]) != 0) {
-            const f = s.negative(divide(R[k][col], R[row][col]));
+          if (sops.sgn(R[k][col]) != 0) {
+            const f = sops.negative(divide(R[k][col], R[row][col]));
 
             _adjustRowInPlace(R, k, row, f);
             _adjustRowInPlace(U, k, row, f);
 
             if (overField)
               R[k][col] = 0;
-            else if (s.ne(0, R[k][col]))
+            else if (sops.ne(0, R[k][col]))
               cleared = false;
           }
         }
@@ -214,15 +214,15 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
       col = 0;
 
       for (let row = 0; row < nrows; ++row) {
-        while (col < ncols && s.eq(R[row][col], 0))
+        while (col < ncols && sops.eq(R[row][col], 0))
           ++col;
         if (col >= ncols)
           break;
 
         for (let i = 0; i < row; ++i) {
-          if (s.eq(R[i][col], 0))
+          if (sops.eq(R[i][col], 0))
             continue;
-          const f = s.negative(divide(R[i][col], R[row][col]));
+          const f = sops.negative(divide(R[i][col], R[row][col]));
           _adjustRowInPlace(R, i, row, f);
           _adjustRowInPlace(U, i, row, f);
         }
@@ -236,14 +236,14 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
 
   const _rowEchelonForm = M => {
-    const A = _clone(M);
+    const A = cloneMatrix(M);
     const [nrows, ncols] = shapeOfMatrix(A);
 
     let row = 0;
 
     for (let col = 0; col < ncols; ++col) {
       let r = row;
-      while (r < nrows && s.eq(A[r][col], 0))
+      while (r < nrows && sops.eq(A[r][col], 0))
         ++r;
 
       if (r >= nrows)
@@ -254,7 +254,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
       const p = A[row][col];
       for (let j = col; j < ncols; ++j)
-        A[row][j] = s.div(A[row][j], p);
+        A[row][j] = sops.div(A[row][j], p);
 
       for (let i = 0; i < nrows; ++i) {
         if (i == row)
@@ -262,7 +262,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
         const f = A[i][col];
         for (let j = col; j < ncols; ++j)
-          A[i][j] = s.minus(A[i][j], s.times(A[row][j], f));
+          A[i][j] = sops.minus(A[i][j], sops.times(A[row][j], f));
       }
 
       ++row;
@@ -276,7 +276,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     const [nrows, ncols] = shapeOfMatrix(A);
     let row = 0;
     for (let col = 0; col < ncols; ++col) {
-      if (row < nrows && s.sgn(A[row][col]) != 0)
+      if (row < nrows && sops.sgn(A[row][col]) != 0)
         ++row;
     }
     return row;
@@ -294,7 +294,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     const t = triangulation(A);
     return array(nrows)
       .map((_, i) => t.R[i][i])
-      .reduce((a, x) => s.times(a, x), t.sign);
+      .reduce((a, x) => sops.times(a, x), t.sign);
   };
 
 
@@ -311,15 +311,15 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
       for (let i = top-1; i >= 0; --i) {
         let right = v[i][j];
         for (let nu = i+1; nu < top; ++nu) {
-          right = s.minus(right, s.times(R[i][nu], X[nu][j]));
+          right = sops.minus(right, sops.times(R[i][nu], X[nu][j]));
         }
 
-        if (s.sgn(right) == 0)
+        if (sops.sgn(right) == 0)
           X[i][j] = right;
-        else if (s.sgn(R[i][i]) == 0)
+        else if (sops.sgn(R[i][i]) == 0)
           return null;
         else
-          X[i][j] = s.div(right, R[i][i]);
+          X[i][j] = sops.div(right, R[i][i]);
       }
     }
 
@@ -352,7 +352,7 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     const [n, m] = shapeOfMatrix(A);
     for (let i = 0; i < n; ++i) {
       for (let j = 0; j < m; ++j) {
-        if (i != j && s.ne(A[i][j], 0))
+        if (i != j && sops.ne(A[i][j], 0))
           return false;
       }
     }
@@ -401,18 +401,18 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
       const d = i < m ? D[i][i] : 0;
       for (let j = 0; j < k; ++j) {
         const r = v[i][j];
-        if (scalarOps.eq(d, 0)) {
-          if (!(scalarOps.eq(r, 0)
+        if (sops.eq(d, 0)) {
+          if (!(sops.eq(r, 0)
                 || (modZ
-                    && scalarOps.isInteger(r))
-                || (!scalarOps.isRational(r)
-                    && scalarOps.le(scalarOps.abs(r), epsilon))))
+                    && sops.isInteger(r))
+                || (!sops.isRational(r)
+                    && sops.le(sops.abs(r), epsilon))))
           {
             return null;
           }
         }
         else if (i < m) {
-          y[i][j] = scalarOps.div(r, d);
+          y[i][j] = sops.div(r, d);
         }
       }
     }
@@ -440,25 +440,25 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
   const _rowProduct = (A, i, j) => {
     const [nrows, ncols] = shapeOfMatrix(A)
     return array(ncols)
-      .map((_, k) => s.times(A[i][k], A[j][k]))
-      .reduce((a, x) => s.plus(a, x));
+      .map((_, k) => sops.times(A[i][k], A[j][k]))
+      .reduce((a, x) => sops.plus(a, x));
   };
 
   const _normalizeRowInPlace = (A, i) => {
-    const norm = Math.sqrt(s.toJS(_rowProduct(A, i, i)));
+    const norm = Math.sqrt(sops.toJS(_rowProduct(A, i, i)));
 
     const row = A[i];
     for (const j in row)
-      row[j] = s.div(row[j], norm);
+      row[j] = sops.div(row[j], norm);
   };
 
   const orthonormalized = A => {
     const [nrows, ncols] = shapeOfMatrix(A)
-    const O = _clone(A);
+    const O = cloneMatrix(A);
 
     array(nrows).forEach((_, i) => {
       array(i).forEach((_, j) => {
-        _adjustRowInPlace(O, i, j, s.negative(_rowProduct(O, i, j)))
+        _adjustRowInPlace(O, i, j, sops.negative(_rowProduct(O, i, j)))
       });
       _normalizeRowInPlace(O, i);
     });
@@ -471,17 +471,17 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     let sup = 0;
     for (let i = 0; i < nrows; ++i) {
       for (let j = 0; j < ncols; ++j) {
-        const val = s.abs(A[i][j]);
-        if (s.gt(val, sup))
+        const val = sops.abs(A[i][j]);
+        if (sops.gt(val, sup))
           sup = val;
       }
     }
-    const delta = s.times(sup, epsilon);
+    const delta = sops.times(sup, epsilon);
     const cleaned = x => {
-      if (s.le(s.abs(x), delta))
+      if (sops.le(sops.abs(x), delta))
         return 0;
-      else if (s.le(s.abs(s.minus(s.round(x),x)), epsilon))
-        return s.round(x);
+      else if (sops.le(sops.abs(sops.minus(sops.round(x),x)), epsilon))
+        return sops.round(x);
       else
         return x;
     };
@@ -492,8 +492,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
   const methods = {
     toJS: {
-      Vector: map.V(s.toJS),
-      Matrix: map.M(s.toJS)
+      Vector: map.V(sops.toJS),
+      Matrix: map.M(sops.toJS)
     },
 
     vector: {
@@ -527,8 +527,8 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     },
 
     negative: {
-      Vector: map.V(s.negative),
-      Matrix: map.M(s.negative)
+      Vector: map.V(sops.negative),
+      Matrix: map.M(sops.negative)
     },
 
     cmp: {
@@ -541,13 +541,13 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     },
 
     squareNorm: {
-      Vector: mapFold.V(x => s.times(x, x), s.plus),
-      Matrix: mapFold.M(x => s.times(x, x), s.plus)
+      Vector: mapFold.V(x => sops.times(x, x), sops.plus),
+      Matrix: mapFold.M(x => sops.times(x, x), sops.plus)
     },
 
     norm: {
-      Vector: v => s.sqrt(methods.squareNorm.Vector(v)),
-      Matrix: m => s.sqrt(methods.squareNorm.Matrix(m))
+      Vector: v => sops.sqrt(methods.squareNorm.Vector(v)),
+      Matrix: m => sops.sqrt(methods.squareNorm.Matrix(m))
     },
 
     transposed: {
@@ -616,12 +616,12 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     },
 
     __repr__: {
-      Vector: map.V(s.repr),
-      Matrix: map.M(s.repr)
+      Vector: map.V(sops.repr),
+      Matrix: map.M(sops.repr)
     },
 
-    __Vector__: { Object: ({ Vector: v }) => map.V(s.fromRepr)(v) },
-    __Matrix__: { Object: ({ Matrix: m }) => map.M(s.fromRepr)(m) },
+    __Vector__: { Object: ({ Vector: v }) => map.V(sops.fromRepr)(v) },
+    __Matrix__: { Object: ({ Matrix: m }) => map.M(sops.fromRepr)(m) },
   };
 
   for (const name of ['plus', 'minus', 'div', 'idiv', 'mod']) {
@@ -630,23 +630,23 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
 
   for (const name of ['plus', 'minus', 'times', 'div', 'idiv', 'mod']) {
     for (const sType of scalarTypes) {
-      methods[name]['Vector'][sType] = map.VS(s[name]);
-      methods[name]['Matrix'][sType] = map.MS(s[name]);
+      methods[name]['Vector'][sType] = map.VS(sops[name]);
+      methods[name]['Matrix'][sType] = map.MS(sops[name]);
     }
   }
 
   for (const name of ['plus', 'minus', 'times']) {
     for (const sType of scalarTypes) {
       methods[name][sType] = {
-        Vector: map.SV(s[name]),
-        Matrix: map.SM(s[name])
+        Vector: map.SV(sops[name]),
+        Matrix: map.SM(sops[name])
       }
     }
   }
 
   for (const name of ['plus', 'minus']) {
-    methods[name].Vector.Vector = map.VV(s[name]);
-    methods[name].Matrix.Matrix = map.MM(s[name]);
+    methods[name].Vector.Vector = map.VV(sops[name]);
+    methods[name].Matrix.Matrix = map.MM(sops[name]);
   }
 
   if (epsilon) {
@@ -656,5 +656,5 @@ export function extend(scalarOps, scalarTypes, overField, epsilon = null) {
     }
   }
 
-  return s.register(methods);
+  return sops.register(methods);
 };
