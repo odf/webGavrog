@@ -1,6 +1,7 @@
 import { typeOf } from '../arithmetic/base';
 import { rationals, rationalMatricesAsModule } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
+import * as laExact from '../arithmetic/linearAlgebraExact';
 
 import { coordinateChanges } from './types';
 import * as parms from './parameterVectors';
@@ -176,42 +177,6 @@ export function primitiveSetting(stdOps) {
 };
 
 
-const _reduceVector = (v, bs) => {
-  if (bs.length == 0)
-    return { reduced: v, coefficients: [], index: 0, independent: true };
-
-  const [nrows, ncols] = V.shape(bs);
-  if (v.length != ncols)
-    throw Error("shapes don't match");
-
-  let rowBs = 0;
-  let colBs = 0;
-  let colV = 0;
-  const coefficients = [];
-
-  while (rowBs < nrows && colBs < ncols) {
-    const b = bs[rowBs];
-    while (colBs < ncols && V.eq(b[colBs], 0))
-      ++colBs;
-
-    while (colV < ncols && V.eq(v[colV], 0))
-      ++colV;
-
-    if (colV < colBs || colV >= ncols || colBs >= ncols)
-      break;
-    else if (colV == colBs) {
-      const f = V.div(v[colV], b[colV]);
-      v = V.minus(v, V.times(b, f));
-      coefficients.push(f);
-    }
-
-    ++rowBs;
-  }
-
-  return { reduced: v, coefficients, index: rowBs, independent: colV < ncols };
-};
-
-
 export const gramMatrixConfigurationSpace = ops => {
   const d = V.dimension(ops[0]);
   const m = (d * (d+1)) / 2;
@@ -232,13 +197,8 @@ export const gramMatrixConfigurationSpace = ops => {
     const A = P.minus(P.times(S, P.times(M, P.transposed(S))), M);
 
     for (const row of A) {
-      for (const x of row) {
-        const v = x.coords;
-
-        const { reduced, index, independent } = _reduceVector(v, eqns);
-        if (independent)
-          eqns.splice(index, 0, reduced);
-      }
+      for (const x of row)
+        laExact.extendBasis(x.coords, eqns, V);
     }
   }
 
