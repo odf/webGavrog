@@ -30,7 +30,7 @@ const gcdex = (m, n) => {
 };
 
 
-const diagonalize = mat => {
+const diagonalizeInPlace = mat => {
   const [nrows, ncols] = ops.shape(mat);
   const n = Math.min(nrows, ncols);
 
@@ -41,56 +41,74 @@ const diagonalize = mat => {
     // --- find the nonzero submatrix entry with smallest absolute value
     for (let row = i; row < nrows; ++row) {
       for (let col = i; col < ncols; ++col) {
-        const val = ops.abs(M[row][col]);
+        const val = ops.abs(mat[row][col]);
         if (ops.ne(val, 0) && (pivotVal == null || ops.lt(val, pivotVal)))
           [pivotVal, pivotRow, pivotCol] = [val, row, col];
       }
     }
 
     if (pivotVal == null)
-      return;
+      return mat;
 
     // --- move the pivot to the diagonal and make it positive
     if (pivotRow != i) {
       for (let col = i; col < ncols; ++col)
-        [M[i][col], M[pivotRow][col]] = [M[pivotRow][col], M[i][col]];
+        [mat[i][col], mat[pivotRow][col]] = [mat[pivotRow][col], mat[i][col]];
     }
 
     if (pivotCol != i) {
       for (let row = i; row < nrows; ++row)
-        [M[row][i], M[row][pivotCol]] = [M[row][pivotCol], M[row][i]];
+        [mat[row][i], mat[row][pivotCol]] = [mat[row][pivotCol], mat[row][i]];
     }
 
-    if (ops.lt(M[i][i], 0)) {
+
+    if (ops.lt(mat[i][i], 0)) {
       for (let col = i; col < ncols; ++col)
-        M[i][col] = ops.negative(M[i][col]);
+        mat[i][col] = ops.negative(mat[i][col]);
     }
 
     // --- eliminate off-diagonal entries in i-th row and column
-    let done = false;
+    let dirty = true;
 
-    while (!done) {
+    while (dirty) {
       // --- clear the i-th column by row operations
       for (let row = i + 1; row < nrows; ++row) {
-        const [x, a, b, c, d] = gcdex(M[i][i], M[row][i]);
+        const [x, a, b, c, d] = gcdex(mat[i][i], mat[row][i]);
         for (let col = i; col < ncols; ++col) {
-          const [v, w] = [M[i][col], M[row][col]];
-          M[i][col] = ops.plus(ops.times(v, a), ops.times(w, b));
-          M[row][col] = ops.plus(ops.times(v, c), ops.times(w, d));
+          const [v, w] = [mat[i][col], mat[row][col]];
+          mat[i][col] = ops.plus(ops.times(v, a), ops.times(w, b));
+          mat[row][col] = ops.plus(ops.times(v, c), ops.times(w, d));
         }
       }
                 
       // --- now try to clear the i-th row by column operations
-      done = true;
+      dirty = false;
       
-      // TODO ...
+      for (let col = i + 1; col < ncols; ++col) {
+        const [x, a, b, c, d] = gcdex(mat[i][i], mat[i][col]);
+        dirty = dirty || ops.ne(b, 0);
+
+        for (let row = i; row < nrows; ++row) {
+          const [v, w] = [mat[row][i], mat[row][col]];
+          mat[row][i] = ops.plus(ops.times(v, a), ops.times(w, b));
+          mat[row][col] = ops.plus(ops.times(v, c), ops.times(w, d));
+        }
+      }
     }
   }
+
+  return mat;
 };
 
 
 if (require.main == module) {
-  const test = (m, n) => {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
+  const cloneMatrix = A => A.map(row => row.slice());
+
+  const testGcdex = (m, n) => {
     const [x, a, b, c, d] = gcdex(m, n);
     const checkX = ops.plus(ops.times(a, m), ops.times(b, n));
     const check0 = ops.plus(ops.times(c, m), ops.times(d, n));
@@ -100,12 +118,22 @@ if (require.main == module) {
     console.log();
   };
 
-  test(5, 3);
-  test(85, 51);
-  test(34, 55);
-  test(170, 275);
-  test(550, 275);
-  test(0, 275);
-  test(550, 0);
-  test(0, 0);
+  testGcdex(5, 3);
+  testGcdex(85, 51);
+  testGcdex(34, 55);
+  testGcdex(170, 275);
+  testGcdex(550, 275);
+  testGcdex(0, 275);
+  testGcdex(550, 0);
+  testGcdex(0, 0);
+
+  const testDiag = mat => {
+    console.log(`mat = ${mat}`);
+    console.log(`diag(mat) = ${diagonalizeInPlace(cloneMatrix(mat))}`);
+    console.log();
+  };
+
+  testDiag([ [ 2, 2, 3 ], [ 3, 3, 4 ], [ 2, 1, 3 ] ]);
+  testDiag([ [ 1, 2 ], [ 3, 4 ] ]);
+  testDiag([ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]);
 }
