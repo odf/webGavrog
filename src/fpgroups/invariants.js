@@ -135,27 +135,6 @@ if (require.main == module) {
 
   const cloneMatrix = A => A.map(row => row.slice());
 
-  const testGcdex = (m, n) => {
-    const [x, a, b, c, d] = ops.gcdex(m, n);
-    const checkX = ops.plus(ops.times(a, m), ops.times(b, n));
-    const check0 = ops.plus(ops.times(c, m), ops.times(d, n));
-    console.log(`gcd(${m}, ${n}) = ${x}`);
-    console.log(`  ${a} * ${m} + ${b} * ${n} = ${checkX}`);
-    console.log(`  ${c} * ${m} + ${d} * ${n} = ${check0}`);
-    console.log();
-  };
-
-  testGcdex(5, 3);
-  testGcdex(85, 51);
-  testGcdex(34, 55);
-  testGcdex(170, 275);
-  testGcdex(550, 275);
-  testGcdex(0, 275);
-  testGcdex(550, 0);
-  testGcdex(5, 5);
-  testGcdex(5, -5);
-  testGcdex(0, 0);
-
   const testDiag = mat => {
     console.log(`mat = ${mat}`);
     console.log(`diag(mat) = ${diagonalizeInPlace(cloneMatrix(mat))}`);

@@ -35,6 +35,28 @@ if (require.main == module) {
 
   const ops = rationalMatrices;
 
+  const testGcdex = (m, n) => {
+    const [x, a, b, c, d] = ops.gcdex(m, n);
+    const checkX = ops.plus(ops.times(a, m), ops.times(b, n));
+    const check0 = ops.plus(ops.times(c, m), ops.times(d, n));
+    console.log(`gcd(${m}, ${n}) = ${x}`);
+    console.log(`  ${a} * ${m} + ${b} * ${n} = ${checkX}`);
+    console.log(`  ${c} * ${m} + ${d} * ${n} = ${check0}`);
+    console.log();
+  };
+
+  testGcdex(5, 3);
+  testGcdex(85, 51);
+  testGcdex(34, 55);
+  testGcdex(170, 275);
+  testGcdex(550, 275);
+  testGcdex(0, 275);
+  testGcdex(550, 0);
+  testGcdex(5, 5);
+  testGcdex(5, -5);
+  testGcdex(0, 0);
+  testGcdex(ops.div(5, 6), ops.div(11, 9));
+
   const V = [1, 2, 3];
   const M = [[1, 2, 3], [4, 5, 6]];
 
