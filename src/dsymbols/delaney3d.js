@@ -1,6 +1,7 @@
 import * as I from 'immutable';
 
 import { stabilizer } from '../fpgroups/stabilizer';
+import { abelianInvariants } from '../fpgroups/invariants';
 
 import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
@@ -41,50 +42,6 @@ const _degree = function _degree(ct, word) {
 
 const _flattensAll = (ct, cones) =>
   cones.every(([wd, d]) => _degree(ct, wd) == d);
-
-
-const _isDiagonal = mat => {
-  const [nrows, ncols] = ops.shape(mat);
-  return (
-    I.Range(0, nrows).every(i => (
-      I.Range(0, ncols).every(j => (
-        i == j || 0 == ops.sgn(mat[i][j]))))));
-}
-
-
-const _factors = function _factors(xs) {
-  return I.List(xs).withMutations(function(xs) {
-    I.Range(0, xs.size).forEach(function(i) {
-      let a = xs.get(i);
-      I.Range(i+1, xs.size).forEach(function(j) {
-        const b = xs.get(j);
-        const g = ops.gcd(a, b);
-        xs.set(j, ops.sgn(g) == 0 ? 0 : ops.times(ops.idiv(a, g), b));
-        a = g;
-      });
-      xs.set(i, a);
-    });
-  });
-};
-
-
-const _invariants = function _invariants(nrGens, rels) {
-  let mat = cosets.relatorMatrix(nrGens, rels).toJS();
-
-  while (!_isDiagonal(mat)) {
-    mat = ops.transposed(ops.triangulation(mat).R);
-    mat = ops.transposed(ops.triangulation(mat).R);
-  }
-
-  const [nrows, ncols] = ops.shape(mat);
-  const d = Math.min(nrows, ncols);
-  const diag = I.Range(0, d).map(i => mat[i][i]);
-  const factors = _factors(diag)
-    .filter(x => ops.cmp(x, 1))
-    .sort((a, b) => ops.cmp(a, b));
-
-  return I.Repeat(0, nrGens - d).concat(factors);
-};
 
 
 export function pseudoToroidalCover(ds) {
@@ -141,8 +98,8 @@ export function pseudoToroidalCover(ds) {
       domain,
       (...args) => table.getIn(args)
     );
-    const inv = _invariants(stab.generators.size, stab.relators);
-    return inv.map(x => ops.sgn(x)).equals(I.List([0,0,0]));
+    const inv = abelianInvariants(stab.generators.size, stab.relators);
+    return ops.eq(inv, [0, 0, 0]);
   });
 
   if (good)
