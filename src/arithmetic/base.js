@@ -55,6 +55,32 @@ const gcd = (a, b, ops) => {
 };
 
 
+const gcdex = (m, n, ops) => {
+  let f  = ops.abs(m);
+  let fm = ops.lt(m, 0) ? -1 : 1;
+  let g  = ops.abs(n);
+  let gm = 0;
+
+  while (ops.ne(g, 0)) {
+    const q  = ops.idiv(f, g);
+    const t  = g;
+    const tm = gm;
+    g  = ops.minus(f, ops.times(q, g));
+    gm = ops.minus(fm, ops.times(q, gm));
+    f  = t;
+    fm = tm;
+  }
+
+  if (ops.eq(n, 0))
+    return [ f, fm, 0, gm, 1 ];
+  else
+    return [
+      f,
+      fm, ops.idiv(ops.minus(f, ops.times(fm, m)), n),
+      gm, ops.idiv(ops.minus(0, ops.times(gm, m)), n) ];
+};
+
+
 const mod = (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y));
 
 
@@ -81,6 +107,7 @@ const defaults = {
 
   mod: { __default__: mod },
   gcd: { __default__: gcd },
+  gcdex: { __default__: gcdex },
 
   typeOf     : { __default__: x => typeOf(x) },
   repr       : { __default__: (x, ops) => ({ [typeOf(x)]: ops.__repr__(x) }) },

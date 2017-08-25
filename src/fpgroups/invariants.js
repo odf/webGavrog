@@ -7,32 +7,6 @@ import { intMatrices } from '../arithmetic/types';
 const ops = intMatrices;
 
 
-const gcdex = (m, n) => {
-  let f  = ops.abs(m);
-  let fm = ops.lt(m, 0) ? -1 : 1;
-  let g  = ops.abs(n);
-  let gm = 0;
-
-  while (ops.ne(g, 0)) {
-    const q  = ops.idiv(f, g);
-    const t  = g;
-    const tm = gm;
-    g  = ops.minus(f, ops.times(q, g));
-    gm = ops.minus(fm, ops.times(q, gm));
-    f  = t;
-    fm = tm;
-  }
-
-  if (ops.eq(n, 0))
-    return [ f, fm, 0, gm, 1 ];
-  else
-    return [
-      f,
-      fm, ops.idiv(ops.minus(f, ops.times(fm, m)), n),
-      gm, ops.idiv(ops.minus(0, ops.times(gm, m)), n) ];
-};
-
-
 const diagonalizeInPlace = mat => {
   const [nrows, ncols] = ops.shape(mat);
   const n = Math.min(nrows, ncols);
@@ -83,7 +57,7 @@ const diagonalizeInPlace = mat => {
             mat[row][col] = ops.minus(mat[row][col], ops.times(x, mat[i][col]));
         }
         else if (ops.ne(0, f)) {
-          const [x, a, b, c, d] = gcdex(e, f);
+          const [x, a, b, c, d] = ops.gcdex(e, f);
           for (let col = i; col < ncols; ++col) {
             const [v, w] = [mat[i][col], mat[row][col]];
             mat[i][col] = ops.plus(ops.times(v, a), ops.times(w, b));
@@ -104,7 +78,7 @@ const diagonalizeInPlace = mat => {
         else if (ops.ne(0, f)) {
           dirty = true;
 
-          const [x, a, b, c, d] = gcdex(e, f);
+          const [x, a, b, c, d] = ops.gcdex(e, f);
           for (let row = i; row < nrows; ++row) {
             const [v, w] = [mat[row][i], mat[row][col]];
             mat[row][i] = ops.plus(ops.times(v, a), ops.times(w, b));
@@ -162,7 +136,7 @@ if (require.main == module) {
   const cloneMatrix = A => A.map(row => row.slice());
 
   const testGcdex = (m, n) => {
-    const [x, a, b, c, d] = gcdex(m, n);
+    const [x, a, b, c, d] = ops.gcdex(m, n);
     const checkX = ops.plus(ops.times(a, m), ops.times(b, n));
     const check0 = ops.plus(ops.times(c, m), ops.times(d, n));
     console.log(`gcd(${m}, ${n}) = ${x}`);
