@@ -39,7 +39,6 @@ const diagonalizeInPlace = mat => {
 
   // --- eliminate off-diagonal elements in a diagonal sweep
   for (let i = 0; i < n; ++i) {
-    console.log(`i = ${i}, mat = ${mat}`);
     let [pivotVal, pivotRow, pivotCol] = [null, 0, 0];
 
     // --- find the nonzero submatrix entry with smallest absolute value
@@ -65,13 +64,10 @@ const diagonalizeInPlace = mat => {
         [mat[row][i], mat[row][pivotCol]] = [mat[row][pivotCol], mat[row][i]];
     }
 
-
     if (ops.lt(mat[i][i], 0)) {
       for (let col = i; col < ncols; ++col)
         mat[i][col] = ops.negative(mat[i][col]);
     }
-
-    console.log(`mat <- ${mat}`);
 
     // --- eliminate off-diagonal entries in i-th row and column
     let dirty = true;
@@ -79,11 +75,20 @@ const diagonalizeInPlace = mat => {
     while (dirty) {
       // --- clear the i-th column by row operations
       for (let row = i + 1; row < nrows; ++row) {
-        const [x, a, b, c, d] = gcdex(mat[i][i], mat[row][i]);
-        for (let col = i; col < ncols; ++col) {
-          const [v, w] = [mat[i][col], mat[row][col]];
-          mat[i][col] = ops.plus(ops.times(v, a), ops.times(w, b));
-          mat[row][col] = ops.plus(ops.times(v, c), ops.times(w, d));
+        const [e, f] = [mat[i][i], mat[row][i]];
+
+        if (ops.ne(0, e) && ops.eq(0, ops.mod(f, e))) {
+          const x = ops.idiv(f, e);
+          for (let col = i; col < ncols; ++col)
+            mat[row][col] = ops.minus(mat[row][col], ops.times(x, mat[i][col]));
+        }
+        else if (ops.ne(0, f)) {
+          const [x, a, b, c, d] = gcdex(e, f);
+          for (let col = i; col < ncols; ++col) {
+            const [v, w] = [mat[i][col], mat[row][col]];
+            mat[i][col] = ops.plus(ops.times(v, a), ops.times(w, b));
+            mat[row][col] = ops.plus(ops.times(v, c), ops.times(w, d));
+          }
         }
       }
 
@@ -91,17 +96,22 @@ const diagonalizeInPlace = mat => {
       dirty = false;
 
       for (let col = i + 1; col < ncols; ++col) {
-        //TODO add proper condition for repeating the loop
-        const [x, a, b, c, d] = gcdex(mat[i][i], mat[i][col]);
+        const [e, f] = [mat[i][i], mat[i][col]];
 
-        for (let row = i; row < nrows; ++row) {
-          const [v, w] = [mat[row][i], mat[row][col]];
-          mat[row][i] = ops.plus(ops.times(v, a), ops.times(w, b));
-          mat[row][col] = ops.plus(ops.times(v, c), ops.times(w, d));
+        if (ops.ne(0, e) && ops.eq(0, ops.mod(f, e))) {
+          mat[i][col] = 0;
+        }
+        else if (ops.ne(0, f)) {
+          dirty = true;
+
+          const [x, a, b, c, d] = gcdex(e, f);
+          for (let row = i; row < nrows; ++row) {
+            const [v, w] = [mat[row][i], mat[row][col]];
+            mat[row][i] = ops.plus(ops.times(v, a), ops.times(w, b));
+            mat[row][col] = ops.plus(ops.times(v, c), ops.times(w, d));
+          }
         }
       }
-
-      console.log(`mat <- ${mat}`);
     }
   }
 
@@ -110,14 +120,11 @@ const diagonalizeInPlace = mat => {
 
 
 export const abelianInvariants = (nrGens, rels) => {
-  console.log(`abelianInvariants(${nrGens}, ${rels})`);
   const mat = cosets.relatorMatrix(nrGens, rels).toJS();
   const [nrows, ncols] = ops.shape(mat);
   const n = Math.min(nrows, ncols);
-  console.log(`  mat = ${mat}`);
 
   diagonalizeInPlace(mat);
-  console.log(`  mat <- ${mat}`);
 
   const factors = [];
   for (let i = 0; i < n; ++i)
@@ -184,9 +191,12 @@ if (require.main == module) {
   testDiag([ [ 2, 2, 3 ], [ 3, 3, 4 ], [ 2, 1, 3 ] ]);
   testDiag([ [ 1, 2 ], [ 3, 4 ] ]);
   testDiag([ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]);
+  testDiag([ [ 2, 0, 0 ], [ 0, 2, 0 ], [ 0, 0, 2 ],
+             [ 2, 2, 0 ], [ 2, 0, 2 ], [ 0, 2, 2 ] ]);
 
   const testInvariants = (nrGens, rels) => {
-    console.log(abelianInvariants(3, I.List(rels).map(word)));
+    console.log(`abelianInvariants(${nrGens}, ${rels}) =`);
+    console.log(`  ${abelianInvariants(3, I.List(rels).map(word))}`);
     console.log();
   };
 
