@@ -18,9 +18,6 @@ export const intMatrices = mats
 export const rationalMatrices = mats
   .extend(rationals, ['Integer', 'LongInt', 'Fraction'], true);
 
-export const rationalMatricesAsModule = mats
-  .extend(rationals, ['Integer', 'LongInt', 'Fraction'], false);
-
 export const matrices = mats
   .extend(reals, ['Integer', 'LongInt', 'Float', 'Fraction'],
           true, Math.pow(2, -50));
@@ -90,10 +87,6 @@ if (require.main == module) {
   console.log(ops.times(M, ops.transposed(M)));
 
   const A = [[1,2,3],[0,4,5],[6,0,7]];
-  const T = ops.triangulation(A);
-  console.log(`T.R = ${T.R}`);
-  console.log(`T.U = ${T.U}`);
-  console.log(`T.sign = ${T.sign}`);
   console.log(ops.rank(A));
   console.log(ops.determinant(A));
 
@@ -151,9 +144,6 @@ if (require.main == module) {
                     [0,-0.5,0.9999999999999998]]);
 
   const iops = intMatrices;
-
-  console.log();
-  console.log(JSON.stringify(iops.triangulation(A)));
 
   const testRepr = x => {
     const xr = fops.repr(x);

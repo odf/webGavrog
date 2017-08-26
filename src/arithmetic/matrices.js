@@ -547,10 +547,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
       Matrix: transposedMatrix
     },
 
-    triangulation: {
-      Matrix: M => triangulation(M, false)
-    },
-
     rowEchelonForm: {
       Matrix: _rowEchelonForm
     },
