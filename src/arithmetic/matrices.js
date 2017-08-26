@@ -226,43 +226,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
   };
 
 
-  const _rowEchelonForm = M => {
-    const A = cloneMatrix(M);
-    const [nrows, ncols] = shapeOfMatrix(A);
-
-    let row = 0;
-
-    for (let col = 0; col < ncols; ++col) {
-      let r = row;
-      while (r < nrows && sops.eq(A[r][col], 0))
-        ++r;
-
-      if (r >= nrows)
-        continue;
-
-      if (r != row)
-        [A[row], A[r]] = [A[r], A[row]];
-
-      const p = A[row][col];
-      for (let j = col; j < ncols; ++j)
-        A[row][j] = sops.div(A[row][j], p);
-
-      for (let i = 0; i < nrows; ++i) {
-        if (i == row)
-          continue;
-
-        const f = A[i][col];
-        for (let j = col; j < ncols; ++j)
-          A[i][j] = sops.minus(A[i][j], sops.times(A[row][j], f));
-      }
-
-      ++row;
-    }
-
-    return A;
-  };
-
-
   const _rank = A => {
     const [nrows, ncols] = shapeOfMatrix(A);
     let row = 0;
@@ -545,10 +508,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
     transposed: {
       Vector: v => v.map(x => [x]),
       Matrix: transposedMatrix
-    },
-
-    rowEchelonForm: {
-      Matrix: _rowEchelonForm
     },
 
     rank: {
