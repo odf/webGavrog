@@ -1,5 +1,5 @@
 import { typeOf } from '../arithmetic/base';
-import { rationals, rationalMatricesAsModule } from '../arithmetic/types';
+import { rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 import { extendBasis } from '../arithmetic/linearAlgebraExact';
 
@@ -143,15 +143,14 @@ const checkGroup = ops => {
 
 
 const primitiveCell = ops => {
-  const d  = operatorDimension(ops[0]);
-  const vs = ops
-    .filter(op => typeOf(op) == 'AffineTransformation')
-    .filter(op => isIdentity(op.linear))
-    .map(op => op.shift);
+  const basis = V.identityMatrix(operatorDimension(ops[0]));
 
-  const B = V.identityMatrix(d).concat(vs);
+  for (const op of ops) {
+    if (typeOf(op) == 'AffineTransformation' && isIdentity(op.linear))
+      extendBasis(op.shift, basis, V, false);
+  }
 
-  return rationalMatricesAsModule.triangulation(B).R.slice(0, d);
+  return basis;
 };
 
 
