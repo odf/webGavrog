@@ -731,7 +731,7 @@ CRYSTAL
 END
 `;
 
-  for (const b of cgd.default(input)) {
+  for (const b of cgd.structures(input)) {
     for (const key in b) {
       console.log(`${key}:`);
 
