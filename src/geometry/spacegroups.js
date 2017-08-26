@@ -1,7 +1,7 @@
 import { typeOf } from '../arithmetic/base';
 import { rationals, rationalMatricesAsModule } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
-import * as laExact from '../arithmetic/linearAlgebraExact';
+import { extendBasis } from '../arithmetic/linearAlgebraExact';
 
 import { coordinateChanges } from './types';
 import * as parms from './parameterVectors';
@@ -198,7 +198,7 @@ export const gramMatrixConfigurationSpace = ops => {
 
     for (const row of A) {
       for (const x of row)
-        laExact.extendBasis(x.coords, eqns, V);
+        extendBasis(x.coords, eqns, V);
     }
   }
 
