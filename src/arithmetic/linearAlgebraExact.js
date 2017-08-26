@@ -1,7 +1,9 @@
 export const extendBasis = (v, bs, ops, overField=true) => {
+  const _vecAbs = v => ops.lt(v, []) ? ops.negative(v) : v;
+
   if (bs.length == 0) {
-    if (v.findIndex(x => ops.ne(x, 0)) >= 0)
-      bs.push(v);
+    if (ops.sgn(v) != 0)
+      bs.push(_vecAbs(v));
   }
   else {
     const [nrows, ncols] = ops.shape(bs);
@@ -28,7 +30,7 @@ export const extendBasis = (v, bs, ops, overField=true) => {
         }
         else {
           const [x, r, s, t, u] = ops.gcdex(v[colV], b[colV]);
-          bs[rowBs] = ops.plus(ops.times(v, r), ops.times(b, s));
+          bs[rowBs] = _vecAbs(ops.plus(ops.times(v, r), ops.times(b, s)));
           v = ops.plus(ops.times(v, t), ops.times(b, u));
         }
       }
@@ -40,6 +42,6 @@ export const extendBasis = (v, bs, ops, overField=true) => {
       ++colV;
 
     if (colV < ncols)
-      bs.splice(rowBs, 0, v);
+      bs.splice(rowBs, 0, _vecAbs(v));
   }
 };
