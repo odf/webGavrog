@@ -123,11 +123,6 @@ if (require.main == module) {
   console.log(`${fops.cleanup(fops.times(A, B))}`);
 
   console.log();
-  const O = fops.orthonormalized(A);
-  const P = fops.cleanup(fops.times(O, fops.transposed(O)));
-  console.log(`O = ${O}`);
-  console.log(`O * O.T = ${P}`);
-  console.log();
 
   const testFloatInverse = A => {
     const B = fops.cleanup(fops.inverse(A));

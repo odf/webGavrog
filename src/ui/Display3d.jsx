@@ -39,6 +39,17 @@ const rotation = function(dx, dy, aboutZ) {
 };
 
 
+const orthonormalized = vs => {
+  const out = [];
+  for (let v of vs) {
+    for (const w of out)
+      v = ops.minus(v, ops.times(w, ops.times(v, w)))
+    out.push(ops.div(v, ops.norm(v)));
+  }
+  return out;
+};
+
+
 const MODE = {
   ROTATE: 0,
   TILT  : 1,
@@ -72,7 +83,7 @@ const newCameraParameters = function(params, dx, dy, button, wheel, pos) {
   } else {
     const rot = rotation(-dx, -dy, button == MODE.TILT);
     return Object.assign({}, params, {
-      matrix: ops.orthonormalized(ops.times(rot, params.matrix)) });
+      matrix: orthonormalized(ops.times(rot, params.matrix)) });
   }
 };
 

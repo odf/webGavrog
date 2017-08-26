@@ -383,35 +383,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
   };
 
 
-  const _rowProduct = (A, i, j) => {
-    const [nrows, ncols] = shapeOfMatrix(A)
-    return array(ncols)
-      .map((_, k) => sops.times(A[i][k], A[j][k]))
-      .reduce((a, x) => sops.plus(a, x));
-  };
-
-  const _normalizeRowInPlace = (A, i) => {
-    const norm = Math.sqrt(sops.toJS(_rowProduct(A, i, i)));
-
-    const row = A[i];
-    for (const j in row)
-      row[j] = sops.div(row[j], norm);
-  };
-
-  const orthonormalized = A => {
-    const [nrows, ncols] = shapeOfMatrix(A)
-    const O = cloneMatrix(A);
-
-    array(nrows).forEach((_, i) => {
-      array(i).forEach((_, j) => {
-        _adjustRowInPlace(O, i, j, sops.negative(_rowProduct(O, i, j)))
-      });
-      _normalizeRowInPlace(O, i);
-    });
-
-    return O;
-  };
-
   const cleanup = A => {
     const [nrows, ncols] = shapeOfMatrix(A);
     let sup = 0;
@@ -508,10 +479,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
 
     determinant: {
       Matrix: determinant
-    },
-
-    orthonormalized: {
-      Matrix: orthonormalized
     },
 
     solve: {
