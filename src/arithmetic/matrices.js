@@ -383,14 +383,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
   };
 
 
-  const solutionModZ = (A, b) => {
-    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
-      throw new Error('matrix shapes must match');
-
-    return _solution(A, b, true);
-  };
-
-
   const _rowProduct = (A, i, j) => {
     const [nrows, ncols] = shapeOfMatrix(A)
     return array(ncols)
@@ -539,10 +531,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
 
     solution: {
       Matrix: { Matrix: solution }
-    },
-
-    solutionModZ: {
-      Matrix: { Matrix: solutionModZ }
     },
 
     crossProduct: {
