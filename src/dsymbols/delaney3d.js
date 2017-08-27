@@ -9,8 +9,6 @@ import * as fundamental from './fundamental';
 import * as derived     from './derived';
 import * as covers      from './covers';
 
-import { intMatrices } from '../arithmetic/types';
-const ops = intMatrices;
 
 const _coreType = {
    1: 'z1',
@@ -99,7 +97,7 @@ export function pseudoToroidalCover(ds) {
       (...args) => table.getIn(args)
     );
     const inv = abelianInvariants(stab.generators.size, stab.relators);
-    return ops.eq(inv, [0, 0, 0]);
+    return inv.length == 3 && inv.every(x => x == 0);
   });
 
   if (good)

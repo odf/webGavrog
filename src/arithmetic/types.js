@@ -12,9 +12,6 @@ export const rationals = require('./fractions')
 export const reals = require('./floats')
   .extend(rationals);
 
-export const intMatrices = mats
-  .extend(integers, ['Integer', 'LongInt'], false);
-
 export const rationalMatrices = mats
   .extend(rationals, ['Integer', 'LongInt', 'Fraction'], true);
 

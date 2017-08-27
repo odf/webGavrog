@@ -3,12 +3,15 @@ import * as I from 'immutable';
 import * as cosets      from '../fpgroups/cosets';
 import { word } from '../fpgroups/freeWords';
 
-import { intMatrices } from '../arithmetic/types';
-const ops = intMatrices;
+import { integers } from '../arithmetic/types';
+const ops = integers;
+
+
+const shapeOfMatrix = m => [m.length, m[0].length];
 
 
 const diagonalizeInPlace = mat => {
-  const [nrows, ncols] = ops.shape(mat);
+  const [nrows, ncols] = shapeOfMatrix(mat);
   const n = Math.min(nrows, ncols);
 
   // --- eliminate off-diagonal elements in a diagonal sweep
@@ -95,7 +98,7 @@ const diagonalizeInPlace = mat => {
 
 export const abelianInvariants = (nrGens, rels) => {
   const mat = cosets.relatorMatrix(nrGens, rels).toJS();
-  const [nrows, ncols] = ops.shape(mat);
+  const [nrows, ncols] = shapeOfMatrix(mat);
   const n = Math.min(nrows, ncols);
 
   diagonalizeInPlace(mat);
