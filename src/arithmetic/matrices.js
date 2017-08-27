@@ -146,7 +146,7 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
       row[j] = fn(j);
   };
 
-  const triangulation = (A, clearAboveDiagonal = false) => {
+  const triangulation = A => {
     _timers && _timers.start('matrix triangulation');
 
     const [nrows, ncols] = shapeOfMatrix(A);
@@ -191,25 +191,6 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
       }
 
       ++col;
-    }
-
-    if (clearAboveDiagonal) {
-      col = 0;
-
-      for (let row = 0; row < nrows; ++row) {
-        while (col < ncols && sops.eq(R[row][col], 0))
-          ++col;
-        if (col >= ncols)
-          break;
-
-        for (let i = 0; i < row; ++i) {
-          if (sops.eq(R[i][col], 0))
-            continue;
-          const f = sops.negative(sops.div(R[i][col], R[row][col]));
-          _adjustRowInPlace(R, i, row, f);
-          _adjustRowInPlace(U, i, row, f);
-        }
-      }
     }
 
     _timers && _timers.stop('matrix triangulation');
@@ -313,10 +294,10 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
     let Q = identity(m);
     let t;
 
-    t = triangulation(D, true);
+    t = triangulation(D);
     P = matrixProduct(t.U, P);
     D = transposedMatrix(t.R);
-    t = triangulation(D, true);
+    t = triangulation(D);
     Q = matrixProduct(t.U, Q);
     D = transposedMatrix(t.R);
 
