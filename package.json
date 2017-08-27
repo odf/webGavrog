@@ -9,7 +9,8 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack -p",
-    "build-dev": "webpack --debug --devtool cheap-module-source-map --output-pathinfo"
+    "build-dev": "webpack --debug --devtool cheap-module-source-map --output-pathinfo",
+    "test": "spec/jstest-babel spec/**/*_spec.js"
   },
   "author": "",
   "license": "Apache-2.0",
