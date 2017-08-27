@@ -6,10 +6,6 @@ import { extendBasis } from '../arithmetic/linearAlgebraExact';
 import { coordinateChanges } from './types';
 import * as parms from './parameterVectors';
 
-const P = mats.extend(
-  parms.extend(rationals, ['Integer', 'LongInt', 'Fraction']),
-  ['Integer', 'LongInt', 'Fraction', 'ParameterVector'], false);
-
 const V = coordinateChanges;
 
 
@@ -177,6 +173,10 @@ export function primitiveSetting(stdOps) {
 
 
 export const gramMatrixConfigurationSpace = ops => {
+  const P = mats.extend(
+    parms.extend(rationals, ['Integer', 'LongInt', 'Fraction']),
+    ['Integer', 'LongInt', 'Fraction', 'ParameterVector']);
+
   const d = V.dimension(ops[0]);
   const m = (d * (d+1)) / 2;
 

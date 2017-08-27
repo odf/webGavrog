@@ -42,7 +42,7 @@ const transposedMatrix = m => {
 };
 
 
-export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
+export const extend = (scalarOps, scalarTypes, epsilon = null) => {
   const sops = scalarOps;
 
 
@@ -149,7 +149,6 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
   const triangulation = (A, clearAboveDiagonal = false) => {
     _timers && _timers.start('matrix triangulation');
 
-    const divide = overField ? sops.div : sops.idiv;
     const [nrows, ncols] = shapeOfMatrix(A);
 
     const R = cloneMatrix(A);
@@ -158,50 +157,43 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
     let sign = 1;
 
     for (let row = 0; row < nrows; ++row) {
-      let cleared = false;
+      if (col >= ncols)
+        break;
 
-      while (!cleared && col < ncols) {
-        const pivotRow = _findPivot(R, row, col);
+      const pivotRow = _findPivot(R, row, col);
 
-        if (pivotRow == null) {
-          ++col;
-          continue;
-        }
-
-        if (pivotRow != row) {
-          _swapRowsInPlace(R, row, pivotRow);
-          _swapRowsInPlace(U, row, pivotRow);
-          sign *= -1;
-        }
-
-        if (sops.lt(R[row][col], 0)) {
-          _negateRowInPlace(R, row);
-          _negateRowInPlace(U, row);
-          sign *= -1;
-        }
-
-        cleared = true;
-
-        for (let k = row + 1; k < nrows; ++k) {
-          if (sops.sgn(R[k][col]) != 0) {
-            const f = sops.negative(divide(R[k][col], R[row][col]));
-
-            _adjustRowInPlace(R, k, row, f);
-            _adjustRowInPlace(U, k, row, f);
-
-            if (overField)
-              R[k][col] = 0;
-            else if (sops.ne(0, R[k][col]))
-              cleared = false;
-          }
-        }
-
-        if (cleared)
-          ++col;
+      if (pivotRow == null) {
+        ++col;
+        continue;
       }
+
+      if (pivotRow != row) {
+        _swapRowsInPlace(R, row, pivotRow);
+        _swapRowsInPlace(U, row, pivotRow);
+        sign *= -1;
+      }
+
+      if (sops.lt(R[row][col], 0)) {
+        _negateRowInPlace(R, row);
+        _negateRowInPlace(U, row);
+        sign *= -1;
+      }
+
+      for (let k = row + 1; k < nrows; ++k) {
+        if (sops.sgn(R[k][col]) != 0) {
+          const f = sops.negative(sops.div(R[k][col], R[row][col]));
+
+          _adjustRowInPlace(R, k, row, f);
+          _adjustRowInPlace(U, k, row, f);
+
+          R[k][col] = 0;
+        }
+      }
+
+      ++col;
     }
 
-    if (clearAboveDiagonal == true) {
+    if (clearAboveDiagonal) {
       col = 0;
 
       for (let row = 0; row < nrows; ++row) {
@@ -213,7 +205,7 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
         for (let i = 0; i < row; ++i) {
           if (sops.eq(R[i][col], 0))
             continue;
-          const f = sops.negative(divide(R[i][col], R[row][col]));
+          const f = sops.negative(sops.div(R[i][col], R[row][col]));
           _adjustRowInPlace(R, i, row, f);
           _adjustRowInPlace(U, i, row, f);
         }
@@ -321,14 +313,12 @@ export const extend = (scalarOps, scalarTypes, overField, epsilon = null) => {
     let Q = identity(m);
     let t;
 
-    do {
-      t = triangulation(D, true);
-      P = matrixProduct(t.U, P);
-      D = transposedMatrix(t.R);
-      t = triangulation(D, true);
-      Q = matrixProduct(t.U, Q);
-      D = transposedMatrix(t.R);
-    } while (!(overField || isDiagonal(D)))
+    t = triangulation(D, true);
+    P = matrixProduct(t.U, P);
+    D = transposedMatrix(t.R);
+    t = triangulation(D, true);
+    Q = matrixProduct(t.U, Q);
+    D = transposedMatrix(t.R);
 
     return { P, D, Q: transposedMatrix(Q) };
   };

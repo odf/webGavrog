@@ -13,11 +13,10 @@ export const reals = require('./floats')
   .extend(rationals);
 
 export const rationalMatrices = mats
-  .extend(rationals, ['Integer', 'LongInt', 'Fraction'], true);
+  .extend(rationals, ['Integer', 'LongInt', 'Fraction']);
 
 export const matrices = mats
-  .extend(reals, ['Integer', 'LongInt', 'Float', 'Fraction'],
-          true, Math.pow(2, -50));
+  .extend(reals, ['Integer', 'LongInt', 'Float', 'Fraction'], Math.pow(2, -50));
 
 export const residueClassRing = m => residues.extend(base.arithmetic(), m);
 
@@ -134,8 +133,6 @@ if (require.main == module) {
   testFloatInverse([[0.8164965809277261,0,0],
                     [0.577350269189626,0.8660254037844387,0],
                     [0,-0.5,0.9999999999999998]]);
-
-  const iops = intMatrices;
 
   const testRepr = x => {
     const xr = fops.repr(x);
