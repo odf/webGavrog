@@ -130,10 +130,6 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
     return best;
   };
 
-  const _swapRowsInPlace = (A, i, j) => { [A[i], A[j]] = [A[j], A[i]]; };
-
-  const _negateRowInPlace = (A, i) => { A[i] = map.V(sops.negative)(A[i]); };
-
   const _truncate = (x, a) =>
     (sops.cmp(sops.abs(x), sops.abs(sops.times(a, epsilon))) <= 0) ? 0 : x;
 
@@ -164,14 +160,14 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
 
         if (pivotRow != null) {
           if (pivotRow != row) {
-            _swapRowsInPlace(R, row, pivotRow);
-            _swapRowsInPlace(U, row, pivotRow);
+            [R[row], R[pivotRow]] = [R[pivotRow], R[row]];
+            [U[row], U[pivotRow]] = [U[pivotRow], U[row]];
             sign *= -1;
           }
 
           if (sops.lt(R[row][col], 0)) {
-            _negateRowInPlace(R, row);
-            _negateRowInPlace(U, row);
+            R[row] = methods.negative.Vector(R[row]);
+            U[row] = methods.negative.Vector(U[row]);
             sign *= -1;
           }
 
@@ -285,26 +281,16 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
   };
 
 
-  const smithNormalForm = A => {
-    const [n, m] = shapeOfMatrix(A);
-    let D = A;
-    let P = identity(n);
-    let Q = identity(m);
-    let t;
+  const diagonalize = A => {
+    const { U: U1, R: R1 } = triangulation(A);
+    const { U: U2, R: R2 } = triangulation(transposedMatrix(R1));
 
-    t = triangulation(D);
-    P = matrixProduct(t.U, P);
-    D = transposedMatrix(t.R);
-    t = triangulation(D);
-    Q = matrixProduct(t.U, Q);
-    D = transposedMatrix(t.R);
-
-    return { P, D, Q: transposedMatrix(Q) };
+    return { P: U1, D: transposedMatrix(R2), Q: transposedMatrix(U2) };
   };
 
 
   const nullSpace = A => {
-    const { P, D, Q } = smithNormalForm(A);
+    const { P, D, Q } = diagonalize(A);
     const [m] = shapeOfMatrix(Q);
     const r = _rank(D);
     const M = matrix(r, m-r).concat(identity(m-r));
@@ -312,11 +298,14 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
   };
 
 
-  const _solution = (A, b, modZ) => {
+  const solution = (A, b) => {
+    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
+      throw new Error('matrix shapes must match');
+
     const [n, m] = shapeOfMatrix(A);
     const [_, k] = shapeOfMatrix(b);
 
-    const { P, D, Q } = smithNormalForm(A);
+    const { P, D, Q } = diagonalize(A);
     const v = matrixProduct(P, b);
     const y = matrix(m, k);
 
@@ -326,10 +315,7 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
         const r = v[i][j];
         if (sops.eq(d, 0)) {
           if (!(sops.eq(r, 0)
-                || (modZ
-                    && sops.isInteger(r))
-                || (!sops.isRational(r)
-                    && sops.le(sops.abs(r), epsilon))))
+                || (!sops.isRational(r) && sops.le(sops.abs(r), epsilon))))
           {
             return null;
           }
@@ -341,14 +327,6 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
     }
 
     return matrixProduct(Q, y);
-  };
-
-
-  const solution = (A, b) => {
-    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
-      throw new Error('matrix shapes must match');
-
-    return _solution(A, b, false);
   };
 
 
