@@ -489,18 +489,20 @@ if (require.main == module) {
 
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      const embeddings = embed(g);
+      let embeddings = embed(g, false);
 
-      console.log(`  initial gram: ${embeddings.initial.gram}`);
+      console.log(`  initial gram: ${embeddings.gram}`);
       console.log(`  initial positions:`);
-      for (const v of Object.keys(embeddings.initial.positions))
-        console.log(`    ${v} -> ${embeddings.initial.positions[v]}`);
+      for (const v of Object.keys(embeddings.positions))
+        console.log(`    ${v} -> ${embeddings.positions[v]}`);
       console.log();
 
-      console.log(`  relaxed gram: ${embeddings.relaxed.gram}`);
+      embeddings = embed(g);
+
+      console.log(`  relaxed gram: ${embeddings.gram}`);
       console.log(`  relaxed positions:`);
-      for (const v of Object.keys(embeddings.relaxed.positions))
-        console.log(`    ${v} -> ${embeddings.relaxed.positions[v]}`);
+      for (const v of Object.keys(embeddings.positions))
+        console.log(`    ${v} -> ${embeddings.positions[v]}`);
       console.log();
     }
 
