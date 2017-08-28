@@ -157,40 +157,38 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
     let sign = 1;
 
     for (let row = 0; row < nrows; ++row) {
-      if (col >= ncols)
-        break;
+      let pivotRow = null;
 
-      const pivotRow = _findPivot(R, row, col);
+      while (pivotRow == null && col < ncols) {
+        pivotRow = _findPivot(R, row, col);
 
-      if (pivotRow == null) {
-        ++col;
-        continue;
-      }
+        if (pivotRow != null) {
+          if (pivotRow != row) {
+            _swapRowsInPlace(R, row, pivotRow);
+            _swapRowsInPlace(U, row, pivotRow);
+            sign *= -1;
+          }
 
-      if (pivotRow != row) {
-        _swapRowsInPlace(R, row, pivotRow);
-        _swapRowsInPlace(U, row, pivotRow);
-        sign *= -1;
-      }
+          if (sops.lt(R[row][col], 0)) {
+            _negateRowInPlace(R, row);
+            _negateRowInPlace(U, row);
+            sign *= -1;
+          }
 
-      if (sops.lt(R[row][col], 0)) {
-        _negateRowInPlace(R, row);
-        _negateRowInPlace(U, row);
-        sign *= -1;
-      }
+          for (let k = row + 1; k < nrows; ++k) {
+            if (sops.sgn(R[k][col]) != 0) {
+              const f = sops.negative(sops.div(R[k][col], R[row][col]));
 
-      for (let k = row + 1; k < nrows; ++k) {
-        if (sops.sgn(R[k][col]) != 0) {
-          const f = sops.negative(sops.div(R[k][col], R[row][col]));
+              _adjustRowInPlace(R, k, row, f);
+              _adjustRowInPlace(U, k, row, f);
 
-          _adjustRowInPlace(R, k, row, f);
-          _adjustRowInPlace(U, k, row, f);
-
-          R[k][col] = 0;
+              R[k][col] = 0;
+            }
+          }
         }
-      }
 
-      ++col;
+        ++col;
+      }
     }
 
     _timers && _timers.stop('matrix triangulation');
