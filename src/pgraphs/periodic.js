@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
-import { extendBasis } from '../arithmetic/linearAlgebraExact';
 import { rationalMatrices } from '../arithmetic/types';
+import { rationalLinearAlgebraModular } from '../arithmetic/types';
 
 import modularSolver from '../arithmetic/solveRational';
 import * as solveRational from '../arithmetic/solveRational';
@@ -203,9 +203,9 @@ const _isConnectedOrbitGraph = (graph) => {
 
 
 const _makeBasis = M => {
-  const basis = [];
+  let basis = null;
   for (const row of M)
-    extendBasis(row, basis, ops, false);
+    basis = rationalLinearAlgebraModular.extendBasis(row, basis);
   return basis;
 };
 

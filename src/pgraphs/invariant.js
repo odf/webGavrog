@@ -1,6 +1,6 @@
 import * as I from 'immutable';
 
-import { extendBasis } from '../arithmetic/linearAlgebraExact';
+import { rationalLinearAlgebraModular } from '../arithmetic/types';
 
 import * as pg from './periodic';
 import * as ps from './symmetries';
@@ -101,9 +101,9 @@ const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
 
 
 const _postprocessTraversal = trav => {
-  const basis = [];
+  let basis = null;
   for (const [head, tail, shift] of trav)
-    extendBasis(shift, basis, ops, false);
+    basis = rationalLinearAlgebraModular.extendBasis(shift, basis);
 
   const basisChange = ops.inverse(basis);
 

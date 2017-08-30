@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
 import * as pg from './periodic';
-import { extendBasis } from '../arithmetic/linearAlgebraExact';
+import { rationalLinearAlgebraModular } from '../arithmetic/types';
 import Partition from '../common/partition';
 import * as comb from '../common/combinatorics';
 import * as util from '../common/util';
@@ -358,9 +358,9 @@ const translationalEquivalenceClasses = (graph, equivs) =>
 
 
 const fullTranslationBasis = vectors => {
-  const basis = ops.identityMatrix(vectors[0].length);
+  let basis = ops.identityMatrix(vectors[0].length);
   for (const v of vectors)
-    extendBasis(v, basis, ops, false);
+    basis = rationalLinearAlgebraModular.extendBasis(v, basis);
   return basis;
 };
 

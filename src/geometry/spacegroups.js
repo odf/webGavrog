@@ -1,7 +1,12 @@
 import { typeOf } from '../arithmetic/base';
 import { rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
-import { extendBasis } from '../arithmetic/linearAlgebraExact';
+
+import {
+  rationalLinearAlgebra,
+  rationalLinearAlgebraModular
+} from '../arithmetic/types';
+
 
 import { coordinateChanges } from './types';
 import * as parms from './parameterVectors';
@@ -139,11 +144,11 @@ const checkGroup = ops => {
 
 
 const primitiveCell = ops => {
-  const basis = V.identityMatrix(operatorDimension(ops[0]));
+  let basis = V.identityMatrix(operatorDimension(ops[0]));
 
   for (const op of ops) {
     if (typeOf(op) == 'AffineTransformation' && isIdentity(op.linear))
-      extendBasis(op.shift, basis, V, false);
+      basis = rationalLinearAlgebraModular.extendBasis(op.shift, basis);
   }
 
   return basis;
@@ -190,14 +195,14 @@ export const gramMatrixConfigurationSpace = ops => {
   }
 
   // -- collect equations for the configuration space
-  const eqns = [];
+  let eqns = null;
   for (const op of ops) {
     const S = V.linearPart(op);
     const A = P.minus(P.times(S, P.times(M, P.transposed(S))), M);
 
     for (const row of A) {
       for (const x of row)
-        extendBasis(x.coords, eqns, V);
+        eqns = rationalLinearAlgebra.extendBasis(x.coords, eqns);
     }
   }
 
