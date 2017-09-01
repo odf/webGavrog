@@ -56,19 +56,13 @@ const gcd = (a, b, ops) => {
 
 
 const gcdex = (m, n, ops) => {
-  let f  = ops.abs(m);
-  let fm = ops.lt(m, 0) ? -1 : 1;
-  let g  = ops.abs(n);
-  let gm = 0;
+  let [f, g] = [ops.abs(m), ops.abs(n)];
+  let [fm, gm] = [ops.lt(m, 0) ? -1 : 1, 0];
 
   while (ops.ne(g, 0)) {
     const q  = ops.idiv(f, g);
-    const t  = g;
-    const tm = gm;
-    g  = ops.minus(f, ops.times(q, g));
-    gm = ops.minus(fm, ops.times(q, gm));
-    f  = t;
-    fm = tm;
+    [f, g] = [g, ops.minus(f, ops.times(q, g))];
+    [fm, gm] = [gm, ops.minus(fm, ops.times(q, gm))];
   }
 
   if (ops.eq(n, 0))
