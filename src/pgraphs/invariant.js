@@ -104,6 +104,7 @@ const _postprocessTraversal = trav => {
   let basis = null;
   for (const [head, tail, shift] of trav)
     basis = rationalLinearAlgebraModular.extendBasis(shift, basis);
+  basis = basis.map(v => ops.lt(v, []) ? ops.negative(v) : v);
 
   const basisChange = ops.inverse(basis);
 
