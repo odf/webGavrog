@@ -90,6 +90,8 @@ const diagonalizeInPlace = mat => {
         }
       }
     }
+
+    mat[i][i] = ops.abs(mat[i][i]);
   }
 
   return mat;

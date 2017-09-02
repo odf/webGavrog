@@ -55,23 +55,17 @@ const gcd = (a, b, ops) => {
 };
 
 
-const gcdex = (m, n, ops) => {
-  let [f, g] = [ops.abs(m), ops.abs(n)];
-  let [fm, gm] = [ops.lt(m, 0) ? -1 : 1, 0];
+const gcdex = (a, b, ops) => {
+  const cs = [[a, b], [1, 0], [0, 1]];
 
-  while (ops.ne(g, 0)) {
-    const q  = ops.idiv(f, g);
-    [f, g] = [g, ops.minus(f, ops.times(q, g))];
-    [fm, gm] = [gm, ops.minus(fm, ops.times(q, gm))];
+  while (ops.ne(cs[0][1], 0)) {
+    const q = ops.idiv(cs[0][0], cs[0][1]);
+    for (let i = 0; i < 3; ++i)
+      [cs[i][0], cs[i][1]] =
+      [cs[i][1], ops.minus(cs[i][0], ops.times(q, cs[i][1]))];
   }
 
-  if (ops.eq(n, 0))
-    return [ f, fm, 0, gm, 1 ];
-  else
-    return [
-      f,
-      fm, ops.idiv(ops.minus(f, ops.times(fm, m)), n),
-      gm, ops.idiv(ops.minus(0, ops.times(gm, m)), n) ];
+  return [cs[0][0], cs[1][0], cs[2][0], cs[1][1], cs[2][1]];
 };
 
 
