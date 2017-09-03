@@ -54,15 +54,71 @@ export const extend = (matrixOps, overField) => {
   };
 
 
+  const triangularBasis = rows => {
+    let bs = null;
+    for (const v of rows)
+      bs = extendBasis(v, bs);
+    return bs;
+  };
+
+
+  const rank = rows => triangularBasis(rows).length;
+
+
+  const determinant = rows => {
+    const [nrows, ncols] = ops.shape(rows);
+    if (nrows != ncols)
+      throw new Error('must be a square matrix');
+
+    const bs = triangularBasis(rows);
+
+    if (bs.length < nrows)
+      return 0;
+    else
+      return bs.map((v, i) => v[i]).reduce((a, x) => ops.times(a, x));
+  };
+
+
   const methods = {
     extendBasis: {
       Vector: {
         Null: extendBasis,
         Matrix: extendBasis
       }
-    }
+    },
+    triangularBasis: { Matrix: triangularBasis },
+    rank: { Matrix: rank },
+    determinant: { Matrix: determinant }
   };
 
 
   return ops.register(methods);
 };
+
+
+if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
+  const types = require('./types');
+  const opsO = types.rationalMatrices;
+  const opsF = extend(types.rationalMatrices, true);
+  const opsM = extend(types.rationalMatrices, false);
+
+  const test = A => {
+    console.log(`A = ${A}`);
+    console.log(`over field:`);
+    console.log(`  basis = ${opsF.triangularBasis(A)}`);
+    console.log(`  rank(A): ${opsO.rank(A)} <-> ${opsF.rank(A)}`);
+    console.log(`  det(A) : ${opsO.determinant(A)} <-> ${opsF.determinant(A)}`);
+    console.log(`over module:`);
+    console.log(`  basis = ${opsM.triangularBasis(A)}`);
+    console.log(`  rank(A): ${opsO.rank(A)} <-> ${opsM.rank(A)}`);
+    console.log(`  det(A) : ${opsO.determinant(A)} <-> ${opsM.determinant(A)}`);
+    console.log();
+  };
+
+  test([[1,2,3],[0,4,5],[6,0,7]]);
+  test([[2,3,4],[5,6,7],[8,9,0]]);
+}
