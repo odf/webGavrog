@@ -106,6 +106,26 @@ export const extend = (matrixOps, overField) => {
   };
 
 
+  const _solveSingle = (vec, val) => {
+    console.log(`_solveSingle(${vec}, ${val})`);
+    let out = ops.times(vec, 0);
+
+    if (overField)
+      out[0] = ops.div(val, vec[0]);
+    else if (vec.length == 1) {
+      if (ops.eq(ops.mod(val, vec[0]), 0))
+        out[0] = ops.div(val, vec[0]);
+      else
+        out = null;
+    }
+    else
+      console.log('not yet implemented');
+
+    console.log(`  -> ${out}`);
+    return out;
+  };
+
+
   const solve = (lft, rgt) => {
     const [rowsLft, colsLft] = ops.shape(lft);
     const [rowsRgt, colsRgt] = ops.shape(rgt);
@@ -114,6 +134,7 @@ export const extend = (matrixOps, overField) => {
       throw new Error('left and right side must have equal number of rows');
 
     const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
+    console.log(`    <${bs}>`);
     const [rows, cols] = ops.shape(bs);
 
     const leading = [];
@@ -128,15 +149,16 @@ export const extend = (matrixOps, overField) => {
     if (leading[rows - 1] >= colsLft)
       return null;
 
-    result = ops.matrix(rowsLft, colsRgt);
+    const result = ops.matrix(rowsLft, colsRgt);
 
     for (let j = colsLft; j < cols; ++j) {
       for (let k = rows - 1; k >= 0; --k) {
-        const v = _solveSingle(bs.slice(leading[k], leading[k + 1]), bs[k][j]);
+        const v = _solveSingle(bs[k].slice(leading[k], leading[k + 1]),
+                               bs[k][j]);
         if (v == null)
           return null;
         for (let nu = 0; nu < v.length; ++nu)
-          result[nu + leading[k]][j] = v[nu];
+          result[nu + leading[k]][j - colsLft] = v[nu];
       }
     }
 
@@ -173,32 +195,44 @@ if (require.main == module) {
   const opsF = extend(types.rationalMatrices, true);
   const opsM = extend(types.rationalMatrices, false);
 
-  const test = A => {
+  const I = [[1,0,0],[0,1,0],[0,0,1]];
+  const B = [[1,2,3],[4,5,6],[7,8,0]];
+
+  const testIn = (A, ops) => {
     const [n, m] = opsO.shape(A);
+
+    console.log(`  basis = ${ops.triangularBasis(A)}`);
+    console.log(`  reduced = ${ops.reducedBasis(A)}`);
+    console.log(`  rank(A): ${opsO.rank(A)} <-> ${ops.rank(A)}`);
+    if (n == m)
+      console.log(
+        `  det(A) : ${opsO.determinant(A)} <-> ${ops.determinant(A)}`);
+
+    const Ainv = ops.solve(A, I);
+    if (Ainv)
+      console.log(`  inverse check: ${A} * ${Ainv} = ${ops.times(A, Ainv)}`);
+    else
+      console.log(`  no inverse`);
+
+    const M = ops.solve(A, ops.times(A, B));
+    console.log(`  solving ${A} * M = ${ops.times(A, B)}:`);
+    console.log(`  M = ${M}`);
+    if (M != null)
+      console.log(`  check: ${ops.times(A, M)}`);
+  };
+
+  const test = A => {
     console.log(`A = ${A}`);
-
     console.log(`over field:`);
-    console.log(`  basis = ${opsF.triangularBasis(A)}`);
-    console.log(`  reduced = ${opsF.reducedBasis(A)}`);
-    console.log(`  rank(A): ${opsO.rank(A)} <-> ${opsF.rank(A)}`);
-    if (n == m)
-      console.log(
-        `  det(A) : ${opsO.determinant(A)} <-> ${opsF.determinant(A)}`);
-    opsF.solve(A, [[1,0,0],[0,1,0],[0,0,1]]);
-
+    testIn(A, opsF);
     console.log(`over module:`);
-    console.log(`  basis = ${opsM.triangularBasis(A)}`);
-    console.log(`  reduced = ${opsM.reducedBasis(A)}`);
-    console.log(`  rank(A): ${opsO.rank(A)} <-> ${opsM.rank(A)}`);
-    if (n == m)
-      console.log(
-        `  det(A) : ${opsO.determinant(A)} <-> ${opsM.determinant(A)}`);
-    opsM.solve(A, [[1,0,0],[0,1,0],[0,0,1]]);
-
+    testIn(A, opsM);
     console.log();
   };
 
   test([[1,2,3],[0,4,5],[6,0,7]]);
   test([[2,3,4],[5,6,7],[8,9,0]]);
   test([[9,8,7],[6,5,4],[3,2,1]]);
+  test([[1,2,3],[0,1,4],[0,0,1]]);
+  test([[1,1,1],[0,1,1],[0,0,1]]);
 }
