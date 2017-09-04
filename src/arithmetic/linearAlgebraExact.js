@@ -79,6 +79,33 @@ export const extend = (matrixOps, overField) => {
   };
 
 
+  const reducedBasis = rows => {
+    const div = overField ? ops.div : ops.idiv;
+    const bs = triangularBasis(rows);
+
+    let col = 0;
+    for (let row = 0; row < bs.length; ++row) {
+      while (ops.eq(bs[row][col], 0))
+        ++col;
+
+      if (ops.lt(bs[row][col], 0))
+        bs[row] = ops.negative(bs[row]);
+
+      if (overField && ops.ne(bs[row][col], 1))
+        bs[row] = div(bs[row], bs[row][col]);
+
+      const p = bs[row][col];
+
+      for (let i = 0; i < row; ++i) {
+        if (overField || ops.ge(bs[i][col], p) || ops.lt(bs[i][col], 0))
+          bs[i] = ops.minus(bs[i], ops.times(bs[row], div(bs[i][col], p)));
+      }
+    }
+
+    return bs;
+  };
+
+
   const methods = {
     extendBasis: {
       Vector: {
@@ -87,6 +114,7 @@ export const extend = (matrixOps, overField) => {
       }
     },
     triangularBasis: { Matrix: triangularBasis },
+    reducedBasis: { Matrix: reducedBasis },
     rank: { Matrix: rank },
     determinant: { Matrix: determinant }
   };
@@ -110,15 +138,18 @@ if (require.main == module) {
     console.log(`A = ${A}`);
     console.log(`over field:`);
     console.log(`  basis = ${opsF.triangularBasis(A)}`);
+    console.log(`  reduced = ${opsF.reducedBasis(A)}`);
     console.log(`  rank(A): ${opsO.rank(A)} <-> ${opsF.rank(A)}`);
     console.log(`  det(A) : ${opsO.determinant(A)} <-> ${opsF.determinant(A)}`);
     console.log(`over module:`);
     console.log(`  basis = ${opsM.triangularBasis(A)}`);
+    console.log(`  reduced = ${opsM.reducedBasis(A)}`);
     console.log(`  rank(A): ${opsO.rank(A)} <-> ${opsM.rank(A)}`);
     console.log(`  det(A) : ${opsO.determinant(A)} <-> ${opsM.determinant(A)}`);
     console.log();
   };
 
   test([[1,2,3],[0,4,5],[6,0,7]]);
+  test([[9,8,7],[6,5,4],[3,2,1]]);
   test([[2,3,4],[5,6,7],[8,9,0]]);
 }
