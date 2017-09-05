@@ -106,21 +106,30 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const _solveSingle = (vec, val) => {
-    let out = ops.times(vec, 0);
-
-    if (overField)
-      out[0] = ops.div(val, vec[0]);
-    else if (vec.length == 1) {
+  const _solveDiophantine = (vec, val) => {
+    if (vec.length == 1) {
       if (ops.eq(ops.mod(val, vec[0]), 0))
-        out[0] = ops.div(val, vec[0]);
+        return [ops.div(val, vec[0])];
       else
-        out = null;
+        return null;
     }
-    else
+    else {
       console.log('not yet implemented');
+      return null;
+    }
+  };
 
-    return out;
+
+  const _leadingPositions = bs => {
+    const result = [];
+    let col = 0;
+    for (let row = 0; row < bs.length; ++row) {
+      while (ops.eq(bs[row][col], 0))
+        ++col;
+      result.push(col);
+    }
+
+    return result;
   };
 
 
@@ -133,18 +142,12 @@ export const extend = (matrixOps, overField) => {
 
     const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
     const [rows, cols] = ops.shape(bs);
-
-    const leading = [];
-    let col = 0;
-    for (let row = 0; row < bs.length; ++row) {
-      while (ops.eq(bs[row][col], 0))
-        ++col;
-      leading.push(col);
-    }
-    leading.push(colsLft);
+    const leading = _leadingPositions(bs);
 
     if (leading[rows - 1] >= colsLft)
       return null;
+
+    leading.push(colsLft);
 
     const result = [];
 
@@ -154,14 +157,19 @@ export const extend = (matrixOps, overField) => {
       for (let k = rows - 1; k >= 0; --k) {
         const b = bs[k];
         const [from, to] = [leading[k], leading[k + 1]];
-        const v = b.slice(from, to);
         const s = ops.minus(b[j], ops.times(out, b.slice(to, colsLft)));
 
-        const w = _solveSingle(v, s);
-        if (w == null)
-          return null;
-        else
-          out = w.concat(out);
+        if (overField) {
+          out = ops.vector(to - from).concat(out);
+          out[0] = ops.div(s, b[from]);
+        }
+        else {
+          const w = _solveDiophantine(b.slice(from, to), s);
+          if (w == null)
+            return null;
+          else
+            out = w.concat(out);
+        }
       }
 
       result.push(out);
