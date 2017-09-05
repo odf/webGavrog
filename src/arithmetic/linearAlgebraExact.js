@@ -114,8 +114,13 @@ export const extend = (matrixOps, overField) => {
         return null;
     }
     else {
-      console.log('not yet implemented');
-      return null;
+      const [x, a, b, c, d] = ops.gcdex(vec[0], vec[1]);
+      const t = _solveDiophantine([x].concat(vec.slice(2)), val);
+
+      if (t == null)
+        return null;
+      else
+        return [ops.times(a, t[0]), ops.times(b, t[0])].concat(t.slice(1));
     }
   };
 
