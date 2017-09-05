@@ -107,7 +107,6 @@ export const extend = (matrixOps, overField) => {
 
 
   const _solveSingle = (vec, val) => {
-    console.log(`_solveSingle(${vec}, ${val})`);
     let out = ops.times(vec, 0);
 
     if (overField)
@@ -121,7 +120,6 @@ export const extend = (matrixOps, overField) => {
     else
       console.log('not yet implemented');
 
-    console.log(`  -> ${out}`);
     return out;
   };
 
@@ -134,7 +132,6 @@ export const extend = (matrixOps, overField) => {
       throw new Error('left and right side must have equal number of rows');
 
     const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
-    console.log(`    <${bs}>`);
     const [rows, cols] = ops.shape(bs);
 
     const leading = [];
@@ -149,20 +146,28 @@ export const extend = (matrixOps, overField) => {
     if (leading[rows - 1] >= colsLft)
       return null;
 
-    const result = ops.matrix(rowsLft, colsRgt);
+    const result = [];
 
     for (let j = colsLft; j < cols; ++j) {
+      let out = [];
+
       for (let k = rows - 1; k >= 0; --k) {
-        const v = _solveSingle(bs[k].slice(leading[k], leading[k + 1]),
-                               bs[k][j]);
+        const [from, to] = [leading[k], leading[k + 1]];
+        const vleft = bs[k].slice(from, to);
+        const sright = ops.minus(bs[k][j],
+                                 ops.times(out, bs[k].slice(to, colsLft)));
+
+        const v = _solveSingle(vleft, sright);
         if (v == null)
           return null;
-        for (let nu = 0; nu < v.length; ++nu)
-          result[nu + leading[k]][j - colsLft] = v[nu];
+        else
+          out = v.concat(out);
       }
+
+      result.push(out);
     }
 
-    return result;
+    return ops.transposed(result);
   };
 
 
