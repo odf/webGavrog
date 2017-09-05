@@ -152,10 +152,10 @@ export const extend = (matrixOps, overField) => {
       let out = [];
 
       for (let k = rows - 1; k >= 0; --k) {
-        const row = bs[k];
+        const b = bs[k];
         const [from, to] = [leading[k], leading[k + 1]];
-        const v = row.slice(from, to);
-        const s = ops.minus(row[j], ops.times(out, row.slice(to, colsLft)));
+        const v = b.slice(from, to);
+        const s = ops.minus(b[j], ops.times(out, b.slice(to, colsLft)));
 
         const w = _solveSingle(v, s);
         if (w == null)
