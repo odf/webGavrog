@@ -140,9 +140,7 @@ export const extend = (matrixOps, overField) => {
 
   const solve = (lft, rgt) => {
     const [rowsLft, colsLft] = ops.shape(lft);
-    const [rowsRgt, colsRgt] = ops.shape(rgt);
-
-    if (rowsLft != rowsRgt)
+    if (rowsLft != rgt.length)
       throw new Error('left and right side must have equal number of rows');
 
     const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
