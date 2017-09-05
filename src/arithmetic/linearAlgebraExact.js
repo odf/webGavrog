@@ -83,6 +83,9 @@ export const extend = (matrixOps, overField) => {
     const div = overField ? ops.div : ops.idiv;
     const bs = triangularBasis(rows);
 
+    if (bs == null)
+      return null;
+
     let col = 0;
     for (let row = 0; row < bs.length; ++row) {
       while (ops.eq(bs[row][col], 0))
@@ -127,11 +130,14 @@ export const extend = (matrixOps, overField) => {
 
   const _leadingPositions = bs => {
     const result = [];
-    let col = 0;
-    for (let row = 0; row < bs.length; ++row) {
-      while (ops.eq(bs[row][col], 0))
-        ++col;
-      result.push(col);
+
+    if (bs != null) {
+      let col = 0;
+      for (let row = 0; row < bs.length; ++row) {
+        while (ops.eq(bs[row][col], 0))
+          ++col;
+        result.push(col);
+      }
     }
 
     return result;
@@ -139,11 +145,15 @@ export const extend = (matrixOps, overField) => {
 
 
   const solve = (lft, rgt) => {
+    const [rowsRgt, colsRgt] = ops.shape(lft);
     const [rowsLft, colsLft] = ops.shape(lft);
-    if (rowsLft != rgt.length)
+    if (rowsLft != rowsRgt)
       throw new Error('left and right side must have equal number of rows');
 
     const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
+    if (bs == null)
+      return ops.matrix(rowsRgt, colsLft);
+
     const [rows, cols] = ops.shape(bs);
     const leading = _leadingPositions(bs);
 
@@ -174,6 +184,9 @@ export const extend = (matrixOps, overField) => {
             out = w.concat(out);
         }
       }
+
+      if (leading[0] > 0)
+        out = ops.vector(leading[0]).concat(out);
 
       result.push(out);
     }
