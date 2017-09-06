@@ -228,13 +228,42 @@ export const extend = (matrixOps, overField) => {
         Matrix: extendBasis
       }
     },
-    triangularBasis: { Matrix: triangularBasis },
-    reducedBasis: { Matrix: reducedBasis },
-    rank: { Matrix: rank },
-    determinant: { Matrix: determinant },
-    solve: { Matrix: { Matrix: solve } },
-    leftNullSpace: { Matrix: leftNullSpace },
-    nullSpace: { Matrix: nullSpace }
+
+    triangularBasis: {
+      Null: _ => null,
+      Matrix: triangularBasis
+    },
+
+    reducedBasis: {
+      Null: _ => null,
+      Matrix: reducedBasis
+    },
+
+    rank: {
+      Null: _ => 0,
+      Matrix: rank
+    },
+
+    determinant: {
+      Null: _ => 0,
+      Matrix: determinant
+    },
+
+    solve: {
+      Matrix: {
+        Matrix: solve
+      }
+    },
+
+    leftNullSpace: {
+      Null: _ => null,
+      Matrix: leftNullSpace
+    },
+
+    nullSpace: {
+      Null: _ => null,
+      Matrix: nullSpace
+    }
   };
 
 

@@ -11,35 +11,24 @@ const test = function(ops) {
       [spec.generators.linearEquations(jsc.nat)],
       ([A, v]) => {
         const b = ops.times(A, v);
-        const x = ops.solve(A, b);
-        return ops.eq(ops.times(A, x), b);
-      },
-      { tests: 1000, size: 100 }));
+        return ops.eq(ops.times(A, ops.solve(A, b)), b);
+      }));
   });
 
   this.describe('the nullSpace operator', function() {
     this.it('determines the correct null space rank', spec.property(
       [spec.generators.linearEquations(jsc.nat)],
-      ([A, v]) => {
-        const [n, m] = ops.shape(A);
-        const r = ops.rank(A);
-        const N = ops.nullSpace(A);
-
-        if (r == n)
-          return N == null;
-        else
-          return r + ops.rank(ops.transposed(N)) == n;
-      },
-      { tests: 1000, size: 100 }));
+      ([A, _]) => ops.rank(ops.nullSpace(A)) == ops.shape(A)[0] - ops.rank(A)
+    ));
   });
 };
 
 
-JS.Test.describe('in exact linear algebra', function() {
-  this.describe('over fields,',
+JS.Test.describe('exact linear algebra', function() {
+  this.describe('over fields:',
                 test.bind(this, types.rationalLinearAlgebra));
 
-  this.describe('over modules,',
+  this.describe('over modules:',
                 test.bind(this, types.rationalLinearAlgebraModular));
 });
 
