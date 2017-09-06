@@ -112,25 +112,6 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const _solveDiophantine = (vec, val) => {
-    if (vec.length == 1) {
-      if (ops.eq(ops.mod(val, vec[0]), 0))
-        return [ops.div(val, vec[0])];
-      else
-        return null;
-    }
-    else {
-      const [x, a, b, c, d] = ops.gcdex(vec[0], vec[1]);
-      const t = _solveDiophantine([x].concat(vec.slice(2)), val);
-
-      if (t == null)
-        return null;
-      else
-        return [ops.times(a, t[0]), ops.times(b, t[0])].concat(t.slice(1));
-    }
-  };
-
-
   const _leadingPositions = bs => {
     const result = [];
 
@@ -147,16 +128,7 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const solve = (lft, rgt) => {
-    const [rowsRgt, colsRgt] = ops.shape(lft);
-    const [rowsLft, colsLft] = ops.shape(lft);
-    if (rowsLft != rowsRgt)
-      throw new Error('left and right side must have equal number of rows');
-
-    const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
-    if (bs == null)
-      return ops.matrix(rowsRgt, colsLft);
-
+  const _solveReducedOverField = (bs, colsLft) => {
     const [rows, cols] = ops.shape(bs);
     const leading = _leadingPositions(bs);
 
@@ -175,17 +147,8 @@ export const extend = (matrixOps, overField) => {
         const [from, to] = [leading[k], leading[k + 1]];
         const s = ops.minus(b[j], ops.times(out, b.slice(to, colsLft)));
 
-        if (overField) {
-          out = ops.vector(to - from).concat(out);
-          out[0] = ops.div(s, b[from]);
-        }
-        else {
-          const w = _solveDiophantine(b.slice(from, to), s);
-          if (w == null)
-            return null;
-          else
-            out = w.concat(out);
-        }
+        out = ops.vector(to - from).concat(out);
+        out[0] = ops.div(s, b[from]);
       }
 
       if (leading[0] > 0)
@@ -195,6 +158,42 @@ export const extend = (matrixOps, overField) => {
     }
 
     return ops.transposed(result);
+  };
+
+
+  const _solveReducedOverModule = (bs, m) => {
+    const n = bs.length;
+    const lft = bs.map(v => v.slice(0, m));
+    const rgt = bs.map(v => v.slice(m));
+
+    const I = ops.identityMatrix(m);
+    const vs = reducedBasis(ops.transposed(lft).map((v, i) => v.concat(I[i])));
+    const U = ops.transposed(vs).slice(n);
+    const B = ops.transposed(vs.slice(0, n)).slice(0, n);
+    const Binv = solve(B, ops.identityMatrix(n), true);
+    const y = ops.times(Binv, rgt).concat(ops.matrix(m - n, rgt[0].length));
+
+    if (y.every(v => v.every(x => ops.isInteger(x)))) // TODO generalize test
+      return ops.times(U, y);
+    else
+      return null;
+  };
+
+
+  const solve = (lft, rgt, overField=true) => {
+    const [rowsLft, colsLft] = ops.shape(lft);
+    const [rowsRgt, colsRgt] = ops.shape(rgt);
+    if (rowsLft != rowsRgt)
+      throw new Error('left and right side must have equal number of rows');
+
+    const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
+
+    if (bs == null)
+      return ops.matrix(colsLft, colsRgt);
+    else if (overField)
+      return _solveReducedOverField(bs, colsLft);
+    else
+      return _solveReducedOverModule(bs, colsLft);
   };
 
 
@@ -251,13 +250,13 @@ export const extend = (matrixOps, overField) => {
 
     solve: {
       Matrix: {
-        Matrix: solve
+        Matrix: (lft, rgt) => solve(lft, rgt, overField)
       }
     },
 
     inverse: {
       Null: _ => null,
-      Matrix: mat => solve(mat, ops.identityMatrix(ops.dimension(mat)))
+      Matrix: mat => solve(mat, ops.identityMatrix(mat.length), overField)
     },
 
     leftNullSpace: {
@@ -284,12 +283,21 @@ if (require.main == module) {
   const types = require('./types');
   const ops = extend(types.rationalMatrices, false);
 
-  const A = [[5,1,2],[10,8,5],[5,7,3]];
-  const v = [[3],[7],[0]];
-  const b = ops.times(A, v);
+  const test = (A, v) => {
+    const b = ops.times(A, v);
 
-  console.log(`A = ${A}`);
-  console.log(`v = ${v}`);
-  console.log(`b := A * v = ${b}`);
-  console.log(`A * x = b ~> x = ${ops.solve(A, b)}`);
+    console.log(`A = ${A}`);
+    console.log(`v = ${v}`);
+    console.log(`b := A * v = ${b}`);
+
+    const x = ops.solve(A, b);
+    console.log(`A * x = b ~> x = ${x}`);
+    console.log(`check A * x = ${ops.times(A, x)}`);
+
+    console.log();
+  };
+
+  test([[5,1,2],[10,8,5],[5,7,3]], [[3],[7],[0]]);
+  test([[5,1,2],[10,8,5],[5,7,3]], [[ops.div(3, 5)],[7],[0]]);
+  test([[0,0,0],[ 0,0,0],[0,0,0]], [[0],[0],[0]]);
 }
