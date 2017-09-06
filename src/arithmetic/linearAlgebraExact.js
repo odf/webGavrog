@@ -255,6 +255,11 @@ export const extend = (matrixOps, overField) => {
       }
     },
 
+    inverse: {
+      Null: _ => null,
+      Matrix: mat => solve(mat, ops.identityMatrix(ops.dimension(mat)))
+    },
+
     leftNullSpace: {
       Null: _ => null,
       Matrix: leftNullSpace
@@ -294,7 +299,7 @@ if (require.main == module) {
       console.log(
         `  det(A) : ${opsO.determinant(A)} <-> ${ops.determinant(A)}`);
 
-    const Ainv = ops.solve(A, I);
+    const Ainv = ops.inverse(A);
     if (Ainv == null)
       console.log(`  no inverse`);
     else if (ops.eq(ops.times(A, Ainv), I))
