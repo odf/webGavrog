@@ -206,8 +206,7 @@ export const extend = (matrixOps, overField) => {
   const leftNullSpace = mat => {
     const [nrows, ncols] = ops.shape(mat);
     const [lft, rgt] = reducedBasis(mat, ops.identityMatrix(nrows));
-    const leading = _leadingPositions(lft);
-    const k = leading.findIndex(x => x >= ncols);
+    const k = lft.findIndex(v => v.every(x => ops.eq(x, 0)));
 
     if (k >= 0)
       return rgt.slice(k);
