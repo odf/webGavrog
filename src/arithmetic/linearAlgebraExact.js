@@ -168,9 +168,13 @@ export const extend = (matrixOps, overField) => {
 
     const I = ops.identityMatrix(m);
     const vs = reducedBasis(ops.transposed(lft).map((v, i) => v.concat(I[i])));
+
     const U = ops.transposed(vs).slice(n);
     const B = ops.transposed(vs.slice(0, n)).slice(0, n);
     const Binv = solve(B, ops.identityMatrix(n), true);
+    if (Binv == null)
+      return null;
+
     const y = ops.times(Binv, rgt).concat(ops.matrix(m - n, rgt[0].length));
 
     if (y.every(v => v.every(x => ops.isInteger(x)))) // TODO generalize test
