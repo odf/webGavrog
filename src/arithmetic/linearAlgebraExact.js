@@ -195,6 +195,29 @@ export const extend = (matrixOps, overField) => {
   };
 
 
+  const leftNullSpace = mat => {
+    const [nrows, ncols] = ops.shape(mat);
+    const I = ops.identityMatrix(nrows);
+    const ext = reducedBasis(mat.map((v, i) => v.concat(I[i])));
+    const leading = _leadingPositions(ext);
+    const k = leading.findIndex(x => x >= ncols);
+
+    if (k >= 0)
+      return ext.slice(k).map(v => v.slice(ncols));
+    else
+      return null;
+  };
+
+
+  const nullSpace = mat => {
+    const lns = leftNullSpace(ops.transposed(mat));
+    if (lns == null)
+      return null;
+    else
+      return ops.transposed(lns);
+  };
+
+
   const methods = {
     extendBasis: {
       Vector: {
@@ -206,7 +229,9 @@ export const extend = (matrixOps, overField) => {
     reducedBasis: { Matrix: reducedBasis },
     rank: { Matrix: rank },
     determinant: { Matrix: determinant },
-    solve: { Matrix: { Matrix: solve } }
+    solve: { Matrix: { Matrix: solve } },
+    leftNullSpace: { Matrix: leftNullSpace },
+    nullSpace: { Matrix: nullSpace }
   };
 
 
@@ -238,24 +263,46 @@ if (require.main == module) {
         `  det(A) : ${opsO.determinant(A)} <-> ${ops.determinant(A)}`);
 
     const Ainv = ops.solve(A, I);
-    if (Ainv)
-      console.log(`  inverse check: ${A} * ${Ainv} = ${ops.times(A, Ainv)}`);
-    else
+    if (Ainv == null)
       console.log(`  no inverse`);
+    else if (ops.eq(ops.times(A, Ainv), I))
+      console.log(`  inverse check okay - got ${Ainv}`);
+    else
+      console.log(`  inverse check failed -`,
+                  `${A} * ${Ainv} = ${ops.times(A, Ainv)}`);
+
+    const N = ops.nullSpace(A);
+    if (N == null)
+      console.log(`  empty nullspace`);
+    else if (ops.eq(ops.times(A, N), ops.times(A, ops.times(0, N))))
+      console.log(`  nullspace check okay - got ${N}`);
+    else
+      console.log(`  nullspace check failed -`,
+                  `${A} * ${N} = ${ops.times(A, N)}`);
 
     const M = ops.solve(A, ops.times(A, B));
     console.log(`  solving ${A} * M = ${ops.times(A, B)}:`);
     console.log(`  M = ${M}`);
-    if (M != null)
-      console.log(`  check: ${ops.times(A, M)}`);
+
+    if (M == null)
+      console.log(`  no solution`);
+    else if (ops.eq(ops.times(A, M), ops.times(A, B)))
+      console.log(`  check okay!`);
+    else
+      console.log(`  check failed -`,
+                  `${ops.times(A, M)} should be ${ops.times(A, B)}`);
   };
 
   const test = A => {
     console.log(`A = ${A}`);
+    console.log();
     console.log(`over field:`);
     testIn(A, opsF);
+    console.log();
     console.log(`over module:`);
     testIn(A, opsM);
+    console.log();
+    console.log();
     console.log();
   };
 
