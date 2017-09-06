@@ -118,71 +118,32 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const _leadingPositions = bs => {
-    const result = [];
-
-    if (bs != null) {
-      let col = 0;
-      for (let row = 0; row < bs.length; ++row) {
-        while (col < bs[row].length && ops.eq(bs[row][col], 0))
-          ++col;
-        result.push(col);
-      }
-    }
-
-    return result;
-  };
-
-
-  const _solveReducedOverField = (lft, rgt) => {
-    const [rows, colsLft] = ops.shape(lft);
-    const [_, colsRgt] = ops.shape(rgt);
-    const leading = _leadingPositions(lft);
-
-    if (leading[rows - 1] >= colsLft)
-      return null;
-
-    leading.push(colsLft);
-
-    const result = [];
-
-    for (let j = 0; j < colsRgt; ++j) {
-      let out = [];
-
-      for (let k = rows - 1; k >= 0; --k) {
-        const [from, to] = [leading[k], leading[k + 1]];
-        const s = ops.minus(rgt[k][j], ops.times(out, lft[k].slice(to)));
-
-        out = ops.vector(to - from).concat(out);
-        out[0] = ops.div(s, lft[k][from]);
-      }
-
-      if (leading[0] > 0)
-        out = ops.vector(leading[0]).concat(out);
-
-      result.push(out);
-    }
-
-    return ops.transposed(result);
-  };
-
-
-  const _solveReducedOverModule = (lft, rgt) => {
+  const _solveReduced = (lft, rgt) => {
     const [n, m] = ops.shape(lft);
 
     const [B, U] = reducedBasis(ops.transposed(lft), ops.identityMatrix(m))
       .map(t => ops.transposed(t));
 
-    const Binv = solve(B.map(v => v.slice(0, n)), ops.identityMatrix(n), true);
-    if (Binv == null)
-      return null;
+    const y = [];
+    for (const i in rgt) {
+      if (ops.eq(B[i][i], 0))
+        return null;
 
-    const y = ops.times(Binv, rgt).concat(ops.matrix(m - n, rgt[0].length));
+      let v = rgt[i];
+      for (let k = 0; k < i; ++k)
+        v = ops.minus(v, ops.times(B[i][k], y[k]));
 
-    if (y.every(v => v.every(x => ops.isInteger(x)))) // TODO generalize test
-      return ops.times(U, y);
-    else
-      return null;
+      const w = [];
+      for (const x of v) {
+        if (overField || ops.eq(ops.mod(x, B[i][i]), 0))
+          w.push(ops.div(x, B[i][i]));
+        else
+          return null;
+      }
+      y.push(w);
+    }
+
+    return ops.times(U, y.concat(ops.matrix(m - n, y[0].length)));
   };
 
 
@@ -196,10 +157,8 @@ export const extend = (matrixOps, overField) => {
 
     if (lft == null)
       return ops.matrix(colsLft, colsRgt);
-    else if (overField)
-      return _solveReducedOverField(lft, rgt);
     else
-      return _solveReducedOverModule(lft, rgt);
+      return _solveReduced(lft, rgt);
   };
 
 
@@ -301,6 +260,7 @@ if (require.main == module) {
     console.log();
   };
 
+  test([[6,3],[0,5]], [[2],[3]]);
   test([[5,1,2],[10,8,5],[5,7,3]], [[3],[7],[0]]);
   test([[5,1,2],[10,8,5],[5,7,3]], [[ops.div(3, 5)],[7],[0]]);
   test([[0,0,0],[ 0,0,0],[0,0,0]], [[0],[0],[0]]);
