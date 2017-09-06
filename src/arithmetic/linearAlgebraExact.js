@@ -118,36 +118,7 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const _solveReduced = (lft, rgt) => {
-    const [n, m] = ops.shape(lft);
-
-    const [B, U] = reducedBasis(ops.transposed(lft), ops.identityMatrix(m))
-      .map(t => ops.transposed(t));
-
-    const y = [];
-    for (const i in rgt) {
-      if (ops.eq(B[i][i], 0))
-        return null;
-
-      let v = rgt[i];
-      for (let k = 0; k < i; ++k)
-        v = ops.minus(v, ops.times(B[i][k], y[k]));
-
-      const w = [];
-      for (const x of v) {
-        if (overField || ops.eq(ops.mod(x, B[i][i]), 0))
-          w.push(ops.div(x, B[i][i]));
-        else
-          return null;
-      }
-      y.push(w);
-    }
-
-    return ops.times(U, y.concat(ops.matrix(m - n, y[0].length)));
-  };
-
-
-  const solve = (lft, rgt, overField=true) => {
+  const solve = (lft, rgt) => {
     const [rowsLft, colsLft] = ops.shape(lft);
     const [rowsRgt, colsRgt] = ops.shape(rgt);
     if (rowsLft != rowsRgt)
@@ -157,8 +128,23 @@ export const extend = (matrixOps, overField) => {
 
     if (lft == null)
       return ops.matrix(colsLft, colsRgt);
-    else
-      return _solveReduced(lft, rgt);
+    else if (rank(lft) < lft.length)
+      return null;
+
+    const [n, m] = ops.shape(lft);
+    const [B, U] = reducedBasis(ops.transposed(lft), ops.identityMatrix(m))
+      .map(t => ops.transposed(t));
+
+    const y = [];
+    for (const i in rgt) {
+      const v = ops.minus(rgt[i], ops.times(B[i].slice(0, i), y));
+      if (!overField && v.some(x => ops.ne(ops.mod(x, B[i][i]), 0)))
+        return null;
+
+      y.push(v.map(x => ops.div(x, B[i][i])));
+    }
+
+    return ops.times(U, y.concat(ops.matrix(m - n, y[0].length)));
   };
 
 
@@ -213,13 +199,13 @@ export const extend = (matrixOps, overField) => {
 
     solve: {
       Matrix: {
-        Matrix: (lft, rgt) => solve(lft, rgt, overField)
+        Matrix: (lft, rgt) => solve(lft, rgt)
       }
     },
 
     inverse: {
       Null: _ => null,
-      Matrix: mat => solve(mat, ops.identityMatrix(mat.length), overField)
+      Matrix: mat => solve(mat, ops.identityMatrix(mat.length))
     },
 
     leftNullSpace: {
