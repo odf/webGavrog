@@ -82,12 +82,13 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const reducedBasis = rows => {
+  const reducedBasis = (mat, right=null) => {
     const div = overField ? ops.div : ops.idiv;
-    const bs = triangularBasis(rows);
+    const t = right == null ? mat : mat.map((v, i) => v.concat(right[i]));
+    const bs = triangularBasis(t);
 
     if (bs == null)
-      return null;
+      return right == null ? null : [null, null];
 
     let col = 0;
     for (let row = 0; row < bs.length; ++row) {
@@ -108,7 +109,12 @@ export const extend = (matrixOps, overField) => {
       }
     }
 
-    return bs;
+    if (right == null)
+      return bs;
+    else {
+      const [n, m] = ops.shape(mat);
+      return [bs.map(v => v.slice(0, m)), bs.map(v => v.slice(m))];
+    }
   };
 
 
@@ -118,7 +124,7 @@ export const extend = (matrixOps, overField) => {
     if (bs != null) {
       let col = 0;
       for (let row = 0; row < bs.length; ++row) {
-        while (ops.eq(bs[row][col], 0))
+        while (col < bs[row].length && ops.eq(bs[row][col], 0))
           ++col;
         result.push(col);
       }
@@ -128,9 +134,10 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const _solveReducedOverField = (bs, colsLft) => {
-    const [rows, cols] = ops.shape(bs);
-    const leading = _leadingPositions(bs);
+  const _solveReducedOverField = (lft, rgt) => {
+    const [rows, colsLft] = ops.shape(lft);
+    const [_, colsRgt] = ops.shape(rgt);
+    const leading = _leadingPositions(lft);
 
     if (leading[rows - 1] >= colsLft)
       return null;
@@ -139,16 +146,15 @@ export const extend = (matrixOps, overField) => {
 
     const result = [];
 
-    for (let j = colsLft; j < cols; ++j) {
+    for (let j = 0; j < colsRgt; ++j) {
       let out = [];
 
       for (let k = rows - 1; k >= 0; --k) {
-        const b = bs[k];
         const [from, to] = [leading[k], leading[k + 1]];
-        const s = ops.minus(b[j], ops.times(out, b.slice(to, colsLft)));
+        const s = ops.minus(rgt[k][j], ops.times(out, lft[k].slice(to)));
 
         out = ops.vector(to - from).concat(out);
-        out[0] = ops.div(s, b[from]);
+        out[0] = ops.div(s, lft[k][from]);
       }
 
       if (leading[0] > 0)
@@ -161,17 +167,13 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const _solveReducedOverModule = (bs, m) => {
-    const n = bs.length;
-    const lft = bs.map(v => v.slice(0, m));
-    const rgt = bs.map(v => v.slice(m));
+  const _solveReducedOverModule = (lft, rgt) => {
+    const [n, m] = ops.shape(lft);
 
-    const I = ops.identityMatrix(m);
-    const vs = reducedBasis(ops.transposed(lft).map((v, i) => v.concat(I[i])));
+    const [B, U] = reducedBasis(ops.transposed(lft), ops.identityMatrix(m))
+      .map(t => ops.transposed(t));
 
-    const U = ops.transposed(vs).slice(n);
-    const B = ops.transposed(vs.slice(0, n)).slice(0, n);
-    const Binv = solve(B, ops.identityMatrix(n), true);
+    const Binv = solve(B.map(v => v.slice(0, n)), ops.identityMatrix(n), true);
     if (Binv == null)
       return null;
 
@@ -190,26 +192,25 @@ export const extend = (matrixOps, overField) => {
     if (rowsLft != rowsRgt)
       throw new Error('left and right side must have equal number of rows');
 
-    const bs = reducedBasis(lft.map((v, i) => v.concat(rgt[i])));
+    [lft, rgt] = reducedBasis(lft, rgt);
 
-    if (bs == null)
+    if (lft == null)
       return ops.matrix(colsLft, colsRgt);
     else if (overField)
-      return _solveReducedOverField(bs, colsLft);
+      return _solveReducedOverField(lft, rgt);
     else
-      return _solveReducedOverModule(bs, colsLft);
+      return _solveReducedOverModule(lft, rgt);
   };
 
 
   const leftNullSpace = mat => {
     const [nrows, ncols] = ops.shape(mat);
-    const I = ops.identityMatrix(nrows);
-    const ext = reducedBasis(mat.map((v, i) => v.concat(I[i])));
-    const leading = _leadingPositions(ext);
+    const [lft, rgt] = reducedBasis(mat, ops.identityMatrix(nrows));
+    const leading = _leadingPositions(lft);
     const k = leading.findIndex(x => x >= ncols);
 
     if (k >= 0)
-      return ext.slice(k).map(v => v.slice(ncols));
+      return rgt.slice(k);
     else
       return null;
   };
@@ -296,7 +297,7 @@ if (require.main == module) {
 
     const x = ops.solve(A, b);
     console.log(`A * x = b ~> x = ${x}`);
-    console.log(`check A * x = ${ops.times(A, x)}`);
+    console.log(`check A * x: ${ops.times(A, x)}`);
 
     console.log();
   };
