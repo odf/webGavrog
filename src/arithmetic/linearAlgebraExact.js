@@ -62,7 +62,10 @@ export const extend = (matrixOps, overField) => {
   };
 
 
-  const rank = rows => triangularBasis(rows).length;
+  const rank = rows => {
+    const bs = triangularBasis(rows);
+    return bs == null ? 0 : bs.length;
+  };
 
 
   const determinant = rows => {
@@ -72,7 +75,7 @@ export const extend = (matrixOps, overField) => {
 
     const bs = triangularBasis(rows);
 
-    if (bs.length < nrows)
+    if (bs == null || bs.length < nrows)
       return 0;
     else
       return bs.map((v, i) => v[i]).reduce((a, x) => ops.times(a, x));
@@ -306,6 +309,7 @@ if (require.main == module) {
     console.log();
   };
 
+  test([[0,0,0],[0,0,0],[0,0,0]]);
   test([[1,2,3],[0,4,5],[6,0,7]]);
   test([[2,3,4],[5,6,7],[8,9,0]]);
   test([[9,8,7],[6,5,4],[3,2,1]]);
