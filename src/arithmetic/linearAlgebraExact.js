@@ -11,6 +11,9 @@ export const extend = (matrixOps, overField) => {
     let colBs = 0;
     let colV = 0;
 
+    if (bs != null)
+      bs = bs.slice();
+
     while (rowBs < nrows && colBs < ncols) {
       const b = bs[rowBs];
       while (colBs < ncols && ops.eq(b[colBs], 0))
