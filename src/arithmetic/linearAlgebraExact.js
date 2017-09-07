@@ -216,6 +216,10 @@ export const extend = (matrixOps, overField) => {
     nullSpace: {
       Null: _ => null,
       Matrix: nullSpace
+    },
+
+    transposed: {
+      Null: _ => null
     }
   };
 
@@ -242,6 +246,7 @@ if (require.main == module) {
     const x = ops.solve(A, b);
     console.log(`A * x = b ~> x = ${x}`);
     console.log(`check A * x: ${ops.times(A, x)}`);
+    console.log(`nullspace: ${ops.transposed(ops.nullSpace(A))}`);
 
     console.log();
   };
