@@ -3,57 +3,35 @@ export const extend = (matrixOps, overField) => {
 
 
   const extendBasis = (v, bs) => {
-    const [nrows, ncols] = bs == null ? [0, v.length] : ops.shape(bs);
-    if (v.length != ncols)
-      throw Error("shapes don't match");
-
-    let rowBs = 0;
-    let colBs = 0;
-    let colV = 0;
-
-    if (bs != null)
+    if (bs && bs.length)
       bs = bs.slice();
 
-    while (rowBs < nrows && colBs < ncols) {
-      const b = bs[rowBs];
-      while (colBs < ncols && ops.eq(b[colBs], 0))
-        ++colBs;
+    for (const row in bs || []) {
+      const b = bs[row];
+      const colB = b.findIndex(x => ops.ne(x, 0));
+      const colV = v.findIndex(x => ops.ne(x, 0));
 
-      while (colV < ncols && ops.eq(v[colV], 0))
-        ++colV;
+      if (v.length != b.length)
+        throw Error("shapes don't match");
 
-      if (colV < colBs || colV >= ncols || colBs >= ncols)
-        break;
-      else if (colV == colBs) {
-        if (overField || ops.eq(0, ops.mod(v[colV], b[colV]))) {
+      if (colV < colB) {
+        if (colV >= 0)
+          bs.splice(row, 0, (bs.length - row) % 2 ? ops.negative(v) : v);
+        return bs;
+      }
+      else if (colV == colB) {
+        if (overField || ops.eq(0, ops.mod(v[colV], b[colV])))
           v = ops.minus(v, ops.times(b, ops.div(v[colV], b[colV])));
-        }
         else {
           const [x, r, s, t, u] = ops.gcdex(b[colV], v[colV]);
-          bs[rowBs] = ops.plus(ops.times(b, r), ops.times(v, s));
-          if (ops.lt(ops.times(r, u), ops.times(s, t)))
-            bs[rowBs] = ops.negative(bs[rowBs]);
+          const det = ops.minus(ops.times(r, u), ops.times(s, t));
+          bs[row] = ops.times(det, ops.plus(ops.times(b, r), ops.times(v, s)));
           v = ops.plus(ops.times(b, t), ops.times(v, u));
         }
       }
-
-      ++rowBs;
     }
 
-    while (colV < ncols && ops.eq(v[colV], 0))
-      ++colV;
-
-    if (colV < ncols) {
-      if ((nrows - rowBs) % 2 != 0)
-        v = ops.negative(v);
-
-      if (nrows == 0)
-        return [v];
-      else
-        return bs.slice(0, rowBs).concat([v], bs.slice(rowBs));
-    }
-    else
-      return bs;
+    return ops.sgn(v) == 0 ? bs : (bs || []).concat([v]);
   };
 
 
