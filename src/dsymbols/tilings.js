@@ -12,7 +12,7 @@ import * as periodic    from '../pgraphs/periodic';
 
 import * as util from '../common/util';
 
-import { matrices } from '../arithmetic/types';
+import { matrices, rationalLinearAlgebraModular } from '../arithmetic/types';
 const ops = matrices;
 
 
@@ -35,7 +35,8 @@ const _edgeTranslations = function _edgeTranslations(cov) {
   _timers && _timers.stop('_edgeTranslations: fundamental group');
 
   _timers && _timers.start('_edgeTranslations: relator null space');
-  const nul = ops.nullSpace(cosets.relatorMatrix(n, fg.relators).toJS());
+  const nul = rationalLinearAlgebraModular.nullSpace(
+    cosets.relatorMatrix(n, fg.relators).toJS());
   _timers && _timers.stop('_edgeTranslations: relator null space');
 
   _timers && _timers.start('_edgeTranslations: assign translations to edges');

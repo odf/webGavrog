@@ -106,7 +106,7 @@ if (require.main == module) {
   console.log(`${A} *\n${Ainv} =\n${ops.times(A, Ainv)}\n`);
 
   const testNullSpace = B => {
-    const N = ops.nullSpace(B);
+    const N = rationalLinearAlgebraModular.nullSpace(B);
     console.log(`${B} *\n${N} =\n${N ? ops.times(B, N) : N}\n`);
   }
 

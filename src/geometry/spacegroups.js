@@ -207,7 +207,7 @@ export const gramMatrixConfigurationSpace = ops => {
   }
 
   // -- return the solution space
-  return V.transposed(V.nullSpace(eqns));
+  return V.transposed(rationalLinearAlgebraModular.nullSpace(eqns));
 };
 
 
@@ -257,7 +257,7 @@ const shiftSpace = ops => {
   const pops = primitive.ops.map(op => opModZ(V.times(toStd, op)));
 
   const M = [].concat(...pops.map(op => V.minus(V.linearPart(op), I)));
-  return V.transposed(V.nullSpace(M));
+  return V.transposed(rationalLinearAlgebraModular.nullSpace(M));
 };
 
 

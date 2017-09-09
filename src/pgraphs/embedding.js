@@ -4,7 +4,7 @@ import * as sg from '../geometry/spacegroups';
 import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
-import { matrices } from '../arithmetic/types';
+import { matrices, rationalLinearAlgebra } from '../arithmetic/types';
 const ops = matrices;
 
 
@@ -44,7 +44,7 @@ const _nodeSymmetrizer = (v, syms, positions) => {
 
 const _normalizedInvariantSpace = P => {
   const I = ops.identityMatrix(ops.dimension(P));
-  const A = ops.transposed(ops.nullSpace(ops.transposed(ops.minus(P, I))));
+  const A = rationalLinearAlgebra.leftNullSpace(ops.minus(P, I));
 
   const [nr, nc] = ops.shape(A);
   const k = A.findIndex(r => ops.ne(r[nc - 1], 0));
@@ -388,6 +388,7 @@ const _energyEvaluator = (
 
 
 const embed = (g, relax=true) => {
+  console.log(`embed(${g})`);
   _timers && _timers.start('embed');
 
   _timers && _timers.start('embed: barycentric placement');

@@ -289,15 +289,6 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
   };
 
 
-  const nullSpace = A => {
-    const { P, D, Q } = diagonalize(A);
-    const [m] = shapeOfMatrix(Q);
-    const r = _rank(D);
-    const M = matrix(r, m-r).concat(identity(m-r));
-    return matrixProduct(Q, M);
-  };
-
-
   const solution = (A, b) => {
     if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
       throw new Error('matrix shapes must match');
@@ -437,10 +428,6 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
 
     inverse: {
       Matrix: inverse
-    },
-
-    nullSpace: {
-      Matrix: nullSpace
     },
 
     solution: {
