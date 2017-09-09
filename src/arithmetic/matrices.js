@@ -269,58 +269,6 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
   };
 
 
-  const isDiagonal = A => {
-    const [n, m] = shapeOfMatrix(A);
-    for (let i = 0; i < n; ++i) {
-      for (let j = 0; j < m; ++j) {
-        if (i != j && sops.ne(A[i][j], 0))
-          return false;
-      }
-    }
-    return true;
-  };
-
-
-  const diagonalize = A => {
-    const { U: U1, R: R1 } = triangulation(A);
-    const { U: U2, R: R2 } = triangulation(transposedMatrix(R1));
-
-    return { P: U1, D: transposedMatrix(R2), Q: transposedMatrix(U2) };
-  };
-
-
-  const solution = (A, b) => {
-    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
-      throw new Error('matrix shapes must match');
-
-    const [n, m] = shapeOfMatrix(A);
-    const [_, k] = shapeOfMatrix(b);
-
-    const { P, D, Q } = diagonalize(A);
-    const v = matrixProduct(P, b);
-    const y = matrix(m, k);
-
-    for (let i = 0; i < n; ++i) {
-      const d = i < m ? D[i][i] : 0;
-      for (let j = 0; j < k; ++j) {
-        const r = v[i][j];
-        if (sops.eq(d, 0)) {
-          if (!(sops.eq(r, 0)
-                || (!sops.isRational(r) && sops.le(sops.abs(r), epsilon))))
-          {
-            return null;
-          }
-        }
-        else if (i < m) {
-          y[i][j] = sops.div(r, d);
-        }
-      }
-    }
-
-    return matrixProduct(Q, y);
-  };
-
-
   const cleanup = A => {
     const [nrows, ncols] = shapeOfMatrix(A);
     let sup = 0;
@@ -428,10 +376,6 @@ export const extend = (scalarOps, scalarTypes, epsilon = null) => {
 
     inverse: {
       Matrix: inverse
-    },
-
-    solution: {
-      Matrix: { Matrix: solution }
     },
 
     crossProduct: {

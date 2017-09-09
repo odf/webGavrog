@@ -1,6 +1,9 @@
 import * as I from 'immutable';
 
-import { rationalLinearAlgebraModular } from '../arithmetic/types';
+import {
+  rationalLinearAlgebra,
+  rationalLinearAlgebraModular
+} from '../arithmetic/types';
 
 import * as pg from './periodic';
 import * as ps from './symmetries';
@@ -12,7 +15,8 @@ const ops = pg.ops;
 
 
 const _solveInRows = (v, M) => {
-  const tmp = ops.solution(ops.transposed(M), ops.transposed(v));
+  const tmp = rationalLinearAlgebra.solve(
+    ops.transposed(M), ops.transposed(v));
   return tmp && ops.transposed(tmp);
 };
 

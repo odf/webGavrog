@@ -135,8 +135,7 @@ const _parametersForPosition = (pos, cfg, symmetrizer) => {
   if (cfg.length > 1) {
     const M = cfg.slice(0, -1);
     const p = ops.minus(ops.times(pos.concat(1), symmetrizer), _last(cfg));
-    return ops.transposed(
-      ops.solution(ops.transposed(M), ops.transposed(p)))[0];
+    return ops.transposed(ops.solve(ops.transposed(M), ops.transposed(p)))[0];
   }
   else
     return [];
@@ -388,7 +387,6 @@ const _energyEvaluator = (
 
 
 const embed = (g, relax=true) => {
-  console.log(`embed(${g})`);
   _timers && _timers.start('embed');
 
   _timers && _timers.start('embed: barycentric placement');
