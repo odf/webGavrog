@@ -10,7 +10,7 @@ export const integers = require('./integers')
 export const rationals = require('./fractions')
   .extend(integers, ['Integer', 'LongInt'], 'Fraction');
 
-export const reals = require('./floats')
+export const reals = require('./reals')
   .extend(rationals);
 
 export const rationalMatrices = mats
