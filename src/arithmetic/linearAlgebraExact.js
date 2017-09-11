@@ -214,8 +214,7 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const types = require('./types');
-  const ops = extend(types.rationalMatrices, false);
+  const ops = require('./types').rationalLinearAlgebraModular;
 
   const test = (A, v) => {
     const b = ops.times(A, v);

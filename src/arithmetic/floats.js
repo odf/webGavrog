@@ -1,23 +1,5 @@
-export const extend = rationals => {
-  const ops = rationals;
-
-
-  const make = x => {
-    if (x == 0)
-      return Number.MIN_VALUE;
-    else if (Number.isSafeInteger(x))
-      return (1 + Number.EPSILON) * x;
-    else
-      return x;
-  };
-
-
-  const isqrt = x => {
-    if (Math.abs(x) <= Number.MAX_SAFE_INTEGER)
-      return Math.sqrt(x);
-    else
-      return make(Make.sqrt(x));
-  };
+export const extend = integers => {
+  const ops = integers;
 
 
   const mod = (x, y) => {
@@ -25,17 +7,11 @@ export const extend = rationals => {
       return 0;
     else {
       const t = x % y;
-      return make(t < 0 ? t + y : t);
+      return t < 0 ? t + y : t;
     }
   };
 
   const methods = {
-    float: {
-      Float   : x => make(x),
-      Integer : x => make(x),
-      LongInt : x => make(ops.toJS(x)),
-      Fraction: x => make(ops.toJS(x))
-    },
     isReal  : { Float: x => true },
     toJS    : { Float: x => x },
     negative: { Float: x => -x },
@@ -47,38 +23,30 @@ export const extend = rationals => {
     methods[name] = { Float: x => Math[name](x) }
 
   methods.sqrt = {
-    Integer : isqrt,
-    Float   : x => make(Math.sqrt(x)),
-    LongInt : x => make(Math.sqrt(ops.toJS(x))),
-    Fraction: x => make(Math.sqrt(ops.toJS(x)))
+    Integer : x => Math.sqrt(x),
+    Float   : x => Math.sqrt(x)
   };
 
   for (const [name, op] of [
-    [ 'cmp'  , (x, y) => (x > y) - (x < y)                    ],
-    [ 'plus' , (x, y) => make(x + y)                          ],
-    [ 'minus', (x, y) => make(x - y)                          ],
-    [ 'times', (x, y) => (x == 0 || y == 0) ? 0 : make(x * y) ],
-    [ 'div'  , (x, y) => x == 0 ? 0 : make(x / y)             ],
+    [ 'cmp'  , (x, y) => (x > y) - (x < y)              ],
+    [ 'plus' , (x, y) => x + y                          ],
+    [ 'minus', (x, y) => x - y                          ],
+    [ 'times', (x, y) => (x == 0 || y == 0) ? 0 : x * y ],
+    [ 'div'  , (x, y) => x == 0 ? 0 : x / y             ],
     [ 'mod'  , mod ]
   ]) {
     methods[name] = {
       Float: {
         Float   : (x, y) => op(x, y),
-        Integer : (x, y) => op(x, y),
-        LongInt : (x, y) => op(x, ops.toJS(y)),
-        Fraction: (x, y) => op(x, ops.toJS(y))
+        Integer : (x, y) => op(x, y)
       },
       Integer: {
         Float   : (x, y) => op(x, y)
-      },
-      LongInt: {
-        Float   : (x, y) => op(ops.toJS(x), y)
-      },
-      Fraction: {
-        Float   : (x, y) => op(ops.toJS(x), y)
       }
     };
   }
+
+  methods.div.Integer.Integer = (x, y) => x == 0 ? 0 : x / y;
 
   return ops.register(methods);
 };

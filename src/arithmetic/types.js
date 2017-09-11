@@ -1,11 +1,15 @@
 const base = require('./base');
 const mats = require('./matrices');
 const linalg = require('./linearAlgebraExact');
+const linalgNum = require('./linearAlgebraNumerical');
 const residues = require('./residues');
 
 
 export const integers = require('./integers')
   .extend(base.arithmetic());
+
+export const floats = require('./floats')
+  .extend(integers);
 
 export const rationals = require('./fractions')
   .extend(integers, ['Integer', 'LongInt'], 'Fraction');
@@ -13,8 +17,14 @@ export const rationals = require('./fractions')
 export const reals = require('./reals')
   .extend(rationals);
 
+export const floatMatrices = mats
+  .extend(floats, ['Integer', 'Float'], Math.pow(2, -50));
+
 export const rationalMatrices = mats
   .extend(rationals, ['Integer', 'LongInt', 'Fraction']);
+
+export const matrices = mats
+  .extend(reals, ['Integer', 'LongInt', 'Float', 'Fraction'], Math.pow(2, -50));
 
 export const rationalLinearAlgebra = linalg
   .extend(rationalMatrices, true);
@@ -22,8 +32,8 @@ export const rationalLinearAlgebra = linalg
 export const rationalLinearAlgebraModular = linalg
   .extend(rationalMatrices, false);
 
-export const matrices = mats
-  .extend(reals, ['Integer', 'LongInt', 'Float', 'Fraction'], Math.pow(2, -50));
+export const numericalLinearAlgebra = linalgNum
+  .extend(floatMatrices);
 
 export const residueClassRing = m => residues.extend(base.arithmetic(), m);
 

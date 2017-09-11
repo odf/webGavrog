@@ -213,13 +213,9 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const types = require('./types');
-  const ops = extend(types.matrices);
+  const ops = require('./types').numericalLinearAlgebra;
 
   const test = (A, v) => {
-    A = A.map(row => row.map(x => ops.float(x)));
-    v = v.map(row => row.map(x => ops.float(x)));
-
     const b = ops.times(A, v);
 
     console.log(`A = ${A}`);
