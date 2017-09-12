@@ -10,7 +10,8 @@ const properties = {
     [spec.generators.linearEquations(jsc.nat)],
     ([A, v]) => {
       const b = ops.times(A, v);
-      return ops.eq(ops.times(A, ops.solve(A, b)), b);
+      const w = ops.solve(A, b);
+      return w == null || ops.eq(ops.times(A, w), b);
     }
   ),
 
