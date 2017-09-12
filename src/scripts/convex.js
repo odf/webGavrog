@@ -4,8 +4,8 @@ import * as DS       from '../dsymbols/delaney';
 import * as periodic from '../pgraphs/periodic';
 import * as tilings  from '../dsymbols/tilings';
 
-import { rationalMatrices } from '../arithmetic/types';
-const ops = rationalMatrices;
+import { rationalLinearAlgebra } from '../arithmetic/types';
+const ops = rationalLinearAlgebra
 
 
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
