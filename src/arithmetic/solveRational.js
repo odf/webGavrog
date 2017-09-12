@@ -1,6 +1,6 @@
-import { matrices } from './types';
+import { rationalMatrices } from './types';
 
-const ops = matrices;
+const ops = rationalMatrices;
 
 const p = 9999991;
 
@@ -141,12 +141,14 @@ const integerMatrixProduct = (A, B) => {
 
 
 const numberOfPAdicStepsNeeded = (A, b) => {
-  const logLengths = M => ops.transposed(M).map(r => Math.log(ops.norm(r)));
+  const logLengths = M =>
+    ops.transposed(M).map(r => 0.5 * Math.log(ops.toJS(ops.squareNorm(r))));
+
   const max = v => v.reduce((x, y) => x > y ? x : y);
   const sum = v => v.reduce((x, y) => x + y);
 
   const ls = logLengths(A).concat(max(logLengths(b)));
-  const lsSorted = ls.sort((a, b) => - ops.cmp(a, b));
+  const lsSorted = ls.sort((a, b) => b - a);
   const logDelta = sum(lsSorted.slice(0, A[0].length));
   const golden = (1 + Math.sqrt(5)) / 2;
 
