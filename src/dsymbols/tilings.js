@@ -79,19 +79,9 @@ const _cornerShifts = function _cornerShifts(cov, e2t) {
 
 
 export const skeleton = cov => {
-  useTimers(util.timers());
-
-  _timers && _timers.start('skeleton');
-
-  _timers && _timers.start('skeleton: edge translations');
   const e2t = _edgeTranslations(cov);
-  _timers && _timers.stop('skeleton: edge translations');
-
-  _timers && _timers.start('skeleton: corner shifts');
   const c2s = _cornerShifts(cov, e2t);
-  _timers && _timers.stop('skeleton: corner shifts');
 
-  _timers && _timers.start('skeleton: chamber2node');
   const chamber2node = {};
   let node = 1;
   for (const orb of properties.orbits(cov, _remainingIndices(cov, 0))) {
@@ -99,9 +89,7 @@ export const skeleton = cov => {
       chamber2node[D] = node;
     node += 1;
   }
-  _timers && _timers.stop('skeleton: chamber2node');
 
-  _timers && _timers.start('skeleton: edges');
   const zero = ops.vector(delaney.dim(cov));
   const edges = properties.orbitReps(cov, _remainingIndices(cov, 1))
     .map(function(D) {
@@ -115,19 +103,9 @@ export const skeleton = cov => {
 
       return [v, w, s];
     });
-  _timers && _timers.stop('skeleton: edges');
-
-  _timers && _timers.start('skeleton: make graph');
-  const graph = periodic.make(edges);
-  _timers && _timers.stop('skeleton: make graph');
-
-  _timers && _timers.stop('skeleton');
-
-  console.log(`Skeleton details:`);
-  console.log(`${JSON.stringify(_timers.current(), null, 2)}`);
 
   return {
-    graph,
+    graph: periodic.make(edges),
     chamber2node: chamber2node,
     edgeTranslations: e2t.toJS(),
     cornerShifts: c2s.toJS()
