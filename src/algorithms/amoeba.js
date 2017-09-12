@@ -1,7 +1,3 @@
-import { matrices } from '../arithmetic/types';
-const ops = matrices;
-
-
 const newPoint = (simplex, factor, fn) => {
   const dim = simplex.length - 1;
   const p = new Array(dim + 1).fill(0);
@@ -36,7 +32,7 @@ const step = (simplex, fn) => {
       simplex[dim] = pc;
     else {
       for (let i = 0; i <= dim; ++i) {
-        simplex[i] = ops.div(ops.plus(simplex[i], simplex[0]), 2);
+        simplex[i] = simplex[i].map((x, j) => (x + simplex[0][j]) / 2);
         simplex[i][0] = fn(simplex[i].slice(1));
       }
     }
@@ -47,9 +43,10 @@ const step = (simplex, fn) => {
 
 
 const optimize = (fn, dim, start, maxSteps, tolerance, initialScale=1.0) => {
-  const m = ops.times(initialScale, ops.identityMatrix(dim));
+  const array = n => Array(n).fill(0);
+  const m = array(dim).map((_, i) => array(dim).fill(initialScale, i, i+1));
 
-  const simplex = [start].concat(m.map(e => ops.plus(e, start)))
+  const simplex = [start].concat(m.map(e => e.map((x, i) => x + start[i])))
     .map(p => [fn(p)].concat(p))
     .sort((a, b) => a[0] - b[0]);
 
