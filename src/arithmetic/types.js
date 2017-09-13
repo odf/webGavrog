@@ -1,5 +1,6 @@
 const base = require('./base');
 const mats = require('./matrices');
+const matsX = require('./matricesExtended');
 const linalg = require('./linearAlgebra');
 const residues = require('./residues');
 
@@ -17,12 +18,12 @@ export const reals = require('./reals')
   .extend(rationals);
 
 export const floatMatrices = mats
-  .extend(floats, ['Integer', 'Float'], Math.pow(2, -50));
+  .extend(floats, ['Integer', 'Float']);
 
 export const rationalMatrices = mats
   .extend(rationals, ['Integer', 'LongInt', 'Fraction']);
 
-export const matrices = mats
+export const matrices = matsX
   .extend(reals, ['Integer', 'LongInt', 'Float', 'Fraction'], Math.pow(2, -50));
 
 export const rationalLinearAlgebra = linalg

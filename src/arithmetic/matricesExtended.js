@@ -1,3 +1,10 @@
+let _timers = null;
+
+export const useTimers = timers => {
+  _timers = timers;
+};
+
+
 const checkLen = (v, w) => {
   if (w.length == v.length)
     return true;
@@ -35,7 +42,7 @@ const transposedMatrix = m => {
 };
 
 
-export const extend = (scalarOps, scalarTypes) => {
+export const extend = (scalarOps, scalarTypes, epsilon = null) => {
   const sops = scalarOps;
 
 
@@ -110,6 +117,182 @@ export const extend = (scalarOps, scalarTypes) => {
   };
 
 
+  const _findPivot = (A, row, col) => {
+    let best = null;
+    for (let i = row; i < A.length; ++i) {
+      if (sops.ne(0, A[i][col])
+          && (best == null
+              || sops.lt(sops.abs(A[i][col]), sops.abs(A[best][col]))))
+      {
+          best = i;
+      }
+    }
+    return best;
+  };
+
+  const _truncate = (x, a) =>
+    (sops.cmp(sops.abs(x), sops.abs(sops.times(a, epsilon))) <= 0) ? 0 : x;
+
+  const _adjustRowInPlace = (A, i, j, f) => {
+    const fn0 = k => sops.plus(A[i][k], sops.times(A[j][k], f));
+    const fn  = epsilon ? k => _truncate(fn0(k), A[i][k]) : fn0;
+
+    const row = A[i];
+    for (const j in row)
+      row[j] = fn(j);
+  };
+
+  const triangulation = A => {
+    _timers && _timers.start('matrix triangulation');
+
+    const [nrows, ncols] = shapeOfMatrix(A);
+
+    const R = cloneMatrix(A);
+    const U = identity(A.length);
+    let col = 0;
+    let sign = 1;
+
+    for (let row = 0; row < nrows; ++row) {
+      let pivotRow = null;
+
+      while (pivotRow == null && col < ncols) {
+        pivotRow = _findPivot(R, row, col);
+
+        if (pivotRow != null) {
+          if (pivotRow != row) {
+            [R[row], R[pivotRow]] = [R[pivotRow], R[row]];
+            [U[row], U[pivotRow]] = [U[pivotRow], U[row]];
+            sign *= -1;
+          }
+
+          if (sops.lt(R[row][col], 0)) {
+            R[row] = methods.negative.Vector(R[row]);
+            U[row] = methods.negative.Vector(U[row]);
+            sign *= -1;
+          }
+
+          for (let k = row + 1; k < nrows; ++k) {
+            if (sops.sgn(R[k][col]) != 0) {
+              const f = sops.negative(sops.div(R[k][col], R[row][col]));
+
+              _adjustRowInPlace(R, k, row, f);
+              _adjustRowInPlace(U, k, row, f);
+
+              R[k][col] = 0;
+            }
+          }
+        }
+
+        ++col;
+      }
+    }
+
+    _timers && _timers.stop('matrix triangulation');
+
+    return { R, U, sign };
+  };
+
+
+  const _rank = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
+    let row = 0;
+    for (let col = 0; col < ncols; ++col) {
+      if (row < nrows && sops.sgn(A[row][col]) != 0)
+        ++row;
+    }
+    return row;
+  };
+
+
+  const rank = A => _rank(triangulation(A).R);
+
+
+  const determinant = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
+    if (nrows != ncols)
+      throw new Error('must be a square matrix');
+
+    const t = triangulation(A);
+    return array(nrows)
+      .map((_, i) => t.R[i][i])
+      .reduce((a, x) => sops.times(a, x), t.sign);
+  };
+
+
+  const _solve = (R, v) => {
+    _timers && _timers.start('linear equation system solve');
+
+    const [n, m] = shapeOfMatrix(R);
+    const [_, k] = shapeOfMatrix(v);
+    const top = Math.min(n, m);
+
+    const X = array(m).map(() => array(k));
+
+    for (let j = 0; j < k; ++j) {
+      for (let i = top-1; i >= 0; --i) {
+        let right = v[i][j];
+        for (let nu = i+1; nu < top; ++nu) {
+          right = sops.minus(right, sops.times(R[i][nu], X[nu][j]));
+        }
+
+        if (sops.sgn(right) == 0)
+          X[i][j] = right;
+        else if (sops.sgn(R[i][i]) == 0)
+          return null;
+        else
+          X[i][j] = sops.div(right, R[i][i]);
+      }
+    }
+
+    _timers && _timers.stop('linear equation system solve');
+
+    return X;
+  };
+
+
+  const solve = (A, b) => {
+    if (shapeOfMatrix(A)[0] != shapeOfMatrix(b)[0])
+      throw new Error('matrix shapes must match');
+
+    const t = triangulation(A);
+
+    return _solve(t.R, matrixProduct(t.U, b));
+  };
+
+
+  const inverse = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
+    if (nrows != ncols)
+      throw new Error('must be a square matrix');
+
+    return solve(A, identity(nrows));
+  };
+
+
+  const cleanup = A => {
+    const [nrows, ncols] = shapeOfMatrix(A);
+    let sup = 0;
+    for (let i = 0; i < nrows; ++i) {
+      for (let j = 0; j < ncols; ++j) {
+        const val = sops.abs(A[i][j]);
+        if (sops.gt(val, sup))
+          sup = val;
+      }
+    }
+    const delta = sops.times(sup, epsilon);
+    const cleaned = x => {
+      if (sops.le(sops.abs(x), delta))
+        return 0;
+      else if (sops.le(sops.abs(sops.minus(sops.round(x),x)), epsilon))
+        return sops.round(x);
+      else
+        return x;
+    };
+
+    return map.M(cleaned)(A);
+  };
+
+
   const methods = {
     toJS: {
       Vector: map.V(sops.toJS),
@@ -176,6 +359,25 @@ export const extend = (scalarOps, scalarTypes) => {
       Matrix: transposedMatrix
     },
 
+    rank: {
+      Matrix: rank
+    },
+
+    determinant: {
+      Matrix: determinant
+    },
+
+    solve: {
+      Matrix: {
+        Vector: (m, v) => solve(m, methods.transposed.Vector(v)),
+        Matrix: solve
+      }
+    },
+
+    inverse: {
+      Matrix: inverse
+    },
+
     crossProduct: {
       Vector: {
         Vector: crossProduct
@@ -225,6 +427,13 @@ export const extend = (scalarOps, scalarTypes) => {
   for (const name of ['plus', 'minus']) {
     methods[name].Vector.Vector = map.VV(sops[name]);
     methods[name].Matrix.Matrix = map.MM(sops[name]);
+  }
+
+  if (epsilon) {
+    methods.cleanup = {
+      Vector: v => cleanup([v])[0],
+      Matrix: m => cleanup(m)
+    }
   }
 
   return sops.register(methods);

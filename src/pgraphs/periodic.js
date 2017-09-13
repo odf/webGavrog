@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
-import { rationalMatrices } from '../arithmetic/types';
-import { rationalLinearAlgebraModular } from '../arithmetic/types';
+import { rationalLinearAlgebra,
+         rationalLinearAlgebraModular } from '../arithmetic/types';
 
 import modularSolver from '../arithmetic/solveRational';
 import * as solveRational from '../arithmetic/solveRational';
@@ -25,7 +25,7 @@ class VectorLabeledEdge {
 
   reverse() {
     return new VectorLabeledEdge(
-      this.tail, this.head, rationalMatrices.negative(this.shift));
+      this.tail, this.head, rationalLinearAlgebra.negative(this.shift));
   }
 
   canonical() {
@@ -41,7 +41,7 @@ class VectorLabeledEdge {
 };
 
 
-export const ops = rationalMatrices.register({
+export const ops = rationalLinearAlgebra.register({
   __repr__  : {
     VectorLabeledEdge: x => ({
       head: ops.repr(x.head),
