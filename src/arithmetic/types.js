@@ -43,7 +43,7 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const ops = rationalMatrices;
+  const ops = rationalLinearAlgebra;
 
   const testGcdex = (m, n) => {
     const [x, a, b, c, d] = ops.gcdex(m, n);
@@ -109,8 +109,8 @@ if (require.main == module) {
   };
 
   console.log();
-  testSolve(A, [1, 1, 1]);
-  testSolve(A, [1, 1, 2]);
+  testSolve(A, ops.transposed([1, 1, 1]));
+  testSolve(A, ops.transposed([1, 1, 2]));
 
   const Ainv = ops.inverse(A);
   console.log(`${A} *\n${Ainv} =\n${ops.times(A, Ainv)}\n`);
@@ -126,7 +126,7 @@ if (require.main == module) {
   testNullSpace([[0,0,0,0], [0,0,0,0], [0,0,-1,0], [0,0,0,0]]);
 
 
-  const fops = matrices;
+  const fops = numericalLinearAlgebra;
 
   console.log();
   console.log(fops.sqrt(625));
@@ -134,33 +134,32 @@ if (require.main == module) {
   const B = fops.inverse(A);
   console.log(`${A} *`);
   console.log(`${B} =`);
-  console.log(`${fops.cleanup(fops.times(A, B))}`);
+  console.log(`${fops.times(A, B)}`);
 
   console.log();
 
   const testFloatInverse = A => {
-    const B = fops.cleanup(fops.inverse(A));
-    console.log(`${A} *\n${B} =\n${B ? fops.cleanup(fops.times(A, B)) : B}\n`);
+    const B = fops.inverse(A);
+    console.log(`${A} *\n${B} =\n${B ? fops.times(A, B) : B}\n`);
   };
 
-  testFloatInverse(fops.cleanup(
-    [[0.8164965809277261,0,0],
-     [0.577350269189626,0.8660254037844387,0],
-     [-5.5511151231257815e-17,-0.5,0.9999999999999998]]));
+  testFloatInverse([[0.8164965809277261,0,0],
+                    [0.577350269189626,0.8660254037844387,0],
+                    [-5.5511151231257815e-17,-0.5,0.9999999999999998]]);
 
   testFloatInverse([[0.8164965809277261,0,0],
                     [0.577350269189626,0.8660254037844387,0],
                     [0,-0.5,0.9999999999999998]]);
 
-  const testRepr = x => {
-    const xr = fops.repr(x);
+  const testRepr = (ops, x) => {
+    const xr = ops.repr(x);
     console.log();
     console.log(JSON.stringify(xr));
-    console.log(JSON.stringify(fops.fromRepr(xr)));
+    console.log(JSON.stringify(ops.fromRepr(xr)));
   };
 
-  testRepr(ops.div([1, 2, 3], 3));
-  testRepr([[1.1, 2.2, ops.integer('-12_345_678_901_234_567_890')]]);
+  testRepr(ops, ops.div([1, 2, 3], 3));
+  testRepr(fops, [[1.1, 2.2, -123456789012345]]);
 
   console.log(ops.cmp([1, 2, 3], [1, 2, 2]));
   console.log(ops.cmp([1, 2, 3], [1, 2, 3]));
