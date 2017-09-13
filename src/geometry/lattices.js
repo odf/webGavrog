@@ -1,6 +1,6 @@
-import { matrices } from '../arithmetic/types';
+import { numericalLinearAlgebra } from '../arithmetic/types';
 
-const ops = matrices;
+const ops = numericalLinearAlgebra;
 const eps = Math.pow(2, -40);
 
 const trim = x => Math.abs(x) < eps ? 0 : x;
