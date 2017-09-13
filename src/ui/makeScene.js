@@ -13,15 +13,11 @@ import * as netSyms     from '../pgraphs/symmetries';
 
 import embed from '../pgraphs/embedding';
 
-import { matrices } from '../arithmetic/types';
-const ops = matrices;
+import { floatMatrices } from '../arithmetic/types';
+const ops = floatMatrices;
 
 const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
-
-
-const _normalized = v => ops.div(v, ops.norm(v));
-const _range = n => new Array(n).fill(0).map((_, i) => i);
 
 
 const geometry = (vertices, faces) => {
@@ -45,18 +41,20 @@ const geometry = (vertices, faces) => {
 
 
 const stick = (p, q, radius, segments) => {
+  const normalized = v => ops.div(v, ops.norm(v));
+
   if (p.length == 2) {
     p = p.concat(0);
     q = q.concat(0);
   }
 
   const n = segments;
-  const d = _normalized(ops.minus(q, p));
+  const d = normalized(ops.minus(q, p));
   const ex = [1,0,0];
   const ey = [0,1,0];
   const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
-  const u = _normalized(ops.crossProduct(d, t));
-  const v = _normalized(ops.crossProduct(d, u));
+  const u = normalized(ops.crossProduct(d, t));
+  const v = normalized(ops.crossProduct(d, u));
   const a = Math.PI * 2 / n;
 
   const section = I.Range(0, n).map(i => {
@@ -146,16 +144,6 @@ const _graphWithNormalizedShifts = graph => {
 };
 
 
-const simpleEmbedding = graph => {
-  const I = ops.identityMatrix(graph.dim);
-  const syms = netSyms.symmetries(graph).symmetries.map(s => s.transform);
-  const gram = spacegroups.resymmetrizedGramMatrix(I, syms);
-  const positions = periodic.barycentricPlacement(graph);
-
-  return { gram, positions };
-};
-
-
 const flatMap   = (fn, xs) => [].concat.apply([], xs.map(fn));
 
 const cartesian = (...vs) => (
@@ -164,6 +152,14 @@ const cartesian = (...vs) => (
     flatMap(xs => vs[vs.length - 1].map(y => xs.concat(y)),
             cartesian(...vs.slice(0, -1)))
 );
+
+
+const range = n => new Array(n).fill(0).map((_, i) => i);
+
+
+const baseShifts = dim => dim == 3 ?
+  cartesian([0, 1], [0, 1], [0, 1]) :
+  cartesian(range(6), range(6));
 
 
 const makeNetModel = (structure, options, log) => csp.go(function*() {
@@ -177,19 +173,14 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
   const points = [];
   const edges = [];
 
-  const shifts = graph.dim == 3 ?
-    cartesian([0, 1], [0, 1], [0, 1]) :
-    cartesian(_range(6), _range(6));
-
-  for (const s of shifts) {
+  for (const s of baseShifts(graph.dim)) {
     for (const e of graph.edges) {
       edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
         ([node, shift]) => {
           const key = JSON.stringify([node, shift]);
           const idx = nodeIndex[key] || points.length;
           if (idx == points.length) {
-            const p = ops.times(ops.plus(pos[node], shift), basis);
-            points.push(ops.toJS(p));
+            points.push(ops.times(ops.plus(pos[node], shift), basis));
             nodeIndex[key] = idx;
           }
           return idx;
@@ -287,11 +278,6 @@ const light = (color, x, y, z) => {
 
   return light;
 };
-
-
-const baseShifts = dim => dim == 3 ?
-  cartesian([0, 1], [0, 1], [0, 1]) :
-  cartesian(_range(6), _range(6));
 
 
 const makeTilingModel = (structure, options, log) => csp.go(function*() {
