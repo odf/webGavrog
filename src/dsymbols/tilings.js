@@ -12,66 +12,42 @@ import * as periodic    from '../pgraphs/periodic';
 
 import * as util from '../common/util';
 
-import { matrices, rationalLinearAlgebraModular } from '../arithmetic/types';
-const ops = matrices;
+import {
+  rationalLinearAlgebraModular,
+  numericalLinearAlgebra
+} from '../arithmetic/types';
 
-
-let _timers = null;
-
-export function useTimers(timers) {
-  _timers = timers;
-}
+const opsR = rationalLinearAlgebraModular;
+const opsF = numericalLinearAlgebra;
 
 
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
-const _edgeTranslations = function _edgeTranslations(cov) {
-  _timers && _timers.start('_edgeTranslations');
-
-  _timers && _timers.start('_edgeTranslations: fundamental group');
+const _edgeTranslations = cov => {
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
-  _timers && _timers.stop('_edgeTranslations: fundamental group');
+  const nul = opsR.nullSpace(cosets.relatorMatrix(n, fg.relators).toJS());
+  const vec = rel => cosets.relatorAsVector(rel, n).toJS();
 
-  _timers && _timers.start('_edgeTranslations: relator null space');
-  const nul = rationalLinearAlgebraModular.nullSpace(
-    cosets.relatorMatrix(n, fg.relators).toJS());
-  _timers && _timers.stop('_edgeTranslations: relator null space');
-
-  _timers && _timers.start('_edgeTranslations: assign translations to edges');
-  const result = fg.edge2word.map(function(a) {
-    return a.map(function(b) {
-      const v = cosets.relatorAsVector(b, n).toJS();
-      return ops.times(v, nul);
-    });
-  });
-  _timers && _timers.stop('_edgeTranslations: assign translations to edges');
-
-  _timers && _timers.stop('_edgeTranslations');
-
-  return result;
+  return fg.edge2word.map(a => a.map(b => opsR.times(vec(b), nul)));
 };
 
 
-const _cornerShifts = function _cornerShifts(cov, e2t) {
+const _cornerShifts = (cov, e2t) => {
   const dim = delaney.dim(cov);
-  const zero = ops.vector(dim);
+  const zero = opsR.vector(dim);
 
-  return I.Map().withMutations(function(m) {
-    cov.indices().forEach(function(i) {
+  return I.Map().withMutations(m => {
+    cov.indices().forEach(i => {
       const idcs = _remainingIndices(cov, i);
 
-      properties.traversal(cov, idcs, cov.elements()).forEach(function(e) {
-        const Dk = e[0];
-        const k  = e[1];
-        const D  = e[2];
-
+      properties.traversal(cov, idcs, cov.elements()).forEach(([Dk, k, D]) => {
         if (k == properties.traversal.root)
           m.setIn([D, i], zero);
         else
           m.setIn([D, i],
-                  ops.minus(m.getIn([Dk, i]), e2t.getIn([Dk, k]) || zero));
+                  opsR.minus(m.getIn([Dk, i]), e2t.getIn([Dk, k]) || zero));
       });
     });
   });
@@ -90,16 +66,16 @@ export const skeleton = cov => {
     node += 1;
   }
 
-  const zero = ops.vector(delaney.dim(cov));
+  const zero = opsR.vector(delaney.dim(cov));
   const edges = properties.orbitReps(cov, _remainingIndices(cov, 1))
-    .map(function(D) {
+    .map(D => {
       const E = cov.s(0, D);
       const v = chamber2node[D];
       const w = chamber2node[E];
       const t = e2t.getIn([D, 0]) || zero;
       const sD = c2s.getIn([D, 0]);
       const sE = c2s.getIn([E, 0]);
-      const s = ops.minus(ops.plus(t, sE), sD);
+      const s = opsR.minus(opsR.plus(t, sE), sD);
 
       return [v, w, s];
     });
@@ -117,31 +93,31 @@ const chamberPositions = (cov, skel, pos, basis) => {
   const dim = delaney.dim(cov);
   let result = {};
 
-  cov.elements().forEach(function(D) {
+  cov.elements().forEach(D => {
     const p = pos[skel.chamber2node[D]];
     const t = skel.cornerShifts[D][0];
-    result[D] = [ops.plus(p, t)];
+    result[D] = [opsF.plus(p, t)];
   });
 
-  I.Range(1, dim+1).forEach(function(i) {
+  I.Range(1, dim+1).forEach(i => {
     const idcs = I.Range(0, i);
-    properties.orbits(cov, idcs, cov.elements()).forEach(function(orb) {
-      let s = ops.vector(dim);
-      orb.forEach(function(E) {
+    properties.orbits(cov, idcs, cov.elements()).forEach(orb => {
+      let s = opsF.vector(dim);
+      orb.forEach(E => {
         const p = result[E][0];
         const t = skel.cornerShifts[E][i];
-        s = ops.plus(s, ops.minus(p, t));
+        s = opsF.plus(s, opsF.minus(p, t));
       });
-      s = ops.times(ops.div(1, orb.size), s);
-      orb.forEach(function(E) {
+      s = opsF.times(opsF.div(1, orb.size), s);
+      orb.forEach(E => {
         const t = skel.cornerShifts[E][i];
-        result[E].push(ops.plus(s, t));
+        result[E].push(opsF.plus(s, t));
       });
    });
   });
 
   for (const D of cov.elements())
-    result[D] = result[D].map(p => ops.toJS(ops.times(p, basis)));
+    result[D] = result[D].map(p => opsF.times(p, basis));
 
   return result;
 };
@@ -149,21 +125,36 @@ const chamberPositions = (cov, skel, pos, basis) => {
 
 const chamberBasis = (pos, D) => {
   const t = pos[D];
-  return ops.cleanup(t.slice(1).map(v => ops.minus(v, t[0])));
+  return t.slice(1).map(v => opsF.minus(v, t[0]));
+};
+
+
+const determinant = M => {
+  if (M.length == 2)
+    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
+  else if (M.length == 3)
+    return (+ M[0][0] * M[1][1] * M[2][2]
+            + M[0][1] * M[1][2] * M[2][0]
+            + M[0][2] * M[1][0] * M[2][1]
+            - M[0][2] * M[1][1] * M[2][0]
+            - M[0][1] * M[1][0] * M[2][2]
+            - M[0][0] * M[1][2] * M[2][1]);
+  else
+    return opsF.determinant(M);
 };
 
 
 export const symmetries = (ds, cov, pos) => {
   const D0 = cov.elements()
-    .find(D => ops.ne(ops.determinant(chamberBasis(pos, D)), 0));
-  const A = ops.inverse(chamberBasis(pos, D0));
+    .find(D => opsF.ne(determinant(chamberBasis(pos, D)), 0));
+  const A = opsF.inverse(chamberBasis(pos, D0));
 
   const phi = properties.morphism(cov, 1, ds, 1);
   const E0 = phi.get(D0);
 
   return I.List(cov.elements()).toJS()
     .filter(D => phi.get(D) == E0)
-    .map(D => ops.times(A, chamberBasis(pos, D)));
+    .map(D => opsF.times(A, chamberBasis(pos, D)));
 };
 
 
@@ -173,7 +164,7 @@ export const makeCover = ds =>
   delaney2d.toroidalCover(ds);
 
 
-const interpolate = (f, v, w) => ops.plus(w, ops.times(f, ops.minus(v, w)));
+const interpolate = (f, v, w) => opsF.plus(w, opsF.times(f, opsF.minus(v, w)));
 
 
 const tileSurface3D = (corners, faces) => {
@@ -198,25 +189,10 @@ const tileSurface2D = (corners, faces) => {
 };
 
 
-const determinant = M => {
-  if (M.length == 2)
-    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
-  else if (M.length == 3)
-    return (+ M[0][0] * M[1][1] * M[2][2]
-            + M[0][1] * M[1][2] * M[2][0]
-            + M[0][2] * M[1][0] * M[2][1]
-            - M[0][2] * M[1][1] * M[2][0]
-            - M[0][1] * M[1][0] * M[2][2]
-            - M[0][0] * M[1][2] * M[2][1]);
-  else
-    return ops.determinant(ops.cleanup(M));
-};
-
-
 const adjustedOrientation = (cov, pos) => {
   const bas = D => chamberBasis(pos, D);
-  const D0 = cov.elements().find(D => ops.ne(determinant(bas(D)), 0));
-  const sgn = ops.sgn(determinant(bas(D0)));
+  const D0 = cov.elements().find(D => opsF.ne(determinant(bas(D)), 0));
+  const sgn = opsF.sgn(determinant(bas(D0)));
 
   const ori = properties.partialOrientation(cov).toJS();
   if (sgn * ori[D0] < 0) {
@@ -246,8 +222,8 @@ const tileSurface = (cov, pos, ori, elms, idcs) => {
 
 const affineSymmetry = (D0, D1, pos) => {
   const bas = D => chamberBasis(pos, D);
-  const linear = ops.cleanup(ops.times(ops.inverse(bas(D0)), bas(D1)));
-  const shift = ops.minus(pos[D1][0], ops.times(pos[D0][0], linear));
+  const linear = opsF.times(opsF.inverse(bas(D0)), bas(D1));
+  const shift = opsF.minus(pos[D1][0], opsF.times(pos[D0][0], linear));
 
   return linear.map(r => r.concat(0)).concat([shift.concat([1])]);
 };
@@ -269,11 +245,11 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
   const tiles = [];
 
   for (const elms of tileOrbits) {
-    const D0 = elms.find(D => ops.ne(determinant(bas(D)), 0));
+    const D0 = elms.find(D => opsF.ne(determinant(bas(D)), 0));
     const E0 = phi.get(D0);
 
     let templateIndex = dsChamberToTemplateIndex[E0];
-    let symmetry = ops.identityMatrix(dim + 1);
+    let symmetry = opsF.identityMatrix(dim + 1);
 
     if (templateIndex == null) {
       templateIndex = templates.length;
