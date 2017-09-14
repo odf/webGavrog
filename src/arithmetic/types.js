@@ -9,7 +9,7 @@ export const integers = require('./integers')
   .extend(base.arithmetic());
 
 export const floats = require('./floats')
-  .extend(integers);
+  .extend(base.arithmetic());
 
 export const rationals = require('./fractions')
   .extend(integers, ['Integer', 'LongInt'], 'Fraction');

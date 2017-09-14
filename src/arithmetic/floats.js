@@ -1,7 +1,4 @@
-export const extend = integers => {
-  const ops = integers;
-
-
+export const extend = baseOps => {
   const mod = (x, y) => {
     if (x == 0)
       return 0;
@@ -18,15 +15,34 @@ export const extend = integers => {
 
 
   const methods = {
-    isReal  : { Float: x => true },
-    toJS    : { Float: x => x },
-    negative: { Float: x => -x },
-    sgn     : { Float: x => (x > 0) - (x < 0) },
-    __Float__: { Object: ({ Float: x }) => x }
+    isInteger: {
+      Integer: x => true
+    },
+    isReal: {
+      Integer: x => true,
+      Float: x => true
+    },
+    toJS: {
+      Integer: x => x,
+      Float: x => x
+    },
+    negative: {
+      Integer: x => -x,
+      Float: x => -x
+    },
+    sgn: {
+      Integer: x => (x > 0) - (x < 0),
+      Float: x => (x > 0) - (x < 0)
+    },
+    __Float__: { Object: ({ Float: x }) => x },
+    __Integer__: { Object: ({ Integer: x }) => x }
   };
 
   for (const name of [ 'abs', 'floor', 'ceil', 'round' ])
-    methods[name] = { Float: x => Math[name](x) }
+    methods[name] = {
+      Integer: x => Math[name](x),
+      Float: x => Math[name](x)
+    }
 
   methods.sqrt = {
     Integer : x => Math.sqrt(x),
@@ -48,26 +64,11 @@ export const extend = integers => {
         Integer : (x, y) => op(x, y)
       },
       Integer: {
-        Float   : (x, y) => op(x, y)
+        Float   : (x, y) => op(x, y),
+        Integer : (x, y) => op(x, y)
       }
     };
   }
 
-  for (const [name, op] of [
-    [ 'div'  , (x, y) => x == 0 ? 0 : x / y ],
-    [ 'areClose', areClose ]
-  ]) {
-    methods[name] = {
-      Float: {
-        Float  : (x, y) => op(x, y),
-        Integer: (x, y) => op(x, y)
-      },
-      Integer: {
-        Float  : (x, y) => op(x, y),
-        Integer: (x, y) => op(x, y)
-      }
-    };
-  }
-
-  return ops.register(methods);
+  return baseOps.register(methods);
 };

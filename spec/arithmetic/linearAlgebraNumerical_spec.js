@@ -33,7 +33,8 @@ const properties = {
     ([A, _]) => {
       const N = ops.nullSpace(A);
       return N == null ||
-        ops.times(A, N).every(v => v.every(x => ops.eq(x, 0)));
+        matricesAreClose(ops.times(A, N),
+                         ops.matrix(A.length, N[0].length), ops);
     }
   ),
 

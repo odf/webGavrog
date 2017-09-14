@@ -235,7 +235,11 @@ if (require.main == module) {
       const x = ops.solve(A, b);
       console.log(`A * x = b ~> x = ${x}`);
       console.log(`check A * x: ${ops.times(A, x)}`);
-      console.log(`nullspace: ${ops.transposed(ops.nullSpace(A))}`);
+
+      const n = ops.nullSpace(A);
+      console.log(`nullspace: ${ops.transposed(n)}`);
+      if (n)
+        console.log(`nullspace check ${ops.times(A, n)}`);
 
       console.log();
     };
@@ -243,6 +247,7 @@ if (require.main == module) {
     console.log(`=== ${name} ===`);
     console.log();
 
+    test([[13,18,4],[10,17,3],[3,1,1]], [[18],[10],[0]]);
     test([[6,3],[0,5]], [[2],[3]]);
     test([[5,1,2],[10,8,5],[5,7,3]], [[3],[7],[0]]);
     test([[5,1,2],[10,8,5],[5,7,3]], [[ops.div(3, 5)],[7],[0]]);
