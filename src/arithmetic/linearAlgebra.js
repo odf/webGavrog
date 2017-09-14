@@ -20,11 +20,11 @@ export const extend = (matrixOps, overField=true, eps=null) => {
         return bs;
       }
       else if (colV == colB) {
+        if (ops.abs(v[colV]) > ops.abs(b[colV])) {
+          [b, v] = [v, ops.negative(b)];
+          bs[row] = b;
+        }
         if (overField || ops.eq(0, ops.mod(v[colV], b[colV]))) {
-          if (ops.abs(v[colV]) > ops.abs(b[colV])) {
-            [b, v] = [v, ops.negative(b)];
-            bs[row] = b;
-          }
           v = ops.minus(v, ops.times(b, ops.div(v[colV], b[colV])));
           if (eps) {
             const t = ops.times(eps, v.reduce(
@@ -247,6 +247,7 @@ if (require.main == module) {
     console.log(`=== ${name} ===`);
     console.log();
 
+    test([[1,0,-1,2]], [[1],[2],[3],[4]]);
     test([[13,18,4],[10,17,3],[3,1,1]], [[18],[10],[0]]);
     test([[6,3],[0,5]], [[2],[3]]);
     test([[5,1,2],[10,8,5],[5,7,3]], [[3],[7],[0]]);
