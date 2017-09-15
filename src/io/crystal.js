@@ -391,31 +391,15 @@ const applyOpsToFaces = (pos, action, faces, ops) => {
 };
 
 
-const projection = (dir, origin) => p => {
-  const d = V.minus(p, origin);
-  return V.plus(origin, V.minus(d, V.times(V.times(dir, d), dir)));
-};
-
-
 const normalized = v => V.div(v, V.norm(v));
 
 
 const sectorNormals = vs => {
-  const n = vs.length;
-  const edges = vs.map((v, i) => [v, vs[(i + 1) % n]]);
-  const plus = (v, w) => V.plus(v, w);
+  const centroid = V.div(vs.reduce((v, w) => V.plus(v, w)), vs.length);
 
-  const faceNormal = normalized(
-    edges.map(([v, w]) => V.crossProduct(v, w)).reduce(plus));
-  const centroid = V.div(vs.reduce(plus), vs.length);
-
-  const proj = projection(faceNormal, centroid);
-  const midPoint = (v, w) => V.div(V.plus(v, w), 2);
-
-  return edges.map(([v, w]) => {
-    const c = midPoint(v, w);
-    const d = midPoint(centroid, proj(c));
-    return normalized(V.crossProduct(V.minus(w, v), V.minus(d, c)));
+  return vs.map((v, i) => {
+    const w = vs[(i + 1) % vs.length];
+    return normalized(V.crossProduct(V.minus(w, v), V.minus(centroid, w)));
   });
 };
 
