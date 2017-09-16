@@ -81,7 +81,7 @@ const _coordinateParametrization = (graph, syms) => {
 
     nodeInfo[v] = {
       index: next,
-      configSpace: ops.toJS(cv),
+      configSpace: cv,
       symmetrizer: sv,
       isRepresentative: true
     };
@@ -103,7 +103,7 @@ const _coordinateParametrization = (graph, syms) => {
       if (ops.ne(ops.times(cw, sw), cw))
         throw Error(`${cw} * ${sw} = ${ops.times(cw, sw)}`);
 
-      nodeInfo[w] = { index: next, configSpace: ops.toJS(cw), symmetrizer: sw };
+      nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
     }
 
     next += cv.length - 1;
@@ -405,6 +405,10 @@ const embed = (g, relax=true) => {
 
   _timers && _timers.start('embed: position space');
   const posSpace = _coordinateParametrization(g, syms);
+  for (const v in posSpace) {
+    posSpace[v].configSpace = ops.toJS(posSpace[v].configSpace);
+    posSpace[v].symmetrizer = ops.toJS(posSpace[v].symmetrizer);
+  }
   _timers && _timers.stop('embed: position space');
 
   _timers && _timers.start('embed: gram space');
