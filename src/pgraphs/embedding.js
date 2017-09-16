@@ -4,22 +4,13 @@ import * as sg from '../geometry/spacegroups';
 import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
-import { matrices, rationalLinearAlgebra } from '../arithmetic/types';
-const ops = matrices;
+import {
+  rationalLinearAlgebra,
+  numericalLinearAlgebra
+} from '../arithmetic/types';
 
-
-let _timers = null;
-
-export function useTimers(timers) {
-  _timers = timers;
-};
-
-
-const encode = value => pg.ops.serialize(value);
-const decode = value => pg.ops.deserialize(value);
-
-
-const _avg = xs => ops.div(xs.reduce((a, b) => ops.plus(a, b)), xs.length);
+const opsR = rationalLinearAlgebra
+const opsF = numericalLinearAlgebra;
 
 
 const _projectiveMatrix = (linear, shift) =>
@@ -29,37 +20,38 @@ const _projectiveMatrix = (linear, shift) =>
 const _nodeSymmetrizer = (v, syms, positions) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const pos = positions.get(v);
-  const dim = ops.dimension(pos);
+  const dim = opsR.dimension(pos);
 
-  const s = _avg(stab.map(a => a.concat([ops.minus(pos, ops.times(pos, a))])));
+  const avg = xs => opsR.div(xs.reduce((a, b) => opsR.plus(a, b)), xs.length);
+  const s = avg(stab.map(a => a.concat([opsR.minus(pos, opsR.times(pos, a))])));
   const m = s.slice(0, dim);
   const t = s[dim];
 
-  if (ops.ne(ops.plus(ops.times(pos, m), t), pos))
-    throw Error(`${pos} * ${[m, t]} = ${ops.plus(ops.times(pos, m), t)}`);
+  if (opsR.ne(opsR.plus(opsR.times(pos, m), t), pos))
+    throw Error(`${pos} * ${[m, t]} = ${opsR.plus(opsR.times(pos, m), t)}`);
 
   return _projectiveMatrix(m, t);
 };
 
 
 const _normalizedInvariantSpace = P => {
-  const I = ops.identityMatrix(ops.dimension(P));
-  const A = rationalLinearAlgebra.leftNullSpace(ops.minus(P, I));
+  const I = opsR.identityMatrix(opsR.dimension(P));
+  const A = opsR.leftNullSpace(opsR.minus(P, I));
 
-  const [nr, nc] = ops.shape(A);
-  const k = A.findIndex(r => ops.ne(r[nc - 1], 0));
+  const [nr, nc] = opsR.shape(A);
+  const k = A.findIndex(r => opsR.ne(r[nc - 1], 0));
 
   if (k >= 0) {
-    const t = ops.div(A[k], A[k][nc - 1]);
+    const t = opsR.div(A[k], A[k][nc - 1]);
     A[k] = A[nr - 1];
     A[nr - 1] = t;
 
     for (let i = 0; i < nr - 1; ++i)
-      A[i] = ops.minus(A[i], ops.times(A[nr - 1], A[i][nc - 1]));
+      A[i] = opsR.minus(A[i], opsR.times(A[nr - 1], A[i][nc - 1]));
   }
 
-  if (ops.ne(ops.times(A, P), A))
-    throw Error(`${A} * ${P} = ${ops.times(A, P)}`);
+  if (opsR.ne(opsR.times(A, P), A))
+    throw Error(`${A} * ${P} = ${opsR.times(A, P)}`);
 
   return A;
 };
@@ -95,13 +87,13 @@ const _coordinateParametrization = (graph, syms) => {
       const pw = positions.get(w);
 
       const a = sym.transform;
-      const t = _projectiveMatrix(a, ops.minus(pw, ops.times(pv, a)));
+      const t = _projectiveMatrix(a, opsR.minus(pw, opsR.times(pv, a)));
 
-      const cw = ops.times(cv, t);
+      const cw = opsR.times(cv, t);
       const sw = _nodeSymmetrizer(w, syms, positions);
 
-      if (ops.ne(ops.times(cw, sw), cw))
-        throw Error(`${cw} * ${sw} = ${ops.times(cw, sw)}`);
+      if (opsR.ne(opsR.times(cw, sw), cw))
+        throw Error(`${cw} * ${sw} = ${opsR.times(cw, sw)}`);
 
       nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
     }
@@ -113,7 +105,55 @@ const _coordinateParametrization = (graph, syms) => {
 };
 
 
-const _last = a => a.slice(-1)[0];
+function* _pairs(list) {
+  for (const i in list)
+    for (const j in list)
+      if (j > i)
+        yield [list[i], list[j]];
+};
+
+
+const _angleOrbits = (graph, syms, adj, pos) => {
+  const encode = value => pg.ops.serialize(value);
+  const decode = value => pg.ops.deserialize(value);
+
+  const seen = {};
+  let p = Partition();
+
+  for (const v of pg.vertices(graph)) {
+    for (const [inc1, inc2] of _pairs(pg.allIncidences(graph, v, adj))) {
+      const u = inc1.tail;
+      const w = inc2.tail;
+      const s = opsR.minus(inc2.shift, inc1.shift);
+
+      const a = pg.makeEdge(u, w, s).canonical();
+      const ka = encode(a);
+
+      if (seen[ka])
+        continue;
+
+      seen[ka] = true;
+
+      for (const phi of syms) {
+        const ux = phi.src2img[u];
+        const wx = phi.src2img[w];
+        const t = phi.transform;
+
+        const c = opsR.plus(s, opsR.minus(pos.get(w), pos.get(u)));
+        const d = opsR.minus(pos.get(wx), pos.get(ux));
+        const sx = opsR.minus(opsR.times(c, t), d);
+
+        const b = pg.makeEdge(ux, wx, sx).canonical();
+        const kb = encode(b);
+
+        seen[kb] = true;
+        p = p.union(ka, kb);
+      }
+    }
+  }
+
+  return p.classes(Object.keys(seen)).map(cl => cl.map(decode));
+};
 
 
 const _positionFromParameters = (parms, cfg) => {
@@ -134,8 +174,10 @@ const _positionFromParameters = (parms, cfg) => {
 const _parametersForPosition = (pos, cfg, symmetrizer) => {
   if (cfg.length > 1) {
     const M = cfg.slice(0, -1);
-    const p = ops.minus(ops.times(pos.concat(1), symmetrizer), _last(cfg));
-    return ops.transposed(ops.solve(ops.transposed(M), ops.transposed(p)))[0];
+    const p = opsF.minus(opsF.times(pos.concat(1), symmetrizer),
+                        cfg[cfg.length - 1]);
+    return opsF.transposed(
+      opsF.solve(opsF.transposed(M), opsF.transposed(p)))[0];
   }
   else
     return [];
@@ -144,7 +186,7 @@ const _parametersForPosition = (pos, cfg, symmetrizer) => {
 
 const _gramMatrixFromParameters = (parms, cfg) => {
   const n = Math.sqrt(2 * cfg[0].length + 0.25) - 0.5;
-  const G = ops.matrix(n, n);
+  const G = opsF.matrix(n, n);
 
   let k = 0;
 
@@ -174,7 +216,7 @@ const _gramMatrixFromParameters = (parms, cfg) => {
 
 const _parametersForGramMatrix = (gram, cfg, syms) => {
   const G = sg.resymmetrizedGramMatrix(gram, syms);
-  const n = ops.shape(G)[0];
+  const n = opsF.shape(G)[0];
 
   const a = [];
   for (let i = 0; i < n; ++i) {
@@ -183,15 +225,8 @@ const _parametersForGramMatrix = (gram, cfg, syms) => {
     }
   }
 
-  return ops.transposed(ops.solve(ops.transposed(cfg), ops.transposed(a)))[0];
-};
-
-
-function* _pairs(list) {
-  for (const i in list)
-    for (const j in list)
-      if (j > i)
-        yield [list[i], list[j]];
+  return opsF.transposed(
+    opsF.solve(opsF.transposed(cfg), opsF.transposed(a)))[0];
 };
 
 
@@ -212,11 +247,13 @@ const _configurationFromParameters = (
   }
 
   const gram = _gramMatrixFromParameters(gramParams, gramSpace);
-  const edgeLength = _edgeLength(positionParams, positionSpace, gram, positions);
+  const edgeLength =
+    _edgeLength(positionParams, positionSpace, gram, positions);
+
   const lengths = graph.edges.map(edgeLength).toArray();
   const avgEdgeLength = sum(lengths) / lengths.length;
 
-  return { gram: ops.div(gram, avgEdgeLength * avgEdgeLength), positions };
+  return { gram: opsF.div(gram, avgEdgeLength * avgEdgeLength), positions };
 };
 
 
@@ -239,46 +276,6 @@ const _parametersForConfiguration = (
   }
 
   return Array.concat.apply(null, pieces);
-};
-
-
-const _angleOrbits = (graph, syms, adj, pos) => {
-  const seen = {};
-  let p = Partition();
-
-  for (const v of pg.vertices(graph)) {
-    for (const [inc1, inc2] of _pairs(pg.allIncidences(graph, v, adj))) {
-      const u = inc1.tail;
-      const w = inc2.tail;
-      const s = ops.minus(inc2.shift, inc1.shift);
-
-      const a = pg.makeEdge(u, w, s).canonical();
-      const ka = encode(a);
-
-      if (seen[ka])
-        continue;
-
-      seen[ka] = true;
-
-      for (const phi of syms) {
-        const ux = phi.src2img[u];
-        const wx = phi.src2img[w];
-        const t = phi.transform;
-
-        const c = ops.plus(s, ops.minus(pos.get(w), pos.get(u)));
-        const d = ops.minus(pos.get(wx), pos.get(ux));
-        const sx = ops.minus(ops.times(c, t), d);
-
-        const b = pg.makeEdge(ux, wx, sx).canonical();
-        const kb = encode(b);
-
-        seen[kb] = true;
-        p = p.union(ka, kb);
-      }
-    }
-  }
-
-  return p.classes(Object.keys(seen)).map(cl => cl.map(decode));
 };
 
 
@@ -323,7 +320,7 @@ const determinant = M => {
             - M[0][1] * M[1][0] * M[2][2]
             - M[0][0] * M[1][2] * M[2][1]);
   else
-    return ops.determinant(M);
+    return opsF.determinant(M);
 };
 
 
@@ -374,7 +371,7 @@ const _energyEvaluator = (
         return 0.0;
     }));
 
-    const cellVolumePerNode = ops.sqrt(determinant(gram)) *
+    const cellVolumePerNode = opsF.sqrt(determinant(gram)) *
       Math.pow(scaling, gram.length) / Object.keys(positionSpace).length;
 
     const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
@@ -387,49 +384,27 @@ const _energyEvaluator = (
 
 
 const embed = (g, relax=true) => {
-  _timers && _timers.start('embed');
-
-  _timers && _timers.start('embed: barycentric placement');
   const positions = pg.barycentricPlacement(g);
-  _timers && _timers.stop('embed: barycentric placement');
-
-  _timers && _timers.start('embed: symmetries');
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
-  _timers && _timers.stop('embed: symmetries');
-
-  _timers && _timers.start('embed: edge and angle orbits');
   const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  _timers && _timers.stop('embed: edge and angle orbits');
-
-  _timers && _timers.start('embed: position space');
   const posSpace = _coordinateParametrization(g, syms);
   for (const v in posSpace) {
-    posSpace[v].configSpace = ops.toJS(posSpace[v].configSpace);
-    posSpace[v].symmetrizer = ops.toJS(posSpace[v].symmetrizer);
+    posSpace[v].configSpace = opsR.toJS(posSpace[v].configSpace);
+    posSpace[v].symmetrizer = opsR.toJS(posSpace[v].symmetrizer);
   }
-  _timers && _timers.stop('embed: position space');
-
-  _timers && _timers.start('embed: gram space');
-  const gramSpace = ops.toJS(sg.gramMatrixConfigurationSpace(symOps));
-  _timers && _timers.stop('embed: gram space');
-
-  _timers && _timers.start('embed: gram matrix');
-  const I = ops.identityMatrix(g.dim);
-  const gram = sg.resymmetrizedGramMatrix(I, symOps);
-  _timers && _timers.stop('embed: gram matrix');
-
-  _timers && _timers.start('embed: start parameters');
-  const startParams = ops.toJS(_parametersForConfiguration(
-    g, gram, positions, gramSpace, posSpace, symOps));
-  _timers && _timers.stop('embed: start parameters');
+  const gramSpace = opsR.toJS(sg.gramMatrixConfigurationSpace(symOps));
+  const I = opsF.identityMatrix(g.dim);
+  const gram = opsR.toJS(sg.resymmetrizedGramMatrix(I, symOps));
+  const posF = positions.map(p => opsR.toJS(p));
+  const symF = symOps.map(s => opsR.toJS(s));
+  const startParams = _parametersForConfiguration(
+    g, gram, posF, gramSpace, posSpace, symF);
 
   let params = startParams;
 
   if (relax) {
-    _timers && _timers.start('embed: optimizing');
-
     for (let pass = 0; pass < 3; ++pass) {
       const volumeWeight = Math.pow(10, -pass);
       const penaltyWeight = pass == 2 ? 1 : 0;
@@ -444,15 +419,9 @@ const embed = (g, relax=true) => {
 
       console.log(`relaxation pass ${pass} used ${result.steps} amoeba steps`);
     }
-
-    _timers && _timers.stop('embed: optimizing');
   }
 
-  _timers && _timers.start('embed: extracting result');
   const result = _configurationFromParameters(g, params, gramSpace, posSpace);
-  _timers && _timers.stop('embed: extracting result');
-
-  _timers && _timers.stop('embed');
 
   return result;
 };
@@ -469,15 +438,6 @@ if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
-
-  const timers = util.timers();
-
-  useTimers(timers);
-  pg.useTimers(timers);
-  symmetries.useTimers(timers);
-  crystal.useTimers(timers);
-
-  _timers.start('total');
 
   const test = g => {
     console.log('----------------------------------------');
@@ -509,10 +469,6 @@ if (require.main == module) {
       console.log();
     }
 
-    console.log();
-    _timers.stop('total');
-    console.log(`${JSON.stringify(_timers.current(), null, 2)}`);
-    _timers.start('total');
     console.log();
   };
 
