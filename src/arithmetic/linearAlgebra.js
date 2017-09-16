@@ -3,6 +3,9 @@ export const extend = (matrixOps, overField=true, eps=null) => {
 
 
   const extendBasis = (v, bs) => {
+    if (eps)
+      v = v.map(x => x == Number.MIN_VALUE ? 0 : x);
+
     if (bs && bs.length)
       bs = bs.slice();
 
@@ -25,12 +28,12 @@ export const extend = (matrixOps, overField=true, eps=null) => {
           bs[row] = b;
         }
         if (overField || ops.eq(0, ops.mod(v[colV], b[colV]))) {
-          v = ops.minus(v, ops.times(b, ops.div(v[colV], b[colV])));
-          if (eps) {
-            const t = ops.times(eps, v.reduce(
-              (a, x) => ops.gt(ops.abs(x), a) ? ops.abs(x) : a, 0));
-            v = v.map(x => ops.gt(ops.abs(x), t) ? x : 0);
-          }
+          const w = ops.minus(v, ops.times(b, ops.div(v[colV], b[colV])));
+          if (eps)
+            v = w.map((x, k) => ops.le(ops.abs(x),
+                                       ops.abs(ops.times(v[k], eps))) ? 0 : x);
+          else
+            v = w;
         }
         else {
           const [x, r, s, t, u] = ops.gcdex(b[colV], v[colV]);
