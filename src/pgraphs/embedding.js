@@ -5,11 +5,13 @@ import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
 import {
+  matrices,
   rationalLinearAlgebra,
   numericalLinearAlgebra
 } from '../arithmetic/types';
 
-const opsR = rationalLinearAlgebra
+const ops = matrices;
+const opsR = rationalLinearAlgebra;
 const opsF = numericalLinearAlgebra;
 
 
@@ -177,7 +179,7 @@ const _parametersForPosition = (pos, cfg, symmetrizer) => {
     const p = opsF.minus(opsF.times(pos.concat(1), symmetrizer),
                         cfg[cfg.length - 1]);
     return opsF.transposed(
-      opsF.solve(opsF.transposed(M), opsF.transposed(p)))[0];
+      ops.solve(opsF.transposed(M), opsF.transposed(p)))[0];
   }
   else
     return [];
@@ -226,7 +228,7 @@ const _parametersForGramMatrix = (gram, cfg, syms) => {
   }
 
   return opsF.transposed(
-    opsF.solve(opsF.transposed(cfg), opsF.transposed(a)))[0];
+    ops.solve(opsF.transposed(cfg), opsF.transposed(a)))[0];
 };
 
 
