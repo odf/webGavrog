@@ -22,15 +22,8 @@ const _projectiveMatrix = (linear, shift) =>
 const _nodeSymmetrizer = (v, syms, positions) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const pos = positions.get(v);
-  const dim = opsR.dimension(pos);
-
-  const avg = xs => opsR.div(xs.reduce((a, b) => opsR.plus(a, b)), xs.length);
-  const s = avg(stab.map(a => a.concat([opsR.minus(pos, opsR.times(pos, a))])));
-  const m = s.slice(0, dim);
-  const t = s[dim];
-
-  if (opsR.ne(opsR.plus(opsR.times(pos, m), t), pos))
-    throw Error(`${pos} * ${[m, t]} = ${opsR.plus(opsR.times(pos, m), t)}`);
+  const m = opsR.div(stab.reduce((a, b) => opsR.plus(a, b)), stab.length);
+  const t = opsR.minus(pos, opsR.times(pos, m));
 
   return _projectiveMatrix(m, t);
 };
@@ -44,9 +37,7 @@ const _normalizedInvariantSpace = P => {
   const k = A.findIndex(r => opsR.ne(r[nc - 1], 0));
 
   if (k >= 0) {
-    const t = opsR.div(A[k], A[k][nc - 1]);
-    A[k] = A[nr - 1];
-    A[nr - 1] = t;
+    [A[k], A[nr - 1]] = [A[nr - 1], opsR.div(A[k], A[k][nc - 1])];
 
     for (let i = 0; i < nr - 1; ++i)
       A[i] = opsR.minus(A[i], opsR.times(A[nr - 1], A[i][nc - 1]));
