@@ -128,6 +128,54 @@ const _angleOrbits = (graph, syms, adj, pos) => {
 };
 
 
+const _parametersForPosition = (pos, cfg, proj, symmetrizer) => {
+  const n = cfg.length;
+
+  if (n > 1)
+    return opsF.times(
+      opsF.minus(opsF.times(pos.concat(1), symmetrizer), cfg[n - 1]), proj);
+  else
+    return [];
+};
+
+
+const _parametersForGramMatrix = (gram, proj, syms) => {
+  const G = sg.resymmetrizedGramMatrix(gram, syms);
+  const n = opsF.shape(G)[0];
+
+  const a = [];
+  for (let i = 0; i < n; ++i) {
+    for (let j = i; j < n; ++j) {
+      a.push(G[i][j]);
+    }
+  }
+
+  return opsF.times(a, proj);
+};
+
+
+const _parametersForConfiguration = (
+  graph,
+  gram,
+  positions,
+  gramProj,
+  positionSpace,
+  symOps
+) => {
+  const pieces = [_parametersForGramMatrix(gram, gramProj, symOps)];
+
+  for (const v of pg.vertices(graph)) {
+    const psv = positionSpace[v];
+
+    if (psv.isRepresentative)
+      pieces.push(_parametersForPosition(
+        positions.get(v), psv.configSpace, psv.configProj, psv.symmetrizer));
+  }
+
+  return Array.concat.apply(null, pieces);
+};
+
+
 const _positionFromParameters = (parms, cfg) => {
   const n = parms.length;
   let p = cfg[n].slice(0, -1);
@@ -138,19 +186,6 @@ const _positionFromParameters = (parms, cfg) => {
   }
 
   return p;
-};
-
-
-const _parametersForPosition = (pos, cfg, symmetrizer) => {
-  if (cfg.length > 1) {
-    const M = cfg.slice(0, -1);
-    const p = opsF.minus(opsF.times(pos.concat(1), symmetrizer),
-                        cfg[cfg.length - 1]);
-    return opsF.transposed(
-      ops.solve(opsF.transposed(M), opsF.transposed(p)))[0];
-  }
-  else
-    return [];
 };
 
 
@@ -184,22 +219,6 @@ const _gramMatrixFromParameters = (parms, cfg) => {
 
 
 
-const _parametersForGramMatrix = (gram, cfg, syms) => {
-  const G = sg.resymmetrizedGramMatrix(gram, syms);
-  const n = opsF.shape(G)[0];
-
-  const a = [];
-  for (let i = 0; i < n; ++i) {
-    for (let j = i; j < n; ++j) {
-      a.push(G[i][j]);
-    }
-  }
-
-  return opsF.transposed(
-    ops.solve(opsF.transposed(cfg), opsF.transposed(a)))[0];
-};
-
-
 const _configurationFromParameters = (
   graph,
   params,
@@ -224,28 +243,6 @@ const _configurationFromParameters = (
   const avgEdgeLength = sum(lengths) / lengths.length;
 
   return { gram: opsF.div(gram, avgEdgeLength * avgEdgeLength), positions };
-};
-
-
-const _parametersForConfiguration = (
-  graph,
-  gram,
-  positions,
-  gramSpace,
-  positionSpace,
-  symOps
-) => {
-  const pieces = [_parametersForGramMatrix(gram, gramSpace, symOps)];
-
-  for (const v of pg.vertices(graph)) {
-    const { configSpace, symmetrizer, isRepresentative} = positionSpace[v];
-    if (isRepresentative) {
-      const pos = positions.get(v);
-      pieces.push(_parametersForPosition(pos, configSpace, symmetrizer));
-    }
-  }
-
-  return Array.concat.apply(null, pieces);
 };
 
 
@@ -353,6 +350,9 @@ const _energyEvaluator = (
 };
 
 
+const id = dim => opsR.identityMatrix(dim);
+
+
 const embed = (g, relax=true) => {
   const positions = pg.barycentricPlacement(g);
   const syms = symmetries.symmetries(g).symmetries;
@@ -361,16 +361,22 @@ const embed = (g, relax=true) => {
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = _coordinateParametrization(g, syms);
   for (const v in posSpace) {
-    posSpace[v].configSpace = opsR.toJS(posSpace[v].configSpace);
+    const cfg = posSpace[v].configSpace;
+    const n = cfg.length;
+    posSpace[v].configSpace = opsR.toJS(cfg);
+    posSpace[v].configProj =
+      n == 1 ? [[]] : opsR.toJS(opsR.solve(cfg.slice(0, -1), id(n - 1)));
     posSpace[v].symmetrizer = opsR.toJS(posSpace[v].symmetrizer);
   }
-  const gramSpace = opsR.toJS(sg.gramMatrixConfigurationSpace(symOps));
-  const I = opsF.identityMatrix(g.dim);
-  const gram = opsR.toJS(sg.resymmetrizedGramMatrix(I, symOps));
+  const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
+  const gramSpaceF = opsR.toJS(gramSpace);
+  const gramProjF = opsR.toJS(opsR.solve(gramSpace, id(gramSpace.length)));
+
+  const gram = opsR.toJS(sg.resymmetrizedGramMatrix(id(g.dim), symOps));
   const posF = positions.map(p => opsR.toJS(p));
   const symF = symOps.map(s => opsR.toJS(s));
   const startParams = _parametersForConfiguration(
-    g, gram, posF, gramSpace, posSpace, symF);
+    g, gram, posF, gramProjF, posSpace, symF);
 
   let params = startParams;
 
@@ -380,7 +386,7 @@ const embed = (g, relax=true) => {
       const penaltyWeight = pass == 2 ? 1 : 0;
 
       const energy = _energyEvaluator(
-        posSpace, gramSpace,
+        posSpace, gramSpaceF,
         edgeOrbits, angleOrbits,
         volumeWeight, penaltyWeight);
 
@@ -391,7 +397,7 @@ const embed = (g, relax=true) => {
     }
   }
 
-  const result = _configurationFromParameters(g, params, gramSpace, posSpace);
+  const result = _configurationFromParameters(g, params, gramSpaceF, posSpace);
 
   return result;
 };
