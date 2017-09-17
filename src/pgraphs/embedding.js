@@ -5,12 +5,10 @@ import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
 import {
-  matrices,
   rationalLinearAlgebra,
   numericalLinearAlgebra
 } from '../arithmetic/types';
 
-const ops = matrices;
 const opsR = rationalLinearAlgebra;
 const opsF = numericalLinearAlgebra;
 
