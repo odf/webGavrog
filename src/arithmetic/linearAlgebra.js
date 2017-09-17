@@ -178,7 +178,7 @@ export const extend = (matrixOps, overField=true, eps=null) => {
 
     reducedBasis: {
       Null: _ => null,
-      Matrix: reducedBasis
+      Matrix: mat => reducedBasis(mat)
     },
 
     rank: {
