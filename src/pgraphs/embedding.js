@@ -132,11 +132,9 @@ const _positionFromParameters = (parms, cfg) => {
   const n = parms.length;
   let p = cfg[n].slice(0, -1);
 
-  if (cfg.length > 1) {
-    for (let i = 0; i < n; ++i) {
-      for (let j = 0; j < p.length; ++j)
-        p[j] += parms[i] * cfg[i][j];
-    }
+  for (let i = 0; i < n; ++i) {
+    for (let j = 0; j < p.length; ++j)
+      p[j] += parms[i] * cfg[i][j];
   }
 
   return p;
