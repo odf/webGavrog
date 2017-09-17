@@ -29,29 +29,11 @@ const _nodeSymmetrizer = (v, syms, positions) => {
 };
 
 
-const _normalizedInvariantSpace = P => {
-  const I = opsR.identityMatrix(opsR.dimension(P));
-  const A = opsR.leftNullSpace(opsR.minus(P, I));
-
-  const [nr, nc] = opsR.shape(A);
-  const k = A.findIndex(r => opsR.ne(r[nc - 1], 0));
-
-  if (k >= 0) {
-    [A[k], A[nr - 1]] = [A[nr - 1], opsR.div(A[k], A[k][nc - 1])];
-
-    for (let i = 0; i < nr - 1; ++i)
-      A[i] = opsR.minus(A[i], opsR.times(A[nr - 1], A[i][nc - 1]));
-  }
-
-  if (opsR.ne(opsR.times(A, P), A))
-    throw Error(`${A} * ${P} = ${opsR.times(A, P)}`);
-
-  return A;
-};
-
-
 const _coordinateParametrization = (graph, syms) => {
   const positions = pg.barycentricPlacement(graph);
+  const I = opsR.identityMatrix(graph.dim + 1);
+  const rot = A => A.slice().reverse().map(row => row.slice().reverse());
+  const normalized = A => rot(opsR.reducedBasis(rot(A)));
 
   const nodeInfo = {};
   let next = 0;
@@ -62,13 +44,10 @@ const _coordinateParametrization = (graph, syms) => {
 
     const pv = positions.get(v);
     const sv = _nodeSymmetrizer(v, syms, positions);
-    const cv = _normalizedInvariantSpace(sv);
+    const cv = normalized(opsR.leftNullSpace(opsR.minus(sv, I)));
 
     nodeInfo[v] = {
-      index: next,
-      configSpace: cv,
-      symmetrizer: sv,
-      isRepresentative: true
+      index: next, configSpace: cv, symmetrizer: sv, isRepresentative: true
     };
 
     for (const sym of syms) {
