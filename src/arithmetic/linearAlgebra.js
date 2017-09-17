@@ -247,6 +247,14 @@ if (require.main == module) {
       console.log();
     };
 
+    const testInv = A => {
+      console.log(`A = ${A}`);
+      const Ainv = ops.solve(A, ops.identityMatrix(A.length));
+      console.log(`Ainv = ${Ainv}`);
+      console.log(`check: A * Ainv = ${ops.times(A, Ainv)}`);
+      console.log();
+    };
+
     console.log(`=== ${name} ===`);
     console.log();
 
@@ -256,6 +264,9 @@ if (require.main == module) {
     test([[5,1,2],[10,8,5],[5,7,3]], [[3],[7],[0]]);
     test([[5,1,2],[10,8,5],[5,7,3]], [[ops.div(3, 5)],[7],[0]]);
     test([[0,0,0],[ 0,0,0],[0,0,0]], [[0],[0],[0]]);
+
+    testInv([[1,2,0,1],[0,1,1,0],[0,0,1,2]]);
+
     console.log();
   };
 
