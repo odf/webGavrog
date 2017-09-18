@@ -1,6 +1,10 @@
-const matrices = require('../arithmetic/types').matrices;
+import {
+  matrices,
+  rationalLinearAlgebra,
+  numericalLinearAlgebra
+} from '../arithmetic/types';
 
-export const points = require('./points')
+const points = require('./points')
   .extend(matrices, ['Integer', 'LongInt', 'Fraction', 'Float']);
 
 export const affineTransformations = require('./affineTransformations')
@@ -8,6 +12,26 @@ export const affineTransformations = require('./affineTransformations')
 
 export const coordinateChanges = require('./coordinateChanges')
   .extend(affineTransformations);
+
+
+export const pointsQ = require('./points')
+  .extend(rationalLinearAlgebra, ['Integer', 'LongInt', 'Fraction']);
+
+export const affineTransformationsQ = require('./affineTransformations')
+  .extend(pointsQ);
+
+export const coordinateChangesQ = require('./coordinateChanges')
+  .extend(affineTransformationsQ);
+
+
+export const pointsF = require('./points')
+  .extend(numericalLinearAlgebra, ['Integer', 'LongInt', 'Fraction']);
+
+export const affineTransformationsF = require('./affineTransformations')
+  .extend(pointsF);
+
+export const coordinateChangesF = require('./coordinateChanges')
+  .extend(affineTransformationsF);
 
 
 if (require.main == module) {

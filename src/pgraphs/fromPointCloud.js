@@ -1,9 +1,36 @@
 import * as lattices from '../geometry/lattices';
-import { points }    from '../geometry/types';
-import induceEdges   from '../geometry/induceEdges';
+import { pointsF }    from '../geometry/types';
+
+const ops = pointsF;
 
 
-const ops = points;
+const norm     = (v, dot)    => ops.sqrt(dot(v, v));
+const distance = (p, q, dot) => norm(ops.minus(p, q), dot);
+const sortBy   = (a, key)    => a.sort((x, y) => ops.cmp(x[key], y[key]));
+
+const withDistances = (pos, points, dot) =>
+  points.map(p => ({point: p, dist: distance(pos, p.pos, dot) }));
+
+const withClosestDistances = (pos, points, dot, limit) =>
+  sortBy(withDistances(pos, points, dot), 'dist').slice(0, limit);
+
+const withRelevantDistances = (p, points, dot) =>
+  withClosestDistances(p.pos, points, dot, p.degree+1)
+  .filter(q => q.point.id != p.id)
+  .slice(0, p.degree)
+  .map(q => ({ base: p, neighbor: q.point, dist: q.dist }));
+
+const allDistances = (points, dot) => {
+  const tmp = points.map(p => withRelevantDistances(p, points, dot));
+  return sortBy([].concat(...tmp), 'dist');
+};
+
+const induceEdges = (points, graph, dot = ops.times) => {
+  allDistances(points, dot).forEach(({ base: p, neighbor: q, dist: d }) => {
+    if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
+      graph.addEdge(p, q);
+  });
+};
 
 
 const graph = () => {
