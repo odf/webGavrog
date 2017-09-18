@@ -538,8 +538,12 @@ const degreesSatisfied = (nodes, edges) => {
 };
 
 
-const withInducedEdges = (nodes, givenEdges, gram) =>
-  fromPointCloud(nodes, givenEdges, dotProduct(gram));
+const withInducedEdges = (nodes, givenEdges, gram) => {
+  const pointAsFloat = pos => V.point(V.toJS(V.vector(pos)));
+  const nodesF = nodes.map(({ id, pos, degree }) =>
+                           ({ id, pos: pointAsFloat(pos), degree }));
+  return fromPointCloud(nodesF, givenEdges, dotProduct(gram));
+};
 
 
 export function netFromCrystal(spec) {

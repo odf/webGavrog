@@ -7,7 +7,7 @@ import {
 const points = require('./points')
   .extend(matrices, ['Integer', 'LongInt', 'Fraction', 'Float']);
 
-export const affineTransformations = require('./affineTransformations')
+const affineTransformations = require('./affineTransformations')
   .extend(points);
 
 export const coordinateChanges = require('./coordinateChanges')

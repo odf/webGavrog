@@ -1,6 +1,6 @@
 import { rationalLinearAlgebra } from '../arithmetic/types';
-import { affineTransformations } from './types';
-const V = affineTransformations;
+import { affineTransformationsQ } from './types';
+const V = affineTransformationsQ;
 
 
 const CS_0D              = "Crystal System 0d";

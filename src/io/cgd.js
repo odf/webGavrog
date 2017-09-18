@@ -1,6 +1,6 @@
 const parser = require('./cgdParser');
 
-const ops = require('../geometry/types').affineTransformations;
+const ops = require('../arithmetic/types').rationalMatrices;
 
 import * as pg from '../pgraphs/periodic';
 import * as sg from './sgtable';

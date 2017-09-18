@@ -1,5 +1,5 @@
 const parser = require('./sgtableParser');
-const ops = require('../geometry/types').affineTransformations;
+const ops = require('../geometry/types').affineTransformationsQ;
 
 
 const makeOperator = spec => {
