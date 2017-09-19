@@ -546,6 +546,16 @@ const withInducedEdges = (nodes, givenEdges, gram) => {
 };
 
 
+const symmetrizedGramMatrix = (G, ops) => {
+  const M = ops
+    .map(S => V.linearPart(S))
+    .map(S => V.times(S, V.times(G, V.transposed(S))))
+    .reduce((A, B) => V.plus(A, B));
+
+  return V.div(M, ops.length);
+};
+
+
 export function netFromCrystal(spec) {
   _timers && _timers.start('netFromCrystal');
 
@@ -559,14 +569,14 @@ export function netFromCrystal(spec) {
   }
 
   const { name: groupName, transform, operators } = group;
-  const cellGram = spacegroups.resymmetrizedGramMatrix(G0, operators);
+  const cellGram = symmetrizedGramMatrix(G0, operators);
   if (matrixError(cellGram, G0) > 0.01) {
     warnings.push(`Unit cell resymmetrized to ${unitCellParameters(cellGram)}`);
   }
 
   const primitive = spacegroups.primitiveSetting(operators);
   const toPrimitive = primitive.fromStd.oldToNew;
-  const primitiveGram = spacegroups.resymmetrizedGramMatrix(
+  const primitiveGram = symmetrizedGramMatrix(
     V.times(primitive.cell, V.times(cellGram, V.transposed(primitive.cell))),
     primitive.ops);
 
@@ -620,14 +630,14 @@ export const tilingFromFacelist = spec => {
   }
 
   const { name: groupName, transform, operators } = group;
-  const cellGram = spacegroups.resymmetrizedGramMatrix(G0, operators);
+  const cellGram = symmetrizedGramMatrix(G0, operators);
   if (matrixError(cellGram, G0) > 0.01) {
     warnings.push(`Unit cell resymmetrized to ${unitCellParameters(cellGram)}`);
   }
 
   const primitive = spacegroups.primitiveSetting(operators);
   const toPrimitive = primitive.fromStd.oldToNew;
-  const primitiveGram = spacegroups.resymmetrizedGramMatrix(
+  const primitiveGram = symmetrizedGramMatrix(
     V.times(primitive.cell, V.times(cellGram, V.transposed(primitive.cell))),
     primitive.ops);
 

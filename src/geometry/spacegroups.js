@@ -8,10 +8,10 @@ import {
 } from '../arithmetic/types';
 
 
-import { coordinateChanges } from './types';
+import { coordinateChangesQ } from './types';
 import * as parms from './parameterVectors';
 
-const V = coordinateChanges;
+const V = coordinateChangesQ;
 
 
 const isIdentity = M => {
@@ -208,16 +208,6 @@ export const gramMatrixConfigurationSpace = ops => {
 
   // -- return the solution space
   return V.transposed(rationalLinearAlgebraModular.nullSpace(eqns));
-};
-
-
-export function resymmetrizedGramMatrix(G, ops) {
-  const M = ops
-    .map(S => V.linearPart(S))
-    .map(S => V.times(S, V.times(G, V.transposed(S))))
-    .reduce((A, B) => V.plus(A, B));
-
-  return V.div(M, ops.length);
 };
 
 

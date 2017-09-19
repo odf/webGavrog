@@ -4,6 +4,8 @@ import * as sg from '../geometry/spacegroups';
 import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
+import { affineTransformationsQ } from '../geometry/types';
+
 import {
   rationalLinearAlgebra,
   numericalLinearAlgebra
@@ -137,8 +139,18 @@ const _parametersForPosition = (pos, cfg, proj, symmetrizer) => {
 };
 
 
+const symmetrizedGramMatrix = (G, ops) => {
+  const M = ops
+    .map(S => opsR.toJS(affineTransformationsQ.linearPart(S)))
+    .map(S => opsF.times(S, opsF.times(G, opsF.transposed(S))))
+    .reduce((A, B) => opsF.plus(A, B));
+
+  return opsF.div(M, ops.length);
+};
+
+
 const _parametersForGramMatrix = (gram, proj, syms) => {
-  const G = sg.resymmetrizedGramMatrix(gram, syms);
+  const G = symmetrizedGramMatrix(gram, syms);
   const n = opsF.shape(G)[0];
 
   const a = [];
@@ -370,7 +382,7 @@ const embed = (g, relax=true) => {
   const gramSpaceF = opsR.toJS(gramSpace);
   const gramProjF = opsR.toJS(opsR.solve(gramSpace, id(gramSpace.length)));
 
-  const gram = opsR.toJS(sg.resymmetrizedGramMatrix(id(g.dim), symOps));
+  const gram = symmetrizedGramMatrix(id(g.dim), symOps);
   const posF = positions.map(p => opsR.toJS(p));
   const symF = symOps.map(s => opsR.toJS(s));
   const startParams = _parametersForConfiguration(
