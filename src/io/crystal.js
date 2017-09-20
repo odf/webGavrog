@@ -584,7 +584,7 @@ export function netFromCrystal(spec) {
 
   const primitive = spacegroups.primitiveSetting(operators);
   const primitiveCell = opsQ.toJS(primitive.cell);
-  const toPrimitive = primitive.fromStd.oldToNew;
+  const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
   const primitiveGram = symmetrizedGramMatrix(
     opsF.times(primitiveCell,
                opsF.times(cellGram, opsF.transposed(primitiveCell))),
@@ -647,14 +647,14 @@ export const tilingFromFacelist = spec => {
 
   const primitive = spacegroups.primitiveSetting(operators);
   const primitiveCell = opsQ.toJS(primitive.cell);
-  const toPrimitive = primitive.fromStd.oldToNew;
+  const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
   const primitiveGram = symmetrizedGramMatrix(
     opsF.times(primitiveCell,
                opsF.times(cellGram, opsF.transposed(primitiveCell))),
     primitive.ops);
 
   const facesMapped = faces.map(
-    f => f.map(p => ops.times(toPrimitive, ops.point(p))));
+    f => f.map(p => opsF.times(toPrimitive, opsF.point(p))));
 
   const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
   const { pos, action, faces: codedFaces } =

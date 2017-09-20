@@ -1,6 +1,6 @@
 const parser = require('./cgdParser');
 
-const ops = require('../arithmetic/types').rationalMatrices;
+const ops = require('../geometry/types').affineTransformationsQ;
 
 import * as pg from '../pgraphs/periodic';
 import * as sg from './sgtable';
@@ -54,7 +54,8 @@ const capitalize = s => s[0].toUpperCase() + s.slice(1);
 
 const findGroup = args => sg.settingByName(args.join(''));
 
-const makeCoordinate = x => typeof x == 'number' ? x : ops.div(x.n, x.d);
+const makeCoordinate = x =>
+  typeof x == 'number' ? x : ops.toJS(ops.div(x.n, x.d));
 
 
 const makeOperator = spec => {
