@@ -8,7 +8,7 @@ import * as derived from '../dsymbols/derived';
 import fromPointCloud from '../pgraphs/fromPointCloud';
 
 import { coordinateChanges } from '../geometry/types';
-const V = coordinateChanges;
+const ops = coordinateChanges;
 
 
 let _timers = null;
@@ -18,7 +18,7 @@ export function useTimers(timers) {
 };
 
 
-const matrixError = (A, B) => V.div(V.norm(V.minus(A, B)), V.norm(A));
+const matrixError = (A, B) => ops.div(ops.norm(ops.minus(A, B)), ops.norm(A));
 const eps = Math.pow(2, -50);
 const trim = x => Math.abs(x) < eps ? 0 : x;
 const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
@@ -30,7 +30,7 @@ const mapNode = coordinateChange => ({ name, coordination, position }, i) => ({
   index: i,
   coordination,
   positionInput: position,
-  positionPrimitive: V.modZ(V.times(coordinateChange, V.point(position)))
+  positionPrimitive: ops.modZ(ops.times(coordinateChange, ops.point(position)))
 });
 
 
@@ -42,10 +42,10 @@ const findNode = (nodes, name) => {
 
 
 const mapEnd = (coordinateChange, nodes) => p => {
-  if (V.typeOf(p) == 'Vector') {
+  if (ops.typeOf(p) == 'Vector') {
     return {
       positionInput: p,
-      positionPrimitive: V.times(coordinateChange, V.point(p))
+      positionPrimitive: ops.times(coordinateChange, ops.point(p))
     }
   }
   else {
@@ -67,12 +67,12 @@ const mapEdge = (coordinateChange, nodes) => {
 
 
 const unitCellParameters = G => {
-  if (V.dimension(G) == 2) {
+  if (ops.dimension(G) == 2) {
     const a = Math.sqrt(G[0][0]);
     const b = Math.sqrt(G[1][1]);
     return [a, b, acosdeg(G[0][1] / a / b)];
   }
-  else if (V.dimension(G) == 3) {
+  else if (ops.dimension(G) == 3) {
     const a = Math.sqrt(G[0][0]);
     const b = Math.sqrt(G[1][1]);
     const c = Math.sqrt(G[2][2]);
@@ -85,7 +85,7 @@ const unitCellParameters = G => {
 
 
 const dotProduct = gram => {
-  const G = V.toJS(gram);
+  const G = ops.toJS(gram);
 
   return (v, w) => {
     let s = 0;
@@ -122,15 +122,15 @@ const shiftIntoDirichletDomain = (pos, dirichletVecs, dot) => {
 
 
 const pointsAreCloseModZ = (gram, maxDist) => {
-  const n = V.dimension(gram);
-  const limit = V.times(maxDist, maxDist);
+  const n = ops.dimension(gram);
+  const limit = ops.times(maxDist, maxDist);
   const dot = dotProduct(gram);
-  const vecs = lattices.dirichletVectors(V.identityMatrix(n), dot);
+  const vecs = lattices.dirichletVectors(ops.identityMatrix(n), dot);
 
   return (p, q) => {
     _timers && _timers.start("pointsAreCloseModZ");
 
-    const d0 = p.coords.map((x, i) => (V.toJS(x) - V.toJS(q.coords[i])) % 1);
+    const d0 = p.coords.map((x, i) => (ops.toJS(x) - ops.toJS(q.coords[i])) % 1);
     const d = shiftIntoDirichletDomain(d0, vecs, dot);
     const result = dot(d, d) < limit;
 
@@ -142,13 +142,13 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 
 
 const vectorsAreClose = (gram, maxDist) => {
-  const n = V.dimension(gram);
-  const limit = V.times(maxDist, maxDist);
+  const n = ops.dimension(gram);
+  const limit = ops.times(maxDist, maxDist);
   const dot = dotProduct(gram);
 
   return (v, w) => {
-    const d = V.toJS(V.minus(v, w));
-    return V.le(dot(d, d), limit);
+    const d = ops.toJS(ops.minus(v, w));
+    return ops.le(dot(d, d), limit);
   };
 };
 
@@ -159,7 +159,7 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
     if (areEqualFn(p, q)) {
       return {
         node: nodes[i].id,
-        shift: V.minus(p, q).map(x => V.round(x))
+        shift: ops.minus(p, q).map(x => ops.round(x))
       };
     }
   }
@@ -168,15 +168,15 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
 };
 
 
-const operatorCosets = (ops, subgroup) => {
+const operatorCosets = (symOps, subgroup) => {
   const seen = {};
   const result = [];
 
-  for (const op of ops) {
+  for (const op of symOps) {
     if (!seen[spacegroups.opModZ(op)]) {
       result.push(op);
       for (const t of subgroup) {
-        seen[spacegroups.opModZ(V.times(op, t))] = true;
+        seen[spacegroups.opModZ(ops.times(op, t))] = true;
       }
     }
   }
@@ -185,12 +185,13 @@ const operatorCosets = (ops, subgroup) => {
 };
 
 
-const pointStabilizer = (point, ops, areEqualFn) => {
-  const stabilizer = ops.filter(op => areEqualFn(point, V.times(op, point)));
+const pointStabilizer = (point, symOps, areEqualFn) => {
+  const stabilizer = symOps.filter(
+    op => areEqualFn(point, ops.times(op, point)));
 
   for (const A of stabilizer) {
     for (const B of stabilizer) {
-      if (!areEqualFn(point, V.times(V.times(A, V.inverse(B)), point))) {
+      if (!areEqualFn(point, ops.times(ops.times(A, ops.inverse(B)), point))) {
         return null;
       }
     }
@@ -200,16 +201,16 @@ const pointStabilizer = (point, ops, areEqualFn) => {
 };
 
 
-const edgeStabilizer = (pos, vec, ops, pointsEqualFn, vectorsEqualFn) => {
+const edgeStabilizer = (pos, vec, symOps, pointsEqualFn, vectorsEqualFn) => {
   const goodOp = op => (
-    pointsEqualFn(pos, V.times(op, pos))
-      && vectorsEqualFn(vec, V.times(V.linearPart(op), vec)));
+    pointsEqualFn(pos, ops.times(op, pos))
+      && vectorsEqualFn(vec, ops.times(ops.linearPart(op), vec)));
 
-  const stabilizer = ops.filter(goodOp);
+  const stabilizer = symOps.filter(goodOp);
 
   for (const A of stabilizer) {
     for (const B of stabilizer) {
-      if (!goodOp(V.times(A, V.inverse(B)))) {
+      if (!goodOp(ops.times(A, ops.inverse(B)))) {
         return null;
       }
     }
@@ -219,13 +220,13 @@ const edgeStabilizer = (pos, vec, ops, pointsEqualFn, vectorsEqualFn) => {
 };
 
 
-const nodeImages = (ops, equalFn) => (v, index) => {
+const nodeImages = (symOps, equalFn) => (v, index) => {
   const { name, coordination, positionInput, positionPrimitive } = v;
-  const stabilizer = pointStabilizer(positionPrimitive, ops, equalFn);
-  const cosetReps = operatorCosets(ops, stabilizer);
+  const stabilizer = pointStabilizer(positionPrimitive, symOps, equalFn);
+  const cosetReps = operatorCosets(symOps, stabilizer);
 
   return cosetReps.map(op => ({
-    pos: V.modZ(V.times(op, positionPrimitive)),
+    pos: ops.modZ(ops.times(op, positionPrimitive)),
     degree: coordination,
     repIndex: index,
     operator: op
@@ -233,20 +234,20 @@ const nodeImages = (ops, equalFn) => (v, index) => {
 };
 
 
-const edgeImages = (ops, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
+const edgeImages = (symOps, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
   const { from: { positionPrimitive: src },
           to: { positionPrimitive: dst } } = e;
-  const vec = V.minus(dst, src);
+  const vec = ops.minus(dst, src);
 
   const stabilizer = edgeStabilizer(
-    src, vec, ops, pntsEqualFn, vecsEqualFn)
+    src, vec, symOps, pntsEqualFn, vecsEqualFn)
 
-  const cosetReps = operatorCosets(ops, stabilizer);
+  const cosetReps = operatorCosets(symOps, stabilizer);
 
   return cosetReps
     .map(operator => {
-      const from = V.modZ(V.times(operator, src));
-      const to = V.plus(from, V.times(V.linearPart(operator), vec));
+      const from = ops.modZ(ops.times(operator, src));
+      const to = ops.plus(from, ops.times(ops.linearPart(operator), vec));
 
       return {
         from: lookupPointModZ(from, nodes, pntsEqualFn),
@@ -258,21 +259,21 @@ const edgeImages = (ops, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
 };
 
 
-const applyOpsToNodes = (nodes, ops, equalFn) =>
-  flatMap(nodeImages(ops, equalFn), nodes)
+const applyOpsToNodes = (nodes, symOps, equalFn) =>
+  flatMap(nodeImages(symOps, equalFn), nodes)
   .map(({ pos, degree, repIndex, operator }, id) => ({
     id, pos, degree, repIndex, operator
   }))
 
 
-const applyOpsToEdges = (edges, nodes, ops, pointsEqFn, vectorsEqFn) =>
-  flatMap(edgeImages(ops, nodes, pointsEqFn, vectorsEqFn), edges)
+const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) =>
+  flatMap(edgeImages(symOps, nodes, pointsEqFn, vectorsEqFn), edges)
   .map(({ from, to, repIndex, operator }, id) => ({
     id, from, to, repIndex, operator
   }));
 
 
-const applyOpsToCorners = (rawFaces, ops, pointsEqFn) => {
+const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
   _timers && _timers.start("applyOpsToCorners");
 
   const pos = [];
@@ -288,24 +289,24 @@ const applyOpsToCorners = (rawFaces, ops, pointsEqFn) => {
 
       if (found < 0) {
         const images = {};
-        const stabilizer = pointStabilizer(p, ops, pointsEqFn);
-        const reps = operatorCosets(ops, stabilizer);
+        const stabilizer = pointStabilizer(p, symOps, pointsEqFn);
+        const reps = operatorCosets(symOps, stabilizer);
 
         for (const r of reps) {
           for (const op of stabilizer)
-            images[spacegroups.opModZ(V.times(r, op))] = pos.length;
-          pos.push(V.modZ(V.times(r, p)));
+            images[spacegroups.opModZ(ops.times(r, op))] = pos.length;
+          pos.push(ops.modZ(ops.times(r, p)));
         }
 
         for (const r of reps) {
           const m = {};
-          for (const op of ops)
-            m[op] = images[spacegroups.opModZ(V.times(op, r))];
+          for (const op of symOps)
+            m[op] = images[spacegroups.opModZ(ops.times(op, r))];
           action.push(m);
         }
       }
 
-      const shift = V.minus(p, pos[index]).map(x => V.round(x));
+      const shift = ops.minus(p, pos[index]).map(x => ops.round(x));
       face.push({ index, shift });
     }
 
@@ -339,7 +340,7 @@ const normalizedFace = face => {
   for (const i in face) {
     const s = face[i].shift;
     const fa = face.slice(i).concat(face.slice(0, i))
-      .map(({ index, shift }) => ({ index, shift: V.minus(shift, s) }));
+      .map(({ index, shift }) => ({ index, shift: ops.minus(shift, s) }));
     const fb = [fa[0]].concat(fa.slice(1).reverse());
 
     if (best == null || less(fa, best)) {
@@ -356,17 +357,17 @@ const normalizedFace = face => {
 };
 
 
-const applyOpsToFaces = (pos, action, faces, ops) => {
+const applyOpsToFaces = (pos, action, faces, symOps) => {
   _timers && _timers.start("applyOpsToFaces");
 
   const apply = (op, { index, shift }) => {
-    const oldPos = V.plus(pos[index], shift);
-    const newPos = V.times(op, oldPos);
+    const oldPos = ops.plus(pos[index], shift);
+    const newPos = ops.times(op, oldPos);
     const newIndex = action[index][op];
 
     return {
       index: newIndex,
-      shift: V.minus(newPos, pos[newIndex]).map(x => V.round(x))
+      shift: ops.minus(newPos, pos[newIndex]).map(x => ops.round(x))
     }
   };
 
@@ -374,7 +375,7 @@ const applyOpsToFaces = (pos, action, faces, ops) => {
   const result = [];
 
   for (const f of faces) {
-    for (const op of ops) {
+    for (const op of symOps) {
       const fNew = normalizedFace(f.map(e => apply(op, e)));
       const key = JSON.stringify(fNew.face);
 
@@ -391,15 +392,15 @@ const applyOpsToFaces = (pos, action, faces, ops) => {
 };
 
 
-const normalized = v => V.div(v, V.norm(v));
+const normalized = v => ops.div(v, ops.norm(v));
 
 
 const sectorNormals = vs => {
-  const centroid = V.div(vs.reduce((v, w) => V.plus(v, w)), vs.length);
+  const centroid = ops.div(vs.reduce((v, w) => ops.plus(v, w)), vs.length);
 
   return vs.map((v, i) => {
     const w = vs[(i + 1) % vs.length];
-    return normalized(V.crossProduct(V.minus(w, v), V.minus(centroid, w)));
+    return normalized(ops.crossProduct(ops.minus(w, v), ops.minus(centroid, w)));
   });
 };
 
@@ -412,8 +413,8 @@ const collectEdges = faces => {
     const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
 
     edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
-      const key = JSON.stringify([v1, v2, V.minus(s2, s1)]);
-      const keyInv = JSON.stringify([v2, v1, V.minus(s1, s2)]);
+      const key = JSON.stringify([v1, v2, ops.minus(s2, s1)]);
+      const keyInv = JSON.stringify([v2, v1, ops.minus(s1, s2)]);
 
       if (facesAtEdge[key])
         facesAtEdge[key].push([i, j, false]);
@@ -430,23 +431,23 @@ const collectEdges = faces => {
 
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
   const explicitFaces = faces.map(f => f.face.map(
-    item => V.plus(V.vector(corners[item.index]), item.shift)));
+    item => ops.plus(ops.vector(corners[item.index]), item.shift)));
 
   const normals = explicitFaces.map(sectorNormals)
   const facesAtEdge = collectEdges(faces);
-  const getNormal = ([i, j, rev]) => V.times(normals[i][j], rev ? -1 : 1);
+  const getNormal = ([i, j, rev]) => ops.times(normals[i][j], rev ? -1 : 1);
 
   const result = [];
   for (const key of Object.keys(facesAtEdge)) {
     const [v, w, s] = JSON.parse(key);
-    const d = normalized(V.minus(V.plus(corners[w], s), corners[v]));
+    const d = normalized(ops.minus(ops.plus(corners[w], s), corners[v]));
     const n0 = getNormal(facesAtEdge[key][0]);
 
     const incidences = facesAtEdge[key].map(([i, j, reverse]) => {
       const n = getNormal([i, j, reverse]);
-      const angle = Math.acos(Math.max(-1, Math.min(1, V.times(n0, n))));
+      const angle = Math.acos(Math.max(-1, Math.min(1, ops.times(n0, n))));
 
-      if (V.lt(V.determinant(V.cleanup([d, n0, n])), 0))
+      if (ops.lt(ops.determinant(ops.cleanup([d, n0, n])), 0))
         return [i, j, reverse, 2 * Math.PI - angle];
       else
         return [i, j, reverse, angle];
@@ -524,7 +525,7 @@ const buildTiling = (pos, faces) => {
 
 
 const convertEdge = ({ from, to }) =>
-  [from.node, to.node, V.minus(to.shift, from.shift)];
+  [from.node, to.node, ops.minus(to.shift, from.shift)];
 
 
 const degreesSatisfied = (nodes, edges) => {
@@ -539,20 +540,20 @@ const degreesSatisfied = (nodes, edges) => {
 
 
 const withInducedEdges = (nodes, givenEdges, gram) => {
-  const pointAsFloat = pos => V.point(V.toJS(V.vector(pos)));
+  const pointAsFloat = pos => ops.point(ops.toJS(ops.vector(pos)));
   const nodesF = nodes.map(({ id, pos, degree }) =>
                            ({ id, pos: pointAsFloat(pos), degree }));
   return fromPointCloud(nodesF, givenEdges, dotProduct(gram));
 };
 
 
-const symmetrizedGramMatrix = (G, ops) => {
-  const M = ops
-    .map(S => V.linearPart(S))
-    .map(S => V.times(S, V.times(G, V.transposed(S))))
-    .reduce((A, B) => V.plus(A, B));
+const symmetrizedGramMatrix = (G, symOps) => {
+  const M = symOps
+    .map(S => ops.linearPart(S))
+    .map(S => ops.times(S, ops.times(G, ops.transposed(S))))
+    .reduce((A, B) => ops.plus(A, B));
 
-  return V.div(M, ops.length);
+  return ops.div(M, symOps.length);
 };
 
 
@@ -577,7 +578,8 @@ export function netFromCrystal(spec) {
   const primitive = spacegroups.primitiveSetting(operators);
   const toPrimitive = primitive.fromStd.oldToNew;
   const primitiveGram = symmetrizedGramMatrix(
-    V.times(primitive.cell, V.times(cellGram, V.transposed(primitive.cell))),
+    ops.times(primitive.cell,
+              ops.times(cellGram, ops.transposed(primitive.cell))),
     primitive.ops);
 
   const nodesMapped = nodes.map(mapNode(toPrimitive));
@@ -638,11 +640,12 @@ export const tilingFromFacelist = spec => {
   const primitive = spacegroups.primitiveSetting(operators);
   const toPrimitive = primitive.fromStd.oldToNew;
   const primitiveGram = symmetrizedGramMatrix(
-    V.times(primitive.cell, V.times(cellGram, V.transposed(primitive.cell))),
+    ops.times(primitive.cell,
+              ops.times(cellGram, ops.transposed(primitive.cell))),
     primitive.ops);
 
   const facesMapped = faces.map(
-    f => f.map(p => V.times(toPrimitive, V.point(p))));
+    f => f.map(p => ops.times(toPrimitive, ops.point(p))));
 
   const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
   const { pos, action, faces: codedFaces } =
