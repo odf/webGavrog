@@ -7,8 +7,15 @@ import * as derived from '../dsymbols/derived';
 
 import fromPointCloud from '../pgraphs/fromPointCloud';
 
-import { coordinateChanges } from '../geometry/types';
+import {
+  coordinateChanges,
+  coordinateChangesQ,
+  coordinateChangesF
+} from '../geometry/types';
+
 const ops = coordinateChanges;
+const opsQ = coordinateChangesQ;
+const opsF = coordinateChangesF;
 
 
 let _timers = null;
@@ -549,11 +556,11 @@ const withInducedEdges = (nodes, givenEdges, gram) => {
 
 const symmetrizedGramMatrix = (G, symOps) => {
   const M = symOps
-    .map(S => ops.linearPart(S))
-    .map(S => ops.times(S, ops.times(G, ops.transposed(S))))
-    .reduce((A, B) => ops.plus(A, B));
+    .map(S => opsQ.toJS(opsQ.linearPart(S)))
+    .map(S => opsF.times(S, opsF.times(G, opsF.transposed(S))))
+    .reduce((A, B) => opsF.plus(A, B));
 
-  return ops.div(M, symOps.length);
+  return opsF.div(M, symOps.length);
 };
 
 
@@ -576,10 +583,11 @@ export function netFromCrystal(spec) {
   }
 
   const primitive = spacegroups.primitiveSetting(operators);
+  const primitiveCell = opsQ.toJS(primitive.cell);
   const toPrimitive = primitive.fromStd.oldToNew;
   const primitiveGram = symmetrizedGramMatrix(
-    ops.times(primitive.cell,
-              ops.times(cellGram, ops.transposed(primitive.cell))),
+    opsF.times(primitiveCell,
+               opsF.times(cellGram, opsF.transposed(primitiveCell))),
     primitive.ops);
 
   const nodesMapped = nodes.map(mapNode(toPrimitive));
@@ -605,7 +613,7 @@ export function netFromCrystal(spec) {
     name,
     group: group.name,
     cellGram,
-    primitiveCell: primitive.cell,
+    primitiveCell,
     primitiveGram,
     toPrimitive,
     nodeReps: nodesMapped,
@@ -638,10 +646,11 @@ export const tilingFromFacelist = spec => {
   }
 
   const primitive = spacegroups.primitiveSetting(operators);
+  const primitiveCell = opsQ.toJS(primitive.cell);
   const toPrimitive = primitive.fromStd.oldToNew;
   const primitiveGram = symmetrizedGramMatrix(
-    ops.times(primitive.cell,
-              ops.times(cellGram, ops.transposed(primitive.cell))),
+    opsF.times(primitiveCell,
+               opsF.times(cellGram, opsF.transposed(primitiveCell))),
     primitive.ops);
 
   const facesMapped = faces.map(
@@ -662,7 +671,7 @@ export const tilingFromFacelist = spec => {
     name,
     group: group.name,
     cellGram,
-    primitiveCell: primitive.cell,
+    primitiveCell,
     primitiveGram,
     toPrimitive,
     symbol: derived.minimal(ds),
