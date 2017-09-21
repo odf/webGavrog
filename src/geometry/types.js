@@ -1,17 +1,7 @@
 import {
-  matrices,
   rationalLinearAlgebra,
   numericalLinearAlgebra
 } from '../arithmetic/types';
-
-const points = require('./points')
-  .extend(matrices, ['Integer', 'LongInt', 'Fraction', 'Float']);
-
-const affineTransformations = require('./affineTransformations')
-  .extend(points);
-
-export const coordinateChanges = require('./coordinateChanges')
-  .extend(affineTransformations);
 
 
 export const pointsQ = require('./points')
@@ -39,7 +29,7 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const ops = coordinateChanges;
+  const ops = coordinateChangesF;
 
   const t = ops.times(ops.shift([1,1,1]), [[1,1,0],[1,2,0],[0,0,1]]);
 
