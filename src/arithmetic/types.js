@@ -13,9 +13,6 @@ export const floats = require('./floats')
 export const rationals = require('./fractions')
   .extend(integers, ['Integer', 'LongInt'], 'Fraction');
 
-export const reals = require('./reals')
-  .extend(rationals);
-
 export const floatMatrices = mats
   .extend(floats, ['Integer', 'Float']);
 
