@@ -536,6 +536,8 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   return baseOps.register({
+    __context__: () => 'integers',
+
     isInteger: {
       LongInt: x => true,
       Integer: x => true

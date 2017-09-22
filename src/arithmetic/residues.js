@@ -23,6 +23,8 @@ const _cmp   = (a, b) => (a > b) - (a < b);
 
 export function extend(basis, m) {
   const methods = {
+    __context__: () => `residues(${m})`,
+
     toJS : { Integer: a => _make(a, m) },
     abs  : { Integer: a => _make(a, m) },
     floor: { Integer: a => _make(a, m) },

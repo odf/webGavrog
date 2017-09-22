@@ -164,6 +164,8 @@ export const extend = (matrixOps, overField=true, eps=null) => {
 
 
   const methods = {
+    __context__: () => `linearAlgebra(${matrixOps.__context__()})`,
+
     extendBasis: {
       Vector: {
         Null: extendBasis,

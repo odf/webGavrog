@@ -111,6 +111,8 @@ export const extend = (scalarOps, scalarTypes) => {
 
 
   const methods = {
+    __context__: () => `matrices(${scalarOps.__context__()})`,
+
     toJS: {
       Vector: map.V(sops.toJS),
       Matrix: map.M(sops.toJS)

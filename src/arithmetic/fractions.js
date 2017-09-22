@@ -128,6 +128,8 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 
 
   const methods = {
+    __context__: () => `fractions(${intOps.__context__()})`,
+
     isRational: { [typeName]: x => true },
     isReal    : { [typeName]: x => true },
     toJS      : { [typeName]: toJS     },

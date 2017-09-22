@@ -15,6 +15,8 @@ export const extend = baseOps => {
 
 
   const methods = {
+    __context__: () => 'floats',
+
     isInteger: {
       Integer: x => true
     },

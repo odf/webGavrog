@@ -22,8 +22,11 @@ const call = (dispatch, op, ops) => (...args) => {
 
   if (method)
     return method(...args, ops);
-  else
-    throw new Error(`Operator '${op}' not defined on [${args.map(typeOf)}]`);
+  else {
+    const types = args.map(typeOf);
+    const context = ops.__context__();
+    throw new Error(`${context} - Operator '${op}' not defined on [${types}]`);
+  }
 };
 
 
@@ -82,6 +85,8 @@ const fromRepr = (obj, ops) => {
 
 
 const defaults = {
+  __context__: () => 'default',
+
   isInteger    : { __default__: x => false },
   isRational   : { __default__: x => false },
   isReal       : { __default__: x => false },
