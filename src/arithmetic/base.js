@@ -1,4 +1,4 @@
-export const typeOf = x => {
+const typeOf = x => {
   const t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
 
   if (t == 'Number') {

@@ -1,4 +1,3 @@
-import { typeOf } from '../arithmetic/base';
 import { rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
@@ -67,7 +66,7 @@ const checkTranslationalPartOfOperator = (s, d) => {
 
 
 const checkOperatorType = op => {
-  const t = typeOf(op);
+  const t = V.typeOf(op);
 
   if (t != 'Matrix' && t != 'AffineTransformation')
     throw new Error(`expected a Matrix or AffineTransformation, got ${op}`);
@@ -77,7 +76,7 @@ const checkOperatorType = op => {
 const checkOperator = (op, d) => {
   checkOperatorType(op);
 
-  if (typeOf(op) == 'Matrix')
+  if (V.typeOf(op) == 'Matrix')
     checkLinearPartOfOperator(op, d);
   else {
     checkLinearPartOfOperator(op.linear, d);
@@ -87,7 +86,7 @@ const checkOperator = (op, d) => {
 
 
 const operatorDimension = op =>
-  (typeOf(op) == 'Matrix' ? op : op.linear).length;
+  (V.typeOf(op) == 'Matrix' ? op : op.linear).length;
 
 
 const checkOperatorList = ops => {
@@ -102,7 +101,7 @@ const checkOperatorList = ops => {
 
 
 export const opModZ = op => {
-  if (typeOf(op) == 'Matrix')
+  if (V.typeOf(op) == 'Matrix')
     return op;
   else
     return V.affineTransformation(op.linear, V.mod(op.shift, 1));
@@ -147,7 +146,7 @@ const primitiveCell = ops => {
   let basis = V.identityMatrix(operatorDimension(ops[0]));
 
   for (const op of ops) {
-    if (typeOf(op) == 'AffineTransformation' && isIdentity(op.linear))
+    if (V.typeOf(op) == 'AffineTransformation' && isIdentity(op.linear))
       basis = rationalLinearAlgebraModular.extendBasis(op.shift, basis);
   }
 
