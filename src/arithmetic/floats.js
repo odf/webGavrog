@@ -9,11 +9,6 @@ export const extend = baseOps => {
   };
 
 
-  const areClose = (x, y, eps=Math.pow(2, -40)) =>
-    (x == 0 && Math.abs(y) < eps) || (y == 0 && Math.abs(x) < eps) ||
-    Math.abs(x - y) <= eps * Math.max(Math.abs(x), Math.abs(y));
-
-
   const methods = {
     __context__: () => 'floats',
 
@@ -40,16 +35,11 @@ export const extend = baseOps => {
     __Integer__: { Object: ({ Integer: x }) => x }
   };
 
-  for (const name of [ 'abs', 'floor', 'ceil', 'round' ])
+  for (const name of [ 'abs', 'floor', 'ceil', 'round', 'sqrt' ])
     methods[name] = {
       Integer: x => Math[name](x),
       Float: x => Math[name](x)
     }
-
-  methods.sqrt = {
-    Integer : x => Math.sqrt(x),
-    Float   : x => Math.sqrt(x)
-  };
 
   for (const [name, op] of [
     [ 'cmp'  , (x, y) => (x > y) - (x < y)              ],
@@ -57,17 +47,16 @@ export const extend = baseOps => {
     [ 'minus', (x, y) => x - y                          ],
     [ 'times', (x, y) => (x == 0 || y == 0) ? 0 : x * y ],
     [ 'div'  , (x, y) => x == 0 ? 0 : x / y             ],
-    [ 'mod'  , mod ],
-    [ 'areClose', areClose ]
+    [ 'mod'  , mod ]
   ]) {
     methods[name] = {
       Float: {
-        Float   : (x, y) => op(x, y),
-        Integer : (x, y) => op(x, y)
+        Float  : op,
+        Integer: op
       },
       Integer: {
-        Float   : (x, y) => op(x, y),
-        Integer : (x, y) => op(x, y)
+        Float  : op,
+        Integer: op
       }
     };
   }
