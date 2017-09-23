@@ -124,7 +124,7 @@ export const extend = (baseOps, baseLength = 0) => {
 
   const _cmp = (r, s, k=0) => {
     if (r.length != s.length + k)
-      return r.length - s.length + k;
+      return r.length - (s.length + k);
 
     for (let i = s.length - 1; i >= 0; --i)
       if (r[i + k] != s[i])
