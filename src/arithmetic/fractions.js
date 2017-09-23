@@ -17,43 +17,20 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
   const toJS = n => intOps.toJS(n.numer) / intOps.toJS(n.denom);
 
 
-  const _makeFast = (numer, denom) => {
-    if (denom < 0)
-      return _makeFast(-numer, -denom);
-    else if (denom == 0)
-      throw new Error('fraction has zero denominator');
-    else {
-      const a = intOps.gcd(denom, numer);
-      const n = numer / a;
-      const d = denom / a;
-
-      if (d == 1 || n == 0)
-        return n;
-      else
-        return new Fraction(n, d);
-    }
-  };
-
-
   const make = (numer, denom) => {
-    if (typeof numer == 'number' && typeof denom == 'number')
-      return _makeFast(numer, denom);
-
-    const s = intOps.sgn(denom);
-
-    if (s < 0)
+    if (intOps.lt(denom, 0))
       return make(intOps.negative(numer), intOps.negative(denom));
-    else if (s == 0)
+    else if (intOps.eq(denom, 0))
       throw new Error('fraction has zero denominator');
+    else if (intOps.eq(numer, 0))
+      return numer;
     else {
       const a = intOps.gcd(denom, numer);
-      const n = intOps.idiv(numer, a);
-      const d = intOps.idiv(denom, a);
 
-      if (intOps.cmp(d, 1) == 0 || intOps.sgn(n) == 0)
-        return n;
+      if (intOps.eq(a, denom))
+        return intOps.idiv(numer, a);
       else
-        return new Fraction(n, d);
+        return new Fraction(intOps.idiv(numer, a), intOps.idiv(denom, a));
     }
   };
 
@@ -78,21 +55,30 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 
   const floor = q => intOps.idiv(q.numer, q.denom);
 
-  const ceil = q =>
-    intOps.idiv(intOps.plus(q.numer, intOps.minus(q.denom, 1)), q.denom);
-
-  const cmp = (q, r) => {
-    const d = minus(q, r);
-    return intOps.sgn(d.numer == null ? d : d.numer);
+  const ceil = q => {
+    const [n, r] = intOps.divmod(q.numer, q.denom);
+    if (intOps.gt(r, 0))
+      return intOps.plus(n, 1);
+    else
+      return n;
   };
 
 
   const round = q => {
-    const t = floor(q);
-    const up = intOps.ge(
-      intOps.times(2, intOps.minus(q.numer, intOps.times(t, q.denom))),
-      q.denom);
-    return up ? intOps.plus(t, 1) : t;
+    const [n, r] = intOps.divmod(q.numer, q.denom);
+    if (intOps.ge(intOps.times(2, r), q.denom))
+      return intOps.plus(n, 1);
+    else
+      return n;
+  };
+
+
+  const cmp = (q, r) => {
+    const a = intOps.gcd(q.denom, r.denom);
+    const s = intOps.idiv(r.denom, a);
+    const t = intOps.idiv(q.denom, a);
+
+    return intOps.cmp(intOps.times(s, q.numer), intOps.times(t, r.numer));
   };
 
 
