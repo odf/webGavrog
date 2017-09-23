@@ -106,7 +106,7 @@ export const extend = (baseOps, baseLength = 0) => {
     const s = literal.replace(/^[+-]/, '').replace(/_/g, '');
     const offset = s.length % decimalBaseLength;
 
-    let digits = [parseInt(s.slice(0, offset))];
+    let digits = offset ? [parseInt(s.slice(0, offset))] : [];
 
     for (let i = offset; i < s.length; i += decimalBaseLength) {
       const chunk = s.slice(i, i + decimalBaseLength);
