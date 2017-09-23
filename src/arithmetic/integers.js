@@ -15,6 +15,8 @@ export const extend = (baseOps, baseLength = 0) => {
   const BASE = Math.pow(2, BASELENGTH);
   const HALFBASE = Math.sqrt(BASE);
 
+  const decimalBase = Math.pow(10, Math.floor(Math.log10(BASE)));
+
   const powersOfTwo =
     new Array(BASELENGTH).fill(0).map((_, i) => Math.pow(2, i));
 
@@ -35,10 +37,13 @@ export const extend = (baseOps, baseLength = 0) => {
       else {
         const s = [];
         let t = this.digits;
+        let r;
         while (t.length > 0) {
-          const [q, r] = _divmod(t, [10]);
-          s.push(r[0] || 0);
-          t = q;
+          [t, r] = _divmod(t, [decimalBase]);
+          if (t.length > 0)
+            s.push((r[0] + decimalBase).toString().slice(1));
+          else
+            s.push(r[0].toString());
         }
         return s.reverse().join('');
       }
@@ -46,6 +51,13 @@ export const extend = (baseOps, baseLength = 0) => {
 
     get __typeName() { return 'LongInt'; }
   };
+
+
+  const negative = n => make(-n.sign, n.digits);
+  const abs      = n => sgn(n) ? make(1, n.digits) : n;
+  const sgn      = n => n.sign;
+  const _isZero  = n => n.sign == 0;
+  const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
 
 
   const make = (s, d) => {
@@ -104,13 +116,6 @@ export const extend = (baseOps, baseLength = 0) => {
     
     return make(sign, digits);
   };
-
-
-  const negative = n => make(-n.sign, n.digits);
-  const abs      = n => sgn(n) ? make(1, n.digits) : n;
-  const sgn      = n => n.sign;
-  const _isZero  = n => n.sign == 0;
-  const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
 
 
   const _cmp = (r, s, k=0) => {
