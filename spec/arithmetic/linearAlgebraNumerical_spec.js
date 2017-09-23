@@ -5,9 +5,14 @@ import * as spec from '../helpers';
 import * as types from '../../src/arithmetic/types';
 
 
+const areClose = (x, y, eps=Math.pow(2, -40)) =>
+  (x == 0 && Math.abs(y) < eps) || (y == 0 && Math.abs(x) < eps) ||
+  Math.abs(x - y) <= eps * Math.max(Math.abs(x), Math.abs(y));
+
+
 const matricesAreClose = (A, B, ops) => {
   const good = ops.eq(ops.shape(A), ops.shape(B)) &&
-    A.every((row, i) => row.every((x, j) => ops.areClose(x, B[i][j])));
+    A.every((row, i) => row.every((x, j) => areClose(x, B[i][j])));
   if (!good)
     console.log(`matricesAreClose(${JSON.stringify(A)}, ${JSON.stringify(B)})`);
   return good;
