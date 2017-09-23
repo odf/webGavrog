@@ -204,7 +204,7 @@ export const extend = (baseOps, baseLength = 0) => {
     else if (_isZero(b))
       return a;
     else if (a.sign != b.sign)
-      return minus(a, negative(b));
+      return minus(a, new LongInt(-b.sign, b.digits));
     else
       return make(a.sign, _plus(a.digits, b.digits));
   };
@@ -216,7 +216,7 @@ export const extend = (baseOps, baseLength = 0) => {
     else if (_isZero(b))
       return a;
     else if (a.sign != b.sign)
-      return plus(a, negative(b));
+      return plus(a, new LongInt(-b.sign, b.digits));
     else {
       const d = _cmp(a.digits, b.digits);
       if (d == 0)
