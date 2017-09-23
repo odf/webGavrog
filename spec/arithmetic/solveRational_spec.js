@@ -3,7 +3,9 @@ import * as jsc from 'jsverify';
 import * as spec from '../helpers';
 
 import solve from '../../src/arithmetic/solveRational';
-import { matrices } from '../../src/arithmetic/types';
+import { rationalMatrices } from '../../src/arithmetic/types';
+
+const matrices = rationalMatrices;
 
 
 JS.Test.describe('solveRational', function() {
