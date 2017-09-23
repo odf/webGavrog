@@ -15,7 +15,8 @@ export const extend = (baseOps, baseLength = 0) => {
   const BASE = Math.pow(2, BASELENGTH);
   const HALFBASE = Math.sqrt(BASE);
 
-  const decimalBase = Math.pow(10, Math.floor(Math.log10(BASE)));
+  const decimalBaseLength = Math.floor(Math.log10(BASE));
+  const decimalBase = Math.pow(10, decimalBaseLength);
 
   const powersOfTwo =
     new Array(BASELENGTH).fill(0).map((_, i) => Math.pow(2, i));
@@ -59,6 +60,8 @@ export const extend = (baseOps, baseLength = 0) => {
   const _isZero  = n => n.sign == 0;
   const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
 
+  const _last = a => a[a.length - 1];
+
 
   const make = (s, d) => {
     while (_last(d) == 0)
@@ -96,18 +99,19 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
 
-  const _last = a => a[a.length - 1];
-
-
   const parse = literal => {
     if (!literal.match(/^[+-]?\d{1,3}(_?\d{3})*$/))
       throw new Error("expected an integer literal, got "+literal);
 
     const s = literal.replace(/^[+-]/, '').replace(/_/g, '');
+    const offset = s.length % decimalBaseLength;
 
-    let digits = [];
-    for (let i = 0; i < s.length; ++i)
-      digits = _plus(_times(digits, [10]), [parseInt(s[i])]);
+    let digits = [parseInt(s.slice(0, offset))];
+
+    for (let i = offset; i < s.length; i += decimalBaseLength) {
+      const chunk = s.slice(i, i + decimalBaseLength);
+      digits = _plus(_times(digits, [decimalBase]), [parseInt(chunk)]);
+    }
 
     while (digits.length > 0 && _last(digits) == 0)
       digits.pop();
