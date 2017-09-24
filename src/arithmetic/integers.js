@@ -301,7 +301,7 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const _divmod = (r, s) => {
-    const k = BASELENGTH - 1 - Math.floor(Math.log(_last(s)) / Math.log(2));
+    const k = BASELENGTH - 1 - Math.floor(Math.log2(_last(s)));
     r = _shiftLeft(r, k);
     s = _shiftLeft(s, k);
 
@@ -315,8 +315,7 @@ export const extend = (baseOps, baseLength = 0) => {
     }
 
     for (let j = m - 1; r.length > 0 && j >= 0; --j) {
-      q[j] = Math.min(_quotient2by1(r[n + j], r[n + j - 1], s[n - 1]),
-                      BASE - 1);
+      q[j] = Math.min(_quotient2by1(r[n + j], r[n + j - 1], s[n - 1]), BASE-1);
 
       let t = _timesSingleDigit(s, q[j]);
       while (_last(t) == 0)
@@ -363,7 +362,7 @@ export const extend = (baseOps, baseLength = 0) => {
     if (b.sign == 0)
       throw new Error('division by zero');
     else if (a.sign == 0)
-      return a;
+      return 0;
 
     const s = a.sign * b.sign;
     const d = _cmp(a.digits, b.digits);
@@ -386,7 +385,7 @@ export const extend = (baseOps, baseLength = 0) => {
     if (b.sign == 0)
       throw new Error('division by zero');
     else if (a.sign == 0)
-      return a;
+      return [a, 0];
 
     const s = a.sign * b.sign;
     const d = _cmp(a.digits, b.digits);
