@@ -3,9 +3,6 @@ export const extend = (matrixOps, overField=true, eps=null) => {
 
 
   const extendBasis = (v, bs) => {
-    if (eps)
-      v = v.map(x => x == Number.MIN_VALUE ? 0 : x);
-
     if (bs && bs.length)
       bs = bs.slice();
 
@@ -29,9 +26,11 @@ export const extend = (matrixOps, overField=true, eps=null) => {
         }
         if (overField || ops.eq(0, ops.mod(v[colV], b[colV]))) {
           const w = ops.minus(v, ops.times(b, ops.div(v[colV], b[colV])));
-          if (eps)
-            v = w.map((x, k) => ops.le(ops.abs(x),
-                                       ops.abs(ops.times(v[k], eps))) ? 0 : x);
+          if (eps) {
+            const d = eps * v.length;
+            v = w.map((x, k) =>
+                      ops.le(ops.abs(x), ops.abs(ops.times(v[k], d))) ? 0 : x);
+          }
           else
             v = w;
         }
@@ -234,6 +233,7 @@ if (require.main == module) {
       const b = ops.times(A, v);
 
       console.log(`A = ${A}`);
+      console.log(`  reduced => ${ops.reducedBasis(A)}`);
       console.log(`v = ${v}`);
       console.log(`b := A * v = ${b}`);
 
