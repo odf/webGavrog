@@ -2,6 +2,10 @@ export const extend = (matrixOps, overField=true, eps=null) => {
   const ops = matrixOps;
 
 
+  const _cleanup = (v, limit) =>
+    v.map((x, k) => ops.le(ops.abs(x), ops.abs(limit[k])) ? 0 : x);
+
+
   const extendBasis = (v, bs) => {
     if (bs && bs.length)
       bs = bs.slice();
@@ -26,13 +30,7 @@ export const extend = (matrixOps, overField=true, eps=null) => {
         }
         if (overField || ops.eq(0, ops.mod(v[colV], b[colV]))) {
           const w = ops.minus(v, ops.times(b, ops.div(v[colV], b[colV])));
-          if (eps) {
-            const d = eps * v.length;
-            v = w.map((x, k) =>
-                      ops.le(ops.abs(x), ops.abs(ops.times(v[k], d))) ? 0 : x);
-          }
-          else
-            v = w;
+          v = eps ? _cleanup(w, ops.times(v, eps * v.length)) : w;
         }
         else {
           const [x, r, s, t, u] = ops.gcdex(b[colV], v[colV]);
@@ -47,18 +45,11 @@ export const extend = (matrixOps, overField=true, eps=null) => {
   };
 
 
-  const triangularBasis = rows => {
-    let bs = null;
-    for (const v of rows)
-      bs = extendBasis(v, bs);
-    return bs;
-  };
+  const triangularBasis = rows =>
+    rows.reduce((bs, v) => extendBasis(v, bs), null);
 
 
-  const rank = rows => {
-    const bs = triangularBasis(rows);
-    return bs == null ? 0 : bs.length;
-  };
+  const rank = rows => (triangularBasis(rows) || []).length;
 
 
   const determinant = rows => {
@@ -71,7 +62,7 @@ export const extend = (matrixOps, overField=true, eps=null) => {
     if (bs == null || bs.length < nrows)
       return 0;
     else
-      return bs.map((v, i) => v[i]).reduce((a, x) => ops.times(a, x));
+      return bs.reduce((a, v, i) => ops.times(a, v[i]), 1);
   };
 
 
@@ -97,8 +88,10 @@ export const extend = (matrixOps, overField=true, eps=null) => {
       const p = bs[row][col];
 
       for (let i = 0; i < row; ++i) {
-        if (overField || ops.ge(bs[i][col], p) || ops.lt(bs[i][col], 0))
-          bs[i] = ops.minus(bs[i], ops.times(bs[row], div(bs[i][col], p)));
+        if (overField || ops.ge(bs[i][col], p) || ops.lt(bs[i][col], 0)) {
+          const w = ops.minus(bs[i], ops.times(bs[row], div(bs[i][col], p)));
+          bs[i] = eps ? _cleanup(w, ops.times(bs[i], eps * bs[i].length)) : w;
+        }
       }
     }
 
