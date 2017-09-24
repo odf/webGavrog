@@ -174,6 +174,7 @@ export const extend = (scalarOps, scalarTypes) => {
     },
 
     transposed: {
+      Null: _ => null,
       Vector: v => v.map(x => [x]),
       Matrix: transposedMatrix
     },

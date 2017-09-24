@@ -146,15 +146,6 @@ export const extend = (matrixOps, overField=true, eps=null) => {
   };
 
 
-  const nullSpace = mat => {
-    const lns = leftNullSpace(ops.transposed(mat));
-    if (lns == null)
-      return null;
-    else
-      return ops.transposed(lns);
-  };
-
-
   const methods = {
     __context__: () => `linearAlgebra(${matrixOps.__context__()})`,
 
@@ -203,11 +194,7 @@ export const extend = (matrixOps, overField=true, eps=null) => {
 
     nullSpace: {
       Null: _ => null,
-      Matrix: nullSpace
-    },
-
-    transposed: {
-      Null: _ => null
+      Matrix: mat => ops.transposed(leftNullSpace(ops.transposed(mat)))
     }
   };
 
