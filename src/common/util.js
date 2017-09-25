@@ -1,6 +1,3 @@
-import * as I from 'immutable';
-
-
 const now = (() => {
   if (typeof performance != 'undefined' && performance.now)
     return performance.now.bind(performance);
@@ -14,7 +11,7 @@ const now = (() => {
 })();
 
 
-export function timer() {
+export const timer = () => {
   let _last = now();
 
   return () => {
@@ -25,7 +22,7 @@ export function timer() {
 };
 
 
-export function timers() {
+export const timers = () => {
   const _accumulated = {};
   const _start = {};
   const _count = {};
@@ -37,20 +34,14 @@ export function timers() {
         _count[key] = (_count[key] || 0) + 1
       }
     },
+
     stop(key) {
       if (_start[key] != null) {
         _accumulated[key] = (_accumulated[key] || 0.0) + now() - _start[key];
         _start[key] = null;
       }
     },
-    stopAll() {
-      for (const k in _start)
-        this.stop(k);
-    },
-    switchTo(key) {
-      this.stopAll();
-      this.start(key);
-    },
+
     current() {
       const t = now();
       for (const k in _start) {
