@@ -1,49 +1,29 @@
-const _last = a => a[a.length - 1];
+const skip = (spec, stack) => {
+  let s = stack;
+  while(s.length && s[0].length < 2)
+    s = s.slice(1);
 
-
-const current = (spec, stack) => _last(stack)[0];
-const result  = (spec, stack) => spec.extract(current(spec, stack));
+  if (s.length)
+    return backtracker(spec, [s[0].slice(1)].concat(s.slice(1)));
+};
 
 
 const step = (spec, stack) => {
-  const children = spec.children(current(spec, stack));
+  const children = spec.children(stack[0][0]);
 
-  if (children && children.length > 0)
-    return backtracker(spec, stack.concat([[
-      children[0], children.slice(1), 0 ]]));
+  if (children && children.length)
+    return backtracker(spec, [children].concat(stack));
   else
     return skip(spec, stack);
 };
 
 
-const skip = (spec, stack) => {
-  let s = stack;
-  while(s.length && _last(s)[1].length == 0)
-    s = s.slice(0, -1);
-
-  if (s.length > 0) {
-    const siblingsLeft = _last(s)[1];
-    const branchNr     = _last(s)[2];
-
-    return backtracker(spec, s.slice(0, -1).concat([[
-      siblingsLeft[0], siblingsLeft.slice(1), branchNr + 1
-    ]]));
-  }
-};
-
-
-export const backtracker = (spec, stack) => {
-  if (stack === undefined)
-    return backtracker(spec, [[spec.root, [], 0]]);
-  else {
-    return {
-      current: () => current(spec, stack),
-      result : () => result(spec, stack),
-      step   : () => step(spec, stack),
-      skip   : () => skip(spec, stack)
-    };
-  }
-};
+export const backtracker = (spec, stack=[[spec.root]]) => ({
+  current: () => stack[0][0],
+  result : () => spec.extract(stack[0][0]),
+  step   : () => step(spec, stack),
+  skip   : () => skip(spec, stack)
+});
 
 
 export function* results(gen, pred) {
@@ -61,22 +41,18 @@ export function* results(gen, pred) {
 };
 
 
-export const empty = () => {
-  return backtracker({
-    root    : null,
-    extract : () => {},
-    children: () => {}
-  });
-};
+export const empty = () => backtracker({
+  root    : null,
+  extract : () => {},
+  children: () => {}
+});
 
 
-export const singleton = (x) => {
-  return backtracker({
-    root    : x,
-    extract : x => x,
-    children: () => {}
-  });
-};
+export const singleton = x => backtracker({
+  root    : x,
+  extract : x => x,
+  children: () => {}
+});
 
 
 if (require.main == module) {
