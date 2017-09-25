@@ -85,10 +85,7 @@ const _spanningTree = function _spanningTree(basePoint, nrGens, action) {
 };
 
 
-export const stabilizer = (
-  basePoint, nrGens, relators, domain, action, timers = null
-) => {
-  timers && timers.start('preparations');
+export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
   const relsByGen = _relatorsByStartGen(relators);
   const tree = _spanningTree(basePoint, nrGens, action);
   const gens = I.Range(1, nrGens+1).flatMap(i => [i, -i]);
@@ -97,7 +94,6 @@ export const stabilizer = (
   const point2word = I.Map([[basePoint, id]]).asMutable();
   const edge2word = I.Map().asMutable();
 
-  timers && timers.switchTo('closing trivial relations');
   tree.forEach(function(edge) {
     _closeRelations(edge, id, edge2word, relsByGen, action);
     point2word.set(
@@ -108,7 +104,6 @@ export const stabilizer = (
   const generators = [];
   let lastGen = 0;
 
-  timers && timers.switchTo('constructing the generators');
   domain.forEach(function(px) {
     const wx = point2word.get(px);
     gens.forEach(function(g) {
@@ -123,7 +118,6 @@ export const stabilizer = (
     });
   });
 
-  timers && timers.switchTo('constructing the relators');
   const subrels = I.Set().asMutable();
   for (const p of domain) {
     for (const r of relators) {
@@ -133,7 +127,6 @@ export const stabilizer = (
     }
   }
 
-  timers && timers.stopAll();
   return { generators: I.List(generators), relators: subrels.sort(fw.compare) };
 };
 
