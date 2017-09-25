@@ -7,9 +7,7 @@ const p = 9999991;
 
 let _timers = null;
 
-export function useTimers(timers) {
-  _timers = timers;
-};
+export const useTimers = timers => { _timers = timers; };
 
 
 const modularInverse = (a, m) => {
@@ -179,7 +177,7 @@ const rationalReconstruction = (s, h) => {
 };
 
 
-export default function solve(A, b) {
+const solve = (A, b) => {
   _timers && _timers.start('solveRational');
 
   const C = modularMatrixInverse(A, p);
@@ -217,3 +215,6 @@ export default function solve(A, b) {
 
   return result;
 };
+
+
+export default solve;
