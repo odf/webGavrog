@@ -1,39 +1,40 @@
-import * as I from 'immutable';
+const _last = a => a[a.length - 1];
 
 
-const current = (spec, stack) => stack.last().first();
+const current = (spec, stack) => _last(stack)[0];
 const result  = (spec, stack) => spec.extract(current(spec, stack));
 
-const step = function step(spec, stack) {
-  const children = I.List(spec.children(current(spec, stack)));
 
-  if (children.size > 0)
-    return backtracker(spec, stack.push(I.List([
-      children.first(), children.rest(), 0
-    ])));
+const step = (spec, stack) => {
+  const children = spec.children(current(spec, stack));
+
+  if (children && children.length > 0)
+    return backtracker(spec, stack.concat([[
+      children[0], children.slice(1), 0 ]]));
   else
     return skip(spec, stack);
 };
 
-const skip = function skip(spec, stack) {
+
+const skip = (spec, stack) => {
   let s = stack;
-  while(s.last() && s.last().get(1).size == 0)
-    s = s.pop();
+  while(s.length && _last(s)[1].length == 0)
+    s = s.slice(0, -1);
 
-  if (s.size > 0) {
-    const siblingsLeft = s.last().get(1);
-    const branchNr     = s.last().get(2);
+  if (s.length > 0) {
+    const siblingsLeft = _last(s)[1];
+    const branchNr     = _last(s)[2];
 
-    return backtracker(spec, s.pop().push(I.List([
-      siblingsLeft.first(), siblingsLeft.rest(), branchNr + 1
-    ])));
+    return backtracker(spec, s.slice(0, -1).concat([[
+      siblingsLeft[0], siblingsLeft.slice(1), branchNr + 1
+    ]]));
   }
 };
 
 
-export function backtracker(spec, stack) {
+export const backtracker = (spec, stack) => {
   if (stack === undefined)
-    return backtracker(spec, I.List([I.List([spec.root, I.List([]), 0])]));
+    return backtracker(spec, [[spec.root, [], 0]]);
   else {
     return {
       current: () => current(spec, stack),
@@ -60,7 +61,7 @@ export function* results(gen, pred) {
 };
 
 
-export function empty() {
+export const empty = () => {
   return backtracker({
     root    : null,
     extract : () => {},
@@ -69,7 +70,7 @@ export function empty() {
 };
 
 
-export function singleton(x) {
+export const singleton = (x) => {
   return backtracker({
     root    : x,
     extract : x => x,
@@ -105,5 +106,9 @@ if (require.main == module) {
     }
   });
 
-  console.log(JSON.stringify(I.Seq(results(gen))));
+  const out = [];
+  for (const a of results(gen))
+    out.push(a);
+
+  console.log(JSON.stringify(out));
 }

@@ -316,7 +316,8 @@ export function tables(nrGens, relators, maxCosets) {
     extract(table) { return free(table).isEmpty() ? table : undefined },
     children(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
-        .filter(t => !t.isEmpty() && _isCanonical(t, gens));
+        .filter(t => !t.isEmpty() && _isCanonical(t, gens))
+        .toArray();
     }
   });
 };
@@ -394,13 +395,6 @@ if (require.main == module) {
   console.log(_expandGenerators(4));
   console.log(_expandRelators([[1,2,-3]]));
 
-  const tablesTimers = util.timers();
-  useTimers(tablesTimers);
-
   for (const x of generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8)))
     console.log(JSON.stringify(x));
-  console.log(`timing detail for coset table generation:`);
-  console.log(`${JSON.stringify(tablesTimers.current(), null, 2)}`);
-
-  console.log(`${timer()} msec total computation time`);
 }
