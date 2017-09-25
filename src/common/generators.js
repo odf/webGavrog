@@ -1,25 +1,19 @@
-const skip = (spec, stack) => {
-  const k = stack.findIndex(a => a.length >= 2);
-  if (k >= 0)
-    return backtracker(spec, [stack[k].slice(1)].concat(stack.slice(k + 1)));
-};
-
-
-const step = (spec, stack) => {
-  const children = spec.children(stack[0][0]);
-
-  if (children && children.length)
-    return backtracker(spec, [children].concat(stack));
-  else
-    return skip(spec, stack);
-};
-
-
 export const backtracker = (spec, stack=[[spec.root]]) => ({
-  current: () => stack[0][0],
-  result : () => spec.extract(stack[0][0]),
-  step   : () => step(spec, stack),
-  skip   : () => skip(spec, stack)
+  current() {
+    return stack[0][0];
+  },
+  result() {
+    return spec.extract(stack[0][0]);
+  },
+  skip() {
+    const k = stack.findIndex(a => a.length >= 2);
+    if (k >= 0)
+      return backtracker(spec, [stack[k].slice(1)].concat(stack.slice(k + 1)));
+  },
+  step() {
+    const todo = spec.children(stack[0][0]) || [];
+    return todo.length ? backtracker(spec, [todo].concat(stack)) : this.skip();
+  }
 });
 
 
