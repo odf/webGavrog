@@ -1,4 +1,4 @@
-export function create(source) {
+export const create = source => {
   let   lastId    = 0;
   const callbacks = {};
   const worker    = new Worker(source);
