@@ -1,10 +1,7 @@
 const skip = (spec, stack) => {
-  let s = stack;
-  while(s.length && s[0].length < 2)
-    s = s.slice(1);
-
-  if (s.length)
-    return backtracker(spec, [s[0].slice(1)].concat(s.slice(1)));
+  const k = stack.findIndex(a => a.length >= 2);
+  if (k >= 0)
+    return backtracker(spec, [stack[k].slice(1)].concat(stack.slice(k + 1)));
 };
 
 
