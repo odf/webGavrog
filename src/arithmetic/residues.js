@@ -21,7 +21,7 @@ const _div   = (a, b, m) => (_inverse(b, m) * a) % m;
 const _cmp   = (a, b) => (a > b) - (a < b);
 
 
-export function extend(basis, m) {
+export const extend = (basis, m) => {
   const methods = {
     __context__: () => `residues(${m})`,
 
