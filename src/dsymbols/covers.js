@@ -6,27 +6,26 @@ import * as cosets      from '../fpgroups/cosets';
 import { seq }          from '../common/lazyseq';
 
 
-export function coverForTable(ds, table, edgeToWord) {
-  return derived.cover(ds, table.size, (k, i, D) => (
-    (edgeToWord.getIn([D, i]) || []).reduce((k, g) => table.getIn([k, g]), k))
-  );
-};
+export const coverForTable = (ds, table, edgeToWord) =>
+  derived.cover(ds, table.size,
+                (k, i, D) => ((edgeToWord.getIn([D, i]) || [])
+                              .reduce((k, g) => table.getIn([k, g]), k)));
 
 
-export function subgroupCover(ds, subgroupGens) {
+export const subgroupCover = (ds, subgroupGens) => {
   const fun = fundamental.fundamentalGroup(ds);
-  const table = cosets.cosetTable(fun.nrGenerators, fun.relators, subgroupGens);
 
-  return coverForTable(ds, table, fun.edge2word);
+  return coverForTable(
+    ds,
+    cosets.cosetTable(fun.nrGenerators, fun.relators, subgroupGens),
+    fun.edge2word);
 };
 
 
-export function finiteUniversalCover(ds) {
-  return subgroupCover(ds, []);
-};
+export const finiteUniversalCover = ds => subgroupCover(ds, []);
 
 
-export function covers(ds, maxDeg) {
+export const covers = (ds, maxDeg) => {
   const fun = fundamental.fundamentalGroup(ds);
   const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
 
