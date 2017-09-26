@@ -3,7 +3,7 @@ import * as fundamental from './fundamental';
 import * as derived     from './derived';
 import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
-import * as I           from 'immutable';
+import { seq }          from '../common/lazyseq';
 
 
 export function coverForTable(ds, table, edgeToWord) {
@@ -30,7 +30,7 @@ export function covers(ds, maxDeg) {
   const fun = fundamental.fundamentalGroup(ds);
   const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
 
-  return I.Seq(generators.results(tableGenerator))
+  return seq(generators.results(tableGenerator))
     .map(table => coverForTable(ds, table, fun.edge2word));
 };
 

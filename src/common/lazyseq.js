@@ -22,6 +22,11 @@ class Seq {
     return this.toArray().join(' -> ');
   }
 
+  forEach(fn) {
+    for (const x of this)
+      fn(x)
+  }
+
   reverse() {
     let rev = nil;
     for (const x of this) {
@@ -42,7 +47,7 @@ class Seq {
 
   flatten() {
     return this.isNil ? nil :
-      this.first().appendLazy(() => this.rest().flatten())
+      seq(this.first()).appendLazy(() => this.rest().flatten())
   }
 
   map(fn) {
