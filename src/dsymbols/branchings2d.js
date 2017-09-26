@@ -1,4 +1,3 @@
-import * as I from 'immutable';
 import * as generators from '../common/generators';
 import * as DS from './delaney';
 import * as DS2D from './delaney2d';
@@ -12,12 +11,18 @@ const _loopless = (ds, i, j, D) => props.orbit(ds, [i, j], D)
   .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
-const _openOrbits = ds => I.Set(
-  I.List([[0,1], [1,2]])
-    .flatMap(([i,j]) => (
-      DS.orbitReps2(ds, i, j)
-        .filter(D => !ds.v(i, j, D))
-        .map(D => I.List([i, D, DS.r(ds, i, j, D), _loopless(ds, i, j, D)])))));
+const _openOrbits = ds => {
+  const result = [];
+
+  for (const [i, j] of [[0, 1], [1, 2]]) {
+    for (const D of DS.orbitReps2(ds, i, j)) {
+      if (!ds.v(i, j, D))
+        result.push([i, D, DS.r(ds, i, j, D), _loopless(ds, i, j, D)]);
+    }
+  }
+
+  return result;
+};
 
 
 const _compareMapped = (ds, m) => {
@@ -55,22 +60,20 @@ export const branchings = (
     root: [ds, DS2D.curvature(ds), _openOrbits(ds)],
 
     extract([ds, curv, unused]) {
-      if (unused.isEmpty() && _isCanonical(ds, maps))
+      if (unused.length == 0 && _isCanonical(ds, maps))
         return ds;
     },
 
     children([ds, curv, unused]) {
-      if (!unused.isEmpty()) {
-        const orb = unused.first();
-        const unusedRemaining = unused.remove(orb);
-        const [i, D, r, loopless] = orb.toArray();
+      if (unused.length) {
+        const [i, D, r, loopless] = unused[0]
 
         return spinsToTry
           .filter(v => isCandidate(curv, i, D, r, loopless, v))
           .map(v => [
             ds.withBranchings(i, [[D, v]]),
             _newCurvature(curv, loopless, v),
-            unusedRemaining
+            unused.slice(1)
           ]);
       }
     }
