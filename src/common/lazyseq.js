@@ -173,6 +173,15 @@ class Cons extends Seq {
 
 export const cons = (firstVal, restFn) => new Cons(firstVal, restFn);
 
+export const seq = iter => {
+  if (typeof iter.next == 'function') {
+    const s = iter.next();
+    return s.done ? nil : cons(s.value, () => seq(iter));
+  }
+  else
+    return seq(iter[Symbol.iterator]());
+};
+
 export const fromArray = (a, start=0) => 
   start < a.length ? cons(a[start], () => fromArray(a, start + 1)) : nil;
 
@@ -205,8 +214,12 @@ if (require.main == module) {
     console.log();
   };
 
+  const gen = function*() { yield 5; yield 3; yield 7; yield 1; };
+
   test('nil');
   test('fromArray([5, 3, 7, 1])');
+  test('seq([5, 3, 7, 1])');
+  test('seq(gen())');
   test('range(5, 15)');
   test('constant(4).take(8)');
   test('iterate(2, x => x*x).take(5)');
