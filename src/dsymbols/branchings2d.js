@@ -71,7 +71,7 @@ export const branchings = (
         return spinsToTry
           .filter(v => isCandidate(curv, i, D, r, loopless, v))
           .map(v => [
-            ds.withBranchings(i, [[D, v]]),
+            DS.withBranchings(ds, i, [[D, v]]),
             _newCurvature(curv, loopless, v),
             unused.slice(1)
           ]);
