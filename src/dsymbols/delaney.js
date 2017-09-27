@@ -1,7 +1,7 @@
 import * as I from 'immutable';
 
 
-const _assert = function(condition, message) {
+const _assert = (condition, message) => {
   if (!condition)
     throw new Error(message || 'assertion error');
 };
@@ -19,12 +19,12 @@ const _index    = (dsImpl, i, D) => i * dsImpl.size + D - 1;
 const _get      = (dsImpl, list, i, D) => list.get(_index(dsImpl, i, D));
 const _set      = (dsImpl, list, i, D, x) => list.set(_index(dsImpl, i, D), x);
 
-const _s = function _s(dsImpl, i, D) {
+const _s = (dsImpl, i, D) => {
   if (_isElement(dsImpl, D) && _isIndex(dsImpl, i))
     return _get(dsImpl, dsImpl.s, i, D);
 };
 
-const _v = function _v(dsImpl, i, j, D) {
+const _v = (dsImpl, i, j, D) => {
   if (_isElement(dsImpl, D) && _isIndex(dsImpl, i) && _isIndex(dsImpl, j)) {
     if (j == i+1)
       return _get(dsImpl, dsImpl.v, i, D);
@@ -45,8 +45,8 @@ const _merge = (a, b) => a.withMutations(list => {
 });
 
 
-const _precheckPairings = function _checkPairings(specs, size) {
-  specs.forEach(function(p) {
+const _precheckPairings = (specs, size) => {
+  specs.forEach(p => {
     _assert(p.size == 1 || p.size == 2,
             'expected pair or singleton, got '+p);
 
@@ -66,17 +66,17 @@ const _precheckPairings = function _checkPairings(specs, size) {
 };
 
 
-const _withPairings = function _withPairings(dsImpl, i, inputs) {
+const _withPairings = (dsImpl, i, inputs) => {
   const specs = I.List(inputs).map(I.List);
   _precheckPairings(specs, dsImpl.size);
 
   _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim,
           'expected an integer between 0 and '+dsImpl.dim+', got i');
 
-  const sNew = I.List().withMutations(function(list) {
+  const sNew = I.List().withMutations(list => {
     const dangling = [];
 
-    specs.forEach(function(p) {
+    specs.forEach(p => {
       const D = p.get(0);
       const E = p.size > 1 ? p.get(1) : p.get(0);
       const Di = _get(dsImpl, list, i, D);
@@ -94,7 +94,7 @@ const _withPairings = function _withPairings(dsImpl, i, inputs) {
       _set(dsImpl, list, i, E, D);
     });
 
-    dangling.forEach(function(D) {
+    dangling.forEach(D => {
       if (D && _get(dsImpl, list, i, D) === undefined)
         _set(dsImpl, list, i, D, 0);
     });
@@ -104,8 +104,8 @@ const _withPairings = function _withPairings(dsImpl, i, inputs) {
 };
 
 
-const _precheckBranchings = function _checkBranchings(specs, size) {
-  specs.forEach(function(p) {
+const _precheckBranchings = (specs, size) => {
+  specs.forEach(p => {
     _assert(p.size == 2, 'expected pair, got '+p);
 
     const D = p.get(0);
@@ -122,15 +122,15 @@ const _precheckBranchings = function _checkBranchings(specs, size) {
 };
 
 
-const _withBranchings = function _withBranchings(dsImpl, i, inputs) {
+const _withBranchings = (dsImpl, i, inputs) => {
   const specs = I.List(inputs).map(I.List);
   _precheckBranchings(specs, dsImpl.size);
 
   _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim-1,
           'expected integer between 0 and '+dsImpl.dim-1+', got i');
 
-  const vNew = I.List().withMutations(function(list) {
-    specs.forEach(function(p) {
+  const vNew = I.List().withMutations(list => {
+    specs.forEach(p => {
       const D = p.get(0);
       const v = p.get(1);
       const vD = _get(dsImpl, list, i, D);
@@ -153,7 +153,7 @@ const _withBranchings = function _withBranchings(dsImpl, i, inputs) {
 };
 
 
-const _fromData = function _fromData(dim, sData, vData) {
+const _fromData = (dim, sData, vData) => {
   const s = I.List(sData);
   const v = I.List(vData);
   const size = v.size / dim;
@@ -176,7 +176,7 @@ const _fromData = function _fromData(dim, sData, vData) {
 };
 
 
-export function build(dim, size, pairingsFn, branchingsFn) {
+export const build = (dim, size, pairingsFn, branchingsFn) => {
   const s = I.List().setSize((dim+1) * size);
   const v = I.List().setSize(dim * size);
   const ds0 = _fromData(dim, s, v);
@@ -193,7 +193,7 @@ export function build(dim, size, pairingsFn, branchingsFn) {
 };
 
 
-export function parse(str) {
+export const parse = str => {
   const _parseInts = str => str.trim().split(/\s+/).map(s => parseInt(s));
 
   const parts = str.trim().replace(/^</, '').replace(/>$/, '').split(/:/);
@@ -256,13 +256,13 @@ export function parse(str) {
 };
 
 
-export function orbitReps1(ds, i) {
+export const orbitReps1 = (ds, i) => {
   return ds.elements().filter(D => (ds.s(i, D) || D) >= D);
 };
 
 
-export function orbit2(ds, i, j, D) {
-  return I.Set().withMutations(function(set) {
+export const orbit2 = (ds, i, j, D) => {
+  return I.Set().withMutations(set => {
     let E = D;
     do {
       E = ds.s(i, E) || E;
@@ -275,11 +275,11 @@ export function orbit2(ds, i, j, D) {
 };
 
 
-export function orbitReps2(ds, i, j) {
+export const orbitReps2 = (ds, i, j) => {
   const seen = new Array(ds.elements().size + 1);
   const result = [];
 
-  ds.elements().forEach(function(D) {
+  ds.elements().forEach(D => {
     if (!seen[D]) {
       let E = D;
 
@@ -299,7 +299,7 @@ export function orbitReps2(ds, i, j) {
 };
 
 
-export function stringify(ds) {
+export const stringify = ds => {
   const sDefs = ds.indices()
     .map(i => (
       orbitReps1(ds, i)
@@ -322,7 +322,7 @@ export function stringify(ds) {
 };
 
 
-export function r(ds, i, j, D) {
+export const r = (ds, i, j, D) => {
   let k = 0;
   let E = D;
 
@@ -337,56 +337,26 @@ export function r(ds, i, j, D) {
 };
 
 
-export function m(ds, i, j, D) {
-  return ds.v(i, j, D) * r(ds, i, j, D);
-};
+export const isElement = (ds, D) => ds.isElement(D);
+export const elements = ds => ds.elements();
+export const size = ds => ds.elements().size;
 
-export function isElement(ds, D) {
-  return ds.isElement(D);
-};
+export const isIndex = (ds, i) => ds.isIndex(i);
+export const indices = ds => ds.indices();
+export const dim = ds => ds.indices().size - 1;
 
-export function elements(ds) {
-  return ds.elements();
-};
+export const s = (ds, i, D) => ds.s(i, D);
+export const v = (ds, i, j, D) => ds.v(i, j, D);
+export const m = (ds, i, j, D) => ds.v(i, j, D) * r(ds, i, j, D);
 
-export function isIndex(ds, i) {
-  return ds.isIndex(i);
-};
+export const withPairings = (ds, i, specs) => ds.withPairings(i, specs);
+export const withBranchings = (ds, i, specs) => ds.withBranchings(i, specs);
 
-export function indices(ds) {
-  return ds.indices();
-};
 
-export function s(ds, i, D) {
-  return ds.s(i, D);
-};
-
-export function v(ds, i, j, D) {
-  return ds.v(i, j, D);
-};
-
-export function dim(ds) {
-  return ds.indices().size - 1;
-};
-
-export function size(ds) {
-  return ds.elements().size;
-};
-
-export function withPairings(ds, i, pairings) {
-  return ds.withPairings(i, pairings);
-};
-
-export function withBranchings(ds, i, branchings) {
-  return ds.withBranchings(i, branchings);
-};
-
-export function parseSymbols(text) {
-  return text
-    .split('\n')
-    .filter(line => !line.match(/^\s*(#.*)?$/))
-    .map(parse);
-};
+export const parseSymbols = text => text
+  .split('\n')
+  .filter(line => !line.match(/^\s*(#.*)?$/))
+  .map(parse);
 
 
 if (require.main == module) {
