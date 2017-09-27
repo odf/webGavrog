@@ -32,9 +32,9 @@ const _loopless = function _loopless(ds, i, j, D) {
 };
 
 
-const _unbranched = ds => _map1dOrbits(ds.v, ds).every(v => v == 1);
+const _unbranched = ds => _map1dOrbits(ds.v.bind(ds), ds).every(v => v == 1);
 
-const _fullyBranched = ds => _map1dOrbits(ds.v, ds).every(v => !!v);
+const _fullyBranched = ds => _map1dOrbits(ds.v.bind(ds), ds).every(v => !!v);
 
 const _sum = numbers => numbers.reduce((a, x) => Q.plus(a, x), 0);
 
@@ -76,7 +76,7 @@ export function isSpherical(ds) {
     return false;
 
   const dso   = d.orientedCover(ds);
-  const cones = _map1dOrbits(dso.v, dso).filter(v => v > 1).toJS();
+  const cones = _map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1).toJS();
   const n     = cones.length;
 
   return n > 2 || (n == 2 && cones[0] == cones[1]);
@@ -121,7 +121,7 @@ export function toroidalCover(ds) {
   _assert(isEuclidean(ds), 'must be euclidean');
 
   const dso = d.orientedCover(ds);
-  const degree = _map1dOrbits(dso.v, dso).max();
+  const degree = _map1dOrbits(dso.v.bind(dso), dso).max();
 
   return cv.covers(dso, degree).filter(_unbranched).first();
 };

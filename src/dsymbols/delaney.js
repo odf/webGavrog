@@ -7,34 +7,33 @@ const _assert = (condition, message) => {
 };
 
 
-const _isElement = (dsImpl, D) =>
-  typeof D == 'number' && D >= 1 && D <= dsImpl.size;
+const _precheckPairings = (ds, specs) => {
+  specs.forEach(p => {
+    _assert(p.size == 1 || p.size == 2, `expected pair or singleton, got ${p}`);
 
-const _isIndex = (dsImpl, i) =>
-  typeof i == 'number' && i >= 0 && i <= dsImpl.dim;
+    const D = p.get(0);
+    const E = p.size > 1 ? p.get(1) : p.get(0);
 
-const _elements = dsImpl => I.Range(1, dsImpl.size+1);
-const _indices  = dsImpl => I.Range(0, dsImpl.dim+1);
-const _index    = (dsImpl, i, D) => i * dsImpl.size + D - 1;
-const _get      = (dsImpl, list, i, D) => list.get(_index(dsImpl, i, D));
-const _set      = (dsImpl, list, i, D, x) => list.set(_index(dsImpl, i, D), x);
-
-const _s = (dsImpl, i, D) => {
-  if (_isElement(dsImpl, D) && _isIndex(dsImpl, i))
-    return _get(dsImpl, dsImpl.s, i, D);
+    _assert(ds.isElement(D),
+            `expected an integer between 1 and ${ds.size}, got ${D}`);
+    _assert(ds.isElement(E),
+            `expected an integer between 1 and ${ds.size}, got ${E}`);
+  });
 };
 
-const _v = (dsImpl, i, j, D) => {
-  if (_isElement(dsImpl, D) && _isIndex(dsImpl, i) && _isIndex(dsImpl, j)) {
-    if (j == i+1)
-      return _get(dsImpl, dsImpl.v, i, D);
-    else if (j == i-1)
-      return _get(dsImpl, dsImpl.v, j, D);
-    else if (_get(dsImpl, dsImpl.s, i, D) == _get(dsImpl, dsImpl.s, j, D))
-      return 2;
-    else
-      return 1;
-  }
+
+const _precheckBranchings = (ds, specs) => {
+  specs.forEach(p => {
+    _assert(p.size == 2, `expected pair, got ${p}`);
+
+    const D = p.get(0);
+    const v = p.get(1);
+
+    _assert(ds.isElement(D),
+            `expected an integer between 1 and ${ds.size}, got ${D}`);
+    _assert(Number.isInteger(v) && v >= 0,
+            `expected a non-negative integer, got ${v}`);
+  });
 };
 
 
@@ -45,33 +44,77 @@ const _merge = (a, b) => a.withMutations(list => {
 });
 
 
-const _precheckPairings = (specs, size) => {
-  specs.forEach(p => {
-    _assert(p.size == 1 || p.size == 2,
-            'expected pair or singleton, got '+p);
+const _index = (ds, i, D) => i * ds.size + D - 1;
+const _get   = (ds, list, i, D) => list.get(_index(ds, i, D));
+const _set   = (ds, list, i, D, x) => list.set(_index(ds, i, D), x);
 
-    const D = p.get(0);
-    const E = p.size > 1 ? p.get(1) : p.get(0);
 
-    _assert(typeof D == 'number' && D % 1 == 0 && D > 0,
-            'expected a positive integer, got '+D);
-    _assert(D <= size,
-            'expected at most '+size+', got '+D);
+class DSymbol {
+  constructor(dim, sData, vData) {
+    this._s = I.List(sData);
+    this._v = I.List(vData);
+    this.dim = dim;
+    this.size = this._v.size / dim;
+  }
 
-    _assert(typeof E == 'number' && E % 1 == 0 && E >= 0,
-            'expected a non-negative integer, got '+E);
-    _assert(E <= size,
-            'expected at most '+size+', got '+E);
-  });
+  isElement(D) {
+    return Number.isInteger(D) && D >= 1 && D <= this.size;
+  }
+
+  elements() {
+    return I.Range(1, this.size + 1);
+  }
+
+  isIndex(i) {
+    return Number.isInteger(i) && i >= 0 && i <= this.dim;
+  }
+
+  indices() {
+    return I.Range(0, this.dim + 1);
+  }
+
+  s(i, D) {
+    if (this.isElement(D) && this.isIndex(i))
+      return _get(this, this._s, i, D);
+  }
+
+  v(i, j, D) {
+    if (this.isElement(D) && this.isIndex(i) && this.isIndex(j)) {
+      if (j == i+1)
+        return _get(this, this._v, i, D);
+      else if (j == i-1)
+        return _get(this, this._v, j, D);
+      else if (this.s(i, D) == this.s(j, D))
+        return 2;
+      else
+        return 1;
+    }
+  }
+
+  withPairings(i, inputs) {
+    return _withPairings(this, i, inputs);
+  }
+
+  withBranchings(i, inputs) {
+    return _withBranchings(this, i, inputs);
+  }
+
+  toString() {
+    return stringify(this);
+  }
+
+  toJSON() {
+    return stringify(this);
+  }
 };
 
 
-const _withPairings = (dsImpl, i, inputs) => {
+const _withPairings = (ds, i, inputs) => {
   const specs = I.List(inputs).map(I.List);
-  _precheckPairings(specs, dsImpl.size);
+  _precheckPairings(ds, specs);
 
-  _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim,
-          'expected an integer between 0 and '+dsImpl.dim+', got i');
+  _assert(ds.isIndex(i),
+          `expected an integer between 0 and ${ds.dim}, got ${i}`);
 
   const sNew = I.List().withMutations(list => {
     const dangling = [];
@@ -79,107 +122,66 @@ const _withPairings = (dsImpl, i, inputs) => {
     specs.forEach(p => {
       const D = p.get(0);
       const E = p.size > 1 ? p.get(1) : p.get(0);
-      const Di = _get(dsImpl, list, i, D);
-      const Ei = _get(dsImpl, list, i, E);
+      const Di = _get(ds, list, i, D);
+      const Ei = _get(ds, list, i, E);
 
       _assert(Di === undefined || Di == E,
               'conflicting partners '+Di+' and '+E+' for '+D);
       _assert(Ei === undefined || Ei == D,
               'conflicting partners '+Ei+' and '+D+' for '+E);
 
-      dangling.push(_get(dsImpl, dsImpl.s, i, D));
-      dangling.push(_get(dsImpl, dsImpl.s, i, E));
+      dangling.push(ds.s(i, D));
+      dangling.push(ds.s(i, E));
 
-      _set(dsImpl, list, i, D, E);
-      _set(dsImpl, list, i, E, D);
+      _set(ds, list, i, D, E);
+      _set(ds, list, i, E, D);
     });
 
     dangling.forEach(D => {
-      if (D && _get(dsImpl, list, i, D) === undefined)
-        _set(dsImpl, list, i, D, 0);
+      if (D && _get(ds, list, i, D) === undefined)
+        _set(ds, list, i, D, 0);
     });
   });
 
-  return _fromData(dsImpl.dim, _merge(dsImpl.s, sNew), dsImpl.v);
+  return new DSymbol(ds.dim, _merge(ds._s, sNew), ds._v);
 };
 
 
-const _precheckBranchings = (specs, size) => {
-  specs.forEach(p => {
-    _assert(p.size == 2, 'expected pair, got '+p);
-
-    const D = p.get(0);
-    const v = p.get(1);
-
-    _assert(typeof D == 'number' && D % 1 == 0 && D > 0,
-            'expected a positive integer, got '+D);
-    _assert(D <= size,
-            'expected at most '+size+', got '+D);
-
-    _assert(typeof v == 'number' && v % 1 == 0 && v >= 0,
-            'expected a non-negative integer, got '+v);
-  });
-};
-
-
-const _withBranchings = (dsImpl, i, inputs) => {
+const _withBranchings = (ds, i, inputs) => {
   const specs = I.List(inputs).map(I.List);
-  _precheckBranchings(specs, dsImpl.size);
+  _precheckBranchings(ds, specs);
 
-  _assert(typeof i == 'number' && i % 1 == 0 && i >= 0 && i <= dsImpl.dim-1,
-          'expected integer between 0 and '+dsImpl.dim-1+', got i');
+  _assert(ds.isIndex(i),
+          `expected an integer between 0 and ${ds.dim}, got ${i}`);
 
   const vNew = I.List().withMutations(list => {
     specs.forEach(p => {
       const D = p.get(0);
       const v = p.get(1);
-      const vD = _get(dsImpl, list, i, D);
+      const vD = _get(ds, list, i, D);
 
       _assert(vD === undefined || vD == v,
               'conflicting values '+vD+' and '+v+' for '+D);
 
       let E = D;
       do {
-        E = _get(dsImpl, dsImpl.s, i, E) || E;
-        _set(dsImpl, list, i, E, v);
-        E = _get(dsImpl, dsImpl.s, i+1, E) || E;
-        _set(dsImpl, list, i, E, v);
+        E = ds.s(i, E) || E;
+        _set(ds, list, i, E, v);
+        E = ds.s(i+1, E) || E;
+        _set(ds, list, i, E, v);
       }
       while (E != D);
     });
   });
 
-  return _fromData(dsImpl.dim, dsImpl.s, _merge(dsImpl.v, vNew));
-};
-
-
-const _fromData = (dim, sData, vData) => {
-  const s = I.List(sData);
-  const v = I.List(vData);
-  const size = v.size / dim;
-
-  const _ds = { s, v, dim, size };
-
-  return {
-    isElement     : d         => _isElement(_ds, D),
-    elements      : ()        => _elements(_ds),
-    isIndex       : i         => _isIndex(_ds, i),
-    indices       : ()        => _indices(_ds),
-    s             : (i, D)    => _s(_ds, i, D),
-    v             : (i, j, D) => _v(_ds, i, j, D),
-    withPairings  : (i, data) => _withPairings(_ds, i, data),
-    withBranchings: (i, data) => _withBranchings(_ds, i, data),
-
-    toString() { return stringify(this); },
-    toJSON() { return stringify(this); }
-  }
+  return new DSymbol(ds.dim, ds._s, _merge(ds._v, vNew));
 };
 
 
 export const build = (dim, size, pairingsFn, branchingsFn) => {
   const s = I.List().setSize((dim+1) * size);
   const v = I.List().setSize(dim * size);
-  const ds0 = _fromData(dim, s, v);
+  const ds0 = new DSymbol(dim, s, v);
 
   const ds1 = I.Range(0, dim+1).reduce(
     (tmp, i) => tmp.withPairings(i, pairingsFn(ds0, i)),
@@ -252,7 +254,7 @@ export const parse = str => {
     }
   }
 
-  return _fromData(dim, s, v);
+  return new DSymbol(dim, s, v);
 };
 
 
@@ -363,8 +365,8 @@ if (require.main == module) {
   const ds = parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>');
 
   console.log(stringify(ds));
-  console.log('' + ds);
+  console.log(`${ds}`);
 
-  console.log('' + ds.withPairings(1, [[2,1]]));
-  console.log('' + ds.withBranchings(0, [[2,3],[1,5]]));
+  console.log(`${ds.withPairings(1, [[2,1]])}`);
+  console.log(`${ds.withBranchings(0, [[2,3],[1,5]])}`);
 }
