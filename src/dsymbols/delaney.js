@@ -1,19 +1,6 @@
 import * as I from 'immutable';
 
 
-const _assert = (condition, message) => {
-  if (!condition)
-    throw new Error(message || 'assertion error');
-};
-
-
-const _merge = (a, b) => a.withMutations(list => {
-  b.forEach((x, i) => {
-    if (x !== undefined) list.set(i, x);
-  });
-});
-
-
 const _index = (ds, i, D) => i * ds.size + D - 1;
 const _get   = (ds, list, i, D) => list.get(_index(ds, i, D));
 const _set   = (ds, list, i, D, x) => list.set(_index(ds, i, D), x);
@@ -71,81 +58,60 @@ class DSymbol {
 };
 
 
-export const withPairings = (ds, i, inputs) => {
-  const specs = I.List(inputs).map(I.List);
+const _assert = (condition, message) => {
+  if (!condition)
+    throw new Error(message || 'assertion error');
+};
 
-  specs.forEach(p => {
-    _assert(p.size == 1 || p.size == 2, `expected pair or singleton, got ${p}`);
 
-    const D = p.get(0);
-    const E = p.size > 1 ? p.get(1) : p.get(0);
-
-    _assert(ds.isElement(D),
-            `expected an integer between 1 and ${ds.size}, got ${D}`);
-    _assert(ds.isElement(E),
-            `expected an integer between 1 and ${ds.size}, got ${E}`);
-  });
-
+export const withPairings = (ds, i, specs) => {
   _assert(ds.isIndex(i),
           `expected an integer between 0 and ${ds.dim}, got ${i}`);
 
-  const sNew = I.List().withMutations(list => {
+  const sNew = ds._s.withMutations(list => {
     const dangling = [];
 
-    specs.forEach(p => {
-      const D = p.get(0);
-      const E = p.size > 1 ? p.get(1) : p.get(0);
+    for (let [D, E] of specs) {
+      if (E == null)
+        E = D;
+
+      _assert(ds.isElement(D),
+              `expected an integer between 1 and ${ds.size}, got ${D}`);
+      _assert(ds.isElement(E),
+              `expected an integer between 1 and ${ds.size}, got ${E}`);
+
       const Di = _get(ds, list, i, D);
       const Ei = _get(ds, list, i, E);
-
-      _assert(Di === undefined || Di == E,
-              'conflicting partners '+Di+' and '+E+' for '+D);
-      _assert(Ei === undefined || Ei == D,
-              'conflicting partners '+Ei+' and '+D+' for '+E);
 
       dangling.push(ds.s(i, D));
       dangling.push(ds.s(i, E));
 
       _set(ds, list, i, D, E);
       _set(ds, list, i, E, D);
-    });
+    }
 
-    dangling.forEach(D => {
+    for (const D of dangling) {
       if (D && _get(ds, list, i, D) === undefined)
         _set(ds, list, i, D, 0);
-    });
+    }
   });
 
-  return new DSymbol(ds.dim, _merge(ds._s, sNew), ds._v);
+  return new DSymbol(ds.dim, sNew, ds._v);
 };
 
 
-export const withBranchings = (ds, i, inputs) => {
-  const specs = I.List(inputs).map(I.List);
-
-  specs.forEach(p => {
-    _assert(p.size == 2, `expected pair, got ${p}`);
-
-    const D = p.get(0);
-    const v = p.get(1);
-
-    _assert(ds.isElement(D),
-            `expected an integer between 1 and ${ds.size}, got ${D}`);
-    _assert(Number.isInteger(v) && v >= 0,
-            `expected a non-negative integer, got ${v}`);
-  });
-
+export const withBranchings = (ds, i, specs) => {
   _assert(ds.isIndex(i),
           `expected an integer between 0 and ${ds.dim}, got ${i}`);
 
-  const vNew = I.List().withMutations(list => {
-    specs.forEach(p => {
-      const D = p.get(0);
-      const v = p.get(1);
+  const vNew = ds._v.withMutations(list => {
+    specs.forEach(([D, v]) => {
       const vD = _get(ds, list, i, D);
 
-      _assert(vD === undefined || vD == v,
-              'conflicting values '+vD+' and '+v+' for '+D);
+      _assert(ds.isElement(D),
+              `expected an integer between 1 and ${ds.size}, got ${D}`);
+      _assert(Number.isInteger(v) && v >= 0,
+              `expected a non-negative integer, got ${v}`);
 
       let E = D;
       do {
@@ -158,7 +124,7 @@ export const withBranchings = (ds, i, inputs) => {
     });
   });
 
-  return new DSymbol(ds.dim, ds._s, _merge(ds._v, vNew));
+  return new DSymbol(ds.dim, ds._s, vNew);
 };
 
 
