@@ -1,9 +1,7 @@
 import * as I from 'immutable';
 
 
-const _index = (ds, i, D) => i * ds.size + D - 1;
-const _get   = (ds, list, i, D) => list.get(_index(ds, i, D));
-const _set   = (ds, list, i, D, x) => list.set(_index(ds, i, D), x);
+const _get = (ds, list, i, D) => list.get(i * ds.size + D - 1);
 
 
 class DSymbol {
@@ -65,64 +63,54 @@ const _assert = (condition, message) => {
 
 
 export const withPairings = (ds, i, specs) => {
-  _assert(ds.isIndex(i),
-          `expected an integer between 0 and ${ds.dim}, got ${i}`);
+  _assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
 
-  const sNew = ds._s.withMutations(list => {
-    const dangling = [];
+  const sNew = ds._s.toArray(); 
+  const get = D => sNew[i * ds.size + D - 1];
+  const set = (D, x) => { sNew[i * ds.size + D - 1] = x; };
 
-    for (let [D, E] of specs) {
-      if (E == null)
-        E = D;
+  const dangling = [];
 
-      _assert(ds.isElement(D),
-              `expected an integer between 1 and ${ds.size}, got ${D}`);
-      _assert(ds.isElement(E),
-              `expected an integer between 1 and ${ds.size}, got ${E}`);
+  for (const [D, E] of specs) {
+    _assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
+    _assert(ds.isElement(E), `need integer between 1 and ${ds.size}, got ${E}`);
 
-      const Di = _get(ds, list, i, D);
-      const Ei = _get(ds, list, i, E);
+    dangling.push(get(D));
+    dangling.push(get(E));
 
-      dangling.push(ds.s(i, D));
-      dangling.push(ds.s(i, E));
+    set(D, E);
+    set(E, D);
+  }
 
-      _set(ds, list, i, D, E);
-      _set(ds, list, i, E, D);
-    }
-
-    for (const D of dangling) {
-      if (D && _get(ds, list, i, D) === undefined)
-        _set(ds, list, i, D, 0);
-    }
-  });
+  for (const D of dangling) {
+    if (D && get(get(D)) != D)
+      set(D, 0);
+  }
 
   return new DSymbol(ds.dim, sNew, ds._v);
 };
 
 
 export const withBranchings = (ds, i, specs) => {
-  _assert(ds.isIndex(i),
-          `expected an integer between 0 and ${ds.dim}, got ${i}`);
+  _assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
 
-  const vNew = ds._v.withMutations(list => {
-    specs.forEach(([D, v]) => {
-      const vD = _get(ds, list, i, D);
+  const vNew = ds._v.toArray();
+  const set = (D, x) => { vNew[i * ds.size + D - 1] = x; };
 
-      _assert(ds.isElement(D),
-              `expected an integer between 1 and ${ds.size}, got ${D}`);
-      _assert(Number.isInteger(v) && v >= 0,
-              `expected a non-negative integer, got ${v}`);
+  for (const [D, v] of specs) {
+    _assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
+    _assert(Number.isInteger(v) && v >= 0,
+            `need non-negative integer, got ${v}`);
 
-      let E = D;
-      do {
-        E = ds.s(i, E) || E;
-        _set(ds, list, i, E, v);
-        E = ds.s(i+1, E) || E;
-        _set(ds, list, i, E, v);
-      }
-      while (E != D);
-    });
-  });
+    let E = D;
+    do {
+      E = ds.s(i, E) || E;
+      set(E, v);
+      E = ds.s(i+1, E) || E;
+      set(E, v);
+    }
+    while (E != D);
+  }
 
   return new DSymbol(ds.dim, ds._s, vNew);
 };
