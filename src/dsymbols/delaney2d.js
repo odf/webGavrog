@@ -18,16 +18,13 @@ const _map1dOrbits = function _map1dOrbits(fn, ds) {
   return ds.indices().flatMap(i => (
     ds.indices()
       .filter(j => j > i)
-      .flatMap(j => (
-        p.orbitReps(ds, [i, j], ds.elements())
-          .map(D => fn(i, j, D))
-      ))
+      .flatMap(j => DS.orbitReps2(ds, i, j).map(D => fn(i, j, D)))
   ));
 };
 
 
 const _loopless = function _loopless(ds, i, j, D) {
-  return p.orbit(ds, [i, j], D)
+  return DS.orbit2(ds, i, j, D)
     .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 };
 

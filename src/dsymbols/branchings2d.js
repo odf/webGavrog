@@ -7,7 +7,7 @@ import { rationals } from '../arithmetic/types';
 const Q = rationals;
 
 
-const _loopless = (ds, i, j, D) => props.orbit(ds, [i, j], D)
+const _loopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
   .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 

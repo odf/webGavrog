@@ -194,9 +194,8 @@ export const parse = str => {
 };
 
 
-export const orbitReps1 = (ds, i) => {
-  return ds.elements().filter(D => (ds.s(i, D) || D) >= D);
-};
+export const orbitReps1 = (ds, i) =>
+  ds.elements().filter(D => (ds.s(i, D) || D) >= D);
 
 
 export const orbit2 = (ds, i, j, D) => {
