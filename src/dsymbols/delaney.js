@@ -1,15 +1,15 @@
 import * as I from 'immutable';
 
 
-const _get = (ds, list, i, D) => list.get(i * ds.size + D - 1);
+const _get = (ds, list, i, D) => list[i * ds.size + D - 1];
 
 
 class DSymbol {
   constructor(dim, sData, vData) {
-    this._s = I.List(sData);
-    this._v = I.List(vData);
+    this._s = sData.slice();
+    this._v = vData.slice();
     this.dim = dim;
-    this.size = this._v.size / dim;
+    this.size = this._v.length / dim;
   }
 
   isElement(D) {
@@ -65,7 +65,7 @@ const _assert = (condition, message) => {
 export const withPairings = (ds, i, specs) => {
   _assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
 
-  const sNew = ds._s.toArray(); 
+  const sNew = ds._s.slice();
   const get = D => sNew[i * ds.size + D - 1];
   const set = (D, x) => { sNew[i * ds.size + D - 1] = x; };
 
@@ -94,7 +94,7 @@ export const withPairings = (ds, i, specs) => {
 export const withBranchings = (ds, i, specs) => {
   _assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
 
-  const vNew = ds._v.toArray();
+  const vNew = ds._v.slice();
   const set = (D, x) => { vNew[i * ds.size + D - 1] = x; };
 
   for (const [D, v] of specs) {
@@ -117,8 +117,8 @@ export const withBranchings = (ds, i, specs) => {
 
 
 export const build = (dim, size, pairingsFn, branchingsFn) => {
-  const s = I.List().setSize((dim+1) * size);
-  const v = I.List().setSize(dim * size);
+  const s = new Array((dim+1) * size);
+  const v = new Array(dim * size);
   const ds0 = new DSymbol(dim, s, v);
 
   const ds1 = I.Range(0, dim+1).reduce(
