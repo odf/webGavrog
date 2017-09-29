@@ -152,7 +152,7 @@ export const symmetries = (ds, cov, pos) => {
   const phi = properties.morphism(cov, 1, ds, 1);
   const E0 = phi.get(D0);
 
-  return I.List(cov.elements()).toJS()
+  return cov.elements()
     .filter(D => phi.get(D) == E0)
     .map(D => opsF.times(A, chamberBasis(pos, D)));
 };

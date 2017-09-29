@@ -15,8 +15,8 @@ const _assert = function _assert(condition, message) {
 
 
 const _map1dOrbits = function _map1dOrbits(fn, ds) {
-  return ds.indices().flatMap(i => (
-    ds.indices()
+  return I.List(ds.indices()).flatMap(i => (
+    I.List(ds.indices())
       .filter(j => j > i)
       .flatMap(j => DS.orbitReps2(ds, i, j).map(D => fn(i, j, D)))
   ));

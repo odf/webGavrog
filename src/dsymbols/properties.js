@@ -36,7 +36,7 @@ const _fold = function _fold(partition, a, b, matchP, spreadFn) {
 
 const _typeMap = function _typeMap(ds) {
   const base = I.Map(ds.elements().map(D => [D, I.List()]));
-  const idcs = DS.indices(ds);
+  const idcs = I.List(DS.indices(ds));
 
   return base.withMutations(function(map) {
     idcs.zip(idcs.rest()).forEach(function(p) {
@@ -55,25 +55,25 @@ const _typeMap = function _typeMap(ds) {
 
 
 export function isMinimal(ds) {
-  const D0 = ds.elements().first();
+  const D0 = ds.elements()[0];
   const tm = _typeMap(ds);
 
   const match  = (D, E) => tm.get(D).equals(tm.get(E));
   const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
 
-  return ds.elements().rest()
+  return ds.elements().slice(1)
     .every(D => _fold(Partition(), D0, D, match, spread) === undefined);
 };
 
 
 export function typePartition(ds) {
-  const D0 = ds.elements().first();
+  const D0 = ds.elements()[0];
   const tm = _typeMap(ds);
 
   const match  = (D, E) => tm.get(D).equals(tm.get(E));
   const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
 
-  return ds.elements().rest().reduce(
+  return ds.elements().slice(1).reduce(
     (p, D) => _fold(p, D0, D, match, spread) || p,
     Partition()
   );
@@ -268,7 +268,7 @@ const _protocol = function _protocol(ds, idcs, gen) {
 
 
 export function invariant(ds) {
-  const idcs = DS.indices(ds).toJS();
+  const idcs = DS.indices(ds);
   let best = null;
 
   ds.elements().forEach(function(D0) {
@@ -298,7 +298,7 @@ export function invariant(ds) {
 
 export const morphism = (src, srcD0, img, imgD0) => {
   _assert(isConnected(src), 'source symbol must be connected');
-  _assert(src.indices().equals(img.indices()), 'index lists must be equal');
+  _assert(src.dim == img.dim, 'dimensions must be equal');
 
   const idcs = src.indices();
   const tSrc = _typeMap(src);
@@ -330,8 +330,8 @@ export const morphism = (src, srcD0, img, imgD0) => {
 export const automorphisms = ds => {
   _assert(isConnected(ds), 'symbol must be connected');
   const elms = ds.elements();
-  if (elms.size) {
-    const D = elms.first();
+  if (elms.length) {
+    const D = elms[0];
     return elms.map(E => morphism(ds, D, ds, E)).filter(m => m != null);
   }
 };

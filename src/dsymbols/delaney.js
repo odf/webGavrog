@@ -1,5 +1,5 @@
-import * as I from 'immutable';
-
+const _range = (from, to) =>
+  new Array(to - from).fill(0).map((_, i) => i + from);
 
 const _get = (ds, list, i, D) => list[i * ds.size + D - 1];
 
@@ -25,7 +25,7 @@ class DSymbol {
   }
 
   elements() {
-    return I.Range(1, this.size + 1);
+    return _range(1, this.size + 1);
   }
 
   isIndex(i) {
@@ -33,7 +33,7 @@ class DSymbol {
   }
 
   indices() {
-    return I.Range(0, this.dim + 1);
+    return _range(0, this.dim + 1);
   }
 
   s(i, D) {

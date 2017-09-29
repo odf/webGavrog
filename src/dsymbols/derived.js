@@ -21,7 +21,7 @@ export function cover(ds, nrSheets, fn) {
 
   return DS.build(
     d, n * nrSheets,
-    (_, i) => ds.elements().flatMap(D => (
+    (_, i) => I.List(ds.elements()).flatMap(D => (
       I.Range(0, nrSheets).map(k => [k * n + D, fn(k, i, D) * n + ds.s(i, D)]))),
     (tmp, i) => DS.orbitReps2(tmp, i, i+1).map(D => (
       [D, (DS.m(ds, i, i+1, (D - 1) % n + 1) || 0) / DS.r(tmp, i, i+1, D)])));
@@ -78,7 +78,7 @@ export function barycentricSubdivision(ds, splitDim) {
     return DS.build(
       DS.dim(ds), n * m,
       function(_, i) {
-        return ds.elements().flatMap(function(D) {
+        return I.List(ds.elements()).flatMap(function(D) {
           return I.Range(0, m).map(function(j) {
             const p = perms.get(j);
             if (i < splitDim) {
@@ -93,7 +93,7 @@ export function barycentricSubdivision(ds, splitDim) {
         });
       },
       function(tmp, i) {
-        return ds.elements().flatMap(function(D) {
+        return I.List(ds.elements()).flatMap(function(D) {
           return I.Range(0, m).map(function(j) {
             const p = perms.get(j);
             let v;
