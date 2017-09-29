@@ -64,6 +64,9 @@ class DSymbol {
 };
 
 
+const _dsymbol = (dim, s, v) => Object.freeze(new DSymbol(dim, s, v));
+
+
 const _assert = (condition, message) => {
   if (!condition)
     throw new Error(message || 'assertion error');
@@ -95,7 +98,7 @@ export const withPairings = (ds, i, specs) => {
       set(D, 0);
   }
 
-  return new DSymbol(ds.dim, sNew, ds._v);
+  return _dsymbol(ds.dim, sNew, ds._v);
 };
 
 
@@ -120,12 +123,12 @@ export const withBranchings = (ds, i, specs) => {
     while (E != D);
   }
 
-  return new DSymbol(ds.dim, ds._s, vNew);
+  return _dsymbol(ds.dim, ds._s, vNew);
 };
 
 
 export const build = (dim, size, pairingsFn, branchingsFn) => {
-  let ds = new DSymbol(dim, new Array((dim+1) * size), new Array(dim * size));
+  let ds = _dsymbol(dim, new Array((dim+1) * size), new Array(dim * size));
 
   const ds0 = ds;
   for (let i = 0; i <= dim; ++i)
@@ -198,7 +201,7 @@ export const parse = str => {
     }
   }
 
-  return new DSymbol(dim, s, v);
+  return _dsymbol(dim, s, v);
 };
 
 
