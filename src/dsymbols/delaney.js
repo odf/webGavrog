@@ -199,18 +199,22 @@ export const orbitReps1 = (ds, i) =>
 
 
 export const orbit2 = (ds, i, j, D) => {
+  const seen = new Array(ds.elements().size + 1);
   const result = [];
 
   let E = D;
   do {
-    E = ds.s(i, E) || E;
-    result.push(E);
-    E = ds.s(j, E) || E;
-    result.push(E);
+    for (const k of [i, j]) {
+      E = ds.s(k, E) || E;
+      if (!seen[E]) {
+        result.push(E);
+        seen[E] = true;
+      }
+    }
   }
   while (E != D);
 
-  return I.Set(result);
+  return result;
 };
 
 
