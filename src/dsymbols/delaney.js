@@ -249,7 +249,7 @@ export const orbitReps2 = (ds, i, j) => {
     }
   });
 
-  return I.List(result);
+  return result;
 };
 
 
