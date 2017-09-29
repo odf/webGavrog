@@ -8,8 +8,16 @@ class DSymbol {
   constructor(dim, sData, vData) {
     this._s = sData.slice();
     this._v = vData.slice();
-    this.dim = dim;
-    this.size = this._v.length / dim;
+    this._dim = dim;
+    this._size = this._v.length / dim;
+  }
+
+  get dim() {
+    return this._dim;
+  }
+
+  get size() {
+    return this._size;
   }
 
   isElement(D) {
@@ -199,7 +207,7 @@ export const orbitReps1 = (ds, i) =>
 
 
 export const orbit2 = (ds, i, j, D) => {
-  const seen = new Array(ds.elements().size + 1);
+  const seen = new Array(ds.size + 1);
   const result = [];
 
   let E = D;
@@ -219,7 +227,7 @@ export const orbit2 = (ds, i, j, D) => {
 
 
 export const orbitReps2 = (ds, i, j) => {
-  const seen = new Array(ds.elements().size + 1);
+  const seen = new Array(ds.size + 1);
   const result = [];
 
   ds.elements().forEach(D => {
@@ -258,8 +266,8 @@ export const stringify = ds => {
         .join(' ')))
     .join(',');
 
-  const n = ds.elements().size;
-  const d = ds.indices().size - 1;
+  const n = ds.size;
+  const d = ds.dim;
 
   return '<1.1:'+n+(d == 2 ? '' : ' '+d)+':'+sDefs+':'+mDefs+'>';
 };
@@ -282,11 +290,11 @@ export const r = (ds, i, j, D) => {
 
 export const isElement = (ds, D) => ds.isElement(D);
 export const elements = ds => ds.elements();
-export const size = ds => ds.elements().size;
+export const size = ds => ds.size;
 
 export const isIndex = (ds, i) => ds.isIndex(i);
 export const indices = ds => ds.indices();
-export const dim = ds => ds.indices().size - 1;
+export const dim = ds => ds.dim;
 
 export const s = (ds, i, D) => ds.s(i, D);
 export const v = (ds, i, j, D) => ds.v(i, j, D);
