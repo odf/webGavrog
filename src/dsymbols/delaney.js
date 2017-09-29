@@ -117,19 +117,17 @@ export const withBranchings = (ds, i, specs) => {
 
 
 export const build = (dim, size, pairingsFn, branchingsFn) => {
-  const s = new Array((dim+1) * size);
-  const v = new Array(dim * size);
-  const ds0 = new DSymbol(dim, s, v);
+  let ds = new DSymbol(dim, new Array((dim+1) * size), new Array(dim * size));
 
-  const ds1 = I.Range(0, dim+1).reduce(
-    (tmp, i) => withPairings(tmp, i, pairingsFn(ds0, i)),
-    ds0);
+  const ds0 = ds;
+  for (let i = 0; i <= dim; ++i)
+    ds = withPairings(ds, i, pairingsFn(ds0, i));
 
-  const ds2 = I.Range(0, dim).reduce(
-    (tmp, i) => withBranchings(tmp, i, branchingsFn(ds1, i)),
-    ds1);
+  const ds1 = ds;
+  for (let i = 0; i < dim; i++)
+    ds = withBranchings(ds, i, branchingsFn(ds1, i));
 
-  return ds2;
+  return ds;
 };
 
 
@@ -202,16 +200,18 @@ export const orbitReps1 = (ds, i) => {
 
 
 export const orbit2 = (ds, i, j, D) => {
-  return I.Set().withMutations(set => {
-    let E = D;
-    do {
-      E = ds.s(i, E) || E;
-      set.add(E);
-      E = ds.s(j, E) || E;
-      set.add(E);
-    }
-    while (E != D);
-  });
+  const result = [];
+
+  let E = D;
+  do {
+    E = ds.s(i, E) || E;
+    result.push(E);
+    E = ds.s(j, E) || E;
+    result.push(E);
+  }
+  while (E != D);
+
+  return I.Set(result);
 };
 
 
