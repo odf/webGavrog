@@ -28,7 +28,7 @@ const _fullyInvolutive = ct =>
 const _traceWord = (ct, k, word) => word.reduce((k, g) => ct.getIn([k, g]), k);
 
 
-const _degree = function _degree(ct, word) {
+const _degree = (ct, word) => {
   let k = 0;
   for (let i = 1; ; ++i) {
     k = _traceWord(ct, k, word);
@@ -42,7 +42,7 @@ const _flattensAll = (ct, cones) =>
   cones.every(([wd, d]) => _degree(ct, wd) == d);
 
 
-export function pseudoToroidalCover(ds) {
+export const pseudoToroidalCover = ds => {
   ds = derived.orientedCover(ds);
 
   const fg = fundamental.fundamentalGroup(ds);
@@ -87,7 +87,7 @@ export function pseudoToroidalCover(ds) {
     .flatMap(type => categorized.get(type) || [])
     .map(([type, table]) => table);
 
-  const good = candidates.find(function(table) {
+  const good = candidates.find(table => {
     const domain = table.keySeq();
     const stab = stabilizer(
       domain.first(),
@@ -108,7 +108,7 @@ export function pseudoToroidalCover(ds) {
 if (require.main == module) {
   const delaney = require('./delaney');
 
-  const test = function test(ds) {
+  const test = ds => {
     console.log('ds = '+ds);
     const cov = pseudoToroidalCover(ds);
     console.log('cov = '+cov);
