@@ -23,14 +23,14 @@ const _coreType = {
 const _fullyInvolutive = ct =>
   ct.every(row => row.keySeq().every(g => row.get(g) == row.get(-g)));
 
-
-const _traceWord = (ct, k, word) => word.reduce((k, g) => ct.getIn([k, g]), k);
+const cType = ct =>
+  ct.size == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.size];
 
 
 const _degree = (ct, word) => {
   let k = 0;
   for (let i = 1; ; ++i) {
-    k = _traceWord(ct, k, word);
+    k = word.reduce((k, g) => ct.getIn([k, g]), k);
     if (k == 0)
       return i;
   }
@@ -51,11 +51,7 @@ export const pseudoToroidalCover = ds => {
     throw new Error('violates the crystallographic restriction');
 
   const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
-  const subgroups = seq(generators.results(tableGen));
-  const base = subgroups.map(cosets.coreTable);
-
-  const cType = ct =>
-    ct.size == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.size];
+  const base = seq(generators.results(tableGen)).map(cosets.coreTable);
 
   const cores = base
     .filter(ct => _flattensAll(ct, cones))
@@ -106,9 +102,8 @@ if (require.main == module) {
   const delaney = require('./delaney');
 
   const test = ds => {
-    console.log('ds = '+ds);
-    const cov = pseudoToroidalCover(ds);
-    console.log('cov = '+cov);
+    console.log(`ds = ${ds}`);
+    console.log(`cov = ${pseudoToroidalCover(ds)}`);
     console.log();
   }
 
