@@ -4,7 +4,7 @@ import * as properties from './properties';
 import * as comb       from '../common/combinatorics';
 
 
-export function dual(ds) {
+export const dual = ds => {
   const d = DS.dim(ds);
   const n = DS.size(ds);
 
@@ -15,7 +15,7 @@ export function dual(ds) {
 };
 
 
-export function cover(ds, nrSheets, fn) {
+export const cover = (ds, nrSheets, fn) => {
   const d = DS.dim(ds);
   const n = DS.size(ds);
 
@@ -28,7 +28,7 @@ export function cover(ds, nrSheets, fn) {
 };
 
 
-export function orientedCover(ds) {
+export const orientedCover = ds => {
   if (properties.isOriented(ds))
     return ds;
   else {
@@ -39,7 +39,7 @@ export function orientedCover(ds) {
 };
 
 
-export function minimal(ds) {
+export const minimal = ds => {
   if (properties.isMinimal(ds))
     return ds;
   else {
@@ -65,7 +65,7 @@ export function minimal(ds) {
 const _applyPerm = (p, i) => (i < 0 || i >= p.size) ? i : p.get(i) - 1;
 
 
-export function barycentricSubdivision(ds, splitDim) {
+export const barycentricSubdivision = (ds, splitDim) => {
   if (splitDim == 0)
     return ds;
   else {
@@ -77,9 +77,9 @@ export function barycentricSubdivision(ds, splitDim) {
 
     return DS.build(
       DS.dim(ds), n * m,
-      function(_, i) {
-        return I.List(ds.elements()).flatMap(function(D) {
-          return I.Range(0, m).map(function(j) {
+      (_, i) => {
+        return I.List(ds.elements()).flatMap(D => {
+          return I.Range(0, m).map(j => {
             const p = perms.get(j);
             if (i < splitDim) {
               const pi = p.set(i, p.get(i+1)).set(i+1, p.get(i));
@@ -92,9 +92,9 @@ export function barycentricSubdivision(ds, splitDim) {
           });
         });
       },
-      function(tmp, i) {
-        return I.List(ds.elements()).flatMap(function(D) {
-          return I.Range(0, m).map(function(j) {
+      (tmp, i) => {
+        return I.List(ds.elements()).flatMap(D => {
+          return I.Range(0, m).map(j => {
             const p = perms.get(j);
             let v;
             if (i < splitDim - 1)
@@ -110,7 +110,7 @@ export function barycentricSubdivision(ds, splitDim) {
 };
 
 
-export function canonical(ds) {
+export const canonical = ds => {
   const inv = properties.invariant(ds);
   const dim = DS.dim(ds);
   const size = DS.size(ds);
@@ -138,7 +138,7 @@ export function canonical(ds) {
 
 
 if (require.main == module) {
-  const test = function(ds) {
+  const test = ds => {
     console.log('ds = '+ds);
     console.log();
 
@@ -148,7 +148,7 @@ if (require.main == module) {
     console.log('    canonical     : ' + canonical(ds));
     console.log();
 
-    ds.indices().forEach(function(i) {
+    ds.indices().forEach(i => {
       console.log('    '+i+'-subdivision : '+barycentricSubdivision(ds, i));
     });
     console.log();
