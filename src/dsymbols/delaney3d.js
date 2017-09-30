@@ -1,7 +1,6 @@
-import * as I from 'immutable';
-
 import { stabilizer } from '../fpgroups/stabilizer';
 import { abelianInvariants } from '../fpgroups/invariants';
+import { seq } from '../common/lazyseq';
 
 import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
@@ -52,7 +51,7 @@ export const pseudoToroidalCover = ds => {
     throw new Error('violates the crystallographic restriction');
 
   const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
-  const subgroups = I.List(generators.results(tableGen));
+  const subgroups = seq(generators.results(tableGen));
   const base = subgroups.map(cosets.coreTable);
 
   const cType = ct =>
@@ -70,38 +69,36 @@ export const pseudoToroidalCover = ds => {
   const z3a = base.filter(ct => ct.size == 3 &&  _flattensAll(ct, cones3));
   const s3a = base.filter(ct => ct.size == 6 &&  _flattensAll(ct, cones3));
 
-  const z6 = z3a.flatMap(a => (
-    z2a
-      .map(b => cosets.intersectionTable(a, b))
+  const z6 = z3a.flatMap(
+    a => z2a.map(b => cosets.intersectionTable(a, b))
       .filter(ct => ct.size == 6 && _flattensAll(ct, cones))
-      .map(ct => ['z6', ct])));
+      .map(ct => ['z6', ct]));
 
-  const d6 = s3a.flatMap(a => (
-    z2b
-      .map(b => cosets.intersectionTable(a, b))
+  const d6 = s3a.flatMap(
+    a => z2b.map(b => cosets.intersectionTable(a, b))
       .filter(ct => ct.size == 12 && _flattensAll(ct, cones))
-      .map(ct => ['d6', ct])));
+      .map(ct => ['d6', ct]));
 
-  const categorized = I.Seq().concat(cores, z6, d6).groupBy(a => a[0]);
-  const candidates = I.List('z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' '))
-    .flatMap(type => categorized.get(type) || [])
-    .map(([type, table]) => table);
+  const candidates = cores.append(z6).append(d6);
 
-  const good = candidates.find(table => {
-    const domain = table.keySeq();
-    const stab = stabilizer(
-      domain.first(),
-      fg.nrGenerators,
-      fg.relators,
-      domain,
-      (...args) => table.getIn(args)
-    );
-    const inv = abelianInvariants(stab.generators.size, stab.relators);
-    return inv.length == 3 && inv.every(x => x == 0);
-  });
+  for (const type of 'z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' ')) {
+    for (const [t, table] of candidates) {
+      if (t == type) {
+        const domain = table.keySeq();
+        const stab = stabilizer(
+          domain.first(),
+          fg.nrGenerators,
+          fg.relators,
+          domain,
+          (...args) => table.getIn(args)
+        );
+        const inv = abelianInvariants(stab.generators.size, stab.relators);
 
-  if (good)
-    return covers.coverForTable(ds, good, fg.edge2word);
+        if (inv.length == 3 && inv.every(x => x == 0))
+          return covers.coverForTable(ds, table, fg.edge2word);
+      }
+    }
+  }
 };
 
 
