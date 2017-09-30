@@ -1,8 +1,6 @@
 const _range = (from, to) =>
   new Array(to - from).fill(0).map((_, i) => i + from);
 
-const _get = (ds, list, i, D) => list[i * ds.size + D - 1];
-
 
 class DSymbol {
   constructor(dim, sData, vData) {
@@ -38,15 +36,15 @@ class DSymbol {
 
   s(i, D) {
     if (this.isElement(D) && this.isIndex(i))
-      return _get(this, this._s, i, D);
+      return this._s[i * this.size + D - 1];
   }
 
   v(i, j, D) {
     if (this.isElement(D) && this.isIndex(i) && this.isIndex(j)) {
       if (j == i+1)
-        return _get(this, this._v, i, D);
+        return this._v[i * this.size + D - 1];
       else if (j == i-1)
-        return _get(this, this._v, j, D);
+        return this._v[j * this.size + D - 1];
       else if (this.s(i, D) == this.s(j, D))
         return 2;
       else
@@ -73,8 +71,19 @@ const _assert = (condition, message) => {
 };
 
 
-export const withPairings = (ds, i, specs) => {
+const _assertIndex = (ds, i) =>
   _assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
+
+const _assertElement = (ds, D) =>
+  _assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
+
+
+const _assertNonNegative = v =>
+  _assert(Number.isInteger(v) && v >= 0, `need non-negative integer, got ${v}`);
+
+
+export const withPairings = (ds, i, specs) => {
+  _assertIndex(ds, i);
 
   const sNew = ds._s.slice();
   const get = D => sNew[i * ds.size + D - 1];
@@ -83,8 +92,8 @@ export const withPairings = (ds, i, specs) => {
   const dangling = [];
 
   for (const [D, E] of specs) {
-    _assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
-    _assert(ds.isElement(E), `need integer between 1 and ${ds.size}, got ${E}`);
+    _assertElement(ds, D);
+    _assertElement(ds, E);
 
     dangling.push(get(D));
     dangling.push(get(E));
@@ -103,15 +112,14 @@ export const withPairings = (ds, i, specs) => {
 
 
 export const withBranchings = (ds, i, specs) => {
-  _assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
+  _assertIndex(ds, i);
 
   const vNew = ds._v.slice();
   const set = (D, x) => { vNew[i * ds.size + D - 1] = x; };
 
   for (const [D, v] of specs) {
-    _assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
-    _assert(Number.isInteger(v) && v >= 0,
-            `need non-negative integer, got ${v}`);
+    _assertElement(ds, D);
+    _assertNonNegative(v);
 
     let E = D;
     do {
@@ -233,7 +241,7 @@ export const orbitReps2 = (ds, i, j) => {
   const seen = new Array(ds.size + 1);
   const result = [];
 
-  ds.elements().forEach(D => {
+  for (const D of ds.elements()) {
     if (!seen[D]) {
       let E = D;
 
@@ -247,7 +255,7 @@ export const orbitReps2 = (ds, i, j) => {
 
       result.push(D);
     }
-  });
+  }
 
   return result;
 };
@@ -255,24 +263,18 @@ export const orbitReps2 = (ds, i, j) => {
 
 export const stringify = ds => {
   const sDefs = ds.indices()
-    .map(i => (
-      orbitReps1(ds, i)
-        .map(D => ds.s(i, D) || 0)
-        .join(' ')))
+    .map(i => orbitReps1(ds, i).map(D => ds.s(i, D) || 0).join(' '))
     .join(',');
 
   const mDefs = ds.indices()
     .filter(i => ds.isIndex(i+1))
-    .map(i => (
-      orbitReps2(ds, i, i+1)
-        .map(D => m(ds, i, i+1, D) || 0)
-        .join(' ')))
+    .map(i => orbitReps2(ds, i, i+1).map(D => m(ds, i, i+1, D) || 0).join(' '))
     .join(',');
 
   const n = ds.size;
   const d = ds.dim;
 
-  return '<1.1:'+n+(d == 2 ? '' : ' '+d)+':'+sDefs+':'+mDefs+'>';
+  return `<1.1:${n}${d == 2 ? '' : ` ${d}`}:${sDefs}:${mDefs}>`;
 };
 
 
