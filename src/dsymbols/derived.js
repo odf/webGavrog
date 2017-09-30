@@ -1,7 +1,6 @@
-import * as DS         from './delaney';
-import * as properties from './properties';
-import * as comb       from '../common/combinatorics';
-import * as seq        from '../common/lazyseq';
+import * as DS    from './delaney';
+import * as props from './properties';
+import * as comb  from '../common/combinatorics';
 
 
 export const dual = ds => {
@@ -19,25 +18,33 @@ export const cover = (ds, nrSheets, fn) => {
   const d = DS.dim(ds);
   const n = DS.size(ds);
 
-  const pairingsFn = (_, i) => seq.seq(ds.elements())
-    .flatMap(D => seq.range(0, nrSheets).map(
-      k => [k * n + D, fn(k, i, D) * n + ds.s(i, D)]));
+  const pairingsFn = (_, i) => {
+    const out = [];
+    for (const D of ds.elements()) {
+      for (let k = 0; k < nrSheets; ++k)
+        out.push([k * n + D, fn(k, i, D) * n + ds.s(i, D)]);
+    }
+    return out;
+  };
 
-  const branchingsFn = (tmp, i) => DS.orbitReps2(tmp, i, i+1)
-    .map(D => [
-      D,
-      (DS.m(ds, i, i+1, (D - 1) % n + 1) || 0) / DS.r(tmp, i, i+1, D)
-    ]);
+  const branchingsFn = (tmp, i) => {
+    const out = [];
+    for (const D of DS.orbitReps2(tmp, i, i+1)) {
+      const m = DS.m(ds, i, i+1, (D - 1) % n + 1) || 0;
+      out.push([D, m / DS.r(tmp, i, i+1, D)]);
+    }
+    return out;
+  };
 
   return DS.build(d, n * nrSheets, pairingsFn, branchingsFn);
 };
 
 
 export const orientedCover = ds => {
-  if (properties.isOriented(ds))
+  if (props.isOriented(ds))
     return ds;
   else {
-    const ori = properties.partialOrientation(ds);
+    const ori = props.partialOrientation(ds);
     return cover(
       ds, 2, (k, i, D) => ori.get(D) == ori.get(ds.s(i, D)) ? 1 - k : k);
   }
@@ -45,10 +52,10 @@ export const orientedCover = ds => {
 
 
 export const minimal = ds => {
-  if (properties.isMinimal(ds))
+  if (props.isMinimal(ds))
     return ds;
   else {
-    const p = properties.typePartition(ds);
+    const p = props.typePartition(ds);
     const reps = ds.elements().filter(D => p.get(D) == D);
 
     return DS.build(
@@ -68,44 +75,53 @@ export const barycentricSubdivision = (ds, splitDim) => {
   if (splitDim == 0)
     return ds;
   else {
-    const perms = seq.seq(comb.permutations(splitDim + 1)).toArray();
     const n = DS.size(ds);
 
-    return DS.build(
-      DS.dim(ds), n * perms.length,
-      (_, i) => seq.seq(ds.elements())
-        .flatMap(D => perms.map((p, j) => {
-          if (i < splitDim) {
-            const q = p.slice();
-            [q[i], q[i+1]] = [p[i+1], p[i]];
-            const k = perms.findIndex(p => p <= q && p >= q);
-            return [n * j + D, n * k + D];
-          } else {
-            const E = ds.s(_apply(p, i), D);
-            return [n * j + D, n * j + E];
-          }
-        })),
-      (tmp, i) => seq.seq(ds.elements())
-        .flatMap(D => perms.map((p, j) => {
-          const v =
-            (i < splitDim - 1) ? 1 : ds.v(_apply(p, i), _apply(p, i+1), D);
-          return [n * j + D, v];
-        }))
-    );
+    const perms = [];
+    const elements = [];
+    let j = 0;
+    for (const p of comb.permutations(splitDim + 1)) {
+      perms.push(p);
+      for (const D of ds.elements())
+        elements.push([p, j, D]);
+      ++j;
+    }
+
+    const sigma = (p, i) => {
+      const q = p.slice();
+      [q[i], q[i+1]] = [p[i+1], p[i]];
+      return perms.findIndex(p => p <= q && p >= q);
+    };
+
+    const pairingsFn = (_, i) => elements.map(([p, j, D]) => [
+      n * j + D,
+      (i < splitDim) ?
+        n * sigma(p, i) + D :
+        n * j + ds.s(_apply(p, i), D)
+    ]);
+
+    const branchingsFn = (tmp, i) => elements.map(([p, j, D]) => [
+      n * j + D,
+      (i < splitDim - 1) ?
+        1 :
+        ds.v(_apply(p, i), _apply(p, i+1), D)
+    ]);
+
+    return DS.build(DS.dim(ds), n * perms.length, pairingsFn, branchingsFn);
   }
 };
 
 
 export const canonical = ds => {
-  const inv = properties.invariant(ds);
+  const inv = props.invariant(ds);
   const dim = DS.dim(ds);
   const size = DS.size(ds);
 
   const ops = new Array(dim + 1).fill(0).map(_ => []);
   const brs = new Array(dim).fill(0).map(_ => []);
 
-  let n   = 0;
-  let k   = -1;
+  let n = 0;
+  let k = -1;
 
   while (k+1 < inv.size) {
     const i = inv.get(++k);
@@ -126,18 +142,17 @@ export const canonical = ds => {
 
 if (require.main == module) {
   const test = ds => {
-    console.log('ds = '+ds);
+    console.log(`ds = ${ds}`);
     console.log();
 
-    console.log('    dual          : '+dual(ds));
-    console.log('    minimal image : ' + minimal(ds));
-    console.log('    oriented cover: ' + orientedCover(ds));
-    console.log('    canonical     : ' + canonical(ds));
+    console.log(`    dual          : ${dual(ds)}`);
+    console.log(`    minimal image : ${minimal(ds)}`);
+    console.log(`    oriented cover: ${orientedCover(ds)}`);
+    console.log(`    canonical     : ${canonical(ds)}`);
     console.log();
 
-    ds.indices().forEach(i => {
-      console.log('    '+i+'-subdivision : '+barycentricSubdivision(ds, i));
-    });
+    for (const i of ds.indices())
+      console.log(`    ${i}-subdivision : ${barycentricSubdivision(ds, i)}`);
     console.log();
     console.log();
   };
