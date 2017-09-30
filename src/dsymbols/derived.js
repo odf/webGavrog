@@ -1,7 +1,7 @@
-import * as I          from 'immutable';
 import * as DS         from './delaney';
 import * as properties from './properties';
 import * as comb       from '../common/combinatorics';
+import * as seq        from '../common/lazyseq';
 
 
 export const dual = ds => {
@@ -19,12 +19,17 @@ export const cover = (ds, nrSheets, fn) => {
   const d = DS.dim(ds);
   const n = DS.size(ds);
 
-  return DS.build(
-    d, n * nrSheets,
-    (_, i) => I.List(ds.elements()).flatMap(D => (
-      I.Range(0, nrSheets).map(k => [k * n + D, fn(k, i, D) * n + ds.s(i, D)]))),
-    (tmp, i) => DS.orbitReps2(tmp, i, i+1).map(D => (
-      [D, (DS.m(ds, i, i+1, (D - 1) % n + 1) || 0) / DS.r(tmp, i, i+1, D)])));
+  const pairingsFn = (_, i) => seq.seq(ds.elements())
+    .flatMap(D => seq.range(0, nrSheets).map(
+      k => [k * n + D, fn(k, i, D) * n + ds.s(i, D)]));
+
+  const branchingsFn = (tmp, i) => DS.orbitReps2(tmp, i, i+1)
+    .map(D => [
+      D,
+      (DS.m(ds, i, i+1, (D - 1) % n + 1) || 0) / DS.r(tmp, i, i+1, D)
+    ]);
+
+  return DS.build(d, n * nrSheets, pairingsFn, branchingsFn);
 };
 
 
@@ -44,67 +49,48 @@ export const minimal = ds => {
     return ds;
   else {
     const p = properties.typePartition(ds);
-    const reps = I.List(p.classes(ds.elements()))
-      .map(cl => cl.find(D => p.get(D) == D));
-    const emap = I.Map(reps.zip(I.Range(1)));
-    const imap = I.Map(I.Range().zip(ds.indices()));
+    const reps = ds.elements().filter(D => p.get(D) == D);
 
     return DS.build(
-      DS.dim(ds), reps.count(),
-      (_, i) => reps.map(D => (
-        [emap.get(D), emap.get(p.get(ds.s(imap.get(i), D)))])),
-      (tmp, i) => reps.map(D => (
-        [emap.get(D), 
-         (DS.m(ds, imap.get(i), imap.get(i+1), D) || 0)
-         /
-         DS.r(tmp, i, i+1, emap.get(D))])));
+      DS.dim(ds), reps.length,
+      (_, i) => reps.map(
+        (D, k) => [k+1, reps.indexOf(p.get(ds.s(i, D))) + 1]),
+      (tmp, i) => reps.map(
+        (D, k) => [k+1, (DS.m(ds, i, i+1, D) || 0) / DS.r(tmp, i, i+1, k+1)]));
   }
 };
 
 
-const _applyPerm = (p, i) => (i < 0 || i >= p.size) ? i : p.get(i) - 1;
+const _apply = (p, i) => (i < 0 || i >= p.length) ? i : p[i] - 1;
 
 
 export const barycentricSubdivision = (ds, splitDim) => {
   if (splitDim == 0)
     return ds;
   else {
-    const dim = DS.dim(ds);
-    const perms = I.List(comb.permutations(splitDim + 1)).map(I.List);
-    const pidx = I.Map(I.List(perms).zip(I.Range()));
+    const perms = seq.seq(comb.permutations(splitDim + 1)).toArray();
     const n = DS.size(ds);
-    const m = perms.size;
 
     return DS.build(
-      DS.dim(ds), n * m,
-      (_, i) => {
-        return I.List(ds.elements()).flatMap(D => {
-          return I.Range(0, m).map(j => {
-            const p = perms.get(j);
-            if (i < splitDim) {
-              const pi = p.set(i, p.get(i+1)).set(i+1, p.get(i));
-              const k = pidx.get(pi);
-              return [n * j + D, n * k + D];
-            } else {
-              const E = ds.s(_applyPerm(p, i), D);
-              return [n * j + D, n * j + E];
-            }
-          });
-        });
-      },
-      (tmp, i) => {
-        return I.List(ds.elements()).flatMap(D => {
-          return I.Range(0, m).map(j => {
-            const p = perms.get(j);
-            let v;
-            if (i < splitDim - 1)
-              v = 1;
-            else
-              v = ds.v(_applyPerm(p, i), _applyPerm(p, i+1), D);
-            return [n * j + D, v];
-          });
-        });
-      }
+      DS.dim(ds), n * perms.length,
+      (_, i) => seq.seq(ds.elements())
+        .flatMap(D => perms.map((p, j) => {
+          if (i < splitDim) {
+            const q = p.slice();
+            [q[i], q[i+1]] = [p[i+1], p[i]];
+            const k = perms.findIndex(p => p <= q && p >= q);
+            return [n * j + D, n * k + D];
+          } else {
+            const E = ds.s(_apply(p, i), D);
+            return [n * j + D, n * j + E];
+          }
+        })),
+      (tmp, i) => seq.seq(ds.elements())
+        .flatMap(D => perms.map((p, j) => {
+          const v =
+            (i < splitDim - 1) ? 1 : ds.v(_apply(p, i), _apply(p, i+1), D);
+          return [n * j + D, v];
+        }))
     );
   }
 };
@@ -115,8 +101,9 @@ export const canonical = ds => {
   const dim = DS.dim(ds);
   const size = DS.size(ds);
 
-  let ops = I.Map(I.Range(0, dim+1).zip(I.Repeat(I.List())));
-  let brs = I.Map(I.Range(0, dim).zip(I.Repeat(I.List())));
+  const ops = new Array(dim + 1).fill(0).map(_ => []);
+  const brs = new Array(dim).fill(0).map(_ => []);
+
   let n   = 0;
   let k   = -1;
 
@@ -126,14 +113,14 @@ export const canonical = ds => {
     const E = (i >= 0) ? inv.get(++k) : D;
     if (E > n) {
       for (let j = 0; j < dim; ++j)
-        brs = brs.set(j, brs.get(j).push([E, inv.get(++k)]));
+        brs[j].push([E, inv.get(++k)]);
       n = E;
     }
     if (i >= 0)
-      ops = ops.set(i, ops.get(i).push([D, E]));
+      ops[i].push([D, E]);
   }
 
-  return DS.build(dim, size, (_, i) => ops.get(i), (_, i) => brs.get(i));
+  return DS.build(dim, size, (_, i) => ops[i], (_, i) => brs[i]);
 };
 
 
