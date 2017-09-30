@@ -7,13 +7,13 @@ import { rationals } from '../arithmetic/types';
 const Q = rationals;
 
 
-const _assert = function _assert(condition, message) {
+const _assert = (condition, message) => {
   if (!condition)
     throw new Error(message || 'assertion error');
 };
 
 
-const _map1dOrbits = function _map1dOrbits(fn, ds) {
+const _map1dOrbits = (fn, ds) => {
   const result = [];
 
   for (const i of ds.indices()) {
@@ -29,10 +29,8 @@ const _map1dOrbits = function _map1dOrbits(fn, ds) {
 };
 
 
-const _loopless = function _loopless(ds, i, j, D) {
-  return DS.orbit2(ds, i, j, D)
-    .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
-};
+const _loopless = (ds, i, j, D) =>
+  DS.orbit2(ds, i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
 const _unbranched = ds => _map1dOrbits(ds.v.bind(ds), ds).every(v => v == 1);
@@ -42,39 +40,28 @@ const _fullyBranched = ds => _map1dOrbits(ds.v.bind(ds), ds).every(v => !!v);
 const _sum = numbers => numbers.reduce((a, x) => Q.plus(a, x), 0);
 
 
-export function curvature(ds, vDefault = 1) {
+export const curvature = (ds, vDefault = 1) => {
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
   _assert(p.isConnected(ds), 'must be connected');
 
-  const orbitContribution = (i, j, D) => (
-    Q.div((_loopless(ds, i, j, D) ? 2 : 1), (ds.v(i, j, D) || vDefault))
-  );
+  const orbitContribution = (i, j, D) =>
+    Q.div((_loopless(ds, i, j, D) ? 2 : 1), (ds.v(i, j, D) || vDefault));
 
   return Q.minus(_sum(_map1dOrbits(orbitContribution, ds)), DS.size(ds));
 };
 
 
-export function isProtoEuclidean(ds) {
-  return Q.cmp(curvature(ds), 0) >= 0;
-};
+export const isProtoEuclidean = ds => Q.cmp(curvature(ds), 0) >= 0;
+export const isProtoSpherical = ds => Q.cmp(curvature(ds), 0) > 0;
+
+export const isEuclidean = ds =>
+  _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) == 0);
+
+export const isHyperbolic = ds =>
+  _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) < 0);
 
 
-export function isProtoSpherical(ds) {
-  return Q.cmp(curvature(ds), 0) > 0;
-};
-
-
-export function isEuclidean(ds) {
-  return _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) == 0);
-};
-
-
-export function isHyperbolic(ds) {
-  return _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) < 0);
-};
-
-
-export function isSpherical(ds) {
+export const isSpherical = ds => {
   if (!_fullyBranched(ds) || (Q.cmp(curvature(ds), 0) <= 0))
     return false;
 
@@ -86,7 +73,7 @@ export function isSpherical(ds) {
 };
 
 
-export function orbifoldSymbol(ds) {
+export const orbifoldSymbol = ds => {
   const orbitType = (i, j, D) => (
     { v: ds.v(i, j, D), c: _loopless(ds, i, j, D) }
   );
@@ -122,7 +109,7 @@ export function orbifoldSymbol(ds) {
 };
 
 
-export function toroidalCover(ds) {
+export const toroidalCover = ds => {
   _assert(isEuclidean(ds), 'must be euclidean');
 
   const dso = d.orientedCover(ds);
@@ -133,7 +120,7 @@ export function toroidalCover(ds) {
 
 
 if (require.main == module) {
-  const test = function test(ds) {
+  const test = ds => {
     console.log('ds = '+ds);
     console.log('  curvature is '+curvature(ds));
     console.log('  symbol is '+(isProtoEuclidean(ds) ? '' : 'not ')
