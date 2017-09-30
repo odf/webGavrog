@@ -1,4 +1,3 @@
-import * as I  from 'immutable';
 import * as DS from './delaney';
 import * as p  from './properties';
 import * as d  from './derived';
@@ -15,11 +14,18 @@ const _assert = function _assert(condition, message) {
 
 
 const _map1dOrbits = function _map1dOrbits(fn, ds) {
-  return I.List(ds.indices()).flatMap(i => (
-    I.List(ds.indices())
-      .filter(j => j > i)
-      .flatMap(j => DS.orbitReps2(ds, i, j).map(D => fn(i, j, D)))
-  ));
+  const result = [];
+
+  for (const i of ds.indices()) {
+    for (const j of ds.indices()) {
+      if (j > i) {
+        for (const D of DS.orbitReps2(ds, i, j))
+          result.push(fn(i, j, D));
+      }
+    }
+  }
+
+  return result;
 };
 
 
@@ -73,7 +79,7 @@ export function isSpherical(ds) {
     return false;
 
   const dso   = d.orientedCover(ds);
-  const cones = _map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1).toJS();
+  const cones = _map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1);
   const n     = cones.length;
 
   return n > 2 || (n == 2 && cones[0] == cones[1]);
@@ -100,11 +106,13 @@ export function orbifoldSymbol(ds) {
     (p.isLoopless(ds) ? 0 : 1)
   ])));
 
-  const sym = I.List().concat(
+  const repeat = (c, n) => new Array(n).fill(c);
+
+  const sym = [].concat(
     cones.sort().reverse(),
     (p.isLoopless(ds) ? [] : ['*']),
     corners.sort().reverse(),
-    (p.isWeaklyOriented(ds) ? I.Repeat('o', cost/2) : I.Repeat('x', cost))
+    (p.isWeaklyOriented(ds) ? repeat('o', cost/2) : repeat('x', cost))
   ).join('');
 
   if (sym == 'x' || sym == '*' || sym == '')
@@ -118,7 +126,7 @@ export function toroidalCover(ds) {
   _assert(isEuclidean(ds), 'must be euclidean');
 
   const dso = d.orientedCover(ds);
-  const degree = _map1dOrbits(dso.v.bind(dso), dso).max();
+  const degree = Math.max.apply(null, _map1dOrbits(dso.v.bind(dso), dso));
 
   return cv.covers(dso, degree).filter(_unbranched).first();
 };
