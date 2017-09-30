@@ -51,47 +51,40 @@ export const curvature = (ds, vDefault = 1) => {
 };
 
 
-export const isProtoEuclidean = ds => Q.cmp(curvature(ds), 0) >= 0;
-export const isProtoSpherical = ds => Q.cmp(curvature(ds), 0) > 0;
-
-export const isEuclidean = ds =>
-  _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) == 0);
-
-export const isHyperbolic = ds =>
-  _fullyBranched(ds) && (Q.cmp(curvature(ds), 0) < 0);
+export const isProtoEuclidean = ds => Q.ge(curvature(ds), 0);
+export const isProtoSpherical = ds => Q.gt(curvature(ds), 0);
+export const isEuclidean = ds => _fullyBranched(ds) && Q.eq(curvature(ds), 0);
+export const isHyperbolic = ds => _fullyBranched(ds) && Q.lt(curvature(ds), 0);
 
 
 export const isSpherical = ds => {
-  if (!_fullyBranched(ds) || (Q.cmp(curvature(ds), 0) <= 0))
+  if (_fullyBranched(ds) && isProtoSpherical(ds)) {
+    const dso = d.orientedCover(ds);
+    const cones = _map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1);
+
+    return cones.length > 2 || (cones.length == 2 && cones[0] == cones[1]);
+  }
+  else
     return false;
-
-  const dso   = d.orientedCover(ds);
-  const cones = _map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1);
-  const n     = cones.length;
-
-  return n > 2 || (n == 2 && cones[0] == cones[1]);
 };
 
 
 export const orbifoldSymbol = ds => {
-  const orbitType = (i, j, D) => (
-    { v: ds.v(i, j, D), c: _loopless(ds, i, j, D) }
-  );
+  const orbitType = (i, j, D) => [ds.v(i, j, D), _loopless(ds, i, j, D)];
 
-  const v        = o => o.v;
-  const isCone   = o => o.v > 1 && o.c;
-  const isCorner = o => o.v > 1 && !o.c;
+  const types = _map1dOrbits(orbitType, ds);
+  const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
+  const corners = types.filter(([v, c]) => v > 1 && !c).map(([v]) => v);
 
-  const types   = _map1dOrbits(orbitType, ds);
-  const cones   = types.filter(isCone).map(v);
-  const corners = types.filter(isCorner).map(v);
-
-  const cost = Q.toJS(Q.minus(2, _sum([
+  const cost = Q.minus(2, _sum([
     Q.div(curvature(ds), 2),
     _sum(cones.map(v => Q.div(v - 1, v))),
     _sum(corners.map(v => Q.div(v - 1, 2*v))),
     (p.isLoopless(ds) ? 0 : 1)
-  ])));
+  ]));
+
+  _assert(Q.typeOf(cost) == 'Integer',
+          'residual cost should be an integer, got ${cost}');
 
   const repeat = (c, n) => new Array(n).fill(c);
 
@@ -121,28 +114,28 @@ export const toroidalCover = ds => {
 
 if (require.main == module) {
   const test = ds => {
-    console.log('ds = '+ds);
-    console.log('  curvature is '+curvature(ds));
-    console.log('  symbol is '+(isProtoEuclidean(ds) ? '' : 'not ')
-                +'proto-euclidean');
-    console.log('  symbol is '+(isProtoSpherical(ds) ? '' : 'not ')
-                +'proto-spherical');
-    console.log('  symbol is '+(isEuclidean(ds) ? '' : 'not ')+'euclidean');
-    console.log('  symbol is '+(isHyperbolic(ds) ? '' : 'not ')+'hyperbolic');
-    console.log('  symbol is '+(isSpherical(ds) ? '' : 'not ')+'spherical');
-    console.log('  orbifold symbol = '+orbifoldSymbol(ds));
+    const is = fn => fn(ds) ? 'is' : 'is not';
+
+    console.log(`ds = ${ds}`);
+    console.log(`  curvature is ${curvature(ds)}`);
+    console.log(`  symbol ${is(isProtoEuclidean)} proto-euclidean`);
+    console.log(`  symbol ${is(isProtoSpherical)} proto-spherical`);
+    console.log(`  symbol ${is(isEuclidean)} euclidean`);
+    console.log(`  symbol ${is(isHyperbolic)} hyperbolic`);
+    console.log(`  symbol ${is(isSpherical)} spherical`);
+    console.log(`  orbifold symbol = ${orbifoldSymbol(ds)}`);
+
     if (isEuclidean(ds)) {
       const dst = toroidalCover(ds);
+      console.log(`  toroidal cover = ${dst}`);
+
       const curv = curvature(dst);
       const orbs = orbifoldSymbol(dst);
 
-      console.log('  toroidal cover = '+dst);
-
-      if (Q.cmp(curv, 0) == 0 && orbs == 'o')
+      if (Q.eq(curv, 0) && orbs == 'o')
         console.log('    (curvature and orbifold symbol okay)');
       else
-        console.error('    !!!! curvature '+Q.toString(curvature(dst))+
-                      ', orbifold symbol '+orbifoldSymbol(dst));
+        console.error(`    !!!! curvature ${curv}, orbifold symbol ${orbs}`);
     }
     console.log();
   };
