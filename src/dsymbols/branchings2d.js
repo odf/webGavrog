@@ -83,15 +83,18 @@ export const branchings = (
 
 if (require.main == module) {
   const covers = require('./covers');
-  const isIsohedral = ds => DS.orbitReps2(ds, 0, 1).length == 1;
 
-  const ds = DS.parse('<1.1:1:1,1,1:0,0>');
+  const noEdgeSharingQuads = ds => DS.orbitReps2(ds, 0, 2)
+    .every(D => DS.m(ds, 0, 1, D) > 4 || DS.m(ds, 0, 1, ds.s(2, D)) > 4);
 
-  covers.covers(ds, 12)
-    .filter(isIsohedral)
+  const n = parseInt(process.argv[2]) || 2
+
+  covers.covers(DS.parse('<1.1:1:1,1,1:0,3>'), n * 6)
+    .filter(ds => DS.orbitReps2(ds, 1, 2).length == n)
     .filter(DS2D.isProtoEuclidean)
-    .flatMap(ds => generators.results(branchings(ds)))
-    .filter(DS2D.isEuclidean)
+    .flatMap(ds => generators.results(branchings(ds, 4)))
+    .filter(noEdgeSharingQuads)
     .filter(props.isMinimal)
+    .filter(DS2D.isEuclidean)
     .forEach(ds => console.log(`${ds}`));
 }
