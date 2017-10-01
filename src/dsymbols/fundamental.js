@@ -43,6 +43,8 @@ const _traceWord = (ds, edge2word, i, j, D) => {
 class Boundary {
   constructor(ds) {
     const m = ds.dim + 1;
+
+    this._ds = ds;
     this._pos = (D, i, j) => ((D - 1) * m + i) * m + j;
     this._data = new Array(ds.size * m * m);
 
@@ -63,65 +65,56 @@ class Boundary {
   setIn([D, i, j], val) {
     this._data[this._pos(D, i, j)] = val;
   }
+
+  glueRecursively(facets) {
+    const todo = facets.slice();
+    const glued = [];
+
+    while (todo.length) {
+      const next = todo.shift();
+      const [D, i, j] = next;
+      const m = DS.m(this._ds, i, j, D) * (this._ds.s(i, D) == D ? 1 : 2);
+
+      if (j == null || (this.getIn(next) || [])[2] == m) {
+        const E = this._ds.s(i, D);
+
+        for (const j of this._ds.indices()) {
+          if (j != i && this.getIn([D, i, j])) {
+            const [chD, kD, nD] = this.getIn([D, i, j]);
+            const [chE, kE, nE] = this.getIn([E, i, j]);
+            const count = D == E ? nD : nD + nE;
+
+            this.setIn([chD, kD, _other(i, j, kD)], [chE, kE, count]);
+            this.setIn([chE, kE, _other(i, j, kE)], [chD, kD, count]);
+            this.setIn([D, i, j], null);
+            this.setIn([E, i, j], null);
+
+            if ((this._ds.s(i, D) == D) == (this._ds.s(kD, chD) == chD))
+              todo.push([chD, kD, _other(i, j, kD)]);
+          }
+        }
+
+        glued.push(next);
+      }
+    }
+
+    return glued;
+  }
 }
 
 
-const _glue = (ds, bnd, D, i) => {
-  const E = ds.s(i, D);
-
-  for (const j of ds.indices()) {
-    if (j != i && bnd.getIn([D, i, j])) {
-      const [chD, kD, nD] = bnd.getIn([D, i, j]);
-      const [chE, kE, nE] = bnd.getIn([E, i, j]);
-      const count = D == E ? nD : nD + nE;
-
-      bnd.setIn([chD, kD, _other(i, j, kD)], [chE, kE, count]);
-      bnd.setIn([chE, kE, _other(i, j, kE)], [chD, kD, count]);
-      bnd.setIn([D, i, j], null);
-      bnd.setIn([E, i, j], null);
-    }
-  }
-};
-
-
-const _glueRecursively = (ds, bnd, facets) => {
-  const todo = facets.slice();
-  const glued = [];
-
-  while (todo.length) {
-    const next = todo.shift();
-    const [D, i, j] = next;
-    const m = DS.m(ds, i, j, D) * (ds.s(i, D) == D ? 1 : 2);
-
-    if (j == null || (bnd.getIn(next) || [])[2] == m) {
-      for (const j of ds.indices()) {
-        const [E, k, _] = bnd.getIn([D, i, j]) || [];
-        if (E != null && (ds.s(i, D) == D) == (ds.s(k, E) == E))
-          todo.push([E, k, _other(i, j, k)]);
-      }
-
-      _glue(ds, bnd, D, i);
-      glued.push(next);
-    }
-  }
-
-  return glued;
-};
-
-
 const _findGenerators = ds => {
-  const bnd = new Boundary(ds);
-
   const edge2word = I.Map().asMutable();
   const gen2edge = [[]];
 
-  _glueRecursively(ds, bnd, _spanningTree(ds));
+  const bnd = new Boundary(ds);
+  bnd.glueRecursively(_spanningTree(ds));
 
   ds.elements().forEach(D => {
     ds.indices().forEach(i => {
       if (ds.indices().some(j => bnd.getIn([D, i, j]))) {
         const gen = gen2edge.length;
-        const glued = _glueRecursively(ds, bnd, [[D, i]]);
+        const glued = bnd.glueRecursively([[D, i]]);
 
         gen2edge.push([D, i]);
 
@@ -145,7 +138,7 @@ const _findGenerators = ds => {
 
 const innerEdges = ds => {
   const bnd = new Boundary(ds);
-  return _glueRecursively(ds, bnd, _spanningTree(ds)).map(a => a.slice(0, 2));
+  return bnd.glueRecursively(_spanningTree(ds)).map(a => a.slice(0, 2));
 }
 
 
