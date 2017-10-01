@@ -66,6 +66,29 @@ class Boundary {
     this._data[this._pos(D, i, j)] = val;
   }
 
+  glue(D, i) {
+    const todo = [];
+    const E = this._ds.s(i, D);
+
+    for (const j of this._ds.indices()) {
+      if (j != i && this.getIn([D, i, j])) {
+        const [chD, kD, nD] = this.getIn([D, i, j]);
+        const [chE, kE, nE] = this.getIn([E, i, j]);
+        const count = D == E ? nD : nD + nE;
+
+        this.setIn([chD, kD, _other(i, j, kD)], [chE, kE, count]);
+        this.setIn([chE, kE, _other(i, j, kE)], [chD, kD, count]);
+        this.setIn([D, i, j], null);
+        this.setIn([E, i, j], null);
+
+        if ((this._ds.s(i, D) == D) == (this._ds.s(kD, chD) == chD))
+          todo.push([chD, kD, _other(i, j, kD)]);
+      }
+    }
+
+    return todo;
+  }
+
   glueRecursively(facets) {
     const todo = facets.slice();
     const glued = [];
@@ -76,23 +99,9 @@ class Boundary {
       const m = DS.m(this._ds, i, j, D) * (this._ds.s(i, D) == D ? 1 : 2);
 
       if (j == null || (this.getIn(next) || [])[2] == m) {
-        const E = this._ds.s(i, D);
-
-        for (const j of this._ds.indices()) {
-          if (j != i && this.getIn([D, i, j])) {
-            const [chD, kD, nD] = this.getIn([D, i, j]);
-            const [chE, kE, nE] = this.getIn([E, i, j]);
-            const count = D == E ? nD : nD + nE;
-
-            this.setIn([chD, kD, _other(i, j, kD)], [chE, kE, count]);
-            this.setIn([chE, kE, _other(i, j, kE)], [chD, kD, count]);
-            this.setIn([D, i, j], null);
-            this.setIn([E, i, j], null);
-
-            if ((this._ds.s(i, D) == D) == (this._ds.s(kD, chD) == chD))
-              todo.push([chD, kD, _other(i, j, kD)]);
-          }
-        }
+        const newTodo = this.glue(D, i);
+        for (const e of newTodo)
+          todo.push(e);
 
         glued.push(next);
       }
