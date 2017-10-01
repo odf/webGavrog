@@ -1,5 +1,3 @@
-import * as I from 'immutable';
-
 import * as freeWords from '../fpgroups/freeWords';
 import * as DS        from './delaney';
 import * as props     from './properties';
@@ -182,7 +180,7 @@ export const fundamentalGroup = ds => {
 
   const nrGenerators = gen2edge.length - 1;
   const relators =
-    I.Set(orbitRelators.concat(mirrors).map(freeWords.relatorRepresentative))
+    orbitRelators.concat(mirrors).map(freeWords.relatorRepresentative)
     .sort();
 
   return { nrGenerators, relators, cones, gen2edge, edge2word };
