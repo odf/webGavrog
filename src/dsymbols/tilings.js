@@ -27,7 +27,10 @@ const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 const _edgeTranslations = cov => {
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
-  const nul = opsR.nullSpace(cosets.relatorMatrix(n, fg.relators).toJS());
+
+  const nul = opsR.nullSpace(
+    cosets.relatorMatrix(n, I.List(fg.relators)).toJS());
+
   const vec = rel => cosets.relatorAsVector(rel, n).toJS();
 
   return fg.edge2word.map(a => a.map(b => opsR.times(vec(b), nul)));
@@ -47,7 +50,7 @@ const _cornerShifts = (cov, e2t) => {
           m.setIn([D, i], zero);
         else
           m.setIn([D, i],
-                  opsR.minus(m.getIn([Dk, i]), e2t.getIn([Dk, k]) || zero));
+                  opsR.minus(m.getIn([Dk, i]), e2t[Dk][k] || zero));
       });
     });
   });
@@ -72,7 +75,7 @@ export const skeleton = cov => {
       const E = cov.s(0, D);
       const v = chamber2node[D];
       const w = chamber2node[E];
-      const t = e2t.getIn([D, 0]) || zero;
+      const t = e2t[D][0] || zero;
       const sD = c2s.getIn([D, 0]);
       const sE = c2s.getIn([E, 0]);
       const s = opsR.minus(opsR.plus(t, sE), sD);
@@ -83,7 +86,7 @@ export const skeleton = cov => {
   return {
     graph: periodic.make(edges),
     chamber2node: chamber2node,
-    edgeTranslations: e2t.toJS(),
+    edgeTranslations: e2t,
     cornerShifts: c2s.toJS()
   };
 };
