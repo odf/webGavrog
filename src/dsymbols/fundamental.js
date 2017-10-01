@@ -5,89 +5,7 @@ import * as DS        from './delaney';
 import * as props     from './properties';
 
 
-class Boundary {
-  constructor(ds) {
-    const m = ds.dim + 1;
-    this._pos = (D, i, j) => ((D - 1) * m + i) * m + j;
-    this._data = new Array(ds.size * m * m);
-
-    for (const D of ds.elements()) {
-      for (const i of ds.indices()) {
-        for (const j of ds.indices()) {
-          if (i != j)
-            this.setIn([D, i, j], { chamber: D, index: j, count: 1 });
-        }
-      }
-    }
-  }
-
-  getIn([D, i, j]) {
-    return this._data[this._pos(D, i, j)];
-  }
-
-  setIn([D, i, j], val) {
-    this._data[this._pos(D, i, j)] = val;
-  }
-}
-
-
 const _other = (a, b, c) => a == c ? b : a;
-
-
-const _glue = (ds, bnd, D, i) => {
-  const E = ds.s(i, D);
-
-  for (const j of ds.indices()) {
-    if (j != i && bnd.getIn([D, i, j])) {
-      const oppD = bnd.getIn([D, i, j]);
-      const oppE = bnd.getIn([E, i, j]);
-      const count = D == E ? oppD.count : oppD.count + oppE.count;
-      bnd.setIn([oppD.chamber, oppD.index, _other(i, j, oppD.index)],
-                { chamber: oppE.chamber, index: oppE.index, count: count });
-      bnd.setIn([oppE.chamber, oppE.index, _other(i, j, oppE.index)],
-                { chamber: oppD.chamber, index: oppD.index, count: count });
-    }
-  }
-
-  for (const j of ds.indices()) {
-    bnd.setIn([D, i, j], null);
-    bnd.setIn([E, i, j], null);
-  }
-};
-
-
-const _todoAfterGluing = function*(ds, bnd, D, i) {
-  const onMirror = ds.s(i, D) == D;
-
-  for (const j of ds.indices()) {
-    const { chamber: E, index: k } = bnd.getIn([D, i, j]) || {};
-
-    if (E != null && onMirror == (ds.s(k, E) == E))
-      yield [E, k, _other(i, j, k)];
-  }
-};
-
-
-const _glueRecursively = (ds, bnd, facets) => {
-  const todo = facets.slice();
-  const glued = [];
-
-  while (todo.length) {
-    const next = todo.shift();
-    const [D, i, j] = next;
-    const m = DS.m(ds, i, j, D) * (ds.s(i, D) == D ? 1 : 2);
-
-    if (j == null || (bnd.getIn(next) || {}).count == m) {
-      for (const t of _todoAfterGluing(ds, bnd, D, i))
-        todo.push(t);
-
-      _glue(ds, bnd, D, i);
-      glued.push(next);
-    }
-  }
-
-  return glued;
-};
 
 
 const _spanningTree = ds => {
@@ -122,6 +40,75 @@ const _traceWord = (ds, edge2word, i, j, D) => {
 };
 
 
+class Boundary {
+  constructor(ds) {
+    const m = ds.dim + 1;
+    this._pos = (D, i, j) => ((D - 1) * m + i) * m + j;
+    this._data = new Array(ds.size * m * m);
+
+    for (const D of ds.elements()) {
+      for (const i of ds.indices()) {
+        for (const j of ds.indices()) {
+          if (i != j)
+            this.setIn([D, i, j], [D, j, 1]);
+        }
+      }
+    }
+  }
+
+  getIn([D, i, j]) {
+    return this._data[this._pos(D, i, j)];
+  }
+
+  setIn([D, i, j], val) {
+    this._data[this._pos(D, i, j)] = val;
+  }
+}
+
+
+const _glue = (ds, bnd, D, i) => {
+  const E = ds.s(i, D);
+
+  for (const j of ds.indices()) {
+    if (j != i && bnd.getIn([D, i, j])) {
+      const [chD, kD, nD] = bnd.getIn([D, i, j]);
+      const [chE, kE, nE] = bnd.getIn([E, i, j]);
+      const count = D == E ? nD : nD + nE;
+
+      bnd.setIn([chD, kD, _other(i, j, kD)], [chE, kE, count]);
+      bnd.setIn([chE, kE, _other(i, j, kE)], [chD, kD, count]);
+      bnd.setIn([D, i, j], null);
+      bnd.setIn([E, i, j], null);
+    }
+  }
+};
+
+
+const _glueRecursively = (ds, bnd, facets) => {
+  const todo = facets.slice();
+  const glued = [];
+
+  while (todo.length) {
+    const next = todo.shift();
+    const [D, i, j] = next;
+    const m = DS.m(ds, i, j, D) * (ds.s(i, D) == D ? 1 : 2);
+
+    if (j == null || (bnd.getIn(next) || [])[2] == m) {
+      for (const j of ds.indices()) {
+        const [E, k, _] = bnd.getIn([D, i, j]) || [];
+        if (E != null && (ds.s(i, D) == D) == (ds.s(k, E) == E))
+          todo.push([E, k, _other(i, j, k)]);
+      }
+
+      _glue(ds, bnd, D, i);
+      glued.push(next);
+    }
+  }
+
+  return glued;
+};
+
+
 const _findGenerators = ds => {
   const bnd = new Boundary(ds);
 
@@ -132,7 +119,7 @@ const _findGenerators = ds => {
 
   ds.elements().forEach(D => {
     ds.indices().forEach(i => {
-      if (ds.indices().some(j => bnd.getIn([D, i, j]) != null)) {
+      if (ds.indices().some(j => bnd.getIn([D, i, j]))) {
         const gen = gen2edge.length;
         const glued = _glueRecursively(ds, bnd, [[D, i]]);
 
