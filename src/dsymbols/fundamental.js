@@ -1,8 +1,8 @@
 import * as I from 'immutable';
 
-import * as freeWords  from '../fpgroups/freeWords';
-import * as DS         from './delaney';
-import * as properties from './properties';
+import * as freeWords from '../fpgroups/freeWords';
+import * as DS        from './delaney';
+import * as props     from './properties';
 
 
 const _other = (a, b, c) => a == c ? b : a;
@@ -28,36 +28,26 @@ const _glue = (ds, bnd, D, i) => {
 };
 
 
-const _todoAfterGluing = (ds, bnd, D, i) => {
+const _todoAfterGluing = function*(ds, bnd, D, i) {
   const onMirror = ds.s(i, D) == D;
 
-  return I.List().withMutations(list => {
-    ds.indices().forEach(j => {
-      const opp = bnd.getIn([D, i, j]);
+  for (const j of ds.indices()) {
+    const { chamber: E, index: k } = bnd.getIn([D, i, j]) || {};
 
-      if (opp) {
-        const E = opp.chamber;
-        const k = opp.index;
-        if (onMirror == (ds.s(k, E) == E))
-          list.push(I.List([E, k, _other(i, j, k)]));
-      }
-    });
-  });
+    if (E != null && onMirror == (ds.s(k, E) == E))
+      yield I.List([E, k, _other(i, j, k)]);
+  }
 };
 
 
 const _glueRecursively = (ds, bnd, facets) => {
   let boundary = bnd;
-  let todo = I.List(facets).map(I.List).asMutable();
+  let todo = I.List(facets).map(I.List).toArray();
   let glued = I.List();
 
-  while (!todo.isEmpty()) {
-    const next = todo.first();
-    todo.shift();
-
-    const D = next.get(0);
-    const i = next.get(1);
-    const j = next.get(2);
+  while (todo.length) {
+    const next = todo.shift();
+    const [D, i, j] = next;
     const m = DS.m(ds, i, j, D) * (ds.s(i, D) == D ? 1 : 2);
 
     const opp = boundary.getIn(next);
@@ -71,40 +61,38 @@ const _glueRecursively = (ds, bnd, facets) => {
     }
   }
 
-  return I.Map({ boundary: boundary, glued: glued });
+  return { boundary, glued };
 };
 
 
 const _spanningTree = ds => {
-  const root = properties.traversal.root;
-  let seen = I.Set();
-  let todo = I.List();
+  const seen = {};
+  const todo = [];
 
-  properties.traversal(ds, ds.indices(), ds.elements()).forEach(e => {
-    const D = e[0];
-    const i = e[1];
-    const E = e[2];
+  for (const [D, i, E] of props.traversal(ds, ds.indices(), ds.elements())) {
+    if (i != props.traversal.root && !seen[E])
+      todo.push([D, i]);
+    seen[E] = true;
+  }
 
-    if (i != root && !seen.contains(E))
-      todo = todo.push(I.List([D, i]));
-    seen = seen.add(E);
-  });
-
-  return todo;
+  return I.List(todo);
 };
 
 
-const _initialBoundary = ds =>
-  I.Map().withMutations(map => {
-    ds.elements().forEach(D => {
-      ds.indices().forEach(i => {
-        ds.indices().forEach(j => {
-          if (i != j)
-            map.setIn([D, i, j], { chamber: D, index: j, count: 1 });
-        });
-      });
-    });
-  });
+const _initialBoundary = ds => {
+  const bnd = I.Map().asMutable();
+
+  for (const D of ds.elements()) {
+    for (const i of ds.indices()) {
+      for (const j of ds.indices()) {
+        if (i != j)
+          bnd.setIn([D, i, j], { chamber: D, index: j, count: 1 });
+      }
+    }
+  }
+
+  return bnd.asImmutable();
+};
 
 
 const _traceWord = (ds, edge2word, i, j, D) => {
@@ -145,10 +133,9 @@ const _updatedWordMap = (ds, edge2word, D, i, gen, glued) => {
 
 
 const _findGenerators = ds => {
-  let boundary = _initialBoundary(ds);
   const tree = _spanningTree(ds);
 
-  boundary = _glueRecursively(ds, boundary, tree).get('boundary');
+  let boundary = _glueRecursively(ds, _initialBoundary(ds), tree).boundary;
 
   let edge2word = I.Map();
   let gen2edge = I.Map();
@@ -156,46 +143,33 @@ const _findGenerators = ds => {
   ds.elements().forEach(D => {
     ds.indices().forEach(i => {
       if (boundary.getIn([D, i])) {
-        const tmp = _glueRecursively(ds, boundary, [[D, i]]);
-        const glued = tmp.get('glued');
         const gen = gen2edge.size+1;
+        const tmp = _glueRecursively(ds, boundary, [[D, i]]);
 
-        boundary = tmp.get('boundary');
+        boundary = tmp.boundary;
         gen2edge = gen2edge.set(gen, I.Map({ chamber: D, index: i }));
-        edge2word = _updatedWordMap(ds, edge2word, D, i, gen, glued);
+        edge2word = _updatedWordMap(ds, edge2word, D, i, gen, tmp.glued);
       }
     })
   });
 
-  return I.Map({ edge2word: edge2word, gen2edge: gen2edge });
+  return { edge2word, gen2edge };
 };
 
 
-const FundamentalGroup = I.Record({
-  nrGenerators: undefined,
-  relators    : undefined,
-  cones       : undefined,
-  gen2edge    : undefined,
-  edge2word   : undefined
-});
-
-
 const innerEdges = ds =>
-  _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds))
-  .get('glued')
+  _glueRecursively(ds, _initialBoundary(ds), _spanningTree(ds)).glued
   .map(a => a.slice(0, 2));
 
 
 export const fundamentalGroup = ds => {
-  const tmp = _findGenerators(ds);
-  const edge2word = tmp.get('edge2word');
-  const gen2edge = tmp.get('gen2edge');
+  const { edge2word, gen2edge } = _findGenerators(ds);
 
   const orbits = [];
   for (const i of ds.indices()) {
     for (const j of ds.indices()) {
       if (j > i) {
-        for (const D of properties.orbitReps(ds, [i, j])) {
+        for (const D of props.orbitReps(ds, [i, j])) {
           const w = _traceWord(ds, edge2word, i, j, D);
           const v = ds.v(i, j, D);
           if (v && w.size > 0)
@@ -221,19 +195,13 @@ export const fundamentalGroup = ds => {
     .map(orb => orb.slice(3))
     .sort();
 
-  const nGens = gen2edge.size;
-  const rels  = I.Set(
+  const nrGenerators = gen2edge.size;
+  const relators = I.Set(
     orbitRelators.concat(mirrors)
       .map(freeWords.relatorRepresentative))
     .sort();
 
-  return FundamentalGroup({
-    nrGenerators: nGens,
-    relators    : rels,
-    cones       : cones,
-    gen2edge    : gen2edge,
-    edge2word   : edge2word
-  });
+  return { nrGenerators, relators, cones, gen2edge, edge2word };
 };
 
 
@@ -246,12 +214,12 @@ if (require.main == module) {
     console.log('    inner edges: '+JSON.stringify(innerEdges(ds)));
     console.log();
 
-    const gens = _findGenerators(ds);
+    const { gen2edge, edge2word } = _findGenerators(ds);
 
-    console.log('    generators: '+gens.get('gen2edge'));
+    console.log('    generators: '+gen2edge);
     console.log();
 
-    console.log('    edge words: '+gens.get('edge2word'));
+    console.log('    edge words: '+edge2word);
     console.log();
 
     const group = fundamentalGroup(ds);
