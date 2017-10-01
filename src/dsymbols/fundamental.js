@@ -8,38 +8,6 @@ import * as props     from './properties';
 const _other = (a, b, c) => a == c ? b : a;
 
 
-const _spanningTree = ds => {
-  const seen = {};
-  const todo = [];
-
-  for (const [D, i, E] of props.traversal(ds, ds.indices(), ds.elements())) {
-    if (i != props.traversal.root && !seen[E])
-      todo.push([D, i]);
-    seen[E] = true;
-  }
-
-  return todo;
-};
-
-
-const _traceWord = (ds, edge2word, i, j, D) => {
-  let E = ds.s(i, D);
-  let k = j;
-  const factors = [];
-
-  while(true) {
-    factors.push(edge2word.getIn([E, k]) || freeWords.empty);
-    if (E == D && k ==i)
-      break;
-
-    E = ds.s(k, E) || E;
-    k = _other(i, j, k);
-  }
-
-  return freeWords.product(factors);
-};
-
-
 class Boundary {
   constructor(ds) {
     const m = ds.dim + 1;
@@ -112,8 +80,40 @@ class Boundary {
 }
 
 
+const _spanningTree = ds => {
+  const seen = {};
+  const todo = [];
+
+  for (const [D, i, E] of props.traversal(ds, ds.indices(), ds.elements())) {
+    if (i != props.traversal.root && !seen[E])
+      todo.push([D, i]);
+    seen[E] = true;
+  }
+
+  return todo;
+};
+
+
+const _traceWord = (ds, edge2word, i, j, D) => {
+  let E = ds.s(i, D);
+  let k = j;
+  const factors = [];
+
+  while(true) {
+    factors.push(edge2word[E][k] || freeWords.empty);
+    if (E == D && k ==i)
+      break;
+
+    E = ds.s(k, E) || E;
+    k = _other(i, j, k);
+  }
+
+  return freeWords.product(factors);
+};
+
+
 const _findGenerators = ds => {
-  const edge2word = I.Map().asMutable();
+  const edge2word = new Array(ds.size + 1).fill(0).map(_ => []);
   const gen2edge = [[]];
 
   const bnd = new Boundary(ds);
@@ -127,21 +127,21 @@ const _findGenerators = ds => {
 
         gen2edge.push([D, i]);
 
-        edge2word.setIn([D, i], freeWords.word([gen]));
-        edge2word.setIn([ds.s(i, D), i], freeWords.inverse([gen]));
+        edge2word[D][i] = freeWords.word([gen]);
+        edge2word[ds.s(i, D)][i] = freeWords.inverse([gen]);
 
         for (const [D, i, j] of glued) {
           const w = _traceWord(ds, edge2word, i, j, D);
           if (!freeWords.empty.equals(w)) {
-            edge2word.setIn([D, i], freeWords.inverse(w));
-            edge2word.setIn([ds.s(i, D), i], w);
+            edge2word[D][i] = freeWords.inverse(w);
+            edge2word[ds.s(i, D)][i] = w;
           }
         }
       }
     }
   }
 
-  return { edge2word: edge2word.asImmutable(), gen2edge };
+  return { edge2word, gen2edge };
 };
 
 
@@ -203,7 +203,7 @@ if (require.main == module) {
     console.log(`    generators: ${JSON.stringify(gen2edge)}`);
     console.log();
 
-    console.log(`    edge words: ${edge2word}`);
+    console.log(`    edge words: ${JSON.stringify(edge2word)}`);
     console.log();
 
     const group = fundamentalGroup(ds);
