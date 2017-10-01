@@ -35,15 +35,15 @@ const _todoAfterGluing = function*(ds, bnd, D, i) {
     const { chamber: E, index: k } = bnd.getIn([D, i, j]) || {};
 
     if (E != null && onMirror == (ds.s(k, E) == E))
-      yield I.List([E, k, _other(i, j, k)]);
+      yield [E, k, _other(i, j, k)];
   }
 };
 
 
 const _glueRecursively = (ds, bnd, facets) => {
+  const todo = facets.slice();
+  const glued = [];
   let boundary = bnd;
-  let todo = I.List(facets).map(I.List).toArray();
-  let glued = I.List();
 
   while (todo.length) {
     const next = todo.shift();
@@ -57,7 +57,7 @@ const _glueRecursively = (ds, bnd, facets) => {
         todo.push(t);
 
       boundary = _glue(ds, boundary, D, i);
-      glued = glued.push(next);
+      glued.push(next);
     }
   }
 
@@ -75,7 +75,7 @@ const _spanningTree = ds => {
     seen[E] = true;
   }
 
-  return I.List(todo);
+  return todo;
 };
 
 
@@ -113,47 +113,38 @@ const _traceWord = (ds, edge2word, i, j, D) => {
 };
 
 
-const _updatedWordMap = (ds, edge2word, D, i, gen, glued) => {
-  return edge2word.withMutations(e2w => {
-    e2w.setIn([D, i], freeWords.word([gen]));
-    e2w.setIn([ds.s(i, D), i], freeWords.inverse([gen]));
-    glued.rest().forEach(e => {
-      const D = e.get(0);
-      const i = e.get(1);
-      const j = e.get(2);
-      const w = _traceWord(ds, e2w, i, j, D);
-
-      if (!freeWords.empty.equals(w)) {
-        e2w.setIn([D, i], freeWords.inverse(w));
-        e2w.setIn([ds.s(i, D), i], w);
-      }
-    });
-  });
-};
-
-
 const _findGenerators = ds => {
   const tree = _spanningTree(ds);
 
-  let boundary = _glueRecursively(ds, _initialBoundary(ds), tree).boundary;
+  const edge2word = I.Map().asMutable();
+  const gen2edge = [[]];
 
-  let edge2word = I.Map();
-  let gen2edge = I.Map();
+  let boundary = _glueRecursively(ds, _initialBoundary(ds), tree).boundary;
 
   ds.elements().forEach(D => {
     ds.indices().forEach(i => {
       if (boundary.getIn([D, i])) {
-        const gen = gen2edge.size+1;
+        const gen = gen2edge.length;
         const tmp = _glueRecursively(ds, boundary, [[D, i]]);
 
         boundary = tmp.boundary;
-        gen2edge = gen2edge.set(gen, I.Map({ chamber: D, index: i }));
-        edge2word = _updatedWordMap(ds, edge2word, D, i, gen, tmp.glued);
+        gen2edge.push([D, i]);
+
+        edge2word.setIn([D, i], freeWords.word([gen]));
+        edge2word.setIn([ds.s(i, D), i], freeWords.inverse([gen]));
+        for (const [D, i, j] of tmp.glued) {
+          const w = _traceWord(ds, edge2word, i, j, D);
+
+          if (!freeWords.empty.equals(w)) {
+            edge2word.setIn([D, i], freeWords.inverse(w));
+            edge2word.setIn([ds.s(i, D), i], w);
+          }
+        }
       }
     })
   });
 
-  return { edge2word, gen2edge };
+  return { edge2word: edge2word.asImmutable(), gen2edge };
 };
 
 
@@ -181,24 +172,19 @@ export const fundamentalGroup = ds => {
 
   const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[4], orb[3]));
 
-  const mirrors = gen2edge.entrySeq()
-    .filter(e => {
-      const D = e[1].get('chamber');
-      const i = e[1].get('index');
-      return ds.s(i, D) == D;
-    })
-    .map(e => freeWords.word([e[0], e[0]]))
-    .toArray();
+  const mirrors = gen2edge
+    .map(([D, i], g) => [D, i, g])
+    .filter(([D, i, g]) => g > 0 && ds.s(i, D) == D)
+    .map(([D, _, g]) => freeWords.word([g, g]));
 
   const cones = orbits
     .filter(orb => orb[4] > 1)
     .map(orb => orb.slice(3))
     .sort();
 
-  const nrGenerators = gen2edge.size;
-  const relators = I.Set(
-    orbitRelators.concat(mirrors)
-      .map(freeWords.relatorRepresentative))
+  const nrGenerators = gen2edge.length - 1;
+  const relators =
+    I.Set(orbitRelators.concat(mirrors).map(freeWords.relatorRepresentative))
     .sort();
 
   return { nrGenerators, relators, cones, gen2edge, edge2word };
@@ -216,7 +202,7 @@ if (require.main == module) {
 
     const { gen2edge, edge2word } = _findGenerators(ds);
 
-    console.log('    generators: '+gen2edge);
+    console.log('    generators: '+JSON.stringify(gen2edge));
     console.log();
 
     console.log('    edge words: '+edge2word);
