@@ -159,34 +159,29 @@ export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
 
 
 export const orbit = (ds, indices, seed) => {
-  const seen = I.Set().asMutable();
-  const result = I.List().asMutable();
+  const seen = {};
+  const result = [];
 
-  traversal(ds, indices, [seed]).forEach(e => {
-    const D = e[2];
-    if (D && !seen.contains(D)) {
-      seen.add(D);
+  for (const [_, i, D] of traversal(ds, indices, [seed])) {
+    if (D && !seen[D]) {
+      seen[D] = true;
       result.push(D);
     }
-  });
+  }
 
-  return result.asImmutable();
+  return I.fromJS(result);
 };
 
 
 export const partialOrientation = ds => {
-  const ori = I.Map().asMutable();
+  const ori = {};
 
-  traversal(ds, ds.indices(), ds.elements()).forEach(e => {
-    const Di = e[0];
-    const i = e[1];
-    const D = e[2];
+  for (const [Di, i, D] of traversal(ds, ds.indices(), ds.elements())) {
+    if (D && !ori[D])
+      ori[D] = i == root ? 1 : -ori[Di];
+  }
 
-    if (D && !ori.get(D))
-      ori.set(D, i == root ? 1 : -ori.get(Di));
-  });
-
-  return ori.asImmutable();
+  return I.Map(ds.elements().map(D => [D, ori[D]]));
 };
 
 
@@ -296,27 +291,29 @@ export const morphism = (src, srcD0, img, imgD0) => {
   const tSrc = _typeMap(src);
   const tImg = _typeMap(img);
   const eq = (as, bs) => as <= bs && bs <= as;
-  const match = (m, D, E) =>
-    E == m.get(D) || (m.get(D) == null && eq(tSrc[D], tImg[E]));
 
-  const m = I.Map([[srcD0, imgD0]]).asMutable();
+  const m = { srcD0: imgD0 };
   const q = [[srcD0, imgD0]];
 
   while (q.length) {
     const [D, E] = q.shift();
-    const pairs = idcs
-      .map(i => [DS.s(src, i, D), DS.s(img, i, E)])
-      .filter(([D, E]) => D != null || E != null);
 
-    if (pairs.every(([D, E]) => match(m, D, E))) {
-      pairs.filter(([D]) => m.get(D) == null).forEach(p => { q.push(p) });
-      pairs.forEach(([D, E]) => m.set(D, E));
+    for (const i of idcs) {
+      const Di = src.s(i, D);
+      const Ei = img.s(i, E);
+
+      if (Di != null || Ei != null) {
+        if (m[Di] == null && eq(tSrc[Di], tImg[Ei])) {
+          q.push([Di, Ei]);
+          m[Di] = Ei;
+        }
+        else if (m[Di] != Ei)
+          return null;
+      }
     }
-    else
-      return null;
   }
 
-  return m.asImmutable();
+  return I.Map(src.elements().map(D => [D, m[D]]));
 };
 
 
