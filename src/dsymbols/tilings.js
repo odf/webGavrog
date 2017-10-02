@@ -81,7 +81,8 @@ export const skeleton = cov => {
       const s = opsR.minus(opsR.plus(t, sE), sD);
 
       return [v, w, s];
-    });
+    })
+    .toArray();
 
   return {
     graph: periodic.make(edges),

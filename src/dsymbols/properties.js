@@ -1,5 +1,6 @@
 import * as I from 'immutable';
 import * as DS from './delaney';
+import { seq } from '../common/lazyseq';
 import Partition from '../common/partition';
 
 
@@ -11,14 +12,10 @@ const _assert = (condition, message) => {
 
 const _fold = (partition, a, b, matchP, spreadFn) => {
   let p = partition;
-  let q = I.List().push(I.List([a, b]));
+  let q = [[a, b]];
 
-  while (!q.isEmpty()) {
-    const _tmp = q.first();
-    const x = _tmp.get(0);
-    const y = _tmp.get(1);
-
-    q = q.rest();
+  while (q.length) {
+    const [x, y] = q.shift();
 
     if (!matchP(x, y))
       return;
@@ -26,7 +23,7 @@ const _fold = (partition, a, b, matchP, spreadFn) => {
       continue;
     else {
       p = p.union(x, y);
-      q = q.concat(I.List(spreadFn(x, y)).map(I.List));
+      q = q.concat(spreadFn(x, y));
     }
   }
 
@@ -35,48 +32,49 @@ const _fold = (partition, a, b, matchP, spreadFn) => {
 
 
 const _typeMap = ds => {
-  const base = I.Map(ds.elements().map(D => [D, I.List()]));
-  const idcs = I.List(DS.indices(ds));
+  const result = {};
 
-  return base.withMutations(map => {
-    idcs.zip(idcs.rest()).forEach(p => {
-      const i = p[0];
-      const j = p[1];
+  for (const D of ds.elements())
+    result[D] = [];
 
-      DS.orbitReps2(ds, i, j).forEach(D => {
+  for (const i of ds.indices()) {
+    for (const j of ds.indices()) {
+      for (const D of DS.orbitReps2(ds, i, j)) {
         const m = DS.m(ds, i, j, D);
-        DS.orbit2(ds, i, j, D).forEach(E => {
-          map.set(E, map.get(E).push(m));
-        });
-      });
-    });
-  });
+        for (const E of DS.orbit2(ds, i, j, D))
+          result[E].push(m);
+      }
+    }
+  }
+
+  return result;
+};
+
+
+const typePartitionFolder = ds => {
+  const tm = _typeMap(ds);
+  const match  = (D, E) => tm[D] <= tm[E] && tm[D] >= tm[E];
+  const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
+
+  return (p, D, E) => _fold(p, D, E, match, spread);
 };
 
 
 export const isMinimal = ds => {
+  const folder = typePartitionFolder(ds);
+  const p = Partition();
   const D0 = ds.elements()[0];
-  const tm = _typeMap(ds);
 
-  const match  = (D, E) => tm.get(D).equals(tm.get(E));
-  const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
-
-  return ds.elements().slice(1)
-    .every(D => _fold(Partition(), D0, D, match, spread) === undefined);
+  return ds.elements().slice(1).every(D => folder(p, D0, D) === undefined);
 };
 
 
 export const typePartition = ds => {
+  const folder = typePartitionFolder(ds);
+  const p = Partition();
   const D0 = ds.elements()[0];
-  const tm = _typeMap(ds);
 
-  const match  = (D, E) => tm.get(D).equals(tm.get(E));
-  const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
-
-  return ds.elements().slice(1).reduce(
-    (p, D) => _fold(p, D0, D, match, spread) || p,
-    Partition()
-  );
+  return ds.elements().slice(1).reduce((p, D) => folder(p, D0, D) || p, p);
 };
 
 
@@ -126,8 +124,8 @@ const Traversal = function*(ds, indices, seeds) {
   }
 };
 
-export const traversal = (ds, indices, seeds) => 
-  I.Seq(Traversal(ds, indices, seeds));
+export const traversal = (ds, indices, seeds) =>
+  seq(Traversal(ds, indices, seeds));
 
 
 const root = traversal.root = null;
@@ -157,7 +155,7 @@ export const orbits = (ds, indices, seeds) => {
 };
 
 
-export const isConnected = ds => orbitReps(ds, ds.indices()).count() < 2;
+export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
 
 
 export const orbit = (ds, indices, seed) => {
@@ -297,8 +295,9 @@ export const morphism = (src, srcD0, img, imgD0) => {
   const idcs = src.indices();
   const tSrc = _typeMap(src);
   const tImg = _typeMap(img);
+  const eq = (as, bs) => as <= bs && bs <= as;
   const match = (m, D, E) =>
-    E == m.get(D) || (m.get(D) == null && tSrc.get(D).equals(tImg.get(E)));
+    E == m.get(D) || (m.get(D) == null && eq(tSrc[D], tImg[E]));
 
   const m = I.Map([[srcD0, imgD0]]).asMutable();
   const q = [[srcD0, imgD0]];
