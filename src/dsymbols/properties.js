@@ -3,13 +3,13 @@ import * as DS from './delaney';
 import Partition from '../common/partition';
 
 
-const _assert = function _assert(condition, message) {
+const _assert = (condition, message) => {
   if (!condition)
     throw new Error(message || 'assertion error');
 };
 
 
-const _fold = function _fold(partition, a, b, matchP, spreadFn) {
+const _fold = (partition, a, b, matchP, spreadFn) => {
   let p = partition;
   let q = I.List().push(I.List([a, b]));
 
@@ -34,16 +34,16 @@ const _fold = function _fold(partition, a, b, matchP, spreadFn) {
 };
 
 
-const _typeMap = function _typeMap(ds) {
+const _typeMap = ds => {
   const base = I.Map(ds.elements().map(D => [D, I.List()]));
   const idcs = I.List(DS.indices(ds));
 
-  return base.withMutations(function(map) {
-    idcs.zip(idcs.rest()).forEach(function(p) {
+  return base.withMutations(map => {
+    idcs.zip(idcs.rest()).forEach(p => {
       const i = p[0];
       const j = p[1];
 
-      DS.orbitReps2(ds, i, j).forEach(function(D) {
+      DS.orbitReps2(ds, i, j).forEach(D => {
         const m = DS.m(ds, i, j, D);
         DS.orbit2(ds, i, j, D).forEach(E => {
           map.set(E, map.get(E).push(m));
@@ -54,7 +54,7 @@ const _typeMap = function _typeMap(ds) {
 };
 
 
-export function isMinimal(ds) {
+export const isMinimal = ds => {
   const D0 = ds.elements()[0];
   const tm = _typeMap(ds);
 
@@ -66,7 +66,7 @@ export function isMinimal(ds) {
 };
 
 
-export function typePartition(ds) {
+export const typePartition = ds => {
   const D0 = ds.elements()[0];
   const tm = _typeMap(ds);
 
@@ -80,7 +80,7 @@ export function typePartition(ds) {
 };
 
 
-const Traversal = function* Traversal(ds, indices, seeds) {
+const Traversal = function*(ds, indices, seeds) {
   const seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
   const todo = {};
   const seen = {};
@@ -126,18 +126,17 @@ const Traversal = function* Traversal(ds, indices, seeds) {
   }
 };
 
-export function traversal(ds, indices, seeds) {
-  return I.Seq(Traversal(ds, indices, seeds));
-};
+export const traversal = (ds, indices, seeds) => 
+  I.Seq(Traversal(ds, indices, seeds));
+
 
 const root = traversal.root = null;
 
 
-export function orbitReps(ds, indices, seeds) {
-  return traversal(ds, indices, seeds || ds.elements())
-    .filter(e => e[1] == root)
-    .map(e => e[2]);
-};
+export const orbitReps = (ds, indices, seeds) =>
+  traversal(ds, indices, seeds || ds.elements())
+  .filter(e => e[1] == root)
+  .map(e => e[2]);
 
 
 export const orbits = (ds, indices, seeds) => {
@@ -158,16 +157,14 @@ export const orbits = (ds, indices, seeds) => {
 };
 
 
-export function isConnected(ds) {
-  return orbitReps(ds, ds.indices()).count() < 2;
-};
+export const isConnected = ds => orbitReps(ds, ds.indices()).count() < 2;
 
 
-export function orbit(ds, indices, seed) {
+export const orbit = (ds, indices, seed) => {
   const seen = I.Set().asMutable();
   const result = I.List().asMutable();
 
-  traversal(ds, indices, [seed]).forEach(function(e) {
+  traversal(ds, indices, [seed]).forEach(e => {
     const D = e[2];
     if (D && !seen.contains(D)) {
       seen.add(D);
@@ -179,10 +176,10 @@ export function orbit(ds, indices, seed) {
 };
 
 
-export function partialOrientation(ds) {
+export const partialOrientation = ds => {
   const ori = I.Map().asMutable();
 
-  traversal(ds, ds.indices(), ds.elements()).forEach(function(e) {
+  traversal(ds, ds.indices(), ds.elements()).forEach(e => {
     const Di = e[0];
     const i = e[1];
     const D = e[2];
@@ -195,35 +192,32 @@ export function partialOrientation(ds) {
 };
 
 
-export function _forAllEdges(ds, test) {
-  return ds.elements().every(D => ds.indices().every(i => test(D, i)));
-};
+const _forAllEdges = (ds, test) =>
+  ds.elements().every(D => ds.indices().every(i => test(D, i)));
 
 
-export function isLoopless(ds) {
-  return _forAllEdges(ds, (D, i) => D != ds.s(i, D));
-};
+export const isLoopless = ds => _forAllEdges(ds, (D, i) => D != ds.s(i, D));
 
 
-export function isOriented(ds) {
+export const isOriented = ds => {
   const ori = partialOrientation(ds);
   return _forAllEdges(ds, (D, i) => ori.get(D) != ori.get(ds.s(i, D)));
 };
 
 
-export function isWeaklyOriented(ds) {
+export const isWeaklyOriented = ds => {
   const ori = partialOrientation(ds);
   const test = (D, Di) => D == Di || ori.get(D) != ori.get(Di);
   return _forAllEdges(ds, (D, i) => test(D, ds.s(i, D)));
 };
 
 
-const _protocol = function _protocol(ds, idcs, gen) {
+const _protocol = (ds, idcs, gen) => {
   const buffer = [];
   const emap = {};
   let n = 1;
 
-  const _advance = function _advance() {
+  const _advance = () => {
     const next = gen.next();
     if (next.done)
       return false;
@@ -267,11 +261,11 @@ const _protocol = function _protocol(ds, idcs, gen) {
 };
 
 
-export function invariant(ds) {
+export const invariant = ds => {
   const idcs = DS.indices(ds);
   let best = null;
 
-  ds.elements().forEach(function(D0) {
+  ds.elements().forEach(D0 => {
     const trav = _protocol(ds, idcs, Traversal(ds, idcs, [D0]));
 
     if (best == null)
@@ -338,7 +332,7 @@ export const automorphisms = ds => {
 
 
 if (require.main == module) {
-  const test = function test(ds) {
+  const test = ds => {
     console.log('ds = '+ds);
     console.log();
 
