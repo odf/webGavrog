@@ -151,7 +151,7 @@ export const orbits = (ds, indices, seeds) => {
     }
   }
 
-  return I.fromJS(result);
+  return result;
 };
 
 
@@ -169,7 +169,7 @@ export const orbit = (ds, indices, seed) => {
     }
   }
 
-  return I.fromJS(result);
+  return result;
 };
 
 
@@ -329,6 +329,10 @@ export const automorphisms = ds => {
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x && x.toString()).join(', ') + ' ]';
+  };
+
   const test = ds => {
     console.log('ds = '+ds);
     console.log();
@@ -361,10 +365,10 @@ if (require.main == module) {
     console.log();
 
     const ori = partialOrientation(ds);
-    console.log('    partial orientation: '+JSON.stringify(ori));
+    console.log('    partial orientation: '+ori);
     console.log();
 
-    console.log('    automorphisms: '+JSON.stringify(automorphisms(ds)));
+    console.log('    automorphisms: '+automorphisms(ds));
     console.log();
     console.log();
   };

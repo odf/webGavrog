@@ -112,7 +112,7 @@ const chamberPositions = (cov, skel, pos, basis) => {
         const t = skel.cornerShifts[E][i];
         s = opsF.plus(s, opsF.minus(p, t));
       });
-      s = opsF.times(opsF.div(1, orb.size), s);
+      s = opsF.times(opsF.div(1, orb.length), s);
       orb.forEach(E => {
         const t = skel.cornerShifts[E][i];
         result[E].push(opsF.plus(s, t));
@@ -209,18 +209,18 @@ const adjustedOrientation = (cov, pos) => {
 
 
 const tileSurface = (cov, pos, ori, elms, idcs) => {
-  const cOrbs = properties.orbits(cov, idcs.slice(1), elms);
+  const cOrbs = I.fromJS(properties.orbits(cov, idcs.slice(1), elms));
   const cPos = cOrbs.map(orb => pos[orb.first()]);
   const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
 
   const faces = properties.orbits(cov, [0, 1], elms)
-    .map(orb => ori[orb.first()] > 0 ? orb.reverse() : orb)
+    .map(orb => ori[orb[0]] > 0 ? orb.reverse() : orb)
     .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs.get(D)));
 
   if (delaney.dim(cov) == 3)
-    return tileSurface3D(cPos.toJS(), faces.toJS());
+    return tileSurface3D(cPos.toJS(), faces);
   else
-    return tileSurface2D(cPos.toJS(), faces.toJS());
+    return tileSurface2D(cPos.toJS(), faces);
 };
 
 
@@ -241,7 +241,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
   const bas = D => chamberBasis(pos, D);
   const ori = adjustedOrientation(cov, pos);
   const idcs = I.Range(0, dim).toArray();
-  const tileOrbits = properties.orbits(cov, idcs).toArray();
+  const tileOrbits = properties.orbits(cov, idcs);
 
   const templates = [];
   const tileOrbitReps = [];
@@ -270,7 +270,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
       symmetry = affineSymmetry(D0, D1, pos);
     }
 
-    const center = pos[elms.first()][dim];
+    const center = pos[elms[0]][dim];
     tiles.push({ templateIndex, symmetry, center });
   }
 
