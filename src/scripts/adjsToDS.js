@@ -66,7 +66,7 @@ const traceFaces = (ds, ch2v) => {
   const faces = [];
 
   for (const D of ds.elements()) {
-    if (ori.get(D) < 0 || seen[D])
+    if (ori[D] < 0 || seen[D])
       continue;
 
     const newFace = [];

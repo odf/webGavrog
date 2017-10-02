@@ -174,14 +174,14 @@ export const orbit = (ds, indices, seed) => {
 
 
 export const partialOrientation = ds => {
-  const ori = {};
+  const ori = new Array(ds.size + 1);
 
   for (const [Di, i, D] of traversal(ds, ds.indices(), ds.elements())) {
     if (D && !ori[D])
       ori[D] = i == root ? 1 : -ori[Di];
   }
 
-  return I.Map(ds.elements().map(D => [D, ori[D]]));
+  return ori;
 };
 
 
@@ -194,13 +194,13 @@ export const isLoopless = ds => _forAllEdges(ds, (D, i) => D != ds.s(i, D));
 
 export const isOriented = ds => {
   const ori = partialOrientation(ds);
-  return _forAllEdges(ds, (D, i) => ori.get(D) != ori.get(ds.s(i, D)));
+  return _forAllEdges(ds, (D, i) => ori[D] != ori[ds.s(i, D)]);
 };
 
 
 export const isWeaklyOriented = ds => {
   const ori = partialOrientation(ds);
-  const test = (D, Di) => D == Di || ori.get(D) != ori.get(Di);
+  const test = (D, Di) => D == Di || ori[D] != ori[Di];
   return _forAllEdges(ds, (D, i) => test(D, ds.s(i, D)));
 };
 
@@ -359,7 +359,8 @@ if (require.main == module) {
     console.log('    0,2 orbit of 1: '+orbit(ds, [0, 2], 1));
     console.log();
 
-    console.log('    partial orientation: '+partialOrientation(ds));
+    const ori = partialOrientation(ds);
+    console.log('    partial orientation: '+JSON.stringify(ori));
     console.log();
 
     console.log('    automorphisms: '+automorphisms(ds));

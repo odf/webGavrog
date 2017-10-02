@@ -45,8 +45,7 @@ export const orientedCover = ds => {
     return ds;
   else {
     const ori = props.partialOrientation(ds);
-    return cover(
-      ds, 2, (k, i, D) => ori.get(D) == ori.get(ds.s(i, D)) ? 1 - k : k);
+    return cover(ds, 2, (k, i, D) => ori[D] == ori[ds.s(i, D)] ? 1 - k : k);
   }
 };
 

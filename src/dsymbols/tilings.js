@@ -198,7 +198,7 @@ const adjustedOrientation = (cov, pos) => {
   const D0 = cov.elements().find(D => opsF.ne(determinant(bas(D)), 0));
   const sgn = opsF.sgn(determinant(bas(D0)));
 
-  const ori = properties.partialOrientation(cov).toJS();
+  const ori = properties.partialOrientation(cov);
   if (sgn * ori[D0] < 0) {
     for (const D of cov.elements())
       ori[D] = -ori[D];
