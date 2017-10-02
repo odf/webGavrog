@@ -154,10 +154,10 @@ export const symmetries = (ds, cov, pos) => {
   const A = opsF.inverse(chamberBasis(pos, D0));
 
   const phi = properties.morphism(cov, 1, ds, 1);
-  const E0 = phi.get(D0);
+  const E0 = phi[D0];
 
   return cov.elements()
-    .filter(D => phi.get(D) == E0)
+    .filter(D => phi[D] == E0)
     .map(D => opsF.times(A, chamberBasis(pos, D)));
 };
 
@@ -250,7 +250,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
 
   for (const elms of tileOrbits) {
     const D0 = elms.find(D => opsF.ne(determinant(bas(D)), 0));
-    const E0 = phi.get(D0);
+    const E0 = phi[D0];
 
     let templateIndex = dsChamberToTemplateIndex[E0];
     let symmetry = opsF.identityMatrix(dim + 1);
@@ -266,7 +266,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
     }
     else {
       const D0 = tileOrbitReps[templateIndex];
-      const D1 = elms.find(D => phi.get(D) == phi.get(D0));
+      const D1 = elms.find(D => phi[D] == phi[D0]);
       symmetry = affineSymmetry(D0, D1, pos);
     }
 

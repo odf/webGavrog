@@ -292,8 +292,9 @@ export const morphism = (src, srcD0, img, imgD0) => {
   const tImg = _typeMap(img);
   const eq = (as, bs) => as <= bs && bs <= as;
 
-  const m = { srcD0: imgD0 };
   const q = [[srcD0, imgD0]];
+  const m = new Array(src.size + 1);
+  m[srcD0] = imgD0;
 
   while (q.length) {
     const [D, E] = q.shift();
@@ -313,7 +314,7 @@ export const morphism = (src, srcD0, img, imgD0) => {
     }
   }
 
-  return I.Map(src.elements().map(D => [D, m[D]]));
+  return m;
 };
 
 
@@ -363,7 +364,7 @@ if (require.main == module) {
     console.log('    partial orientation: '+JSON.stringify(ori));
     console.log();
 
-    console.log('    automorphisms: '+automorphisms(ds));
+    console.log('    automorphisms: '+JSON.stringify(automorphisms(ds)));
     console.log();
     console.log();
   };
