@@ -334,51 +334,52 @@ if (require.main == module) {
   };
 
   const test = ds => {
-    console.log('ds = '+ds);
+    const is = fn => fn(ds) ? 'is' : 'is not';
+
+    console.log(`ds = ${ds}`);
     console.log();
 
-    console.log('    symbol is '+(isConnected(ds) ? '' : 'not ')+'connected.');
-    console.log('    symbol is '+(isMinimal(ds) ? '' : 'not ')+'minimal.');
-    console.log('    symbol is '+(isLoopless(ds) ? '' : 'not ')+'loopless.');
-    console.log('    symbol is '+(isOriented(ds) ? '' : 'not ')+'oriented.');
-    console.log('    symbol is '+(isWeaklyOriented(ds) ? '' : 'not ')
-                +'weakly oriented.');
-    console.log('    type partition: '+typePartition(ds));
+    console.log(`    symbol ${is(isConnected)} connected.`);
+    console.log(`    symbol ${is(isMinimal)} minimal.`);
+    console.log(`    symbol ${is(isLoopless)} loopless.`);
+    console.log(`    symbol ${is(isOriented)} oriented.`);
+    console.log(`    symbol ${is(isWeaklyOriented)} weakly oriented.`);
+    console.log(`    type partition: ${typePartition(ds)}`);
+
     const trav = traversal(ds, ds.indices(), ds.elements());
-    console.log('    traversal: ' + trav);
-    console.log('    invariant: ' + invariant(ds));
+    console.log(`    traversal: ${trav}`);
+    console.log(`    invariant: ${invariant(ds)}`);
     console.log();
 
-    console.log('    0,1 orbit reps: '+orbitReps(ds, [0, 1]));
-    console.log('    1,2 orbit reps: '+orbitReps(ds, [1, 2]));
-    console.log('    0,2 orbit reps: '+orbitReps(ds, [0, 2]));
+    console.log(`    0,1 orbit reps: ${orbitReps(ds, [0, 1])}`);
+    console.log(`    1,2 orbit reps: ${orbitReps(ds, [1, 2])}`);
+    console.log(`    0,2 orbit reps: ${orbitReps(ds, [0, 2])}`);
     console.log();
 
-    console.log('    0,1 orbits: '+orbits(ds, [0, 1]));
-    console.log('    1,2 orbits: '+orbits(ds, [1, 2]));
-    console.log('    0,2 orbits: '+orbits(ds, [0, 2]));
+    console.log(`    0,1 orbits: ${orbits(ds, [0, 1])}`);
+    console.log(`    1,2 orbits: ${orbits(ds, [1, 2])}`);
+    console.log(`    0,2 orbits: ${orbits(ds, [0, 2])}`);
     console.log();
 
-    console.log('    0,1 orbit of 1: '+orbit(ds, [0, 1], 1));
-    console.log('    1,2 orbit of 1: '+orbit(ds, [1, 2], 1));
-    console.log('    0,2 orbit of 1: '+orbit(ds, [0, 2], 1));
+    console.log(`    0,1 orbit of 1: ${orbit(ds, [0, 1], 1)}`);
+    console.log(`    1,2 orbit of 1: ${orbit(ds, [1, 2], 1)}`);
+    console.log(`    0,2 orbit of 1: ${orbit(ds, [0, 2], 1)}`);
     console.log();
 
     const ori = partialOrientation(ds);
-    console.log('    partial orientation: '+ori);
+    console.log(`    partial orientation: ${ori}`);
     console.log();
 
-    console.log('    automorphisms: '+automorphisms(ds));
+    console.log(`    automorphisms: ${automorphisms(ds)}`);
     console.log();
     console.log();
   };
 
-  test(DS.parse(
-    '<1.1:24:' +
-      '2 4 6 8 10 12 14 16 18 20 22 24,' +
-      '16 3 5 7 9 11 13 15 24 19 21 23,' +
-      '10 9 20 19 14 13 22 21 24 23 18 17:' +
-      '8 4,3 3 3 3>'));
+  test(DS.parse(`<1.1:24:
+                2 4 6 8 10 12 14 16 18 20 22 24,
+                16 3 5 7 9 11 13 15 24 19 21 23,
+                10 9 20 19 14 13 22 21 24 23 18 17:
+                8 4,3 3 3 3>`));
 
   test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
   test(DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
