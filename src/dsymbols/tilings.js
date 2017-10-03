@@ -276,3 +276,57 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
 
   return { templates, tiles };
 };
+
+
+if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x && x.toString()).join(', ') + ' ]';
+  };
+
+  const delaney = require('./delaney');
+  const embed = require('../pgraphs/embedding').default;
+
+  const invariantBasis = gram => {
+    const dot = (v, w) => opsF.times(opsF.times(v, gram), w);
+
+    const vs = opsF.identityMatrix(gram.length);
+    const ortho = [];
+
+    for (let v of vs) {
+      for (const w of ortho)
+        v = opsF.minus(v, opsF.times(w, dot(v, w)));
+      ortho.push(opsF.div(v, opsF.sqrt(dot(v, v))))
+    }
+
+    return opsF.times(gram, opsF.transposed(ortho));
+  };
+
+
+  const test = ds => {
+    console.log(`ds = ${ds}`);
+
+    const cov = makeCover(ds);
+    console.log(`cover = ${cov}`);
+
+    const skel = skeleton(cov);
+    console.log(`skeleton = ${skel.graph}`);
+
+    const embedding = embed(skel.graph, false);
+    const pos = embedding.positions;
+    console.log(`vertex positions: ${JSON.stringify(pos)}`);
+
+    const basis = invariantBasis(embedding.gram);
+    console.log(`invariant basis: ${basis}`);
+
+    const surf = tileSurfaces(ds, cov, skel, pos, basis);
+    console.log(`tile surfaces: ${JSON.stringify(surf)}`);
+
+    console.log();
+  }
+
+  test(delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>'));
+  test(delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
+  test(delaney.parse('<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>'));
+  test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
+  test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
+}
