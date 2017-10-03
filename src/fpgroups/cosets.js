@@ -374,7 +374,7 @@ export function relatorAsVector(rel, nrgens) {
 
 
 export function relatorMatrix(nrgens, relators) {
-  return relators.map(rel => relatorAsVector(rel, nrgens));
+  return I.List(relators).map(rel => relatorAsVector(rel, nrgens));
 };
 
 

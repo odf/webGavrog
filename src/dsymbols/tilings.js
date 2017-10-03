@@ -10,6 +10,7 @@ import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
 
+import * as seq from '../common/lazyseq';
 import * as util from '../common/util';
 
 import {
@@ -27,10 +28,7 @@ const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 const _edgeTranslations = cov => {
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
-
-  const nul = opsR.nullSpace(
-    cosets.relatorMatrix(n, I.List(fg.relators)).toJS());
-
+  const nul = opsR.nullSpace(cosets.relatorMatrix(n, fg.relators).toJS());
   const vec = rel => cosets.relatorAsVector(rel, n).toJS();
 
   return fg.edge2word.map(a => a.map(b => opsR.times(vec(b), nul)));
@@ -41,19 +39,19 @@ const _cornerShifts = (cov, e2t) => {
   const dim = delaney.dim(cov);
   const zero = opsR.vector(dim);
 
-  return I.Map().withMutations(m => {
-    cov.indices().forEach(i => {
-      const idcs = _remainingIndices(cov, i);
+  const result = new Array(cov.size + 1).fill(0).map(_ => []);
 
-      properties.traversal(cov, idcs, cov.elements()).forEach(([Dk, k, D]) => {
-        if (k == properties.traversal.root)
-          m.setIn([D, i], zero);
-        else
-          m.setIn([D, i],
-                  opsR.minus(m.getIn([Dk, i]), e2t[Dk][k] || zero));
-      });
-    });
-  });
+  for (const i of cov.indices()) {
+    const idcs = _remainingIndices(cov, i);
+    for (const [Dk, k, D] of properties.traversal(cov, idcs, cov.elements())) {
+      if (k == properties.traversal.root)
+        result[D][i] = zero;
+      else
+        result[D][i] = opsR.minus(result[Dk][i], e2t[Dk][k] || zero);
+    }
+  }
+
+  return result;
 };
 
 
@@ -76,8 +74,8 @@ export const skeleton = cov => {
       const v = chamber2node[D];
       const w = chamber2node[E];
       const t = e2t[D][0] || zero;
-      const sD = c2s.getIn([D, 0]);
-      const sE = c2s.getIn([E, 0]);
+      const sD = c2s[D][0];
+      const sE = c2s[E][0];
       const s = opsR.minus(opsR.plus(t, sE), sD);
 
       return [v, w, s];
@@ -88,37 +86,37 @@ export const skeleton = cov => {
     graph: periodic.make(edges),
     chamber2node: chamber2node,
     edgeTranslations: e2t,
-    cornerShifts: c2s.toJS()
+    cornerShifts: c2s
   };
 };
 
 
-const chamberPositions = (cov, skel, pos, basis) => {
-  const dim = delaney.dim(cov);
-  let result = {};
+const _sum = v => v.reduce((x, y) => x == null ? y : opsF.plus(x, y));
 
-  cov.elements().forEach(D => {
+
+const chamberPositions = (cov, skel, pos, basis) => {
+  const result = {};
+
+  for (const D of cov.elements()) {
     const p = pos[skel.chamber2node[D]];
     const t = skel.cornerShifts[D][0];
     result[D] = [opsF.plus(p, t)];
-  });
+  }
 
-  I.Range(1, dim+1).forEach(i => {
-    const idcs = I.Range(0, i);
-    properties.orbits(cov, idcs, cov.elements()).forEach(orb => {
-      let s = opsF.vector(dim);
-      orb.forEach(E => {
-        const p = result[E][0];
-        const t = skel.cornerShifts[E][i];
-        s = opsF.plus(s, opsF.minus(p, t));
-      });
-      s = opsF.times(opsF.div(1, orb.length), s);
-      orb.forEach(E => {
+  for (let i = 1; i <= delaney.dim(cov); ++i) {
+    const idcs = seq.range(0, i).toArray();
+
+    for (const orb of properties.orbits(cov, idcs, cov.elements())) {
+      const s = opsF.div(
+        _sum(orb.map(E => opsF.minus(result[E][0], skel.cornerShifts[E][i]))),
+        orb.length);
+
+      for (const E of orb) {
         const t = skel.cornerShifts[E][i];
         result[E].push(opsF.plus(s, t));
-      });
-   });
-  });
+      }
+    }
+  }
 
   for (const D of cov.elements())
     result[D] = result[D].map(p => opsF.times(p, basis));
