@@ -8,7 +8,7 @@ import * as props   from '../dsymbols/properties';
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 
 DS.parseSymbols(text)
-  .map(ds => [derived.canonical(ds), props.invariant(ds)])
+  .map(ds => [derived.canonical(ds), I.List(props.invariant(ds))])
   .sort(function(a, b) {
     if (DS.dim(a[0]) != DS.dim(b[0]))
       return DS.dim(a[0]) - DS.dim(b[0]);

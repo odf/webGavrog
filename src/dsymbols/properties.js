@@ -1,4 +1,3 @@
-import * as I from 'immutable';
 import * as DS from './delaney';
 import { seq } from '../common/lazyseq';
 import Partition from '../common/partition';
@@ -279,7 +278,7 @@ export const invariant = ds => {
     }
   });
 
-  return I.List(best.content());
+  return best.content();
 };
 
 

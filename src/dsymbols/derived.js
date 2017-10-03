@@ -122,13 +122,13 @@ export const canonical = ds => {
   let n = 0;
   let k = -1;
 
-  while (k+1 < inv.size) {
-    const i = inv.get(++k);
-    const D = inv.get(++k);
-    const E = (i >= 0) ? inv.get(++k) : D;
+  while (k+1 < inv.length) {
+    const i = inv[++k];
+    const D = inv[++k];
+    const E = (i >= 0) ? inv[++k] : D;
     if (E > n) {
       for (let j = 0; j < dim; ++j)
-        brs[j].push([E, inv.get(++k)]);
+        brs[j].push([E, inv[++k]]);
       n = E;
     }
     if (i >= 0)

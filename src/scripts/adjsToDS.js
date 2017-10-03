@@ -97,6 +97,8 @@ if (require.main == module) {
   const symByInvariant = I.Map().asMutable();
   const minByInvariant = I.Map().asMutable();
 
+  const invar = ds => I.List(invariant(ds));
+
   process.argv.slice(2).forEach(file => {
     const name = path.basename(file, '.txt')
 
@@ -116,8 +118,8 @@ if (require.main == module) {
 
     const { symbol: ds, chamberToVertex } = fromCyclicAdjencencies(adjs);
 
-    minByInvariant.update(invariant(minimal(ds)), I.List(), a => a.push(name));
-    symByInvariant.update(invariant(ds), I.List(), a => a.push(name));
+    minByInvariant.update(invar(minimal(ds)), I.List(), a => a.push(name));
+    symByInvariant.update(invar(ds), I.List(), a => a.push(name));
 
     console.log();
     console.log(traceFaces(ds, chamberToVertex));
