@@ -55,12 +55,12 @@ export const minimal = ds => {
     return ds;
   else {
     const p = props.typePartition(ds);
-    const reps = ds.elements().filter(D => p.get(D) == D);
+    const reps = ds.elements().filter(D => p.find(D) == D);
 
     return DS.build(
       DS.dim(ds), reps.length,
       (_, i) => reps.map(
-        (D, k) => [k+1, reps.indexOf(p.get(ds.s(i, D))) + 1]),
+        (D, k) => [k+1, reps.indexOf(p.find(ds.s(i, D))) + 1]),
       (tmp, i) => reps.map(
         (D, k) => [k+1, (DS.m(ds, i, i+1, D) || 0) / DS.r(tmp, i, i+1, k+1)]));
   }

@@ -1,6 +1,6 @@
 import * as DS from './delaney';
 import { seq } from '../common/lazyseq';
-import Partition from '../common/partition';
+import { Partition } from '../common/unionFind';
 
 
 const _assert = (condition, message) => {
@@ -10,7 +10,7 @@ const _assert = (condition, message) => {
 
 
 const _fold = (partition, a, b, matchP, spreadFn) => {
-  let p = partition;
+  const p = partition.clone();
   let q = [[a, b]];
 
   while (q.length) {
@@ -18,10 +18,10 @@ const _fold = (partition, a, b, matchP, spreadFn) => {
 
     if (!matchP(x, y))
       return;
-    else if (p.get(x) == p.get(y))
+    else if (p.find(x) == p.find(y))
       continue;
     else {
-      p = p.union(x, y);
+      p.union(x, y);
       q = q.concat(spreadFn(x, y));
     }
   }
@@ -61,7 +61,7 @@ const typePartitionFolder = ds => {
 
 export const isMinimal = ds => {
   const folder = typePartitionFolder(ds);
-  const p = Partition();
+  const p = new Partition();
   const D0 = ds.elements()[0];
 
   return ds.elements().slice(1).every(D => folder(p, D0, D) === undefined);
@@ -70,7 +70,7 @@ export const isMinimal = ds => {
 
 export const typePartition = ds => {
   const folder = typePartitionFolder(ds);
-  const p = Partition();
+  const p = new Partition();
   const D0 = ds.elements()[0];
 
   return ds.elements().slice(1).reduce((p, D) => folder(p, D0, D) || p, p);
