@@ -1,5 +1,3 @@
-import * as I from 'immutable';
-
 import * as cosets      from '../fpgroups/cosets';
 import * as delaney     from './delaney';
 import * as properties  from './properties';
@@ -177,7 +175,11 @@ const tileSurface3D = (corners, faces) => {
 
 
 const tileSurface2D = (corners, faces) => {
-  const pos = I.List(corners).flatMap(p => [p[0].concat(0), p[0].concat(0.1)]);
+  const pos = [];
+  for (const [p] of corners) {
+    pos.push(p.concat(0));
+    pos.push(p.concat(0.1));
+  }
 
   const f = faces[0].map(i => 2 * i);
 
@@ -187,7 +189,7 @@ const tileSurface2D = (corners, faces) => {
       return [y, x, x + 1, y + 1];
     }));
 
-  return { pos: pos.toJS(), faces };
+  return { pos, faces };
 };
 
 
@@ -207,18 +209,23 @@ const adjustedOrientation = (cov, pos) => {
 
 
 const tileSurface = (cov, pos, ori, elms, idcs) => {
-  const cOrbs = I.fromJS(properties.orbits(cov, idcs.slice(1), elms));
-  const cPos = cOrbs.map(orb => pos[orb.first()]);
-  const cIdcs = I.Map(cOrbs.flatMap((orb, i) => orb.map(D => [D, i])));
+  const cOrbs = properties.orbits(cov, idcs.slice(1), elms);
+  const cPos = cOrbs.map(orb => pos[orb[0]]);
+
+  const cIdcs = [];
+  cOrbs.forEach((orb, i) => {
+    for (const D of orb)
+      cIdcs[D] = i;
+  });
 
   const faces = properties.orbits(cov, [0, 1], elms)
     .map(orb => ori[orb[0]] > 0 ? orb.reverse() : orb)
-    .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs.get(D)));
+    .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs[D]));
 
   if (delaney.dim(cov) == 3)
-    return tileSurface3D(cPos.toJS(), faces);
+    return tileSurface3D(cPos, faces);
   else
-    return tileSurface2D(cPos.toJS(), faces);
+    return tileSurface2D(cPos, faces);
 };
 
 
@@ -238,7 +245,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
   const phi = properties.morphism(cov, 1, dso, 1);
   const bas = D => chamberBasis(pos, D);
   const ori = adjustedOrientation(cov, pos);
-  const idcs = I.Range(0, dim).toArray();
+  const idcs = seq.range(0, dim).toArray();
   const tileOrbits = properties.orbits(cov, idcs);
 
   const templates = [];
