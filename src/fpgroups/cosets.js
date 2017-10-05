@@ -137,13 +137,20 @@ const maybeCompressed = (c, factor) => {
 };
 
 
+const _expandGenerators = nrGens =>
+  I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
+
+
+const _expandRelators = relators =>
+  I.Set(I.List(relators).flatMap(fw.relatorPermutations));
+
+
 const withInverses = words => I.Set(words).merge(words.map(fw.inverse));
 
 
 export const cosetTable = (nrGens, relators, subgroupGens) => {
-  const gens = I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
-  const rels = withInverses(I.List(relators).map(fw.word).flatMap(
-    r => I.Range(0, r.size).map(i => r.slice(i).concat(r.slice(0, i)))));
+  const gens = _expandGenerators(nrGens);
+  const rels = withInverses(_expandRelators(relators));
   const subgens = withInverses(subgroupGens.map(fw.word));
 
   let current = {
@@ -191,14 +198,6 @@ export const cosetRepresentatives = table => {
 
   return reps;
 };
-
-
-const _expandGenerators = nrGens =>
-  I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
-
-
-const _expandRelators = relators =>
-  I.Set(I.List(relators).flatMap(fw.relatorPermutations));
 
 
 const _freeInTable = (table, gens) => {
