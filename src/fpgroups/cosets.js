@@ -40,7 +40,7 @@ const identify = (table, part, a, b) => {
 };
 
 
-const scan = function scan(table, w, start, from, to, inverse = false) {
+const scan = (table, w, start, from, to, inverse = false) => {
   const n = w.size - 1;
   let row = start;
   let i = from;
@@ -63,7 +63,7 @@ const scan = function scan(table, w, start, from, to, inverse = false) {
 };
 
 
-const scanAndIdentify = function scanAndIdentify(table, part, w, start) {
+const scanAndIdentify = (table, part, w, start) => {
   const n = w.size;
 
   let t = scan(table, w, start, 0, n);
@@ -94,7 +94,7 @@ const scanAndIdentify = function scanAndIdentify(table, part, w, start) {
 };
 
 
-const scanRelations = function scanRelations(rels, subgens, table, part, start) {
+const scanRelations = (rels, subgens, table, part, start) => {
   let current = {
     table: table,
     part : part
@@ -112,7 +112,7 @@ const scanRelations = function scanRelations(rels, subgens, table, part, start) 
 };
 
 
-const compressed = function(table, part) {
+const compressed = (table, part) => {
   const toIdx = table
     .map((_, k) => k)
     .filter(k => part.find(k) == k)
@@ -128,7 +128,7 @@ const compressed = function(table, part) {
 };
 
 
-const maybeCompressed = function(c, factor) {
+const maybeCompressed = (c, factor) => {
   const invalid = c.table.filter(k => c.part.find(k) != k).size / c.table.size;
   if (invalid > factor)
     return { table: compressed(c.table, c.part), part: partition() };
@@ -137,12 +137,10 @@ const maybeCompressed = function(c, factor) {
 };
 
 
-const withInverses = function(words) {
-  return I.Set(words).merge(words.map(fw.inverse));
-};
+const withInverses = words => I.Set(words).merge(words.map(fw.inverse));
 
 
-export function cosetTable(nrGens, relators, subgroupGens) {
+export const cosetTable = (nrGens, relators, subgroupGens) => {
   const gens = I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
   const rels = withInverses(I.List(relators).map(fw.word).flatMap(
     r => I.Range(0, r.size).map(i => r.slice(i).concat(r.slice(0, i)))));
@@ -178,7 +176,7 @@ export function cosetTable(nrGens, relators, subgroupGens) {
 };
 
 
-export function cosetRepresentatives(table) {
+export const cosetRepresentatives = table => {
   let queue = I.List([0]);
   let reps = I.Map([[0, fw.empty]]);
 
@@ -195,17 +193,15 @@ export function cosetRepresentatives(table) {
 };
 
 
-const _expandGenerators = function _expandGenerators(nrGens) {
-  return I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
-};
+const _expandGenerators = nrGens =>
+  I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
 
 
-const _expandRelators = function _expandRelators(relators) {
-  return I.Set(I.List(relators).flatMap(fw.relatorPermutations));
-};
+const _expandRelators = relators =>
+  I.Set(I.List(relators).flatMap(fw.relatorPermutations));
 
 
-const _freeInTable = function _freeInTable(table, gens) {
+const _freeInTable = (table, gens) => {
   return I.Range(0, table.size).flatMap(k => (
     gens
       .filter(g => table.get(k).get(g) == null)
@@ -213,7 +209,7 @@ const _freeInTable = function _freeInTable(table, gens) {
 };
 
 
-const _scanRecursively = function _scanRecursively(rels, table, index) {
+const _scanRecursively = (rels, table, index) => {
   const q = [];
   const rs = rels.toArray();
 
@@ -242,9 +238,7 @@ const _scanRecursively = function _scanRecursively(rels, table, index) {
 };
 
 
-const _potentialChildren = function _potentialChildren(
-  table, gens, rels, maxCosets
-) {
+const _potentialChildren = (table, gens, rels, maxCosets) => {
   const free = _freeInTable(table, gens);
 
   if (!free.isEmpty()) {
@@ -256,7 +250,7 @@ const _potentialChildren = function _potentialChildren(
     const candidates = n < maxCosets ? I.List(matches).push(n) : matches;
 
     return candidates
-      .map(function(pos) {
+      .map(pos => {
         const t = table.setIn([k, g], pos).setIn([pos, ginv], k);
         return _scanRecursively(rels, t, k);
       })
@@ -267,7 +261,7 @@ const _potentialChildren = function _potentialChildren(
 };
 
 
-const _compareRenumberedFom = function _compareRenumberedFom(table, gens, start) {
+const _compareRenumberedFom = (table, gens, start) => {
   let o2n = I.Map([[start, 0]]);
   let n2o = I.Map([[0, start]]);
   let row = 0;
@@ -304,13 +298,11 @@ const _compareRenumberedFom = function _compareRenumberedFom(table, gens, start)
 };
 
 
-const _isCanonical = function _isCanonical(table, gens) {
-  return I.Range(1, table.size)
-    .every(start => _compareRenumberedFom(table, gens, start) >= 0);
-};
+const _isCanonical = (table, gens) => I.Range(1, table.size)
+  .every(start => _compareRenumberedFom(table, gens, start) >= 0);
 
 
-export function tables(nrGens, relators, maxCosets) {
+export const tables = (nrGens, relators, maxCosets) => {
   const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
   const free = t => _freeInTable(t, gens);
@@ -327,14 +319,14 @@ export function tables(nrGens, relators, maxCosets) {
 };
 
 
-const _inducedTable = function _inducedTable(gens, img, img0) {
+const _inducedTable = (gens, img, img0) => {
   const table = I.List([I.Map()]).asMutable();
   const o2n = I.Map([[img0, 0]]).asMutable();
   const n2o = I.Map([[0, img0]]).asMutable();
   let i = 0;
 
   while (i < table.size) {
-    gens.forEach(function(g) {
+    gens.forEach(g => {
       const k = img(n2o.get(i), g);
       const n = o2n.has(k) ? o2n.get(k) : table.size;
       o2n.set(k, n);
@@ -348,7 +340,7 @@ const _inducedTable = function _inducedTable(gens, img, img0) {
 };
 
 
-export function intersectionTable(tableA, tableB) {
+export const intersectionTable = (tableA, tableB) => {
   return _inducedTable(
     (tableA.first() || I.Map()).keySeq(),
     (es, g) => I.List([tableA.getIn([es.get(0), g]),
@@ -358,28 +350,26 @@ export function intersectionTable(tableA, tableB) {
 };
 
 
-export function coreTable(base) {
-  return _inducedTable(
+export const coreTable = base =>
+  _inducedTable(
     (base.first() || I.Map()).keySeq(),
     (es, g) => es.map(e => base.getIn([e, g])),
     base.keySeq()
   );
-};
 
 
 const _sgn = x => (x > 0) - (x < 0);
 const _sum = a => a.reduce((x, y) => x + y, 0);
 
 
-export function relatorAsVector(rel, nrgens) {
+export const relatorAsVector = (rel, nrgens) => {
   const counts = rel.groupBy(Math.abs).map(a => _sum(a.map(_sgn)));
   return I.List(I.Range(1, nrgens+1).map(i => counts.get(i) || 0));
 };
 
 
-export function relatorMatrix(nrgens, relators) {
-  return I.List(relators).map(rel => relatorAsVector(rel, nrgens));
-};
+export const relatorMatrix = (nrgens, relators) =>
+  I.List(relators).map(rel => relatorAsVector(rel, nrgens));
 
 
 if (require.main == module) {
