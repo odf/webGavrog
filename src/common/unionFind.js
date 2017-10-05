@@ -38,6 +38,10 @@ export class Partition {
     }
   }
 
+  isTrivial() {
+    return Object.keys(this._parent).length == 0;
+  }
+
   clone() {
     const p = new Partition();
     p._rank = Object.assign({}, this._rank);

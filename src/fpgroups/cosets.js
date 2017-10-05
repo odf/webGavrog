@@ -3,7 +3,10 @@ import * as fw         from './freeWords';
 import * as generators from '../common/generators';
 import * as util       from '../common/util';
 
-import partition from '../common/partition';
+import { Partition } from '../common/unionFind';
+
+
+const partition = () => new Partition();
 
 
 const mergeRows = (part, ra, rb) => {
@@ -12,7 +15,7 @@ const mergeRows = (part, ra, rb) => {
 
   const next = row
     .map((ag, g) => [ag, rowAlt.get(g)])
-    .filter(([a, b]) => part.get(a) != part.get(b));
+    .filter(([a, b]) => part.find(a) != part.find(b));
 
   return { row, next };
 };
@@ -20,12 +23,13 @@ const mergeRows = (part, ra, rb) => {
 
 const identify = (table, part, a, b) => {
   const queue = [[a, b]];
+  part = part.clone();
 
   while (queue.length) {
-    const [a, b] = queue.shift().map(part.get);
+    const [a, b] = queue.shift().map(x => part.find(x));
 
     if (a != b) {
-      part = part.union(a, b);
+      part.union(a, b);
       const { row, next } = mergeRows(part, table.get(a), table.get(b));
       table = table.set(a, row).set(b, row);
       next.forEach(x => queue.push(x));
@@ -102,7 +106,7 @@ const scanRelations = function scanRelations(rels, subgens, table, part, start) 
   );
 
   return subgens.reduce(
-    (c, w) => scanAndIdentify(c.table, c.part, w, c.part.get(0)),
+    (c, w) => scanAndIdentify(c.table, c.part, w, c.part.find(0)),
     current
   );
 };
@@ -111,11 +115,11 @@ const scanRelations = function scanRelations(rels, subgens, table, part, start) 
 const compressed = function(table, part) {
   const toIdx = table
     .map((_, k) => k)
-    .filter(k => part.get(k) == k)
+    .filter(k => part.find(k) == k)
     .toMap()
     .flip();
 
-  const canon = a => toIdx.get(part.get(a));
+  const canon = a => toIdx.get(part.find(a));
 
   return table.toMap()
     .filter((r, k) => toIdx.get(k) != undefined)
@@ -125,7 +129,7 @@ const compressed = function(table, part) {
 
 
 const maybeCompressed = function(c, factor) {
-  const invalid = c.table.filter(k => c.part.get(k) != k).size / c.table.size;
+  const invalid = c.table.filter(k => c.part.find(k) != k).size / c.table.size;
   if (invalid > factor)
     return { table: compressed(c.table, c.part), part: partition() };
   else
@@ -157,7 +161,7 @@ export function cosetTable(nrGens, relators, subgroupGens) {
 
     if (i >= current.table.size) {
       return compressed(current.table, current.part);
-    } else if (j >= gens.size || i != current.part.get(i)) {
+    } else if (j >= gens.size || i != current.part.find(i)) {
       ++i;
       j = 0;
     } else if (current.table.getIn([i, gens.get(j)]) !== undefined) {
