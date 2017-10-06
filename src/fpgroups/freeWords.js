@@ -53,7 +53,7 @@ export const relatorPermutations = wd => {
     result.push(wx);
     result.push(inverse(wx));
   }
-  return I.List(result);
+  return result;
 };
 
 
@@ -71,7 +71,8 @@ export const compare = (a, b) => {
 };
 
 
-export const relatorRepresentative = w => relatorPermutations(w).min(compare);
+export const relatorRepresentative = w => relatorPermutations(w)
+  .reduce((a, b) => a == null || compare(a, b) > 0 ? b : a, null)
 
 
 if (require.main == module) {
