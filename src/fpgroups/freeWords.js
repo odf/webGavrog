@@ -5,16 +5,13 @@
 import * as I from 'immutable';
 
 
-const _isInteger = x => typeof x == 'number' && x % 1 == 0;
-
-
 const _normalize = ws => {
   const tmp = [];
   let head = 0;
 
   for (const w of ws) {
     for (const x of w) {
-      if (!_isInteger(x))
+      if (!Number.isSafeInteger(x))
         throw new Error(`illegal word ${w} - all letters must be integers`);
       if (x == 0)
         break;
@@ -31,38 +28,18 @@ const _normalize = ws => {
 };
 
 
-export const empty = I.List();
+export const empty = _normalize([]);
 
+export const word = w => _normalize([w]);
 
-export function word(w) {
-  return _normalize([w]);
-};
+export const inverse = w => word(w).reverse().map(x => -x);
 
+export const raisedTo = (m, w) =>
+  m < 0 ? raisedTo(-m, inverse(w)) : _normalize(Array(m).fill(w));
 
-export function inverse(w) {
-  return word(w).reverse().map(x => -x);
-};
+export const product = words => _normalize(words);
 
-
-export function raisedTo(m, w) {
-  if (m == 0)
-    return empty;
-  else if (m < 0)
-    return raisedTo(-m, inverse(w));
-  else
-    return _normalize(Array(m).fill(w));
-};
-
-
-export function product(words) {
-  return _normalize(words);
-};
-
-
-export function commutator(a, b) {
-  return product([a, b, inverse(a), inverse(b)]);
-};
-
+export const commutator = (a, b) => product([a, b, inverse(a), inverse(b)]);
 
 export const rotated = (a, i) => product([a.slice(i), a.slice(0, i)]);
 
