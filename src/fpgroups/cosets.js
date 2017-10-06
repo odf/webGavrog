@@ -150,7 +150,7 @@ const withInverses = words => I.Set(words).merge(words.map(fw.inverse));
 
 export const cosetTable = (nrGens, relators, subgroupGens) => {
   const gens = _expandGenerators(nrGens);
-  const rels = withInverses(_expandRelators(relators));
+  const rels = _expandRelators(relators);
   const subgens = withInverses(subgroupGens.map(fw.word));
 
   let current = {
