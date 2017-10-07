@@ -2,12 +2,10 @@ import * as I  from 'immutable';
 import * as fw from './freeWords';
 
 
-const _relatorsByStartGen = function _relatorsByStartGen(relators) {
-  return I.List(relators).map(I.List)
-    .flatMap(fw.relatorPermutations)
-    .groupBy(rel => rel.get(0))
-    .map(I.Set);
-};
+const _relatorsByStartGen = relators => I.List(relators).map(I.List)
+  .flatMap(fw.relatorPermutations)
+  .groupBy(rel => rel.get(0))
+  .map(I.Set);
 
 
 const _inverseGen = g => fw.inverse([g]).first();
@@ -34,7 +32,7 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
     edge2word.setIn([point, gen], w);
     edge2word.setIn([action(point, gen), _inverseGen(gen)], fw.inverse(w));
 
-    relsByGen.get(gen).forEach(function(r) {
+    relsByGen.get(gen).forEach(r => {
       let cut = null;
       let w   = null;
       let x   = point;
@@ -61,7 +59,7 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
 };
 
 
-const _spanningTree = function _spanningTree(basePoint, nrGens, action) {
+const _spanningTree = (basePoint, nrGens, action) => {
   const gens = I.Range(1, nrGens+1).flatMap(i => [i, -i]);
 
   const queue = [basePoint];
@@ -71,7 +69,7 @@ const _spanningTree = function _spanningTree(basePoint, nrGens, action) {
   while (queue.length) {
     const point = queue.shift();
 
-    gens.forEach(function(gen) {
+    gens.forEach(gen => {
       const p = action(point, gen);
       if (!seen.contains(p)) {
         queue.push(p);
@@ -94,7 +92,7 @@ export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
   const point2word = I.Map([[basePoint, id]]).asMutable();
   const edge2word = I.Map().asMutable();
 
-  tree.forEach(function(edge) {
+  tree.forEach(edge => {
     _closeRelations(edge, id, edge2word, relsByGen, action);
     point2word.set(
       action(edge.point, edge.gen),
@@ -104,9 +102,9 @@ export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
   const generators = [];
   let lastGen = 0;
 
-  domain.forEach(function(px) {
+  domain.forEach(px => {
     const wx = point2word.get(px);
-    gens.forEach(function(g) {
+    gens.forEach(g => {
       const edge = { point: px, gen: g };
       if (edge2word.getIn([px, g]) == null) {
         const py = action(px, g);
