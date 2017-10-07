@@ -106,7 +106,7 @@ export const toroidalCover = ds => {
   _assert(isEuclidean(ds), 'must be euclidean');
 
   const dso = d.orientedCover(ds);
-  const degree = Math.max.apply(null, _map1dOrbits(dso.v.bind(dso), dso));
+  const degree = Math.max(..._map1dOrbits(dso.v.bind(dso), dso));
 
   return cv.covers(dso, degree).filter(_unbranched).first();
 };
