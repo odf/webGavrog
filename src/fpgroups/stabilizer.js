@@ -83,6 +83,15 @@ const _spanningTree = (basePoint, nrGens, action) => {
 };
 
 
+const _insertInOrderedSet = (elm, set, cmp) => {
+  let i = 0;
+  while (i < set.length && cmp(elm, set[i]) < 0)
+    ++i;
+  if (i >= set.length || cmp(elm, set[i]) != 0)
+    set.splice(i, 0, elm);
+};
+
+
 export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
   const relsByGen = _relatorsByStartGen(relators);
   const tree = _spanningTree(basePoint, nrGens, action);
@@ -116,16 +125,16 @@ export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
     });
   });
 
-  const subrels = I.Set().asMutable();
+  const subrels = [];
   for (const p of domain) {
     for (const r of relators) {
       const w = fw.relatorRepresentative(_traceWord(p, r, edge2word, action));
-      if (w && w.size)
-        subrels.add(w);
+      if (w && fw.compare(w, fw.empty))
+        _insertInOrderedSet(w, subrels, fw.compare);
     }
   }
 
-  return { generators: I.List(generators), relators: subrels.sort(fw.compare) };
+  return { generators, relators: subrels };
 };
 
 

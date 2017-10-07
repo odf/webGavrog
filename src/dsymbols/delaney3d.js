@@ -88,7 +88,7 @@ export const pseudoToroidalCover = ds => {
           domain,
           (...args) => table.getIn(args)
         );
-        const inv = abelianInvariants(stab.generators.size, stab.relators);
+        const inv = abelianInvariants(stab.generators.length, stab.relators);
 
         if (inv.length == 3 && inv.every(x => x == 0))
           return covers.coverForTable(ds, table, fg.edge2word);
