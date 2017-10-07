@@ -9,18 +9,6 @@ import { Partition } from '../common/unionFind';
 const partition = () => new Partition();
 
 
-const mergeRows = (part, ra, rb) => {
-  const row    = rb.merge(ra);
-  const rowAlt = ra.merge(rb);
-
-  const next = row
-    .map((ag, g) => [ag, rowAlt.get(g)])
-    .filter(([a, b]) => part.find(a) != part.find(b));
-
-  return { row, next };
-};
-
-
 const identify = (table, part, a, b) => {
   const queue = [[a, b]];
   part = part.clone();
@@ -30,9 +18,18 @@ const identify = (table, part, a, b) => {
 
     if (a != b) {
       part.union(a, b);
-      const { row, next } = mergeRows(part, table.get(a), table.get(b));
+      const merged = table.get(a).asMutable();
+
+      for (const [g, gb] of table.get(b)) {
+        const ga = table.getIn([a, g]);
+        if (ga == null)
+          merged.set(g, gb);
+        else if (part.find(ga) != part.find(gb))
+          queue.push([ga, gb]);
+      }
+
+      const row = merged.asImmutable();
       table = table.set(a, row).set(b, row);
-      next.forEach(x => queue.push(x));
     }
   }
 
