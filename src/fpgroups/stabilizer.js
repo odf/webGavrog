@@ -15,7 +15,7 @@ const _traceWord = (point, w, edge2word, action) => {
   let p = point;
   const trace = [];
   w.forEach(g => {
-    trace.push(edge2word.getIn([p, g]));
+    trace.push(edge2word[p][g]);
     p = action(p, g);
   });
 
@@ -29,8 +29,14 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
   while (queue.length) {
     const [{ point, gen }, w] = queue.shift();
 
-    edge2word.setIn([point, gen], w);
-    edge2word.setIn([action(point, gen), _inverseGen(gen)], fw.inverse(w));
+    if (edge2word[point] == null)
+      edge2word[point] = {};
+    edge2word[point][gen] = w;
+
+    const pg = action(point, gen);
+    if (edge2word[pg] == null)
+      edge2word[pg] = {};
+    edge2word[pg][_inverseGen(gen)] = fw.inverse(w);
 
     relsByGen.get(gen).forEach(r => {
       let cut = null;
@@ -39,7 +45,7 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
 
       for (const i of r.keys()) {
         const h = r.get(i);
-        if (edge2word.getIn([x, h]) == null) {
+        if ((edge2word[x] || {})[h] == null) {
           if (cut == null) {
             cut = { point: x, gen: h };
             w   = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
@@ -95,35 +101,35 @@ const _insertInOrderedSet = (elm, set, cmp) => {
 export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
   const relsByGen = _relatorsByStartGen(relators);
   const tree = _spanningTree(basePoint, nrGens, action);
-  const gens = I.Range(1, nrGens+1).flatMap(i => [i, -i]);
   const id = fw.empty;
 
-  const point2word = I.Map([[basePoint, id]]).asMutable();
-  const edge2word = I.Map().asMutable();
+  const point2word = { [basePoint]: id };
+  const edge2word = {};
 
-  tree.forEach(edge => {
+  for (const edge of tree) {
     _closeRelations(edge, id, edge2word, relsByGen, action);
-    point2word.set(
-      action(edge.point, edge.gen),
-      fw.product([point2word.get(edge.point), [edge.gen]]));
-  });
+    point2word[action(edge.point, edge.gen)] =
+      fw.product([point2word[edge.point], [edge.gen]]);
+  }
 
   const generators = [];
   let lastGen = 0;
 
-  domain.forEach(px => {
-    const wx = point2word.get(px);
-    gens.forEach(g => {
-      const edge = { point: px, gen: g };
-      if (edge2word.getIn([px, g]) == null) {
-        const py = action(px, g);
-        const wy = point2word.get(py);
-        const h = ++lastGen;
-        _closeRelations(edge, fw.word([h]), edge2word, relsByGen, action);
-        generators.push(fw.product([wx, [g], fw.inverse(wy)]));
+  for (const px of domain) {
+    const wx = point2word[px];
+    for (let i = 1; i <= nrGens; ++i) {
+      for (const g of [i, -i]) {
+        const edge = { point: px, gen: g };
+        if (edge2word[px][g] == null) {
+          const py = action(px, g);
+          const wy = point2word[py];
+          const h = ++lastGen;
+          _closeRelations(edge, fw.word([h]), edge2word, relsByGen, action);
+          generators.push(fw.product([wx, [g], fw.inverse(wy)]));
+        }
       }
-    });
-  });
+    }
+  }
 
   const subrels = [];
   for (const p of domain) {
