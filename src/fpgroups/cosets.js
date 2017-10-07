@@ -113,9 +113,9 @@ const compressed = (table, part) => {
 };
 
 
-const maybeCompressed = (c, factor) => {
-  const invalid = c.table.filter(k => c.part.find(k) != k).size / c.table.size;
-  if (invalid > factor)
+const maybeCompressed = (c, factor=0.5) => {
+  const invalid = c.table.filter(k => c.part.find(k) != k).size;
+  if (invalid > factor * c.table.size)
     return { table: compressed(c.table, c.part), part: partition() };
   else
     return c;
