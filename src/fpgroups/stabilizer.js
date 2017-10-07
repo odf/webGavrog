@@ -1,11 +1,28 @@
-import * as I  from 'immutable';
 import * as fw from './freeWords';
 
 
-const _relatorsByStartGen = relators => I.List(relators).map(I.List)
-  .flatMap(fw.relatorPermutations)
-  .groupBy(rel => rel.get(0))
-  .map(I.Set);
+const _insertInOrderedSet = (elm, set, cmp) => {
+  let i = 0;
+  while (i < set.length && cmp(elm, set[i]) < 0)
+    ++i;
+  if (i >= set.length || cmp(elm, set[i]) != 0)
+    set.splice(i, 0, elm);
+};
+
+
+const _relatorsByStartGen = relators => {
+  const result = {};
+  for (const rel of relators) {
+    for (const w of fw.relatorPermutations(rel)) {
+      const g = w.first();
+      if (result[g] == null)
+        result[g] = [w];
+      else
+        _insertInOrderedSet(w, result[g], fw.compare);
+    }
+  }
+  return result;
+};
 
 
 const _inverseGen = g => fw.inverse([g]).first();
@@ -38,7 +55,7 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
       edge2word[pg] = {};
     edge2word[pg][_inverseGen(gen)] = fw.inverse(w);
 
-    relsByGen.get(gen).forEach(r => {
+    relsByGen[gen].forEach(r => {
       let cut = null;
       let w   = null;
       let x   = point;
@@ -66,35 +83,26 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
 
 
 const _spanningTree = (basePoint, nrGens, action) => {
-  const gens = I.Range(1, nrGens+1).flatMap(i => [i, -i]);
-
   const queue = [basePoint];
   const edges = [];
-  const seen  = I.Set([basePoint]).asMutable();
+  const seen  = { basePoint: true };
 
   while (queue.length) {
     const point = queue.shift();
 
-    gens.forEach(gen => {
-      const p = action(point, gen);
-      if (!seen.contains(p)) {
-        queue.push(p);
-        seen.add(p);
-        edges.push({ point, gen });
+    for (let i = 1; i <= nrGens; ++i) {
+      for (const gen of [i, -i]) {
+        const p = action(point, gen);
+        if (!seen[p]) {
+          queue.push(p);
+          seen[p] = true;
+          edges.push({ point, gen });
+        }
       }
-    });
+    }
   }
 
   return edges;
-};
-
-
-const _insertInOrderedSet = (elm, set, cmp) => {
-  let i = 0;
-  while (i < set.length && cmp(elm, set[i]) < 0)
-    ++i;
-  if (i >= set.length || cmp(elm, set[i]) != 0)
-    set.splice(i, 0, elm);
 };
 
 
