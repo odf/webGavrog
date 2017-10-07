@@ -1,5 +1,3 @@
-import * as I from 'immutable';
-
 import * as cosets      from '../fpgroups/cosets';
 import { word } from '../fpgroups/freeWords';
 
@@ -154,7 +152,7 @@ if (require.main == module) {
 
   const testInvariants = (nrGens, rels) => {
     console.log(`abelianInvariants(${nrGens}, ${rels}) =`);
-    console.log(`  ${abelianInvariants(3, I.List(rels).map(word))}`);
+    console.log(`  ${abelianInvariants(3, rels.map(word))}`);
     console.log();
   };
 
