@@ -113,15 +113,6 @@ const compressed = (table, part) => {
 };
 
 
-const maybeCompressed = (c, factor=0.5) => {
-  const invalid = c.table.filter(k => c.part.find(k) != k).size;
-  if (invalid > factor * c.table.size)
-    return { table: compressed(c.table, c.part), part: partition() };
-  else
-    return c;
-};
-
-
 const _expandGenerators = nrGens =>
   I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
 
@@ -160,8 +151,7 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
       const g = gens.get(j);
       const n = current.table.size;
       const table = current.table.setIn([i, g], n).setIn([n, -g], i);
-      current = maybeCompressed(
-        scanRelations(rels, subgens, table, current.part, n));
+      current = scanRelations(rels, subgens, table, current.part, n);
       ++j;
     }
   }
