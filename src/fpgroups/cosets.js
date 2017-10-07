@@ -71,55 +71,43 @@ const scanAndIdentify = (table, part, w, start) => {
   const tail = t.row;
   const j = n - t.index;
 
-  let result;
-
   if (j == i+1)
-    result =  {
+    return {
       table: table.setIn([head, w.get(i)], tail).setIn([tail, -w.get(i)], head),
-      part : part,
-      next : head
+      part,
+      next: head
     };
   else if (i == j && head != tail)
-    result =  identify(table, part, head, tail);
+    return identify(table, part, head, tail);
   else
-    result =  {
-      table: table,
-      part : part
-    };
-
-  return result;
+    return { table, part };
 };
 
 
-const scanRelations = (rels, subgens, table, part, start) => {
-  let current = {
-    table: table,
-    part : part
-  };
-
-  current = rels.reduce(
-    (c, w) => scanAndIdentify(c.table, c.part, w, start),
-    current
+const scanRelations = (rels, subgens, table, part, start) =>
+  subgens.reduce(
+    ({ table, part }, w) => scanAndIdentify(table, part, w, part.find(0)),
+    rels.reduce(
+      ({ table, part }, w) => scanAndIdentify(table, part, w, start),
+      { table, part }
+    )
   );
-
-  return subgens.reduce(
-    (c, w) => scanAndIdentify(c.table, c.part, w, c.part.find(0)),
-    current
-  );
-};
 
 
 const compressed = (table, part) => {
-  const toIdx = table
-    .map((_, k) => k)
-    .filter(k => part.find(k) == k)
-    .toMap()
-    .flip();
+  const toIdx = {};
+  let i = 0;
+  for (const k of table.keySeq()) {
+    if (part.find(k) == k) {
+      toIdx[k] = i;
+      ++i;
+    }
+  }
 
-  const canon = a => toIdx.get(part.find(a));
+  const canon = a => toIdx[part.find(a)];
 
   return table.toMap()
-    .filter((r, k) => toIdx.get(k) != undefined)
+    .filter((r, k) => toIdx[k] != undefined)
     .mapKeys(canon)
     .map(row => row.map(canon));
 };
