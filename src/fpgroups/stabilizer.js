@@ -25,16 +25,14 @@ const _relatorsByStartGen = relators => {
 };
 
 
-const _inverseGen = g => fw.inverse([g]).first();
-
-
 const _traceWord = (point, w, edge2word, action) => {
   let p = point;
   const trace = [];
-  w.forEach(g => {
+
+  for (const g of w) {
     trace.push(edge2word[p][g]);
     p = action(p, g);
-  });
+  }
 
   return fw.product(trace);
 };
@@ -53,19 +51,19 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
     const pg = action(point, gen);
     if (edge2word[pg] == null)
       edge2word[pg] = {};
-    edge2word[pg][_inverseGen(gen)] = fw.inverse(w);
+    edge2word[pg][-gen] = fw.inverse(w);
 
-    relsByGen[gen].forEach(r => {
+    for (const r of relsByGen[gen]) {
       let cut = null;
-      let w   = null;
-      let x   = point;
+      let w = null;
+      let x = point;
 
       for (const i of r.keys()) {
         const h = r.get(i);
         if ((edge2word[x] || {})[h] == null) {
           if (cut == null) {
             cut = { point: x, gen: h };
-            w   = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
+            w = fw.inverse(fw.rotated(r, i+1).slice(0, -1));
           }
           else {
             cut = null;
@@ -77,7 +75,7 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
 
       if (cut != null)
         queue.push([cut, _traceWord(cut.point, w, edge2word, action)]);
-    });
+    }
   }
 };
 
