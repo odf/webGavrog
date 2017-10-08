@@ -102,16 +102,13 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
   let part = new Partition();
   let i = 0, j = 0;
 
-  while (true) {
+  while (i < table.size) {
     if (table.size > 10000)
       throw new Error('maximum coset table size reached');
 
-    if (i >= table.size) {
-      return compressed(table, part);
-    } else if (j >= gens.size || i != part.find(i)) {
-      ++i;
-      j = 0;
-    } else {
+    if (j >= gens.size || i != part.find(i))
+      [i, j] = [i + 1, 0];
+    else {
       if (table.getIn([i, gens.get(j)]) == null) {
         const g = gens.get(j);
         const n = table.size;
@@ -128,6 +125,8 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
       ++j;
     }
   }
+
+  return compressed(table, part);
 };
 
 
