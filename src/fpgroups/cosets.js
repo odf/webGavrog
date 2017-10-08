@@ -7,41 +7,38 @@ import { Partition } from '../common/unionFind';
 
 
 const identify = (table, part, a, b) => {
-  const queue = [[a, b]];
   part = part.clone();
+  table = table.asMutable();
+
+  const queue = [[a, b]];
 
   while (queue.length) {
     const [a, b] = queue.shift().map(x => part.find(x));
 
     if (a != b) {
       part.union(a, b);
-      const merged = table.get(a).asMutable();
 
-      for (const [g, gb] of table.get(b)) {
-        const ga = table.getIn([a, g]);
-        if (ga == null)
-          merged.set(g, gb);
-        else if (part.find(ga) != part.find(gb))
-          queue.push([ga, gb]);
+      for (const [g, bg] of table.get(b)) {
+        const ag = table.getIn([a, g]);
+        if (ag == null)
+          table.setIn([a, g], bg);
+        else if (part.find(ag) != part.find(bg))
+          queue.push([ag, bg]);
       }
-
-      const row = merged.asImmutable();
-      table = table.set(a, row).set(b, row);
+      table.set(b, table.get(a));
     }
   }
 
-  return { table, part };
+  return { table: table.asImmutable(), part };
 };
 
 
-const scan = (table, w, start, from, to, inverse = false) => {
-  const n = w.size - 1;
+const scan = (table, w, start, limit) => {
   let row = start;
-  let i = from;
+  let i = 0;
 
-  while (i < to) {
-    const c = inverse ? -w.get(n-i) : w.get(i);
-    const next = table.getIn([row, c]);
+  while (i < limit) {
+    const next = table.getIn([row, w.get(i)]);
     if (next == null)
       break;
     else {
@@ -56,22 +53,14 @@ const scan = (table, w, start, from, to, inverse = false) => {
 
 const scanAndIdentify = (table, part, w, start) => {
   const n = w.size;
+  const { row: head, index: i } = scan(table, w, start, n);
+  const { row: tail, index: j } = scan(table, fw.inverse(w), start, n - i);
 
-  let t = scan(table, w, start, 0, n);
-  const head = t.row;
-  const i = t.index;
-
-  t = scan(table, w, start, 0, n - i, true);
-  const tail = t.row;
-  const j = n - t.index;
-
-  if (j == i+1)
-    return {
-      table: table.setIn([head, w.get(i)], tail).setIn([tail, -w.get(i)], head),
-      part,
-      next: head
-    };
-  else if (i == j && head != tail)
+  if (i + j == n - 1) {
+    table = table.setIn([head, w.get(i)], tail).setIn([tail, -w.get(i)], head);
+    return { table, part, next: head };
+  }
+  else if (i + j == n && head != tail)
     return identify(table, part, head, tail);
   else
     return { table, part };
@@ -115,13 +104,10 @@ const _expandRelators = relators =>
   I.Set(I.List(relators).flatMap(fw.relatorPermutations));
 
 
-const withInverses = words => I.Set(words).merge(words.map(fw.inverse));
-
-
 export const cosetTable = (nrGens, relators, subgroupGens) => {
   const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
-  const subgens = withInverses(subgroupGens.map(fw.word));
+  const subgens = subgroupGens.map(fw.word);
 
   let current = {
     table: I.List([I.Map()]),
