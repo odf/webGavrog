@@ -67,16 +67,6 @@ const scanAndIdentify = (table, part, w, start) => {
 };
 
 
-const scanRelations = (rels, subgens, table, part, start) =>
-  subgens.reduce(
-    ({ table, part }, w) => scanAndIdentify(table, part, w, part.find(0)),
-    rels.reduce(
-      ({ table, part }, w) => scanAndIdentify(table, part, w, start),
-      { table, part }
-    )
-  );
-
-
 const compressed = (table, part) => {
   const toIdx = {};
   let i = 0;
@@ -107,31 +97,34 @@ const _expandRelators = relators =>
 export const cosetTable = (nrGens, relators, subgroupGens) => {
   const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
-  const subgens = subgroupGens.map(fw.word);
 
-  let current = {
-    table: I.List([I.Map()]),
-    part: new Partition()
-  };
-
+  let table = I.List([I.Map()]);
+  let part = new Partition();
   let i = 0, j = 0;
 
   while (true) {
-    if (current.table.size > 10000)
+    if (table.size > 10000)
       throw new Error('maximum coset table size reached');
 
-    if (i >= current.table.size) {
-      return compressed(current.table, current.part);
-    } else if (j >= gens.size || i != current.part.find(i)) {
+    if (i >= table.size) {
+      return compressed(table, part);
+    } else if (j >= gens.size || i != part.find(i)) {
       ++i;
       j = 0;
-    } else if (current.table.getIn([i, gens.get(j)]) != null) {
-      ++j;
     } else {
-      const g = gens.get(j);
-      const n = current.table.size;
-      const table = current.table.setIn([i, g], n).setIn([n, -g], i);
-      current = scanRelations(rels, subgens, table, current.part, n);
+      if (table.getIn([i, gens.get(j)]) == null) {
+        const g = gens.get(j);
+        const n = table.size;
+
+        let t = { table: table.setIn([i, g], n).setIn([n, -g], i), part };
+        for (const w of rels)
+          t = scanAndIdentify(t.table, t.part, w, n);
+        for (const w of subgroupGens)
+          t = scanAndIdentify(t.table, t.part, fw.word(w), part.find(0));
+
+        table = t.table;
+        part = t.part;
+      }
       ++j;
     }
   }
