@@ -24,7 +24,7 @@ export function* results(gen, pred) {
     if (!pred || pred(g.current())) {
       const val = g.result();
       g = g.step();
-      if (val !== undefined)
+      if (val != null)
         yield val;
     } else
       g = g.skip();

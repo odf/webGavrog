@@ -6,9 +6,6 @@ import * as util       from '../common/util';
 import { Partition } from '../common/unionFind';
 
 
-const partition = () => new Partition();
-
-
 const identify = (table, part, a, b) => {
   const queue = [[a, b]];
   part = part.clone();
@@ -45,7 +42,7 @@ const scan = (table, w, start, from, to, inverse = false) => {
   while (i < to) {
     const c = inverse ? -w.get(n-i) : w.get(i);
     const next = table.getIn([row, c]);
-    if (next === undefined)
+    if (next == null)
       break;
     else {
       ++i;
@@ -53,10 +50,7 @@ const scan = (table, w, start, from, to, inverse = false) => {
     }
   }
 
-  return {
-    row  : row,
-    index: i
-  };
+  return { row, index: i };
 };
 
 
@@ -107,7 +101,7 @@ const compressed = (table, part) => {
   const canon = a => toIdx[part.find(a)];
 
   return table.toMap()
-    .filter((r, k) => toIdx[k] != undefined)
+    .filter((r, k) => toIdx[k] != null)
     .mapKeys(canon)
     .map(row => row.map(canon));
 };
@@ -131,7 +125,7 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
 
   let current = {
     table: I.List([I.Map()]),
-    part : partition()
+    part: new Partition()
   };
 
   let i = 0, j = 0;
@@ -145,7 +139,7 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
     } else if (j >= gens.size || i != current.part.find(i)) {
       ++i;
       j = 0;
-    } else if (current.table.getIn([i, gens.get(j)]) !== undefined) {
+    } else if (current.table.getIn([i, gens.get(j)]) != null) {
       ++j;
     } else {
       const g = gens.get(j);
@@ -165,7 +159,7 @@ export const cosetRepresentatives = table => {
   while (queue.size > 0) {
     const i = queue.first();
     const row = table.get(i);
-    const free = row.filter(v => reps.get(v) === undefined);
+    const free = row.filter(v => reps.get(v) == null);
     reps = reps.merge(free.entrySeq().map(
       e => [e[1], fw.product([reps.get(i), [e[0]]])]));
     queue = queue.shift().concat(free.toList());
@@ -195,7 +189,7 @@ const _scanRecursively = (rels, table, index) => {
     if (k < rs.length) {
       const rel = rs[k];
       ++k;
-      const out = scanAndIdentify(t, partition(), rel, row);
+      const out = scanAndIdentify(t, new Partition(), rel, row);
       if (!out.part.isTrivial())
         return;
 
@@ -283,7 +277,7 @@ export const tables = (nrGens, relators, maxCosets) => {
 
   return generators.backtracker({
     root: I.List([I.Map()]),
-    extract(table) { return free(table).isEmpty() ? table : undefined },
+    extract(table) { return free(table).isEmpty() ? table : null },
     children(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
         .filter(t => !t.isEmpty() && _isCanonical(t, gens))
