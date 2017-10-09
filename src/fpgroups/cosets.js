@@ -5,6 +5,9 @@ import * as generators from '../common/generators';
 import { Partition } from '../common/unionFind';
 
 
+const _joinInTable = (t, a, b, g) => t.setIn([a, g], b).setIn([b, -g], a);
+
+
 const identify = (table, part, a, b) => {
   part = part.clone();
   table = table.asMutable();
@@ -56,7 +59,7 @@ const scanAndIdentify = (table, part, w, start) => {
   const { row: tail, index: j } = scan(table, fw.inverse(w), start, n - i);
 
   if (i + j == n - 1) {
-    table = table.setIn([head, w.get(i)], tail).setIn([tail, -w.get(i)], head);
+    table = _joinInTable(table, head, tail, w.get(i));
     return { table, part, next: head };
   }
   else if (i + j == n && head != tail)
@@ -112,7 +115,7 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
         const g = gens.get(j);
         const n = table.size;
 
-        let t = { table: table.setIn([i, g], n).setIn([n, -g], i), part };
+        let t = { table: _joinInTable(table, i, n, g), part };
         for (const w of rels)
           t = scanAndIdentify(t.table, t.part, w, n);
         for (const w of subgroupGens)
@@ -191,15 +194,14 @@ const _potentialChildren = (table, gens, rels, maxCosets) => {
 
     for (let pos = k; pos < limit; ++pos) {
       if (table.getIn([pos, ginv]) == null) {
-        const t0 = table.setIn([k, g], pos).setIn([pos, ginv], k);
-        const t = _scanRecursively(rels, t0, k);
+        const t = _scanRecursively(rels, _joinInTable(table, k, pos, g), k);
         if (t != null)
           result.push(t);
       }
     }
   }
 
-  return I.List(result);
+  return result;
 };
 
 
@@ -254,8 +256,7 @@ export const tables = (nrGens, relators, maxCosets) => {
     extract(table) { return isFull(table) ? table : null },
     children(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
-        .filter(t => !t.isEmpty() && _isCanonical(t, gens))
-        .toArray();
+        .filter(t => !t.isEmpty() && _isCanonical(t, gens));
     }
   });
 };
@@ -273,7 +274,7 @@ const _inducedTable = (gens, img, img0) => {
       const n = o2n.has(k) ? o2n.get(k) : table.size;
       o2n.set(k, n);
       n2o.set(n, k);
-      table.setIn([i, g], n).setIn([n, -g], i);
+      _joinInTable(table, i, n, g);
     });
     ++i;
   }
