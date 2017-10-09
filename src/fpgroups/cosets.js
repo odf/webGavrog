@@ -158,31 +158,26 @@ const _firstFreeInTable = (table, gens) => {
 
 
 const _scanRecursively = (rels, table, index) => {
-  const q = [];
-  const rs = rels.toArray();
+  const p = () => new Partition();
+  const q = [index];
 
-  let row = index;
-  let t   = table;
-  let k   = 0;
+  while (q.length) {
+    const row = q.shift();
 
-  while (k < rs.length || q.length) {
-    if (k < rs.length) {
-      const rel = rs[k];
-      ++k;
-      const out = scanAndIdentify(t, new Partition(), rel, row);
-      if (!out.part.isTrivial())
+    for (const rel of rels) {
+      const { table: t, part, next } = scanAndIdentify(table, p(), rel, row);
+
+      if (part.isTrivial()) {
+        table = t;
+        if (next != null)
+          q.push(next);
+      }
+      else
         return;
-
-      t = out.table;
-      if (out.next != null)
-        q.push(out.next);
-    } else {
-      row = q.shift();
-      k = 0;
     }
   }
 
-  return t;
+  return table;
 };
 
 
