@@ -1,7 +1,6 @@
 import * as I          from 'immutable';
 import * as fw         from './freeWords';
 import * as generators from '../common/generators';
-import * as util       from '../common/util';
 
 import { Partition } from '../common/unionFind';
 
@@ -131,16 +130,17 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
 
 
 export const cosetRepresentatives = table => {
-  let queue = I.List([0]);
-  let reps = I.Map([[0, fw.empty]]);
+  const queue = [0];
+  const reps = [fw.empty];
 
-  while (queue.size > 0) {
-    const i = queue.first();
-    const row = table.get(i);
-    const free = row.filter(v => reps.get(v) == null);
-    reps = reps.merge(free.entrySeq().map(
-      e => [e[1], fw.product([reps.get(i), [e[0]]])]));
-    queue = queue.shift().concat(free.toList());
+  while (queue.length) {
+    const i = queue.shift();
+    const w = reps[i];
+
+    for (const [g, k] of table.get(i).filter(g => reps[g] == null)) {
+      reps[k] = fw.product([w, [g]]);
+      queue.push(k);
+    }
   }
 
   return reps;
@@ -319,18 +319,18 @@ export const relatorMatrix = (nrgens, relators) =>
 
 
 if (require.main == module) {
-  const timer = util.timer();
+  const test = table => {
+    const reps = cosetRepresentatives(table);
+    console.log(I.fromJS(reps), Object.keys(reps).length);
+  };
 
   const base = cosetTable(
     3,
     [[1,1], [2,2], [3,3], [1,2,1,2,1,2], [1,3,1,3], fw.raisedTo(3, [2,3])],
     [[1,2]]);
 
-  let t = cosetRepresentatives(base);
-  console.log(t.toList(), t.size);
-
-  t = cosetRepresentatives(coreTable(base));
-  console.log(t.toList(), t.size);
+  test(base);
+  test(coreTable(base));
 
   console.log(_expandGenerators(4));
   console.log(_expandRelators([[1,2,-3]]));
