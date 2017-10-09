@@ -183,22 +183,23 @@ const _scanRecursively = (rels, table, index) => {
 
 const _potentialChildren = (table, gens, rels, maxCosets) => {
   const [k, g] = _firstFreeInTable(table, gens) || [];
+  const result = [];
 
-  if (k == null)
-    return I.List();
-  else {
+  if (k != null) {
     const ginv = -g;
-    const n = table.size;
-    const matches = I.Range(k, n).filter(k => table.getIn([k, ginv]) == null);
-    const candidates = n < maxCosets ? I.List(matches).push(n) : matches;
+    const limit = Math.min(table.size + 1, maxCosets);
 
-    return candidates
-      .map(pos => {
-        const t = table.setIn([k, g], pos).setIn([pos, ginv], k);
-        return _scanRecursively(rels, t, k);
-      })
-      .filter(t => t != null);
+    for (let pos = k; pos < limit; ++pos) {
+      if (table.getIn([pos, ginv]) == null) {
+        const t0 = table.setIn([k, g], pos).setIn([pos, ginv], k);
+        const t = _scanRecursively(rels, t0, k);
+        if (t != null)
+          result.push(t);
+      }
+    }
   }
+
+  return I.List(result);
 };
 
 
