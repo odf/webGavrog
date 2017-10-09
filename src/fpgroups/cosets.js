@@ -147,11 +147,13 @@ export const cosetRepresentatives = table => {
 };
 
 
-const _freeInTable = (table, gens) => {
-  return I.Range(0, table.size).flatMap(k => (
-    gens
-      .filter(g => table.get(k).get(g) == null)
-      .map(g => ({ index: k, generator: g }))));
+const _firstFreeInTable = (table, gens) => {
+  for (let k = 0; k < table.size; ++k) {
+    for (const g of gens) {
+      if (table.getIn([k, g]) == null)
+        return [k, g];
+    }
+  }
 };
 
 
@@ -185,11 +187,11 @@ const _scanRecursively = (rels, table, index) => {
 
 
 const _potentialChildren = (table, gens, rels, maxCosets) => {
-  const free = _freeInTable(table, gens);
+  const [k, g] = _firstFreeInTable(table, gens) || [];
 
-  if (!free.isEmpty()) {
-    const k = free.first().index;
-    const g = free.first().generator;
+  if (k == null)
+    return I.List();
+  else {
     const ginv = -g;
     const n = table.size;
     const matches = I.Range(k, n).filter(k => table.getIn([k, ginv]) == null);
@@ -202,8 +204,6 @@ const _potentialChildren = (table, gens, rels, maxCosets) => {
       })
       .filter(t => t != null);
   }
-  else
-    return I.List();
 };
 
 
@@ -251,11 +251,11 @@ const _isCanonical = (table, gens) => I.Range(1, table.size)
 export const tables = (nrGens, relators, maxCosets) => {
   const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
-  const free = t => _freeInTable(t, gens);
+  const isFull = t => _firstFreeInTable(t, gens) == null;
 
   return generators.backtracker({
     root: I.List([I.Map()]),
-    extract(table) { return free(table).isEmpty() ? table : null },
+    extract(table) { return isFull(table) ? table : null },
     children(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
         .filter(t => !t.isEmpty() && _isCanonical(t, gens))
