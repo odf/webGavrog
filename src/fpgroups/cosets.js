@@ -100,8 +100,23 @@ const _expandGenerators = nrGens =>
   range(1, nrGens+1).concat(range(-1, -(nrGens+1)));
 
 
-const _expandRelators = relators =>
-  I.Set(I.List(relators).flatMap(fw.relatorPermutations));
+const _insertInOrderedSet = (elm, set, cmp) => {
+  let i = 0;
+  while (i < set.length && cmp(elm, set[i]) < 0)
+    ++i;
+  if (i >= set.length || cmp(elm, set[i]) != 0)
+    set.splice(i, 0, elm);
+};
+
+
+const _expandRelators = relators => {
+  const out = [];
+  for (const rel of relators) {
+    for (const w of fw.relatorPermutations(rel))
+      _insertInOrderedSet(w, out, fw.compare);
+  }
+  return out;
+};
 
 
 export const cosetTable = (nrGens, relators, subgroupGens) => {
