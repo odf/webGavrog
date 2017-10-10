@@ -102,18 +102,16 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
 
   let table = I.List([I.Map()]);
   let part = new Partition();
-  let i = 0, j = 0;
 
-  while (i < table.size) {
-    if (table.size > 10000)
-      throw new Error('maximum coset table size reached');
+  for (let i = 0; i < table.size; ++i) {
+    if (i != part.find(i))
+      continue;
 
-    if (j >= gens.size || i != part.find(i))
-      [i, j] = [i + 1, 0];
-    else {
-      if (table.getIn([i, gens.get(j)]) == null) {
-        const g = gens.get(j);
+    for (const g of gens) {
+      if (table.getIn([i, g]) == null) {
         const n = table.size;
+        if (n >= 10000)
+          throw new Error('maximum coset table size reached');
 
         let t = { table: _joinInTable(table, i, n, g), part };
         for (const w of rels)
@@ -124,7 +122,6 @@ export const cosetTable = (nrGens, relators, subgroupGens) => {
         table = t.table;
         part = t.part;
       }
-      ++j;
     }
   }
 
