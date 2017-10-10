@@ -261,14 +261,17 @@ const _isCanonical = (table, gens) => range(1, table.size)
 export const tables = (nrGens, relators, maxCosets) => {
   const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
-  const isFull = t => _firstFreeInTable(t, gens) == null;
 
   return generators.backtracker({
     root: emptyCosetTable(),
-    extract(table) { return isFull(table) ? table : null },
+
+    extract(table) {
+      return _firstFreeInTable(table, gens) == null ? table : null;
+    },
+
     children(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
-        .filter(t => !t.isEmpty() && _isCanonical(t, gens));
+        .filter(t => t.size && _isCanonical(t, gens));
     }
   });
 };
@@ -276,40 +279,37 @@ export const tables = (nrGens, relators, maxCosets) => {
 
 const _inducedTable = (gens, img, img0) => {
   const table = emptyCosetTable().asMutable();
-  const o2n = I.Map([[img0, 0]]).asMutable();
-  const n2o = I.Map([[0, img0]]).asMutable();
-  let i = 0;
+  const o2n = { [img0]: 0 };
+  const n2o = [img0];
 
-  while (i < table.size) {
-    gens.forEach(g => {
-      const k = img(n2o.get(i), g);
-      const n = o2n.has(k) ? o2n.get(k) : table.size;
-      o2n.set(k, n);
-      n2o.set(n, k);
+  for (let i = 0; i < table.size; ++i) {
+    for (const g of gens) {
+      const k = img(n2o[i], g);
+      if (o2n[k] == null)
+        o2n[k] = table.size;
+      const n = o2n[k];
+      n2o[n] = k;
       _joinInTable(table, i, n, g);
-    });
-    ++i;
+    }
   }
 
   return table.asImmutable();
 };
 
 
-export const intersectionTable = (tableA, tableB) => {
-  return _inducedTable(
+export const intersectionTable = (tableA, tableB) =>
+  _inducedTable(
     (tableA.first() || I.Map()).keySeq(),
-    (es, g) => I.List([tableA.getIn([es.get(0), g]),
-                       tableB.getIn([es.get(1), g])]),
-    I.List([0, 0])
+    (es, g) => [tableA.getIn([es[0], g]), tableB.getIn([es[1], g])],
+    [0, 0]
   );
-};
 
 
 export const coreTable = base =>
   _inducedTable(
     (base.first() || I.Map()).keySeq(),
     (es, g) => es.map(e => base.getIn([e, g])),
-    base.keySeq()
+    base.keySeq().toArray()
   );
 
 
