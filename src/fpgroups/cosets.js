@@ -206,39 +206,28 @@ const _potentialChildren = (table, gens, rels, maxCosets) => {
 
 
 const _compareRenumberedFom = (table, gens, start) => {
-  let o2n = I.Map([[start, 0]]);
-  let n2o = I.Map([[0, start]]);
-  let row = 0;
-  let col = 0;
+  const n2o = [start];
+  const o2n = { [start]: 0 };
 
-  while (true) {
-    if (row >= o2n.size && row < table.size)
+  for (let row = 0; row < table.size; ++row) {
+    if (row >= n2o.length)
       throw new Error("coset table is not transitive");
 
-    if (row >= table.size)
-      return 0;
-    else if (col >= gens.size) {
-      ++row;
-      col = 0;
-    } else {
-      const oval = table.getIn([row, gens.get(col)]);
-      let nval = table.getIn([n2o.get(row), gens.get(col)]);
-      if (nval != null && o2n.get(nval) == null) {
-        n2o = n2o.set(o2n.size, nval);
-        o2n = o2n.set(nval, o2n.size);
+    for (const g of gens) {
+      const t = table.getIn([n2o[row], g]);
+      if (t != null && o2n[t] == null) {
+        o2n[t] = n2o.length;
+        n2o.push(t);
       }
-      nval = o2n.get(nval);
 
-      if (oval == nval)
-        ++col;
-      else if (oval == null)
-        return -1;
-      else if (nval == null)
-        return 1;
-      else
-        return nval - oval;
+      const nval = o2n[t];
+      const oval = table.getIn([row, g]);
+      if (oval != nval)
+        return oval == null ? -1 : nval == null ? 1 : nval - oval;
     }
   }
+
+  return 0;
 };
 
 
