@@ -5,6 +5,14 @@ import * as generators from '../common/generators';
 import { Partition } from '../common/unionFind';
 
 
+const range = (from, to) => {
+  if (to < from)
+    return new Array(from - to).fill(0).map((_, i) => from - i);
+  else
+    return new Array(to - from).fill(0).map((_, i) => from + i);
+};
+
+
 const _joinInTable = (t, a, b, g) => t.setIn([a, g], b).setIn([b, -g], a);
 
 
@@ -89,7 +97,7 @@ const compressed = (table, part) => {
 
 
 const _expandGenerators = nrGens =>
-  I.Range(1, nrGens+1).concat(I.Range(-1, -(nrGens+1)));
+  range(1, nrGens+1).concat(range(-1, -(nrGens+1)));
 
 
 const _expandRelators = relators =>
@@ -228,7 +236,7 @@ const _compareRenumberedFom = (table, gens, start) => {
 };
 
 
-const _isCanonical = (table, gens) => I.Range(1, table.size)
+const _isCanonical = (table, gens) => range(1, table.size)
   .every(start => _compareRenumberedFom(table, gens, start) >= 0);
 
 
@@ -293,7 +301,7 @@ const _sum = a => a.reduce((x, y) => x + y, 0);
 
 export const relatorAsVector = (rel, nrgens) => {
   const counts = rel.groupBy(Math.abs).map(a => _sum(a.map(_sgn)));
-  return I.List(I.Range(1, nrgens+1).map(i => counts.get(i) || 0));
+  return I.List(range(1, nrgens+1).map(i => counts.get(i) || 0));
 };
 
 
