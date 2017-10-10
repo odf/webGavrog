@@ -119,11 +119,14 @@ const _expandRelators = relators => {
 };
 
 
+const emptyCosetTable = () => I.List([I.Map()]);
+
+
 export const cosetTable = (nrGens, relators, subgroupGens) => {
   const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
 
-  let table = I.List([I.Map()]);
+  let table = emptyCosetTable();
   let part = new Partition();
 
   for (let i = 0; i < table.size; ++i) {
@@ -261,7 +264,7 @@ export const tables = (nrGens, relators, maxCosets) => {
   const isFull = t => _firstFreeInTable(t, gens) == null;
 
   return generators.backtracker({
-    root: I.List([I.Map()]),
+    root: emptyCosetTable(),
     extract(table) { return isFull(table) ? table : null },
     children(table) {
       return _potentialChildren(table, gens, rels, maxCosets)
@@ -272,7 +275,7 @@ export const tables = (nrGens, relators, maxCosets) => {
 
 
 const _inducedTable = (gens, img, img0) => {
-  const table = I.List([I.Map()]).asMutable();
+  const table = emptyCosetTable().asMutable();
   const o2n = I.Map([[img0, 0]]).asMutable();
   const n2o = I.Map([[0, img0]]).asMutable();
   let i = 0;
