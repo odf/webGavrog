@@ -318,13 +318,21 @@ const _sum = a => a.reduce((x, y) => x + y, 0);
 
 
 export const relatorAsVector = (rel, nrgens) => {
-  const counts = rel.groupBy(Math.abs).map(a => _sum(a.map(_sgn)));
-  return I.List(range(1, nrgens+1).map(i => counts.get(i) || 0));
+  const out = new Array(nrgens).fill(0);
+
+  for (const w of rel) {
+    if (w < 0)
+      --out[-w - 1];
+    else if (w > 0)
+      ++out[w - 1];
+  }
+
+  return out;
 };
 
 
 export const relatorMatrix = (nrgens, relators) =>
-  I.List(relators).map(rel => relatorAsVector(rel, nrgens));
+  relators.map(rel => relatorAsVector(rel, nrgens));
 
 
 if (require.main == module) {

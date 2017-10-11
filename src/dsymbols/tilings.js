@@ -26,8 +26,8 @@ const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 const _edgeTranslations = cov => {
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
-  const nul = opsR.nullSpace(cosets.relatorMatrix(n, fg.relators).toJS());
-  const vec = rel => cosets.relatorAsVector(rel, n).toJS();
+  const nul = opsR.nullSpace(cosets.relatorMatrix(n, fg.relators));
+  const vec = rel => cosets.relatorAsVector(rel, n);
 
   return fg.edge2word.map(a => a.map(b => opsR.times(vec(b), nul)));
 };

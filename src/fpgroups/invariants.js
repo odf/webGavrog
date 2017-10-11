@@ -97,7 +97,7 @@ const diagonalizeInPlace = mat => {
 
 
 export const abelianInvariants = (nrGens, rels) => {
-  const mat = cosets.relatorMatrix(nrGens, rels).toJS();
+  const mat = cosets.relatorMatrix(nrGens, rels);
   const [nrows, ncols] = shapeOfMatrix(mat);
   const n = Math.min(nrows, ncols);
 
