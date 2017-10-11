@@ -338,7 +338,7 @@ export const relatorMatrix = (nrgens, relators) =>
 if (require.main == module) {
   const test = table => {
     const reps = cosetRepresentatives(table);
-    console.log(I.fromJS(reps), Object.keys(reps).length);
+    console.log(JSON.stringify(reps), Object.keys(reps).length);
   };
 
   const base = cosetTable(
