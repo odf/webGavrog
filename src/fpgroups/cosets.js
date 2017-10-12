@@ -13,34 +13,100 @@ const range = (from, to) => {
 };
 
 
-const _joinInTable = (t, a, b, g) => t.setIn([a, g], b).setIn([b, -g], a);
+class CosetTable {
+  constructor(nrGens) {
+    this.nrGens = nrGens;
+    this.table = [new Array(2 * nrGens + 1)];
+    this.part = new Partition();
+  }
 
+  clone() {
+    const t = new CosetTable(this.nrGens);
+    t.table = this.table.slice().map(row => row.slice());
+    t.part = this.part.clone();
+    return t;
+  }
 
-const identify = (table, part, a, b) => {
-  part = part.clone();
-  table = table.asMutable();
+  get size() {
+    return this.table.length;
+  }
 
-  const queue = [[a, b]];
+  get(c, g) {
+    return (this.table[c] || [])[g + this.nrGens];
+  }
 
-  while (queue.length) {
-    const [a, b] = queue.shift().map(x => part.find(x));
+  set(c, g, d) {
+    if (c == null)
+      throw new Error('oops!');
+    if (this.table[c] == null)
+      this.table[c] = new Array(2 * this.nrGens + 1);
+    this.table[c][g + this.nrGens] = d;
+  }
 
-    if (a != b) {
-      part.union(a, b);
+  join(c, d, g) {
+    this.set(c, g, d);
+    this.set(d, -g, c);
+  }
 
-      for (const [g, bg] of table.get(b)) {
-        const ag = table.getIn([a, g]);
-        if (ag == null)
-          table.setIn([a, g], bg);
-        else if (part.find(ag) != part.find(bg))
-          queue.push([ag, bg]);
+  canon(c) {
+    return this.part.find(c);
+  }
+
+  identify(a, b) {
+    const queue = [[a, b]];
+
+    while (queue.length) {
+      const [a, b] = queue.shift().map(x => this.canon(x));
+
+      if (a != b) {
+        this.part.union(a, b);
+
+        for (const g of this.allGens()) {
+          const ag = this.get(a, g);
+          const bg = this.get(b, g);
+          if (ag == null)
+            this.set(a, g, bg);
+          else {
+            if (bg != null && this.canon(ag) != this.canon(bg))
+              queue.push([ag, bg]);
+            this.set(b, g, ag);
+          }
+        }
       }
-      table.set(b, table.get(a));
     }
   }
 
-  return { table: table.asImmutable(), part };
-};
+  asCompactMatrix() {
+    const toIdx = {};
+    let i = 0;
+    for (const k of range(0, this.table.length)) {
+      if (this.canon(k) == k) {
+        toIdx[k] = i;
+        ++i;
+      }
+    }
+
+    const result = [];
+    for (const k of range(0, this.table.length)) {
+      if (toIdx[k] != null) {
+        const row = [];
+        for (const g of this.allGens())
+          row.push(toIdx[this.canon(this.get(k, g))]);
+        result.push(row);
+      }
+    }
+
+    return result;
+  }
+}
+
+
+CosetTable.prototype.allGens = function*() {
+  for (let i = 1; i <= this.nrGens; ++i)
+    yield i;
+  for (let i = 1; i <= this.nrGens; ++i)
+    yield -i;
+}
 
 
 const scan = (table, w, start, limit) => {
@@ -48,7 +114,7 @@ const scan = (table, w, start, limit) => {
   let i = 0;
 
   while (i < limit) {
-    const next = table.getIn([row, w.get(i)]);
+    const next = table.get(row, w.get(i));
     if (next == null)
       break;
     else {
@@ -61,43 +127,18 @@ const scan = (table, w, start, limit) => {
 };
 
 
-const scanAndIdentify = (table, part, w, start) => {
+const scanAndIdentify = (table, w, start) => {
   const n = w.size;
   const { row: head, index: i } = scan(table, w, start, n);
   const { row: tail, index: j } = scan(table, fw.inverse(w), start, n - i);
 
   if (i + j == n - 1) {
-    table = _joinInTable(table, head, tail, w.get(i));
-    return { table, part, next: head };
+    table.join(head, tail, w.get(i));
+    return head;
   }
   else if (i + j == n && head != tail)
-    return identify(table, part, head, tail);
-  else
-    return { table, part };
+    table.identify(head, tail);
 };
-
-
-const compressed = (table, part) => {
-  const toIdx = {};
-  let i = 0;
-  for (const k of table.keySeq()) {
-    if (part.find(k) == k) {
-      toIdx[k] = i;
-      ++i;
-    }
-  }
-
-  const canon = a => toIdx[part.find(a)];
-
-  return table.toMap()
-    .filter((r, k) => toIdx[k] != null)
-    .mapKeys(canon)
-    .map(row => row.map(canon));
-};
-
-
-const _expandGenerators = nrGens =>
-  range(1, nrGens+1).concat(range(-1, -(nrGens+1)));
 
 
 const _insertInOrderedSet = (elm, set, cmp) => {
@@ -119,39 +160,30 @@ const _expandRelators = relators => {
 };
 
 
-const emptyCosetTable = () => I.List([I.Map()]);
-
-
 export const cosetTable = (nrGens, relators, subgroupGens) => {
-  const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
-
-  let table = emptyCosetTable();
-  let part = new Partition();
+  const table = new CosetTable(nrGens);
 
   for (let i = 0; i < table.size; ++i) {
-    if (i != part.find(i))
+    if (i != table.canon(i))
       continue;
 
-    for (const g of gens) {
-      if (table.getIn([i, g]) == null) {
+    for (const g of table.allGens()) {
+      if (table.get(i, g) == null) {
         const n = table.size;
         if (n >= 10000)
           throw new Error('maximum coset table size reached');
 
-        let t = { table: _joinInTable(table, i, n, g), part };
+        table.join(i, n, g);
         for (const w of rels)
-          t = scanAndIdentify(t.table, t.part, w, n);
+          scanAndIdentify(table, w, n);
         for (const w of subgroupGens)
-          t = scanAndIdentify(t.table, t.part, fw.word(w), part.find(0));
-
-        table = t.table;
-        part = t.part;
+          scanAndIdentify(table, fw.word(w), table.canon(0));
       }
     }
   }
 
-  return compressed(table, part);
+  return table.asCompactMatrix();
 };
 
 
@@ -299,7 +331,7 @@ const _inducedTable = (gens, img, img0) => {
 
 export const intersectionTable = (tableA, tableB) =>
   _inducedTable(
-    (tableA.first() || I.Map()).keySeq(),
+    tableA.first().keySeq(),
     (es, g) => [tableA.getIn([es[0], g]), tableB.getIn([es[1], g])],
     [0, 0]
   );
@@ -307,7 +339,7 @@ export const intersectionTable = (tableA, tableB) =>
 
 export const coreTable = base =>
   _inducedTable(
-    (base.first() || I.Map()).keySeq(),
+    base.first().keySeq(),
     (es, g) => es.map(e => base.getIn([e, g])),
     base.keySeq().toArray()
   );
@@ -336,7 +368,12 @@ export const relatorMatrix = (nrgens, relators) =>
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x && x.toString()).join(', ') + ' ]';
+  };
+
   const test = table => {
+    console.log(table);
     const reps = cosetRepresentatives(table);
     console.log(JSON.stringify(reps), Object.keys(reps).length);
   };
