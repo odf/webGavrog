@@ -13,6 +13,14 @@ const range = (from, to) => {
 };
 
 
+const allGens = function*(nrGens) {
+  for (let i = 1; i <= nrGens; ++i)
+    yield i;
+  for (let i = 1; i <= nrGens; ++i)
+    yield -i;
+}
+
+
 class CosetTable {
   constructor(nrGens) {
     this.nrGens = nrGens;
@@ -25,6 +33,10 @@ class CosetTable {
     t.table = this.table.slice().map(row => row.slice());
     t.part = this.part.clone();
     return t;
+  }
+
+  allGens() {
+    return allGens(this.nrGens)
   }
 
   get size() {
@@ -89,23 +101,15 @@ class CosetTable {
     const result = [];
     for (const k of range(0, this.table.length)) {
       if (toIdx[k] != null) {
-        const row = [];
+        const row = {};
         for (const g of this.allGens())
-          row.push(toIdx[this.canon(this.get(k, g))]);
+          row[g] = toIdx[this.canon(this.get(k, g))];
         result.push(row);
       }
     }
 
     return result;
   }
-}
-
-
-CosetTable.prototype.allGens = function*() {
-  for (let i = 1; i <= this.nrGens; ++i)
-    yield i;
-  for (let i = 1; i <= this.nrGens; ++i)
-    yield -i;
 }
 
 
@@ -195,9 +199,12 @@ export const cosetRepresentatives = table => {
     const i = queue.shift();
     const w = reps[i];
 
-    for (const [g, k] of table.get(i).filter(g => reps[g] == null)) {
-      reps[k] = fw.product([w, [g]]);
-      queue.push(k);
+    for (const g of Object.keys(table[i])) {
+      const k = table[i][g];
+      if (reps[k] == null) {
+        reps[k] = fw.product([w, [parseInt(g)]]);
+        queue.push(k);
+      }
     }
   }
 
