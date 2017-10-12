@@ -316,23 +316,23 @@ export const tables = (nrGens, relators, maxCosets) => {
 };
 
 
-const _inducedTable = (gens, img, img0) => {
-  const table = emptyCosetTable().asMutable();
+const _inducedTable = (nrGens, img, img0) => {
+  const table = new CosetTable(nrGens);
   const o2n = { [img0]: 0 };
   const n2o = [img0];
 
   for (let i = 0; i < table.size; ++i) {
-    for (const g of gens) {
+    for (const g of table.allGens()) {
       const k = img(n2o[i], g);
       if (o2n[k] == null)
         o2n[k] = table.size;
       const n = o2n[k];
       n2o[n] = k;
-      _joinInTable(table, i, n, g);
+      table.join(i, n, g);
     }
   }
 
-  return table.asImmutable();
+  return table.asCompactMatrix();
 };
 
 
@@ -346,9 +346,9 @@ export const intersectionTable = (tableA, tableB) =>
 
 export const coreTable = base =>
   _inducedTable(
-    base.first().keySeq(),
-    (es, g) => es.map(e => base.getIn([e, g])),
-    base.keySeq().toArray()
+    Object.keys(base[0]).length / 2,
+    (es, g) => es.map(e => base[e][g]),
+    range(0, base.length)
   );
 
 
@@ -380,7 +380,6 @@ if (require.main == module) {
   };
 
   const test = table => {
-    console.log(table);
     const reps = cosetRepresentatives(table);
     console.log(JSON.stringify(reps), Object.keys(reps).length);
   };
@@ -393,7 +392,6 @@ if (require.main == module) {
   test(base);
   test(coreTable(base));
 
-  console.log(_expandGenerators(4));
   console.log(_expandRelators([[1,2,-3]]));
 
   for (const x of generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8)))
