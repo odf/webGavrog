@@ -142,6 +142,8 @@ const scanAndIdentify = (table, w, start) => {
   }
   else if (i + j == n && head != tail)
     table.identify(head, tail);
+  else
+    return -1;
 };
 
 
@@ -212,10 +214,10 @@ export const cosetRepresentatives = table => {
 };
 
 
-const _firstFreeInTable = (table, gens) => {
+const _firstFreeInTable = table => {
   for (let k = 0; k < table.size; ++k) {
-    for (const g of gens) {
-      if (table.getIn([k, g]) == null)
+    for (const g of table.allGens()) {
+      if (table.get(k, g) == null)
         return [k, g];
     }
   }
@@ -223,31 +225,26 @@ const _firstFreeInTable = (table, gens) => {
 
 
 const _scanRecursively = (rels, table, index) => {
-  const p = () => new Partition();
   const q = [index];
 
   while (q.length) {
     const row = q.shift();
 
     for (const rel of rels) {
-      const { table: t, part, next } = scanAndIdentify(table, p(), rel, row);
-
-      if (part.isTrivial()) {
-        table = t;
-        if (next != null)
-          q.push(next);
-      }
-      else
-        return;
+      const next = scanAndIdentify(table, rel, row);
+      if (next == null)
+        return false;
+      else if (next >= 0)
+        q.push(next);
     }
   }
 
-  return table;
+  return true;
 };
 
 
-const _potentialChildren = (table, gens, rels, maxCosets) => {
-  const [k, g] = _firstFreeInTable(table, gens) || [];
+const _potentialChildren = (table, rels, maxCosets) => {
+  const [k, g] = _firstFreeInTable(table) || [];
   const result = [];
 
   if (k != null) {
@@ -255,9 +252,10 @@ const _potentialChildren = (table, gens, rels, maxCosets) => {
     const limit = Math.min(table.size + 1, maxCosets);
 
     for (let pos = k; pos < limit; ++pos) {
-      if (table.getIn([pos, ginv]) == null) {
-        const t = _scanRecursively(rels, _joinInTable(table, k, pos, g), k);
-        if (t != null)
+      if (table.get(pos, ginv) == null) {
+        const t = table.clone();
+        t.join(k, pos, g);
+        if (_scanRecursively(rels, t, k))
           result.push(t);
       }
     }
@@ -267,7 +265,7 @@ const _potentialChildren = (table, gens, rels, maxCosets) => {
 };
 
 
-const _compareRenumberedFom = (table, gens, start) => {
+const _compareRenumberedFom = (table, start) => {
   const n2o = [start];
   const o2n = { [start]: 0 };
 
@@ -275,15 +273,15 @@ const _compareRenumberedFom = (table, gens, start) => {
     if (row >= n2o.length)
       throw new Error("coset table is not transitive");
 
-    for (const g of gens) {
-      const t = table.getIn([n2o[row], g]);
+    for (const g of table.allGens()) {
+      const t = table.get(n2o[row], g);
       if (t != null && o2n[t] == null) {
         o2n[t] = n2o.length;
         n2o.push(t);
       }
 
       const nval = o2n[t];
-      const oval = table.getIn([row, g]);
+      const oval = table.get(row, g);
       if (oval != nval)
         return oval == null ? -1 : nval == null ? 1 : nval - oval;
     }
@@ -293,24 +291,23 @@ const _compareRenumberedFom = (table, gens, start) => {
 };
 
 
-const _isCanonical = (table, gens) => range(1, table.size)
-  .every(start => _compareRenumberedFom(table, gens, start) >= 0);
+const _isCanonical = table => range(1, table.size)
+  .every(start => _compareRenumberedFom(table, start) >= 0);
 
 
 export const tables = (nrGens, relators, maxCosets) => {
-  const gens = _expandGenerators(nrGens);
   const rels = _expandRelators(relators);
 
   return generators.backtracker({
-    root: emptyCosetTable(),
+    root: new CosetTable(nrGens),
 
     extract(table) {
-      return _firstFreeInTable(table, gens) == null ? table : null;
+      return _firstFreeInTable(table) == null ? table.asCompactMatrix() : null;
     },
 
     children(table) {
-      return _potentialChildren(table, gens, rels, maxCosets)
-        .filter(t => t.size && _isCanonical(t, gens));
+      return _potentialChildren(table, rels, maxCosets)
+        .filter(t => t.size && _isCanonical(t));
     }
   });
 };
