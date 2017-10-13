@@ -1,4 +1,3 @@
-import * as I          from 'immutable';
 import * as fw         from './freeWords';
 import * as generators from '../common/generators';
 
@@ -112,36 +111,31 @@ class CosetTable {
 
 
 const scan = (table, w, start, limit) => {
-  let row = start;
-  let i = 0;
+  let [row, i] = [start, 0];
 
-  while (i < limit) {
-    const next = table.get(row, w.get(i));
-    if (next == null)
-      break;
-    else {
-      ++i;
-      row = next;
-    }
-  }
+  while (i < limit && table.get(row, w.get(i)) != null)
+    [row, i] = [table.get(row, w.get(i)), i + 1];
 
   return { row, index: i };
 };
 
 
-const scanAndIdentify = (table, w, start) => {
+const scanBothWays = (table, w, start) => {
   const n = w.size;
   const { row: head, index: i } = scan(table, w, start, n);
   const { row: tail, index: j } = scan(table, fw.inverse(w), start, n - i);
 
-  if (i + j == n - 1) {
-    table.join(head, tail, w.get(i));
-    return head;
-  }
-  else if (i + j == n && head != tail)
+  return { head, tail, gap: n - i - j, c: w.get(i) };
+};
+
+
+const scanAndIdentify = (table, w, start) => {
+  const { head, tail, gap, c } = scanBothWays(table, w, start);
+
+  if (gap == 1)
+    table.join(head, tail, c);
+  else if (gap == 0 && head != tail)
     table.identify(head, tail);
-  else
-    return -1;
 };
 
 
@@ -213,7 +207,7 @@ export const cosetRepresentatives = table => {
 
 
 const _firstFreeInTable = table => {
-  for (let k = 0; k < table.size; ++k) {
+  for (const k of range(0, table.size)) {
     for (const g of table.allGens()) {
       if (table.get(k, g) == null)
         return [k, g];
@@ -222,18 +216,20 @@ const _firstFreeInTable = table => {
 };
 
 
-const _scanRecursively = (rels, table, index) => {
+const _closeGapsRecursively = (rels, table, index) => {
   const q = [index];
 
   while (q.length) {
     const row = q.shift();
 
     for (const rel of rels) {
-      const next = scanAndIdentify(table, rel, row);
-      if (next == null)
+      const { head, tail, gap, c } = scanBothWays(table, rel, row);
+      if (gap == 1) {
+        table.join(head, tail, c);
+        q.push(head);
+      }
+      else if (gap == 0 && head != tail)
         return false;
-      else if (next >= 0)
-        q.push(next);
     }
   }
 
@@ -243,17 +239,15 @@ const _scanRecursively = (rels, table, index) => {
 
 const _potentialChildren = (table, rels, maxCosets) => {
   const [k, g] = _firstFreeInTable(table) || [];
+  const limit = Math.min(table.size + 1, maxCosets);
   const result = [];
 
   if (k != null) {
-    const ginv = -g;
-    const limit = Math.min(table.size + 1, maxCosets);
-
-    for (let pos = k; pos < limit; ++pos) {
-      if (table.get(pos, ginv) == null) {
+    for (const pos of range(k, limit)) {
+      if (table.get(pos, -g) == null) {
         const t = table.clone();
         t.join(k, pos, g);
-        if (_scanRecursively(rels, t, k))
+        if (_closeGapsRecursively(rels, t, k))
           result.push(t);
       }
     }
@@ -300,12 +294,11 @@ export const tables = (nrGens, relators, maxCosets) => {
     root: new CosetTable(nrGens),
 
     extract(table) {
-      return _firstFreeInTable(table) == null ? table.asCompactMatrix() : null;
+      return _firstFreeInTable(table) ? null : table.asCompactMatrix();
     },
 
     children(table) {
-      return _potentialChildren(table, rels, maxCosets)
-        .filter(t => t.size && _isCanonical(t));
+      return _potentialChildren(table, rels, maxCosets).filter(_isCanonical);
     }
   });
 };
@@ -345,10 +338,6 @@ export const coreTable = base =>
     (es, g) => es.map(e => base[e][g]),
     range(0, base.length)
   );
-
-
-const _sgn = x => (x > 0) - (x < 0);
-const _sum = a => a.reduce((x, y) => x + y, 0);
 
 
 export const relatorAsVector = (rel, nrgens) => {
