@@ -48,8 +48,6 @@ class CosetTable {
   }
 
   set(c, g, d) {
-    if (c == null)
-      throw new Error('oops!');
     if (this.table[c] == null)
       this.table[c] = new Array(2 * this.nrGens + 1);
     this.table[c][g + this.nrGens] = d;
