@@ -1,4 +1,4 @@
-export function extend(scalarOps, scalarTypes) {
+export const extend = (scalarOps, scalarTypes) => {
 
   const s = scalarOps;
 
@@ -39,6 +39,8 @@ export function extend(scalarOps, scalarTypes) {
 
 
   const methods = {
+    __context__: () => `parameterVectors(${scalarOps.__context__()})`,
+
     parameterVector: {
       Vector: v => make(v)
     },

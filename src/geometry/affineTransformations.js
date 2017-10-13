@@ -1,4 +1,4 @@
-export function extend(pointAndVectorOps) {
+export const extend = pointAndVectorOps => {
 
   const V = pointAndVectorOps;
 
@@ -55,6 +55,9 @@ export function extend(pointAndVectorOps) {
 
 
   const methods = {
+    __context__: () =>
+      `affineTransformations(${pointAndVectorOps.__context__()})`,
+
     dimension: {
       AffineTransformation: t => V.shape(t.linear)[0]
     },

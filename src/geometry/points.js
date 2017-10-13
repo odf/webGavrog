@@ -1,4 +1,4 @@
-export function extend(vectorOps, scalarTypes) {
+export const extend = (vectorOps, scalarTypes) => {
 
   const V = vectorOps;
 
@@ -19,6 +19,8 @@ export function extend(vectorOps, scalarTypes) {
   const array = n => Array(n).fill(0);
 
   const methods = {
+    __context__: () => `points(${vectorOps.__context__()})`,
+
     origin: {
       Integer: n => new Point(array(n))
     },

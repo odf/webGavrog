@@ -1,4 +1,4 @@
-export function extend(transformationOps) {
+export const extend = transformationOps => {
 
   const V = transformationOps;
 
@@ -22,6 +22,8 @@ export function extend(transformationOps) {
 
 
   const methods = {
+    __context__: () => `coordinateChanges(${transformationOps.__context__()})`,
+
     dimension: {
       CoordinateChange: C => V.dimension(C.oldToNew)
     },
