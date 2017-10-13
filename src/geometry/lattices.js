@@ -3,13 +3,13 @@ import { numericalLinearAlgebra } from '../arithmetic/types';
 const ops = numericalLinearAlgebra;
 const eps = Math.pow(2, -40);
 
-const trim = x => Math.abs(x) < eps ? 0 : x;
-const lift = op => (...args) => args.reduce((a, b) => op(a, b));
-const sum  = lift(ops.plus);
+const sum  = (...args) => args.reduce((a, b) => ops.plus(a, b));
+const abs = v => v.map(x => Math.abs(x));
+const cmp = (v, w) => (v > w) - (v < w);
 
 
-const gaussReduced = (u, v, dot = ops.times) => {
-  const vs   = [u, v];
+const gaussReduced = (u, v, dot=ops.times) => {
+  const vs = [u, v];
   const norm = v => dot(v, v);
 
   while (true) {
@@ -27,8 +27,8 @@ const gaussReduced = (u, v, dot = ops.times) => {
 };
 
 
-const sellingReduced = (u, v, w, dot = ops.times) => {
-  const vs   = [u, v, w, ops.negative(sum(u, v, w))];
+const sellingReduced = (u, v, w, dot=ops.times) => {
+  const vs = [u, v, w, ops.negative(sum(u, v, w))];
   let changed;
 
   do {
@@ -53,7 +53,7 @@ const sellingReduced = (u, v, w, dot = ops.times) => {
 };
 
 
-export function dirichletVectors(basis, dot = ops.times) {
+export const dirichletVectors = (basis, dot=ops.times) => {
   switch (basis.length) {
   case 0:
   case 1:
@@ -74,22 +74,18 @@ export function dirichletVectors(basis, dot = ops.times) {
 };
 
 
-const compareVectors = dot => (v, w) => {
-  const abs = v => v.map(x => Math.abs(x));
-  const cmp = (v, w) => (v > w) - (v < w);
-
-  return ops.minus(dot(v, v), dot(w, w)) || cmp(abs(w), abs(v));
-};
+const compareVectors = dot => (v, w) =>
+  ops.minus(dot(v, v), dot(w, w)) || cmp(abs(w), abs(v));
 
 
-export function reducedLatticeBasis(vs, dot = ops.times) {
+export const reducedLatticeBasis = (vs, dot=ops.times) => {
   const dim = vs[0].length;
   const tmp = dirichletVectors(vs, dot).sort(compareVectors(dot));
   const A = [];
 
   const _normalized = v => {
-    let t = v.map(trim);
-    if (t < ops.times(0, t))
+    let t = v.map(x => Math.abs(x) < eps ? 0 : x);
+    if (ops.sgn(t) < 0)
       t = ops.negative(t);
     if (A.length > 0 && ops.gt(dot(A[0], t), 0))
       t = ops.negative(t);
@@ -106,16 +102,14 @@ export function reducedLatticeBasis(vs, dot = ops.times) {
 };
 
 
-export function shiftIntoDirichletDomain(
-  pos, dirichletVecs, dot = ops.times)
-{
+export const shiftIntoDirichletDomain = (pos, dVecs, dot=ops.times) => {
   let s = ops.times(0, pos);
   let changed;
 
   do {
     changed = false;
 
-    for (const v of dirichletVecs) {
+    for (const v of dVecs) {
       const t = ops.div(dot(ops.plus(pos, s), v), dot(v, v));
       if (t < -0.5 || t > 0.5+eps) {
         s = ops.minus(s, ops.times(ops.round(t), v));
