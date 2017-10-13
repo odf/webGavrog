@@ -12,18 +12,12 @@ import * as parms from './parameterVectors';
 
 const V = coordinateChangesQ;
 
+const P = mats.extend(
+  parms.extend(rationals, ['Integer', 'LongInt', 'Fraction']),
+  ['Integer', 'LongInt', 'Fraction', 'ParameterVector']);
 
-const isIdentity = M => {
-  for (let i = 0; i < M.length; ++i) {
-    const row = M[i];
-    for (let j = 0; j < row.length; ++j) {
-      if (V.ne(row[j], 0 + (i == j)))
-        return false;
-    }
-  }
 
-  return true;
-};
+const isIdentity = mat => V.eq(mat, V.identityMatrix(V.dimension(mat)));
 
 
 const checkInteger = x => {
@@ -116,13 +110,13 @@ const fullOperatorList = gens => {
 
   for (let i = 0; i < ops.length; ++i) {
     const A = ops[i];
-    gens.forEach(B => {
+    for (const B of gens) {
       const AB = opModZ(V.times(A, V.inverse(B)));
       if (!seen[AB]) {
         ops.push(AB);
         seen[AB] = true;
       }
-    });
+    }
   }
 
   return ops;
@@ -157,30 +151,26 @@ const primitiveCell = ops => {
 const dedupe = as => {
   const seen = {};
   const result = [];
-  as.forEach(a => {
+  for (const a of as) {
     if (!seen[a]) {
       result.push(a);
       seen[a] = true;
     }
-  });
+  }
   return result;
 };
 
 
-export function primitiveSetting(stdOps) {
-  const cell    = primitiveCell(stdOps);
+export const primitiveSetting = stdOps => {
+  const cell = primitiveCell(stdOps);
   const fromStd = V.coordinateChange(V.inverse(V.transposed(cell)));
-  const ops     = dedupe(stdOps.map(op => opModZ(V.times(fromStd, op))));
+  const ops = dedupe(stdOps.map(op => opModZ(V.times(fromStd, op))));
 
   return { cell, fromStd, ops };
 };
 
 
 export const gramMatrixConfigurationSpace = ops => {
-  const P = mats.extend(
-    parms.extend(rationals, ['Integer', 'LongInt', 'Fraction']),
-    ['Integer', 'LongInt', 'Fraction', 'ParameterVector']);
-
   const d = V.dimension(ops[0]);
   const m = (d * (d+1)) / 2;
 
