@@ -94,9 +94,9 @@ const clearLaterColsInPlace = (mat, i) => {
 
 
 const diagonalizeInPlace = mat => {
-  const [nrows, ncols] = shapeOfMatrix(mat);
+  const n = Math.min(...shapeOfMatrix(mat));
 
-  for (let i = 0; i < nrows && i < ncols; ++i) {
+  for (let i = 0; i < n; ++i) {
     const { pivotVal, pivotRow, pivotCol } = findPivot(mat, i);
 
     if (pivotVal == null)
