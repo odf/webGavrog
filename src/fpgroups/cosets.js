@@ -335,15 +335,15 @@ const _inducedTable = (nrGens, img, img0) => {
 
 export const intersectionTable = (tableA, tableB) =>
   _inducedTable(
-    tableA.first().keySeq(),
-    (es, g) => [tableA.getIn([es[0], g]), tableB.getIn([es[1], g])],
+    Math.max(...Object.keys(tableA[0])),
+    ([a, b], g) => [tableA.get(a, g), tableB.get(b, g)],
     [0, 0]
   );
 
 
 export const coreTable = base =>
   _inducedTable(
-    Object.keys(base[0]).length / 2,
+    Math.max(...Object.keys(base[0])),
     (es, g) => es.map(e => base[e][g]),
     range(0, base.length)
   );
