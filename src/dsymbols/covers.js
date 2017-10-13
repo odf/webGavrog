@@ -7,8 +7,8 @@ import { seq }          from '../common/lazyseq';
 
 
 export const coverForTable = (ds, table, edgeToWord) =>
-  derived.cover(ds, table.size, (k, i, D) => (
-    (edgeToWord[D][i] || []).reduce((k, g) => table.getIn([k, g]), k)));
+  derived.cover(ds, table.length, (k, i, D) => (
+    (edgeToWord[D][i] || []).reduce((k, g) => table[k][g], k)));
 
 
 export const subgroupCover = (ds, subgroupGens) => {

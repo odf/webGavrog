@@ -1,6 +1,6 @@
 import { stabilizer } from '../fpgroups/stabilizer';
 import { abelianInvariants } from '../fpgroups/invariants';
-import { seq } from '../common/lazyseq';
+import { seq, range } from '../common/lazyseq';
 
 import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
@@ -21,16 +21,16 @@ const _coreType = {
 
 
 const _fullyInvolutive = ct =>
-  ct.every(row => row.keySeq().every(g => row.get(g) == row.get(-g)));
+  ct.every(row => Object.keys(row).every(g => row[g] == row[-g]));
 
 const cType = ct =>
-  ct.size == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.size];
+  ct.length == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.length];
 
 
 const _degree = (ct, word) => {
   let k = 0;
   for (let i = 1; ; ++i) {
-    k = word.reduce((k, g) => ct.getIn([k, g]), k);
+    k = word.reduce((k, g) => ct[k][g], k);
     if (k == 0)
       return i;
   }
@@ -60,19 +60,19 @@ export const pseudoToroidalCover = ds => {
   const cones2 = cones.filter(c => c[1] == 2);
   const cones3 = cones.filter(c => c[1] == 3);
 
-  const z2a = base.filter(ct => ct.size == 2 &&  _flattensAll(ct, cones2));
-  const z2b = base.filter(ct => ct.size == 2 && !_flattensAll(ct, cones2));
-  const z3a = base.filter(ct => ct.size == 3 &&  _flattensAll(ct, cones3));
-  const s3a = base.filter(ct => ct.size == 6 &&  _flattensAll(ct, cones3));
+  const z2a = base.filter(ct => ct.length == 2 &&  _flattensAll(ct, cones2));
+  const z2b = base.filter(ct => ct.length == 2 && !_flattensAll(ct, cones2));
+  const z3a = base.filter(ct => ct.length == 3 &&  _flattensAll(ct, cones3));
+  const s3a = base.filter(ct => ct.length == 6 &&  _flattensAll(ct, cones3));
 
   const z6 = z3a.flatMap(
     a => z2a.map(b => cosets.intersectionTable(a, b))
-      .filter(ct => ct.size == 6 && _flattensAll(ct, cones))
+      .filter(ct => ct.length == 6 && _flattensAll(ct, cones))
       .map(ct => ['z6', ct]));
 
   const d6 = s3a.flatMap(
     a => z2b.map(b => cosets.intersectionTable(a, b))
-      .filter(ct => ct.size == 12 && _flattensAll(ct, cones))
+      .filter(ct => ct.length == 12 && _flattensAll(ct, cones))
       .map(ct => ['d6', ct]));
 
   const candidates = cores.append(z6).append(d6);
@@ -80,13 +80,13 @@ export const pseudoToroidalCover = ds => {
   for (const type of 'z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' ')) {
     for (const [t, table] of candidates) {
       if (t == type) {
-        const domain = table.keySeq();
+        const domain = range(0, table.length);
         const stab = stabilizer(
           domain.first(),
           fg.nrGenerators,
           fg.relators,
           domain,
-          (...args) => table.getIn(args)
+          (p, g) => table[p][g]
         );
         const inv = abelianInvariants(stab.generators.length, stab.relators);
 

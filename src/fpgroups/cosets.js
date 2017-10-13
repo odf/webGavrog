@@ -336,7 +336,7 @@ const _inducedTable = (nrGens, img, img0) => {
 export const intersectionTable = (tableA, tableB) =>
   _inducedTable(
     Math.max(...Object.keys(tableA[0])),
-    ([a, b], g) => [tableA.get(a, g), tableB.get(b, g)],
+    ([a, b], g) => [tableA[a][g], tableB[b][g]],
     [0, 0]
   );
 
