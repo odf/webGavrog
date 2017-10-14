@@ -58,23 +58,6 @@ const faceNormal = vs => normalized(
 );
 
 
-export function faceNormals(pos, faces) {
-  return faces.map(corners(pos)).map(faceNormal);
-};
-
-
-export function vertexNormals(pos, faces, faceNormals) {
-  const normals = pos.map(v => ops.times(0, v)).asMutable();
-
-  faces.forEach((f, i) => {
-    const n = faceNormals.get(i);
-    f.forEach(k => { normals.update(k, v => ops.plus(v, n)); });
-  });
-
-  return normals.map(normalized);
-};
-
-
 const edgeIndexes = faces => {
   const eKey     = ([v, w]) => I.List(v < w ? [v, w] : [w, v]);
   const edges    = dedupe(faces.flatMap(is => pairs(is).map(eKey)));
@@ -103,7 +86,7 @@ const adjustedPositions = (faces, pos, isFixed) => {
 };
 
 
-export function subD({ faces, pos, isFixed }) {
+export const subD = ({ faces, pos, isFixed }) => {
   const n = pos.size;
   const m = faces.size;
   const { edges, lookup } = edgeIndexes(faces);
@@ -131,29 +114,6 @@ export function subD({ faces, pos, isFixed }) {
     pos    : adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
     isFixed: isFixed.concat(ffix, efix),
     faces  : newFaces
-  };
-};
-
-
-export function neighbors(faces) {
-  return faces
-    .flatMap(is => pairs(is).flatMap(([v, w]) => [[v, w], [w, v]]))
-    .groupBy(([v, w]) => v)
-    .map(a => dedupe(a.map(([v, w]) => w)))
-  ;
-};
-
-
-export function smooth({ faces, pos, isFixed }) {
-  const nbs = neighbors(faces);
-  const newPositions = pos.map((p, i) => (
-    isFixed.get(i) ? p : centroid(nbs.get(i).map(v => pos.get(v)))
-  ));
-
-  return {
-    faces,
-    pos: newPositions,
-    isFixed
   };
 };
 
@@ -206,11 +166,9 @@ const flattenedOrSuppressedFace = vs => {
 };
 
 
-export function withFlattenedCenterFaces(surface) {
-  return withCenterFaces(
-    surface,
-    vs => scaled(0.5, flattenedOrSuppressedFace(vs)));
-};
+export const withFlattenedCenterFaces = surface => withCenterFaces(
+  surface,
+  vs => scaled(0.5, flattenedOrSuppressedFace(vs)));
 
 
 const insetPoint = (corner, wd, left, right, center) => {
@@ -331,7 +289,7 @@ const connectors = (oldFaces, newFaces) => {
 };
 
 
-export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
+export const insetAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   _timers && _timers.start("  insetAt(): shrinking");
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
@@ -354,7 +312,7 @@ export function insetAt({ faces, pos, isFixed }, wd, isCorner) {
 };
 
 
-export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
+export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   _timers && _timers.start("  beveledAt(): shrinking");
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
@@ -386,9 +344,8 @@ export function beveledAt({ faces, pos, isFixed }, wd, isCorner) {
 };
 
 
-export function standardized({ faces, pos, isFixed }) {
-  return { faces, pos: pos.map(p => ops.toJS(p)), isFixed };
-};
+export const standardized = ({ faces, pos, isFixed }) =>
+  ({ faces, pos: pos.map(p => ops.toJS(p)), isFixed });
 
 
 if (require.main == module) {
