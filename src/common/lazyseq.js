@@ -152,6 +152,7 @@ Seq.prototype[Symbol.iterator] = function*() {
 
 Seq.prototype.reduce = Seq.prototype.foldL;
 Seq.prototype.fold = Seq.prototype.foldR;
+Seq.prototype.iter = Seq.prototype[Symbol.iterator];
 
 
 export const nil = new Seq();
