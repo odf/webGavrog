@@ -1,4 +1,5 @@
 import * as I from 'immutable';
+import * as S from '../common/lazyseq';
 
 import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
@@ -9,19 +10,11 @@ let _timers = null;
 export const useTimers = timers => { _timers = timers };
 
 
-const reductions = (xs, fn, init) =>
-  xs.reduce((a, x) => a.push(fn(a.last(), x)), I.List([init]));
+const pairs = as => S.seq(as).consecCirc(2).map(s => s.toArray()).toArray();
 
-const pairs = as => as.pop().zip(as.shift()).push([as.last(), as.first()]);
-
+const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
 const corners = pos => idcs => idcs.map(i => pos.get(i));
-
-const plus = (v, w) => ops.plus(v, w)
-
-const centroid = pos => ops.div(pos.reduce(plus), I.List(pos).size);
-
-const dedupe = a => I.List(I.Set(a));
-
+const centroid = pos => ops.div(sum(pos), S.seq(pos).length);
 const normalized = v => ops.div(v, ops.norm(v));
 
 
@@ -35,35 +28,33 @@ const cycles = m => {
   const seen = {};
   const faces = [];
 
-  m.keySeq().forEach(i => {
-    if (!seen[i]) {
+  for (const k of Object.keys(m)) {
+    if (!seen[k]) {
+      let i = parseInt(k);
       const f = [];
       while (!seen[i]) {
         seen[i] = true;
         f.push(i);
-        i = m.get(i);
+        i = m[i];
       }
       faces.push(f);
     }
-  });
+  }
 
-  return I.fromJS(faces);
+  return faces;
 };
 
 
-const faceNormal = vs => normalized(
-  pairs(I.List(vs))
-    .map(e => ops.crossProduct(e[0], e[1]))
-    .reduce(plus)
-);
+const faceNormal = vs => normalized(sum(
+  pairs(vs).map(([v, w]) => ops.crossProduct(v, w))));
 
 
 const edgeIndexes = faces => {
   const eKey     = ([v, w]) => I.List(v < w ? [v, w] : [w, v]);
-  const edges    = dedupe(faces.flatMap(is => pairs(is).map(eKey)));
+  const edges    = I.List(I.Set(faces.flatMap(is => pairs(is).map(eKey))));
   const index    = I.Map(edges.map((e, i) => [e, i]));
   const findPair = ([v,w]) => index.get(eKey([v, w]));
-  const lookup   = faces.map(is => pairs(is).map(findPair));
+  const lookup   = faces.map(is => I.List(pairs(is)).map(findPair));
 
   return { edges, lookup }
 };
@@ -78,9 +69,9 @@ const adjustedPositions = (faces, pos, isFixed) => {
       return p;
 
     const m = facesByVertex.get(i).size;
-    const t = facesByVertex.get(i)
-      .flatMap(f => [coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)])
-      .reduce(plus);
+    const t = sum(
+      facesByVertex.get(i)
+        .flatMap(f => [coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
     return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
   });
 };
@@ -135,14 +126,16 @@ export const subD = surf => {
 
 const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
   const centerFaces = faces.map(corners(pos)).map(fn);
-  const offsets = reductions(centerFaces, (a, vs) => a + vs.size, pos.size);
   const extraPositions = centerFaces.flatten(1);
+
+  const offsets = S.seq(centerFaces)
+    .reductions((a, vs) => a + vs.size, pos.size).toArray();
 
   const newFaces = faces.flatMap((is, f) => {
     if (centerFaces.get(f).size == 0)
       return I.List([is]);
 
-    const k = offsets.get(f);
+    const k = offsets[f];
     const m = is.size;
     const center = I.List(I.Range(k, k+m));
     const gallery = I.Range(0, m).map(i => {
@@ -335,13 +328,17 @@ export const beveledAt = (surf, wd, isCorner) => {
       .map(([[, a], [, b]]) => a.concat(b).reverse())
       .valueSeq());
 
-  const cornerFaces = cycles(I.Map(
-    edgeFaces.flatMap(is => [[is.get(2), is.get(1)], [is.get(0), is.get(3)]])));
+  const m = {};
+  for (const is of edgeFaces) {
+    const [a, b, c, d] = is.toArray();
+    m[c] = b;
+    m[a] = d;
+  }
 
   const result = {
     pos    : pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
-    faces  : modifiedFaces.concat(edgeFaces).concat(cornerFaces)
+    faces  : modifiedFaces.concat(edgeFaces).concat(cycles(m))
   };
 
   return surfToJS(result);
