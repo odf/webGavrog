@@ -79,6 +79,15 @@ class Seq {
       return fn(this.first(), () => this.rest().foldR(z, fn));
   }
 
+  reductions(fn, z) {
+    if (this.isNil)
+      return z === undefined ? nil : cons(z, () => nil);
+    else if (z === undefined)
+      return this.rest().reductions(fn, this.first());
+    else
+      return cons(z, () => this.rest().reductions(fn, fn(z, this.first())));
+  }
+
   take(n) {
     if (this.isNil || n <= 0)
       return nil;
@@ -248,6 +257,8 @@ if (require.main == module) {
   test('range(1, 5).reduce((x, y) => x * y, 0.1)');
   test('range(4, 5).reduce((x, y) => x * y)');
   test('range(4, 5).reduce((x, y) => x * y, 0.1)');
+  test('range(2, 8).reductions((x, y) => x * y)');
+  test('range(2, 8).reductions((x, y) => x * y, 0.25)');
   test('range(0, 20).filter(x => x % 3 == 2)');
   test('range(1, 5).some(x => x % 7 == 2)');
   test('range(1, 5).some(x => x % 7 == 6)');
