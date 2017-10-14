@@ -86,7 +86,22 @@ const adjustedPositions = (faces, pos, isFixed) => {
 };
 
 
-export const subD = ({ faces, pos, isFixed }) => {
+const surfToJS = ({ faces, pos, isFixed }) => ({
+  faces: faces.toJS(),
+  pos: pos.toArray(),
+  isFixed: isFixed.toJS()
+});
+
+
+const surfFromJS = ({ faces, pos, isFixed }) => ({
+  faces: I.fromJS(faces),
+  pos: I.List(pos),
+  isFixed: I.fromJS(isFixed)
+});
+
+
+export const subD = surf => {
+  const { faces, pos, isFixed } = surfFromJS(surf);
   const n = pos.size;
   const m = faces.size;
   const { edges, lookup } = edgeIndexes(faces);
@@ -110,11 +125,11 @@ export const subD = ({ faces, pos, isFixed }) => {
     (efix.get(i) ? I.List() : facesByEdge.get(i).map(v => fpos.get(v)))
       .concat([pos.get(v), pos.get(w)])));
 
-  return {
+  return surfToJS({
     pos    : adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
     isFixed: isFixed.concat(ffix, efix),
     faces  : newFaces
-  };
+  });
 };
 
 
@@ -166,9 +181,10 @@ const flattenedOrSuppressedFace = vs => {
 };
 
 
-export const withFlattenedCenterFaces = surface => withCenterFaces(
-  surface,
-  vs => scaled(0.5, flattenedOrSuppressedFace(vs)));
+export const withFlattenedCenterFaces = surface =>
+  surfToJS(withCenterFaces(
+    surfFromJS(surface),
+    vs => scaled(0.5, flattenedOrSuppressedFace(vs))));
 
 
 const insetPoint = (corner, wd, left, right, center) => {
@@ -289,9 +305,10 @@ const connectors = (oldFaces, newFaces) => {
 };
 
 
-export const insetAt = ({ faces, pos, isFixed }, wd, isCorner) => {
+export const insetAt = (surf, wd, isCorner) => {
+  const { faces, pos, isFixed } = surfFromJS(surf);
   const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
+    shrunkAt({ faces, pos, isFixed }, wd, I.fromJS(isCorner));
 
   const newFaces = connectors(faces, modifiedFaces)
     .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]));
@@ -302,13 +319,14 @@ export const insetAt = ({ faces, pos, isFixed }, wd, isCorner) => {
     faces  : modifiedFaces.concat(newFaces)
   };
 
-  return result;
+  return surfToJS(result);
 };
 
 
-export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
+export const beveledAt = (surf, wd, isCorner) => {
+  const { faces, pos, isFixed } = surfFromJS(surf);
   const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
+    shrunkAt({ faces, pos, isFixed }, wd, I.fromJS(isCorner));
 
   const edgeFaces = I.List(
     connectors(faces, modifiedFaces)
@@ -326,7 +344,7 @@ export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
     faces  : modifiedFaces.concat(edgeFaces).concat(cornerFaces)
   };
 
-  return result;
+  return surfToJS(result);
 };
 
 
@@ -336,19 +354,19 @@ if (require.main == module) {
   };
 
   const cube = {
-    pos: I.List([[0,0,0], [0,0,1], [0,1,0], [0,1,1],
-                 [1,0,0], [1,0,1], [1,1,0], [1,1,1]]),
-    faces: I.fromJS([[0,1,3,2],[5,4,6,7],
-                     [1,0,4,5],[2,3,7,6],
-                     [0,2,6,4],[3,1,5,7]]),
-    isFixed: I.Range(0,8).map(i => i < 4)
+    pos: [[0,0,0], [0,0,1], [0,1,0], [0,1,1],
+          [1,0,0], [1,0,1], [1,1,0], [1,1,1]],
+    faces: [[0,1,3,2],[5,4,6,7],
+            [1,0,4,5],[2,3,7,6],
+            [0,2,6,4],[3,1,5,7]],
+    isFixed: Array(8).fill(0).map((_, i) => i < 4)
   };
 
   const t = withFlattenedCenterFaces(cube);
 
-  console.log(insetAt(t, 0.1, I.Range(0, 8).map(i => true)));
+  console.log(insetAt(t, 0.1, Array(8).fill(true)));
   console.log();
-  console.log(beveledAt(cube, 0.1, I.Range(0, 8).map(i => true)));
+  console.log(beveledAt(cube, 0.1, Array(8).fill(true)));
   console.log();
   console.log(subD(cube));
 }
