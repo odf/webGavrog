@@ -408,5 +408,8 @@ if (require.main == module) {
   const t = withFlattenedCenterFaces(cube);
 
   console.log(insetAt(t, 0.1, I.Range(0, 8).map(i => true)));
+  console.log();
   console.log(beveledAt(cube, 0.1, I.Range(0, 8).map(i => true)));
+  console.log();
+  console.log(subD(cube));
 }
