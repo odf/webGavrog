@@ -137,7 +137,7 @@ class Seq {
   }
 
   consec(n) {
-    return this.subseqs().map(s => s.take(n));
+    return this.subseqs().map(s => s.take(n)).filter(s => s.length == n);
   }
 };
 
@@ -178,14 +178,20 @@ class Cons extends Seq {
 
 export const cons = (firstVal, restFn) => new Cons(firstVal, restFn);
 
-export const seq = iter => {
-  if (typeof iter.next == 'function') {
-    const s = iter.next();
-    return s.done ? nil : cons(s.value, () => seq(iter));
+
+export const seq = val => {
+  if (val instanceof Seq)
+    return val;
+  else if (typeof val.next == 'function') {
+    const s = val.next();
+    return s.done ? nil : cons(s.value, () => seq(val));
   }
+  else if (typeof val[Symbol.iterator] == 'function')
+    return seq(val[Symbol.iterator]());
   else
-    return seq(iter[Symbol.iterator]());
+    return cons(val, () => nil);
 };
+
 
 export const fromArray = (a, start=0) => 
   start < a.length ? cons(a[start], () => fromArray(a, start + 1)) : nil;
@@ -223,7 +229,9 @@ if (require.main == module) {
 
   test('nil');
   test('fromArray([5, 3, 7, 1])');
+  test('seq(3)');
   test('seq([5, 3, 7, 1])');
+  test('seq(seq([5, 3, 7, 1]))');
   test('seq(gen())');
   test('range(5, 15)');
   test('constant(4).take(8)');
@@ -248,7 +256,7 @@ if (require.main == module) {
   test('zipWith((x, y) => x * 10 + y, range(1, 5), range(4, 8).reverse())');
   test('range(1, 4).flatMap(i => range(10 * i, 10 * i + 3))');
   test('range(1, 4).subseqs().map(s => cons(0, () => s))');
-  test('range(1, 5).consec(3).map(s => cons(0, () => s))');
+  test('range(1, 6).consec(3).map(s => cons(0, () => s))');
 
   const fib = cons(0, () =>
                    cons(1, () =>
