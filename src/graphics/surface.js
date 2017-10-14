@@ -10,73 +10,6 @@ let _timers = null;
 export const useTimers = timers => { _timers = timers };
 
 
-const pairs = as => S.seq(as).consecCirc(2).map(s => s.toArray()).toArray();
-
-const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
-const corners = pos => idcs => idcs.map(i => pos.get(i));
-const centroid = pos => ops.div(sum(pos), S.seq(pos).length);
-const normalized = v => ops.div(v, ops.norm(v));
-
-
-const projection = (normal, origin = ops.times(0, normal)) => p => {
-  const d = ops.minus(p, origin);
-  return ops.plus(origin, ops.minus(d, ops.times(ops.times(normal, d), normal)));
-};
-
-
-const cycles = m => {
-  const seen = {};
-  const faces = [];
-
-  for (const k of Object.keys(m)) {
-    if (!seen[k]) {
-      let i = parseInt(k);
-      const f = [];
-      while (!seen[i]) {
-        seen[i] = true;
-        f.push(i);
-        i = m[i];
-      }
-      faces.push(f);
-    }
-  }
-
-  return faces;
-};
-
-
-const faceNormal = vs => normalized(sum(
-  pairs(vs).map(([v, w]) => ops.crossProduct(v, w))));
-
-
-const edgeIndexes = faces => {
-  const eKey     = ([v, w]) => I.List(v < w ? [v, w] : [w, v]);
-  const edges    = I.List(I.Set(faces.flatMap(is => pairs(is).map(eKey))));
-  const index    = I.Map(edges.map((e, i) => [e, i]));
-  const findPair = ([v,w]) => index.get(eKey([v, w]));
-  const lookup   = faces.map(is => I.List(pairs(is)).map(findPair));
-
-  return { edges, lookup }
-};
-
-
-const adjustedPositions = (faces, pos, isFixed) => {
-  const coord = (face, idx, factor) => ops.times(factor, pos.get(face.get(idx)));
-  const facesByVertex = faces.groupBy(f => f.get(0));
-
-  return pos.map((p, i) => {
-    if (isFixed.get(i) || facesByVertex.get(i) == null)
-      return p;
-
-    const m = facesByVertex.get(i).size;
-    const t = sum(
-      facesByVertex.get(i)
-        .flatMap(f => [coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
-    return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
-  });
-};
-
-
 const surfToJS = ({ faces, pos, isFixed }) => ({
   faces: faces.toJS(),
   pos: pos.toArray(),
@@ -91,41 +24,101 @@ const surfFromJS = ({ faces, pos, isFixed }) => ({
 });
 
 
-export const subD = surf => {
-  const { faces, pos, isFixed } = surfFromJS(surf);
-  const n = pos.size;
-  const m = faces.size;
-  const { edges, lookup } = edgeIndexes(faces);
+const pairs = as => S.seq(as).consecCirc(2).map(s => s.toArray()).toArray();
+const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
+const corners = pos => idcs => idcs.map(i => pos[i]);
+const centroid = pos => ops.div(sum(pos), S.seq(pos).length);
+const normalized = v => ops.div(v, ops.norm(v));
 
-  const newFaces = faces.flatMap((vs, f) => {
-    const edge = i => n + m + lookup.get(f).get(i);
-    const prev = i => (i + vs.size - 1) % vs.size;
-    return vs.map((v, i) => I.List([v, edge(i), n + f, edge(prev(i))]));
-  });
 
-  const ffix = I.Repeat(false, faces.size);
-  const fpos = faces.map(corners(pos)).map(centroid);
+const edgeIndexes = faces => {
+  const edges = [];
+  const edgeIndex = {};
+  const lookup = {};
 
-  const facesByEdge = lookup
-    .flatMap((a, f) => a.map(e => [e, f]))
-    .groupBy(([e, f]) => e)
-    .map(a => a.map(([e, f]) => f));
+  for (let f = 0; f < faces.length; ++f) {
+    const ps = pairs(faces[f]);
+    lookup[f] = {};
 
-  const efix = edges.map(([v, w]) => isFixed.get(v) && isFixed.get(w));
-  const epos = edges.map(([v, w], i) => centroid(
-    (efix.get(i) ? I.List() : facesByEdge.get(i).map(v => fpos.get(v)))
-      .concat([pos.get(v), pos.get(w)])));
+    for (let i = 0; i < ps.length; ++i) {
+      const [v, w] = ps[i].slice().sort();
+      if (edgeIndex[[v, w]] == null) {
+        edgeIndex[[v, w]] = edges.length;
+        edges.push([v, w]);
+      }
+      lookup[f][i] = edgeIndex[[v, w]];
+    }
+  }
 
-  return surfToJS({
-    pos    : adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
-    isFixed: isFixed.concat(ffix, efix),
-    faces  : newFaces
+  return { edges, lookup };
+};
+
+
+const adjustedPositions = (faces, pos, isFixed) => {
+  const coord = (face, idx, factor) => ops.times(factor, pos[face[idx]]);
+
+  const facesByVertex = pos.map(_ => []);
+  for (const f of faces)
+    facesByVertex[f[0]].push(f);
+
+  return pos.map((p, i) => {
+    if (isFixed[i] || facesByVertex[i].length == 0)
+      return p;
+
+    const m = facesByVertex[i].length;
+
+    let t = ops.times(0, pos[0]);
+    for (const f of facesByVertex[i])
+      t = ops.plus(t, sum([coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
+
+    return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
   });
 };
 
 
+export const subD = ({ faces, pos, isFixed }) => {
+  const n = pos.length;
+  const m = faces.length;
+  const { edges, lookup } = edgeIndexes(faces);
+
+  const newFaces = [];
+  for (let f = 0; f < faces.length; ++f) {
+    const vs = faces[f];
+    const edge = i => n + m + lookup[f][i];
+    const prev = i => (i + vs.length - 1) % vs.length;
+
+    for (let i = 0; i < vs.length; ++i)
+      newFaces.push([vs[i], edge(i), n + f, edge(prev(i))]);
+  }
+
+  const ffix = Array(faces.length).fill(false);
+  const fpos = faces.map(corners(pos)).map(centroid);
+
+  const facesByEdge = {};
+  for (const f of Object.keys(lookup)) {
+    for (const e of Object.values(lookup[f])) {
+      if (facesByEdge[e] == null)
+        facesByEdge[e] = [f];
+      else
+        facesByEdge[e].push(f);
+    }
+  }
+
+  const efix = edges.map(([v, w]) => isFixed[v] && isFixed[w]);
+  const epos = edges.map(([v, w], i) => centroid(
+    (efix[i] ? [] : facesByEdge[i].map(v => fpos[v]))
+      .concat([pos[v], pos[w]])));
+
+  return {
+    faces: newFaces,
+    pos: adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
+    isFixed: isFixed.concat(ffix, efix)
+  };
+};
+
+
 const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
-  const centerFaces = faces.map(corners(pos)).map(fn);
+  const centerFaces = faces.map(corners(pos.toArray())).map(fn);
   const extraPositions = centerFaces.flatten(1);
 
   const offsets = S.seq(centerFaces)
@@ -153,12 +146,13 @@ const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
 };
 
 
-const scaled = (f, vs) => {
-  if (vs.size == 0)
-    return vs;
+const faceNormal = vs => normalized(sum(
+  pairs(vs).map(([v, w]) => ops.crossProduct(v, w))));
 
-  const c = centroid(vs);
-  return vs.map(v => ops.plus(ops.times(f, v), ops.times(1-f, c)));
+
+const projection = (normal, origin = ops.times(0, normal)) => p => {
+  const d = ops.minus(p, origin);
+  return ops.plus(origin, ops.minus(d, ops.times(ops.times(normal, d), normal)));
 };
 
 
@@ -171,6 +165,15 @@ const flattenedOrSuppressedFace = vs => {
   }
 
   return I.List();
+};
+
+
+const scaled = (f, vs) => {
+  if (vs.size == 0)
+    return vs;
+
+  const c = centroid(vs);
+  return vs.map(v => ops.plus(ops.times(f, v), ops.times(1-f, c)));
 };
 
 
@@ -232,7 +235,7 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
     const ends = hs.map(([f, i]) => pos.get(endIndex(f, i)));
     const c    = centroid(ends.length > 2 ?
                           ends.slice(1, -1) :
-                          corners(pos)(faces.get(hs[0][0])));
+                          corners(pos.toArray())(faces.get(hs[0][0])));
     return insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
   };
 
@@ -313,6 +316,27 @@ export const insetAt = (surf, wd, isCorner) => {
   };
 
   return surfToJS(result);
+};
+
+
+const cycles = m => {
+  const seen = {};
+  const faces = [];
+
+  for (const k of Object.keys(m)) {
+    if (!seen[k]) {
+      let i = parseInt(k);
+      const f = [];
+      while (!seen[i]) {
+        seen[i] = true;
+        f.push(i);
+        i = m[i];
+      }
+      faces.push(f);
+    }
+  }
+
+  return faces;
 };
 
 
