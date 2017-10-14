@@ -148,6 +148,10 @@ class Seq {
   consec(n) {
     return this.subseqs().map(s => s.take(n)).filter(s => s.length == n);
   }
+
+  consecCirc(n) {
+    return this.append(this.append(this).take(n - 1)).consec(n);
+  }
 };
 
 
@@ -269,10 +273,11 @@ if (require.main == module) {
   test('range(1, 4).flatMap(i => range(10 * i, 10 * i + 3))');
   test('range(1, 4).subseqs().map(s => cons(0, () => s))');
   test('range(1, 6).consec(3).map(s => cons(0, () => s))');
+  test('range(1, 4).consecCirc(3).map(s => cons(0, () => s))');
+  test('range(1, 3).consecCirc(6).map(s => cons(0, () => s))');
 
-  const fib = cons(0, () =>
-                   cons(1, () =>
-                        zipWith((x, y) => x + y, fib, fib.rest())));
+  const fib = seq([0, 1]).appendLazy(
+    () => zipWith((x, y) => x + y, fib, fib.rest()));
   test('fib.take(12)');
 
   const primes = upFrom(2).filter(
