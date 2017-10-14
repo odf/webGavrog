@@ -344,10 +344,6 @@ export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
 };
 
 
-export const standardized = ({ faces, pos, isFixed }) =>
-  ({ faces, pos: pos.map(p => ops.toJS(p)), isFixed });
-
-
 if (require.main == module) {
   Array.prototype.toString = function() {
     return 'List [ ' + this.map(x => x.toString()).join(', ') + ' ]';

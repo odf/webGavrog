@@ -14,7 +14,7 @@ const processedSolid = (t0, subDLevel) => {
   const t3 = surface.insetAt(t2, 0.02, t2.isFixed);
   const t4 = surface.beveledAt(t3, 0.01, t2.isFixed);
 
-  return surface.standardized(t4);
+  return t4;
 };
 
 
