@@ -290,55 +290,41 @@ const connectors = (oldFaces, newFaces) => {
 
 
 export const insetAt = ({ faces, pos, isFixed }, wd, isCorner) => {
-  _timers && _timers.start("  insetAt(): shrinking");
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
-  _timers && _timers.stop("  insetAt(): shrinking");
 
-  _timers && _timers.start("  insetAt(): computing new faces");
   const newFaces = connectors(faces, modifiedFaces)
     .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]));
-  _timers && _timers.stop("  insetAt(): computing new faces");
 
-  _timers && _timers.start("  insetAt(): putting things together");
   const result = {
     pos    : pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faces  : modifiedFaces.concat(newFaces)
   };
-  _timers && _timers.stop("  insetAt(): putting things together");
 
   return result;
 };
 
 
 export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
-  _timers && _timers.start("  beveledAt(): shrinking");
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
-  _timers && _timers.stop("  beveledAt(): shrinking");
 
-  _timers && _timers.start("  beveledAt(): computing edge faces");
   const edgeFaces = I.List(
     connectors(faces, modifiedFaces)
       .map(([eo, en]) => [I.List(eo).sort(), I.List(en)])
       .groupBy(([eo]) => eo)
       .map(([[, a], [, b]]) => a.concat(b).reverse())
       .valueSeq());
-  _timers && _timers.stop("  beveledAt(): computing edge faces");
 
-  _timers && _timers.start("  beveledAt(): computing corner faces");
   const cornerFaces = cycles(I.Map(
     edgeFaces.flatMap(is => [[is.get(2), is.get(1)], [is.get(0), is.get(3)]])));
-  _timers && _timers.stop("  beveledAt(): computing corner faces");
 
-  _timers && _timers.start("  beveledAt(): putting things together");
   const result = {
     pos    : pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faces  : modifiedFaces.concat(edgeFaces).concat(cornerFaces)
   };
-  _timers && _timers.stop("  beveledAt(): putting things together");
 
   return result;
 };
