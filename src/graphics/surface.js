@@ -118,31 +118,33 @@ export const subD = ({ faces, pos, isFixed }) => {
 
 
 const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
-  const centerFaces = faces.map(corners(pos.toArray())).map(fn);
-  const extraPositions = centerFaces.flatten(1);
+  const newFaces = [];
+  const newPos = pos.slice();
+  const newIsFixed = isFixed.slice();
 
-  const offsets = S.seq(centerFaces)
-    .reductions((a, vs) => a + vs.size, pos.size).toArray();
+  for (const is of faces) {
+    const centerFace = fn(is.map(i => pos[i]));
 
-  const newFaces = faces.flatMap((is, f) => {
-    if (centerFaces.get(f).size == 0)
-      return I.List([is]);
+    if (centerFace == null)
+      newFaces.push(is);
+    else {
+      const k = newPos.length;
+      const m = centerFace.length;
 
-    const k = offsets[f];
-    const m = is.size;
-    const center = I.List(I.Range(k, k+m));
-    const gallery = I.Range(0, m).map(i => {
-      const j = (i + 1) % m;
-      return I.List([is.get(i), is.get(j), j+k, i+k]); 
-    });
-    return I.List(gallery).push(center);
-  });
+      for (const v of centerFace) {
+        newPos.push(v);
+        newIsFixed.push(false);
+      }
 
-  return {
-    faces  : newFaces,
-    pos    : pos.concat(extraPositions),
-    isFixed: isFixed.concat(extraPositions.map(p => false))
-  };
+      newFaces.push(S.range(k, k + m).toArray());
+      for (let i = 0; i < m; ++i) {
+        const j = (i + 1) % m;
+        newFaces.push([is[i], is[j], j + k, i + k]);
+      }
+    }
+  }
+
+  return { faces: newFaces, pos: newPos, isFixed: newIsFixed };
 };
 
 
@@ -150,7 +152,7 @@ const faceNormal = vs => normalized(sum(
   pairs(vs).map(([v, w]) => ops.crossProduct(v, w))));
 
 
-const projection = (normal, origin = ops.times(0, normal)) => p => {
+const projection = (normal, origin=ops.times(0, normal)) => p => {
   const d = ops.minus(p, origin);
   return ops.plus(origin, ops.minus(d, ops.times(ops.times(normal, d), normal)));
 };
@@ -159,17 +161,17 @@ const projection = (normal, origin = ops.times(0, normal)) => p => {
 const flattenedOrSuppressedFace = vs => {
   const ws = vs.map(projection(faceNormal(vs), centroid(vs)));
 
-  for (let i = 0; i < vs.size; ++i) {
-    if (ops.norm(ops.minus(vs.get(i), ws.get(i))) > 0.01 * ops.norm(ws.get(i)))
+  for (let i = 0; i < vs.length; ++i) {
+    if (ops.norm(ops.minus(vs[i], ws[i])) > 0.01 * ops.norm(ws[i]))
       return ws;
   }
 
-  return I.List();
+  return null;
 };
 
 
 const scaled = (f, vs) => {
-  if (vs.size == 0)
+  if (vs == null)
     return vs;
 
   const c = centroid(vs);
@@ -178,9 +180,7 @@ const scaled = (f, vs) => {
 
 
 export const withFlattenedCenterFaces = surface =>
-  surfToJS(withCenterFaces(
-    surfFromJS(surface),
-    vs => scaled(0.5, flattenedOrSuppressedFace(vs))));
+  withCenterFaces(surface, vs => scaled(0.5, flattenedOrSuppressedFace(vs)));
 
 
 const insetPoint = (corner, wd, left, right, center) => {
