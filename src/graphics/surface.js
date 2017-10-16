@@ -206,7 +206,7 @@ const insetPoint = (corner, wd, left, right, center) => {
 };
 
 
-const nextHalfEdgeAtVertex = faces => {
+const edgeCycle = faces => {
   const edgeLoc = {};
 
   for (let f = 0; f < faces.length; ++f) {
@@ -215,9 +215,17 @@ const nextHalfEdgeAtVertex = faces => {
       edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
   }
 
-  return ([f, i]) => {
-    const is = faces[f];
-    return edgeLoc[[is[i], is[(i + is.length - 1) % is.length]]];
+  return ([f0, k0]) => {
+    const result = [];
+    let [f, k] = [f0, k0];
+
+    do {
+      const is = faces[f];
+      result.push([f, k]);
+      [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
+    } while (f != f0 || k != k0);
+
+    return result;
   };
 };
 
@@ -226,7 +234,7 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
-  const nextAtVtx = nextHalfEdgeAtVertex(faces.toJS());
+  const cycle     = edgeCycle(faces.toJS());
 
   const newVertexForStretch = (v, hs) => {
     const ends = hs.map(([f, i]) => pos.get(endIndex(f, i)));
@@ -234,16 +242,6 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
                           ends.slice(1, -1) :
                           corners(pos.toArray())(faces.get(hs[0][0])));
     return insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
-  };
-
-  const edgeCycle = ([f, k]) => {
-    let e = [f, k];
-    const hs = [];
-    do {
-      hs.push(e);
-      e = nextAtVtx(e);
-    } while(e[0] != f || e[1] != k);
-    return hs;
   };
 
   const stretches = hs => {
@@ -256,30 +254,31 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
         hs.slice(splits[i-1], splits[i]+1)));
   };
 
-  const seen   = I.Set().asMutable();
-  const mods   = I.Map().asMutable();
+  const seen = {};
+  const mods = {};
   const newPos = [];
 
-  faces.forEach((is, f) => {
-    is.forEach((v, k) => {
-      if (seen.contains(v) || !isCorner.get(v))
-        return;
-      seen.add(v);
+  for (let f = 0; f < faces.size; ++f) {
+    const is = faces.get(f);
 
-      stretches(edgeCycle([f, k])).forEach(stretch => {
-        newPos.push(newVertexForStretch(v, stretch));
-        for (let j = 0; j < stretch.length - 1; ++j)
-          mods.set(I.List(stretch[j]), pos.size + newPos.length - 1);
-      });
-    });
-  });
+    for (let k = 0; k < is.size; ++k) {
+      const v = is.get(k);
 
-  const newFaces = faces.map(
-    (is, f) => is.map((v, i) => mods.get(I.List([f, i])) || v));
+      if (!seen[v] && isCorner.get(v)) {
+        seen[v] = true;
+
+        for (const stretch of stretches(cycle([f, k]))) {
+          newPos.push(newVertexForStretch(v, stretch));
+          for (let j = 0; j < stretch.length - 1; ++j)
+            mods[stretch[j]] = pos.size + newPos.length - 1;
+        }
+      }
+    }
+  }
 
   return {
-    pos  : newPos,
-    faces: newFaces
+    pos: newPos,
+    faces: faces.map((is, f) => is.map((v, i) => mods[[f, i]] || v))
   };
 };
 
