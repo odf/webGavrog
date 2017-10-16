@@ -230,18 +230,17 @@ const edgeCycle = faces => {
 };
 
 
-const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
-  const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
-  const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
-  const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
-  const cycle     = edgeCycle(faces.toJS());
+const shrunkAt = ({ faces, pos }, wd, isCorner) => {
+  const nextIndex = (f, i) => (i + 1) % faces[f].length;
+  const endIndex = (f, i) => faces[f][nextIndex(f, i)];
+  const isSplit = ([f, i]) => isCorner[endIndex(f, i)];
+  const cycle = edgeCycle(faces);
 
   const newVertexForStretch = (v, hs) => {
-    const ends = hs.map(([f, i]) => pos.get(endIndex(f, i)));
-    const c    = centroid(ends.length > 2 ?
-                          ends.slice(1, -1) :
-                          corners(pos.toArray())(faces.get(hs[0][0])));
-    return insetPoint(pos.get(v), wd, ends[0], ends[ends.length-1], c);
+    const ends = hs.map(([f, i]) => pos[endIndex(f, i)]);
+    const c = centroid(
+      ends.length > 2 ? ends.slice(1, -1) : corners(pos)(faces[hs[0][0]]));
+    return insetPoint(pos[v], wd, ends[0], ends[ends.length-1], c);
   };
 
   const stretches = hs => {
@@ -258,19 +257,19 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   const mods = {};
   const newPos = [];
 
-  for (let f = 0; f < faces.size; ++f) {
-    const is = faces.get(f);
+  for (let f = 0; f < faces.length; ++f) {
+    const is = faces[f];
 
-    for (let k = 0; k < is.size; ++k) {
-      const v = is.get(k);
+    for (let k = 0; k < is.length; ++k) {
+      const v = is[k];
 
-      if (!seen[v] && isCorner.get(v)) {
+      if (!seen[v] && isCorner[v]) {
         seen[v] = true;
 
         for (const stretch of stretches(cycle([f, k]))) {
           newPos.push(newVertexForStretch(v, stretch));
           for (let j = 0; j < stretch.length - 1; ++j)
-            mods[stretch[j]] = pos.size + newPos.length - 1;
+            mods[stretch[j]] = pos.length + newPos.length - 1;
         }
       }
     }
@@ -299,8 +298,8 @@ const connectors = (oldFaces, newFaces) => {
 
 export const insetAt = (surf, wd, isCorner) => {
   const { faces, pos, isFixed } = surfFromJS(surf);
-  const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, I.fromJS(isCorner));
+  const { pos: newPos, faces: mFaces } = shrunkAt(surf, wd, isCorner);
+  const modifiedFaces = I.fromJS(mFaces);
 
   const newFaces = connectors(faces, modifiedFaces)
     .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]));
@@ -338,8 +337,8 @@ const cycles = m => {
 
 export const beveledAt = (surf, wd, isCorner) => {
   const { faces, pos, isFixed } = surfFromJS(surf);
-  const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, I.fromJS(isCorner));
+  const { pos: newPos, faces: mFaces } = shrunkAt(surf, wd, isCorner);
+  const modifiedFaces = I.fromJS(mFaces);
 
   const edgeFaces = I.List(
     connectors(faces, modifiedFaces)
