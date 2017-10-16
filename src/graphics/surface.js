@@ -207,20 +207,17 @@ const insetPoint = (corner, wd, left, right, center) => {
 
 
 const nextHalfEdgeAtVertex = faces => {
-  const edgeLoc = I.Map().asMutable();
+  const edgeLoc = {};
 
-  faces.forEach((is, f) => {
-    is.forEach((v, k) => {
-      const w = is.get((k + 1) % is.size);
-      edgeLoc.setIn([v, w], [f, k]);
-    });
-  });
+  for (let f = 0; f < faces.length; ++f) {
+    const is = faces[f];
+    for (let k = 0; k < is.length; ++k)
+      edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
+  }
 
   return ([f, i]) => {
-    const is = faces.get(f);
-    const v = is.get(i);
-    const w = is.get((i + is.size - 1) % is.size);
-    return edgeLoc.getIn([v, w]);
+    const is = faces[f];
+    return edgeLoc[[is[i], is[(i + is.length - 1) % is.length]]];
   };
 };
 
@@ -229,7 +226,7 @@ const shrunkAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   const nextIndex = (f, i) => (i + 1) % faces.get(f).size;
   const endIndex  = (f, i) => faces.get(f).get(nextIndex(f, i));
   const isSplit   = ([f, i]) => isCorner.get(endIndex(f, i));
-  const nextAtVtx = nextHalfEdgeAtVertex(faces);
+  const nextAtVtx = nextHalfEdgeAtVertex(faces.toJS());
 
   const newVertexForStretch = (v, hs) => {
     const ends = hs.map(([f, i]) => pos.get(endIndex(f, i)));
