@@ -1,27 +1,7 @@
-import * as I from 'immutable';
 import * as S from '../common/lazyseq';
 
 import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
-
-
-let _timers = null;
-
-export const useTimers = timers => { _timers = timers };
-
-
-const surfToJS = ({ faces, pos, isFixed }) => ({
-  faces: faces.toJS(),
-  pos: pos.toArray(),
-  isFixed: isFixed.toJS()
-});
-
-
-const surfFromJS = ({ faces, pos, isFixed }) => ({
-  faces: I.fromJS(faces),
-  pos: I.List(pos),
-  isFixed: I.fromJS(isFixed)
-});
 
 
 const pairs = as => S.seq(as).consecCirc(2).map(s => s.toArray()).toArray();
@@ -283,34 +263,32 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
 
 
 const connectors = (oldFaces, newFaces) => {
-  const result = I.List().asMutable();
-  oldFaces.forEach((isOld, i) => {
-    const isNew = newFaces.get(i);
-    isOld.forEach((vo, k) => {
-      const k1 = (k + 1) % isOld.size;
-      if (vo != isNew.get(k) && isOld.get(k1) != isNew.get(k1))
-        result.push([[vo, isOld.get(k1)], [isNew.get(k), isNew.get(k1)]]);
-    });
-  });
-  return result.asImmutable();
+  const result = [];
+
+  for (let i = 0; i < oldFaces.length; ++i) {
+    const isOld = oldFaces[i];
+    const isNew = newFaces[i];
+
+    for (let k = 0; k < isOld.length; ++k) {
+      const k1 = (k + 1) % isOld.length;
+      if (isOld[k] != isNew[k] && isOld[k1] != isNew[k1])
+        result.push([isOld[k], isOld[k1], isNew[k1], isNew[k]]);
+    }
+  }
+
+  return result;
 };
 
 
-export const insetAt = (surf, wd, isCorner) => {
-  const { faces, pos, isFixed } = surfFromJS(surf);
-  const { pos: newPos, faces: mFaces } = shrunkAt(surf, wd, isCorner);
-  const modifiedFaces = I.fromJS(mFaces);
+export const insetAt = ({ faces, pos, isFixed }, wd, isCorner) => {
+  const { pos: newPos, faces: modifiedFaces } =
+    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
 
-  const newFaces = connectors(faces, modifiedFaces)
-    .map(([[vo, wo], [vn, wn]]) => I.List([vo, wo, wn, vn]));
-
-  const result = {
-    pos    : pos.concat(newPos),
-    isFixed: isFixed.concat(newPos.map(i => true)),
-    faces  : modifiedFaces.concat(newFaces)
+  return {
+    faces: modifiedFaces.concat(connectors(faces, modifiedFaces)),
+    pos: pos.concat(newPos),
+    isFixed: isFixed.concat(newPos.map(i => true))
   };
-
-  return surfToJS(result);
 };
 
 
@@ -335,32 +313,34 @@ const cycles = m => {
 };
 
 
-export const beveledAt = (surf, wd, isCorner) => {
-  const { faces, pos, isFixed } = surfFromJS(surf);
-  const { pos: newPos, faces: mFaces } = shrunkAt(surf, wd, isCorner);
-  const modifiedFaces = I.fromJS(mFaces);
+export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
+  const { pos: newPos, faces: modifiedFaces } =
+    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
 
-  const edgeFaces = I.List(
-    connectors(faces, modifiedFaces)
-      .map(([eo, en]) => [I.List(eo).sort(), I.List(en)])
-      .groupBy(([eo]) => eo)
-      .map(([[, a], [, b]]) => a.concat(b).reverse())
-      .valueSeq());
+  const edgeFaces = [];
+  const seen = {};
+
+  for (const [a, b, c, d] of connectors(faces, modifiedFaces)) {
+    const m = [a, b].sort();
+    const [f, e] = seen[m] || [];
+    if (e == null)
+      seen[m] = [d, c];
+    else
+      edgeFaces.push([c, d, e, f]);
+  }
 
   const m = {};
   for (const is of edgeFaces) {
-    const [a, b, c, d] = is.toArray();
+    const [a, b, c, d] = is;
     m[c] = b;
     m[a] = d;
   }
 
-  const result = {
-    pos    : pos.concat(newPos),
-    isFixed: isFixed.concat(newPos.map(i => true)),
-    faces  : modifiedFaces.concat(edgeFaces).concat(cycles(m))
+  return {
+    faces: modifiedFaces.concat(edgeFaces).concat(cycles(m)),
+    pos: pos.concat(newPos),
+    isFixed: isFixed.concat(newPos.map(i => true))
   };
-
-  return surfToJS(result);
 };
 
 
