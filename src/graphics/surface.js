@@ -321,17 +321,15 @@ export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   const seen = {};
 
   for (const [a, b, c, d] of connectors(faces, modifiedFaces)) {
-    const m = [a, b].sort();
-    const [f, e] = seen[m] || [];
+    const [f, e] = seen[[b, a]] || [];
     if (e == null)
-      seen[m] = [d, c];
+      seen[[a, b]] = [d, c];
     else
       edgeFaces.push([c, d, e, f]);
   }
 
   const m = {};
-  for (const is of edgeFaces) {
-    const [a, b, c, d] = is;
+  for (const [a, b, c, d] of edgeFaces) {
     m[c] = b;
     m[a] = d;
   }
