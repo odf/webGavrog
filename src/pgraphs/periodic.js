@@ -9,9 +9,6 @@ import * as solveRational from '../arithmetic/solveRational';
 import * as util from '../common/util';
 
 
-let _timers = null;
-
-
 class VectorLabeledEdge {
   constructor(head, tail, shift) {
     this.head = head;
@@ -75,12 +72,11 @@ const encode = value => ops.serialize(value);
 const decode = value => ops.deserialize(value);
 
 
-export function makeEdge(head, tail, shift) {
-  return new VectorLabeledEdge(head, tail, shift);
-};
+export const makeEdge = (head, tail, shift) =>
+  new VectorLabeledEdge(head, tail, shift);
 
 
-export function make(data) {
+export const make = data => {
   const ereps = data.map(([h, t, s]) => encode(makeEdge(h, t, s).canonical()));
   const edges = I.OrderedSet(ereps).map(decode);
 
@@ -109,7 +105,7 @@ export const fromObject = ({ PeriodicGraph: obj }) => new Graph(
 );
 
 
-export function vertices(graph) {
+export const vertices = graph => {
   const result = I.OrderedSet().asMutable();
   for (const e of graph.edges) {
     result.add(e.head);
@@ -119,7 +115,7 @@ export function vertices(graph) {
 };
 
 
-export function adjacencies(graph) {
+export const adjacencies = graph => {
   const target = e => ({ v: e.tail, s: e.shift });
 
   let res = I.Map();
@@ -132,7 +128,7 @@ export function adjacencies(graph) {
 };
 
 
-export function coordinationSeq(graph, start, dist) {
+export const coordinationSeq = (graph, start, dist) => {
   const adj  = adjacencies(graph);
   const zero = ops.vector(graph.dim);
 
@@ -253,17 +249,15 @@ const _componentInCoverGraph = (graph, start) => {
 };
 
 
-export function isConnected(graph) {
-  _timers && _timers.start('isConnected');
+export const isConnected = graph => {
   const verts = vertices(graph);
   const comp = _componentInCoverGraph(graph, verts.first());
-  _timers && _timers.stop('isConnected');
 
   return comp.nodes.length >= verts.size && comp.multiplicity == 1;
 };
 
 
-export function connectedComponents(graph) {
+export const connectedComponents = graph => {
   const verts = vertices(graph);
   const seen = I.Set().asMutable();
   const result = [];
@@ -280,11 +274,9 @@ export function connectedComponents(graph) {
 };
 
 
-export function barycentricPlacement(graph) {
+export const barycentricPlacement = graph => {
   if (graph._$pos != undefined)
     return graph._$pos;
-
-  _timers && _timers.start('barycentricPlacement');
 
   const adj   = adjacencies(graph);
   const verts = vertices(graph);
@@ -314,15 +306,13 @@ export function barycentricPlacement(graph) {
 
   const result = I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
 
-  _timers && _timers.stop('barycentricPlacement');
-
   graph._$pos = result;
 
   return result;
 };
 
 
-export function isStable(graph) {
+export const isStable = graph => {
   const pos = barycentricPlacement(graph);
   const verts = vertices(graph);
   const seen = I.Set().asMutable();
@@ -340,10 +330,9 @@ export function isStable(graph) {
 };
 
 
-export function isLocallyStable(graph) {
+export const isLocallyStable = graph => {
   const pos = barycentricPlacement(graph);
 
-  _timers && _timers.start('isLocallyStable');
   const adj = adjacencies(graph);
   const verts = vertices(graph);
 
@@ -354,7 +343,6 @@ export function isLocallyStable(graph) {
       const p = ops.plus(pos.get(w.v), w.s);
       const key = encode(p);
       if (seen.contains(key)) {
-        _timers && _timers.stop('isLocallyStable');
         return false;
       }
       else
@@ -362,24 +350,16 @@ export function isLocallyStable(graph) {
     }
   }
 
-  _timers && _timers.stop('isLocallyStable');
   return true;
 };
 
 
-export function allIncidences(graph, v, adj = adjacencies(graph)) {
-  return adj.get(v).map(({v: w, s}) => makeEdge(v, w, s)).toJS();
-};
+export const allIncidences = (graph, v, adj=adjacencies(graph)) =>
+  adj.get(v).map(({v: w, s}) => makeEdge(v, w, s)).toJS();
 
 
-export function edgeVector(e, pos) {
-  return ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
-};
-
-
-export function useTimers(timers) {
-  _timers = timers;
-}
+export const edgeVector = (e, pos) =>
+  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
 
 
 if (require.main == module) {
@@ -387,7 +367,7 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const test = function test(g) {
+  const test = g => {
     console.log('g = '+g);
     console.log('  cs  = '+coordinationSeq(g, 1, 10));
     if (isConnected(g)) {
