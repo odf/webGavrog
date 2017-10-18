@@ -72,18 +72,33 @@ const encode = value => ops.serialize(value);
 const decode = value => ops.deserialize(value);
 
 
+const dedupe = as => {
+  const seen = {};
+  const out = [];
+
+  for (const a of as) {
+    const key = encode(a);
+    if (!seen[key]) {
+      seen[key] = true;
+      out.push(a);
+    }
+  }
+
+  return out;
+};
+
+
 export const makeEdge = (head, tail, shift) =>
   new VectorLabeledEdge(head, tail, shift);
 
 
 export const make = data => {
-  const ereps = data.map(([h, t, s]) => encode(makeEdge(h, t, s).canonical()));
-  const edges = I.OrderedSet(ereps).map(decode);
+  const edges = dedupe(data.map(([h, t, s]) => makeEdge(h, t, s).canonical()));
 
-  if (edges.size == 0)
+  if (edges.length == 0)
     throw new Error('cannot be empty');
 
-  const dim = edges.first().shift.length;
+  const dim = edges[0].shift.length;
   if (edges.some(e => e.shift.length != dim))
     throw new Error('must have consistent shift dimensions');
 
@@ -94,14 +109,14 @@ export const make = data => {
 export const asObject = graph => ({
   PeriodicGraph: {
     dim: graph.dim,
-    edges: graph.edges.map(e => ops.repr(e)).toArray()
+    edges: graph.edges.map(e => ops.repr(e))
   }
 });
 
 
 export const fromObject = ({ PeriodicGraph: obj }) => new Graph(
   obj.dim,
-  I.OrderedSet(obj.edges.map(e => ops.fromRepr(e)))
+  obj.edges.map(e => ops.fromRepr(e))
 );
 
 

@@ -17,8 +17,14 @@ const encode = value => ops.serialize(value);
 const decode = value => ops.deserialize(value);
 
 
-const _directedEdges = graph =>
-  graph.edges.flatMap(e => [e, e.reverse()]).toJS();
+const _directedEdges = graph => {
+  const out = [];
+  for (const e of graph.edges) {
+    out.push(e);
+    out.push(e.reverse());
+  }
+  return out;
+};
 
 
 const _goodCombinations = (edges, pos) => {

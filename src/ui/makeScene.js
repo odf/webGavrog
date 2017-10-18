@@ -117,7 +117,7 @@ const ballAndStick = (
 
 
 const _graphWithNormalizedShifts = graph => {
-  const v0 = graph.edges.first().head;
+  const v0 = graph.edges[0].head;
   const adj = periodic.adjacencies(graph);
   const shifts = { [v0]: ops.vector(graph.dim) };
   const queue = [v0];

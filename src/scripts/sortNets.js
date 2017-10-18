@@ -19,7 +19,7 @@ process.argv.slice(2).forEach(file => {
 
 graphs.sort(({graph: g1, name: n1}, {graph: g2, name: n2}) =>
             (pgr.vertices(g1).size - pgr.vertices(g2).size ||
-             g1.edges.size - g2.edges.size));
+             g1.edges.length - g2.edges.length));
 
 for (const { graph, name } of graphs) {
   console.log('PERIODIC_GRAPH');
