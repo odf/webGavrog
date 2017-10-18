@@ -149,22 +149,22 @@ export const coordinationSeq = (graph, start, dist) => {
   const adj  = adjacencies(graph);
   const zero = ops.vector(graph.dim);
 
-  let oldShell = I.Set();
-  let thisShell = I.Set([I.fromJS([start, zero])]);
+  let oldShell = {};
+  let thisShell = { [JSON.stringify([start, zero])]: true };
   const res = [1];
 
-  for (const i of I.Range(1, dist+1)) {
-    let nextShell = I.Set().asMutable();
-    for (const item of thisShell) {
-      const [v, s] = item.toJS();
+  for (let i = 0; i < dist; ++i) {
+    const nextShell = {};
+    for (const item of Object.keys(thisShell)) {
+      const [v, s] = JSON.parse(item);
       for (const { v: w, s: t } of adj[v]) {
-        const key = I.fromJS([w, ops.plus(s, t)]);
-        if (!oldShell.contains(key) && !thisShell.contains(key))
-          nextShell.add(key);
+        const key = JSON.stringify([w, ops.plus(s, t)]);
+        if (!oldShell[key] && !thisShell[key])
+          nextShell[key] = true;
       }
     }
 
-    res.push(nextShell.size);
+    res.push(Object.keys(nextShell).length);
     oldShell = thisShell;
     thisShell = nextShell;
   }
