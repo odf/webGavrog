@@ -125,7 +125,7 @@ const _graphWithNormalizedShifts = graph => {
   while (queue.length) {
     const v = queue.shift();
 
-    for (const { v: w, s } of adj.get(v)) {
+    for (const { v: w, s } of adj[v]) {
       if (shifts[w] == null) {
         shifts[w] = ops.plus(s, shifts[v]);
         queue.push(w)

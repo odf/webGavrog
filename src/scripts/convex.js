@@ -18,10 +18,10 @@ DS.parseSymbols(text).forEach(function(ds) {
     const G   = tilings.skeleton(tilings.makeCover(ds)).graph;
     const pos = periodic.barycentricPlacement(G);
 
-    good = periodic.adjacencies(G).entrySeq().every(function(e) {
+    good = Object.entries(periodic.adjacencies(G)).every(function(e) {
       const p = pos.get(e[0]);
       const nbrs = e[1].map(n => ops.minus(ops.plus(pos.get(n.v), n.s), p));
-      return ops.rank(nbrs.toArray()) == dim;
+      return ops.rank(nbrs) == dim;
     });
   }
 

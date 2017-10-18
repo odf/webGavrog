@@ -131,11 +131,15 @@ export const vertices = graph => {
 export const adjacencies = graph => {
   const target = e => ({ v: e.tail, s: e.shift });
 
-  let res = I.Map();
+  const res = {};
   for (const e of graph.edges) {
-    res = res
-      .update(e.head, a => (a || I.List()).push(target(e)))
-      .update(e.tail, a => (a || I.List()).push(target(e.reverse())));
+    if (res[e.head] == null)
+      res[e.head] = [];
+    res[e.head].push(target(e));
+
+    if (res[e.tail] == null)
+      res[e.tail] = [];
+    res[e.tail].push(target(e.reverse()));
   }
   return res;
 };
@@ -153,7 +157,7 @@ export const coordinationSeq = (graph, start, dist) => {
     let nextShell = I.Set().asMutable();
     for (const item of thisShell) {
       const [v, s] = item.toJS();
-      for (const { v: w, s: t } of adj.get(v)) {
+      for (const { v: w, s: t } of adj[v]) {
         const key = I.fromJS([w, ops.plus(s, t)]);
         if (!oldShell.contains(key) && !thisShell.contains(key))
           nextShell.add(key);
@@ -179,7 +183,7 @@ const _componentInOrbitGraph = (graph, start) => {
     const v = queue.shift();
     const av = nodeShifts.get(v);
 
-    for (const {v: w, s: shift} of adj.get(v)) {
+    for (const {v: w, s: shift} of adj[v]) {
       if (nodeShifts.get(w) == undefined) {
         queue.push(w);
         nodeShifts.set(w, ops.minus(av, shift));
@@ -304,7 +308,7 @@ export const barycentricPlacement = graph => {
 
   verts.forEach((v, i) => {
     if (i > 0) {
-      adj.get(v).forEach(c => {
+      adj[v].forEach(c => {
         if (c.v != v) {
           const j = vIdcs.get(c.v);
           A[i][j] -= 1;
@@ -352,7 +356,7 @@ export const isLocallyStable = graph => {
   for (const v of verts) {
     const seen = I.Set().asMutable();
 
-    for (const w of adj.get(v)) {
+    for (const w of adj[v]) {
       const p = ops.plus(pos.get(w.v), w.s);
       const key = encode(p);
       if (seen.contains(key)) {
@@ -368,7 +372,7 @@ export const isLocallyStable = graph => {
 
 
 export const allIncidences = (graph, v, adj=adjacencies(graph)) =>
-  adj.get(v).map(({v: w, s}) => makeEdge(v, w, s)).toJS();
+  adj[v].map(({v: w, s}) => makeEdge(v, w, s));
 
 
 export const edgeVector = (e, pos) =>

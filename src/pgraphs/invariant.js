@@ -132,7 +132,7 @@ const _goodBases = (graph, bases) => {
 
   const atLoop = bases.filter(basis => {
     const v = basis[0].head;
-    return adj.get(v).every(e => e.tail == v);
+    return adj[v].every(e => e.tail == v);
   });
 
   if (atLoop.size > 0)
@@ -140,15 +140,15 @@ const _goodBases = (graph, bases) => {
 
   const atLune = bases.filter(basis => {
     const v = basis[0].head;
-    const neighbours = adj.get(v).map(e => e.tail).sort();
+    const neighbours = adj[v].map(e => e.tail).sort();
     return neighbours.some((w, i) => i == 0 || w == neighbours[i - 1]);
   });
 
   if (atLune.size > 0)
     return atLune;
 
-  const maxDeg = adj.keySeq().map(v => adj.get(v).size).max();
-  return bases.filter(basis => adj.get(basis[0].head).size == maxDeg);
+  const maxDeg = Object.keys(adj).map(v => adj[v].length).max();
+  return bases.filter(basis => adj[basis[0].head].length == maxDeg);
 };
 
 

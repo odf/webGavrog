@@ -411,7 +411,7 @@ export function symmetries(graph)
 
   _timers && _timers.start('symmetries: preparations');
   const adj = pg.adjacencies(graph);
-  const deg = v => adj.get(v).size;
+  const deg = v => adj[v].length;
 
   const encodedBases = bases.map(b => b.map(encode)).toArray();
   const keys = encodedBases.map(b => b.join(','));
