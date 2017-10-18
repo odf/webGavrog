@@ -6,8 +6,6 @@ import { rationalLinearAlgebra,
 import modularSolver from '../arithmetic/solveRational';
 import * as solveRational from '../arithmetic/solveRational';
 
-import * as util from '../common/util';
-
 
 class VectorLabeledEdge {
   constructor(head, tail, shift) {
@@ -121,12 +119,12 @@ export const fromObject = ({ PeriodicGraph: obj }) => new Graph(
 
 
 export const vertices = graph => {
-  const result = I.OrderedSet().asMutable();
+  const verts = [];
   for (const e of graph.edges) {
-    result.add(e.head);
-    result.add(e.tail);
+    verts.push(e.head);
+    verts.push(e.tail);
   }
-  return I.List(result);
+  return dedupe(verts);
 };
 
 
@@ -207,9 +205,9 @@ const _componentInOrbitGraph = (graph, start) => {
 
 const _isConnectedOrbitGraph = (graph) => {
   const verts = vertices(graph);
-  const comp = _componentInOrbitGraph(graph, verts.first());
+  const comp = _componentInOrbitGraph(graph, verts[0]);
 
-  return comp.nodes.size >= verts.size;
+  return comp.nodes.size >= verts.length;
 };
 
 
@@ -266,9 +264,9 @@ const _componentInCoverGraph = (graph, start) => {
 
 export const isConnected = graph => {
   const verts = vertices(graph);
-  const comp = _componentInCoverGraph(graph, verts.first());
+  const comp = _componentInCoverGraph(graph, verts[0]);
 
-  return comp.nodes.length >= verts.size && comp.multiplicity == 1;
+  return comp.nodes.length >= verts.length && comp.multiplicity == 1;
 };
 
 
@@ -295,9 +293,9 @@ export const barycentricPlacement = graph => {
 
   const adj   = adjacencies(graph);
   const verts = vertices(graph);
-  const vIdcs = I.Map(I.Range(0, verts.size).map(i => [verts.get(i), i]));
+  const vIdcs = I.Map(I.Range(0, verts.length).map(i => [verts[i], i]));
 
-  const n = verts.size;
+  const n = verts.length;
   const d = graph.dim;
   let A = ops.matrix(n, n);
   let t = ops.matrix(n, d);
@@ -319,7 +317,7 @@ export const barycentricPlacement = graph => {
 
   const p = modularSolver(A, t);
 
-  const result = I.Map(I.Range(0, n).map(i => [verts.get(i), p[i]]));
+  const result = I.Map(I.Range(0, n).map(i => [verts[i], p[i]]));
 
   graph._$pos = result;
 

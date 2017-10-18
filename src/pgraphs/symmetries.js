@@ -81,7 +81,7 @@ export function characteristicBases(graph)
 
   _timers && _timers.start('characteristicBases');
 
-  let results = pg.vertices(graph)
+  let results = I.List(pg.vertices(graph))
     .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
 
   if (results.size == 0)
@@ -254,9 +254,9 @@ export function isMinimal(graph)
 {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
-  const start = verts.first();
+  const start = verts[0];
 
-  for (const v of verts.rest()) {
+  for (const v of verts.slice(1)) {
     if (morphism(graph, graph, start, v, id) != null)
       return false;
   }
@@ -268,7 +268,7 @@ export function isMinimal(graph)
 const translationalEquivalences = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
-  const start = verts.first();
+  const start = verts[0];
 
   let p = Partition();
 
@@ -290,11 +290,11 @@ const translationalEquivalences = graph => {
 const extraTranslationVectors = (graph, equivs) => {
   const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
-  const class0 = equivs.get(verts.first());
-  const pos0 = pos.get(verts.first());
+  const class0 = equivs.get(verts[0]);
+  const pos0 = pos.get(verts[0]);
   const vectors = [];
 
-  for (const v of verts.rest()) {
+  for (const v of verts.slice(1)) {
     if (equivs.get(v) == class0) {
       vectors.push(ops.mod(ops.minus(pos.get(v), pos0), 1));
     }
