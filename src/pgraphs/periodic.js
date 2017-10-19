@@ -372,20 +372,20 @@ if (require.main == module) {
   };
 
   const test = g => {
-    console.log('g = '+g);
-    console.log('  cs  = '+coordinationSeq(g, 1, 10));
+    console.log(`g = ${g}`);
+    console.log(`  cs  = ${coordinationSeq(g, 1, 10)}`);
     if (isConnected(g)) {
-      console.log('  pos = '+format(barycentricPlacement(g)));
-      console.log('  stable: '+isStable(g));
-      console.log('  locally stable: '+isLocallyStable(g));
+      console.log(`  pos = ${format(barycentricPlacement(g))}`);
+      console.log(`  stable: ${isStable(g)}`);
+      console.log(`  locally stable: ${isLocallyStable(g)}`);
     }
 
     for (const comp of connectedComponents(g)) {
-      console.log('  component:');
-      console.log('    nodes = '+comp.nodes);
-      console.log('    graph = '+comp.graph);
-      console.log('    basis = '+comp.basis);
-      console.log('    multiplicity = '+comp.multiplicity);
+      console.log(`  component:`);
+      console.log(`    nodes = ${comp.nodes}`);
+      console.log(`    graph = ${comp.graph}`);
+      console.log(`    basis = ${comp.basis}`);
+      console.log(`    multiplicity = ${comp.multiplicity}`);
     }
     console.log();
   };
