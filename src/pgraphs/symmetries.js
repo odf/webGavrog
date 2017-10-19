@@ -291,12 +291,12 @@ const extraTranslationVectors = (graph, equivs) => {
   const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
   const class0 = equivs.get(verts[0]);
-  const pos0 = pos.get(verts[0]);
+  const pos0 = pos[verts[0]];
   const vectors = [];
 
   for (const v of verts.slice(1)) {
     if (equivs.get(v) == class0) {
-      vectors.push(ops.mod(ops.minus(pos.get(v), pos0), 1));
+      vectors.push(ops.mod(ops.minus(pos[v], pos0), 1));
     }
   }
 
@@ -348,8 +348,8 @@ export function minimalImage(graph)
       const wRep = classes[wNew][0];
 
       const s = e.shift;
-      const vShift = ops.minus(pos.get(v), pos.get(vRep));
-      const wShift = ops.minus(pos.get(w), pos.get(wRep));
+      const vShift = ops.minus(pos[v], pos[vRep]);
+      const wShift = ops.minus(pos[w], pos[wRep]);
       const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)), basisChange);
 
       imgEdges.push([vNew + 1, wNew + 1, sNew]);

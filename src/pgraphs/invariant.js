@@ -28,7 +28,7 @@ const _traversal = function* _traversal(graph, v0, transform)
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
   const old2new = {[v0]: 1};
-  const mappedPos = {[v0]: ops.times(pos.get(v0), transform)};
+  const mappedPos = {[v0]: ops.times(pos[v0], transform)};
   const newPos = {[v0]: mappedPos[v0]};
   const queue = [[v0, zero]];
   const essentialShifts = [];
@@ -45,7 +45,7 @@ const _traversal = function* _traversal(graph, v0, transform)
     for (const e of pg.allIncidences(graph, vo, adj)) {
       const w = e.tail;
       if (mappedPos[w] == null)
-        mappedPos[w] = ops.times(pos.get(w), transform);
+        mappedPos[w] = ops.times(pos[w], transform);
 
       let s = vShift;
       if (ops.ne(zero, e.shift))

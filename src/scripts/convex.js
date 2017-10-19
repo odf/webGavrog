@@ -19,8 +19,8 @@ DS.parseSymbols(text).forEach(function(ds) {
     const pos = periodic.barycentricPlacement(G);
 
     good = Object.entries(periodic.adjacencies(G)).every(function(e) {
-      const p = pos.get(e[0]);
-      const nbrs = e[1].map(n => ops.minus(ops.plus(pos.get(n.v), n.s), p));
+      const p = pos[e[0]];
+      const nbrs = e[1].map(n => ops.minus(ops.plus(pos[n.v], n.s), p));
       return ops.rank(nbrs) == dim;
     });
   }

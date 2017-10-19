@@ -21,7 +21,7 @@ const _projectiveMatrix = (linear, shift) =>
 
 const _nodeSymmetrizer = (v, syms, positions) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
-  const pos = positions.get(v);
+  const pos = positions[v];
   const m = opsR.div(stab.reduce((a, b) => opsR.plus(a, b)), stab.length);
   const t = opsR.minus(pos, opsR.times(pos, m));
 
@@ -42,7 +42,7 @@ const _coordinateParametrization = (graph, syms) => {
     if (nodeInfo[v] != null)
       continue;
 
-    const pv = positions.get(v);
+    const pv = positions[v];
     const sv = _nodeSymmetrizer(v, syms, positions);
     const cv = normalized(opsR.leftNullSpace(opsR.minus(sv, I)));
 
@@ -56,7 +56,7 @@ const _coordinateParametrization = (graph, syms) => {
       if (nodeInfo[w] != null)
         continue;
 
-      const pw = positions.get(w);
+      const pw = positions[w];
 
       const a = sym.transform;
       const t = _projectiveMatrix(a, opsR.minus(pw, opsR.times(pv, a)));
@@ -111,8 +111,8 @@ const _angleOrbits = (graph, syms, adj, pos) => {
         const wx = phi.src2img[w];
         const t = phi.transform;
 
-        const c = opsR.plus(s, opsR.minus(pos.get(w), pos.get(u)));
-        const d = opsR.minus(pos.get(wx), pos.get(ux));
+        const c = opsR.plus(s, opsR.minus(pos[w], pos[u]));
+        const d = opsR.minus(pos[wx], pos[ux]);
         const sx = opsR.minus(opsR.times(c, t), d);
 
         const b = pg.makeEdge(ux, wx, sx).canonical();
@@ -179,7 +179,7 @@ const _parametersForConfiguration = (
 
     if (psv.isRepresentative)
       pieces.push(_parametersForPosition(
-        positions.get(v), psv.configSpace, psv.configProj, psv.symmetrizer));
+        positions[v], psv.configSpace, psv.configProj, psv.symmetrizer));
   }
 
   return Array.concat.apply(null, pieces);
@@ -383,7 +383,11 @@ const embed = (g, relax=true) => {
   const gramProjF = opsR.toJS(opsR.solve(gramSpace, id(gramSpace.length)));
 
   const gram = symmetrizedGramMatrix(id(g.dim), symOps);
-  const posF = positions.map(p => opsR.toJS(p));
+
+  const posF = {};
+  for (const v of Object.keys(positions))
+    posF[v] = opsR.toJS(positions[v]);
+
   const symF = symOps.map(s => opsR.toJS(s));
   const startParams = _parametersForConfiguration(
     g, gram, posF, gramProjF, posSpace, symF);

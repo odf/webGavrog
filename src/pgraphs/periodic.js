@@ -1,5 +1,3 @@
-import * as I from 'immutable';
-
 import { rationalLinearAlgebra,
          rationalLinearAlgebraModular } from '../arithmetic/types';
 
@@ -291,7 +289,7 @@ export const barycentricPlacement = graph => {
 
   A[0][0] = 1;
 
-  for (let i = 1; i < verts.length; ++i) {
+  for (let i = 1; i < n; ++i) {
     const v = verts[i];
     for (const { v: w, s } of adj[v]) {
       if (w != v) {
@@ -305,7 +303,9 @@ export const barycentricPlacement = graph => {
 
   const p = modularSolver(A, t);
 
-  const result = I.Map(I.Range(0, n).map(i => [verts[i], p[i]]));
+  const result = {};
+  for (let i = 0; i < n; ++i)
+    result[verts[i]] = p[i];
 
   graph._$pos = result;
 
@@ -319,8 +319,7 @@ export const isStable = graph => {
   const seen = {};
 
   for (const v of verts) {
-    const p = pos.get(v);
-    const key = encode(p.map(x => ops.mod(x, 1)));
+    const key = encode(pos[v].map(x => ops.mod(x, 1)));
     if (seen[key])
       return false;
     else
@@ -340,9 +339,8 @@ export const isLocallyStable = graph => {
   for (const v of verts) {
     const seen = {};
 
-    for (const w of adj[v]) {
-      const p = ops.plus(pos.get(w.v), w.s);
-      const key = encode(p);
+    for (const { v: w, s } of adj[v]) {
+      const key = encode(ops.plus(pos[w], s));
       if (seen[key])
         return false;
       else
@@ -359,7 +357,7 @@ export const allIncidences = (graph, v, adj=adjacencies(graph)) =>
 
 
 export const edgeVector = (e, pos) =>
-  ops.plus(e.shift, ops.minus(pos.get(e.tail), pos.get(e.head)));
+  ops.plus(e.shift, ops.minus(pos[e.tail], pos[e.head]));
 
 
 if (require.main == module) {
@@ -367,11 +365,17 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
+  const format = obj => {
+    return '{ ' +
+      Object.keys(obj).map(k => `${k}: ${obj[k]}`).join(', ') +
+      ' }';
+  };
+
   const test = g => {
     console.log('g = '+g);
     console.log('  cs  = '+coordinationSeq(g, 1, 10));
     if (isConnected(g)) {
-      console.log('  pos = '+barycentricPlacement(g));
+      console.log('  pos = '+format(barycentricPlacement(g)));
       console.log('  stable: '+isStable(g));
       console.log('  locally stable: '+isLocallyStable(g));
     }
