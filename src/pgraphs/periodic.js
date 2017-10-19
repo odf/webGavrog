@@ -279,7 +279,10 @@ export const barycentricPlacement = graph => {
 
   const adj   = adjacencies(graph);
   const verts = vertices(graph);
-  const vIdcs = I.Map(I.Range(0, verts.length).map(i => [verts[i], i]));
+
+  const vIdcs = {};
+  for (let i = 0; i < verts.length; ++i)
+    vIdcs[verts[i]] = i;
 
   const n = verts.length;
   const d = graph.dim;
@@ -288,18 +291,17 @@ export const barycentricPlacement = graph => {
 
   A[0][0] = 1;
 
-  verts.forEach((v, i) => {
-    if (i > 0) {
-      adj[v].forEach(c => {
-        if (c.v != v) {
-          const j = vIdcs.get(c.v);
-          A[i][j] -= 1;
-          A[i][i] += 1;
-          t[i] = ops.plus(t[i], c.s);
-        }
-      });
+  for (let i = 1; i < verts.length; ++i) {
+    const v = verts[i];
+    for (const { v: w, s } of adj[v]) {
+      if (w != v) {
+        const j = vIdcs[w];
+        A[i][j] -= 1;
+        A[i][i] += 1;
+        t[i] = ops.plus(t[i], s);
+      }
     }
-  });
+  }
 
   const p = modularSolver(A, t);
 
@@ -314,15 +316,15 @@ export const barycentricPlacement = graph => {
 export const isStable = graph => {
   const pos = barycentricPlacement(graph);
   const verts = vertices(graph);
-  const seen = I.Set().asMutable();
+  const seen = {};
 
   for (const v of verts) {
     const p = pos.get(v);
     const key = encode(p.map(x => ops.mod(x, 1)));
-    if (seen.contains(key))
+    if (seen[key])
       return false;
     else
-      seen.add(key);
+      seen[key] = true;
   }
 
   return true;
@@ -336,16 +338,15 @@ export const isLocallyStable = graph => {
   const verts = vertices(graph);
 
   for (const v of verts) {
-    const seen = I.Set().asMutable();
+    const seen = {};
 
     for (const w of adj[v]) {
       const p = ops.plus(pos.get(w.v), w.s);
       const key = encode(p);
-      if (seen.contains(key)) {
+      if (seen[key])
         return false;
-      }
       else
-        seen.add(key);
+        seen[key] = true;
     }
   }
 
