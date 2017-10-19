@@ -175,43 +175,29 @@ export const coordinationSeq = (graph, start, dist) => {
 
 const _componentInOrbitGraph = (graph, start) => {
   const adj = adjacencies(graph);
-  const queue = [start]
   const bridges = [];
-  const nodeShifts = I.Map([[start, ops.vector(graph.dim)]]).asMutable();
+  const nodes = [start];
+  const nodeShifts = { [start]: ops.vector(graph.dim) };
 
-  while (queue.length) {
-    const v = queue.shift();
-    const av = nodeShifts.get(v);
+  for (let i = 0; i < nodes.length; ++i) {
+    const v = nodes[i];
+    const av = nodeShifts[v];
 
     for (const {v: w, s: shift} of adj[v]) {
-      if (nodeShifts.get(w) == undefined) {
-        queue.push(w);
-        nodeShifts.set(w, ops.minus(av, shift));
+      if (nodeShifts[w] == null) {
+        nodes.push(w);
+        nodeShifts[w] = ops.minus(av, shift);
       }
       else {
-        const aw = nodeShifts.get(w);
+        const aw = nodeShifts[w];
         const newShift = ops.plus(shift, ops.minus(aw, av));
-        const pivot = newShift.find(x => ops.ne(x, 0));
-
-        if (pivot != undefined && ops.gt(pivot, 0))
+        if (ops.sgn(newShift) > 0)
           bridges.push({ v, w, s: newShift });
       }
     }
   }
 
-  return {
-    nodes: I.Set(nodeShifts.keys()),
-    nodeShifts,
-    bridges
-  };
-};
-
-
-const _isConnectedOrbitGraph = (graph) => {
-  const verts = vertices(graph);
-  const comp = _componentInOrbitGraph(graph, verts[0]);
-
-  return comp.nodes.size >= verts.length;
+  return { nodes, nodeShifts, bridges };
 };
 
 
@@ -227,9 +213,8 @@ const _makeCoordinateTransform = (B, dim) => {
   if (B.length < dim) {
     B = B.slice();
     for (const vec of ops.identityMatrix(dim)) {
-      if (ops.rank(B.concat([vec])) > ops.rank(B)) {
+      if (ops.rank(B.concat([vec])) > ops.rank(B))
         B.push(vec);
-      }
     }
   }
 
@@ -240,29 +225,25 @@ const _makeCoordinateTransform = (B, dim) => {
 const _componentInCoverGraph = (graph, start) => {
   const { nodes, nodeShifts, bridges } = _componentInOrbitGraph(graph, start);
   const basis = _makeBasis(bridges.map(b => b.s));
-  const thisDim = basis.length;
+  const dim = basis.length;
   const transform = _makeCoordinateTransform(basis, graph.dim);
-  const old2new = I.Map(I.List(nodes).zip(I.Range(1, nodes.size+1)));
+
+  const old2new = {};
+  for (let i = 0; i < nodes.length; ++i)
+    old2new[nodes[i]] = i + 1;
 
   const newEdges = graph.edges
-    .filter(({ head, tail }) =>
-            old2new.get(head) != null && old2new.get(tail) != null)
+    .filter(({ head, tail }) => old2new[head] != null && old2new[tail] != null)
     .map(({ head, tail, shift }) => {
-      const [v, w] = [old2new.get(head), old2new.get(tail)];
-      const [av, aw] = [nodeShifts.get(head), nodeShifts.get(tail)];
+      const [v, w] = [old2new[head], old2new[tail]];
+      const [av, aw] = [nodeShifts[head], nodeShifts[tail]];
       const t = ops.times(ops.plus(shift, ops.minus(aw, av)), transform);
-      return [v, w, t.slice(0, thisDim)];
+      return [v, w, t.slice(0, dim)];
     });
 
-  const multiplicity =
-    thisDim == graph.dim ? ops.abs(ops.determinant(basis)) : 0;
+  const multiplicity = dim == graph.dim ? ops.abs(ops.determinant(basis)) : 0;
 
-  return {
-    basis,
-    multiplicity,
-    nodes: nodes.toArray(),
-    graph: make(newEdges)
-  };
+  return { basis, multiplicity, nodes, graph: make(newEdges) };
 };
 
 
@@ -276,14 +257,15 @@ export const isConnected = graph => {
 
 export const connectedComponents = graph => {
   const verts = vertices(graph);
-  const seen = I.Set().asMutable();
+  const seen = {};
   const result = [];
 
   for (const start of verts) {
-    if (!seen.contains(start)) {
+    if (!seen[start]) {
       const comp = _componentInCoverGraph(graph, start);
       result.push(comp);
-      comp.nodes.forEach(v => seen.add(v));
+      for (const v of comp.nodes)
+        seen[v] = true;
     }
   }
 
