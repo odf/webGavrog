@@ -74,8 +74,7 @@ const _goodEdgeChains = graph => {
 };
 
 
-export function characteristicBases(graph)
-{
+export const characteristicBases = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
@@ -120,7 +119,7 @@ const _checkGraphsForMorphism = (graph1, graph2, transform) => {
 };
 
 
-export function morphism(
+export const morphism = (
   graph1,
   graph2,
   start1,
@@ -128,7 +127,7 @@ export function morphism(
   transform,
   adj1=pg.adjacencies(graph1),
   adj2=pg.adjacencies(graph2)
-) {
+) => {
   _timers && _timers.start('morpism');
 
   _checkGraphsForMorphism(graph1, graph2, transform);
@@ -203,7 +202,7 @@ export function morphism(
 };
 
 
-export function productMorphism(phi, psi) {
+export const productMorphism = (phi, psi) => {
   const compose = (f, g) => {
     const h = {};
     for (const x of Object.keys(f)) {
@@ -228,7 +227,7 @@ export function productMorphism(phi, psi) {
 };
 
 
-export function groupOfMorphisms(generators, keyFn) {
+export const groupOfMorphisms = (generators, keyFn) => {
   const result = generators.slice();
   const seen = {};
   generators.forEach(gen => seen[keyFn(gen)] = true);
@@ -250,8 +249,7 @@ export function groupOfMorphisms(generators, keyFn) {
 };
 
 
-export function isMinimal(graph)
-{
+export const isMinimal = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts[0];
@@ -316,8 +314,7 @@ const fullTranslationBasis = vectors => {
 };
 
 
-export function minimalImage(graph)
-{
+export const minimalImage = graph => {
   let result;
 
   _timers && _timers.start('minimalImage');
@@ -398,8 +395,7 @@ const _matrixProductIfUnimodular = (A, B) => {
 };
 
 
-export function symmetries(graph)
-{
+export const symmetries = graph => {
   const pos = pg.barycentricPlacement(graph);
 
   if (!pg.isLocallyStable(graph))
@@ -476,7 +472,7 @@ export function symmetries(graph)
 };
 
 
-export function edgeOrbits(graph, syms=symmetries(graph).symmetries) {
+export const edgeOrbits = (graph, syms=symmetries(graph).symmetries) => {
   const seen = {};
   let p = Partition();
 
@@ -501,7 +497,7 @@ export function edgeOrbits(graph, syms=symmetries(graph).symmetries) {
 }
 
 
-export function useTimers(timers) {
+export const useTimers = timers => {
   _timers = timers;
 }
 
@@ -511,7 +507,7 @@ if (require.main == module) {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
 
-  const test = function test(g) {
+  const test = g => {
     console.log(`vertices: ${pg.vertices(g)}`);
     console.log('edges:');
     for (const e of g.edges)
