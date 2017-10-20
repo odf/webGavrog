@@ -74,7 +74,7 @@ const _goodEdgeChains = graph => {
 };
 
 
-export const characteristicBases = graph => {
+const characteristicBases = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
@@ -202,7 +202,7 @@ export const morphism = (
 };
 
 
-export const productMorphism = (phi, psi) => {
+const productMorphism = (phi, psi) => {
   const compose = (f, g) => {
     const h = {};
     for (const x of Object.keys(f)) {
@@ -227,7 +227,7 @@ export const productMorphism = (phi, psi) => {
 };
 
 
-export const groupOfMorphisms = (generators, keyFn) => {
+const groupOfMorphisms = (generators, keyFn) => {
   const result = generators.slice();
   const seen = {};
   generators.forEach(gen => seen[keyFn(gen)] = true);
