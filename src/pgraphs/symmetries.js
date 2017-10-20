@@ -2,8 +2,7 @@ import * as I from 'immutable';
 
 import * as pg from './periodic';
 import { rationalLinearAlgebraModular } from '../arithmetic/types';
-import Partition from '../common/partition';
-import { LabelledPartition } from '../common/unionFind';
+import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
 import * as util from '../common/util';
 
@@ -268,15 +267,14 @@ const translationalEquivalences = graph => {
   const verts = pg.vertices(graph);
   const start = verts[0];
 
-  let p = Partition();
+  const p = new part.Partition();
 
   for (const v of verts) {
-    if (p.get(start) != p.get(v)) {
+    if (p.find(start) != p.find(v)) {
       const iso = morphism(graph, graph, start, v, id);
       if (iso != null) {
-        for (const w of verts) {
-          p = p.union(w, iso.src2img[w]);
-        }
+        for (const w of verts)
+          p.union(w, iso.src2img[w]);
       }
     }
   }
@@ -288,12 +286,12 @@ const translationalEquivalences = graph => {
 const extraTranslationVectors = (graph, equivs) => {
   const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
-  const class0 = equivs.get(verts[0]);
+  const class0 = equivs.find(verts[0]);
   const pos0 = pos[verts[0]];
   const vectors = [];
 
   for (const v of verts.slice(1)) {
-    if (equivs.get(v) == class0) {
+    if (equivs.find(v) == class0) {
       vectors.push(ops.mod(ops.minus(pos[v], pos0), 1));
     }
   }
@@ -302,8 +300,26 @@ const extraTranslationVectors = (graph, equivs) => {
 };
 
 
+const equivalenceClasses = (equivs, elements) => {
+  const repToClass = {};
+  const classes = [];
+
+  for (const v of elements) {
+    const rep = equivs.find(v);
+    if (repToClass[rep] == null) {
+      repToClass[rep] = classes.length;
+      classes.push([v]);
+    }
+    else
+      classes[repToClass[rep]].push(v);
+  }
+
+  return classes;
+};
+
+
 const translationalEquivalenceClasses = (graph, equivs) =>
-  equivs.classes(pg.vertices(graph));
+  equivalenceClasses(equivs, pg.vertices(graph));
 
 
 const fullTranslationBasis = vectors => {
@@ -419,7 +435,7 @@ export const symmetries = graph => {
   const id = ops.identityMatrix(graph.dim);
   const generators = [morphism(graph, graph, v0, v0, id, adj, adj)];
 
-  const p = new LabelledPartition((a, b) => a || b);
+  const p = new part.LabelledPartition((a, b) => a || b);
   _timers && _timers.stop('symmetries: preparations');
 
   _timers && _timers.start('symmetries: main loop');
@@ -474,7 +490,7 @@ export const symmetries = graph => {
 
 export const edgeOrbits = (graph, syms=symmetries(graph).symmetries) => {
   const seen = {};
-  let p = Partition();
+  const p = new part.Partition();
 
   for (const a of graph.edges) {
     const ka = encode(a);
@@ -489,11 +505,11 @@ export const edgeOrbits = (graph, syms=symmetries(graph).symmetries) => {
         continue;
       seen[kb] = true;
 
-      p = p.union(ka, kb);
+      p.union(ka, kb);
     }
   }
 
-  return p.classes(Object.keys(seen)).map(cl => cl.map(decode));
+  return equivalenceClasses(p, Object.keys(seen)).map(cl => cl.map(decode));
 }
 
 
