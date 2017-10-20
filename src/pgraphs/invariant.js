@@ -135,7 +135,7 @@ const _goodBases = (graph, bases) => {
     return adj[v].every(e => e.tail == v);
   });
 
-  if (atLoop.size > 0)
+  if (atLoop.length > 0)
     return atLoop;
 
   const atLune = bases.filter(basis => {
@@ -144,7 +144,7 @@ const _goodBases = (graph, bases) => {
     return neighbours.some((w, i) => i == 0 || w == neighbours[i - 1]);
   });
 
-  if (atLune.size > 0)
+  if (atLune.length > 0)
     return atLune;
 
   const maxDeg = Object.keys(adj).map(v => adj[v].length).max();

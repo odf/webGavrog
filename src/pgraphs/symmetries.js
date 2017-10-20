@@ -1,5 +1,3 @@
-import * as I from 'immutable';
-
 import * as pg from './periodic';
 import { rationalLinearAlgebraModular } from '../arithmetic/types';
 import * as part from '../common/unionFind';
@@ -33,13 +31,12 @@ const _goodCombinations = (edges, pos) => {
   for (const c of comb.combinations(edges.length, dim)) {
     const vectors = c.map(i => pg.edgeVector(edges[i - 1], pos));
     if (ops.rank(vectors) == dim) {
-      for (const p of comb.permutations(dim)) {
+      for (const p of comb.permutations(dim))
         results.push(p.map(i => edges[c[i - 1] - 1]));
-      }
     }
   }
 
-  return I.List(results);
+  return results;
 };
 
 
@@ -58,18 +55,16 @@ const _goodEdgeChains = graph => {
       for (const e of pg.allIncidences(graph, v, adj)) {
         const next = es.concat([e]);
         const M = next.map(e => pg.edgeVector(e, pos));
-        if (ops.rank(M) == next.length) {
+        if (ops.rank(M) == next.length)
           extend(next);
-        }
       }
     }
   };
 
-  for (const e of _directedEdges(graph)) {
+  for (const e of _directedEdges(graph))
     extend([e]);
-  }
 
-  return I.List(results);
+  return results;
 };
 
 
@@ -79,13 +74,13 @@ const characteristicBases = graph => {
 
   _timers && _timers.start('characteristicBases');
 
-  let results = I.List(pg.vertices(graph))
-    .flatMap(v => _goodCombinations(pg.allIncidences(graph, v, adj), pos));
+  let results = [].concat(...pg.vertices(graph).map(
+    v => _goodCombinations(pg.allIncidences(graph, v, adj), pos)));
 
-  if (results.size == 0)
+  if (results.length == 0)
     results = _goodEdgeChains(graph);
 
-  if (results.size == 0)
+  if (results.length == 0)
     results = _goodCombinations(_directedEdges(graph), pos);
 
   _timers && _timers.stop('characteristicBases');
@@ -425,11 +420,11 @@ export const symmetries = graph => {
   const adj = pg.adjacencies(graph);
   const deg = v => adj[v].length;
 
-  const encodedBases = bases.map(b => b.map(encode)).toArray();
+  const encodedBases = bases.map(b => b.map(encode));
   const keys = encodedBases.map(b => b.join(','));
-  const degs = bases.map(b => b.map(e => [deg(e.head), deg(e.tail)])).toArray();
-  const v0 = bases.first()[0].head;
-  const B0 = bases.first().map(e => pg.edgeVector(e, pos));
+  const degs = bases.map(b => b.map(e => [deg(e.head), deg(e.tail)]));
+  const v0 = bases[0][0].head;
+  const B0 = bases[0].map(e => pg.edgeVector(e, pos));
   const invB0 = ops.inverse(B0);
 
   const id = ops.identityMatrix(graph.dim);
@@ -439,12 +434,12 @@ export const symmetries = graph => {
   _timers && _timers.stop('symmetries: preparations');
 
   _timers && _timers.start('symmetries: main loop');
-  for (let i = 0; i < bases.size; ++i) {
+  for (let i = 0; i < bases.length; ++i) {
     if (ops.eq(degs[i], degs[0]) &&
         p.find(keys[i]) != p.find(keys[0]) &&
         !p.getLabel(keys[i]))
     {
-      const basis = bases.get(i);
+      const basis = bases[i];
       const v = basis[0].head;
       const B = basis.map(e => pg.edgeVector(e, pos));
 
@@ -454,7 +449,7 @@ export const symmetries = graph => {
       if (iso) {
         generators.push(iso);
 
-        for (let i = 0; i < bases.size; ++i) {
+        for (let i = 0; i < bases.length; ++i) {
           p.union(
             keys[i],
             encodedBases[i].map(e => iso.src2img[e]).join(','));
@@ -467,10 +462,11 @@ export const symmetries = graph => {
   _timers && _timers.stop('symmetries: main loop');
 
   _timers && _timers.start('symmetries: representative bases');
-  const representativeBases = I.Range(0, bases.size)
-    .filter(i => keys[i] == p.find(keys[i]))
-    .map(i => bases.get(i))
-    .toList();
+  const representativeBases = [];
+  for (let i = 0; i < bases.length; ++i) {
+    if (keys[i] == p.find(keys[i]))
+      representativeBases.push(bases[i]);
+  }
   _timers && _timers.stop('symmetries: representative bases');
 
   _timers && _timers.start('symmetries: group of morphisms');
@@ -531,7 +527,7 @@ if (require.main == module) {
     console.log();
 
     const bases = characteristicBases(g);
-    console.log(`found ${bases.size} characteristic bases`);
+    console.log(`found ${bases.length} characteristic bases`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries(g);
@@ -541,7 +537,7 @@ if (require.main == module) {
                   + ` from ${gens.length} generators:`);
       for (const sym of gens)
         console.log(sym.transform);
-      console.log(`found ${bases.size} representative base(s):`);
+      console.log(`found ${bases.length} representative base(s):`);
       for (const basis of bases)
         console.log(`${basis}`);
       console.log();
