@@ -47,9 +47,8 @@ const _goodEdgeChains = graph => {
   const results = [];
 
   const extend = es => {
-    if (es.length == dim) {
+    if (es.length == dim)
       results.push(es);
-    }
     else {
       const v = es[es.length - 1].tail;
       for (const e of pg.allIncidences(graph, v, adj)) {
@@ -72,20 +71,16 @@ const characteristicBases = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
-  _timers && _timers.start('characteristicBases');
-
-  let results = [].concat(...pg.vertices(graph).map(
+  const stars = [].concat(...pg.vertices(graph).map(
     v => _goodCombinations(pg.allIncidences(graph, v, adj), pos)));
+  if (stars.length)
+    return stars;
 
-  if (results.length == 0)
-    results = _goodEdgeChains(graph);
+  const chains = _goodEdgeChains(graph);
+  if (chains.length)
+    return chains;
 
-  if (results.length == 0)
-    results = _goodCombinations(_directedEdges(graph), pos);
-
-  _timers && _timers.stop('characteristicBases');
-
-  return results;
+  return _goodCombinations(_directedEdges(graph), pos);
 };
 
 
@@ -286,9 +281,8 @@ const extraTranslationVectors = (graph, equivs) => {
   const vectors = [];
 
   for (const v of verts.slice(1)) {
-    if (equivs.find(v) == class0) {
+    if (equivs.find(v) == class0)
       vectors.push(ops.mod(ops.minus(pos[v], pos0), 1));
-    }
   }
 
   return vectors;
@@ -341,24 +335,18 @@ export const minimalImage = graph => {
 
     const old2new = {};
     for (let i = 0; i < classes.length; ++i) {
-      for (const v of classes[i]) {
+      for (const v of classes[i])
         old2new[v] = i;
-      }
     }
 
     const imgEdges = [];
-    for (const e of graph.edges) {
-      const v = e.head;
-      const w = e.tail;
+    for (const { head: v, tail: w, shift: s } of graph.edges) {
       const vNew = old2new[v];
       const wNew = old2new[w];
-      const vRep = classes[vNew][0];
-      const wRep = classes[wNew][0];
-
-      const s = e.shift;
-      const vShift = ops.minus(pos[v], pos[vRep]);
-      const wShift = ops.minus(pos[w], pos[wRep]);
-      const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)), basisChange);
+      const vShift = ops.minus(pos[v], pos[classes[vNew][0]]);
+      const wShift = ops.minus(pos[w], pos[classes[wNew][0]]);
+      const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)),
+                             basisChange);
 
       imgEdges.push([vNew + 1, wNew + 1, sNew]);
     }
@@ -412,7 +400,9 @@ export const symmetries = graph => {
   if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable; cannot compute symmetries');
 
+  _timers && _timers.start('characteristicBases');
   const bases = characteristicBases(graph);
+  _timers && _timers.stop('characteristicBases');
 
   _timers && _timers.start('symmetries');
 
