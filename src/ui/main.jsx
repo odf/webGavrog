@@ -1,9 +1,9 @@
 import * as React    from 'react';
 import * as ReactDOM from 'react-dom';
 import * as csp      from 'plexus-csp';
-import validate      from 'plexus-validate';
 
 import Form          from '../plexus-form';
+import validate      from '../plexus-form/validate';
 
 import * as version  from '../version';
 import * as delaney  from '../dsymbols/delaney';
