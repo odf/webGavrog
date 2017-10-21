@@ -5,9 +5,6 @@ import * as comb from '../common/combinatorics';
 import * as util from '../common/util';
 
 
-let _timers = null;
-
-
 const ops = pg.ops;
 
 const encode = value => ops.serialize(value);
@@ -117,8 +114,6 @@ export const morphism = (
   adj1=pg.adjacencies(graph1),
   adj2=pg.adjacencies(graph2)
 ) => {
-  _timers && _timers.start('morpism');
-
   _checkGraphsForMorphism(graph1, graph2, transform);
 
   const src2img = {};
@@ -152,10 +147,8 @@ export const morphism = (
 
   while (queue.length) {
     const [w1, w2] = queue.shift();
-    _timers && _timers.start('morpism: _adjacenciesByEdgeVector');
     const n1 = _adjacenciesByEdgeVector(graph1, w1, adj1);
     const n2 = _adjacenciesByEdgeVector(graph2, w2, adj2);
-    _timers && _timers.stop('morpism: _adjacenciesByEdgeVector');
 
     for (const [d1, e1] of Object.entries(n1)) {
       const e2 = n2[encode(ops.times(decode(d1), transform))];
@@ -166,18 +159,14 @@ export const morphism = (
 
       if (status == OKAY)
         queue.push([e1.tail, e2.tail]);
-      else if (status == BAD) {
-        _timers && _timers.stop('morpism');
+      else if (status == BAD)
         return null;
-      }
     }
   }
 
   const complete = pg.vertices(graph2).every(v => img2src[v] != null) &&
     graph2.edges.every(e => (img2src[encode(e)] != null &&
                              img2src[encode(e.reverse())] != null));
-
-  _timers && _timers.stop('morpism');
 
   if (complete)
     return {
@@ -320,12 +309,8 @@ const fullTranslationBasis = vectors => {
 
 
 export const minimalImage = graph => {
-  let result;
-
-  _timers && _timers.start('minimalImage');
-
   if (isMinimal(graph))
-    result = graph;
+    return graph;
   else {
     const pos = pg.barycentricPlacement(graph);
     const equivs = translationalEquivalences(graph);
@@ -351,12 +336,8 @@ export const minimalImage = graph => {
       imgEdges.push([vNew + 1, wNew + 1, sNew]);
     }
 
-    result = pg.make(imgEdges);
+    return pg.make(imgEdges);
   }
-
-  _timers && _timers.stop('minimalImage');
-
-  return result;
 };
 
 
@@ -400,13 +381,7 @@ export const symmetries = graph => {
   if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable; cannot compute symmetries');
 
-  _timers && _timers.start('characteristicBases');
   const bases = characteristicBases(graph);
-  _timers && _timers.stop('characteristicBases');
-
-  _timers && _timers.start('symmetries');
-
-  _timers && _timers.start('symmetries: preparations');
   const adj = pg.adjacencies(graph);
   const deg = v => adj[v].length;
 
@@ -421,9 +396,7 @@ export const symmetries = graph => {
   const generators = [morphism(graph, graph, v0, v0, id, adj, adj)];
 
   const p = new part.LabelledPartition((a, b) => a || b);
-  _timers && _timers.stop('symmetries: preparations');
 
-  _timers && _timers.start('symmetries: main loop');
   for (let i = 0; i < bases.length; ++i) {
     if (ops.eq(degs[i], degs[0]) &&
         p.find(keys[i]) != p.find(keys[0]) &&
@@ -449,22 +422,15 @@ export const symmetries = graph => {
         p.setLabel(keys[i], true);
     }
   }
-  _timers && _timers.stop('symmetries: main loop');
 
-  _timers && _timers.start('symmetries: representative bases');
   const representativeBases = [];
   for (let i = 0; i < bases.length; ++i) {
     if (keys[i] == p.find(keys[i]))
       representativeBases.push(bases[i]);
   }
-  _timers && _timers.stop('symmetries: representative bases');
 
-  _timers && _timers.start('symmetries: group of morphisms');
   const keyFn = phi => encodedBases[0].map(e => phi.src2img[e]).join(',');
   const syms = groupOfMorphisms(generators, keyFn);
-  _timers && _timers.stop('symmetries: group of morphisms');
-
-  _timers && _timers.stop('symmetries');
 
   return {
     generators: generators.slice(1),
@@ -541,11 +507,6 @@ export const angleOrbits = (graph, syms, adj=pg.adjacencies(graph)) => {
 };
 
 
-export const useTimers = timers => {
-  _timers = timers;
-}
-
-
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -595,10 +556,6 @@ if (require.main == module) {
     console.log();
   };
 
-  const symTimers = util.timers();
-  useTimers(symTimers);
-  symTimers.start('total');
-
   test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
                  [ 1, 2, [ 1, 0, 0 ] ],
                  [ 1, 2, [ 0, 1, 0 ] ],
@@ -636,7 +593,4 @@ if (require.main == module) {
                  [ 1, 2, [ 0, 1, 0 ] ],
                  [ 1, 1, [ 0, 0, 1 ] ],
                  [ 2, 2, [ 0, 0, 1 ] ] ]));
-
-  symTimers.stop('total');
-  console.log(`${JSON.stringify(symTimers.current(), null, 2)}`);
 }
