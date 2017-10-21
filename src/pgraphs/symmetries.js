@@ -508,39 +508,31 @@ function* _pairs(list) {
 
 
 export const angleOrbits = (graph, syms, adj=pg.adjacencies(graph)) => {
-  const ops = rationalLinearAlgebraModular;
   const pos = pg.barycentricPlacement(graph);
   const seen = {};
   const p = new part.Partition();
 
   for (const v of pg.vertices(graph)) {
-    for (const [inc1, inc2] of _pairs(pg.allIncidences(graph, v, adj))) {
-      const u = inc1.tail;
-      const w = inc2.tail;
-      const s = ops.minus(inc2.shift, inc1.shift);
+    for (const [{ tail: u, shift: su }, { tail: w, shift: sw }]
+         of _pairs(pg.allIncidences(graph, v, adj)))
+    {
+      const s = ops.minus(sw, su);
+      const c = ops.plus(s, ops.minus(pos[w], pos[u]));
+      const ka = encode(pg.makeEdge(u, w, s).canonical());
 
-      const a = pg.makeEdge(u, w, s).canonical();
-      const ka = encode(a);
+      if (!seen[ka]) {
+        seen[ka] = true;
 
-      if (seen[ka])
-        continue;
+        for (const { src2img, transform } of syms) {
+          const ux = src2img[u];
+          const wx = src2img[w];
+          const d = ops.minus(pos[wx], pos[ux]);
+          const sx = ops.minus(ops.times(c, transform), d);
+          const kb = encode(pg.makeEdge(ux, wx, sx).canonical());
 
-      seen[ka] = true;
-
-      for (const phi of syms) {
-        const ux = phi.src2img[u];
-        const wx = phi.src2img[w];
-        const t = phi.transform;
-
-        const c = ops.plus(s, ops.minus(pos[w], pos[u]));
-        const d = ops.minus(pos[wx], pos[ux]);
-        const sx = ops.minus(ops.times(c, t), d);
-
-        const b = pg.makeEdge(ux, wx, sx).canonical();
-        const kb = encode(b);
-
-        seen[kb] = true;
-        p.union(ka, kb);
+          seen[kb] = true;
+          p.union(ka, kb);
+        }
       }
     }
   }
