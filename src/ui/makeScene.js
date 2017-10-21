@@ -1,4 +1,3 @@
-import * as I     from 'immutable';
 import * as THREE from 'three';
 import * as csp   from 'plexus-csp';
 
@@ -56,17 +55,18 @@ const stick = (p, q, radius, segments) => {
   const v = normalized(ops.crossProduct(d, u));
   const a = Math.PI * 2 / n;
 
-  const section = I.Range(0, n).map(i => {
+  const section = [];
+  for (let i = 0; i < n; ++i) {
     const x = a * i;
     const c = Math.cos(x) * radius;
     const s = Math.sin(x) * radius;
-    return ops.plus(ops.times(c, u), ops.times(s, v));
-  });
+    section.push(ops.plus(ops.times(c, u), ops.times(s, v)));
+  }
 
   return geometry(
-    I.List().concat(section.map(c => ops.plus(c, p)),
-                    section.map(c => ops.plus(c, q))),
-    I.Range(0, n).map(i => {
+    [].concat(section.map(c => ops.plus(c, p)),
+              section.map(c => ops.plus(c, q))),
+    new Array(n).fill(0).map((_, i) => {
       const j = (i + 1) % n;
       return [i, j, j+n, i+n];
     })
@@ -182,7 +182,7 @@ const makeNetModel = (structure, options, log) => csp.go(function*() {
 
   const embedding = embed(graph, !options.skipRelaxation);
   const basis = invariantBasis(embedding.gram);
-  const pos = I.Map(embedding.positions).toJS();
+  const pos = embedding.positions;
 
   const nodeIndex = {};
   const points = [];
