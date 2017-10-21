@@ -130,7 +130,7 @@ const _findGenerators = ds => {
 
         for (const [D, i, j] of glued) {
           const w = _traceWord(ds, edge2word, i, j, D);
-          if (!freeWords.empty.equals(w)) {
+          if (w.length > 0) {
             edge2word[D][i] = freeWords.inverse(w);
             edge2word[ds.s(i, D)][i] = w;
           }
@@ -159,7 +159,7 @@ export const fundamentalGroup = ds => {
         for (const D of props.orbitReps(ds, [i, j])) {
           const w = _traceWord(ds, edge2word, i, j, D);
           const v = ds.v(i, j, D);
-          if (v && w.size > 0)
+          if (v && w.length > 0)
             orbits.push([D, i, j, w, v]);
         }
       }
@@ -188,6 +188,10 @@ export const fundamentalGroup = ds => {
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x && x.toString()).join(', ') + ' ]';
+  };
+
   const test = ds => {
     console.log('ds = '+ds);
     console.log();

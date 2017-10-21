@@ -14,7 +14,7 @@ const _relatorsByStartGen = relators => {
   const result = {};
   for (const rel of relators) {
     for (const w of fw.relatorPermutations(rel)) {
-      const g = w.first();
+      const g = w[0];
       if (result[g] == null)
         result[g] = [w];
       else
@@ -58,8 +58,8 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
       let w = null;
       let x = point;
 
-      for (const i of r.keys()) {
-        const h = r.get(i);
+      for (let i = 0; i < r.length; ++i) {
+        const h = r[i];
         if ((edge2word[x] || {})[h] == null) {
           if (cut == null) {
             cut = { point: x, gen: h };

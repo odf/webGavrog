@@ -113,19 +113,19 @@ class CosetTable {
 const scan = (table, w, start, limit) => {
   let [row, i] = [start, 0];
 
-  while (i < limit && table.get(row, w.get(i)) != null)
-    [row, i] = [table.get(row, w.get(i)), i + 1];
+  while (i < limit && table.get(row, w[i]) != null)
+    [row, i] = [table.get(row, w[i]), i + 1];
 
   return { row, index: i };
 };
 
 
 const scanBothWays = (table, w, start) => {
-  const n = w.size;
+  const n = w.length;
   const { row: head, index: i } = scan(table, w, start, n);
   const { row: tail, index: j } = scan(table, fw.inverse(w), start, n - i);
 
-  return { head, tail, gap: n - i - j, c: w.get(i) };
+  return { head, tail, gap: n - i - j, c: w[i] };
 };
 
 

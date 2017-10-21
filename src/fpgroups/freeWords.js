@@ -1,9 +1,6 @@
 // Operations for free words over the natural numbers (i.e. positive integers).
 // Inverses are represented as negative numbers.
-// Words are represented as immutable.js Lists.
-
-import * as I from 'immutable';
-
+// Words are represented as plain JavaScript arrays.
 
 const _normalize = ws => {
   const tmp = [];
@@ -24,7 +21,7 @@ const _normalize = ws => {
     }
   }
 
-  return I.List(tmp.slice(0, head));
+  return tmp.slice(0, head);
 };
 
 
@@ -48,7 +45,7 @@ export const relatorPermutations = wd => {
   const w = word(wd);
 
   const result = [];
-  for (let i = 0; i < w.size; ++i) {
+  for (let i = 0; i < w.length; ++i) {
     const wx = rotated(w, i);
     result.push(wx);
     result.push(inverse(wx));
@@ -61,13 +58,13 @@ const _cmp = (x, y) => x * y * (x - y);
 
 
 export const compare = (a, b) => {
-  const n = Math.min(a.size, b.size);
+  const n = Math.min(a.length, b.length);
   for (let i = 0; i < n; ++i) {
-    const d = _cmp(a.get(i), b.get(i));
+    const d = _cmp(a[i], b[i]);
     if (d)
       return d;
   }
-  return a.size - b.size;
+  return a.length - b.length;
 };
 
 
