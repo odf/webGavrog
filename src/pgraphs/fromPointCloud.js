@@ -100,7 +100,7 @@ const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
 const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x, y]), xs);
 
 
-export default function fromPointCloud(rawPoints, explicitEdges, dot) {
+const fromPointCloud = (rawPoints, explicitEdges, dot) => {
   const basis  = ops.identityMatrix(ops.dimension(rawPoints[0].pos));
   const dvs    = lattices.dirichletVectors(basis, dot);
   const dvs2   = ops.times(2, dvs);
@@ -125,3 +125,6 @@ export default function fromPointCloud(rawPoints, explicitEdges, dot) {
   induceEdges(points, G, dot);
   return G.edges();
 };
+
+
+export default fromPointCloud;
