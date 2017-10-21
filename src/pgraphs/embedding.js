@@ -1,7 +1,6 @@
 import * as pg from './periodic';
 import * as symmetries from './symmetries';
 import * as sg from '../geometry/spacegroups';
-import Partition from '../common/partition';
 import amoeba from '../algorithms/amoeba';
 
 import { affineTransformationsQ } from '../geometry/types';
@@ -74,57 +73,6 @@ const _coordinateParametrization = (graph, syms) => {
   }
 
   return nodeInfo;
-};
-
-
-function* _pairs(list) {
-  for (const i in list)
-    for (const j in list)
-      if (j > i)
-        yield [list[i], list[j]];
-};
-
-
-const _angleOrbits = (graph, syms, adj, pos) => {
-  const encode = value => pg.ops.serialize(value);
-  const decode = value => pg.ops.deserialize(value);
-
-  const seen = {};
-  let p = Partition();
-
-  for (const v of pg.vertices(graph)) {
-    for (const [inc1, inc2] of _pairs(pg.allIncidences(graph, v, adj))) {
-      const u = inc1.tail;
-      const w = inc2.tail;
-      const s = opsR.minus(inc2.shift, inc1.shift);
-
-      const a = pg.makeEdge(u, w, s).canonical();
-      const ka = encode(a);
-
-      if (seen[ka])
-        continue;
-
-      seen[ka] = true;
-
-      for (const phi of syms) {
-        const ux = phi.src2img[u];
-        const wx = phi.src2img[w];
-        const t = phi.transform;
-
-        const c = opsR.plus(s, opsR.minus(pos[w], pos[u]));
-        const d = opsR.minus(pos[wx], pos[ux]);
-        const sx = opsR.minus(opsR.times(c, t), d);
-
-        const b = pg.makeEdge(ux, wx, sx).canonical();
-        const kb = encode(b);
-
-        seen[kb] = true;
-        p = p.union(ka, kb);
-      }
-    }
-  }
-
-  return p.classes(Object.keys(seen)).map(cl => cl.map(decode));
 };
 
 
@@ -367,7 +315,7 @@ const embed = (g, relax=true) => {
   const positions = pg.barycentricPlacement(g);
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
-  const angleOrbits = _angleOrbits(g, syms, pg.adjacencies(g), positions);
+  const angleOrbits = symmetries.angleOrbits(g, syms);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = _coordinateParametrization(g, syms);
   for (const v in posSpace) {

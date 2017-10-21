@@ -474,7 +474,7 @@ export const symmetries = graph => {
 };
 
 
-export const edgeOrbits = (graph, syms=symmetries(graph).symmetries) => {
+export const edgeOrbits = (graph, syms) => {
   const seen = {};
   const p = new part.Partition();
 
@@ -497,6 +497,56 @@ export const edgeOrbits = (graph, syms=symmetries(graph).symmetries) => {
 
   return equivalenceClasses(p, Object.keys(seen)).map(cl => cl.map(decode));
 }
+
+
+function* _pairs(list) {
+  for (const i in list)
+    for (const j in list)
+      if (j > i)
+        yield [list[i], list[j]];
+};
+
+
+export const angleOrbits = (graph, syms, adj=pg.adjacencies(graph)) => {
+  const ops = rationalLinearAlgebraModular;
+  const pos = pg.barycentricPlacement(graph);
+  const seen = {};
+  const p = new part.Partition();
+
+  for (const v of pg.vertices(graph)) {
+    for (const [inc1, inc2] of _pairs(pg.allIncidences(graph, v, adj))) {
+      const u = inc1.tail;
+      const w = inc2.tail;
+      const s = ops.minus(inc2.shift, inc1.shift);
+
+      const a = pg.makeEdge(u, w, s).canonical();
+      const ka = encode(a);
+
+      if (seen[ka])
+        continue;
+
+      seen[ka] = true;
+
+      for (const phi of syms) {
+        const ux = phi.src2img[u];
+        const wx = phi.src2img[w];
+        const t = phi.transform;
+
+        const c = ops.plus(s, ops.minus(pos[w], pos[u]));
+        const d = ops.minus(pos[wx], pos[ux]);
+        const sx = ops.minus(ops.times(c, t), d);
+
+        const b = pg.makeEdge(ux, wx, sx).canonical();
+        const kb = encode(b);
+
+        seen[kb] = true;
+        p.union(ka, kb);
+      }
+    }
+  }
+
+  return equivalenceClasses(p, Object.keys(seen)).map(cl => cl.map(decode));
+};
 
 
 export const useTimers = timers => {
