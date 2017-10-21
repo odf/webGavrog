@@ -3,29 +3,21 @@ import * as S from '../common/lazyseq';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
-import {
-  rationalLinearAlgebra,
-  rationalLinearAlgebraModular
-} from '../arithmetic/types';
+import { rationalLinearAlgebraModular } from '../arithmetic/types';
 
 const ops = pg.ops;
 
 
-const _solveInRows = (v, M) => {
-  const tmp = rationalLinearAlgebra.solve(
-    ops.transposed(M), ops.transposed(v));
-  return tmp && ops.transposed(tmp);
-};
+const _solveInRows = (v, M) =>
+  ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
 
 
-const _traversal = function*(graph, v0, transform) {
+const _traversal = function*(graph, v0, transform, adj) {
   const zero = ops.vector(graph.dim);
 
-  const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
   const old2new = {[v0]: 1};
-  const mappedPos = {[v0]: ops.times(pos[v0], transform)};
-  const newPos = {[v0]: mappedPos[v0]};
+  const newPos = { [v0]: ops.times(pos[v0], transform) };
   const queue = [[v0, zero]];
   const essentialShifts = [];
 
@@ -37,17 +29,10 @@ const _traversal = function*(graph, v0, transform) {
     const vn = old2new[vo];
 
     const neighbors = [];
-
     for (const e of pg.allIncidences(graph, vo, adj)) {
       const w = e.tail;
-      if (mappedPos[w] == null)
-        mappedPos[w] = ops.times(pos[w], transform);
-
-      let s = vShift;
-      if (ops.ne(zero, e.shift))
-        s = ops.plus(s, ops.times(e.shift, transform));
-
-      neighbors.push([w, s, ops.plus(s, mappedPos[w])]);
+      const s = ops.plus(vShift, ops.times(e.shift, transform));
+      neighbors.push([w, s, ops.plus(s, ops.times(pos[w], transform))]);
     }
 
     neighbors.sort(([wa, sa, pa], [wb, sb, pb]) => ops.cmp(pa, pb));
@@ -60,65 +45,54 @@ const _traversal = function*(graph, v0, transform) {
         newPos[wo] = p;
         queue.push([wo, s]);
       }
-      else if (wn < vn) {
+      else if (wn < vn)
         continue;
-      }
       else {
         const rawShift = ops.minus(p, newPos[wo]);
         let shift;
-        if (basisAdjustment != null) {
+        if (basisAdjustment != null)
           shift = ops.times(rawShift, basisAdjustment);
-        }
-        else if (ops.sgn(rawShift) == 0) {
+        else if (ops.sgn(rawShift) == 0)
           shift = rawShift;
-        }
         else {
-          if (essentialShifts.length) {
+          if (essentialShifts.length)
             shift = _solveInRows(rawShift, essentialShifts);
-          }
+
           if (shift == null) {
             shift = ops.unitVector(graph.dim, essentialShifts.length);
             essentialShifts.push(rawShift);
-            if (essentialShifts.length == graph.dim) {
+            if (essentialShifts.length == graph.dim)
               basisAdjustment = ops.inverse(essentialShifts);
-            }
           }
-          else {
+          else
             shift = shift[0].concat(ops.vector(graph.dim - shift[0].length));
-          }
         }
-        if (vn < wn || (vn == wn && ops.sgn(shift) < 0)) {
+        if (vn < wn || (vn == wn && ops.sgn(shift) < 0))
           yield [vn, wn, shift];
-        }
       }
     }
   }
 };
 
 
-const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
-  (headA - headB) || (tailA - tailB) || ops.cmp(shiftA, shiftB);
-
-
 const _postprocessTraversal = trav => {
   let basis = null;
   for (const [head, tail, shift] of trav)
     basis = rationalLinearAlgebraModular.extendBasis(shift, basis);
-  basis = basis.map(v => ops.lt(v, []) ? ops.negative(v) : v);
+  basis = basis.map(v => ops.sgn(v) < 0 ? ops.negative(v) : v);
 
   const basisChange = ops.inverse(basis);
 
   return trav.map(([head, tail, shift]) => {
     const newShift = ops.times(shift, basisChange);
-    if (newShift.some(x => !ops.isInteger(x))) {
+
+    if (newShift.some(x => !ops.isInteger(x)))
       throw new Error("panic: produced non-integer shift");
-    }
-    if (head == tail && ops.sgn(newShift) > 0) {
+
+    if (head == tail && ops.sgn(newShift) > 0)
       return [head, tail, ops.negative(newShift)];
-    }
-    else {
+    else
       return [head, tail, newShift];
-    }
   });
 };
 
@@ -137,7 +111,7 @@ const _goodBases = (graph, bases) => {
   const atLune = bases.filter(basis => {
     const v = basis[0].head;
     const neighbours = adj[v].map(e => e.tail).sort();
-    return neighbours.some((w, i) => i == 0 || w == neighbours[i - 1]);
+    return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
   });
 
   if (atLune.length > 0)
@@ -149,29 +123,29 @@ const _goodBases = (graph, bases) => {
 
 
 export const invariant = graph => {
+  const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
   const sym = ps.symmetries(graph);
+
+  const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
+    (headA - headB) || (tailA - tailB) || ops.cmp(shiftA, shiftB);
 
   let best = null;
 
   for (const basis of _goodBases(graph, sym.representativeBases)) {
-    const v = basis[0].head;
     const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
-    const trav = S.seq(_traversal(graph, v, transform));
+    const trav = S.seq(_traversal(graph, basis[0].head, transform, adj));
 
     if (best == null)
       best = trav;
     else {
-      for (let i = 0; ; ++i) {
-        if (trav.drop(i).isNil)
-          break;
+      let [t, b] = [trav, best];
 
-        const d = _cmpSteps(trav.pick(i), best.pick(i));
-        if (d < 0)
-          best = trav;
-        else if (d > 0)
-          break;
-      }
+      while (!t.isNil && _cmpSteps(t.first(), b.first()) == 0)
+        [t, b] = [t.rest(), b.rest()];
+
+      if (!t.isNil && _cmpSteps(t.first(), b.first()) < 0)
+        best = trav;
     }
   }
 
