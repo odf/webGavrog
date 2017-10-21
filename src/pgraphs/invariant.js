@@ -1,15 +1,12 @@
-import * as I from 'immutable';
+import * as S from '../common/lazyseq';
+
+import * as pg from './periodic';
+import * as ps from './symmetries';
 
 import {
   rationalLinearAlgebra,
   rationalLinearAlgebraModular
 } from '../arithmetic/types';
-
-import * as pg from './periodic';
-import * as ps from './symmetries';
-
-
-let _timers = null;
 
 const ops = pg.ops;
 
@@ -21,8 +18,7 @@ const _solveInRows = (v, M) => {
 };
 
 
-const _traversal = function* _traversal(graph, v0, transform)
-{
+const _traversal = function*(graph, v0, transform) {
   const zero = ops.vector(graph.dim);
 
   const adj = pg.adjacencies(graph);
@@ -152,51 +148,34 @@ const _goodBases = (graph, bases) => {
 };
 
 
-export function invariant(graph)
-{
+export const invariant = graph => {
   const pos = pg.barycentricPlacement(graph);
   const sym = ps.symmetries(graph);
-
-  _timers && _timers.start('invariant');
 
   let best = null;
 
   for (const basis of _goodBases(graph, sym.representativeBases)) {
     const v = basis[0].head;
     const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
-    const trav = I.Seq(_traversal(graph, v, transform));
+    const trav = S.seq(_traversal(graph, v, transform));
 
-    if (best == null) {
+    if (best == null)
       best = trav;
-    }
     else {
       for (let i = 0; ; ++i) {
-        const next = trav.get(i);
-        if (next == null) {
+        if (trav.drop(i).isNil)
           break;
-        }
 
-        const d = _cmpSteps(next, best.get(i));
-        if (d < 0) {
+        const d = _cmpSteps(trav.pick(i), best.pick(i));
+        if (d < 0)
           best = trav;
-        }
-        else if (d > 0) {
+        else if (d > 0)
           break;
-        }
       }
     }
   }
 
-  const result = _postprocessTraversal(I.List(best).toArray()).sort(_cmpSteps);
-
-  _timers && _timers.stop('invariant');
-
-  return result;
-}
-
-
-export function useTimers(timers) {
-  _timers = timers;
+  return _postprocessTraversal(best.toArray()).sort(_cmpSteps);
 }
 
 
