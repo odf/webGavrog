@@ -1,9 +1,10 @@
-import * as surface   from '../graphics/surface';
-import * as delaney   from '../dsymbols/delaney';
-import * as periodic  from '../pgraphs/periodic';
-import * as tilings   from '../dsymbols/tilings';
+import * as surface  from '../graphics/surface';
+import * as delaney  from '../dsymbols/delaney';
+import * as tilings  from '../dsymbols/tilings';
+import * as periodic from '../pgraphs/periodic';
+import * as cgd      from '../io/cgd';
 
-import embed from '../pgraphs/embedding';
+import embed         from '../pgraphs/embedding';
 
 
 const handlers = {
@@ -38,6 +39,15 @@ const handlers = {
     const ds = delaney.parse(dsTxt);
     const cov = delaney.parse(covTxt);
     return tilings.tileSurfaces(ds, cov, skel, pos, basis);
+  },
+
+  parseCGD(data) {
+    const blocks = cgd.blocks(data);
+    for (const b of blocks) {
+      const spec = b.content.find(s => s.key == 'name');
+      b.name = ((spec || {}).args || [])[0];
+    }
+    return blocks;
   }
 };
 

@@ -264,19 +264,6 @@ END
 ];
 
 
-const parseStructures = (filename, data, log) => {
-  if (filename.match(/\.(cgd|pgr)$/)) {
-    log('Parsing .cgd data...');
-    return cgd.blocks(data)
-              .map(block => ({ ...block, name: findName(block.content) }));
-  }
-  else if (filename.match(/\.(ds|tgs)$/))
-    return Array.from(parseDSymbols(data));
-  else
-    return [];
-};
-
-
 class FileLoader {
   constructor(onData, accept, multiple=false, binary=false) {
     this.onData = onData;
@@ -434,10 +421,19 @@ class App extends React.Component {
   }
 
   handleFileData(file, data) {
-    this.setState({ filename: file.name });
+    const filename = file.name;
+    this.setState({ filename });
 
     csp.go(function*() {
-      const list = parseStructures(file.name, data, s => this.log(s));
+      let list = [];
+
+      if (filename.match(/\.(ds|tgs)$/))
+        list = Array.from(parseDSymbols(data));
+      else if (filename.match(/\.(cgd|pgr)$/)) {
+        this.log('Parsing .cgd data...');
+        list = yield callWorker({ cmd: 'parseCGD', val: data });
+      }
+
       this.setStructure(0, list);
     }.bind(this));
   }
