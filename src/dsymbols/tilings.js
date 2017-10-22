@@ -9,7 +9,6 @@ import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
 
 import * as seq from '../common/lazyseq';
-import * as util from '../common/util';
 
 import {
   rationalLinearAlgebraModular,

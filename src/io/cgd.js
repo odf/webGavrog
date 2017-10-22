@@ -5,14 +5,6 @@ const ops = require('../geometry/types').affineTransformationsQ;
 import * as pg from '../pgraphs/periodic';
 import * as sg from './sgtable';
 import * as cr from './crystal';
-import * as util from '../common/util';
-
-
-let _timers = null;
-
-export function useTimers(timers) {
-  _timers = timers;
-};
 
 
 const translation = {

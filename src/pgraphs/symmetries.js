@@ -2,7 +2,6 @@ import * as pg from './periodic';
 import { rationalLinearAlgebraModular } from '../arithmetic/types';
 import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
-import * as util from '../common/util';
 
 
 const ops = pg.ops;

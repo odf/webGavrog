@@ -370,7 +370,6 @@ export default embed;
 
 if (require.main == module) {
   const cgd = require('../io/cgd');
-  const util = require('../common/util');
   const crystal = require('../io/crystal');
 
   Array.prototype.toString = function() {

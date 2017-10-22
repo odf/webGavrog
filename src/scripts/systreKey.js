@@ -13,10 +13,6 @@ Array.prototype.toString = function() {
 
 
 const timers = util.timers();
-io.useTimers(timers);
-sym.useTimers(timers);
-inv.useTimers(timers);
-pgr.useTimers(timers);
 
 require('../io/crystal').useTimers(timers);
 
@@ -32,18 +28,15 @@ process.argv.slice(2).forEach(file => {
     const G = b.graph;
 
     try {
-      if (!pgr.isConnected(G)) {
+      if (!pgr.isConnected(G))
         console.log(`  Error: net '${b.name}' is not connected`);
-      }
-      else if (!pgr.isLocallyStable(G)) {
+      else if (!pgr.isLocallyStable(G))
         console.log(`  Error: net '${b.name}' is not locally stable`);
-      }
       else {
         const key = inv.invariant(sym.minimalImage(G));
         timers.start('printing results');
-        for (const [head, tail, shift] of key) {
+        for (const [head, tail, shift] of key)
           console.log(`  ${head} ${tail} ${shift}`);
-        }
         timers.stop('printing results');
       }
     } catch(ex) {
