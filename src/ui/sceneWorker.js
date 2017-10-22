@@ -6,23 +6,14 @@ import * as tilings   from '../dsymbols/tilings';
 import embed from '../pgraphs/embedding';
 
 
-const processedSolid = (t0, subDLevel) => {
-  const t1 = surface.withFlattenedCenterFaces(t0);
-  const t2 = Array(subDLevel).fill(0).reduce(s => surface.subD(s), t1);
-  const t3 = surface.insetAt(t2, 0.02, t2.isFixed);
-  const t4 = surface.beveledAt(t3, 0.01, t2.isFixed);
-
-  return t4;
-};
-
-
 const handlers = {
-  processSolid({ pos, faces, isFixed, subDLevel }) {
-    return processedSolid({ pos, faces, isFixed }, subDLevel);
-  },
-
   processSolids(solidsIn) {
-    return solidsIn.map(this.processSolid);
+    return solidsIn.map(({ pos, faces, isFixed, subDLevel }) => {
+      const t1 = surface.withFlattenedCenterFaces({ pos, faces, isFixed });
+      const t2 = Array(subDLevel).fill(0).reduce(s => surface.subD(s), t1);
+      const t3 = surface.insetAt(t2, 0.02, t2.isFixed);
+      return surface.beveledAt(t3, 0.01, t2.isFixed);
+    });
   },
 
   dsCover(dsTxt) {
