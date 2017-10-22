@@ -5,6 +5,7 @@ import * as csp      from 'plexus-csp';
 import Form          from '../plexus-form';
 import validate      from '../plexus-form/validate';
 
+import * as webworkers from '../common/webworkers';
 import * as version  from '../version';
 import * as delaney  from '../dsymbols/delaney';
 import parseDSymbols from '../io/ds';
@@ -30,6 +31,10 @@ if (!HTMLCanvasElement.prototype.toBlob) {
     }
   });
 }
+
+
+const worker = webworkers.create('js/sceneWorker.js');
+const callWorker = csp.nbind(worker, null);
 
 
 const findName = data => (
@@ -412,6 +417,7 @@ class App extends React.Component {
         const scene = yield makeScene(
           structures[index],
           this.state.options,
+          callWorker,
           s => this.log(s));
 
         const camera = scene.getObjectByName('camera');

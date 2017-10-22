@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import * as csp   from 'plexus-csp';
 
 import * as util        from '../common/util';
-import * as webworkers  from '../common/webworkers';
 import * as delaney     from '../dsymbols/delaney';
 import * as tilings     from '../dsymbols/tilings';
 import * as lattices    from '../geometry/lattices';
@@ -13,9 +12,6 @@ import embed from '../pgraphs/embedding';
 
 import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
-
-const worker = webworkers.create('js/sceneWorker.js');
-const callWorker = csp.nbind(worker, null);
 
 
 const geometry = (vertices, faces) => {
@@ -177,7 +173,7 @@ const invariantBasis = gram => {
 };
 
 
-const makeNetModel = (structure, options, log) => csp.go(function*() {
+const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
   const graph = _graphWithNormalizedShifts(structure.graph);
 
   const embedding = embed(graph, !options.skipRelaxation);
@@ -295,7 +291,9 @@ const light = (color, x, y, z) => {
 };
 
 
-const makeTilingModel = (structure, options, log) => csp.go(function*() {
+const makeTilingModel =
+  (structure, options, runJob, log) => csp.go(function*() {
+
   const ds = structure.symbol;
   const dim = delaney.dim(ds);
   const extensionFactor = dim == 3 ? 2 : 6;
@@ -303,14 +301,14 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   const t = util.timer();
 
   yield log('Finding the pseudo-toroidal cover...');
-  const cov = yield structure.cover || delaney.parse(yield callWorker({
+  const cov = yield structure.cover || delaney.parse(yield runJob({
     cmd: 'dsCover',
     val: `${ds}`
   }));
   console.log(`${Math.round(t())} msec to compute the cover`);
 
   yield log('Extracting the skeleton...');
-  const skel = yield callWorker({
+  const skel = yield runJob({
     cmd: 'skeleton',
     val: `${cov}`
   });
@@ -318,7 +316,7 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   console.log(`${Math.round(t())} msec to extract the skeleton`);
 
   yield log('Computing an embedding...');
-  const embedding = yield callWorker({
+  const embedding = yield runJob({
     cmd: 'embedding',
     val: { graphRepr: skel.graph, relax: !options.skipRelaxation }
   });
@@ -330,14 +328,14 @@ const makeTilingModel = (structure, options, log) => csp.go(function*() {
   console.log(`${Math.round(t())} msec to compute the translation basis`);
 
   yield log('Making the base tile surfaces...');
-  const { templates, tiles } = yield callWorker({
+  const { templates, tiles } = yield runJob({
     cmd: 'tileSurfaces',
     val: { dsTxt: `${ds}`, covTxt: `${cov}`, skel, pos, basis }
   });
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 
   yield log('Refining the tile surfaces...');
-  const refinedTemplates = yield callWorker({
+  const refinedTemplates = yield runJob({
     cmd: 'processSolids',
     val: templates.map(({ pos, faces }) => ({
       pos,
@@ -366,14 +364,14 @@ const builders = {
 };
 
 
-const makeScene = (structure, options, log) => csp.go(function*() {
+const makeScene = (structure, options, runJob, log) => csp.go(function*() {
   const type = structure.type;
   const builder = builders[type];
 
   if (builder == null)
     throw new Error(`rendering not implemented for type ${type}`);
 
-  const model = yield builder(structure, options, log);
+  const model = yield builder(structure, options, runJob, log);
 
   const bbox = new THREE.Box3();
   bbox.setFromObject(model);
