@@ -1,3 +1,5 @@
+import * as pickler from '../common/pickler';
+
 const findBaseLength = () => {
   for (let n = 2; ; n += 2) {
     const b = Math.pow(2, n);
@@ -52,6 +54,13 @@ export const extend = (baseOps, baseLength = 0) => {
 
     get __typeName() { return 'LongInt'; }
   };
+
+
+  pickler.register(
+    'LongInt',
+    ({ sign, digits }) => ({ sign, digits }),
+    ({ sign, digits }) => make(sign, digits)
+  );
 
 
   const negative = n => make(-n.sign, n.digits);

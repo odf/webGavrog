@@ -1,3 +1,5 @@
+import * as pickler from '../common/pickler';
+
 import { rationalLinearAlgebra,
          rationalLinearAlgebraModular } from '../arithmetic/types';
 
@@ -61,7 +63,23 @@ class Graph {
   toString() {
     return `PGraph(${this.edges})`;
   }
+
+  get __typeName() { return 'PeriodicGraph'; }
 };
+
+
+pickler.register(
+  'VectorLabeledEdge',
+  ({ head, tail, shift }) => ({ head, tail, shift }),
+  ({ head, tail, shift }) => new VectorLabeledEdge(head, tail, shift)
+);
+
+
+pickler.register(
+  'PeriodicGraph',
+  ({ dim, edges }) => ({ dim, edges: pickler.pickle(edges) }),
+  ({ dim, edges }) => new Graph(dim, pickler.unpickle(edges))
+);
 
 
 const encode = value => ops.serialize(value);
@@ -373,9 +391,27 @@ if (require.main == module) {
 
   const test = g => {
     console.log(`g = ${g}`);
+    console.log();
+
+    console.log(`pickled: ${JSON.stringify(pickler.pickle(g))}`);
+    console.log();
+
+    console.log(`unpickled: ${pickler.unpickle(pickler.pickle(g))}`);
+    console.log();
+
     console.log(`  cs  = ${coordinationSeq(g, 1, 10)}`);
     if (isConnected(g)) {
-      console.log(`  pos = ${format(barycentricPlacement(g))}`);
+      const pos = barycentricPlacement(g);
+      console.log(`  pos = ${format(pos)}`);
+      console.log();
+
+      const pickled = pickler.pickle(pos);
+      console.log(`  pickled: ${JSON.stringify(pickled)}`);
+      console.log();
+
+      console.log(`  unpickled: ${format(pickler.unpickle(pickled))}`);
+      console.log();
+
       console.log(`  stable: ${isStable(g)}`);
       console.log(`  locally stable: ${isLocallyStable(g)}`);
     }
@@ -387,6 +423,7 @@ if (require.main == module) {
       console.log(`    basis = ${comp.basis}`);
       console.log(`    multiplicity = ${comp.multiplicity}`);
     }
+    console.log();
     console.log();
   };
 

@@ -1,3 +1,5 @@
+import * as pickler from '../common/pickler';
+
 export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 
   class Fraction {
@@ -12,6 +14,15 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 
     get __typeName() { return typeName; }
   };
+
+
+  pickler.register(
+    typeName,
+    ({ numer, denom }) =>
+      ({ numer: pickler.pickle(numer), denom: pickler.pickle(denom) }),
+    ({ numer, denom }) =>
+      new Fraction(pickler.unpickle(numer), pickler.unpickle(denom))
+  );
 
 
   const toJS = n => intOps.toJS(n.numer) / intOps.toJS(n.denom);
