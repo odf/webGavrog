@@ -1,10 +1,13 @@
+import * as pickler from '../common/pickler';
+
+
 export const create = source => {
   let   lastId    = 0;
   const callbacks = {};
   const worker    = new Worker(source);
 
   worker.onmessage = event => {
-    const { id, output, ok } = event.data;
+    const { id, output, ok } = pickler.unpickle(event.data);
     const cb = callbacks[id];
 
     if (cb) {
@@ -20,6 +23,6 @@ export const create = source => {
   return (input, cb) => {
     const id = ++lastId;
     callbacks[id] = cb || null;
-    worker.postMessage({ id, input });
+    worker.postMessage(pickler.pickle({ id, input }));
   };
 };

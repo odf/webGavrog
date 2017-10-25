@@ -301,24 +301,23 @@ const makeTilingModel =
   const t = util.timer();
 
   yield log('Finding the pseudo-toroidal cover...');
-  const cov = yield structure.cover || delaney.parse(yield runJob({
+  const cov = yield structure.cover || (yield runJob({
     cmd: 'dsCover',
-    val: `${ds}`
+    val: ds
   }));
   console.log(`${Math.round(t())} msec to compute the cover`);
 
   yield log('Extracting the skeleton...');
   const skel = yield runJob({
     cmd: 'skeleton',
-    val: `${cov}`
+    val: cov
   });
-  //const graph = periodic.fromObject(skel.graph);
   console.log(`${Math.round(t())} msec to extract the skeleton`);
 
   yield log('Computing an embedding...');
   const embedding = yield runJob({
     cmd: 'embedding',
-    val: { graphRepr: skel.graph, relax: !options.skipRelaxation }
+    val: { graph: skel.graph, relax: !options.skipRelaxation }
   });
   const pos = embedding.positions;
   console.log(`${Math.round(t())} msec to compute the embedding`);
@@ -330,7 +329,7 @@ const makeTilingModel =
   yield log('Making the base tile surfaces...');
   const { templates, tiles } = yield runJob({
     cmd: 'tileSurfaces',
-    val: { dsTxt: `${ds}`, covTxt: `${cov}`, skel, pos, basis }
+    val: { ds, cov, skel, pos, basis }
   });
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 

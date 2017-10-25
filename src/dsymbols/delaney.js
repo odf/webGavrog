@@ -1,3 +1,6 @@
+import * as pickler from '../common/pickler';
+
+
 const _range = (from, to) =>
   new Array(to - from).fill(0).map((_, i) => i + from);
 
@@ -59,7 +62,16 @@ class DSymbol {
   toJSON() {
     return stringify(this);
   }
+
+  get __typeName() { return 'DelaneySymbol'; }
 };
+
+
+pickler.register(
+  'DelaneySymbol',
+  ({ _s, _v, _dim }) => ({ _s, _v, _dim }),
+  ({ _s, _v, _dim }) => new DSymbol(_dim, _s, _v)
+);
 
 
 const _dsymbol = (dim, s, v) => Object.freeze(new DSymbol(dim, s, v));
@@ -317,6 +329,8 @@ if (require.main == module) {
 
   console.log(stringify(ds));
   console.log(`${ds}`);
+  console.log(`pickled: ${JSON.stringify(pickler.pickle(ds))}`);
+  console.log(`unpickled: ${pickler.unpickle(pickler.pickle(ds))}`);
 
   console.log(`${withPairings(ds, 1, [[2,1]])}`);
   console.log(`${withBranchings(ds, 0, [[2,3],[1,5]])}`);

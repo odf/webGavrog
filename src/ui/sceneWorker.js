@@ -1,3 +1,4 @@
+import * as pickler  from '../common/pickler';
 import * as surface  from '../graphics/surface';
 import * as delaney  from '../dsymbols/delaney';
 import * as tilings  from '../dsymbols/tilings';
@@ -17,27 +18,19 @@ const handlers = {
     });
   },
 
-  dsCover(dsTxt) {
-    const ds = delaney.parse(dsTxt);
-    const cov = tilings.makeCover(ds);
-
-    return `${cov}`;
+  dsCover(ds) {
+    return tilings.makeCover(ds);
   },
 
-  embedding({ graphRepr, relax }) {
-    return embed(periodic.fromObject(graphRepr), relax);
+  embedding({ graph, relax }) {
+    return embed(graph, relax);
   },
 
-  skeleton(covTxt) {
-    const cov = delaney.parse(covTxt);
-    const skel = tilings.skeleton(cov);
-
-    return Object.assign(skel, { graph: periodic.asObject(skel.graph) });
+  skeleton(cov) {
+    return tilings.skeleton(cov);
   },
 
-  tileSurfaces({ dsTxt, covTxt, skel, pos, basis }) {
-    const ds = delaney.parse(dsTxt);
-    const cov = delaney.parse(covTxt);
+  tileSurfaces({ ds, cov, skel, pos, basis }) {
     return tilings.tileSurfaces(ds, cov, skel, pos, basis);
   },
 
@@ -53,7 +46,7 @@ const handlers = {
 
 
 onmessage = event => {
-  const { id, input: { cmd, val } } = event.data;
+  const { id, input: { cmd, val } } = pickler.unpickle(event.data);
 
   let output = null, ok = false;
 
@@ -65,5 +58,5 @@ onmessage = event => {
     console.log(ex.stack);
   }
 
-  postMessage({ id, output, ok });
+  postMessage(pickler.pickle({ id, output, ok }));
 };

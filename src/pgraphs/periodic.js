@@ -120,20 +120,6 @@ export const make = data => {
 };
 
 
-export const asObject = graph => ({
-  PeriodicGraph: {
-    dim: graph.dim,
-    edges: graph.edges.map(e => ops.repr(e))
-  }
-});
-
-
-export const fromObject = ({ PeriodicGraph: obj }) => new Graph(
-  obj.dim,
-  obj.edges.map(e => ops.fromRepr(e))
-);
-
-
 export const vertices = graph => {
   const verts = [];
   for (const e of graph.edges) {
