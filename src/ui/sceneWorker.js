@@ -41,6 +41,10 @@ const handlers = {
       b.name = ((spec || {}).args || [])[0];
     }
     return blocks;
+  },
+
+  processCGD(block) {
+    return cgd.processed(block);
   }
 };
 

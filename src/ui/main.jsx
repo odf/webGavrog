@@ -398,7 +398,10 @@ class App extends React.Component {
       try {
         if (structures[index].isRaw) {
           this.log('Converting structure data...');
-          structures[index] = cgd.processed(structures[index]);
+          structures[index] = yield callWorker({
+            cmd: 'processCGD',
+            val: structures[index]
+          });
         }
 
         const scene = yield makeScene(
