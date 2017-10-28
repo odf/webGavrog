@@ -82,18 +82,13 @@ pickler.register(
 );
 
 
-const encode = value => ops.serialize(value);
-const decode = value => ops.deserialize(value);
-
-
 const dedupe = as => {
   const seen = {};
   const out = [];
 
   for (const a of as) {
-    const key = encode(a);
-    if (!seen[key]) {
-      seen[key] = true;
+    if (!seen[a]) {
+      seen[a] = true;
       out.push(a);
     }
   }
@@ -323,7 +318,7 @@ export const isStable = graph => {
   const seen = {};
 
   for (const v of verts) {
-    const key = encode(pos[v].map(x => ops.mod(x, 1)));
+    const key = ops.serialize(pos[v].map(x => ops.mod(x, 1)));
     if (seen[key])
       return false;
     else
@@ -344,7 +339,7 @@ export const isLocallyStable = graph => {
     const seen = {};
 
     for (const { v: w, s } of adj[v]) {
-      const key = encode(ops.plus(pos[w], s));
+      const key = ops.serialize(ops.plus(pos[w], s));
       if (seen[key])
         return false;
       else
