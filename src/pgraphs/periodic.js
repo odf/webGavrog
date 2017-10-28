@@ -38,18 +38,12 @@ class VectorLabeledEdge {
 
 export const ops = rationalLinearAlgebra.register({
   __repr__  : {
-    VectorLabeledEdge: x => ({
-      head: ops.repr(x.head),
-      tail: ops.repr(x.tail),
-      shift: ops.repr(x.shift)
-    })
+    VectorLabeledEdge: ({ head, tail, shift }) =>
+      [head, tail, shift]
   },
   __VectorLabeledEdge__: {
-    Object: ({ VectorLabeledEdge: obj }) =>
-      new VectorLabeledEdge(
-        ops.fromRepr(obj.head),
-        ops.fromRepr(obj.tail),
-        ops.fromRepr(obj.shift))
+    Object: ({ VectorLabeledEdge: [head, tail, shift] }) =>
+      new VectorLabeledEdge(head, tail, shift)
   }
 });
 
