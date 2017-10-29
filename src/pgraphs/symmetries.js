@@ -83,41 +83,7 @@ const characteristicBases = graph => {
 };
 
 
-const _adjacenciesByEdgeVector = (graph, v, adj) => {
-  const pos = pg.barycentricPlacement(graph);
-
-  const out = {};
-  for (const e of pg.allIncidences(graph, v, adj))
-    out[encode(pg.edgeVector(e, pos))] = e;
-
-  return out;
-};
-
-
-const _checkGraphsForMorphism = (graph1, graph2, transform) => {
-  const errors = [];
-
-  if (graph2.dim != graph1.dim)
-    errors.push('graphs have different dimensions');
-  if (transform != null && ops.dimension(transform) != graph1.dim)
-    errors.push('coordinate transformation has the wrong dimension');
-
-  if (errors.length > 0)
-    throw new Error(errors.join('\n'));
-};
-
-
-export const morphism = (
-  graph1,
-  graph2,
-  start1,
-  start2,
-  transform,
-  adj1=pg.adjacencies(graph1),
-  adj2=pg.adjacencies(graph2)
-) => {
-  _checkGraphsForMorphism(graph1, graph2, transform);
-
+const morphism = (graph, start1, start2, transform, edgeByVec) => {
   const src2img = {};
   const img2src = {};
   const queue = [];
@@ -149,11 +115,9 @@ export const morphism = (
 
   while (queue.length) {
     const [w1, w2] = queue.shift();
-    const n1 = _adjacenciesByEdgeVector(graph1, w1, adj1);
-    const n2 = _adjacenciesByEdgeVector(graph2, w2, adj2);
 
-    for (const [d1, e1] of Object.entries(n1)) {
-      const e2 = n2[encode(ops.times(decode(d1), transform))];
+    for (const [d1, e1] of Object.entries(edgeByVec[w1])) {
+      const e2 = edgeByVec[w2][encode(ops.times(decode(d1), transform))];
 
       const status = (e2 == null ? BAD : OKAY) ||
         tryPair(encode(e1), encode(e2)) ||
@@ -166,19 +130,12 @@ export const morphism = (
     }
   }
 
-  const complete = pg.vertices(graph2).every(v => img2src[v] != null) &&
-    graph2.edges.every(e => (img2src[encode(e)] != null &&
-                             img2src[encode(e.reverse())] != null));
+  const complete = pg.vertices(graph).every(v => img2src[v] != null) &&
+    graph.edges.every(e => (img2src[encode(e)] != null &&
+                            img2src[encode(e.reverse())] != null));
 
   if (complete)
-    return {
-      src2img,
-      img2src,
-      transform,
-      injective,
-      sourceGraph: graph1,
-      imageGraph: graph2
-    };
+    return { src2img, img2src, transform, injective };
 };
 
 
@@ -200,9 +157,7 @@ const productMorphism = (phi, psi) => {
     src2img,
     img2src,
     transform: ops.times(phi.transform, psi.transform),
-    injective: phi.injective && psi.injective,
-    sourceGraph: phi.sourceGraph,
-    imageGraph: psi.imageGraph
+    injective: phi.injective && psi.injective
   };
 };
 
@@ -233,9 +188,11 @@ export const isMinimal = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts[0];
+  const adj = pg.adjacencies(graph);
+  const ebv = edgesByVector(graph, adj);
 
   for (const v of verts.slice(1)) {
-    if (morphism(graph, graph, start, v, id) != null)
+    if (morphism(graph, start, v, id, ebv) != null)
       return false;
   }
 
@@ -247,12 +204,14 @@ const translationalEquivalences = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts[0];
+  const adj = pg.adjacencies(graph);
+  const ebv = edgesByVector(graph, adj);
 
   const p = new part.Partition();
 
   for (const v of verts) {
     if (p.find(start) != p.find(v)) {
-      const iso = morphism(graph, graph, start, v, id);
+      const iso = morphism(graph, start, v, id, ebv);
       if (iso != null) {
         for (const w of verts)
           p.union(w, iso.src2img[w]);
@@ -377,6 +336,19 @@ const _matrixProductIfUnimodular = (A, B) => {
 };
 
 
+const edgesByVector = (graph, pos, adj) => {
+  const result = {};
+
+  for (const v of pg.vertices(graph)) {
+    const m = result[v] = {};
+    for (const e of pg.allIncidences(graph, v, adj))
+      m[encode(pg.edgeVector(e, pos))] = e;
+  }
+
+  return result;
+};
+
+
 export const symmetries = graph => {
   const pos = pg.barycentricPlacement(graph);
 
@@ -385,6 +357,7 @@ export const symmetries = graph => {
 
   const bases = characteristicBases(graph);
   const adj = pg.adjacencies(graph);
+  const ebv = edgesByVector(graph, pos, adj);
   const deg = v => adj[v].length;
 
   const encodedBases = bases.map(b => b.map(encode));
@@ -395,7 +368,7 @@ export const symmetries = graph => {
   const invB0 = ops.inverse(B0);
 
   const id = ops.identityMatrix(graph.dim);
-  const generators = [morphism(graph, graph, v0, v0, id, adj, adj)];
+  const generators = [morphism(graph, v0, v0, id, ebv)];
 
   const p = new part.LabelledPartition((a, b) => a || b);
 
@@ -409,7 +382,7 @@ export const symmetries = graph => {
       const B = basis.map(e => pg.edgeVector(e, pos));
 
       const M = _matrixProductIfUnimodular(invB0, B);
-      const iso = M && morphism(graph, graph, v0, v, M, adj, adj);
+      const iso = M && morphism(graph, v0, v, M, ebv);
 
       if (iso) {
         generators.push(iso);
