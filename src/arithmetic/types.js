@@ -144,16 +144,6 @@ if (require.main == module) {
                     [0.577350269189626,0.8660254037844387,0],
                     [0,-0.5,0.9999999999999998]]);
 
-  const testRepr = (ops, x) => {
-    const xr = ops.repr(x);
-    console.log();
-    console.log(JSON.stringify(xr));
-    console.log(JSON.stringify(ops.fromRepr(xr)));
-  };
-
-  testRepr(ops, ops.div([1, 2, 3], 3));
-  testRepr(fops, [[1.1, 2.2, -123456789012345]]);
-
   console.log(ops.cmp([1, 2, 3], [1, 2, 2]));
   console.log(ops.cmp([1, 2, 3], [1, 2, 3]));
   console.log(ops.cmp([1, 2, 3], [1, 2, 4]));

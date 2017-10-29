@@ -3,9 +3,10 @@ import * as S from '../common/lazyseq';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
-import { rationalLinearAlgebraModular } from '../arithmetic/types';
+import { rationalLinearAlgebra,
+         rationalLinearAlgebraModular } from '../arithmetic/types';
 
-const ops = pg.ops;
+const ops = rationalLinearAlgebra;
 
 
 const _solveInRows = (v, M) =>

@@ -7,6 +7,12 @@ import modularSolver from '../arithmetic/solveRational';
 import * as solveRational from '../arithmetic/solveRational';
 
 
+export const ops = rationalLinearAlgebra;
+
+const encode = pickler.serialize;
+const decode = pickler.deserialize;
+
+
 class VectorLabeledEdge {
   constructor(head, tail, shift) {
     this.head = head;
@@ -34,18 +40,6 @@ class VectorLabeledEdge {
 
   get __typeName() { return 'VectorLabeledEdge'; }
 };
-
-
-export const ops = rationalLinearAlgebra.register({
-  __repr__  : {
-    VectorLabeledEdge: ({ head, tail, shift }) =>
-      [head, tail, shift]
-  },
-  __VectorLabeledEdge__: {
-    Object: ({ VectorLabeledEdge: [head, tail, shift] }) =>
-      new VectorLabeledEdge(head, tail, shift)
-  }
-});
 
 
 class Graph {
@@ -312,7 +306,7 @@ export const isStable = graph => {
   const seen = {};
 
   for (const v of verts) {
-    const key = ops.serialize(pos[v].map(x => ops.mod(x, 1)));
+    const key = encode(pos[v].map(x => ops.mod(x, 1)));
     if (seen[key])
       return false;
     else
@@ -333,7 +327,7 @@ export const isLocallyStable = graph => {
     const seen = {};
 
     for (const { v: w, s } of adj[v]) {
-      const key = ops.serialize(ops.plus(pos[w], s));
+      const key = encode(ops.plus(pos[w], s));
       if (seen[key])
         return false;
       else

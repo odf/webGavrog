@@ -75,15 +75,6 @@ const gcdex = (a, b, ops) => {
 const mod = (x, y, ops) => ops.minus(x, ops.times(ops.idiv(x, y), y));
 
 
-const fromRepr = (obj, ops) => {
-  const keys = Object.keys(obj);
-  if (keys.length != 1)
-    throw new Error('must have exactly one key');
-
-  return ops[`__${keys[0]}__`](obj);
-};
-
-
 const defaults = {
   __context__: () => 'default',
 
@@ -102,13 +93,7 @@ const defaults = {
   gcd: { __default__: gcd },
   gcdex: { __default__: gcdex },
 
-  typeOf     : { __default__: x => typeOf(x) },
-  repr       : { __default__: (x, ops) => ({ [typeOf(x)]: ops.__repr__(x) }) },
-  fromRepr   : { Object: fromRepr },
-  serialize  : { __default__: (x, ops) => JSON.stringify(ops.repr(x)) },
-  deserialize: { String: (x, ops) => fromRepr(JSON.parse(x), ops) },
-
-  __repr__: { __default__: x => x }
+  typeOf     : { __default__: x => typeOf(x) }
 };
 
 

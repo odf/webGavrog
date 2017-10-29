@@ -689,10 +689,7 @@ export const extend = (baseOps, baseLength = 0) => {
         Integer: (x, y) => gcdBinary(x, promote(y)),
         LongInt: gcdBinary
       }
-    },
-    __repr__: { LongInt: x => ({ sign: x.sign, digits: x.digits }) },
-    __Integer__: { Object: ({ Integer: n }) => n },
-    __LongInt__: { Object: ({ LongInt: obj }) => make(obj.sign, obj.digits) }
+    }
   });
 };
 

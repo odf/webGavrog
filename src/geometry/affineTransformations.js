@@ -97,16 +97,6 @@ export const extend = pointAndVectorOps => {
         AffineTransformation: (M, T) =>
           make(V.times(M, T.linear), V.times(M, T.shift))
       }
-    },
-    __repr__  : {
-      AffineTransformation: x => ({
-        linear: V.repr(x.linear),
-        shift: V.repr(x.shift)
-      })
-    },
-    __AffineTransformation__: {
-      Object: ({ AffineTransformation: obj }) =>
-        make(V.fromRepr(obj.linear), V.fromRepr(obj.shift))
     }
   };
 

@@ -53,3 +53,7 @@ export const unpickle = x => {
       return x;
   }
 };
+
+
+export const serialize = x => JSON.stringify(pickle(x));
+export const deserialize = x => unpickle(JSON.parse(x));

@@ -135,17 +135,7 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
     sgn       : { [typeName]: sgn      },
     floor     : { [typeName]: floor    },
     ceil      : { [typeName]: ceil     },
-    round     : { [typeName]: round    },
-    __repr__  : {
-      [typeName]: x => ({
-        numer: intOps.repr(x.numer),
-        denom: intOps.repr(x.denom)
-      })
-    },
-    [`__${typeName}__`]: {
-      Object: ({ [typeName]: obj }) =>
-        make(intOps.fromRepr(obj.numer), intOps.fromRepr(obj.denom))
-    }
+    round     : { [typeName]: round    }
   };
 
   methods.rational = { String: parse };

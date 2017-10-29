@@ -194,15 +194,7 @@ export const extend = (scalarOps, scalarTypes) => {
         Vector: (m, v) => matrixProduct([v], transposedMatrix(m))[0],
         Matrix: matrixProduct
       }
-    },
-
-    __repr__: {
-      Vector: map.V(sops.repr),
-      Matrix: map.M(sops.repr)
-    },
-
-    __Vector__: { Object: ({ Vector: v }) => map.V(sops.fromRepr)(v) },
-    __Matrix__: { Object: ({ Matrix: m }) => map.M(sops.fromRepr)(m) },
+    }
   };
 
   for (const name of ['plus', 'minus', 'div', 'idiv', 'mod']) {

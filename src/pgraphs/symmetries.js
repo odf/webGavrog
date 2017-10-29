@@ -1,13 +1,16 @@
+import * as pickler from '../common/pickler';
+
 import * as pg from './periodic';
-import { rationalLinearAlgebraModular } from '../arithmetic/types';
+import { rationalLinearAlgebra,
+         rationalLinearAlgebraModular } from '../arithmetic/types';
 import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
 
 
-const ops = pg.ops;
+const ops = rationalLinearAlgebra;
 
-const encode = value => ops.serialize(value);
-const decode = value => ops.deserialize(value);
+const encode = pickler.serialize;
+const decode = pickler.deserialize;
 
 
 const _directedEdges = graph => {

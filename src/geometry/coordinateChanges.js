@@ -44,15 +44,6 @@ export const extend = transformationOps => {
         Matrix: applyToOp,
         AffineTransformation: applyToOp
       }
-    },
-
-    __repr__: {
-      CoordinateChange: C => V.repr(C.oldToNew)
-    },
-
-    __CoordinateChange__: {
-      Object: ({ CoordinateChange: transform }) =>
-        new CoordinateChange(V.fromRepr(transform))
     }
   };
 

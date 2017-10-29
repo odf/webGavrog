@@ -52,15 +52,4 @@ if (require.main == module) {
       ops.coordinateChange(ops.times(3, ops.identityMatrix(3))),
       ops.shift([1,2,3]))
   }`);
-
-  const testRepr = x => {
-    const xr = ops.repr(x);
-    console.log();
-    console.log(JSON.stringify(xr));
-    console.log(JSON.stringify(ops.fromRepr(xr)));
-  };
-
-  testRepr(ops.point(ops.div([1, 2, 3], 3)));
-  testRepr(t);
-  testRepr(ops.coordinateChange(t));
 }
