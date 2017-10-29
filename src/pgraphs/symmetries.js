@@ -83,86 +83,52 @@ const characteristicBases = graph => {
 };
 
 
-const morphism = (graph, start1, start2, transform, edgeByVec) => {
-  const src2img = {};
-  const img2src = {};
-  const queue = [];
-
-  let injective = true;
-
-  const OKAY = 0;
-  const BAD = -1;
-  const SEEN = 1;
-
-  const tryPair = (src, img) => {
-    const oldImg = src2img[src];
-    if (img == oldImg)
-      return SEEN;
-    else if (oldImg != null)
-      return BAD;
-
-    if (img2src[img] != null)
-      injective = false;
-
-    src2img[src] = img;
-    img2src[img] = src;
-
-    return OKAY;
-  };
-
-  tryPair(start1, start2);
-  queue.push([start1, start2]);
+const automorphism = (graph, start1, start2, transform, edgeByVec) => {
+  const src2img = { [start1]: start2 };
+  const queue = [[start1, start2]];
 
   while (queue.length) {
     const [w1, w2] = queue.shift();
 
     for (const [d1, e1] of Object.entries(edgeByVec[w1])) {
       const e2 = edgeByVec[w2][encode(ops.times(decode(d1), transform))];
+      if (e2 == null)
+        return null;
 
-      const status = (e2 == null ? BAD : OKAY) ||
-        tryPair(encode(e1), encode(e2)) ||
-        tryPair(e1.tail, e2.tail);
+      src2img[encode(e1)] = encode(e2);
 
-      if (status == OKAY)
+      if (src2img[e1.tail] == null) {
+        src2img[e1.tail] = e2.tail;
         queue.push([e1.tail, e2.tail]);
-      else if (status == BAD)
+      }
+      else if (src2img[e1.tail] != e2.tail)
         return null;
     }
   }
 
-  const complete = pg.vertices(graph).every(v => img2src[v] != null) &&
-    graph.edges.every(e => (img2src[encode(e)] != null &&
-                            img2src[encode(e.reverse())] != null));
-
-  if (complete)
-    return { src2img, img2src, transform, injective };
+  return { src2img, transform };
 };
 
 
-const productMorphism = (phi, psi) => {
+const productAutomorphism = (phi, psi) => {
   const compose = (f, g) => {
     const h = {};
     for (const x of Object.keys(f)) {
       h[x] = g[f[x]];
       if (h[x] == null)
-        throw new Error('morphism do not compose');
+        throw new Error('automorphisms do not compose');
     }
     return h;
   };
 
   const src2img = compose(phi.src2img, psi.src2img);
-  const img2src = compose(psi.img2src, phi.img2src);
+  const transform = ops.times(phi.transform, psi.transform);
 
-  return {
-    src2img,
-    img2src,
-    transform: ops.times(phi.transform, psi.transform),
-    injective: phi.injective && psi.injective
-  };
+  return { src2img, transform };
 };
 
 
-const groupOfMorphisms = (generators, keyFn) => {
+const groupOfAutomorphisms = (generators, keyFn) => {
   const result = generators.slice();
   const seen = {};
   generators.forEach(gen => seen[keyFn(gen)] = true);
@@ -170,7 +136,7 @@ const groupOfMorphisms = (generators, keyFn) => {
   for (let next = 0; next < result.length; ++next) {
     const phi = result[next];
     for (const psi of generators) {
-      const product = productMorphism(phi, psi);
+      const product = productAutomorphism(phi, psi);
       const key = keyFn(product);
 
       if (!seen[key]) {
@@ -192,7 +158,7 @@ export const isMinimal = graph => {
   const ebv = edgesByVector(graph, adj);
 
   for (const v of verts.slice(1)) {
-    if (morphism(graph, start, v, id, ebv) != null)
+    if (automorphism(graph, start, v, id, ebv) != null)
       return false;
   }
 
@@ -211,7 +177,7 @@ const translationalEquivalences = graph => {
 
   for (const v of verts) {
     if (p.find(start) != p.find(v)) {
-      const iso = morphism(graph, start, v, id, ebv);
+      const iso = automorphism(graph, start, v, id, ebv);
       if (iso != null) {
         for (const w of verts)
           p.union(w, iso.src2img[w]);
@@ -368,7 +334,7 @@ export const symmetries = graph => {
   const invB0 = ops.inverse(B0);
 
   const id = ops.identityMatrix(graph.dim);
-  const generators = [morphism(graph, v0, v0, id, ebv)];
+  const generators = [automorphism(graph, v0, v0, id, ebv)];
 
   const p = new part.LabelledPartition((a, b) => a || b);
 
@@ -382,7 +348,7 @@ export const symmetries = graph => {
       const B = basis.map(e => pg.edgeVector(e, pos));
 
       const M = _matrixProductIfUnimodular(invB0, B);
-      const iso = M && morphism(graph, v0, v, M, ebv);
+      const iso = M && automorphism(graph, v0, v, M, ebv);
 
       if (iso) {
         generators.push(iso);
@@ -405,7 +371,7 @@ export const symmetries = graph => {
   }
 
   const keyFn = phi => encodedBases[0].map(e => phi.src2img[e]).join(',');
-  const syms = groupOfMorphisms(generators, keyFn);
+  const syms = groupOfAutomorphisms(generators, keyFn);
 
   return {
     generators: generators.slice(1),
