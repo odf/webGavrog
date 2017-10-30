@@ -167,8 +167,9 @@ export const isMinimal = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts[0];
+  const pos = pg.barycentricPlacement(graph);
   const adj = pg.adjacencies(graph);
-  const ebv = edgesByVector(graph, adj);
+  const ebv = edgesByVector(graph, pos, adj);
 
   for (const v of verts.slice(1)) {
     if (automorphism(graph, start, v, id, ebv) != null)
@@ -183,8 +184,9 @@ const translationalEquivalences = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const start = verts[0];
+  const pos = pg.barycentricPlacement(graph);
   const adj = pg.adjacencies(graph);
-  const ebv = edgesByVector(graph, adj);
+  const ebv = edgesByVector(graph, pos, adj);
 
   const p = new part.Partition();
 
