@@ -98,31 +98,6 @@ const _postprocessTraversal = trav => {
 };
 
 
-const _goodBases = (graph, bases) => {
-  const adj = pg.adjacencies(graph);
-
-  const atLoop = bases.filter(basis => {
-    const v = basis[0].head;
-    return adj[v].every(e => e.tail == v);
-  });
-
-  if (atLoop.length > 0)
-    return atLoop;
-
-  const atLune = bases.filter(basis => {
-    const v = basis[0].head;
-    const neighbours = adj[v].map(e => e.tail).sort();
-    return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
-  });
-
-  if (atLune.length > 0)
-    return atLune;
-
-  const maxDeg = Object.keys(adj).map(v => adj[v].length).max();
-  return bases.filter(basis => adj[basis[0].head].length == maxDeg);
-};
-
-
 export const invariant = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
@@ -133,7 +108,7 @@ export const invariant = graph => {
 
   let best = null;
 
-  for (const basis of _goodBases(graph, sym.representativeBases)) {
+  for (const basis of ps.goodBases(graph, sym.representativeBases)) {
     const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
     const trav = S.seq(_traversal(graph, basis[0].head, transform, adj));
 

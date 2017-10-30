@@ -83,6 +83,19 @@ const characteristicBases = graph => {
 };
 
 
+const identityAutomorphism = graph => {
+  const src2img = {};
+  for (const v of pg.vertices(graph))
+    src2img[v] = v;
+  for (const e of graph.edges)
+    src2img[encode[e]] = encode[e];
+
+  const transform = ops.identityMatrix(graph.dim);
+
+  return { src2img, transform };
+};
+
+
 const automorphism = (graph, start1, start2, transform, edgeByVec) => {
   const src2img = { [start1]: start2 };
   const queue = [[start1, start2]];
@@ -315,34 +328,52 @@ const edgesByVector = (graph, pos, adj) => {
 };
 
 
+export const goodBases = (graph, bases) => {
+  const adj = pg.adjacencies(graph);
+
+  const atLoop = bases.filter(basis => {
+    const v = basis[0].head;
+    return adj[v].every(e => e.tail == v);
+  });
+
+  if (atLoop.length > 0)
+    return atLoop;
+
+  const atLune = bases.filter(basis => {
+    const v = basis[0].head;
+    const neighbours = adj[v].map(e => e.tail).sort();
+    return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
+  });
+
+  if (atLune.length > 0)
+    return atLune;
+
+  const maxDeg = Object.keys(adj).map(v => adj[v].length).max();
+  return bases.filter(basis => adj[basis[0].head].length == maxDeg);
+};
+
+
 export const symmetries = graph => {
   const pos = pg.barycentricPlacement(graph);
 
   if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable; cannot compute symmetries');
 
-  const bases = characteristicBases(graph);
-  const adj = pg.adjacencies(graph);
-  const ebv = edgesByVector(graph, pos, adj);
-  const deg = v => adj[v].length;
+  const ebv = edgesByVector(graph, pos, pg.adjacencies(graph));
 
+  const bases = goodBases(graph, characteristicBases(graph));
   const encodedBases = bases.map(b => b.map(encode));
   const keys = encodedBases.map(b => b.join(','));
-  const degs = bases.map(b => b.map(e => [deg(e.head), deg(e.tail)]));
+
   const v0 = bases[0][0].head;
   const B0 = bases[0].map(e => pg.edgeVector(e, pos));
   const invB0 = ops.inverse(B0);
 
-  const id = ops.identityMatrix(graph.dim);
-  const generators = [automorphism(graph, v0, v0, id, ebv)];
-
+  const generators = [];
   const p = new part.LabelledPartition((a, b) => a || b);
 
   for (let i = 0; i < bases.length; ++i) {
-    if (ops.eq(degs[i], degs[0]) &&
-        p.find(keys[i]) != p.find(keys[0]) &&
-        !p.getLabel(keys[i]))
-    {
+    if (p.find(keys[i]) != p.find(keys[0]) && !p.getLabel(keys[i])) {
       const basis = bases[i];
       const v = basis[0].head;
       const B = basis.map(e => pg.edgeVector(e, pos));
@@ -371,13 +402,11 @@ export const symmetries = graph => {
   }
 
   const keyFn = phi => encodedBases[0].map(e => phi.src2img[e]).join(',');
-  const syms = groupOfAutomorphisms(generators, keyFn);
+  const symmetries = generators.length ?
+    groupOfAutomorphisms(generators, keyFn) :
+    [ identityAutomorphism(graph) ];
 
-  return {
-    generators: generators.slice(1),
-    representativeBases,
-    symmetries: syms
-  };
+  return { generators, representativeBases, symmetries };
 };
 
 
