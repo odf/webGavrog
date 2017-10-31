@@ -330,7 +330,7 @@ const edgesByVector = (graph, pos, adj) => {
 };
 
 
-export const goodBases = (graph, bases) => {
+const goodBases = (graph, bases) => {
   const adj = pg.adjacencies(graph);
 
   const atLoop = bases.filter(basis => {
