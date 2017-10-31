@@ -108,9 +108,9 @@ export const invariant = graph => {
 
   let best = null;
 
-  for (const basis of sym.representativeBases) {
-    const transform = ops.inverse(basis.map(e => pg.edgeVector(e, pos)));
-    const trav = S.seq(_traversal(graph, basis[0].head, transform, adj));
+  for (const edgeList of sym.representativeEdgeLists) {
+    const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
+    const trav = S.seq(_traversal(graph, edgeList[0].head, transform, adj));
 
     if (best == null)
       best = trav;

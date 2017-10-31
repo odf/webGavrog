@@ -66,7 +66,7 @@ const _goodEdgeChains = graph => {
 };
 
 
-const characteristicBases = graph => {
+const characteristicEdgeLists = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
@@ -330,19 +330,19 @@ const edgesByVector = (graph, pos, adj) => {
 };
 
 
-const goodBases = (graph, bases) => {
+const goodEdgeLists = (graph, edgeLists) => {
   const adj = pg.adjacencies(graph);
 
-  const atLoop = bases.filter(basis => {
-    const v = basis[0].head;
+  const atLoop = edgeLists.filter(edgeList => {
+    const v = edgeList[0].head;
     return adj[v].every(e => e.tail == v);
   });
 
   if (atLoop.length > 0)
     return atLoop;
 
-  const atLune = bases.filter(basis => {
-    const v = basis[0].head;
+  const atLune = edgeLists.filter(edgeList => {
+    const v = edgeList[0].head;
     const neighbours = adj[v].map(e => e.tail).sort();
     return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
   });
@@ -351,7 +351,7 @@ const goodBases = (graph, bases) => {
     return atLune;
 
   const maxDeg = Object.keys(adj).map(v => adj[v].length).max();
-  return bases.filter(basis => adj[basis[0].head].length == maxDeg);
+  return edgeLists.filter(edgeList => adj[edgeList[0].head].length == maxDeg);
 };
 
 
@@ -363,22 +363,22 @@ export const symmetries = graph => {
 
   const ebv = edgesByVector(graph, pos, pg.adjacencies(graph));
 
-  const bases = goodBases(graph, characteristicBases(graph));
-  const encodedBases = bases.map(b => b.map(encode));
-  const keys = encodedBases.map(b => b.join(','));
+  const edgeLists = goodEdgeLists(graph, characteristicEdgeLists(graph));
+  const encodedEdgeLists = edgeLists.map(b => b.map(encode));
+  const keys = encodedEdgeLists.map(b => b.join(','));
 
-  const v0 = bases[0][0].head;
-  const B0 = bases[0].map(e => pg.edgeVector(e, pos));
+  const v0 = edgeLists[0][0].head;
+  const B0 = edgeLists[0].map(e => pg.edgeVector(e, pos));
   const invB0 = ops.inverse(B0);
 
   const generators = [];
   const p = new part.LabelledPartition((a, b) => a || b);
 
-  for (let i = 0; i < bases.length; ++i) {
+  for (let i = 0; i < edgeLists.length; ++i) {
     if (p.find(keys[i]) != p.find(keys[0]) && !p.getLabel(keys[i])) {
-      const basis = bases[i];
-      const v = basis[0].head;
-      const B = basis.map(e => pg.edgeVector(e, pos));
+      const edgeList = edgeLists[i];
+      const v = edgeList[0].head;
+      const B = edgeList.map(e => pg.edgeVector(e, pos));
 
       const M = _matrixProductIfUnimodular(invB0, B);
       const iso = M && automorphism(graph, v0, v, M, ebv);
@@ -386,10 +386,10 @@ export const symmetries = graph => {
       if (iso) {
         generators.push(iso);
 
-        for (let i = 0; i < bases.length; ++i) {
+        for (let i = 0; i < edgeLists.length; ++i) {
           p.union(
             keys[i],
-            encodedBases[i].map(e => iso.src2img[e]).join(','));
+            encodedEdgeLists[i].map(e => iso.src2img[e]).join(','));
         }
       }
       else
@@ -397,18 +397,18 @@ export const symmetries = graph => {
     }
   }
 
-  const representativeBases = [];
-  for (let i = 0; i < bases.length; ++i) {
+  const representativeEdgeLists = [];
+  for (let i = 0; i < edgeLists.length; ++i) {
     if (keys[i] == p.find(keys[i]))
-      representativeBases.push(bases[i]);
+      representativeEdgeLists.push(edgeLists[i]);
   }
 
-  const keyFn = phi => encodedBases[0].map(e => phi.src2img[e]).join(',');
+  const keyFn = phi => encodedEdgeLists[0].map(e => phi.src2img[e]).join(',');
   const symmetries = generators.length ?
     groupOfAutomorphisms(generators, keyFn) :
     [ identityAutomorphism(graph) ];
 
-  return { generators, representativeBases, symmetries };
+  return { generators, representativeEdgeLists, symmetries };
 };
 
 
@@ -491,20 +491,20 @@ if (require.main == module) {
       console.log(`  ${e}`);
     console.log();
 
-    const bases = characteristicBases(g);
-    console.log(`found ${bases.length} characteristic bases`);
+    const edgeLists = characteristicEdgeLists(g);
+    console.log(`found ${edgeLists.length} characteristic edgeLists`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries(g);
       const gens = syms.generators;
-      const bases = syms.representativeBases;
+      const edgeLists = syms.representativeEdgeLists;
       console.log(`found ${syms.symmetries.length} symmetries in total`
                   + ` from ${gens.length} generators:`);
       for (const sym of gens)
         console.log(sym.transform);
-      console.log(`found ${bases.length} representative base(s):`);
-      for (const basis of bases)
-        console.log(`${basis}`);
+      console.log(`found ${edgeLists.length} representative base(s):`);
+      for (const edgeList of edgeLists)
+        console.log(`${edgeList}`);
       console.log();
 
       const minimal = isMinimal(g);
