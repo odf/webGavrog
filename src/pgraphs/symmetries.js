@@ -335,20 +335,23 @@ export const symmetries = graph => {
   const ebv = edgesByVector(graph, pos, pg.adjacencies(graph));
 
   const edgeLists = goodEdgeLists(graph, characteristicEdgeLists(graph));
+  const bases = edgeLists.map(es => ({
+    v: es[0].head,
+    B: es.map(e => pg.edgeVector(e, pos))
+  }));
+
   const encodedEdgeLists = edgeLists.map(b => b.map(encode));
   const keys = encodedEdgeLists.map(b => b.join(','));
 
-  const v0 = edgeLists[0][0].head;
-  const invB0 = ops.inverse(edgeLists[0].map(e => pg.edgeVector(e, pos)));
+  const v0 = bases[0].v;
+  const invB0 = ops.inverse(bases[0].B);
 
   const generators = [];
   const p = new part.LabelledPartition((a, b) => a || b);
 
   for (let i = 0; i < edgeLists.length; ++i) {
     if (p.find(keys[i]) != p.find(keys[0]) && !p.getLabel(keys[i])) {
-      const edgeList = edgeLists[i];
-      const v = edgeList[0].head;
-      const B = edgeList.map(e => pg.edgeVector(e, pos));
+      const { v, B } = bases[i];
 
       const M = ops.times(invB0, B);
       const iso = isUnimodular(M) && automorphism(graph, v0, v, M, ebv);
