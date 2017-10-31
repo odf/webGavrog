@@ -283,38 +283,9 @@ export const minimalImage = graph => {
 };
 
 
-const _matrixProductIfUnimodular = (A, B) => {
-  const [nrowsA, ncolsA] = [A.length, A[0].length];
-  const [nrowsB, ncolsB] = [B.length, B[0].length];
-
-  if (ncolsA != nrowsB)
-    throw new Error('shapes do not match');
-
-  const result = Array(nrowsA);
-
-  for (let i = 0; i < nrowsA; ++i) {
-    const row = Array(ncolsB).fill(0);
-
-    for (let j = 0; j < ncolsB; ++j) {
-      let t = 0;
-
-      for (let k = 0; k < ncolsA; ++k)
-        t = ops.plus(t, ops.times(A[i][k], B[k][j]));
-
-      if (!ops.isInteger(t))
-        return null;
-
-      row[j] = t;
-    }
-
-    result[i] = row;
-  }
-
-  if (ops.eq(1, ops.abs(ops.determinant(result))))
-    return result;
-  else
-    return null;
-};
+const isUnimodular = A =>
+  A.every(row => row.every(x => ops.isInteger(x))) &&
+  ops.eq(1, ops.abs(ops.determinant(A)));
 
 
 const edgesByVector = (graph, pos, adj) => {
@@ -368,8 +339,7 @@ export const symmetries = graph => {
   const keys = encodedEdgeLists.map(b => b.join(','));
 
   const v0 = edgeLists[0][0].head;
-  const B0 = edgeLists[0].map(e => pg.edgeVector(e, pos));
-  const invB0 = ops.inverse(B0);
+  const invB0 = ops.inverse(edgeLists[0].map(e => pg.edgeVector(e, pos)));
 
   const generators = [];
   const p = new part.LabelledPartition((a, b) => a || b);
@@ -380,16 +350,16 @@ export const symmetries = graph => {
       const v = edgeList[0].head;
       const B = edgeList.map(e => pg.edgeVector(e, pos));
 
-      const M = _matrixProductIfUnimodular(invB0, B);
-      const iso = M && automorphism(graph, v0, v, M, ebv);
+      const M = ops.times(invB0, B);
+      const iso = isUnimodular(M) && automorphism(graph, v0, v, M, ebv);
 
       if (iso) {
         generators.push(iso);
 
-        for (let i = 0; i < edgeLists.length; ++i) {
+        for (let k = 0; k < edgeLists.length; ++k) {
           p.union(
-            keys[i],
-            encodedEdgeLists[i].map(e => iso.src2img[e]).join(','));
+            keys[k],
+            encodedEdgeLists[k].map(e => iso.src2img[e]).join(','));
         }
       }
       else
