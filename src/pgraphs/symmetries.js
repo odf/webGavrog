@@ -83,19 +83,6 @@ const characteristicEdgeLists = graph => {
 };
 
 
-const identityAutomorphism = graph => {
-  const src2img = {};
-  for (const v of pg.vertices(graph))
-    src2img[v] = v;
-  for (const e of graph.edges)
-    src2img[encode[e]] = encode[e];
-
-  const transform = ops.identityMatrix(graph.dim);
-
-  return { src2img, transform };
-};
-
-
 const automorphism = (graph, start1, start2, transform, edgeByVec) => {
   const src2img = { [start1]: start2 };
   const queue = [[start1, start2]];
@@ -339,49 +326,38 @@ export const symmetries = graph => {
     v: es[0].head,
     B: es.map(e => pg.edgeVector(e, pos))
   }));
-
-  const encodedEdgeLists = edgeLists.map(b => b.map(encode));
-  const keys = encodedEdgeLists.map(b => b.join(','));
+  const keys = edgeLists.map(encode);
+  const mapped = (es, phi) => es.map(e => decode(phi.src2img[encode(e)]));
 
   const v0 = bases[0].v;
   const invB0 = ops.inverse(bases[0].B);
 
-  const generators = [];
+  const I = ops.identityMatrix(graph.dim);
+  const gens = [automorphism(graph, v0, v0, I, ebv)];
+
   const p = new part.LabelledPartition((a, b) => a || b);
 
   for (let i = 0; i < edgeLists.length; ++i) {
     if (p.find(keys[i]) != p.find(keys[0]) && !p.getLabel(keys[i])) {
       const { v, B } = bases[i];
-
       const M = ops.times(invB0, B);
       const iso = isUnimodular(M) && automorphism(graph, v0, v, M, ebv);
 
       if (iso) {
-        generators.push(iso);
-
-        for (let k = 0; k < edgeLists.length; ++k) {
-          p.union(
-            keys[k],
-            encodedEdgeLists[k].map(e => iso.src2img[e]).join(','));
-        }
+        gens.push(iso);
+        for (let k = 0; k < edgeLists.length; ++k)
+          p.union(keys[k], encode(mapped(edgeLists[k], iso)));
       }
       else
         p.setLabel(keys[i], true);
     }
   }
 
-  const representativeEdgeLists = [];
-  for (let i = 0; i < edgeLists.length; ++i) {
-    if (keys[i] == p.find(keys[i]))
-      representativeEdgeLists.push(edgeLists[i]);
-  }
-
-  const keyFn = phi => encodedEdgeLists[0].map(e => phi.src2img[e]).join(',');
-  const symmetries = generators.length ?
-    groupOfAutomorphisms(generators, keyFn) :
-    [ identityAutomorphism(graph) ];
-
-  return { generators, representativeEdgeLists, symmetries };
+  return {
+    representativeEdgeLists: keys.filter(k => k == p.find(k)).map(decode),
+    symmetries: groupOfAutomorphisms(
+      gens, phi => encode(mapped(edgeLists[0], phi)))
+  };
 };
 
 
