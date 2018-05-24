@@ -374,7 +374,7 @@ const makeScene = (structure, options, runJob, log) => csp.go(function*() {
 
   const bbox = new THREE.Box3();
   bbox.setFromObject(model);
-  model.position.sub(bbox.getCenter());
+  model.position.sub(bbox.getCenter(new THREE.Vector3()));
 
   log('Composing the scene...');
 
