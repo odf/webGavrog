@@ -25,19 +25,22 @@ var makeTitle = function(description, errors) {
   return parts.join('\n\n');
 };
 
-var FieldWrapper = React.createClass({
-  clear: function() {
+class FieldWrapper extends React.Component {
+  clear() {
     this.props.update(this.props.path, null, null);
-  },
+  }
 
-  renderDeleteButton: function() {
+  renderDeleteButton() {
     if (this.props.deleteable)
-      return $.button({ onClick: this.clear, className: 'deleteButton' }, "X");
+      return $.button({
+        onClick: this.clear.bind(this),
+        className: 'deleteButton'
+      }, "X");
     else
       return null;
-  },
+  }
 
-  render: function() {
+  render() {
     var classes = [].concat(errorClass(this.props.errors) || [],
                             'form-element',
                             this.props.classes || []);
@@ -56,19 +59,23 @@ var FieldWrapper = React.createClass({
       this.renderDeleteButton(),
       this.props.children);
   }
-});
+}
 
-var SectionWrapper = React.createClass({
-  clear: function() {
+
+class SectionWrapper extends React.Component {
+  clear() {
     this.props.update(this.props.path, null, null);
-  },
+  }
 
-  renderDeleteButton: function() {
+  renderDeleteButton() {
     if (this.props.deleteable)
-      return $.button({ onClick: this.clear, className: 'deleteButton' }, "X");
+      return $.button({
+        onClick: this.clear.bind(this),
+        className: 'deleteButton'
+      }, "X");
     else
       return null;
-  },
+  }
 
   renderLegend() {
     var legendClasses = [].concat(errorClass(this.props.errors) || [],
@@ -82,9 +89,9 @@ var SectionWrapper = React.createClass({
         this.props.title);
     else
       return null;
-  },
+  }
 
-  render: function() {
+  render() {
     var level = this.props.path.length;
     var classes = [].concat('form-section',
                             (level > 0 ? 'form-subsection' : []),
@@ -99,7 +106,7 @@ var SectionWrapper = React.createClass({
       this.renderDeleteButton(),
       this.props.children);
   }
-});
+}
 
 
 var propsForWrapper = function(props) {

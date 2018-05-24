@@ -6,34 +6,37 @@ var normalizer = require('./utils/normalizer');
 var parser = require('./utils/parser');
 
 
-var UserDefinedField = React.createClass({
-  displayName: 'UserDefinedField',
-
-  normalize: function(text) {
+class UserDefinedField extends React.Component {
+  normalize(text) {
     var n = normalizer[this.props.type];
     return n ? n(text) : text;
-  },
-  parse: function(text) {
+  }
+
+  parse(text) {
     var p = parser[this.props.type];
     return p ? p(text) : text;
-  },
-  handleChange: function(value) {
+  }
+
+  handleChange(value) {
     var text = this.normalize(value);
     this.props.update(this.props.path, text, this.parse(text));
-  },
-  handleKeyPress: function(event) {
+  }
+
+  handleKeyPress(event) {
     if (event.key == 'Enter') {
       event.preventDefault();
     }
-  },
-  render: function() {
+  }
+
+  render() {
     return React.createElement(this.props.component, {
       schema    : this.props.schema,
       value     : this.props.value || '',
-      onKeyPress: this.handleKeyPress,
-      onChange  : this.handleChange
+      onKeyPress: this.handleKeyPress.bind(this),
+      onChange  : this.handleChange.bind(this)
     });
   }
-});
+}
+
 
 module.exports = UserDefinedField;

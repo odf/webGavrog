@@ -7,33 +7,35 @@ var normalizer = require('./utils/normalizer');
 var parser = require('./utils/parser');
 
 
-var InputField = React.createClass({
-  displayName: 'InputField',
-
-  normalize: function(text) {
+class InputField extends React.Component {
+  normalize(text) {
     return normalizer[this.props.type](text);
-  },
-  parse: function(text) {
+  }
+
+  parse(text) {
     return parser[this.props.type](text);
-  },
-  handleChange: function(event) {
+  }
+
+  handleChange(event) {
     var text = this.normalize(event.target.value);
     this.props.update(this.props.path, text, this.parse(text));
-  },
-  handleKeyPress: function(event) {
+  }
+
+  handleKeyPress(event) {
     if (event.key == 'Enter') {
       event.preventDefault();
     }
-  },
-  render: function() {
+  }
+
+  render() {
     return $.input({
       type      : "text",
       name      : this.props.label,
       value     : this.props.value || '',
-      onKeyPress: this.handleKeyPress,
-      onChange  : this.handleChange });
+      onKeyPress: this.handleKeyPress.bind(this),
+      onChange  : this.handleChange.bind(this) });
   }
-});
+}
+
 
 module.exports = InputField;
-
