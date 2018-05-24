@@ -23,10 +23,10 @@ module.exports = [ "main", "sceneWorker" ].map(function(name) {
       filename: name+".js"
     },
     module: {
-      loaders: [
-        { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader" },
-        { test: /\.json$/, loader: "json" },
-        { test: /\.pegjs$/, loader: "pegjs-loader" }
+      rules: [
+        { test: /\.jsx?$/, exclude: /node_modules/, use: "babel-loader" },
+        { test: /\.json$/, use: "json-loader" },
+        { test: /\.pegjs$/, use: "pegjs-loader" }
       ]
     },
     resolve: {
