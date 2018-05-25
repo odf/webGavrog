@@ -1,7 +1,7 @@
 'use strict';
 
 var React = require('react');
-var $ = React.DOM;
+var $ = React.createElement;
 
 var ou = require('./objective');
 
@@ -92,12 +92,14 @@ export default class Form extends React.Component {
     else {
       var buttons = (this.props.buttons || ['Cancel', 'Submit'])
         .map(function(value) {
-          return $.input({ type   : 'submit',
-                           key    : value,
-                           value  : value,
-                           onClick: submit });
+          return $('input',
+                   { type   : 'submit',
+                     key    : value,
+                     value  : value,
+                     onClick: submit
+                   });
         });
-      return $.p({ className: 'form-buttons' }, buttons);
+      return $('p', { className: 'form-buttons' }, buttons);
     }
   }
 
@@ -115,13 +117,14 @@ export default class Form extends React.Component {
       getErrors     : this.getErrors.bind(this)
     });
 
-    return $.form({ onSubmit  : this.preventSubmit.bind(this),
-                    onKeyPress: this.handleKeyPress.bind(this),
-                    className : this.props.className
-                  },
-                  this.props.extraButtons ? this.renderButtons() : $.span(),
-                  renderedFields,
-                  this.renderButtons());
+    return $('form',
+             { onSubmit  : this.preventSubmit.bind(this),
+               onKeyPress: this.handleKeyPress.bind(this),
+               className : this.props.className
+             },
+             this.props.extraButtons ? this.renderButtons() : null,
+             renderedFields,
+             this.renderButtons());
   }
 }
 

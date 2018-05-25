@@ -1,7 +1,7 @@
 'use strict';
 
 var React = require('react');
-var $ = React.DOM;
+var $ = React.createElement;
 
 
 class CheckBox extends React.Component {
@@ -11,7 +11,7 @@ class CheckBox extends React.Component {
   }
 
   render() {
-    return $.input({
+    return $('input', {
       name: this.props.label,
       type: "checkbox",
       checked: this.props.value || false,

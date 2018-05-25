@@ -1,7 +1,7 @@
 'use strict';
 
 var React = require('react');
-var $ = React.DOM;
+var $ = React.createElement;
 
 var ou = require('../../objective');
 
@@ -32,7 +32,7 @@ class FieldWrapper extends React.Component {
 
   renderDeleteButton() {
     if (this.props.deleteable)
-      return $.button({
+      return $('button', {
         onClick: this.clear.bind(this),
         className: 'deleteButton'
       }, "X");
@@ -45,19 +45,14 @@ class FieldWrapper extends React.Component {
                             'form-element',
                             this.props.classes || []);
 
-    return $.div(
-      {
-        className: classes.join(' '),
-        key      : this.props.label,
-        title    : makeTitle(this.props.description, this.props.errors)
-      },
-      $.label(
-        {
-          htmlFor: this.props.label
-        },
-        this.props.title),
-      this.renderDeleteButton(),
-      this.props.children);
+    return $('div',
+             { className: classes.join(' '),
+               key      : this.props.label,
+               title    : makeTitle(this.props.description, this.props.errors)
+             },
+             $('label', { htmlFor: this.props.label }, this.props.title),
+             this.renderDeleteButton(),
+             this.props.children);
   }
 }
 
@@ -69,7 +64,7 @@ class SectionWrapper extends React.Component {
 
   renderDeleteButton() {
     if (this.props.deleteable)
-      return $.button({
+      return $('button', {
         onClick: this.clear.bind(this),
         className: 'deleteButton'
       }, "X");
@@ -81,12 +76,11 @@ class SectionWrapper extends React.Component {
     var legendClasses = [].concat(errorClass(this.props.errors) || [],
                                   'form-section-title');
     if (this.props.title)
-      return $.legend(
-        {
-          className: legendClasses.join(' '),
-          title    : makeTitle(this.props.description, this.props.errors)
-        },
-        this.props.title);
+      return $('legend',
+               { className: legendClasses.join(' '),
+                 title: makeTitle(this.props.description, this.props.errors)
+               },
+               this.props.title);
     else
       return null;
   }
@@ -97,14 +91,13 @@ class SectionWrapper extends React.Component {
                             (level > 0 ? 'form-subsection' : []),
                             this.props.classes || []);
 
-    return $.fieldset(
-      {
-        className: classes.join(' '),
-        key      : this.props.label
-      },
-      this.renderLegend(),
-      this.renderDeleteButton(),
-      this.props.children);
+    return $('fieldset',
+             { className: classes.join(' '),
+               key      : this.props.label
+             },
+             this.renderLegend(),
+             this.renderDeleteButton(),
+             this.props.children);
   }
 }
 

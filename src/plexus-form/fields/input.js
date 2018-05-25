@@ -1,7 +1,7 @@
 'use strict';
 
 var React = require('react');
-var $ = React.DOM;
+var $ = React.createElement;
 
 var normalizer = require('./utils/normalizer');
 var parser = require('./utils/parser');
@@ -28,7 +28,7 @@ class InputField extends React.Component {
   }
 
   render() {
-    return $.input({
+    return $('input', {
       type      : "text",
       name      : this.props.label,
       value     : this.props.value || '',

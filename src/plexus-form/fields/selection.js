@@ -1,7 +1,7 @@
 'use strict';
 
 var React = require('react');
-var $ = React.DOM;
+var $ = React.createElement;
 
 var normalizer = require('./utils/normalizer');
 var parser = require('./utils/parser');
@@ -30,15 +30,14 @@ class Selection extends React.Component {
   render() {
     var names = this.props.names;
 
-    return $.select(
-      {
-        name    : this.props.label,
-        value   : this.props.value || this.props.values[0],
-        onChange: this.handleChange.bind(this)
-      },
-      this.props.values.map(function(opt, i) {
-        return $.option({ key: opt, value: opt }, names[i] || opt);
-      }));
+    return $('select', 
+             { name    : this.props.label,
+               value   : this.props.value || this.props.values[0],
+               onChange: this.handleChange.bind(this)
+             },
+             this.props.values.map(function(opt, i) {
+               return $('option', { key: opt, value: opt }, names[i] || opt);
+             }));
   }
 }
 
