@@ -24,13 +24,18 @@ module.exports = [ "main", "sceneWorker" ].map(function(name) {
     },
     module: {
       rules: [
-        { test: /\.jsx?$/, exclude: /node_modules/, use: "babel-loader" },
+        { test: /\.jsx?$/,
+          exclude: /node_modules/,
+          use: "babel-loader" },
+        { test: /\.elm$/,
+          exclude: [/node_modules/, /elm-stuff/],
+          use: "elm-webpack-loader" },
         { test: /\.json$/, use: "json-loader" },
         { test: /\.pegjs$/, use: "pegjs-loader" }
       ]
     },
     resolve: {
-      extensions: [ ".js", ".jsx", ".pegjs", ".json" ]
+      extensions: [ ".js", ".jsx", ".elm", ".pegjs", ".json" ]
     }
   };
 });

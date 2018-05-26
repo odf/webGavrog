@@ -16,6 +16,9 @@ import Floatable     from './Floatable';
 import Menu          from './Menu';
 import makeScene     from './makeScene';
 
+import Elm from '../elm/react-elm-components'
+import { Buttons } from '../elm/Buttons'
+
 
 if (!HTMLCanvasElement.prototype.toBlob) {
   Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
@@ -601,6 +604,7 @@ class App extends React.Component {
               validate={validate}
               schema={schema}>
         </Form>
+        <Elm src={Buttons} />
       </Floatable>
     );
   }
