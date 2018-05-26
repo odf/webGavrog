@@ -1,6 +1,7 @@
 port module Buttons exposing (main)
 
-import Html exposing (Html, button, div, text)
+import Html exposing (Html, button, div, span, text)
+import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 
 
@@ -48,6 +49,6 @@ view : Model -> Html Msg
 view model =
     div []
         [ button [ onClick Decrement ] [ text "-" ]
-        , div [] [ text (toString model) ]
+        , span [ style [ ( "margin", "0 1em" ) ] ] [ text (toString model) ]
         , button [ onClick Increment ] [ text "+" ]
         ]
