@@ -17,7 +17,7 @@ import Menu          from './Menu';
 import makeScene     from './makeScene';
 
 import Elm from '../elm/react-elm-components'
-import { Buttons } from '../elm/Buttons'
+import { TextInput } from '../elm/TextInput'
 
 
 if (!HTMLCanvasElement.prototype.toBlob) {
@@ -604,7 +604,7 @@ class App extends React.Component {
               validate={validate}
               schema={schema}>
         </Form>
-        <Elm src={Buttons} />
+        <Elm src={TextInput} />
       </Floatable>
     );
   }
