@@ -2,7 +2,7 @@ port module TextInput exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onInput, onClick)
 
 
 main =
@@ -12,6 +12,9 @@ main =
         , subscriptions = subscriptions
         , update = update
         }
+
+
+port send : String -> Cmd msg
 
 
 
@@ -42,6 +45,7 @@ init flags =
 
 type Msg
     = Text String
+    | Send
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -50,6 +54,9 @@ update msg model =
         Text text ->
             { model | text = text } ! []
 
+        Send ->
+            ( model, send model.text )
+
 
 
 -- VIEW
@@ -57,14 +64,15 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ text model.label
+    div [ class "form-element" ]
+        [ label [] [ text model.label ]
         , input
             [ type_ "text"
             , placeholder model.placeholder
             , onInput Text
             ]
             []
+        , button [ onClick Send ] [ text "OK" ]
         ]
 
 

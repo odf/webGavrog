@@ -574,38 +574,25 @@ class App extends React.Component {
     );
   }
 
-  handleJumpSubmit(data) {
+  handleJumpSubmit(number) {
     this.hideWindow('jump');
 
-    if (data.number)
-      this.setStructure(data.number - (data.number > 0));
+    if (number)
+      this.setStructure(number - (number > 0));
   }
 
   renderJumpDialog() {
     if (!this.state.windowsActive.jump)
       return;
 
-    const schema = {
-      title: 'Jump to Structure',
-      type: 'object',
-      properties: {
-        number: {
-          title: 'Index in file',
-          type: 'integer'
-        }
-      }
-    };
-
     return (
       <Floatable className="infoBox" x="c" y="c">
-        <Form buttons={[]}
-              enterKeySubmits="Jump"
-              onSubmit={(data, val) => this.handleJumpSubmit(data, val)}
-              validate={validate}
-              schema={schema}>
-        </Form>
         <Elm src={TextInput}
              flags={{ label: 'Jump to', placeholder: 'Number' }}
+             ports={ ports =>
+               ports.send.subscribe(text =>
+                 this.handleJumpSubmit(parseInt(text)))
+             }
         />
       </Floatable>
     );
