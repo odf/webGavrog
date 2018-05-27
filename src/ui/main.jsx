@@ -604,7 +604,9 @@ class App extends React.Component {
               validate={validate}
               schema={schema}>
         </Form>
-        <Elm src={TextInput} />
+        <Elm src={TextInput}
+             flags={{ label: 'Jump to', placeholder: 'Number' }}
+        />
       </Floatable>
     );
   }

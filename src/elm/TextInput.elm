@@ -6,20 +6,34 @@ import Html.Events exposing (onInput)
 
 
 main =
-    Html.beginnerProgram { model = model, view = view, update = update }
+    Html.programWithFlags
+        { init = init
+        , view = view
+        , subscriptions = subscriptions
+        , update = update
+        }
 
 
 
 -- MODEL
 
 
+type alias Flags =
+    { label : String
+    , placeholder : String
+    }
+
+
 type alias Model =
-    { text : String }
+    { label : String
+    , placeholder : String
+    , text : String
+    }
 
 
-model : Model
-model =
-    Model ""
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    Model flags.label flags.placeholder "" ! []
 
 
 
@@ -30,11 +44,11 @@ type Msg
     = Text String
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Text text ->
-            { model | text = text }
+            { model | text = text } ! []
 
 
 
@@ -44,5 +58,20 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ input [ type_ "text", placeholder "Text", onInput Text ] []
+        [ text model.label
+        , input
+            [ type_ "text"
+            , placeholder model.placeholder
+            , onInput Text
+            ]
+            []
         ]
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch []
