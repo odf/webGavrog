@@ -129,9 +129,7 @@ view model =
 
 checkbox : msg -> String -> Bool -> Html msg
 checkbox msg name isOn =
-    div
-        [ class "form-element"
-        ]
+    div [ class "form-element" ]
         [ label [] [ text name ]
         , input [ type_ "checkbox", checked isOn, onClick msg ] []
         ]

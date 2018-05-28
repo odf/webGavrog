@@ -108,22 +108,6 @@ body {
     border: none;
 }
 
-.form-subsection {
-    border: none;
-    padding: 0;
-    margin: 0.5em 0;
-}
-
-.form-section-title {
-    font-weight: bold;
-    display: none;
-}
-
-.form-subsection .form-section-title {
-    display: inline;
-    padding: 5px 0;
-}
-
 .form-element {
     position: relative;
 }
@@ -131,13 +115,4 @@ body {
 .form-element label {
     display: inline-block;
     width: 12em;
-}
-
-.checkbox-left input {
-    position: absolute;
-    left: 0;
-}
-
-.checkbox-left label {
-    margin-left: 2em;
 }

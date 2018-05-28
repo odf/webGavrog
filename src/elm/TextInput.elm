@@ -76,8 +76,10 @@ view model =
             , onInput Text
             ]
             []
-        , button [ onClick Send ] [ text "OK" ]
-        , button [ onClick Cancel ] [ text "Cancel" ]
+        , p [ class "form-buttons" ]
+            [ button [ onClick Send ] [ text "OK" ]
+            , button [ onClick Cancel ] [ text "Cancel" ]
+            ]
         ]
 
 
