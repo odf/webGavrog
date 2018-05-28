@@ -46,6 +46,7 @@ init flags =
 type Msg
     = Text String
     | Send
+    | Cancel
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -56,6 +57,9 @@ update msg model =
 
         Send ->
             ( model, send model.text )
+
+        Cancel ->
+            ( { model | text = "" }, send "" )
 
 
 
@@ -73,6 +77,7 @@ view model =
             ]
             []
         , button [ onClick Send ] [ text "OK" ]
+        , button [ onClick Cancel ] [ text "Cancel" ]
         ]
 
 
