@@ -574,10 +574,12 @@ class App extends React.Component {
     );
   }
 
-  handleJumpSubmit(number) {
+  handleJumpSubmit(text) {
     this.hideWindow('jump');
 
-    if (number)
+    const number = parseInt(text);
+
+    if (!Number.isNaN(number))
       this.setStructure(number - (number > 0));
   }
 
@@ -585,15 +587,13 @@ class App extends React.Component {
     if (!this.state.windowsActive.jump)
       return;
 
+    const handler = text => this.handleJumpSubmit(text);
+
     return (
       <Floatable className="infoBox" x="c" y="c">
         <Elm src={TextInput}
              flags={{ label: 'Jump to', placeholder: 'Number' }}
-             ports={ ports =>
-               ports.send.subscribe(text =>
-                 this.handleJumpSubmit(parseInt(text)))
-             }
-        />
+             ports={ ports => ports.send.subscribe(handler) } />
       </Floatable>
     );
   }
