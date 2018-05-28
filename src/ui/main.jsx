@@ -598,21 +598,18 @@ class App extends React.Component {
     );
   }
 
-  handleSearchSubmit(data, value) {
+  handleSearchSubmit(text) {
     this.hideWindow('search');
 
-    if (value == "Cancel")
-      return;
-
-    if (data.name) {
-      const pattern = new RegExp(`\\b${data.name}\\b`, 'i');
+    if (text) {
+      const pattern = new RegExp(`\\b${text}\\b`, 'i');
 
       csp.go(function*() {
         const i = this.state.structures.findIndex(s => !!pattern.exec(s.name));
         if (i >= 0)
           this.setStructure(i);
         else
-          this.log(`Name "${data.name}" not found.`);
+          this.log(`Name "${text}" not found.`);
       }.bind(this));
     }
   }
@@ -621,25 +618,13 @@ class App extends React.Component {
     if (!this.state.windowsActive.search)
       return;
 
-    const searchSchema = {
-      title: 'Search Structure',
-      type: 'object',
-      properties: {
-        name: {
-          title: 'Name of structure',
-          type: 'string'
-        }
-      }
-    };
+    const handler = text => this.handleSearchSubmit(text);
 
     return (
       <Floatable className="infoBox" x="c" y="c">
-        <Form buttons={['Search', 'Cancel']}
-              enterKeySubmits="Search"
-              onSubmit={(data, val) => this.handleSearchSubmit(data, val)}
-              validate={validate}
-              schema={searchSchema}>
-        </Form>
+        <Elm src={TextInput}
+             flags={{ label: 'Search by name', placeholder: 'Regex' }}
+             ports={ ports => ports.send.subscribe(handler) } />
       </Floatable>
     );
   }
