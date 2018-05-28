@@ -1,7 +1,7 @@
 port module Options exposing (main)
 
 import Html exposing (..)
-import Html.Attributes exposing (style, type_, class)
+import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 
 
@@ -18,20 +18,22 @@ main =
 -- MODEL
 
 
-type alias Flags =
-    {}
-
-
 type alias Model =
-    { colorByTranslations : Bool
+    { colorByTranslationClass : Bool
     , skipRelaxation : Bool
     , extraSmooth : Bool
+    , showSurfaceMesh : Bool
+    , highlightPicked : Bool
     }
+
+
+type alias Flags =
+    Model
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    Model False False False ! []
+    flags ! []
 
 
 
@@ -45,6 +47,8 @@ type Msg
     = ToggleColorByTranslations
     | ToggleSkipRelaxation
     | ToggleExtraSmooth
+    | ToggleShowSurfaceMesh
+    | ToggleHighlightPicked
     | Send
     | Cancel
 
@@ -54,7 +58,7 @@ update msg model =
     case msg of
         ToggleColorByTranslations ->
             { model
-                | colorByTranslations = not model.colorByTranslations
+                | colorByTranslationClass = not model.colorByTranslationClass
             }
                 ! []
 
@@ -67,6 +71,18 @@ update msg model =
         ToggleExtraSmooth ->
             { model
                 | extraSmooth = not model.extraSmooth
+            }
+                ! []
+
+        ToggleShowSurfaceMesh ->
+            { model
+                | showSurfaceMesh = not model.showSurfaceMesh
+            }
+                ! []
+
+        ToggleHighlightPicked ->
+            { model
+                | highlightPicked = not model.highlightPicked
             }
                 ! []
 
@@ -84,9 +100,26 @@ update msg model =
 view : Model -> Html Msg
 view model =
     fieldset [ class "form-section" ]
-        [ checkbox ToggleColorByTranslations "Color By Translations"
-        , checkbox ToggleSkipRelaxation "Skip Relaxation"
-        , checkbox ToggleExtraSmooth "Extra-Smooth Faces"
+        [ checkbox
+            ToggleColorByTranslations
+            "Color By Translations"
+            model.colorByTranslationClass
+        , checkbox
+            ToggleSkipRelaxation
+            "Skip Relaxation"
+            model.skipRelaxation
+        , checkbox
+            ToggleExtraSmooth
+            "Extra-Smooth Faces"
+            model.extraSmooth
+        , checkbox
+            ToggleShowSurfaceMesh
+            "Show Surface Mesh"
+            model.showSurfaceMesh
+        , checkbox
+            ToggleHighlightPicked
+            "Highlight On Mouseover"
+            model.highlightPicked
         , p [ class "form-buttons" ]
             [ button [ onClick Send ] [ text "OK" ]
             , button [ onClick Cancel ] [ text "Cancel" ]
@@ -94,13 +127,13 @@ view model =
         ]
 
 
-checkbox : msg -> String -> Html msg
-checkbox msg name =
+checkbox : msg -> String -> Bool -> Html msg
+checkbox msg name isOn =
     div
         [ class "form-element"
         ]
         [ label [] [ text name ]
-        , input [ type_ "checkbox", onClick msg ] []
+        , input [ type_ "checkbox", checked isOn, onClick msg ] []
         ]
 
 

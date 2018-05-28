@@ -2,9 +2,6 @@ import * as React    from 'react';
 import * as ReactDOM from 'react-dom';
 import * as csp      from 'plexus-csp';
 
-import Form          from '../plexus-form';
-import validate      from '../plexus-form/validate';
-
 import * as webworkers from '../common/webworkers';
 import * as version  from '../version';
 import * as delaney  from '../dsymbols/delaney';
@@ -348,10 +345,19 @@ class FileSaver {
 }
 
 
+const defaultOptions = {
+  colorByTranslationClass: false,
+  skipRelaxation: false,
+  extraSmooth: false,
+  showSurfaceMesh: false,
+  highlightPicked: false
+};
+
+
 class App extends React.Component {
   constructor() {
     super();
-    this.state = { windowsActive: {}, options: {} };
+    this.state = { windowsActive: {}, options: defaultOptions };
     this.loader = new FileLoader(this.handleFileData.bind(this));
     this.saver = new FileSaver();
   }
@@ -633,57 +639,22 @@ class App extends React.Component {
   handleOptionsSubmit(data, value) {
     this.hideWindow('options');
 
-    if (value == "Cancel")
-      return;
-
-    this.setState((state, props) => ({ options: data }));
-    this.setStructure(this.state.index);
+    if (value) {
+      this.setState((state, props) => ({ options: data }));
+      this.setStructure(this.state.index);
+    }
   }
 
   renderOptionsDialog() {
     if (!this.state.windowsActive.options)
       return;
 
-    const schema = {
-      title: 'Options',
-      description: 'Options',
-      type: 'object',
-      properties: {
-        colorByTranslationClass: {
-          title: 'Color By Translation',
-          type: 'boolean'
-        },
-        skipRelaxation: {
-          title: 'Skip Relaxation',
-          type: 'boolean'
-        },
-        extraSmooth: {
-          title: 'Extra-Smooth Faces',
-          type: 'boolean'
-        },
-        showSurfaceMesh: {
-          title: 'Show Surface Mesh',
-          type: 'boolean'
-        },
-        highlightPicked: {
-          title: 'Highlight On Mouseover',
-          type: 'boolean'
-        }
-      }
-    };
-
-    const handler = model => console.log(`model = ${JSON.stringify(model)}`);
+    const handler = ([data, value]) => this.handleOptionsSubmit(data, value);
 
     return (
       <Floatable className="infoBox" x="c" y="c">
-        <Form buttons={['Apply', 'Cancel']}
-              enterKeySubmits="Apply"
-              onSubmit={(data, val) => this.handleOptionsSubmit(data, val)}
-              validate={validate}
-              schema={schema}
-              values={this.state.options}>
-        </Form>
         <Elm src={Options}
+             flags={this.state.options}
              ports={ ports => ports.send.subscribe(handler) } />
       </Floatable>
     );
