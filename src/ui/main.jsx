@@ -18,6 +18,7 @@ import makeScene     from './makeScene';
 
 import Elm from '../elm/react-elm-components'
 import { TextInput } from '../elm/TextInput'
+import { Options }   from '../elm/Options'
 
 
 if (!HTMLCanvasElement.prototype.toBlob) {
@@ -671,6 +672,8 @@ class App extends React.Component {
       }
     };
 
+    const handler = model => console.log(`model = ${JSON.stringify(model)}`);
+
     return (
       <Floatable className="infoBox" x="c" y="c">
         <Form buttons={['Apply', 'Cancel']}
@@ -680,6 +683,8 @@ class App extends React.Component {
               schema={schema}
               values={this.state.options}>
         </Form>
+        <Elm src={Options}
+             ports={ ports => ports.send.subscribe(handler) } />
       </Floatable>
     );
   }
