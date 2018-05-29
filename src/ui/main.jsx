@@ -354,6 +354,15 @@ const defaultOptions = {
 };
 
 
+const optionLabel = {
+  colorByTranslationClass: "Color By Translations",
+  skipRelaxation: "Skip Relaxation",
+  extraSmooth: "Extra-Smooth Faces",
+  showSurfaceMesh: "Show Surface Mesh",
+  highlightPicked: "Highlight On Mouseover"
+};
+
+
 class App extends React.Component {
   constructor() {
     super();
@@ -640,7 +649,11 @@ class App extends React.Component {
     this.hideWindow('options');
 
     if (value) {
-      this.setState((state, props) => ({ options: data }));
+      const options = {};
+      for (const { key, value } of data)
+        options[key] = value;
+
+      this.setState((state, props) => ({ options }));
       this.setStructure(this.state.index);
     }
   }
@@ -650,12 +663,18 @@ class App extends React.Component {
       return;
 
     const handler = ([data, value]) => this.handleOptionsSubmit(data, value);
+    const options = this.state.options;
+    const flags = Object.keys(options).map(key => ({
+      key: key,
+      label: optionLabel[key],
+      value: options[key]
+    }));
 
     return (
       <Floatable className="infoBox" x="c" y="c">
         <Elm src={Options}
-             flags={this.state.options}
-             ports={ ports => ports.send.subscribe(handler) } />
+             flags={flags}
+             ports={ports => ports.send.subscribe(handler)} />
       </Floatable>
     );
   }
