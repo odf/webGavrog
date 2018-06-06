@@ -16,6 +16,7 @@ import makeScene     from './makeScene';
 import Elm from '../elm/react-elm-components'
 import { TextInput } from '../elm/TextInput'
 import { Options }   from '../elm/Options'
+import { ElmMenu }      from '../elm/Menu'
 
 
 if (!HTMLCanvasElement.prototype.toBlob) {
@@ -552,6 +553,8 @@ class App extends React.Component {
   }
 
   renderMainDialog() {
+    const handler = i => console.error(`selected ${i}`);
+
     return (
       <Floatable className="infoBox">
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
@@ -561,6 +564,14 @@ class App extends React.Component {
           {this.state.log || "Welcome!"}
         </span>
         {this.renderMenu()}
+        <Elm src={ElmMenu}
+             flags={{
+               menuClass: "infoBoxMenu",
+               itemClass: "infoBoxMenuItem",
+               highlightClass: "infoBoxMenuHighlight",
+               items: ['mutus', 'nomen', 'dedit', 'cocis']
+             }}
+             ports={ ports => ports.send.subscribe(handler) } />
       </Floatable>
     );
   }
