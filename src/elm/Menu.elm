@@ -18,18 +18,21 @@ main =
 -- MODEL
 
 
+type alias Classes =
+    { menu : String
+    , item : String
+    , highlight : String
+    }
+
+
 type alias Flags =
-    { menuClass : String
-    , itemClass : String
-    , highlightClass : String
+    { classes : Classes
     , items : List String
     }
 
 
 type alias Model =
-    { menuClass : String
-    , itemClass : String
-    , highlightClass : String
+    { classes : Classes
     , items : List String
     , highlighted : Maybe Int
     }
@@ -37,9 +40,7 @@ type alias Model =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    { menuClass = flags.menuClass
-    , itemClass = flags.itemClass
-    , highlightClass = flags.highlightClass
+    { classes = flags.classes
     , items = flags.items
     , highlighted = Nothing
     }
@@ -75,7 +76,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     ul
-        [ class model.menuClass ]
+        [ class model.classes.menu ]
         (List.indexedMap (viewItem model) model.items)
 
 
@@ -83,8 +84,8 @@ viewItem : Model -> Int -> String -> Html Msg
 viewItem model i s =
     li
         [ classList
-            [ ( model.itemClass, True )
-            , ( model.highlightClass, model.highlighted == Just i )
+            [ ( model.classes.item, True )
+            , ( model.classes.highlight, model.highlighted == Just i )
             ]
         , onMouseEnter <| Highlight (Just i)
         , onMouseLeave <| Highlight Nothing

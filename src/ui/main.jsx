@@ -566,10 +566,12 @@ class App extends React.Component {
         {this.renderMenu()}
         <Elm src={ElmMenu}
              flags={{
-               menuClass: "infoBoxMenu",
-               itemClass: "infoBoxMenuItem",
-               highlightClass: "infoBoxMenuHighlight",
-               items: ['mutus', 'nomen', 'dedit', 'cocis']
+                 classes: {
+                     menu: "infoBoxMenu",
+                     item: "infoBoxMenuItem",
+                     highlight: "infoBoxMenuHighlight"
+                 },
+                 items: ['mutus', 'nomen', 'dedit', 'cocis']
              }}
              ports={ ports => ports.send.subscribe(handler) } />
       </Floatable>
