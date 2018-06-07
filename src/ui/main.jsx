@@ -569,9 +569,16 @@ class App extends React.Component {
                  classes: {
                      menu: "infoBoxMenu",
                      item: "infoBoxMenuItem",
+                     submenu: "infoBoxMenuSubmenu",
+                     subitem: "infoBoxMenuSubmenuItem",
                      highlight: "infoBoxMenuHighlight"
                  },
-                 items: ['mutus', 'nomen', 'dedit', 'cocis']
+                 items: [
+                     { label: 'mutus', submenu: ['red', 'green', 'blue'] },
+                     { label: 'nomen', submenu: null },
+                     { label: 'dedit', submenu: null },
+                     { label: 'cocis', submenu: null }
+                 ]
              }}
              ports={ ports => ports.send.subscribe(handler) } />
       </Floatable>

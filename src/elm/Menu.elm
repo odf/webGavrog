@@ -18,23 +18,32 @@ main =
 -- MODEL
 
 
+type alias ItemSpec =
+    { label : String
+    , submenu : Maybe (List String)
+    }
+
+
 type alias Classes =
     { menu : String
     , item : String
+    , submenu : String
+    , subitem : String
     , highlight : String
     }
 
 
 type alias Flags =
     { classes : Classes
-    , items : List String
+    , items : List ItemSpec
     }
 
 
 type alias Model =
     { classes : Classes
-    , items : List String
-    , highlighted : Maybe Int
+    , items : List ItemSpec
+    , active : Maybe Int
+    , activeSub : Maybe Int
     }
 
 
@@ -42,7 +51,8 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     { classes = flags.classes
     , items = flags.items
-    , highlighted = Nothing
+    , active = Nothing
+    , activeSub = Nothing
     }
         ! []
 
@@ -51,22 +61,28 @@ init flags =
 -- UPDATE
 
 
-port send : Int -> Cmd msg
+port send : ( Maybe Int, Maybe Int ) -> Cmd msg
 
 
 type Msg
-    = Highlight (Maybe Int)
-    | Select Int
+    = Activate (Maybe Int)
+    | ActivateSub (Maybe Int)
+    | Select
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Highlight i ->
-            { model | highlighted = i } ! []
+        Activate i ->
+            { model | active = i } ! []
 
-        Select i ->
-            ( model, send i )
+        ActivateSub i ->
+            { model | activeSub = i } ! []
+
+        Select ->
+            ( { model | active = Nothing, activeSub = Nothing }
+            , send ( model.active, model.activeSub )
+            )
 
 
 
@@ -80,15 +96,51 @@ view model =
         (List.indexedMap (viewItem model) model.items)
 
 
-viewItem : Model -> Int -> String -> Html Msg
-viewItem model i s =
+viewItem : Model -> Int -> ItemSpec -> Html Msg
+viewItem model index item =
+    let
+        isActive =
+            model.active == Just index
+
+        maybeSubMenu =
+            case item.submenu of
+                Nothing ->
+                    []
+
+                Just sub ->
+                    if isActive then
+                        [ viewSubMenu model sub ]
+                    else
+                        []
+    in
+        li
+            [ classList
+                [ ( model.classes.item, True )
+                , ( model.classes.highlight, isActive )
+                ]
+            , onMouseEnter <| Activate (Just index)
+            , onMouseLeave <| Activate Nothing
+            , onClick Select
+            ]
+            ([ text item.label ] ++ maybeSubMenu)
+
+
+viewSubMenu : Model -> List String -> Html Msg
+viewSubMenu model labels =
+    ul
+        [ class model.classes.submenu ]
+        (List.indexedMap (viewSubItem model) labels)
+
+
+viewSubItem : Model -> Int -> String -> Html Msg
+viewSubItem model index label =
     li
         [ classList
-            [ ( model.classes.item, True )
-            , ( model.classes.highlight, model.highlighted == Just i )
+            [ ( model.classes.subitem, True )
+            , ( model.classes.highlight, model.activeSub == Just index )
             ]
-        , onMouseEnter <| Highlight (Just i)
-        , onMouseLeave <| Highlight Nothing
-        , onClick (Select i)
+        , onMouseEnter <| ActivateSub (Just index)
+        , onMouseLeave <| ActivateSub Nothing
+        , onClick Select
         ]
-        [ text s ]
+        [ text label ]
