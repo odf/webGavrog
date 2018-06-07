@@ -11,8 +11,8 @@ import * as cgd      from '../io/cgd';
 import Display3d     from './Display3d';
 import Floatable     from './Floatable';
 import makeScene     from './makeScene';
+import Elm           from './ElmComponent'
 
-import Elm from '../elm/react-elm-components'
 import { TextInput } from '../elm/TextInput'
 import { Options }   from '../elm/Options'
 import { Menu }      from '../elm/Menu'
