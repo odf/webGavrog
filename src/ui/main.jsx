@@ -10,13 +10,12 @@ import * as cgd      from '../io/cgd';
 
 import Display3d     from './Display3d';
 import Floatable     from './Floatable';
-import Menu          from './Menu';
 import makeScene     from './makeScene';
 
 import Elm from '../elm/react-elm-components'
 import { TextInput } from '../elm/TextInput'
 import { Options }   from '../elm/Options'
-import { ElmMenu }      from '../elm/Menu'
+import { Menu }      from '../elm/Menu'
 
 
 if (!HTMLCanvasElement.prototype.toBlob) {
@@ -514,7 +513,7 @@ class App extends React.Component {
       );
   }
 
-  renderMenu() {
+  mainMenu() {
     const fileMenu = [
       { label: 'Open...', action: () => this.loader.select() },
       { label: 'Save Structure...', action: () => this.saveStructure() },
@@ -541,48 +540,67 @@ class App extends React.Component {
       { label: 'About Gavrog...', action: () => this.showWindow('about') }
     ];
 
-    const mainMenu = [
+    return [
       { label: 'File',   submenu: fileMenu },
       { label: 'Structure', submenu: structureMenu },
       { label: 'View',   submenu: viewMenu },
       { label: 'Options...', action: () => this.showWindow('options') },
       { label: 'Help',   submenu: helpMenu }
     ];
+  }
 
-    return <Menu className="infoBoxMenu" spec={mainMenu}/>;
+  renderMenu() {
+      const stripSubmenu = menu => menu.map(({ label }) => label);
+
+      const stripMenu = menu => menu.map(({ label, submenu }) =>
+          ({ label, submenu: submenu ? stripSubmenu(submenu) : null }));
+
+      const mapMenu = menu => menu.map(({ action, submenu }) =>
+          submenu ? mapMenu(submenu) : action);
+
+      const toAction = mapMenu(this.mainMenu());
+
+      const handler = ([i, j]) => {
+          if (i != null) {
+              const a = toAction[i];
+              if (typeof a == 'function')
+                  a();
+              else if (j != null) {
+                  const b = a[j];
+                  if (typeof b == 'function')
+                      b();
+              }
+          }
+      };
+
+      return (
+          <Elm src={Menu}
+               flags={{
+                   classes: {
+                       menu: "infoBoxMenu",
+                       item: "infoBoxMenuItem",
+                       submenu: "infoBoxMenuSubmenu",
+                       subitem: "infoBoxMenuSubmenuItem",
+                       highlight: "infoBoxMenuHighlight"
+                   },
+                   items: stripMenu(this.mainMenu())
+               }}
+               ports={ ports => ports.send.subscribe(handler) } />
+      );
   }
 
   renderMainDialog() {
-    const handler = i => console.error(`selected ${i}`);
-
-    return (
-      <Floatable className="infoBox">
-        <img width="48" className="infoBoxLogo" src="3dt.ico"/>
-        <h3 className="infoBoxHeader">Gavrog</h3>
-        <span className="clearFix">
-          {this.state.title}<br/>
-          {this.state.log || "Welcome!"}
-        </span>
-        {this.renderMenu()}
-        <Elm src={ElmMenu}
-             flags={{
-                 classes: {
-                     menu: "infoBoxMenu",
-                     item: "infoBoxMenuItem",
-                     submenu: "infoBoxMenuSubmenu",
-                     subitem: "infoBoxMenuSubmenuItem",
-                     highlight: "infoBoxMenuHighlight"
-                 },
-                 items: [
-                     { label: 'mutus', submenu: ['red', 'green', 'blue'] },
-                     { label: 'nomen', submenu: null },
-                     { label: 'dedit', submenu: null },
-                     { label: 'cocis', submenu: null }
-                 ]
-             }}
-             ports={ ports => ports.send.subscribe(handler) } />
-      </Floatable>
-    );
+      return (
+          <Floatable className="infoBox">
+              <img width="48" className="infoBoxLogo" src="3dt.ico"/>
+              <h3 className="infoBoxHeader">Gavrog</h3>
+              <span className="clearFix">
+                  {this.state.title}<br/>
+                  {this.state.log || "Welcome!"}
+              </span>
+              {this.renderMenu()}
+          </Floatable>
+      );
   }
 
   renderAboutDialog() {

@@ -1,4 +1,4 @@
-port module ElmMenu exposing (main)
+port module Menu exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
