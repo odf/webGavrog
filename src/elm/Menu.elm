@@ -2,7 +2,8 @@ port module ElmMenu exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onMouseEnter, onMouseLeave)
+import Html.Events exposing (onMouseEnter, onMouseLeave, onWithOptions)
+import Json.Decode as Json
 
 
 main =
@@ -144,3 +145,13 @@ viewSubItem model index label =
         , onClick Select
         ]
         [ text label ]
+
+
+onClick : msg -> Attribute msg
+onClick msg =
+    onWithOptions
+        "click"
+        { stopPropagation = True
+        , preventDefault = False
+        }
+        (Json.succeed msg)
