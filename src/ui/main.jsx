@@ -472,12 +472,14 @@ class App extends React.Component {
   }
 
   saveScreenshot() {
-    const canvas = document.getElementById('main-3d-canvas');
+    window.requestAnimationFrame(() => {
+      const canvas = document.getElementById('main-3d-canvas');
 
-    if (canvas)
-      canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
-    else
-      this.log('ERROR: could not save screenshot - no canvas element found');
+      if (canvas)
+        canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
+      else
+        this.log('ERROR: could not save screenshot - no canvas element found');
+    });
   }
 
   showWindow(key) {
