@@ -16,6 +16,7 @@ import Elm           from './ElmComponent'
 import { TextInput } from '../elm/TextInput'
 import { Options }   from '../elm/Options'
 import { Menu }      from '../elm/Menu'
+import { View3d }    from '../elm/View3d'
 
 
 if (!HTMLCanvasElement.prototype.toBlob) {
@@ -433,8 +434,6 @@ class App extends React.Component {
         const cameraParameters = { distance: camera.position.z };
 
         this.setState({ structures, index, scene, camera, cameraParameters });
-        this.display.viewAlongZ();
-        this.display.center();
       } catch(ex) {
         this.log('ERROR processing the structure!!!');
         console.error(ex);
@@ -494,23 +493,9 @@ class App extends React.Component {
   }
 
   render3dScene() {
-    const keyHandlers = {
-      'p': () => this.setStructure(this.state.index - 1),
-      'n': () => this.setStructure(this.state.index + 1)
-    };
-
-    if (this.state.scene != null)
-      return (
-        <Display3d scene            = {this.state.scene}
-                   camera           = {this.state.camera}
-                   cameraParameters = {this.state.cameraParameters}
-                   width            = {this.state.width}
-                   height           = {this.state.height}
-                   keyHandlers      = {keyHandlers}
-                   options          = {this.state.options}
-                   ref              = {d => this.display = d}
-                   />
-      );
+    return (
+      <Elm src={View3d} />
+    );
   }
 
   mainMenu() {
@@ -543,7 +528,7 @@ class App extends React.Component {
     return [
       { label: 'File',   submenu: fileMenu },
       { label: 'Structure', submenu: structureMenu },
-      { label: 'View',   submenu: viewMenu },
+      //{ label: 'View',   submenu: viewMenu },
       { label: 'Options...', action: () => this.showWindow('options') },
       { label: 'Help',   submenu: helpMenu }
     ];
