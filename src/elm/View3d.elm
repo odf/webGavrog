@@ -18,11 +18,16 @@ import WheelEvent
 import Mesh exposing (..)
 
 
+type alias SceneItem =
+    { mesh : WebGL.Mesh Renderer.Vertex
+    , material : Renderer.Material
+    }
+
+
 type alias Model =
     { size : Window.Size
     , cameraState : Camera.State
-    , mesh : WebGL.Mesh Renderer.Vertex
-    , material : Renderer.Material
+    , scene : List SceneItem
     , modifiers : { shift : Bool, ctrl : Bool }
     }
 
@@ -42,8 +47,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
-      , mesh = initMesh
-      , material = initMaterial
+      , scene = initScene
       , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
@@ -164,13 +168,16 @@ view : Model -> Html Msg
 view model =
     let
         entities =
-            [ Renderer.entity
-                model.mesh
-                model.material
-                (Camera.cameraDistance model.cameraState)
-                (Camera.viewingMatrix model.cameraState)
-                (Camera.perspectiveMatrix model.cameraState)
-            ]
+            List.map
+                (\{ mesh, material } ->
+                    Renderer.entity
+                        mesh
+                        material
+                        (Camera.cameraDistance model.cameraState)
+                        (Camera.viewingMatrix model.cameraState)
+                        (Camera.perspectiveMatrix model.cameraState)
+                )
+                model.scene
     in
         WebGL.toHtml
             [ Html.Attributes.width model.size.width
@@ -248,6 +255,14 @@ faces =
     ]
 
 
-initMesh : WebGL.Mesh Renderer.Vertex
-initMesh =
-    wireframe vertices faces
+initScene : List SceneItem
+initScene =
+    [ { mesh = mesh vertices faces
+      , material = initMaterial
+      }
+    , { mesh =
+            wireframe vertices
+                (List.map (\f -> { f | color = ( 0, 0, 0 ) }) faces)
+      , material = initMaterial
+      }
+    ]
