@@ -15,7 +15,7 @@ import Window
 import Camera
 import Renderer
 import WheelEvent
-import Cube
+import Mesh exposing (..)
 
 
 type alias Model =
@@ -42,7 +42,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
-      , mesh = Cube.cube
+      , mesh = initMesh
       , material = initMaterial
       , modifiers = { shift = False, ctrl = False }
       }
@@ -206,3 +206,48 @@ initMaterial =
     , ks = 0.2
     , shininess = 20.0
     }
+
+
+vertices : List VertexSpec
+vertices =
+    [ { pos = ( -1, -1, -1 ), normal = ( 0, 0, -1 ) }
+    , { pos = ( 1, -1, -1 ), normal = ( 0, 0, -1 ) }
+    , { pos = ( 1, 1, -1 ), normal = ( 0, 0, -1 ) }
+    , { pos = ( -1, 1, -1 ), normal = ( 0, 0, -1 ) }
+    , { pos = ( -1, -1, 1 ), normal = ( 0, 0, 1 ) }
+    , { pos = ( 1, -1, 1 ), normal = ( 0, 0, 1 ) }
+    , { pos = ( 1, 1, 1 ), normal = ( 0, 0, 1 ) }
+    , { pos = ( -1, 1, 1 ), normal = ( 0, 0, 1 ) }
+    , { pos = ( -1, -1, -1 ), normal = ( 0, -1, 0 ) }
+    , { pos = ( -1, -1, 1 ), normal = ( 0, -1, 0 ) }
+    , { pos = ( 1, -1, 1 ), normal = ( 0, -1, 0 ) }
+    , { pos = ( 1, -1, -1 ), normal = ( 0, -1, 0 ) }
+    , { pos = ( -1, 1, -1 ), normal = ( 0, 1, 0 ) }
+    , { pos = ( -1, 1, 1 ), normal = ( 0, 1, 0 ) }
+    , { pos = ( 1, 1, 1 ), normal = ( 0, 1, 0 ) }
+    , { pos = ( 1, 1, -1 ), normal = ( 0, 1, 0 ) }
+    , { pos = ( -1, -1, -1 ), normal = ( -1, 0, 0 ) }
+    , { pos = ( -1, 1, -1 ), normal = ( -1, 0, 0 ) }
+    , { pos = ( -1, 1, 1 ), normal = ( -1, 0, 0 ) }
+    , { pos = ( -1, -1, 1 ), normal = ( -1, 0, 0 ) }
+    , { pos = ( 1, -1, -1 ), normal = ( 1, 0, 0 ) }
+    , { pos = ( 1, 1, -1 ), normal = ( 1, 0, 0 ) }
+    , { pos = ( 1, 1, 1 ), normal = ( 1, 0, 0 ) }
+    , { pos = ( 1, -1, 1 ), normal = ( 1, 0, 0 ) }
+    ]
+
+
+faces : List FaceSpec
+faces =
+    [ { vertices = [ 0, 1, 2, 3 ], color = ( 1, 0, 0 ) }
+    , { vertices = [ 4, 7, 6, 5 ], color = ( 0, 1, 1 ) }
+    , { vertices = [ 8, 9, 10, 11 ], color = ( 0, 1, 0 ) }
+    , { vertices = [ 12, 15, 14, 13 ], color = ( 1, 0, 1 ) }
+    , { vertices = [ 16, 17, 18, 19 ], color = ( 0, 0, 1 ) }
+    , { vertices = [ 20, 23, 22, 21 ], color = ( 1, 1, 0 ) }
+    ]
+
+
+initMesh : WebGL.Mesh Renderer.Vertex
+initMesh =
+    mesh vertices faces
