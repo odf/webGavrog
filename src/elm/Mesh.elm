@@ -1,19 +1,27 @@
-module Mesh exposing (mesh, VertexSpec, FaceSpec)
+module Mesh exposing (VertexSpec, FaceSpec, mesh, wireframe)
 
 import Math.Vector3 exposing (vec3, Vec3)
 import WebGL
 import Renderer
 
 
+type alias Coords =
+    ( Float, Float, Float )
+
+
+type alias Color =
+    ( Float, Float, Float )
+
+
 type alias VertexSpec =
-    { pos : ( Float, Float, Float )
-    , normal : ( Float, Float, Float )
+    { pos : Coords
+    , normal : Coords
     }
 
 
 type alias FaceSpec =
     { vertices : List Int
-    , color : ( Float, Float, Float )
+    , color : Coords
     }
 
 
@@ -21,35 +29,43 @@ type alias Triangle =
     ( Renderer.Vertex, Renderer.Vertex, Renderer.Vertex )
 
 
-toVec3 : ( Float, Float, Float ) -> Vec3
+type alias Edge =
+    ( Renderer.Vertex, Renderer.Vertex )
+
+
+toVec3 : Coords -> Vec3
 toVec3 ( a, b, c ) =
     vec3 a b c
 
 
-makeVertex : List VertexSpec -> Vec3 -> Int -> Renderer.Vertex
+toVertex : Coords -> Coords -> Color -> Renderer.Vertex
+toVertex pos normal color =
+    { pos = toVec3 pos
+    , normal = toVec3 normal
+    , color = toVec3 color
+    }
+
+
+makeVertex : List VertexSpec -> Color -> Int -> Renderer.Vertex
 makeVertex vertices color i =
     case (vertices |> List.drop i |> List.head) of
         Nothing ->
-            { pos = vec3 0 0 0
-            , normal = vec3 1 1 1
-            , color = color
-            }
+            toVertex ( 0, 0, 0 ) ( 1, 1, 1 ) color
 
         Just v ->
-            { pos = toVec3 v.pos
-            , normal = toVec3 v.normal
-            , color = color
-            }
+            toVertex v.pos v.normal color
 
 
-triangulate : List VertexSpec -> FaceSpec -> List Triangle
-triangulate vertices face =
+makeVertices : List VertexSpec -> List Int -> Color -> List Renderer.Vertex
+makeVertices vertices indices color =
+    List.map (makeVertex vertices color) indices
+
+
+triangles : List VertexSpec -> FaceSpec -> List Triangle
+triangles vertices face =
     let
-        color =
-            toVec3 face.color
-
         corners =
-            List.map (makeVertex vertices color) face.vertices
+            makeVertices vertices face.vertices face.color
     in
         case List.head corners of
             Nothing ->
@@ -60,8 +76,24 @@ triangulate vertices face =
                     |> List.map (\( v, w ) -> ( u, v, w ))
 
 
+edges : List VertexSpec -> FaceSpec -> List Edge
+edges vertices face =
+    let
+        corners =
+            makeVertices vertices face.vertices face.color
+    in
+        List.map2 (,) corners ((List.drop 1 corners) ++ (List.take 1 corners))
+
+
 mesh : List VertexSpec -> List FaceSpec -> WebGL.Mesh Renderer.Vertex
 mesh vertices faces =
-    List.map (triangulate vertices) faces
+    List.map (triangles vertices) faces
         |> List.concat
         |> WebGL.triangles
+
+
+wireframe : List VertexSpec -> List FaceSpec -> WebGL.Mesh Renderer.Vertex
+wireframe vertices faces =
+    List.map (edges vertices) faces
+        |> List.concat
+        |> WebGL.lines

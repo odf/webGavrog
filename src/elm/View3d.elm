@@ -250,4 +250,4 @@ faces =
 
 initMesh : WebGL.Mesh Renderer.Vertex
 initMesh =
-    mesh vertices faces
+    wireframe vertices faces
