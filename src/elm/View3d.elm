@@ -7,6 +7,7 @@ import Html.Attributes
 import Html.Events
 import Keyboard
 import Mouse
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3, Vec3)
 import Task
 import Time exposing (Time)
@@ -21,6 +22,7 @@ import Mesh exposing (..)
 type alias SceneItem =
     { mesh : WebGL.Mesh Renderer.Vertex
     , material : Renderer.Material
+    , transform : Mat4
     }
 
 
@@ -167,14 +169,17 @@ update msg model =
 view : Model -> Html Msg
 view model =
     let
+        viewing =
+            Camera.viewingMatrix model.cameraState
+
         entities =
             List.map
-                (\{ mesh, material } ->
+                (\{ mesh, material, transform } ->
                     Renderer.entity
                         mesh
                         material
                         (Camera.cameraDistance model.cameraState)
-                        (Camera.viewingMatrix model.cameraState)
+                        (Mat4.mul viewing transform)
                         (Camera.perspectiveMatrix model.cameraState)
                 )
                 model.scene
@@ -264,8 +269,34 @@ initScene : List SceneItem
 initScene =
     [ { mesh = mesh vertices faces
       , material = initMaterial
+      , transform = Mat4.identity
+      }
+    , { mesh = mesh vertices faces
+      , material = initMaterial
+      , transform = Mat4.makeTranslate (vec3 2.5 0 0)
+      }
+    , { mesh = mesh vertices faces
+      , material = initMaterial
+      , transform = Mat4.makeTranslate (vec3 -2.5 0 0)
+      }
+    , { mesh = mesh vertices faces
+      , material = initMaterial
+      , transform = Mat4.makeTranslate (vec3 0 2.5 0)
+      }
+    , { mesh = mesh vertices faces
+      , material = initMaterial
+      , transform = Mat4.makeTranslate (vec3 0 -2.5 0)
+      }
+    , { mesh = mesh vertices faces
+      , material = initMaterial
+      , transform = Mat4.makeTranslate (vec3 0 0 2.5)
+      }
+    , { mesh = mesh vertices faces
+      , material = initMaterial
+      , transform = Mat4.makeTranslate (vec3 0 0 -2.5)
       }
     , { mesh = wireframe vertices (List.map (recolor ( 0, 0, 0 )) faces)
       , material = initMaterial
+      , transform = Mat4.identity
       }
     ]
