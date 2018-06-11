@@ -255,14 +255,17 @@ faces =
     ]
 
 
+recolor : ( Float, Float, Float ) -> FaceSpec -> FaceSpec
+recolor color face =
+    { face | color = color }
+
+
 initScene : List SceneItem
 initScene =
     [ { mesh = mesh vertices faces
       , material = initMaterial
       }
-    , { mesh =
-            wireframe vertices
-                (List.map (\f -> { f | color = ( 0, 0, 0 ) }) faces)
+    , { mesh = wireframe vertices (List.map (recolor ( 0, 0, 0 )) faces)
       , material = initMaterial
       }
     ]
