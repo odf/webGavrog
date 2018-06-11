@@ -37,39 +37,34 @@ makeVertex vertices color i =
             { pos = v.pos, normal = v.normal, color = colorAsVec color }
 
 
-triangles : List VertexSpec -> FaceSpec -> List ( Vertex, Vertex, Vertex )
-triangles vertices face =
-    let
-        corners =
-            List.map (makeVertex vertices face.color) face.vertices
-    in
-        case List.head corners of
-            Nothing ->
-                []
-
-            Just u ->
-                List.map2 (,) (List.drop 1 corners) (List.drop 2 corners)
-                    |> List.map (\( v, w ) -> ( u, v, w ))
+corners : List VertexSpec -> FaceSpec -> List Vertex
+corners vertices face =
+    List.map (makeVertex vertices face.color) face.vertices
 
 
-edges : List VertexSpec -> FaceSpec -> List ( Vertex, Vertex )
-edges vertices face =
-    let
-        corners =
-            List.map (makeVertex vertices face.color) face.vertices
-    in
-        List.map2 (,) corners ((List.drop 1 corners) ++ (List.take 1 corners))
+triangles : List Vertex -> List ( Vertex, Vertex, Vertex )
+triangles corners =
+    case List.head corners of
+        Nothing ->
+            []
+
+        Just u ->
+            List.map2 (,) (List.drop 1 corners) (List.drop 2 corners)
+                |> List.map (\( v, w ) -> ( u, v, w ))
+
+
+edges : List Vertex -> List ( Vertex, Vertex )
+edges corners =
+    List.map2 (,) corners ((List.drop 1 corners) ++ (List.take 1 corners))
 
 
 mesh : List VertexSpec -> List FaceSpec -> WebGL.Mesh Vertex
 mesh vertices faces =
-    List.map (triangles vertices) faces
-        |> List.concat
+    List.concatMap (triangles << corners vertices) faces
         |> WebGL.triangles
 
 
 wireframe : List VertexSpec -> List FaceSpec -> WebGL.Mesh Vertex
 wireframe vertices faces =
-    List.map (edges vertices) faces
-        |> List.concat
+    List.concatMap (edges << corners vertices) faces
         |> WebGL.lines
