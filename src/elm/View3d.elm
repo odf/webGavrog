@@ -222,45 +222,45 @@ initMaterial =
 
 vertices : List VertexSpec
 vertices =
-    [ { pos = ( -1, -1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( 1, -1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( 1, 1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( -1, 1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( -1, -1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( 1, -1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( 1, 1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( -1, 1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( -1, -1, -1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( -1, -1, 1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( 1, -1, 1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( 1, -1, -1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( -1, 1, -1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( -1, 1, 1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( 1, 1, 1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( 1, 1, -1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( -1, -1, -1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( -1, 1, -1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( -1, 1, 1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( -1, -1, 1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( 1, -1, -1 ), normal = ( 1, 0, 0 ) }
-    , { pos = ( 1, 1, -1 ), normal = ( 1, 0, 0 ) }
-    , { pos = ( 1, 1, 1 ), normal = ( 1, 0, 0 ) }
-    , { pos = ( 1, -1, 1 ), normal = ( 1, 0, 0 ) }
+    [ { pos = vec3 -1 -1 -1, normal = vec3 0 0 -1 }
+    , { pos = vec3 1 -1 -1, normal = vec3 0 0 -1 }
+    , { pos = vec3 1 1 -1, normal = vec3 0 0 -1 }
+    , { pos = vec3 -1 1 -1, normal = vec3 0 0 -1 }
+    , { pos = vec3 -1 -1 1, normal = vec3 0 0 1 }
+    , { pos = vec3 1 -1 1, normal = vec3 0 0 1 }
+    , { pos = vec3 1 1 1, normal = vec3 0 0 1 }
+    , { pos = vec3 -1 1 1, normal = vec3 0 0 1 }
+    , { pos = vec3 -1 -1 -1, normal = vec3 0 -1 0 }
+    , { pos = vec3 -1 -1 1, normal = vec3 0 -1 0 }
+    , { pos = vec3 1 -1 1, normal = vec3 0 -1 0 }
+    , { pos = vec3 1 -1 -1, normal = vec3 0 -1 0 }
+    , { pos = vec3 -1 1 -1, normal = vec3 0 1 0 }
+    , { pos = vec3 -1 1 1, normal = vec3 0 1 0 }
+    , { pos = vec3 1 1 1, normal = vec3 0 1 0 }
+    , { pos = vec3 1 1 -1, normal = vec3 0 1 0 }
+    , { pos = vec3 -1 -1 -1, normal = vec3 -1 0 0 }
+    , { pos = vec3 -1 1 -1, normal = vec3 -1 0 0 }
+    , { pos = vec3 -1 1 1, normal = vec3 -1 0 0 }
+    , { pos = vec3 -1 -1 1, normal = vec3 -1 0 0 }
+    , { pos = vec3 1 -1 -1, normal = vec3 1 0 0 }
+    , { pos = vec3 1 1 -1, normal = vec3 1 0 0 }
+    , { pos = vec3 1 1 1, normal = vec3 1 0 0 }
+    , { pos = vec3 1 -1 1, normal = vec3 1 0 0 }
     ]
 
 
 faces : List FaceSpec
 faces =
-    [ { vertices = [ 0, 1, 2, 3 ], color = ( 1, 0, 0 ) }
-    , { vertices = [ 4, 7, 6, 5 ], color = ( 0, 1, 1 ) }
-    , { vertices = [ 8, 9, 10, 11 ], color = ( 0, 1, 0 ) }
-    , { vertices = [ 12, 15, 14, 13 ], color = ( 1, 0, 1 ) }
-    , { vertices = [ 16, 17, 18, 19 ], color = ( 0, 0, 1 ) }
-    , { vertices = [ 20, 23, 22, 21 ], color = ( 1, 1, 0 ) }
+    [ { vertices = [ 0, 1, 2, 3 ], color = vec3 1 0 0 }
+    , { vertices = [ 4, 7, 6, 5 ], color = vec3 0 1 1 }
+    , { vertices = [ 8, 9, 10, 11 ], color = vec3 0 1 0 }
+    , { vertices = [ 12, 15, 14, 13 ], color = vec3 1 0 1 }
+    , { vertices = [ 16, 17, 18, 19 ], color = vec3 0 0 1 }
+    , { vertices = [ 20, 23, 22, 21 ], color = vec3 1 1 0 }
     ]
 
 
-recolor : ( Float, Float, Float ) -> FaceSpec -> FaceSpec
+recolor : Vec3 -> FaceSpec -> FaceSpec
 recolor color face =
     { face | color = color }
 
@@ -295,7 +295,7 @@ initScene =
       , material = initMaterial
       , transform = Mat4.makeTranslate (vec3 0 0 -2.5)
       }
-    , { mesh = wireframe vertices (List.map (recolor ( 0, 0, 0 )) faces)
+    , { mesh = wireframe vertices (List.map (recolor (vec3 0 0 0)) faces)
       , material = initMaterial
       , transform = Mat4.identity
       }
