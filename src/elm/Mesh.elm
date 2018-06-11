@@ -1,5 +1,6 @@
 module Mesh exposing (VertexSpec, FaceSpec, mesh, wireframe)
 
+import Color exposing (Color)
 import Math.Vector3 exposing (vec3, Vec3)
 import WebGL
 import Renderer exposing (Vertex)
@@ -13,18 +14,27 @@ type alias VertexSpec =
 
 type alias FaceSpec =
     { vertices : List Int
-    , color : Vec3
+    , color : Color
     }
 
 
-makeVertex : List VertexSpec -> Vec3 -> Int -> Vertex
+colorAsVec : Color -> Vec3
+colorAsVec color =
+    let
+        { red, green, blue } =
+            Color.toRgb color
+    in
+        vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
+
+
+makeVertex : List VertexSpec -> Color -> Int -> Vertex
 makeVertex vertices color i =
     case (vertices |> List.drop i |> List.head) of
         Nothing ->
-            { pos = vec3 0 0 0, normal = vec3 1 1 1, color = color }
+            { pos = vec3 0 0 0, normal = vec3 1 1 1, color = colorAsVec color }
 
         Just v ->
-            { pos = v.pos, normal = v.normal, color = color }
+            { pos = v.pos, normal = v.normal, color = colorAsVec color }
 
 
 triangles : List VertexSpec -> FaceSpec -> List ( Vertex, Vertex, Vertex )

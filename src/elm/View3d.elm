@@ -2,21 +2,22 @@ module View3d exposing (main)
 
 import AnimationFrame
 import Char
+import Color exposing (Color)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Keyboard
-import Mouse
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3, Vec3)
+import Mouse
 import Task
 import Time exposing (Time)
 import WebGL
-import Window
 import Camera
+import Mesh exposing (..)
 import Renderer
 import WheelEvent
-import Mesh exposing (..)
+import Window
 
 
 type alias SceneItem =
@@ -210,7 +211,7 @@ main =
 
 initMaterial : Renderer.Material
 initMaterial =
-    { ambientColor = vec3 1 1 2
+    { ambientColor = vec3 1 1 1
     , diffuseColor = vec3 1 1 1
     , specularColor = vec3 1 1 1
     , ka = 0.1
@@ -251,16 +252,16 @@ vertices =
 
 faces : List FaceSpec
 faces =
-    [ { vertices = [ 0, 1, 2, 3 ], color = vec3 1 0 0 }
-    , { vertices = [ 4, 7, 6, 5 ], color = vec3 0 1 1 }
-    , { vertices = [ 8, 9, 10, 11 ], color = vec3 0 1 0 }
-    , { vertices = [ 12, 15, 14, 13 ], color = vec3 1 0 1 }
-    , { vertices = [ 16, 17, 18, 19 ], color = vec3 0 0 1 }
-    , { vertices = [ 20, 23, 22, 21 ], color = vec3 1 1 0 }
+    [ { vertices = [ 0, 1, 2, 3 ], color = Color.hsl (degrees 0) 1 0.5 }
+    , { vertices = [ 4, 7, 6, 5 ], color = Color.hsl (degrees 180) 1 0.5 }
+    , { vertices = [ 8, 9, 10, 11 ], color = Color.hsl (degrees 120) 1 0.5 }
+    , { vertices = [ 12, 15, 14, 13 ], color = Color.hsl (degrees 300) 1 0.5 }
+    , { vertices = [ 16, 17, 18, 19 ], color = Color.hsl (degrees 240) 1 0.5 }
+    , { vertices = [ 20, 23, 22, 21 ], color = Color.hsl (degrees 60) 1 0.5 }
     ]
 
 
-recolor : Vec3 -> FaceSpec -> FaceSpec
+recolor : Color -> FaceSpec -> FaceSpec
 recolor color face =
     { face | color = color }
 
@@ -295,7 +296,7 @@ initScene =
       , material = initMaterial
       , transform = Mat4.makeTranslate (vec3 0 0 -2.5)
       }
-    , { mesh = wireframe vertices (List.map (recolor (vec3 0 0 0)) faces)
+    , { mesh = wireframe vertices (List.map (recolor Color.white) faces)
       , material = initMaterial
       , transform = Mat4.identity
       }
