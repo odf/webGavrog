@@ -24,12 +24,6 @@ type alias RawVec3 =
     ( Float, Float, Float )
 
 
-type alias RawVertexSpec =
-    { pos : RawVec3
-    , normal : RawVec3
-    }
-
-
 type alias RawColor =
     { hue : Float
     , saturation : Float
@@ -37,9 +31,22 @@ type alias RawColor =
     }
 
 
+type alias RawVertexSpec =
+    { pos : RawVec3
+    , normal : RawVec3
+    }
+
+
 type alias RawFaceSpec =
     { vertices : List Int
     , color : RawColor
+    }
+
+
+type alias RawMeshSpec =
+    { vertices : List RawVertexSpec
+    , faces : List RawFaceSpec
+    , isWireframe : Bool
     }
 
 
@@ -60,25 +67,38 @@ type alias RawTransform =
     }
 
 
-type alias RawSceneItem =
-    { vertices : List RawVertexSpec
-    , faces : List RawFaceSpec
+type alias RawInstanceSpec =
+    { meshIndex : Int
     , material : RawMaterial
     , transform : RawTransform
     }
 
 
-type alias SceneItem =
-    { mesh : WebGL.Mesh Renderer.Vertex
+type alias RawSceneSpec =
+    { meshes : List RawMeshSpec
+    , instances : List RawInstanceSpec
+    }
+
+
+type alias Mesh =
+    WebGL.Mesh Renderer.Vertex
+
+
+type alias Instance =
+    { mesh : Mesh
     , material : Renderer.Material
     , transform : Mat4
     }
 
 
+type alias Scene =
+    List Instance
+
+
 type alias Model =
     { size : Window.Size
     , cameraState : Camera.State
-    , scene : List SceneItem
+    , scene : Scene
     , modifiers : { shift : Bool, ctrl : Bool }
     }
 
@@ -262,13 +282,6 @@ makeVec3 ( a, b, c ) =
     vec3 a b c
 
 
-makeVertexSpec : RawVertexSpec -> VertexSpec
-makeVertexSpec v =
-    { pos = makeVec3 v.pos
-    , normal = makeVec3 v.normal
-    }
-
-
 makeColor : RawColor -> Color
 makeColor { hue, saturation, lightness } =
     Color.hsl hue saturation lightness
@@ -283,11 +296,30 @@ makeVec3Color { hue, saturation, lightness } =
         vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
 
 
+makeVertexSpec : RawVertexSpec -> VertexSpec
+makeVertexSpec v =
+    { pos = makeVec3 v.pos
+    , normal = makeVec3 v.normal
+    }
+
+
 makeFaceSpec : RawFaceSpec -> FaceSpec
 makeFaceSpec f =
     { vertices = f.vertices
     , color = makeColor f.color
     }
+
+
+makeMesh : RawMeshSpec -> Mesh
+makeMesh spec =
+    if spec.isWireframe then
+        wireframe
+            (List.map makeVertexSpec spec.vertices)
+            (List.map makeFaceSpec spec.faces)
+    else
+        mesh
+            (List.map makeVertexSpec spec.vertices)
+            (List.map makeFaceSpec spec.faces)
 
 
 makeMaterial : RawMaterial -> Renderer.Material
@@ -313,22 +345,49 @@ makeTransform { basis, shift } =
             (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
 
 
-makeSceneItem : RawSceneItem -> SceneItem
-makeSceneItem item =
-    { mesh =
-        mesh
-            (List.map makeVertexSpec item.vertices)
-            (List.map makeFaceSpec item.faces)
-    , material = makeMaterial item.material
-    , transform = makeTransform item.transform
-    }
+makeInstance : List Mesh -> RawInstanceSpec -> Maybe Instance
+makeInstance meshes spec =
+    meshes
+        |> List.drop spec.meshIndex
+        |> List.head
+        |> Maybe.map
+            (\mesh ->
+                { mesh = mesh
+                , material = makeMaterial spec.material
+                , transform = makeTransform spec.transform
+                }
+            )
+
+
+makeScene : RawSceneSpec -> Scene
+makeScene spec =
+    let
+        meshes =
+            List.map makeMesh spec.meshes
+    in
+        List.filterMap (makeInstance meshes) spec.instances
+
+
+white : RawColor
+white =
+    { hue = 0, saturation = 0, lightness = 1 }
+
+
+black : RawColor
+black =
+    { hue = 0, saturation = 0, lightness = 0 }
+
+
+hue : Float -> RawColor
+hue angleDeg =
+    { hue = degrees angleDeg, saturation = 1.0, lightness = 0.5 }
 
 
 baseMaterial : RawMaterial
 baseMaterial =
-    { ambientColor = { hue = 0, saturation = 0, lightness = 1 }
-    , diffuseColor = { hue = 0, saturation = 0, lightness = 1 }
-    , specularColor = { hue = 0, saturation = 0, lightness = 1 }
+    { ambientColor = white
+    , diffuseColor = white
+    , specularColor = white
     , ka = 0.1
     , kd = 1.0
     , ks = 0.2
@@ -365,14 +424,6 @@ vertices =
     ]
 
 
-hue : Float -> RawColor
-hue angleDeg =
-    { hue = degrees angleDeg
-    , saturation = 1.0
-    , lightness = 0.5
-    }
-
-
 faces : List RawFaceSpec
 faces =
     [ { vertices = [ 0, 1, 2, 3 ], color = hue 0 }
@@ -384,29 +435,41 @@ faces =
     ]
 
 
-recolor : Color -> FaceSpec -> FaceSpec
-recolor color face =
-    { face | color = color }
-
-
-initScene : List SceneItem
+initScene : Scene
 initScene =
-    [ makeSceneItem
-        { vertices = vertices
-        , faces = faces
-        , material = baseMaterial
-        , transform =
-            { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
-            , shift = ( 0, 0, 0 )
-            }
+    makeScene
+        { meshes =
+            [ { vertices = vertices, faces = faces, isWireframe = False }
+            , { vertices = vertices, faces = faces, isWireframe = True }
+            ]
+        , instances =
+            [ { meshIndex = 1
+              , material = { baseMaterial | diffuseColor = black }
+              , transform =
+                    { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
+                    , shift = ( 0, 0, 0 )
+                    }
+              }
+            , { meshIndex = 0
+              , material = baseMaterial
+              , transform =
+                    { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
+                    , shift = ( 0, 0, 0 )
+                    }
+              }
+            , { meshIndex = 0
+              , material = baseMaterial
+              , transform =
+                    { basis = ( ( -1, 0, 0 ), ( 0, 0, 1 ), ( 0, -1, 0 ) )
+                    , shift = ( 2.5, 0, 0 )
+                    }
+              }
+            , { meshIndex = 0
+              , material = baseMaterial
+              , transform =
+                    { basis = ( ( -1, 0, 0 ), ( 0, 0, -1 ), ( 0, 1, 0 ) )
+                    , shift = ( -2.5, 0, 0 )
+                    }
+              }
+            ]
         }
-    , makeSceneItem
-        { vertices = vertices
-        , faces = faces
-        , material = baseMaterial
-        , transform =
-            { basis = ( ( -1, 0, 0 ), ( 0, 0, 1 ), ( 0, -1, 0 ) )
-            , shift = ( 2.5, 0, 0 )
-            }
-        }
-    ]
