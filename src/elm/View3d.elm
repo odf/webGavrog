@@ -2,7 +2,6 @@ module View3d exposing (main)
 
 import AnimationFrame
 import Char
-import Color exposing (Color)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -14,85 +13,10 @@ import Task
 import Time exposing (Time)
 import WebGL
 import Camera
-import Mesh exposing (..)
 import Renderer
+import Scene exposing (..)
 import WheelEvent
 import Window
-
-
-type alias RawVec3 =
-    ( Float, Float, Float )
-
-
-type alias RawColor =
-    { hue : Float
-    , saturation : Float
-    , lightness : Float
-    }
-
-
-type alias RawVertexSpec =
-    { pos : RawVec3
-    , normal : RawVec3
-    }
-
-
-type alias RawFaceSpec =
-    { vertices : List Int
-    , color : RawColor
-    }
-
-
-type alias RawMeshSpec =
-    { vertices : List RawVertexSpec
-    , faces : List RawFaceSpec
-    , isWireframe : Bool
-    }
-
-
-type alias RawMaterial =
-    { ambientColor : RawColor
-    , diffuseColor : RawColor
-    , specularColor : RawColor
-    , ka : Float
-    , kd : Float
-    , ks : Float
-    , shininess : Float
-    }
-
-
-type alias RawTransform =
-    { basis : ( RawVec3, RawVec3, RawVec3 )
-    , shift : RawVec3
-    }
-
-
-type alias RawInstanceSpec =
-    { meshIndex : Int
-    , material : RawMaterial
-    , transform : RawTransform
-    }
-
-
-type alias RawSceneSpec =
-    { meshes : List RawMeshSpec
-    , instances : List RawInstanceSpec
-    }
-
-
-type alias Mesh =
-    WebGL.Mesh Renderer.Vertex
-
-
-type alias Instance =
-    { mesh : Mesh
-    , material : Renderer.Material
-    , transform : Mat4
-    }
-
-
-type alias Scene =
-    List Instance
 
 
 type alias Model =
@@ -277,113 +201,18 @@ main =
         }
 
 
-makeVec3 : RawVec3 -> Vec3
-makeVec3 ( a, b, c ) =
-    vec3 a b c
-
-
-makeColor : RawColor -> Color
-makeColor { hue, saturation, lightness } =
-    Color.hsl hue saturation lightness
-
-
-makeVec3Color : RawColor -> Vec3
-makeVec3Color { hue, saturation, lightness } =
-    let
-        { red, green, blue } =
-            Color.toRgb <| Color.hsl hue saturation lightness
-    in
-        vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
-
-
-makeVertexSpec : RawVertexSpec -> VertexSpec
-makeVertexSpec v =
-    { pos = makeVec3 v.pos
-    , normal = makeVec3 v.normal
-    }
-
-
-makeFaceSpec : RawFaceSpec -> FaceSpec
-makeFaceSpec f =
-    { vertices = f.vertices
-    , color = makeColor f.color
-    }
-
-
-makeMesh : RawMeshSpec -> Mesh
-makeMesh spec =
-    if spec.isWireframe then
-        wireframe
-            (List.map makeVertexSpec spec.vertices)
-            (List.map makeFaceSpec spec.faces)
-    else
-        mesh
-            (List.map makeVertexSpec spec.vertices)
-            (List.map makeFaceSpec spec.faces)
-
-
-makeMaterial : RawMaterial -> Renderer.Material
-makeMaterial mat =
-    { ambientColor = makeVec3Color mat.ambientColor
-    , diffuseColor = makeVec3Color mat.diffuseColor
-    , specularColor = makeVec3Color mat.specularColor
-    , ka = mat.ka
-    , kd = mat.kd
-    , ks = mat.ks
-    , shininess = mat.shininess
-    }
-
-
-makeTransform : RawTransform -> Mat4
-makeTransform { basis, shift } =
-    let
-        ( u, v, w ) =
-            basis
-    in
-        Mat4.mul
-            (Mat4.makeTranslate <| makeVec3 shift)
-            (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
-
-
-makeInstance : List Mesh -> RawInstanceSpec -> Maybe Instance
-makeInstance meshes spec =
-    meshes
-        |> List.drop spec.meshIndex
-        |> List.head
-        |> Maybe.map
-            (\mesh ->
-                { mesh = mesh
-                , material = makeMaterial spec.material
-                , transform = makeTransform spec.transform
-                }
-            )
-
-
-makeScene : RawSceneSpec -> Scene
-makeScene spec =
-    let
-        meshes =
-            List.map makeMesh spec.meshes
-    in
-        List.filterMap (makeInstance meshes) spec.instances
-
-
-white : RawColor
 white =
     { hue = 0, saturation = 0, lightness = 1 }
 
 
-black : RawColor
 black =
     { hue = 0, saturation = 0, lightness = 0 }
 
 
-hue : Float -> RawColor
 hue angleDeg =
     { hue = degrees angleDeg, saturation = 1.0, lightness = 0.5 }
 
 
-baseMaterial : RawMaterial
 baseMaterial =
     { ambientColor = white
     , diffuseColor = white
@@ -395,7 +224,6 @@ baseMaterial =
     }
 
 
-vertices : List RawVertexSpec
 vertices =
     [ { pos = ( -1, -1, -1 ), normal = ( 0, 0, -1 ) }
     , { pos = ( 1, -1, -1 ), normal = ( 0, 0, -1 ) }
@@ -424,7 +252,6 @@ vertices =
     ]
 
 
-faces : List RawFaceSpec
 faces =
     [ { vertices = [ 0, 1, 2, 3 ], color = hue 0 }
     , { vertices = [ 4, 7, 6, 5 ], color = hue 180 }
