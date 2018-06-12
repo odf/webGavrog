@@ -42,7 +42,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
-      , scene = initScene
+      , scene = makeScene sceneSpec
       , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
@@ -201,6 +201,10 @@ main =
         }
 
 
+
+-- Example Scene
+
+
 white =
     { hue = 0, saturation = 0, lightness = 1 }
 
@@ -262,41 +266,39 @@ faces =
     ]
 
 
-initScene : Scene
-initScene =
-    makeScene
-        { meshes =
-            [ { vertices = vertices, faces = faces, isWireframe = False }
-            , { vertices = vertices, faces = faces, isWireframe = True }
-            ]
-        , instances =
-            [ { meshIndex = 1
-              , material = { baseMaterial | diffuseColor = black }
-              , transform =
-                    { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
-                    , shift = ( 0, 0, 0 )
-                    }
-              }
-            , { meshIndex = 0
-              , material = baseMaterial
-              , transform =
-                    { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
-                    , shift = ( 0, 0, 0 )
-                    }
-              }
-            , { meshIndex = 0
-              , material = baseMaterial
-              , transform =
-                    { basis = ( ( -1, 0, 0 ), ( 0, 0, 1 ), ( 0, -1, 0 ) )
-                    , shift = ( 2.5, 0, 0 )
-                    }
-              }
-            , { meshIndex = 0
-              , material = baseMaterial
-              , transform =
-                    { basis = ( ( -1, 0, 0 ), ( 0, 0, -1 ), ( 0, 1, 0 ) )
-                    , shift = ( -2.5, 0, 0 )
-                    }
-              }
-            ]
-        }
+sceneSpec =
+    { meshes =
+        [ { vertices = vertices, faces = faces, isWireframe = False }
+        , { vertices = vertices, faces = faces, isWireframe = True }
+        ]
+    , instances =
+        [ { meshIndex = 1
+          , material = { baseMaterial | diffuseColor = black }
+          , transform =
+                { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
+                , shift = ( 0, 0, 0 )
+                }
+          }
+        , { meshIndex = 0
+          , material = baseMaterial
+          , transform =
+                { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
+                , shift = ( 0, 0, 0 )
+                }
+          }
+        , { meshIndex = 0
+          , material = baseMaterial
+          , transform =
+                { basis = ( ( -1, 0, 0 ), ( 0, 0, 1 ), ( 0, -1, 0 ) )
+                , shift = ( 2.5, 0, 0 )
+                }
+          }
+        , { meshIndex = 0
+          , material = baseMaterial
+          , transform =
+                { basis = ( ( -1, 0, 0 ), ( 0, 0, -1 ), ( 0, 1, 0 ) )
+                , shift = ( -2.5, 0, 0 )
+                }
+          }
+        ]
+    }
