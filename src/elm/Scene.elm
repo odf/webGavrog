@@ -1,4 +1,4 @@
-module Scene exposing (Scene, makeScene)
+module Scene exposing (RawSceneSpec, Scene, makeScene)
 
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)

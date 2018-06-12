@@ -1,4 +1,4 @@
-module View3d exposing (main)
+port module View3d exposing (main)
 
 import AnimationFrame
 import Char
@@ -19,9 +19,9 @@ import WheelEvent
 import Window
 
 
-main : Program Never Model Msg
+main : Program RawSceneSpec Model Msg
 main =
-    Html.program
+    Html.programWithFlags
         { init = init
         , view = view
         , subscriptions = subscriptions
@@ -41,11 +41,11 @@ type alias Model =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : RawSceneSpec -> ( Model, Cmd Msg )
+init spec =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
-      , scene = makeScene sceneSpec
+      , scene = makeScene spec
       , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
@@ -212,106 +212,3 @@ view model =
             , WheelEvent.onMouseWheel WheelMsg
             ]
             entities
-
-
-
--- Example Scene
-
-
-white =
-    { hue = 0, saturation = 0, lightness = 1 }
-
-
-black =
-    { hue = 0, saturation = 0, lightness = 0 }
-
-
-hue angleDeg =
-    { hue = degrees angleDeg, saturation = 1.0, lightness = 0.5 }
-
-
-baseMaterial =
-    { ambientColor = white
-    , diffuseColor = white
-    , specularColor = white
-    , ka = 0.1
-    , kd = 1.0
-    , ks = 0.2
-    , shininess = 20.0
-    }
-
-
-vertices =
-    [ { pos = ( -1, -1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( 1, -1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( 1, 1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( -1, 1, -1 ), normal = ( 0, 0, -1 ) }
-    , { pos = ( -1, -1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( 1, -1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( 1, 1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( -1, 1, 1 ), normal = ( 0, 0, 1 ) }
-    , { pos = ( -1, -1, -1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( -1, -1, 1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( 1, -1, 1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( 1, -1, -1 ), normal = ( 0, -1, 0 ) }
-    , { pos = ( -1, 1, -1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( -1, 1, 1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( 1, 1, 1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( 1, 1, -1 ), normal = ( 0, 1, 0 ) }
-    , { pos = ( -1, -1, -1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( -1, 1, -1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( -1, 1, 1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( -1, -1, 1 ), normal = ( -1, 0, 0 ) }
-    , { pos = ( 1, -1, -1 ), normal = ( 1, 0, 0 ) }
-    , { pos = ( 1, 1, -1 ), normal = ( 1, 0, 0 ) }
-    , { pos = ( 1, 1, 1 ), normal = ( 1, 0, 0 ) }
-    , { pos = ( 1, -1, 1 ), normal = ( 1, 0, 0 ) }
-    ]
-
-
-faces =
-    [ { vertices = [ 0, 1, 2, 3 ], color = hue 0 }
-    , { vertices = [ 4, 7, 6, 5 ], color = hue 180 }
-    , { vertices = [ 8, 9, 10, 11 ], color = hue 120 }
-    , { vertices = [ 12, 15, 14, 13 ], color = hue 300 }
-    , { vertices = [ 16, 17, 18, 19 ], color = hue 240 }
-    , { vertices = [ 20, 23, 22, 21 ], color = hue 60 }
-    ]
-
-
-sceneSpec =
-    { meshes =
-        [ { vertices = vertices, faces = faces, isWireframe = False }
-        , { vertices = vertices, faces = faces, isWireframe = True }
-        ]
-    , instances =
-        [ { meshIndex = 1
-          , material = { baseMaterial | diffuseColor = black }
-          , transform =
-                { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
-                , shift = ( 0, 0, 0 )
-                }
-          }
-        , { meshIndex = 0
-          , material = baseMaterial
-          , transform =
-                { basis = ( ( 1, 0, 0 ), ( 0, 1, 0 ), ( 0, 0, 1 ) )
-                , shift = ( 0, 0, 0 )
-                }
-          }
-        , { meshIndex = 0
-          , material = baseMaterial
-          , transform =
-                { basis = ( ( -1, 0, 0 ), ( 0, 0, 1 ), ( 0, -1, 0 ) )
-                , shift = ( 2.5, 0, 0 )
-                }
-          }
-        , { meshIndex = 0
-          , material = baseMaterial
-          , transform =
-                { basis = ( ( -1, 0, 0 ), ( 0, 0, -1 ), ( 0, 1, 0 ) )
-                , shift = ( -2.5, 0, 0 )
-                }
-          }
-        ]
-    }

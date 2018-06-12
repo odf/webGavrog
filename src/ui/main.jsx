@@ -11,12 +11,13 @@ import * as cgd      from '../io/cgd';
 import Display3d     from './Display3d';
 import Floatable     from './Floatable';
 import makeScene     from './makeScene';
-import Elm           from './ElmComponent'
+import Elm           from './ElmComponent';
+import { sceneSpec } from './exampleScene';
 
-import { TextInput } from '../elm/TextInput'
-import { Options }   from '../elm/Options'
-import { Menu }      from '../elm/Menu'
-import { View3d }    from '../elm/View3d'
+import { TextInput } from '../elm/TextInput';
+import { Options }   from '../elm/Options';
+import { Menu }      from '../elm/Menu';
+import { View3d }    from '../elm/View3d';
 
 
 if (!HTMLCanvasElement.prototype.toBlob) {
@@ -496,7 +497,7 @@ class App extends React.Component {
 
   render3dScene() {
     return (
-      <Elm src={View3d} />
+      <Elm src={View3d} flags={sceneSpec} />
     );
   }
 
