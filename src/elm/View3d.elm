@@ -94,24 +94,24 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ResizeMsg size ->
-            updateCameraState (Camera.setFrameSize size) { model | size = size }
+            updateCamera (Camera.setFrameSize size) { model | size = size }
 
         FrameMsg time ->
-            updateCameraState (Camera.nextFrame time) model
+            updateCamera (Camera.nextFrame time) model
 
         MouseDownMsg ->
-            updateCameraState Camera.startDragging model
+            updateCamera Camera.startDragging model
 
         MouseUpMsg pos ->
-            updateCameraState (Camera.finishDragging pos) model
+            updateCamera (Camera.finishDragging pos) model
 
         MouseMoveMsg pos ->
-            updateCameraState
+            updateCamera
                 (Camera.setMousePosition pos model.modifiers.shift)
                 model
 
         WheelMsg val ->
-            updateCameraState
+            updateCamera
                 (Camera.updateZoom val model.modifiers.shift)
                 model
 
@@ -122,11 +122,8 @@ update msg model =
             handleKeyPress code <| setModifiers code False model
 
 
-updateCameraState :
-    (Camera.State -> Camera.State)
-    -> Model
-    -> ( Model, Cmd Msg )
-updateCameraState fn model =
+updateCamera : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )
+updateCamera fn model =
     { model | cameraState = fn model.cameraState } ! []
 
 
@@ -178,7 +175,7 @@ handleKeyPress code model =
 
 lookAlong : Vec3 -> Vec3 -> Model -> ( Model, Cmd Msg )
 lookAlong axis up model =
-    updateCameraState (Camera.lookAlong axis up) model
+    updateCamera (Camera.lookAlong axis up) model
 
 
 
