@@ -19,23 +19,26 @@ import WheelEvent
 import Window
 
 
+main : Program Never Model Msg
+main =
+    Html.program
+        { init = init
+        , view = view
+        , subscriptions = subscriptions
+        , update = update
+        }
+
+
+
+-- MODEL
+
+
 type alias Model =
     { size : Window.Size
     , cameraState : Camera.State
     , scene : Scene
     , modifiers : { shift : Bool, ctrl : Bool }
     }
-
-
-type Msg
-    = ResizeMsg Window.Size
-    | FrameMsg Time
-    | MouseUpMsg Mouse.Position
-    | MouseDownMsg
-    | MouseMoveMsg Mouse.Position
-    | KeyDownMsg Int
-    | KeyUpMsg Int
-    | WheelMsg Float
 
 
 init : ( Model, Cmd Msg )
@@ -47,6 +50,21 @@ init =
       }
     , Task.perform ResizeMsg Window.size
     )
+
+
+
+-- SUBSCRIPTIONS
+
+
+type Msg
+    = ResizeMsg Window.Size
+    | FrameMsg Time
+    | MouseUpMsg Mouse.Position
+    | MouseDownMsg
+    | MouseMoveMsg Mouse.Position
+    | KeyDownMsg Int
+    | KeyUpMsg Int
+    | WheelMsg Float
 
 
 subscriptions : Model -> Sub Msg
@@ -68,63 +86,8 @@ subscriptions model =
                    ]
 
 
-updateCameraState :
-    (Camera.State -> Camera.State)
-    -> Model
-    -> ( Model, Cmd Msg )
-updateCameraState fn model =
-    { model | cameraState = fn model.cameraState } ! []
 
-
-lookAlong : Vec3 -> Vec3 -> Model -> ( Model, Cmd Msg )
-lookAlong axis up model =
-    updateCameraState (Camera.lookAlong axis up) model
-
-
-handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
-handleKeyPress code model =
-    let
-        char =
-            Char.toLower <| Char.fromCode code
-    in
-        case char of
-            'a' ->
-                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model
-
-            'b' ->
-                lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model
-
-            'c' ->
-                lookAlong (vec3 -1 -1 0) (vec3 0 1 0) model
-
-            'd' ->
-                lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model
-
-            'x' ->
-                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model
-
-            'y' ->
-                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model
-
-            'z' ->
-                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
-
-            _ ->
-                model ! []
-
-
-setModifiers : Char.KeyCode -> Bool -> Model -> Model
-setModifiers keyCode value model =
-    let
-        oldModifiers =
-            model.modifiers
-    in
-        if keyCode == 16 then
-            { model | modifiers = { oldModifiers | shift = value } }
-        else if keyCode == 17 then
-            { model | modifiers = { oldModifiers | ctrl = value } }
-        else
-            model
+-- UPDATE
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -159,6 +122,69 @@ update msg model =
             handleKeyPress code <| setModifiers code False model
 
 
+updateCameraState :
+    (Camera.State -> Camera.State)
+    -> Model
+    -> ( Model, Cmd Msg )
+updateCameraState fn model =
+    { model | cameraState = fn model.cameraState } ! []
+
+
+setModifiers : Char.KeyCode -> Bool -> Model -> Model
+setModifiers keyCode value model =
+    let
+        oldModifiers =
+            model.modifiers
+    in
+        if keyCode == 16 then
+            { model | modifiers = { oldModifiers | shift = value } }
+        else if keyCode == 17 then
+            { model | modifiers = { oldModifiers | ctrl = value } }
+        else
+            model
+
+
+handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
+handleKeyPress code model =
+    let
+        char =
+            Char.toLower <| Char.fromCode code
+    in
+        case char of
+            'a' ->
+                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model
+
+            'b' ->
+                lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model
+
+            'c' ->
+                lookAlong (vec3 -1 -1 0) (vec3 0 1 0) model
+
+            'd' ->
+                lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model
+
+            'x' ->
+                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model
+
+            'y' ->
+                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model
+
+            'z' ->
+                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
+
+            _ ->
+                model ! []
+
+
+lookAlong : Vec3 -> Vec3 -> Model -> ( Model, Cmd Msg )
+lookAlong axis up model =
+    updateCameraState (Camera.lookAlong axis up) model
+
+
+
+-- VIEW
+
+
 view : Model -> Html Msg
 view model =
     let
@@ -189,16 +215,6 @@ view model =
             , WheelEvent.onMouseWheel WheelMsg
             ]
             entities
-
-
-main : Program Never Model Msg
-main =
-    Html.program
-        { init = init
-        , view = view
-        , subscriptions = subscriptions
-        , update = update
-        }
 
 
 
