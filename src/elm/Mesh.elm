@@ -18,28 +18,23 @@ type alias FaceSpec =
     }
 
 
-colorAsVec : Color -> Vec3
-colorAsVec color =
-    let
-        { red, green, blue } =
-            Color.toRgb color
-    in
-        vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
+colorVec { red, green, blue } =
+    vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
 
 
-makeVertex : List VertexSpec -> Color -> Int -> Vertex
-makeVertex vertices color i =
-    case (vertices |> List.drop i |> List.head) of
-        Nothing ->
-            { pos = vec3 0 0 0, normal = vec3 1 1 1, color = colorAsVec color }
+buildVertex : Color -> VertexSpec -> Vertex
+buildVertex color v =
+    { pos = v.pos, normal = v.normal, color = colorVec (Color.toRgb color) }
 
-        Just v ->
-            { pos = v.pos, normal = v.normal, color = colorAsVec color }
+
+pullVertex : List VertexSpec -> Color -> Int -> Maybe Vertex
+pullVertex vertices color i =
+    vertices |> List.drop i |> List.head |> Maybe.map (buildVertex color)
 
 
 corners : List VertexSpec -> FaceSpec -> List Vertex
 corners vertices face =
-    List.map (makeVertex vertices face.color) face.vertices
+    List.filterMap (pullVertex vertices face.color) face.vertices
 
 
 triangles : List Vertex -> List ( Vertex, Vertex, Vertex )
