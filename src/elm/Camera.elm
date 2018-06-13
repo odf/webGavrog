@@ -48,8 +48,8 @@ initialState =
     State
         { size = { width = 0, height = 0 }
         , origin = { x = 0, y = 0 }
-        , cameraDistance = 5
-        , fieldOfView = 45
+        , cameraDistance = 12
+        , fieldOfView = 25
         , dragging = False
         , moving = False
         , ndcPos = { x = 0, y = 0 }
