@@ -7,11 +7,41 @@ import * as tilings     from '../dsymbols/tilings';
 import * as lattices    from '../geometry/lattices';
 import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
+import {subD}           from '../graphics/surface';
 
 import embed from '../pgraphs/embedding';
 
 import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
+
+
+const unitVec = v => ops.div(v, ops.norm(v));
+const white = { hue: 0, saturation: 0, lightness: 1 };
+
+
+const geometryNew = (vertices, faces) => {
+  const normals = vertices.map(v => ops.times(v, 0));
+
+  for (const f of faces) {
+    const n = f.length;
+    for (const i in f) {
+      const u = f[i];
+      const v = f[(i + 1) % n];
+      const w = f[(i + 2) % n];
+
+      const a = ops.minus(vertices[u], vertices[v]);
+      const b = ops.minus(vertices[w], vertices[v]);
+
+      normals[v] = ops.plus(normals[v], ops.crossProduct(b, a));
+    }
+  }
+
+  return {
+    vertices: vertices.map((v, i) => ({ pos: v, normal: unitVec(normals[i]) })),
+    faces: faces.map(f => ({ vertices: f, color: white })),
+    isWireframe: false
+  }
+};
 
 
 const geometry = (vertices, faces) => {
@@ -59,13 +89,32 @@ const stick = (p, q, radius, segments) => {
     section.push(ops.plus(ops.times(c, u), ops.times(s, v)));
   }
 
-  return geometry(
-    [].concat(section.map(c => ops.plus(c, p)),
-              section.map(c => ops.plus(c, q))),
-    new Array(n).fill(0).map((_, i) => {
-      const j = (i + 1) % n;
-      return [i, j, j+n, i+n];
-    })
+  const vertices = [].concat(section.map(c => ops.plus(c, p)),
+                             section.map(c => ops.plus(c, q)));
+
+  const faces = new Array(n).fill(0).map((_, i) => {
+    const j = (i + 1) % n;
+    return [i, j, j+n, i+n];
+  });
+
+  const gNew = geometryNew(vertices, faces);
+
+  return geometry(vertices, faces);
+};
+
+
+const makeBall = radius => {
+  const t0 = {
+    pos: [[1,0,0], [0,1,0], [0,0,1], [-1,0,0], [0,-1,0], [0,0,-1]],
+    faces : [[0,1,2], [1,0,5], [2,1,3], [0,2,4],
+             [3,5,4], [5,3,1], [4,5,0], [3,4,2]],
+    isFixed: [false, false, false, false, false, false]
+  };
+  const t = subD(subD(t0));
+
+  return geometryNew(
+    t.pos.map(v => ops.times(unitVec(v), radius)),
+    t.faces
   );
 };
 
@@ -80,6 +129,12 @@ const ballAndStick = (
 ) => {
   const model = new THREE.Object3D();
   const ball  = new THREE.SphereGeometry(ballRadius, 16, 8);
+
+  const bNew = makeBall(ballRadius);
+  for (const i in bNew.vertices)
+    console.log(`v${i}: ${JSON.stringify(bNew.vertices[i])}`);
+  for (const i in bNew.faces)
+    console.log(`f${i}: ${JSON.stringify(bNew.faces[i])}`);
 
   positions.forEach(p => {
     const mat = new THREE.MeshPhongMaterial({
