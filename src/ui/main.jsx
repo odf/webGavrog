@@ -8,7 +8,6 @@ import * as delaney  from '../dsymbols/delaney';
 import parseDSymbols from '../io/ds';
 import * as cgd      from '../io/cgd';
 
-import Display3d     from './Display3d';
 import Floatable     from './Floatable';
 import makeScene     from './makeScene';
 import Elm           from './ElmComponent';
