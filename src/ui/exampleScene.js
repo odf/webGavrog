@@ -21,40 +21,40 @@ const baseMaterial = {
 
 
 const vertices = [
-  { pos: [ -1, -1, -1 ], normal: [ 0, 0, -1 ] },
-  { pos: [ 1, -1, -1 ], normal: [ 0, 0, -1 ] },
-  { pos: [ 1, 1, -1 ], normal: [ 0, 0, -1 ] },
-  { pos: [ -1, 1, -1 ], normal: [ 0, 0, -1 ] },
-  { pos: [ -1, -1, 1 ], normal: [ 0, 0, 1 ] },
-  { pos: [ 1, -1, 1 ], normal: [ 0, 0, 1 ] },
-  { pos: [ 1, 1, 1 ], normal: [ 0, 0, 1 ] },
-  { pos: [ -1, 1, 1 ], normal: [ 0, 0, 1 ] },
-  { pos: [ -1, -1, -1 ], normal: [ 0, -1, 0 ] },
-  { pos: [ -1, -1, 1 ], normal: [ 0, -1, 0 ] },
-  { pos: [ 1, -1, 1 ], normal: [ 0, -1, 0 ] },
-  { pos: [ 1, -1, -1 ], normal: [ 0, -1, 0 ] },
-  { pos: [ -1, 1, -1 ], normal: [ 0, 1, 0 ] },
-  { pos: [ -1, 1, 1 ], normal: [ 0, 1, 0 ] },
-  { pos: [ 1, 1, 1 ], normal: [ 0, 1, 0 ] },
-  { pos: [ 1, 1, -1 ], normal: [ 0, 1, 0 ] },
-  { pos: [ -1, -1, -1 ], normal: [ -1, 0, 0 ] },
-  { pos: [ -1, 1, -1 ], normal: [ -1, 0, 0 ] },
-  { pos: [ -1, 1, 1 ], normal: [ -1, 0, 0 ] },
-  { pos: [ -1, -1, 1 ], normal: [ -1, 0, 0 ] },
-  { pos: [ 1, -1, -1 ], normal: [ 1, 0, 0 ] },
-  { pos: [ 1, 1, -1 ], normal: [ 1, 0, 0 ] },
-  { pos: [ 1, 1, 1 ], normal: [ 1, 0, 0 ] },
-  { pos: [ 1, -1, 1 ], normal: [ 1, 0, 0 ] }
+  { pos: [ -0.45, -0.45, -0.5 ], normal: [ 0, 0, -1 ] },
+  { pos: [ 0.45, -0.45, -0.5 ], normal: [ 0, 0, -1 ] },
+  { pos: [ 0.45, 0.45, -0.5 ], normal: [ 0, 0, -1 ] },
+  { pos: [ -0.45, 0.45, -0.5 ], normal: [ 0, 0, -1 ] },
+  { pos: [ -0.45, -0.45, 0.5 ], normal: [ 0, 0, 1 ] },
+  { pos: [ 0.45, -0.45, 0.5 ], normal: [ 0, 0, 1 ] },
+  { pos: [ 0.45, 0.45, 0.5 ], normal: [ 0, 0, 1 ] },
+  { pos: [ -0.45, 0.45, 0.5 ], normal: [ 0, 0, 1 ] },
+  { pos: [ -0.45, -0.5, -0.45 ], normal: [ 0, -1, 0 ] },
+  { pos: [ -0.45, -0.5, 0.45 ], normal: [ 0, -1, 0 ] },
+  { pos: [ 0.45, -0.5, 0.45 ], normal: [ 0, -1, 0 ] },
+  { pos: [ 0.45, -0.5, -0.45 ], normal: [ 0, -1, 0 ] },
+  { pos: [ -0.45, 0.5, -0.45 ], normal: [ 0, 1, 0 ] },
+  { pos: [ -0.45, 0.5, 0.45 ], normal: [ 0, 1, 0 ] },
+  { pos: [ 0.45, 0.5, 0.45 ], normal: [ 0, 1, 0 ] },
+  { pos: [ 0.45, 0.5, -0.45 ], normal: [ 0, 1, 0 ] },
+  { pos: [ -0.5, -0.45, -0.45 ], normal: [ -1, 0, 0 ] },
+  { pos: [ -0.5, 0.45, -0.45 ], normal: [ -1, 0, 0 ] },
+  { pos: [ -0.5, 0.45, 0.45 ], normal: [ -1, 0, 0 ] },
+  { pos: [ -0.5, -0.45, 0.45 ], normal: [ -1, 0, 0 ] },
+  { pos: [ 0.5, -0.45, -0.45 ], normal: [ 1, 0, 0 ] },
+  { pos: [ 0.5, 0.45, -0.45 ], normal: [ 1, 0, 0 ] },
+  { pos: [ 0.5, 0.45, 0.45 ], normal: [ 1, 0, 0 ] },
+  { pos: [ 0.5, -0.45, 0.45 ], normal: [ 1, 0, 0 ] }
 ];
 
 
 const faces = [
-  { vertices: [ 0, 1, 2, 3 ], color: hue(0) },
-  { vertices: [ 4, 7, 6, 5 ], color: hue(180) },
-  { vertices: [ 8, 9, 10, 11 ], color: hue(120) },
-  { vertices: [ 12, 15, 14, 13 ], color: hue(300) },
-  { vertices: [ 16, 17, 18, 19 ], color: hue(240) },
-  { vertices: [ 20, 23, 22, 21 ], color: hue(60) }
+  { vertices: [ 0, 1, 2, 3 ], color: white },
+  { vertices: [ 4, 7, 6, 5 ], color: white },
+  { vertices: [ 8, 9, 10, 11 ], color: white },
+  { vertices: [ 12, 15, 14, 13 ], color: white },
+  { vertices: [ 16, 17, 18, 19 ], color: white },
+  { vertices: [ 20, 23, 22, 21 ], color: white }
 ];
 
 
@@ -72,24 +72,24 @@ export const sceneSpec = {
       }
     },
     { meshIndex: 0,
-      material: baseMaterial,
+      material: Object.assign({}, baseMaterial, { diffuseColor: hue(60) }),
       transform: {
         basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
         shift: [ 0, 0, 0 ]
       }
     },
     { meshIndex: 0,
-      material: baseMaterial,
+      material: Object.assign({}, baseMaterial, { diffuseColor: hue(180) }),
       transform: {
         basis: [ [ -1, 0, 0 ], [ 0, 0, 1 ], [ 0, -1, 0 ] ],
-        shift: [ 2.5, 0, 0 ]
+        shift: [ 1.2, 0, 0 ]
       }
     },
     { meshIndex: 0,
-      material: baseMaterial,
+      material: Object.assign({}, baseMaterial, { diffuseColor: hue(300) }),
       transform: {
         basis: [ [ -1, 0, 0 ], [ 0, 0, -1 ], [ 0, 1, 0 ] ],
-        shift: [ -2.5, 0, 0 ]
+        shift: [ -1.2, 0, 0 ]
       }
     }
   ]
