@@ -261,57 +261,65 @@ const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
 const tilingModel = (
   surfaces, instances, options, basis, extensionFactor, shifts=[[0, 0, 0]]
 ) => {
-  const model = new THREE.Object3D();
   const hue0 = Math.random();
 
-  const geometries = surfaces.map(({ pos, faces }) => geometry(pos, faces));
   const extend = v => ops.times(v, extensionFactor);
   const dVecs = lattices.dirichletVectors(basis).map(extend);
 
+  const model = {
+    meshes: surfaces.map(({ pos, faces }) => geometry(pos, faces)),
+    instances: []
+  };
+
   for (const i in instances) {
     const { templateIndex: kind, symmetry, center } = instances[i];
-    const geom = geometries[kind];
 
-    const matrix = new THREE.Matrix4();
-
-    let A = symmetry;
-    if (A.length == 3)
-      A = [
-        A[0].concat(0),
-        A[1].concat(0),
-        [0, 0, 1, 0],
-        A[2].slice(0, 2).concat(0, 1)
+    const transform = {};
+    if (symmetry.length == 3) {
+      transform.basis = [
+        symmetry[0],
+        symmetry[1],
+        [0, 0, 1]
       ];
-
-    matrix.elements = [].concat.apply([], A);
+      transform.shift = symmetry[2];
+    }
+    else {
+      transform.basis = [
+        symmetry[0].slice(0, 3),
+        symmetry[1].slice(0, 3),
+        symmetry[2].slice(0, 3)
+      ];
+      transform.shift = symmetry[3].slice(0, 3);
+    }
 
     for (const s0 of shifts) {
       const a = options.colorByTranslationClass ?
         i / instances.length :
         kind / surfaces.length;
 
-      const mat = new THREE.MeshPhongMaterial({
-        color: colorHSL((hue0 + a) % 1, 1.0, 0.7),
-        shininess: 15
+      const mat = Object.assign({}, baseMaterial, {
+        diffuseColor: {
+          hue: ((hue0 + a) % 1) * 2 * Math.PI,
+          saturation: 1.0,
+          lightness: 0.7
+        },
+        shininess: 15.0
       });
 
       const c = ops.plus(center, s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
-      const tileMesh = new THREE.Mesh(geom, mat);
-      tileMesh.applyMatrix(matrix);
-      tileMesh.position.x += s[0];
-      tileMesh.position.y += s[1];
-      tileMesh.position.z += (s[2] || 0);
-      model.add(tileMesh);
+      model.instances.push({
+        meshIndex: kind,
+        material: mat,
+        transform: {
+          basis: transform.basis,
+          shift: ops.plus(transform.shift, [s[0], s[1], s[2] || 0])
+        }
+      });
 
       if (options.showSurfaceMesh) {
-        const tileWire = wireframe(geom, colorHSL(0.0, 0.0, 0.0));
-        tileWire.applyMatrix(matrix);
-        tileWire.position.x += s[0];
-        tileWire.position.y += s[1];
-        tileWire.position.z += (s[2] || 0);
-        model.add(tileWire);
+        //TODO - implement this
       }
     }
   }
@@ -401,15 +409,7 @@ const makeScene = (structure, options, runJob, log) => csp.go(function*() {
 
   const model = yield builder(structure, options, runJob, log);
 
-  //for (const mesh of model.meshes)
-  //  console.log(JSON.stringify(mesh));
-
-  //for (const instance of model.instances)
-  //  console.log(JSON.stringify(instance));
-
-  //const bbox = new THREE.Box3();
-  //bbox.setFromObject(model);
-  //model.position.sub(bbox.getCenter(new THREE.Vector3()));
+  // TODO - center model via bounding box or sphere
 
   log('Scene complete!');
   return model;
