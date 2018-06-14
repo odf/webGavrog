@@ -24,7 +24,7 @@ const geometryNew = (vertices, faces) => {
 
   for (const f of faces) {
     const n = f.length;
-    for (const i in f) {
+    for (let i = 0; i < n; ++i) {
       const u = f[i];
       const v = f[(i + 1) % n];
       const w = f[(i + 2) % n];
