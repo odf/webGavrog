@@ -94,7 +94,7 @@ const makeBall = radius => {
              [3,5,4], [5,3,1], [4,5,0], [3,4,2]],
     isFixed: [false, false, false, false, false, false]
   };
-  const t = subD(subD(t0));
+  const t = subD(subD(subD(t0)));
 
   return geometry(
     t.pos.map(v => ops.times(unitVec(v), radius)),
@@ -152,7 +152,7 @@ const ballAndStick = (
     const u = positions[e[0]];
     const v = positions[e[1]];
 
-    meshes.push(stick(u, v, stickRadius, 8));
+    meshes.push(stick(u, v, stickRadius, 12));
 
     instances.push({
       meshIndex: meshes.length - 1,
