@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import * as csp   from 'plexus-csp';
 
 import * as util        from '../common/util';
@@ -259,23 +258,6 @@ const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
 });
 
 
-const colorHSL = (hue, saturation, lightness) => {
-  const c = new THREE.Color();
-  c.setHSL(hue, saturation, lightness);
-  return c;
-};
-
-
-const wireframe = (geometry, color) => {
-  const wireframe = new THREE.WireframeGeometry(geometry);
-
-  const line = new THREE.LineSegments(wireframe);
-  line.material.color = color;
-
-  return line;
-};
-
-
 const tilingModel = (
   surfaces, instances, options, basis, extensionFactor, shifts=[[0, 0, 0]]
 ) => {
@@ -335,15 +317,6 @@ const tilingModel = (
   }
 
   return model;
-};
-
-
-const light = (color, x, y, z) => {
-  const light = new THREE.PointLight(color);
-
-  light.position.set(x, y, z);
-
-  return light;
 };
 
 
