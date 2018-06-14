@@ -107,7 +107,7 @@ const baseMaterial = {
   ambientColor: white,
   diffuseColor: white,
   specularColor: white,
-  ka: 0.1,
+  ka: 0.0,
   kd: 1.0,
   ks: 0.2,
   shininess: 15.0
