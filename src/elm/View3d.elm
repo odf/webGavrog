@@ -56,6 +56,9 @@ init spec =
 -- SUBSCRIPTIONS
 
 
+port scenes : (RawSceneSpec -> msg) -> Sub msg
+
+
 type Msg
     = ResizeMsg Window.Size
     | FrameMsg Time
@@ -65,6 +68,7 @@ type Msg
     | KeyDownMsg Int
     | KeyUpMsg Int
     | WheelMsg Float
+    | SetScene RawSceneSpec
 
 
 subscriptions : Model -> Sub Msg
@@ -83,6 +87,7 @@ subscriptions model =
                    , Keyboard.downs KeyDownMsg
                    , Keyboard.ups KeyUpMsg
                    , Window.resizes ResizeMsg
+                   , scenes SetScene
                    ]
 
 
@@ -120,6 +125,9 @@ update msg model =
 
         KeyUpMsg code ->
             handleKeyPress code <| setModifiers code False model
+
+        SetScene spec ->
+            { model | scene = makeScene spec } ! []
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )

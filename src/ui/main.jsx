@@ -430,10 +430,10 @@ class App extends React.Component {
           callWorker,
           s => this.log(s));
 
-        const camera = scene.getObjectByName('camera');
-        const cameraParameters = { distance: camera.position.z };
+        this.setState({ structures, index, scene });
 
-        this.setState({ structures, index, scene, camera, cameraParameters });
+        if (this.state.scenePort)
+          this.state.scenePort.send(scene);
       } catch(ex) {
         this.log('ERROR processing the structure!!!');
         console.error(ex);
@@ -496,7 +496,9 @@ class App extends React.Component {
 
   render3dScene() {
     return (
-      <Elm src={View3d} flags={sceneSpec} />
+      <Elm src={View3d}
+           flags={sceneSpec}
+           ports={ ports => this.setState({ scenePort: ports.scenes }) } />
     );
   }
 

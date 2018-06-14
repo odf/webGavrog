@@ -428,11 +428,11 @@ const makeScene = (structure, options, runJob, log) => csp.go(function*() {
 
   const model = yield builder(structure, options, runJob, log);
 
-  for (const mesh of model.meshes)
-    console.log(JSON.stringify(mesh));
+  //for (const mesh of model.meshes)
+  //  console.log(JSON.stringify(mesh));
 
-  for (const instance of model.instances)
-    console.log(JSON.stringify(instance));
+  //for (const instance of model.instances)
+  //  console.log(JSON.stringify(instance));
 
   //const bbox = new THREE.Box3();
   //bbox.setFromObject(model);
