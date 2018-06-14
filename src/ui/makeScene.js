@@ -19,7 +19,7 @@ const unitVec = v => ops.div(v, ops.norm(v));
 const white = { hue: 0, saturation: 0, lightness: 1 };
 
 
-const geometryNew = (vertices, faces) => {
+const geometry = (vertices, faces, isWireframe=false) => {
   const normals = vertices.map(v => ops.times(v, 0));
 
   for (const f of faces) {
@@ -37,30 +37,16 @@ const geometryNew = (vertices, faces) => {
   }
 
   return {
-    vertices: vertices.map((v, i) => ({ pos: v, normal: unitVec(normals[i]) })),
-    faces: faces.map(f => ({ vertices: f, color: white })),
-    isWireframe: false
+    vertices: vertices.map((v, i) => ({
+      pos: v,
+      normal: unitVec(normals[i])
+    })),
+    faces: faces.map(f => ({
+      vertices: f,
+      color: white
+    })),
+    isWireframe: isWireframe
   }
-};
-
-
-const geometry = (vertices, faces) => {
-  const geom = new THREE.Geometry();
-
-  vertices.forEach(v => {
-    geom.vertices.push(new THREE.Vector3(v[0], v[1], v[2]));
-  });
-
-  faces.forEach(f => {
-    f.forEach((v, i) => {
-      if (i > 0 && i+1 < f.length)
-        geom.faces.push(new THREE.Face3(f[0], f[i], f[i+1]));
-    });
-  });
-
-  geom.computeFaceNormals();
-  geom.computeVertexNormals();
-  return geom;
 };
 
 
@@ -97,8 +83,6 @@ const stick = (p, q, radius, segments) => {
     return [i, j, j+n, i+n];
   });
 
-  const gNew = geometryNew(vertices, faces);
-
   return geometry(vertices, faces);
 };
 
@@ -112,10 +96,21 @@ const makeBall = radius => {
   };
   const t = subD(subD(t0));
 
-  return geometryNew(
+  return geometry(
     t.pos.map(v => ops.times(unitVec(v), radius)),
     t.faces
   );
+};
+
+
+const baseMaterial = {
+  ambientColor: white,
+  diffuseColor: white,
+  specularColor: white,
+  ka: 0.1,
+  kd: 1.0,
+  ks: 0.2,
+  shininess: 15.0
 };
 
 
@@ -124,46 +119,52 @@ const ballAndStick = (
   edges,
   ballRadius=0.1,
   stickRadius=0.04,
-  ballColor=0xe8d880,
-  stickColor=0x404080
+  ballColor={ hue: 0.9, saturation: 0.7, lightness: 0.7 },
+  stickColor={ hue: 4.2, saturation: 0.3, lightness: 0.4 }
 ) => {
-  const model = new THREE.Object3D();
-  const ball  = new THREE.SphereGeometry(ballRadius, 16, 8);
+  const ball = makeBall(ballRadius);
 
-  const bNew = makeBall(ballRadius);
-  for (const i in bNew.vertices)
-    console.log(`v${i}: ${JSON.stringify(bNew.vertices[i])}`);
-  for (const i in bNew.faces)
-    console.log(`f${i}: ${JSON.stringify(bNew.faces[i])}`);
+  const meshes = [ ball ];
+  const instances = [];
+
+  const ballMaterial = Object.assign({}, baseMaterial, {
+    diffuseColor: ballColor,
+    shininess: 50.0
+  });
+
+  const stickMaterial = Object.assign({}, baseMaterial, {
+    diffuseColor: stickColor,
+    shininess: 50.0
+  });
 
   positions.forEach(p => {
-    const mat = new THREE.MeshPhongMaterial({
-      color: ballColor,
-      shininess: 50
-    });
-
-    const s = new THREE.Mesh(ball, mat);
-    s.position.x = p[0];
-    s.position.y = p[1];
-    s.position.z = p[2] || 0;
-    model.add(s);
+    instances.push({
+      meshIndex: 0,
+      material: ballMaterial,
+      transform: {
+        basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
+        shift: [ p[0], p[1], p[2] || 0 ]
+      }
+    })
   });
 
   edges.forEach(e => {
     const u = positions[e[0]];
     const v = positions[e[1]];
-    const s = stick(u, v, stickRadius, 8);
-    s.computeVertexNormals();
 
-    const mat = new THREE.MeshPhongMaterial({
-      color: stickColor,
-      shininess: 50
-    });
+    meshes.push(stick(u, v, stickRadius, 8));
 
-    model.add(new THREE.Mesh(s, mat));
+    instances.push({
+      meshIndex: meshes.length - 1,
+      material: stickMaterial,
+      transform: {
+        basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
+        shift: [ 0, 0, 0 ]
+      }
+    })
   });
 
-  return model;
+  return { meshes, instances };
 };
 
 
@@ -427,28 +428,18 @@ const makeScene = (structure, options, runJob, log) => csp.go(function*() {
 
   const model = yield builder(structure, options, runJob, log);
 
-  const bbox = new THREE.Box3();
-  bbox.setFromObject(model);
-  model.position.sub(bbox.getCenter(new THREE.Vector3()));
+  for (const mesh of model.meshes)
+    console.log(JSON.stringify(mesh));
 
-  log('Composing the scene...');
+  for (const instance of model.instances)
+    console.log(JSON.stringify(instance));
 
-  const distance = 12;
-  const camera = new THREE.PerspectiveCamera(25, 1, 0.1, 10000);
-  camera.name = 'camera';
-  camera.position.z = distance;
-
-  camera.add(light(0xaaaaaa,  distance, 0.5*distance, distance));
-  camera.add(light(0x555555, -0.5*distance, -0.25*distance, distance));
-  camera.add(light(0x000033, 0.25*distance, 0.25*distance, -distance));
-
-  const scene = new THREE.Scene();
-
-  scene.add(model);
-  scene.add(camera);
+  //const bbox = new THREE.Box3();
+  //bbox.setFromObject(model);
+  //model.position.sub(bbox.getCenter(new THREE.Vector3()));
 
   log('Scene complete!');
-  return scene;
+  return model;
 });
 
 
