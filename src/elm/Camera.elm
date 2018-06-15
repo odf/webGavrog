@@ -287,7 +287,7 @@ perspectiveMatrix (State state) =
             else
                 atan (tan (degrees (fov / 2)) / aspectRatio) * 360 / pi
     in
-        Mat4.makePerspective fovy aspectRatio 0.01 100
+        Mat4.makePerspective fovy aspectRatio 1 10000
 
 
 cameraDistance : State -> Float
