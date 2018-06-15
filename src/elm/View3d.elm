@@ -65,7 +65,7 @@ init spec =
     )
 
 
-glMesh : Mesh -> GlMesh
+glMesh : Mesh Renderer.Vertex -> GlMesh
 glMesh mesh =
     case mesh of
         Lines lines ->

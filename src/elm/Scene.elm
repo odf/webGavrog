@@ -62,7 +62,7 @@ type alias RawSceneSpec =
 
 
 type alias Instance =
-    { mesh : Mesh
+    { mesh : Mesh Vertex
     , material : Material
     , transform : Mat4
     }
@@ -93,7 +93,7 @@ makeVertex v =
     }
 
 
-makeMesh : RawMeshSpec -> Mesh
+makeMesh : RawMeshSpec -> Mesh Vertex
 makeMesh spec =
     if spec.isWireframe then
         wireframe (List.map makeVertex spec.vertices) spec.faces
@@ -124,7 +124,7 @@ makeTransform { basis, shift } =
             (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
 
 
-makeInstance : List Mesh -> RawInstanceSpec -> Maybe Instance
+makeInstance : List (Mesh Vertex) -> RawInstanceSpec -> Maybe Instance
 makeInstance meshes spec =
     meshes
         |> List.drop spec.meshIndex
