@@ -1,4 +1,4 @@
-module Mesh exposing (VertexSpec, FaceSpec, Mesh(..), mesh, wireframe)
+module Mesh exposing (Mesh(..), mesh, wireframe)
 
 import Math.Vector3 exposing (vec3, Vec3)
 import Renderer exposing (Vertex)
@@ -9,27 +9,16 @@ type Mesh
     | Triangles (List ( Vertex, Vertex, Vertex ))
 
 
-type alias VertexSpec =
-    { pos : Vec3
-    , normal : Vec3
-    }
-
-
 type alias FaceSpec =
     List Int
 
 
-buildVertex : VertexSpec -> Vertex
-buildVertex v =
-    { pos = v.pos, normal = v.normal }
-
-
-pullVertex : List VertexSpec -> Int -> Maybe Vertex
+pullVertex : List Vertex -> Int -> Maybe Vertex
 pullVertex vertices i =
-    vertices |> List.drop i |> List.head |> Maybe.map buildVertex
+    vertices |> List.drop i |> List.head
 
 
-corners : List VertexSpec -> FaceSpec -> List Vertex
+corners : List Vertex -> FaceSpec -> List Vertex
 corners vertices face =
     List.filterMap (pullVertex vertices) face
 
@@ -50,13 +39,13 @@ edges corners =
     List.map2 (,) corners ((List.drop 1 corners) ++ (List.take 1 corners))
 
 
-mesh : List VertexSpec -> List FaceSpec -> Mesh
+mesh : List Vertex -> List FaceSpec -> Mesh
 mesh vertices faces =
     List.concatMap (triangles << corners vertices) faces
         |> Triangles
 
 
-wireframe : List VertexSpec -> List FaceSpec -> Mesh
+wireframe : List Vertex -> List FaceSpec -> Mesh
 wireframe vertices faces =
     List.concatMap (edges << corners vertices) faces
         |> Lines

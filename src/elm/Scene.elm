@@ -4,7 +4,7 @@ import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3, Vec3)
 import Mesh exposing (..)
-import Renderer
+import Renderer exposing (Material, Vertex)
 
 
 type alias RawVec3 =
@@ -26,7 +26,7 @@ type alias RawVertexSpec =
 
 type alias RawMeshSpec =
     { vertices : List RawVertexSpec
-    , faces : List FaceSpec
+    , faces : List (List Int)
     , isWireframe : Bool
     }
 
@@ -63,7 +63,7 @@ type alias RawSceneSpec =
 
 type alias Instance =
     { mesh : Mesh
-    , material : Renderer.Material
+    , material : Material
     , transform : Mat4
     }
 
@@ -86,8 +86,8 @@ makeVec3Color { hue, saturation, lightness } =
         vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
 
 
-makeVertexSpec : RawVertexSpec -> VertexSpec
-makeVertexSpec v =
+makeVertex : RawVertexSpec -> Vertex
+makeVertex v =
     { pos = makeVec3 v.pos
     , normal = makeVec3 v.normal
     }
@@ -96,12 +96,12 @@ makeVertexSpec v =
 makeMesh : RawMeshSpec -> Mesh
 makeMesh spec =
     if spec.isWireframe then
-        wireframe (List.map makeVertexSpec spec.vertices) spec.faces
+        wireframe (List.map makeVertex spec.vertices) spec.faces
     else
-        mesh (List.map makeVertexSpec spec.vertices) spec.faces
+        mesh (List.map makeVertex spec.vertices) spec.faces
 
 
-makeMaterial : RawMaterial -> Renderer.Material
+makeMaterial : RawMaterial -> Material
 makeMaterial mat =
     { ambientColor = makeVec3Color mat.ambientColor
     , diffuseColor = makeVec3Color mat.diffuseColor
