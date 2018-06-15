@@ -127,7 +127,10 @@ update msg model =
             handleKeyPress code <| setModifiers code False model
 
         SetScene spec ->
-            { model | scene = makeScene spec } ! []
+            lookAlong
+                (vec3 0 0 -1)
+                (vec3 0 1 0)
+                { model | scene = makeScene spec }
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )
