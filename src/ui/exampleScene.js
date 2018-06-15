@@ -49,12 +49,12 @@ const vertices = [
 
 
 const faces = [
-  { vertices: [ 0, 1, 2, 3 ], color: white },
-  { vertices: [ 4, 7, 6, 5 ], color: white },
-  { vertices: [ 8, 9, 10, 11 ], color: white },
-  { vertices: [ 12, 15, 14, 13 ], color: white },
-  { vertices: [ 16, 17, 18, 19 ], color: white },
-  { vertices: [ 20, 23, 22, 21 ], color: white }
+  [ 0, 1, 2, 3 ],
+  [ 4, 7, 6, 5 ],
+  [ 8, 9, 10, 11 ],
+  [ 12, 15, 14, 13 ],
+  [ 16, 17, 18, 19 ],
+  [ 20, 23, 22, 21 ]
 ];
 
 

@@ -18,8 +18,8 @@ const unitVec = v => ops.div(v, ops.norm(v));
 const white = { hue: 0, saturation: 0, lightness: 1 };
 
 
-const geometry = (vertices, faces, isWireframe=false) => {
-  const normals = vertices.map(v => ops.times(v, 0));
+const geometry = (vertsIn, faces, isWireframe=false) => {
+  const normals = vertsIn.map(v => ops.times(v, 0));
 
   for (const f of faces) {
     const n = f.length;
@@ -28,24 +28,19 @@ const geometry = (vertices, faces, isWireframe=false) => {
       const v = f[(i + 1) % n];
       const w = f[(i + 2) % n];
 
-      const a = ops.minus(vertices[u], vertices[v]);
-      const b = ops.minus(vertices[w], vertices[v]);
+      const a = ops.minus(vertsIn[u], vertsIn[v]);
+      const b = ops.minus(vertsIn[w], vertsIn[v]);
 
       normals[v] = ops.plus(normals[v], ops.crossProduct(b, a));
     }
   }
 
-  return {
-    vertices: vertices.map((v, i) => ({
-      pos: v,
-      normal: unitVec(normals[i])
-    })),
-    faces: faces.map(f => ({
-      vertices: f,
-      color: white
-    })),
-    isWireframe: isWireframe
-  }
+  const vertices = vertsIn.map((v, i) => ({
+    pos: v,
+    normal: unitVec(normals[i])
+  }));
+
+  return { vertices, faces, isWireframe }
 };
 
 

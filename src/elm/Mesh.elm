@@ -1,6 +1,5 @@
 module Mesh exposing (VertexSpec, FaceSpec, Mesh(..), mesh, wireframe)
 
-import Color exposing (Color)
 import Math.Vector3 exposing (vec3, Vec3)
 import Renderer exposing (Vertex)
 
@@ -17,28 +16,22 @@ type alias VertexSpec =
 
 
 type alias FaceSpec =
-    { vertices : List Int
-    , color : Color
-    }
+    List Int
 
 
-colorVec { red, green, blue } =
-    vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
+buildVertex : VertexSpec -> Vertex
+buildVertex v =
+    { pos = v.pos, normal = v.normal }
 
 
-buildVertex : Color -> VertexSpec -> Vertex
-buildVertex color v =
-    { pos = v.pos, normal = v.normal, color = colorVec (Color.toRgb color) }
-
-
-pullVertex : List VertexSpec -> Color -> Int -> Maybe Vertex
-pullVertex vertices color i =
-    vertices |> List.drop i |> List.head |> Maybe.map (buildVertex color)
+pullVertex : List VertexSpec -> Int -> Maybe Vertex
+pullVertex vertices i =
+    vertices |> List.drop i |> List.head |> Maybe.map buildVertex
 
 
 corners : List VertexSpec -> FaceSpec -> List Vertex
 corners vertices face =
-    List.filterMap (pullVertex vertices face.color) face.vertices
+    List.filterMap (pullVertex vertices) face
 
 
 triangles : List Vertex -> List ( Vertex, Vertex, Vertex )

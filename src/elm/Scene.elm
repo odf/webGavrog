@@ -24,15 +24,9 @@ type alias RawVertexSpec =
     }
 
 
-type alias RawFaceSpec =
-    { vertices : List Int
-    , color : RawColor
-    }
-
-
 type alias RawMeshSpec =
     { vertices : List RawVertexSpec
-    , faces : List RawFaceSpec
+    , faces : List FaceSpec
     , isWireframe : Bool
     }
 
@@ -83,11 +77,6 @@ makeVec3 ( a, b, c ) =
     vec3 a b c
 
 
-makeColor : RawColor -> Color
-makeColor { hue, saturation, lightness } =
-    Color.hsl hue saturation lightness
-
-
 makeVec3Color : RawColor -> Vec3
 makeVec3Color { hue, saturation, lightness } =
     let
@@ -104,23 +93,12 @@ makeVertexSpec v =
     }
 
 
-makeFaceSpec : RawFaceSpec -> FaceSpec
-makeFaceSpec f =
-    { vertices = f.vertices
-    , color = makeColor f.color
-    }
-
-
 makeMesh : RawMeshSpec -> Mesh
 makeMesh spec =
     if spec.isWireframe then
-        wireframe
-            (List.map makeVertexSpec spec.vertices)
-            (List.map makeFaceSpec spec.faces)
+        wireframe (List.map makeVertexSpec spec.vertices) spec.faces
     else
-        mesh
-            (List.map makeVertexSpec spec.vertices)
-            (List.map makeFaceSpec spec.faces)
+        mesh (List.map makeVertexSpec spec.vertices) spec.faces
 
 
 makeMaterial : RawMaterial -> Renderer.Material

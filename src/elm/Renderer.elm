@@ -6,8 +6,7 @@ import WebGL
 
 
 type alias Vertex =
-    { color : Vec3
-    , pos : Vec3
+    { pos : Vec3
     , normal : Vec3
     }
 
@@ -44,8 +43,7 @@ type alias Uniforms =
 
 
 type alias Varyings =
-    { vcolor : Vec3
-    , vpos : Vec3
+    { vpos : Vec3
     , vnormal : Vec3
     }
 
@@ -84,17 +82,14 @@ vertexShader : WebGL.Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
 
-    attribute vec3 color;
     attribute vec3 pos;
     attribute vec3 normal;
     uniform mat4 viewing;
     uniform mat4 perspective;
-    varying vec3 vcolor;
     varying vec3 vpos;
     varying vec3 vnormal;
 
     void main () {
-        vcolor = color;
         vpos = (viewing * vec4(pos, 1.0)).xyz;
         vnormal = (viewing * vec4(normal, 0.0)).xyz;
         gl_Position = perspective * viewing * vec4(pos, 1.0);
@@ -122,7 +117,6 @@ fragmentShader =
     uniform float kd;
     uniform float ks;
     uniform float shininess;
-    varying vec3 vcolor;
     varying vec3 vpos;
     varying vec3 vnormal;
 
@@ -141,7 +135,7 @@ fragmentShader =
           specular = pow(t, shininess);
         }
 
-        vec3 cd = kd * diffuse * diffuseColor * vcolor;
+        vec3 cd = kd * diffuse * diffuseColor;
         vec3 cs = ks * specular * specularColor;
         vec3 ca = ka * ambientColor;
 
