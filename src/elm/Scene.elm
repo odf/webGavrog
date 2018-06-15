@@ -3,7 +3,6 @@ module Scene exposing (RawSceneSpec, Scene, makeScene)
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3, Vec3)
-import WebGL
 import Mesh exposing (..)
 import Renderer
 
@@ -66,10 +65,6 @@ type alias RawSceneSpec =
     { meshes : List RawMeshSpec
     , instances : List RawInstanceSpec
     }
-
-
-type alias Mesh =
-    WebGL.Mesh Renderer.Vertex
 
 
 type alias Instance =

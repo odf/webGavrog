@@ -1,9 +1,13 @@
-module Mesh exposing (VertexSpec, FaceSpec, mesh, wireframe)
+module Mesh exposing (VertexSpec, FaceSpec, Mesh(..), mesh, wireframe)
 
 import Color exposing (Color)
 import Math.Vector3 exposing (vec3, Vec3)
-import WebGL
 import Renderer exposing (Vertex)
+
+
+type Mesh
+    = Lines (List ( Vertex, Vertex ))
+    | Triangles (List ( Vertex, Vertex, Vertex ))
 
 
 type alias VertexSpec =
@@ -53,13 +57,13 @@ edges corners =
     List.map2 (,) corners ((List.drop 1 corners) ++ (List.take 1 corners))
 
 
-mesh : List VertexSpec -> List FaceSpec -> WebGL.Mesh Vertex
+mesh : List VertexSpec -> List FaceSpec -> Mesh
 mesh vertices faces =
     List.concatMap (triangles << corners vertices) faces
-        |> WebGL.triangles
+        |> Triangles
 
 
-wireframe : List VertexSpec -> List FaceSpec -> WebGL.Mesh Vertex
+wireframe : List VertexSpec -> List FaceSpec -> Mesh
 wireframe vertices faces =
     List.concatMap (edges << corners vertices) faces
-        |> WebGL.lines
+        |> Lines

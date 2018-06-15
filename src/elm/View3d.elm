@@ -13,6 +13,7 @@ import Task
 import Time exposing (Time)
 import WebGL
 import Camera
+import Mesh exposing (..)
 import Renderer
 import Scene exposing (..)
 import WheelEvent
@@ -36,20 +37,54 @@ main =
 type alias Model =
     { size : Window.Size
     , cameraState : Camera.State
-    , scene : Scene
+    , scene : GlScene
     , modifiers : { shift : Bool, ctrl : Bool }
     }
+
+
+type alias GlMesh =
+    WebGL.Mesh Renderer.Vertex
+
+
+type alias GlScene =
+    List
+        { mesh : GlMesh
+        , material : Renderer.Material
+        , transform : Mat4
+        }
 
 
 init : RawSceneSpec -> ( Model, Cmd Msg )
 init spec =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
-      , scene = makeScene spec
+      , scene = glScene <| makeScene spec
       , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
     )
+
+
+glMesh : Mesh -> GlMesh
+glMesh mesh =
+    case mesh of
+        Lines lines ->
+            WebGL.lines lines
+
+        Triangles triangles ->
+            WebGL.triangles triangles
+
+
+glScene : Scene -> GlScene
+glScene scene =
+    List.map
+        (\instance ->
+            { mesh = glMesh instance.mesh
+            , material = instance.material
+            , transform = instance.transform
+            }
+        )
+        scene
 
 
 
@@ -130,7 +165,7 @@ update msg model =
             lookAlong
                 (vec3 0 0 -1)
                 (vec3 0 1 0)
-                { model | scene = makeScene spec }
+                { model | scene = glScene <| makeScene spec }
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )
