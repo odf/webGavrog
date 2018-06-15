@@ -108,9 +108,15 @@ updateZoom value alter (State state) =
 
         newState =
             if alter then
-                { state | fieldOfView = factor * state.fieldOfView }
+                { state
+                    | fieldOfView =
+                        clamp 2.5 150 <| factor * state.fieldOfView
+                }
             else
-                { state | cameraDistance = factor * state.cameraDistance }
+                { state
+                    | cameraDistance =
+                        clamp 2.5 1000 <| factor * state.cameraDistance
+                }
     in
         State newState
 
