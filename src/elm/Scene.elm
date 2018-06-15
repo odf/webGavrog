@@ -1,8 +1,8 @@
-module Scene exposing (RawSceneSpec, Scene, makeScene)
+module Scene exposing (RawSceneSpec, Scene, makeScene, boundingBoxForScene)
 
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 exposing (vec3, Vec3)
+import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mesh exposing (..)
 import Renderer exposing (Material, Vertex)
 
@@ -70,6 +70,12 @@ type alias Instance =
 
 type alias Scene =
     List Instance
+
+
+type alias Box =
+    { minima : Vec3
+    , maxima : Vec3
+    }
 
 
 makeVec3 : RawVec3 -> Vec3
@@ -145,3 +151,51 @@ makeScene spec =
             List.map makeMesh spec.meshes
     in
         List.filterMap (makeInstance meshes) spec.instances
+
+
+pointSetForMesh : Mesh Vertex -> List Vec3
+pointSetForMesh mesh =
+    case mesh of
+        Lines lines ->
+            List.concatMap (\( u, v ) -> [ u, v ]) lines
+                |> List.map .pos
+
+        Triangles triangles ->
+            List.concatMap (\( u, v, w ) -> [ u, v, w ]) triangles
+                |> List.map .pos
+
+
+pointSetForScene : Scene -> List Vec3
+pointSetForScene scene =
+    List.concatMap
+        (\{ mesh, transform } ->
+            pointSetForMesh mesh
+                |> List.map (\v -> Mat4.transform transform v)
+        )
+        scene
+
+
+boundingBoxForScene : Scene -> Box
+boundingBoxForScene scene =
+    let
+        pointsAsRecords =
+            pointSetForScene scene |> List.map Vec3.toRecord
+
+        xs =
+            List.map .x pointsAsRecords
+
+        ys =
+            List.map .y pointsAsRecords
+
+        zs =
+            List.map .z pointsAsRecords
+
+        lo =
+            \args -> List.minimum args |> Maybe.withDefault 0
+
+        hi =
+            \args -> List.maximum args |> Maybe.withDefault 0
+    in
+        Box
+            (vec3 (lo xs) (lo ys) (lo zs))
+            (vec3 (hi xs) (hi ys) (hi zs))

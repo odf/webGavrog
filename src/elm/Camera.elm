@@ -8,6 +8,7 @@ module Camera
         , setFrameSize
         , startDragging
         , finishDragging
+        , setCenter
         , lookAlong
         , perspectiveMatrix
         , viewingMatrix
@@ -145,6 +146,11 @@ finishDragging pos (State state) =
 lookAlong : Vec3 -> Vec3 -> State -> State
 lookAlong axis up (State state) =
     State { state | rotation = Mat4.makeLookAt (vec3 0 0 0) axis up }
+
+
+setCenter : Vec3 -> State -> State
+setCenter pos (State state) =
+    State { state | shift = Vec3.scale -1 pos }
 
 
 panMouse : Position -> State -> State

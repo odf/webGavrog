@@ -7,7 +7,7 @@ import Html.Attributes
 import Html.Events
 import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 exposing (vec3, Vec3)
+import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
 import Task
 import Time exposing (Time)
@@ -162,10 +162,7 @@ update msg model =
             handleKeyPress code <| setModifiers code False model
 
         SetScene spec ->
-            lookAlong
-                (vec3 0 0 -1)
-                (vec3 0 1 0)
-                { model | scene = glScene <| makeScene spec }
+            setScene spec model
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )
@@ -222,6 +219,25 @@ handleKeyPress code model =
 lookAlong : Vec3 -> Vec3 -> Model -> ( Model, Cmd Msg )
 lookAlong axis up model =
     updateCamera (Camera.lookAlong axis up) model
+
+
+setScene : RawSceneSpec -> Model -> ( Model, Cmd Msg )
+setScene spec model =
+    let
+        scene =
+            makeScene spec
+
+        box =
+            boundingBoxForScene scene
+
+        center =
+            Vec3.add box.minima box.maxima |> Vec3.scale (1 / 2)
+    in
+        updateCamera
+            ((Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
+                >> (Camera.setCenter center)
+            )
+            { model | scene = glScene scene }
 
 
 
