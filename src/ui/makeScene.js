@@ -16,6 +16,17 @@ const ops = floatMatrices;
 
 const unitVec = v => ops.div(v, ops.norm(v));
 const white = { hue: 0, saturation: 0, lightness: 1 };
+const black = { hue: 0, saturation: 0, lightness: 0 };
+
+const baseMaterial = {
+  ambientColor: black,
+  diffuseColor: black,
+  specularColor: white,
+  ka: 0.0,
+  kd: 1.0,
+  ks: 0.2,
+  shininess: 15.0
+};
 
 
 const geometry = (vertsIn, faces, isWireframe=false) => {
@@ -35,10 +46,11 @@ const geometry = (vertsIn, faces, isWireframe=false) => {
     }
   }
 
-  const vertices = vertsIn.map((v, i) => ({
-    pos: v,
-    normal: unitVec(normals[i])
-  }));
+  const vertices = vertsIn.map((v, i) => {
+    const normal = unitVec(normals[i]);
+    const pos = isWireframe ? ops.plus(v, ops.times(0.001, normal)) : v;
+    return { pos, normal };
+  });
 
   return { vertices, faces, isWireframe }
 };
@@ -94,17 +106,6 @@ const makeBall = radius => {
     t.pos.map(v => ops.times(unitVec(v), radius)),
     t.faces
   );
-};
-
-
-const baseMaterial = {
-  ambientColor: white,
-  diffuseColor: white,
-  specularColor: white,
-  ka: 0.0,
-  kd: 1.0,
-  ks: 0.2,
-  shininess: 15.0
 };
 
 
@@ -261,10 +262,13 @@ const tilingModel = (
   const extend = v => ops.times(v, extensionFactor);
   const dVecs = lattices.dirichletVectors(basis).map(extend);
 
-  const model = {
-    meshes: surfaces.map(({ pos, faces }) => geometry(pos, faces)),
-    instances: []
-  };
+  const meshes = surfaces.map(({ pos, faces }) => geometry(pos, faces));
+  const extraMeshes = (
+    options.showSurfaceMesh ?
+      surfaces.map(({ pos, faces }) => geometry(pos, faces, true))
+    : []);
+
+  const model = { meshes: meshes.concat(extraMeshes), instances: [] };
 
   for (const i in instances) {
     const { templateIndex: kind, symmetry, center } = instances[i];
@@ -314,7 +318,14 @@ const tilingModel = (
       });
 
       if (options.showSurfaceMesh) {
-        //TODO - implement this
+        model.instances.push({
+          meshIndex: kind + surfaces.length,
+          material: baseMaterial,
+          transform: {
+            basis: transform.basis,
+            shift: ops.plus(transform.shift, [s[0], s[1], s[2] || 0])
+          }
+        });
       }
     }
   }
@@ -403,8 +414,6 @@ const makeScene = (structure, options, runJob, log) => csp.go(function*() {
     throw new Error(`rendering not implemented for type ${type}`);
 
   const model = yield builder(structure, options, runJob, log);
-
-  // TODO - center model via bounding box or sphere
 
   log('Scene complete!');
   return model;
