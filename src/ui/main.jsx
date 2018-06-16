@@ -11,7 +11,6 @@ import * as cgd      from '../io/cgd';
 import Floatable     from './Floatable';
 import makeScene     from './makeScene';
 import Elm           from './ElmComponent';
-import { sceneSpec } from './exampleScene';
 
 import { TextInput } from '../elm/TextInput';
 import { Options }   from '../elm/Options';
@@ -497,7 +496,6 @@ class App extends React.Component {
   render3dScene() {
     return (
       <Elm src={View3d}
-           flags={sceneSpec}
            ports={ ports => this.setState({ scenePort: ports.scenes }) } />
     );
   }

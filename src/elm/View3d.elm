@@ -20,9 +20,9 @@ import WheelEvent
 import Window
 
 
-main : Program RawSceneSpec Model Msg
+main : Program Never Model Msg
 main =
-    Html.programWithFlags
+    Html.program
         { init = init
         , view = view
         , subscriptions = subscriptions
@@ -54,11 +54,11 @@ type alias GlScene =
         }
 
 
-init : RawSceneSpec -> ( Model, Cmd Msg )
-init spec =
+init : ( Model, Cmd Msg )
+init =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
-      , scene = glScene <| makeScene spec
+      , scene = []
       , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
