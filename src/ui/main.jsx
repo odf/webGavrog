@@ -109,7 +109,7 @@ END
   },
   parseCgdBlock(`
 PERIODIC_GRAPH
-  NAME srs
+  NAME srs-net
   EDGES
       1   2     0  0  0
       1   3     1 -1  0
