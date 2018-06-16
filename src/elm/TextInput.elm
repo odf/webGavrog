@@ -2,7 +2,8 @@ port module TextInput exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, onClick)
+import Html.Events exposing (onInput, onClick, onWithOptions)
+import Json.Decode as Json
 
 
 main =
@@ -47,6 +48,7 @@ type Msg
     = Text String
     | Send
     | Cancel
+    | Ignore
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -61,6 +63,9 @@ update msg model =
         Cancel ->
             ( { model | text = "" }, send "" )
 
+        Ignore ->
+            model ! []
+
 
 
 -- VIEW
@@ -74,6 +79,7 @@ view model =
             [ type_ "text"
             , placeholder model.placeholder
             , onInput Text
+            , onKeyUp Ignore
             ]
             []
         , p [ class "form-buttons" ]
@@ -81,6 +87,16 @@ view model =
             , button [ onClick Cancel ] [ text "Cancel" ]
             ]
         ]
+
+
+onKeyUp : msg -> Attribute msg
+onKeyUp msg =
+    onWithOptions
+        "keyup"
+        { stopPropagation = True
+        , preventDefault = False
+        }
+        (Json.succeed msg)
 
 
 
