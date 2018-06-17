@@ -349,8 +349,8 @@ const defaultOptions = {
   colorByTranslationClass: false,
   skipRelaxation: false,
   extraSmooth: false,
-  showSurfaceMesh: false,
-  highlightPicked: false
+  showSurfaceMesh: false /*,
+  highlightPicked: false */
 };
 
 
@@ -358,8 +358,8 @@ const optionLabel = {
   colorByTranslationClass: "Color By Translations",
   skipRelaxation: "Skip Relaxation",
   extraSmooth: "Extra-Smooth Faces",
-  showSurfaceMesh: "Show Surface Mesh",
-  highlightPicked: "Highlight On Mouseover"
+  showSurfaceMesh: "Show Surface Mesh" /*,
+  highlightPicked: "Highlight On Mouseover" */
 };
 
 
