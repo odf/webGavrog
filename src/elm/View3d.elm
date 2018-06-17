@@ -96,6 +96,9 @@ glScene scene =
 port scenes : (RawSceneSpec -> msg) -> Sub msg
 
 
+port commands : (String -> msg) -> Sub msg
+
+
 port keyPresses : Char.KeyCode -> Cmd msg
 
 
@@ -109,6 +112,7 @@ type Msg
     | KeyUpMsg Int
     | WheelMsg Float
     | SetScene RawSceneSpec
+    | Execute String
 
 
 subscriptions : Model -> Sub Msg
@@ -128,6 +132,7 @@ subscriptions model =
                    , Keyboard.ups KeyUpMsg
                    , Window.resizes ResizeMsg
                    , scenes SetScene
+                   , commands Execute
                    ]
 
 
@@ -168,6 +173,18 @@ update msg model =
 
         SetScene spec ->
             setScene spec model
+
+        Execute command ->
+            if command == "center" then
+                updateCamera (Camera.setCenter model.center) model
+            else if command == "viewAlongX" then
+                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model
+            else if command == "viewAlongY" then
+                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model
+            else if command == "viewAlongZ" then
+                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
+            else
+                model ! []
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )

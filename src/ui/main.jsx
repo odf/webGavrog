@@ -503,8 +503,11 @@ class App extends React.Component {
 
   render3dScene() {
     const handlePorts = ports => {
-      this.setState({ scenePort: ports.scenes });
-       ports.keyPresses.subscribe(code => this.handleKeyPress(code));
+      this.setState({
+        scenePort: ports.scenes,
+        commandPort: ports.commands
+      });
+      ports.keyPresses.subscribe(code => this.handleKeyPress(code));
     };
 
     return (
@@ -513,6 +516,8 @@ class App extends React.Component {
   }
 
   mainMenu() {
+    const sendCmd = cmd => () => this.state.commandPort.send(cmd);
+
     const fileMenu = [
       { label: 'Open...', action: () => this.loader.select() },
       { label: 'Save Structure...', action: () => this.saveStructure() },
@@ -529,10 +534,10 @@ class App extends React.Component {
     ];
 
     const viewMenu = [
-      { label: 'Center', action: () => this.display.center() },
-      { label: 'Along X', action: () => this.display.viewAlongX() },
-      { label: 'Along Y', action: () => this.display.viewAlongY() },
-      { label: 'Along Z', action: () => this.display.viewAlongZ() }
+      { label: 'Center', action: sendCmd('center') },
+      { label: 'Along X', action: sendCmd('viewAlongX') },
+      { label: 'Along Y', action: sendCmd('viewAlongY') },
+      { label: 'Along Z', action: sendCmd('viewAlongZ') }
     ];
 
     const helpMenu = [
@@ -542,7 +547,7 @@ class App extends React.Component {
     return [
       { label: 'File',   submenu: fileMenu },
       { label: 'Structure', submenu: structureMenu },
-      //{ label: 'View',   submenu: viewMenu },
+      { label: 'View',   submenu: viewMenu },
       { label: 'Options...', action: () => this.showWindow('options') },
       { label: 'Help',   submenu: helpMenu }
     ];
