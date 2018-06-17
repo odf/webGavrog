@@ -618,9 +618,9 @@ class App extends React.Component {
                  y="c"
                  onClick={() => this.hideWindow('about')}>
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
-        <h3 className="infoBoxHeader">Gavrog for Web</h3>
+        <h3 className="infoBoxHeader">Gavrog for the Web</h3>
         <span className="clearFix">
-          by Olaf Delgado-Friedrichs 2017<br/>
+          by Olaf Delgado-Friedrichs 2018<br/>
           The Australian National University
         </span>
         <p>
