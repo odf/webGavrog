@@ -39,6 +39,7 @@ type alias Model =
     , cameraState : Camera.State
     , scene : GlScene
     , center : Vec3
+    , radius : Float
     , modifiers : { shift : Bool, ctrl : Bool }
     }
 
@@ -61,6 +62,7 @@ init =
       , cameraState = Camera.initialState
       , scene = []
       , center = vec3 0 0 0
+      , radius = 0
       , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
@@ -176,7 +178,7 @@ update msg model =
 
         Execute command ->
             if command == "center" then
-                updateCamera (Camera.setCenter model.center) model
+                updateCamera (Camera.encompass model.center model.radius) model
             else if command == "viewAlongX" then
                 lookAlong (vec3 -1 0 0) (vec3 0 1 0) model
             else if command == "viewAlongY" then
@@ -214,7 +216,7 @@ handleKeyPress code model =
     in
         case char of
             '0' ->
-                updateCamera (Camera.setCenter model.center) model
+                updateCamera (Camera.encompass model.center model.radius) model
 
             'a' ->
                 lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model
@@ -257,12 +259,15 @@ setScene spec model =
 
         center =
             Vec3.add box.minima box.maxima |> Vec3.scale (1 / 2)
+
+        radius =
+            Vec3.length <| Vec3.sub box.minima center
     in
         updateCamera
             ((Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
-                >> (Camera.setCenter center)
+                >> (Camera.encompass center radius)
             )
-            { model | scene = glScene scene, center = center }
+            { model | scene = glScene scene, center = center, radius = radius }
 
 
 

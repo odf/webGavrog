@@ -8,7 +8,7 @@ module Camera
         , setFrameSize
         , startDragging
         , finishDragging
-        , setCenter
+        , encompass
         , lookAlong
         , perspectiveMatrix
         , viewingMatrix
@@ -148,9 +148,13 @@ lookAlong axis up (State state) =
     State { state | rotation = Mat4.makeLookAt (vec3 0 0 0) axis up }
 
 
-setCenter : Vec3 -> State -> State
-setCenter pos (State state) =
-    State { state | shift = Vec3.scale -1 pos }
+encompass : Vec3 -> Float -> State -> State
+encompass center radius (State state) =
+    State
+        { state
+            | shift = Vec3.scale -1 center
+            , cameraDistance = radius / sin (degrees state.fieldOfView / 2)
+        }
 
 
 panMouse : Position -> State -> State
