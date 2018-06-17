@@ -94,6 +94,9 @@ glScene scene =
 port scenes : (RawSceneSpec -> msg) -> Sub msg
 
 
+port keyPresses : Char.KeyCode -> Cmd msg
+
+
 type Msg
     = ResizeMsg Window.Size
     | FrameMsg Time
@@ -213,7 +216,7 @@ handleKeyPress code model =
                 lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
 
             _ ->
-                model ! []
+                ( model, keyPresses code )
 
 
 lookAlong : Vec3 -> Vec3 -> Model -> ( Model, Cmd Msg )

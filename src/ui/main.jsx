@@ -493,10 +493,22 @@ class App extends React.Component {
     }));
   }
 
+  handleKeyPress(code) {
+    const key = String.fromCharCode(code).toLowerCase();
+    if (key == 'p')
+      this.setStructure(this.state.index - 1);
+    else if (key == 'n')
+      this.setStructure(this.state.index + 1)
+  }
+
   render3dScene() {
+    const handlePorts = ports => {
+      this.setState({ scenePort: ports.scenes });
+       ports.keyPresses.subscribe(code => this.handleKeyPress(code));
+    };
+
     return (
-      <Elm src={View3d}
-           ports={ ports => this.setState({ scenePort: ports.scenes }) } />
+      <Elm src={View3d} ports={handlePorts} />
     );
   }
 
