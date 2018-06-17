@@ -38,6 +38,7 @@ type alias Model =
     { size : Window.Size
     , cameraState : Camera.State
     , scene : GlScene
+    , center : Vec3
     , modifiers : { shift : Bool, ctrl : Bool }
     }
 
@@ -59,6 +60,7 @@ init =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
       , scene = []
+      , center = vec3 0 0 0
       , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
@@ -194,6 +196,9 @@ handleKeyPress code model =
             Char.toLower <| Char.fromCode code
     in
         case char of
+            '0' ->
+                updateCamera (Camera.setCenter model.center) model
+
             'a' ->
                 lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model
 
@@ -240,7 +245,7 @@ setScene spec model =
             ((Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
                 >> (Camera.setCenter center)
             )
-            { model | scene = glScene scene }
+            { model | scene = glScene scene, center = center }
 
 
 
