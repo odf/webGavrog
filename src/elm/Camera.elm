@@ -150,11 +150,15 @@ lookAlong axis up (State state) =
 
 encompass : Vec3 -> Float -> State -> State
 encompass center radius (State state) =
-    State
-        { state
-            | shift = Vec3.scale -1 center
-            , cameraDistance = radius / sin (degrees state.fieldOfView / 2)
-        }
+    let
+        dist =
+            radius / sin (degrees state.fieldOfView / 2)
+    in
+        State
+            { state
+                | shift = Vec3.scale -1 center
+                , cameraDistance = clamp 2.5 1000 dist
+            }
 
 
 panMouse : Position -> State -> State
