@@ -371,22 +371,7 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    this.handleResize();
-    this.resizeListener = data => this.handleResize(data);
-    window.addEventListener('resize', this.resizeListener);
-
     this.setStructure(0, structures);
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.resizeListener);
-  }
-
-  handleResize(data) {
-    this.setState({
-      width: window.innerWidth,
-      height: window.innerHeight
-    });
   }
 
   log(s) {
