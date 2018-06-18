@@ -648,11 +648,9 @@ class App extends React.Component {
     const handler = text => this.handleJumpSubmit(text);
 
     return (
-      <Floatable className="infoBox" x="c" y="c">
-        <Elm src={TextInput}
-             flags={{ label: 'Jump to', placeholder: 'Number' }}
-             ports={ ports => ports.send.subscribe(handler) } />
-      </Floatable>
+      <Elm src={TextInput}
+           flags={{ label: 'Jump to', placeholder: 'Number' }}
+           ports={ ports => ports.send.subscribe(handler) } />
     );
   }
 
@@ -679,11 +677,9 @@ class App extends React.Component {
     const handler = text => this.handleSearchSubmit(text);
 
     return (
-      <Floatable className="infoBox" x="c" y="c">
-        <Elm src={TextInput}
-             flags={{ label: 'Search by name', placeholder: 'Regex' }}
-             ports={ ports => ports.send.subscribe(handler) } />
-      </Floatable>
+      <Elm src={TextInput}
+           flags={{ label: 'Search by name', placeholder: 'Regex' }}
+           ports={ ports => ports.send.subscribe(handler) } />
     );
   }
 
@@ -713,11 +709,9 @@ class App extends React.Component {
     }));
 
     return (
-      <Floatable className="infoBox" x="c" y="c">
-        <Elm src={Options}
-             flags={flags}
-             ports={ports => ports.send.subscribe(handler)} />
-      </Floatable>
+      <Elm src={Options}
+           flags={flags}
+           ports={ports => ports.send.subscribe(handler)} />
     );
   }
 
