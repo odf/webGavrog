@@ -14,6 +14,7 @@ module Camera
         , viewingMatrix
         , cameraDistance
         , isMoving
+        , setRedraws
         )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -318,3 +319,8 @@ cameraDistance (State state) =
 isMoving : State -> Bool
 isMoving (State state) =
     state.moving
+
+
+setRedraws : Bool -> State -> State
+setRedraws onOff (State state) =
+    State { state | moving = onOff, deltaRot = Mat4.identity }

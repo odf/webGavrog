@@ -455,6 +455,7 @@ class App extends React.Component {
   }
 
   saveScreenshot() {
+    this.state.commandPort.send('redrawsOn');
     window.requestAnimationFrame(() => {
       const canvas = document.getElementById('main-3d-canvas');
 
@@ -462,6 +463,7 @@ class App extends React.Component {
         canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
       else
         this.log('ERROR: could not save screenshot - no canvas element found');
+      this.state.commandPort.send('redrawsOff');
     });
   }
 

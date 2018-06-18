@@ -185,6 +185,10 @@ update msg model =
                 lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model
             else if command == "viewAlongZ" then
                 lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
+            else if command == "redrawsOn" then
+                updateCamera (Camera.setRedraws True) model
+            else if command == "redrawsOff" then
+                updateCamera (Camera.setRedraws False) model
             else
                 model ! []
 
