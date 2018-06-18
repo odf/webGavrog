@@ -4,8 +4,6 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick, onWithOptions)
 import Json.Decode as Json
-import Task
-import Window
 
 
 main =
@@ -34,21 +32,12 @@ type alias Model =
     { label : String
     , placeholder : String
     , text : String
-    , ypos : Int
-    , xpos : Int
     }
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { label = flags.label
-      , placeholder = flags.placeholder
-      , text = ""
-      , ypos = 100
-      , xpos = 100
-      }
-    , Task.perform Resize Window.size
-    )
+    Model flags.label flags.placeholder "" ! []
 
 
 
@@ -59,7 +48,6 @@ type Msg
     = Text String
     | Send
     | Cancel
-    | Resize Window.Size
     | Ignore
 
 
@@ -75,9 +63,6 @@ update msg model =
         Cancel ->
             ( { model | text = "" }, send "" )
 
-        Resize size ->
-            { model | xpos = size.width // 2, ypos = size.height // 2 } ! []
-
         Ignore ->
             model ! []
 
@@ -89,13 +74,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div
-        [ class "floatable infoBox"
-        , style
-            [ ( "left", toString model.xpos ++ "px" )
-            , ( "top", toString model.ypos ++ "px" )
-            , ( "transform", "translate(-50%, -50%)" )
-            ]
-        ]
+        [ class "floatable centered infoBox" ]
         [ div [ class "form-element" ]
             [ label [] [ text model.label ]
             , input
@@ -129,4 +108,4 @@ onKeyUp msg =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [ Window.resizes Resize ]
+    Sub.batch []
