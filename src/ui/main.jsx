@@ -8,7 +8,6 @@ import * as delaney  from '../dsymbols/delaney';
 import parseDSymbols from '../io/ds';
 import * as cgd      from '../io/cgd';
 
-import Floatable     from './Floatable';
 import makeScene     from './makeScene';
 import Elm           from './ElmComponent';
 
@@ -595,7 +594,7 @@ class App extends React.Component {
 
   renderMainDialog() {
       return (
-          <Floatable className="infoBox">
+          <div className="floatable infoBox">
               <img width="48" className="infoBoxLogo" src="3dt.ico"/>
               <h3 className="infoBoxHeader">Gavrog</h3>
               <span className="clearFix">
@@ -603,7 +602,7 @@ class App extends React.Component {
                   {this.state.log || "Welcome!"}
               </span>
               {this.renderMenu()}
-          </Floatable>
+          </div>
       );
   }
 
