@@ -612,11 +612,8 @@ class App extends React.Component {
       return;
 
     return (
-      <Floatable className="infoBox"
-                 fixed={true}
-                 x="c"
-                 y="c"
-                 onClick={() => this.hideWindow('about')}>
+      <div className="floatable centered infoBox"
+           onClick={() => this.hideWindow('about')}>
         <img width="48" className="infoBoxLogo" src="3dt.ico"/>
         <h3 className="infoBoxHeader">Gavrog for the Web</h3>
         <span className="clearFix">
@@ -628,7 +625,7 @@ class App extends React.Component {
           <b>Revision:</b> {version.gitRev}<br/>
           <b>Timestamp:</b> {version.gitDate}
         </p>
-      </Floatable>
+      </div>
     );
   }
 
