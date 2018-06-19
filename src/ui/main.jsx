@@ -113,8 +113,6 @@ class App extends React.Component {
     const n = structures.length;
     const index = i < 0 ? n + i % n : i % n;
 
-    this.setState({ structures, index });
-
     csp.go(function*() {
       try {
         if (structures[index].isRaw) {
@@ -131,12 +129,10 @@ class App extends React.Component {
           callWorker,
           s => this.log(s));
 
-        this.setState({ structures, index, scene });
-
-        if (this.state.scenePort)
-          this.state.scenePort.send(scene);
+        this.setState({ structures, index });
+        this.state.scenePort.send(scene);
       } catch(ex) {
-        this.log('ERROR processing the structure!!!');
+        this.log(`ERROR processing ${title(this.state)}!!!`);
         console.error(ex);
       }
     }.bind(this));
