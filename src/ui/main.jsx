@@ -61,6 +61,19 @@ const fileSaver = () => {
 };
 
 
+const title = state => {
+  if (state.structures) {
+    const fname = state.filename;
+    const index = state.index + 1;
+    const len = state.structures.length;
+    const name = state.structures[state.index].name;
+    const prefix = fname ? `File "${fname}" ` : 'Structure ';
+    const postfix = name ? `: ${name}` : '';
+    return `${prefix}#${index} (of ${len})${postfix}`;
+  }
+};
+
+
 const defaultOptions = {
   colorByTranslationClass: false,
   skipRelaxation: false,
@@ -95,24 +108,12 @@ class App extends React.Component {
     this.setState({ log: s });
   }
 
-  title(fname, index, len, name) {
-    const prefix = fname ? `File "${fname}" ` : 'Structure ';
-    const postfix = name ? `: ${name}` : '';
-    this.setState({ title: `${prefix}#${index} (of ${len})${postfix}` });
-  }
-
   setStructure(i, structures) {
     structures = structures || this.state.structures;
     const n = structures.length;
     const index = i < 0 ? n + i % n : i % n;
 
     this.setState({ structures, index });
-
-    this.title(
-      this.state.filename,
-      index + 1,
-      structures.length,
-      structures[index].name);
 
     csp.go(function*() {
       try {
@@ -317,7 +318,7 @@ class App extends React.Component {
               <img width="48" className="infoBoxLogo" src="3dt.ico"/>
               <h3 className="infoBoxHeader">Gavrog</h3>
               <span className="clearFix">
-                  {this.state.title}<br/>
+                  {title(this.state)}<br/>
                   {this.state.log || "Welcome!"}
               </span>
               {this.renderMenu()}
