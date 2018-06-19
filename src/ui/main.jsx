@@ -16,22 +16,6 @@ import { Menu }      from '../elm/Menu';
 import { View3d }    from '../elm/View3d';
 
 
-if (!HTMLCanvasElement.prototype.toBlob) {
-  Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
-    value(callback, type, quality) {
-      const binStr = atob(this.toDataURL(type, quality).split(',')[1]);
-
-      const len = binStr.length;
-      const arr = new Uint8Array(len);
-      for (let i = 0; i < len; i++ )
-        arr[i] = binStr.charCodeAt(i);
-
-      callback(new Blob([arr], { type: type || 'image/png' }));
-    }
-  });
-}
-
-
 const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
 
@@ -188,16 +172,31 @@ class App extends React.Component {
   }
 
   saveScreenshot() {
-    this.state.commandPort.send('redrawsOn');
-    window.requestAnimationFrame(() => {
-      const canvas = document.getElementById('main-3d-canvas');
+    const canvas = document.getElementById('main-3d-canvas');
 
-      if (canvas)
-        canvas.toBlob(blob => this.saveFile(blob, 'gavrog.png'));
-      else
-        this.log('ERROR: could not save screenshot - no canvas element found');
-      this.state.commandPort.send('redrawsOff');
-    });
+    if (canvas) {
+      this.state.commandPort.send('redrawsOn');
+
+      window.requestAnimationFrame(() => {
+        if (canvas.toBlob)
+          canvas.toBlob(blob => this.saveFile(blob, 'gavrog.png'));
+        else {
+          const binStr = atob(canvas.toDataURL().split(',')[1]);
+
+          const len = binStr.length;
+          const arr = new Uint8Array(len);
+          for (let i = 0; i < len; i++ )
+            arr[i] = binStr.charCodeAt(i);
+
+          const blob = new Blob([arr], { type: 'image/png' });
+          this.saveFile(blob, 'gavrog.png');
+        }
+
+        this.state.commandPort.send('redrawsOff');
+      });
+    }
+    else
+      this.log('ERROR: could not save screenshot - no canvas element found');
   }
 
   showWindow(key) {
