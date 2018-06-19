@@ -36,29 +36,14 @@ const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
 
 
-class FileLoader {
-  constructor(onData, accept, multiple=false, binary=false) {
-    this.onData = onData;
-    this.accept = accept;
-    this.multiple = multiple;
-    this.binary = binary;
-  }
+const fileLoader = (onData, accept, multiple=false, binary=false) => {
+  const input = document.createElement('input');
 
-  _getInputElement() {
-    if (!this.input) {
-      this.input = document.createElement('input');
+  input.type = 'file';
+  input.accept = accept;
+  input.multiple = multiple;
 
-      this.input.type = 'file';
-      this.input.accept = this.accept;
-      this.input.multiple = this.multiple;
-      this.input.addEventListener('change', event => this._loadFile(event));
-    }
-
-    return this.input;
-  }
-
-  _loadFile(event) {
-    const onData = this.onData;
+  input.addEventListener('change', event => {
     const files = event.target.files;
 
     for (let i = 0; i < files.length; ++i) {
@@ -67,53 +52,29 @@ class FileLoader {
 
       reader.onload = event => onData(file, event.target.result);
 
-      if (this.binary)
+      if (binary)
         reader.readAsDataURL(file);
       else
         reader.readAsText(file);
     }
-  }
+  });
 
-  select() {
-    this._getInputElement().click();
-  }
-
-  destroy() {
-    if (this.input)
-      document.body.removeChild(this.input);
-    this.input = null;
-  }
-}
+  return () => input.click();
+};
 
 
-class FileSaver {
-  constructor() {
-  }
+const fileSaver = () => {
+  const link = document.createElement('a');
 
-  _getDownloadLink() {
-    if (!this.link) {
-      this.link = document.createElement('a');
-      this.link.style.display = 'none';
-      document.body.appendChild(this.link);
-    }
-    return this.link;
-  }
+  link.style.display = 'none';
+  document.body.appendChild(link);
 
-  save(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = this._getDownloadLink();
-
+  return (blob, filename) => {
     link.download = filename;
-    link.href = url;
+    link.href = URL.createObjectURL(blob);
     link.click();
   }
-
-  destroy() {
-    if (this.link)
-      document.body.removeChild(this.link);
-    this.link = null;
-  }
-}
+};
 
 
 const defaultOptions = {
@@ -138,8 +99,8 @@ class App extends React.Component {
   constructor() {
     super();
     this.state = { windowsActive: {}, options: defaultOptions };
-    this.loader = new FileLoader(this.handleFileData.bind(this));
-    this.saver = new FileSaver();
+    this.loadFile = fileLoader(this.handleFileData.bind(this));
+    this.saveFile = fileSaver();
   }
 
   componentDidMount() {
@@ -220,7 +181,7 @@ class App extends React.Component {
     if (structure.type == 'tiling') {
       const text = structure.symbol.toString();
       const blob = new Blob([text], { type: 'text/plain' });
-      this.saver.save(blob, 'gavrog.ds');
+      this.saveFile(blob, 'gavrog.ds');
     }
     else
       throw new Error(`save not yet implemented for '${structure.type}'`);
@@ -232,7 +193,7 @@ class App extends React.Component {
       const canvas = document.getElementById('main-3d-canvas');
 
       if (canvas)
-        canvas.toBlob(blob => this.saver.save(blob, 'gavrog.png'));
+        canvas.toBlob(blob => this.saveFile(blob, 'gavrog.png'));
       else
         this.log('ERROR: could not save screenshot - no canvas element found');
       this.state.commandPort.send('redrawsOff');
@@ -277,7 +238,7 @@ class App extends React.Component {
     const sendCmd = cmd => () => this.state.commandPort.send(cmd);
 
     const fileMenu = [
-      { label: 'Open...', action: () => this.loader.select() },
+      { label: 'Open...', action: () => this.loadFile() },
       { label: 'Save Structure...', action: () => this.saveStructure() },
       { label: 'Save Screenshot...', action: () => this.saveScreenshot() }
     ];
