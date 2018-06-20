@@ -122,6 +122,24 @@ const toStructure = (model, i, log) => csp.go(function*() {
 });
 
 
+const setOptions = (model, options) => {
+  const newOptions = Object.assign({}, model.options, options);
+  return Object.assign({}, model, { options: newOptions });
+};
+
+
+const findStructureByName = (model, regexText) => {
+  const pattern = new RegExp(`\\b${regexText}\\b`, 'i');
+  return model.structures.findIndex(s => !!pattern.exec(s.name));
+};
+
+
+const currentIndex = model => model.index;
+const currentStructure = model => model.structures[model.index];
+const currentScene = model => model.scene;
+const currentOptions = model => model.options;
+
+
 const parseFileData = (model, file, data, log) => csp.go(function*() {
   const filename = file.name;
   let structures = [];
@@ -161,12 +179,20 @@ class App extends React.Component {
         const model = yield toStructure(this.state.model, i,
                                         s => this.log(s));
         this.setState((state, props) => ({ model }));
-        this.state.scenePort.send(model.scene);
+        this.state.scenePort.send(currentScene(model));
       } catch (ex) {
         this.log(`ERROR processing structure ${i}!!!`);
         console.error(ex);
       }
     }.bind(this));
+  }
+
+  previousStructure() {
+    this.setStructure(currentIndex(this.state.model) - 1);
+  }
+
+  nextStructure() {
+    this.setStructure(currentIndex(this.state.model) + 1);
   }
 
   handleFileData(file, data) {
@@ -188,7 +214,7 @@ class App extends React.Component {
   }
 
   saveStructure() {
-    const structure = this.state.model.structures[this.state.model.index];
+    const structure = currentStructure(this.state.model);
 
     if (structure.type == 'tiling') {
       const text = structure.symbol.toString();
@@ -242,9 +268,9 @@ class App extends React.Component {
   handleKeyPress(code) {
     const key = String.fromCharCode(code).toLowerCase();
     if (key == 'p')
-      this.setStructure(this.state.model.index - 1);
+      this.previousStructure();
     else if (key == 'n')
-      this.setStructure(this.state.model.index + 1)
+      this.nextStructure();
   }
 
   render3dScene() {
@@ -272,8 +298,8 @@ class App extends React.Component {
 
     const structureMenu = [
       { label: 'First', action: () => this.setStructure(0) },
-      { label: 'Prev', action: () => this.setStructure(this.state.model.index - 1) },
-      { label: 'Next', action: () => this.setStructure(this.state.model.index + 1) },
+      { label: 'Prev', action: () => this.previousStructure() },
+      { label: 'Next', action: () => this.nextStructure() },
       { label: 'Last', action: () => this.setStructure(-1) },
       { label: 'Jump...', action: () => this.showWindow('jump') },
       { label: 'Search...', action: () => this.showWindow('search') }
@@ -401,15 +427,12 @@ class App extends React.Component {
     this.hideWindow('search');
 
     if (text) {
-      const pattern = new RegExp(`\\b${text}\\b`, 'i');
+      const i = findStructureByName(this.state.model, text);
 
-      csp.go(function*() {
-        const i = this.state.model.structures.findIndex(s => !!pattern.exec(s.name));
-        if (i >= 0)
-          this.setStructure(i);
-        else
-          this.log(`Name "${text}" not found.`);
-      }.bind(this));
+      if (i >= 0)
+        this.setStructure(i);
+      else
+        this.log(`Name "${text}" not found.`);
     }
   }
 
@@ -434,10 +457,9 @@ class App extends React.Component {
       for (const { key, value } of data)
         options[key] = value;
 
-        this.setState((state, props) => ({
-          model: Object.assign({}, this.state.model, { options })
-        }));
-      this.setStructure(this.state.model.index);
+      const model = setOptions(this.state.model, options);
+      this.setState((state, props) => ({ model }));
+      this.setStructure(currentIndex(this.state.model));
     }
   }
 
@@ -446,7 +468,7 @@ class App extends React.Component {
       return;
 
     const handler = ([data, value]) => this.handleOptionsSubmit(data, value);
-    const options = this.state.model.options;
+    const options = currentOptions(this.state.model);
     const flags = Object.keys(options).map(key => ({
       key: key,
       label: optionLabel[key],
