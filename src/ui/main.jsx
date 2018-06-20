@@ -82,42 +82,60 @@ const optionLabel = {
 const initialModel = {
     options: defaultOptions,
     filename: null,
-    structures: null,
+    structures,
     index: null,
     scene: null
 };
 
 
 const title = model => {
-  if (model.structures) {
+  if (model.structures && model.index != null) {
     const fname = model.filename;
     const index = model.index + 1;
     const len = model.structures.length;
     const name = model.structures[model.index].name;
-    const prefix = fname ? `File "${fname}" ` : 'Structure ';
+    const prefix = fname ? `File "${fname}" ` : 'Builtin structure ';
     const postfix = name ? `: ${name}` : '';
     return `${prefix}#${index} (of ${len})${postfix}`;
   }
+  else if (model.filename)
+    return `File "${model.filename}"...`;
 };
 
 
-const toStructure = (model, index, structures, log) => csp.go(function*() {
-  try {
-    if (structures[index].isRaw) {
-      log('Converting structure data...');
-      structures[index] = yield callWorker({
-        cmd: 'processCGD',
-        val: structures[index]
-      });
+const toStructure = (model, i, structureList, log) => csp.go(function*() {
+  const structures = structureList || model.structures;
+  const n = structures.length;
+  const index = i < 0 ? n + i % n : i % n;
+
+  if (structures[index].isRaw) {
+    log('Converting structure data...');
+    structures[index] = yield callWorker({
+      cmd: 'processCGD',
+      val: structures[index]
+    });
+  }
+
+  const scene = yield makeScene(
+      structures[index], model.options, callWorker, log);
+  return Object.assign({}, model, { structures, index, scene });
+});
+
+
+const parseFileData = (model, file, data, log) => csp.go(function*() {
+    const filename = file.name;
+    let structures = [];
+
+    if (filename.match(/\.(ds|tgs)$/)) {
+        log('Parsing .ds data...');
+        structures = Array.from(parseDSymbols(data));
+    }
+    else if (filename.match(/\.(cgd|pgr)$/)) {
+        log('Parsing .cgd data...');
+        structures = yield callWorker({ cmd: 'parseCGD', val: data });
     }
 
-    const scene = yield makeScene(
-        structures[index], model.options, callWorker, log);
-    return Object.assign({}, model, { structures, index, scene });
-  } catch(ex) {
-    log(`ERROR processing ${title(model)}!!!`);
-    console.error(ex);
-  }
+    return Object.assign({}, model, { filename, structures, index: null });
 });
 
 
@@ -130,7 +148,7 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    this.setStructure(0, structures);
+    this.setStructure(0);
   }
 
   log(s) {
@@ -138,37 +156,35 @@ class App extends React.Component {
   }
 
   setStructure(i, structures) {
-    const model = this.state.model
-    structures = structures || model.structures;
-    const n = structures.length;
-    const index = i < 0 ? n + i % n : i % n;
-
-    csp.go(function*() {
-      const newModel = yield toStructure(model, index, structures,
-                                         s => this.log(s));
-      this.setState((state, props) => ({ model: newModel }));
-      this.state.scenePort.send(newModel.scene);
-    }.bind(this));
+      csp.go(function*() {
+          try {
+              const model = yield toStructure(this.state.model, i, structures,
+                                              s => this.log(s));
+              this.setState((state, props) => ({ model }));
+              this.state.scenePort.send(model.scene);
+          } catch (ex) {
+              this.log(`ERROR processing structure ${i}!!!`);
+              console.error(ex);
+          }
+      }.bind(this));
   }
 
   handleFileData(file, data) {
-    const filename = file.name;
-    this.setState((state, props) => ({
-      model: Object.assign({}, state.model, { filename })
-    }));
+      csp.go(function*() {
+          let loadError = false;
+          try {
+              const model = yield parseFileData(this.state.model, file, data,
+                                                s => this.log(s));
+              this.setState((state, props) => ({ model }));
+          } catch (ex) {
+              loadError = true;
+              this.log(`ERROR loading from file "${file.name}"!!!`);
+              console.error(ex);
+          }
 
-    csp.go(function*() {
-      let list = [];
-
-      if (filename.match(/\.(ds|tgs)$/))
-        list = Array.from(parseDSymbols(data));
-      else if (filename.match(/\.(cgd|pgr)$/)) {
-        this.log('Parsing .cgd data...');
-        list = yield callWorker({ cmd: 'parseCGD', val: data });
-      }
-
-      this.setStructure(0, list);
-    }.bind(this));
+          if (!loadError)
+              this.setStructure(0);
+      }.bind(this));
   }
 
   saveStructure() {
