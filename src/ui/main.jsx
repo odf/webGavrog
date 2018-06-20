@@ -61,19 +61,6 @@ const fileSaver = () => {
 };
 
 
-const title = state => {
-  if (state.structures) {
-    const fname = state.filename;
-    const index = state.index + 1;
-    const len = state.structures.length;
-    const name = state.structures[state.index].name;
-    const prefix = fname ? `File "${fname}" ` : 'Structure ';
-    const postfix = name ? `: ${name}` : '';
-    return `${prefix}#${index} (of ${len})${postfix}`;
-  }
-};
-
-
 const defaultOptions = {
   colorByTranslationClass: false,
   skipRelaxation: false,
@@ -92,10 +79,52 @@ const optionLabel = {
 };
 
 
+const initialModel = {
+    options: defaultOptions,
+    filename: null,
+    structures: null,
+    index: null,
+    scene: null
+};
+
+
+const title = model => {
+  if (model.structures) {
+    const fname = model.filename;
+    const index = model.index + 1;
+    const len = model.structures.length;
+    const name = model.structures[model.index].name;
+    const prefix = fname ? `File "${fname}" ` : 'Structure ';
+    const postfix = name ? `: ${name}` : '';
+    return `${prefix}#${index} (of ${len})${postfix}`;
+  }
+};
+
+
+const toStructure = (model, index, structures, log) => csp.go(function*() {
+  try {
+    if (structures[index].isRaw) {
+      log('Converting structure data...');
+      structures[index] = yield callWorker({
+        cmd: 'processCGD',
+        val: structures[index]
+      });
+    }
+
+    const scene = yield makeScene(
+        structures[index], model.options, callWorker, log);
+    return Object.assign({}, model, { structures, index, scene });
+  } catch(ex) {
+    log(`ERROR processing ${title(model)}!!!`);
+    console.error(ex);
+  }
+});
+
+
 class App extends React.Component {
   constructor() {
     super();
-    this.state = { windowsActive: {}, options: defaultOptions };
+    this.state = { windowsActive: {}, model: initialModel };
     this.loadFile = fileLoader(this.handleFileData.bind(this));
     this.saveFile = fileSaver();
   }
@@ -105,42 +134,28 @@ class App extends React.Component {
   }
 
   log(s) {
-    this.setState({ log: s });
+    this.setState((state, props) => ({ log: s }));
   }
 
   setStructure(i, structures) {
-    structures = structures || this.state.structures;
+    const model = this.state.model
+    structures = structures || model.structures;
     const n = structures.length;
     const index = i < 0 ? n + i % n : i % n;
 
     csp.go(function*() {
-      try {
-        if (structures[index].isRaw) {
-          this.log('Converting structure data...');
-          structures[index] = yield callWorker({
-            cmd: 'processCGD',
-            val: structures[index]
-          });
-        }
-
-        const scene = yield makeScene(
-          structures[index],
-          this.state.options,
-          callWorker,
-          s => this.log(s));
-
-        this.setState({ structures, index });
-        this.state.scenePort.send(scene);
-      } catch(ex) {
-        this.log(`ERROR processing ${title(this.state)}!!!`);
-        console.error(ex);
-      }
+      const newModel = yield toStructure(model, index, structures,
+                                         s => this.log(s));
+      this.setState((state, props) => ({ model: newModel }));
+      this.state.scenePort.send(newModel.scene);
     }.bind(this));
   }
 
   handleFileData(file, data) {
     const filename = file.name;
-    this.setState({ filename });
+    this.setState((state, props) => ({
+      model: Object.assign({}, state.model, { filename })
+    }));
 
     csp.go(function*() {
       let list = [];
@@ -157,7 +172,7 @@ class App extends React.Component {
   }
 
   saveStructure() {
-    const structure = this.state.structures[this.state.index];
+    const structure = this.state.model.structures[this.state.model.index];
 
     if (structure.type == 'tiling') {
       const text = structure.symbol.toString();
@@ -211,17 +226,17 @@ class App extends React.Component {
   handleKeyPress(code) {
     const key = String.fromCharCode(code).toLowerCase();
     if (key == 'p')
-      this.setStructure(this.state.index - 1);
+      this.setStructure(this.state.model.index - 1);
     else if (key == 'n')
-      this.setStructure(this.state.index + 1)
+      this.setStructure(this.state.model.index + 1)
   }
 
   render3dScene() {
     const handlePorts = ports => {
-      this.setState({
+      this.setState((state, props) => ({
         scenePort: ports.scenes,
         commandPort: ports.commands
-      });
+      }));
       ports.keyPresses.subscribe(code => this.handleKeyPress(code));
     };
 
@@ -241,8 +256,8 @@ class App extends React.Component {
 
     const structureMenu = [
       { label: 'First', action: () => this.setStructure(0) },
-      { label: 'Prev', action: () => this.setStructure(this.state.index - 1) },
-      { label: 'Next', action: () => this.setStructure(this.state.index + 1) },
+      { label: 'Prev', action: () => this.setStructure(this.state.model.index - 1) },
+      { label: 'Next', action: () => this.setStructure(this.state.model.index + 1) },
       { label: 'Last', action: () => this.setStructure(-1) },
       { label: 'Jump...', action: () => this.showWindow('jump') },
       { label: 'Search...', action: () => this.showWindow('search') }
@@ -314,7 +329,7 @@ class App extends React.Component {
               <img width="48" className="infoBoxLogo" src="3dt.ico"/>
               <h3 className="infoBoxHeader">Gavrog</h3>
               <span className="clearFix">
-                  {title(this.state)}<br/>
+                  {title(this.state.model)}<br/>
                   {this.state.log || "Welcome!"}
               </span>
               {this.renderMenu()}
@@ -373,7 +388,7 @@ class App extends React.Component {
       const pattern = new RegExp(`\\b${text}\\b`, 'i');
 
       csp.go(function*() {
-        const i = this.state.structures.findIndex(s => !!pattern.exec(s.name));
+        const i = this.state.model.structures.findIndex(s => !!pattern.exec(s.name));
         if (i >= 0)
           this.setStructure(i);
         else
@@ -403,8 +418,10 @@ class App extends React.Component {
       for (const { key, value } of data)
         options[key] = value;
 
-      this.setState((state, props) => ({ options }));
-      this.setStructure(this.state.index);
+        this.setState((state, props) => ({
+          model: Object.assign({}, this.state.model, { options })
+        }));
+      this.setStructure(this.state.model.index);
     }
   }
 
@@ -413,7 +430,7 @@ class App extends React.Component {
       return;
 
     const handler = ([data, value]) => this.handleOptionsSubmit(data, value);
-    const options = this.state.options;
+    const options = this.state.model.options;
     const flags = Object.keys(options).map(key => ({
       key: key,
       label: optionLabel[key],
