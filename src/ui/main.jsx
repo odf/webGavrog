@@ -80,11 +80,11 @@ const optionLabel = {
 
 
 const initialModel = {
-    options: defaultOptions,
-    filename: null,
-    structures,
-    index: null,
-    scene: null
+  options: defaultOptions,
+  filename: null,
+  structures,
+  index: null,
+  scene: null
 };
 
 
@@ -103,8 +103,8 @@ const title = model => {
 };
 
 
-const toStructure = (model, i, structureList, log) => csp.go(function*() {
-  const structures = structureList || model.structures;
+const toStructure = (model, i, log) => csp.go(function*() {
+  const structures = model.structures;
   const n = structures.length;
   const index = i < 0 ? n + i % n : i % n;
 
@@ -123,19 +123,19 @@ const toStructure = (model, i, structureList, log) => csp.go(function*() {
 
 
 const parseFileData = (model, file, data, log) => csp.go(function*() {
-    const filename = file.name;
-    let structures = [];
+  const filename = file.name;
+  let structures = [];
 
-    if (filename.match(/\.(ds|tgs)$/)) {
-        log('Parsing .ds data...');
-        structures = Array.from(parseDSymbols(data));
-    }
-    else if (filename.match(/\.(cgd|pgr)$/)) {
-        log('Parsing .cgd data...');
-        structures = yield callWorker({ cmd: 'parseCGD', val: data });
-    }
+  if (filename.match(/\.(ds|tgs)$/)) {
+    log('Parsing .ds data...');
+    structures = Array.from(parseDSymbols(data));
+  }
+  else if (filename.match(/\.(cgd|pgr)$/)) {
+    log('Parsing .cgd data...');
+    structures = yield callWorker({ cmd: 'parseCGD', val: data });
+  }
 
-    return Object.assign({}, model, { filename, structures, index: null });
+  return Object.assign({}, model, { filename, structures, index: null });
 });
 
 
@@ -155,36 +155,36 @@ class App extends React.Component {
     this.setState((state, props) => ({ log: s }));
   }
 
-  setStructure(i, structures) {
-      csp.go(function*() {
-          try {
-              const model = yield toStructure(this.state.model, i, structures,
-                                              s => this.log(s));
-              this.setState((state, props) => ({ model }));
-              this.state.scenePort.send(model.scene);
-          } catch (ex) {
-              this.log(`ERROR processing structure ${i}!!!`);
-              console.error(ex);
-          }
-      }.bind(this));
+  setStructure(i) {
+    csp.go(function*() {
+      try {
+        const model = yield toStructure(this.state.model, i,
+                                        s => this.log(s));
+        this.setState((state, props) => ({ model }));
+        this.state.scenePort.send(model.scene);
+      } catch (ex) {
+        this.log(`ERROR processing structure ${i}!!!`);
+        console.error(ex);
+      }
+    }.bind(this));
   }
 
   handleFileData(file, data) {
-      csp.go(function*() {
-          let loadError = false;
-          try {
-              const model = yield parseFileData(this.state.model, file, data,
-                                                s => this.log(s));
-              this.setState((state, props) => ({ model }));
-          } catch (ex) {
-              loadError = true;
-              this.log(`ERROR loading from file "${file.name}"!!!`);
-              console.error(ex);
-          }
+    csp.go(function*() {
+      let loadError = false;
+      try {
+        const model = yield parseFileData(this.state.model, file, data,
+                                          s => this.log(s));
+        this.setState((state, props) => ({ model }));
+      } catch (ex) {
+        loadError = true;
+        this.log(`ERROR loading from file "${file.name}"!!!`);
+        console.error(ex);
+      }
 
-          if (!loadError)
-              this.setStructure(0);
-      }.bind(this));
+      if (!loadError)
+        this.setStructure(0);
+    }.bind(this));
   }
 
   saveStructure() {
@@ -300,57 +300,57 @@ class App extends React.Component {
   }
 
   renderMenu() {
-      const stripSubmenu = menu => menu.map(({ label }) => label);
+    const stripSubmenu = menu => menu.map(({ label }) => label);
 
-      const stripMenu = menu => menu.map(({ label, submenu }) =>
-          ({ label, submenu: submenu ? stripSubmenu(submenu) : null }));
+    const stripMenu = menu => menu.map(({ label, submenu }) =>
+      ({ label, submenu: submenu ? stripSubmenu(submenu) : null }));
 
-      const mapMenu = menu => menu.map(({ action, submenu }) =>
-          submenu ? mapMenu(submenu) : action);
+    const mapMenu = menu => menu.map(({ action, submenu }) =>
+      submenu ? mapMenu(submenu) : action);
 
-      const toAction = mapMenu(this.mainMenu());
+    const toAction = mapMenu(this.mainMenu());
 
-      const handler = ([i, j]) => {
-          if (i != null) {
-              const a = toAction[i];
-              if (typeof a == 'function')
-                  a();
-              else if (j != null) {
-                  const b = a[j];
-                  if (typeof b == 'function')
-                      b();
-              }
-          }
-      };
+    const handler = ([i, j]) => {
+      if (i != null) {
+        const a = toAction[i];
+        if (typeof a == 'function')
+          a();
+        else if (j != null) {
+          const b = a[j];
+          if (typeof b == 'function')
+            b();
+        }
+      }
+    };
 
-      return (
-          <Elm src={Menu}
-               flags={{
-                   classes: {
-                       menu: "infoBoxMenu",
-                       item: "infoBoxMenuItem",
-                       submenu: "infoBoxMenuSubmenu",
-                       subitem: "infoBoxMenuSubmenuItem",
-                       highlight: "infoBoxMenuHighlight"
-                   },
-                   items: stripMenu(this.mainMenu())
-               }}
-               ports={ ports => ports.send.subscribe(handler) } />
-      );
+    return (
+      <Elm src={Menu}
+           flags={{
+             classes: {
+               menu: "infoBoxMenu",
+               item: "infoBoxMenuItem",
+               submenu: "infoBoxMenuSubmenu",
+               subitem: "infoBoxMenuSubmenuItem",
+               highlight: "infoBoxMenuHighlight"
+             },
+             items: stripMenu(this.mainMenu())
+           }}
+           ports={ ports => ports.send.subscribe(handler) } />
+    );
   }
 
   renderMainDialog() {
-      return (
-          <div className="floatable infoBox">
-              <img width="48" className="infoBoxLogo" src="3dt.ico"/>
-              <h3 className="infoBoxHeader">Gavrog</h3>
-              <span className="clearFix">
-                  {title(this.state.model)}<br/>
-                  {this.state.log || "Welcome!"}
-              </span>
-              {this.renderMenu()}
-          </div>
-      );
+    return (
+      <div className="floatable infoBox">
+        <img width="48" className="infoBoxLogo" src="3dt.ico"/>
+        <h3 className="infoBoxHeader">Gavrog</h3>
+        <span className="clearFix">
+          {title(this.state.model)}<br/>
+      {this.state.log || "Welcome!"}
+        </span>
+        {this.renderMenu()}
+      </div>
+    );
   }
 
   renderAboutDialog() {
