@@ -301,7 +301,7 @@ view model =
             , Html.Attributes.height model.size.height
             , Html.Attributes.style
                 [ ( "display", "block" )
-                , ( "background", "black" )
+                , ( "background", "white" )
                 ]
             , Html.Attributes.id "main-3d-canvas"
             , Html.Events.onMouseDown MouseDownMsg
