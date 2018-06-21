@@ -1,19 +1,9 @@
-port module Menu exposing (main)
+port module Menu exposing (view, ItemSpec, Classes, Actions, Config, State)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onWithOptions)
 import Json.Decode as Json
-
-
-main =
-    Html.programWithFlags
-        { init = init
-        , update = update
-        , view = view
-        , subscriptions = \_ -> Sub.none
-        }
-
 
 
 -- MODEL
@@ -34,74 +24,42 @@ type alias Classes =
     }
 
 
-type alias Flags =
+type alias Actions msg =
+    { activateTopItem : Maybe Int -> msg
+    , activateSubItem : Maybe Int -> msg
+    , selectCurrentItem : msg
+    }
+
+
+type alias Config msg =
     { classes : Classes
+    , actions : Actions msg
     , items : List ItemSpec
     }
 
 
-type alias Model =
-    { classes : Classes
-    , items : List ItemSpec
-    , active : Maybe Int
+type alias State =
+    { active : Maybe Int
     , activeSub : Maybe Int
     }
-
-
-init : Flags -> ( Model, Cmd Msg )
-init flags =
-    { classes = flags.classes
-    , items = flags.items
-    , active = Nothing
-    , activeSub = Nothing
-    }
-        ! []
-
-
-
--- UPDATE
-
-
-port send : ( Maybe Int, Maybe Int ) -> Cmd msg
-
-
-type Msg
-    = Activate (Maybe Int)
-    | ActivateSub (Maybe Int)
-    | Select
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Activate i ->
-            { model | active = i } ! []
-
-        ActivateSub i ->
-            { model | activeSub = i } ! []
-
-        Select ->
-            ( { model | active = Nothing, activeSub = Nothing }
-            , send ( model.active, model.activeSub )
-            )
 
 
 
 -- VIEW
 
 
-view : Model -> Html Msg
-view model =
+view : Config msg -> State -> Html msg
+view config state =
     ul
-        [ class model.classes.menu ]
-        (List.indexedMap (viewItem model) model.items)
+        [ class config.classes.menu ]
+        (List.indexedMap (viewItem config state) config.items)
 
 
-viewItem : Model -> Int -> ItemSpec -> Html Msg
-viewItem model index item =
+viewItem : Config msg -> State -> Int -> ItemSpec -> Html msg
+viewItem config state index item =
     let
         isActive =
-            model.active == Just index
+            state.active == Just index
 
         maybeSubMenu =
             case item.submenu of
@@ -110,39 +68,39 @@ viewItem model index item =
 
                 Just sub ->
                     if isActive then
-                        [ viewSubMenu model sub ]
+                        [ viewSubMenu config state sub ]
                     else
                         []
     in
         li
             [ classList
-                [ ( model.classes.item, True )
-                , ( model.classes.highlight, isActive )
+                [ ( config.classes.item, True )
+                , ( config.classes.highlight, isActive )
                 ]
-            , onMouseEnter <| Activate (Just index)
-            , onMouseLeave <| Activate Nothing
-            , onClick Select
+            , onMouseEnter <| config.actions.activateTopItem (Just index)
+            , onMouseLeave <| config.actions.activateTopItem Nothing
+            , onClick config.actions.selectCurrentItem
             ]
             ([ text item.label ] ++ maybeSubMenu)
 
 
-viewSubMenu : Model -> List String -> Html Msg
-viewSubMenu model labels =
+viewSubMenu : Config msg -> State -> List String -> Html msg
+viewSubMenu config state labels =
     ul
-        [ class model.classes.submenu ]
-        (List.indexedMap (viewSubItem model) labels)
+        [ class config.classes.submenu ]
+        (List.indexedMap (viewSubItem config state) labels)
 
 
-viewSubItem : Model -> Int -> String -> Html Msg
-viewSubItem model index label =
+viewSubItem : Config msg -> State -> Int -> String -> Html msg
+viewSubItem config state index label =
     li
         [ classList
-            [ ( model.classes.subitem, True )
-            , ( model.classes.highlight, model.activeSub == Just index )
+            [ ( config.classes.subitem, True )
+            , ( config.classes.highlight, state.activeSub == Just index )
             ]
-        , onMouseEnter <| ActivateSub (Just index)
-        , onMouseLeave <| ActivateSub Nothing
-        , onClick Select
+        , onMouseEnter <| config.actions.activateSubItem (Just index)
+        , onMouseLeave <| config.actions.activateSubItem Nothing
+        , onClick config.actions.selectCurrentItem
         ]
         [ text label ]
 

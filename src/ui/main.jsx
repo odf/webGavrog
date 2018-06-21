@@ -12,7 +12,7 @@ import Elm           from './ElmComponent';
 
 import { TextInput } from '../elm/TextInput';
 import { Options }   from '../elm/Options';
-import { Menu }      from '../elm/Menu';
+import { MainMenu }  from '../elm/MainMenu';
 import { View3d }    from '../elm/View3d';
 
 
@@ -350,7 +350,7 @@ class App extends React.Component {
     };
 
     return (
-      <Elm src={Menu}
+      <Elm src={MainMenu}
            flags={{
              classes: {
                menu: "infoBoxMenu",
