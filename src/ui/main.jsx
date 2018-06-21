@@ -351,16 +351,7 @@ class App extends React.Component {
 
     return (
       <Elm src={MainMenu}
-           flags={{
-             classes: {
-               menu: "infoBoxMenu",
-               item: "infoBoxMenuItem",
-               submenu: "infoBoxMenuSubmenu",
-               subitem: "infoBoxMenuSubmenuItem",
-               highlight: "infoBoxMenuHighlight"
-             },
-             items: stripMenu(this.mainMenu())
-           }}
+           flags={ stripMenu(this.mainMenu()) }
            ports={ ports => ports.send.subscribe(handler) } />
     );
   }

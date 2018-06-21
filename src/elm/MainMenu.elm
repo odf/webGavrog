@@ -13,10 +13,7 @@ main =
         }
 
 
-type Msg
-    = Activate (Maybe Int)
-    | ActivateSub (Maybe Int)
-    | Select
+port send : ( Maybe Int, Maybe Int ) -> Cmd msg
 
 
 
@@ -29,22 +26,26 @@ type alias Model =
     }
 
 
-type alias Flags =
-    { classes : Menu.Classes
-    , items : List Menu.ItemSpec
-    }
-
-
-init : Flags -> ( Model, Cmd Msg )
-init flags =
+init : List Menu.ItemSpec -> ( Model, Cmd Msg )
+init items =
     { config =
-        { classes = flags.classes
+        { classes = initClasses
         , actions = initActions
-        , items = flags.items
+        , items = items
         }
     , state = initState
     }
         ! []
+
+
+initClasses : Menu.Classes
+initClasses =
+    { menu = "infoBoxMenu"
+    , item = "infoBoxMenuItem"
+    , submenu = "infoBoxMenuSubmenu"
+    , subitem = "infoBoxMenuSubmenuItem"
+    , highlight = "infoBoxMenuHighlight"
+    }
 
 
 initActions : Menu.Actions Msg
@@ -66,7 +67,10 @@ initState =
 -- UPDATE
 
 
-port send : ( Maybe Int, Maybe Int ) -> Cmd msg
+type Msg
+    = Activate (Maybe Int)
+    | ActivateSub (Maybe Int)
+    | Select
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
