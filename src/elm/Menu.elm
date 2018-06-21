@@ -25,8 +25,8 @@ type alias Classes =
 
 
 type alias Actions msg =
-    { activateTopItem : Maybe Int -> msg
-    , activateSubItem : Maybe Int -> msg
+    { activateTopItem : Maybe ( Int, String ) -> msg
+    , activateSubItem : Maybe ( Int, String ) -> msg
     , selectCurrentItem : msg
     }
 
@@ -77,7 +77,8 @@ viewItem config state index item =
                 [ ( config.classes.item, True )
                 , ( config.classes.highlight, isActive )
                 ]
-            , onMouseEnter <| config.actions.activateTopItem (Just index)
+            , onMouseEnter <|
+                config.actions.activateTopItem (Just ( index, item.label ))
             , onMouseLeave <| config.actions.activateTopItem Nothing
             , onClick config.actions.selectCurrentItem
             ]
@@ -98,7 +99,8 @@ viewSubItem config state index label =
             [ ( config.classes.subitem, True )
             , ( config.classes.highlight, state.activeSub == Just index )
             ]
-        , onMouseEnter <| config.actions.activateSubItem (Just index)
+        , onMouseEnter <|
+            config.actions.activateSubItem (Just ( index, label ))
         , onMouseLeave <| config.actions.activateSubItem Nothing
         , onClick config.actions.selectCurrentItem
         ]

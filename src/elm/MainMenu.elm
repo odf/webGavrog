@@ -15,8 +15,8 @@ main =
 
 
 type Msg
-    = Activate (Maybe Int)
-    | ActivateSub (Maybe Int)
+    = Activate (Maybe ( Int, String ))
+    | ActivateSub (Maybe ( Int, String ))
     | Select
     | SetTitle String
     | SetStatus String
@@ -32,7 +32,7 @@ port titles : (String -> msg) -> Sub msg
 port log : (String -> msg) -> Sub msg
 
 
-port send : ( Maybe Int, Maybe Int ) -> Cmd msg
+port send : Maybe String -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -50,6 +50,7 @@ subscriptions _ =
 type alias Model =
     { menuConfig : Menu.Config Msg
     , menuState : Menu.State
+    , activeLabel : Maybe String
     , title : String
     , status : String
     }
@@ -63,6 +64,7 @@ init items =
         , items = items
         }
     , menuState = initState
+    , activeLabel = Nothing
     , title = ""
     , status = "Welcome!"
     }
@@ -100,27 +102,67 @@ initState =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    case msg of
+        Activate item ->
+            updateActive model item ! []
+
+        ActivateSub item ->
+            updateActiveSub model item ! []
+
+        Select ->
+            ( { model | menuState = initState }
+            , send <| model.activeLabel
+            )
+
+        SetTitle title ->
+            { model | title = title } ! []
+
+        SetStatus status ->
+            { model | status = status } ! []
+
+
+updateActive : Model -> Maybe ( Int, String ) -> Model
+updateActive model item =
     let
         state =
             model.menuState
     in
-        case msg of
-            Activate i ->
-                { model | menuState = { state | active = i } } ! []
+        case item of
+            Nothing ->
+                { model
+                    | menuState = initState
+                    , activeLabel = Nothing
+                }
 
-            ActivateSub i ->
-                { model | menuState = { state | activeSub = i } } ! []
+            Just ( i, s ) ->
+                { model
+                    | menuState =
+                        { state
+                            | active = Just i
+                            , activeSub = Nothing
+                        }
+                    , activeLabel = Just s
+                }
 
-            Select ->
-                ( { model | menuState = initState }
-                , send ( state.active, state.activeSub )
-                )
 
-            SetTitle title ->
-                { model | title = title } ! []
+updateActiveSub : Model -> Maybe ( Int, String ) -> Model
+updateActiveSub model item =
+    let
+        state =
+            model.menuState
+    in
+        case item of
+            Nothing ->
+                { model
+                    | menuState = { state | activeSub = Nothing }
+                    , activeLabel = Nothing
+                }
 
-            SetStatus status ->
-                { model | status = status } ! []
+            Just ( i, s ) ->
+                { model
+                    | menuState = { state | activeSub = Just i }
+                    , activeLabel = Just s
+                }
 
 
 

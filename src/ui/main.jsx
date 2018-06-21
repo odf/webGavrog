@@ -289,79 +289,82 @@ class App extends React.Component {
     );
   }
 
-  mainMenu() {
+  execute(actionName) {
     const sendCmd = cmd => () => this.state.commandPort.send(cmd);
 
-    const fileMenu = [
-      { label: 'Open...', action: () => this.loadFile() },
-      { label: 'Save Structure...', action: () => this.saveStructure() },
-      { label: 'Save Screenshot...', action: () => this.saveScreenshot() }
-    ];
+    const action = {
+      ['Open...']: () => this.loadFile(),
+      ['Save Structure...']: () => this.saveStructure(),
+      ['Save Screenshot...']: () => this.saveScreenshot(),
+      ['First']: () => this.setStructure(0),
+      ['Prev']: () => this.previousStructure(),
+      ['Next']: () => this.nextStructure(),
+      ['Last']: () => this.setStructure(-1),
+      ['Jump...']: () => this.showWindow('jump'),
+      ['Search...']: () => this.showWindow('search'),
+      ['Center']: sendCmd('center'),
+      ['Along X']: sendCmd('viewAlongX'),
+      ['Along Y']: sendCmd('viewAlongY'),
+      ['Along Z']: sendCmd('viewAlongZ'),
+      ['About Gavrog...']: () => this.showWindow('about'),
+      ['Options...']: () => this.showWindow('options')
+    };
 
-    const structureMenu = [
-      { label: 'First', action: () => this.setStructure(0) },
-      { label: 'Prev', action: () => this.previousStructure() },
-      { label: 'Next', action: () => this.nextStructure() },
-      { label: 'Last', action: () => this.setStructure(-1) },
-      { label: 'Jump...', action: () => this.showWindow('jump') },
-      { label: 'Search...', action: () => this.showWindow('search') }
-    ];
+    const fn = action[actionName];
+    if (fn)
+      fn();
+  }
 
-    const viewMenu = [
-      { label: 'Center', action: sendCmd('center') },
-      { label: 'Along X', action: sendCmd('viewAlongX') },
-      { label: 'Along Y', action: sendCmd('viewAlongY') },
-      { label: 'Along Z', action: sendCmd('viewAlongZ') }
-    ];
-
-    const helpMenu = [
-      { label: 'About Gavrog...', action: () => this.showWindow('about') }
-    ];
-
+  mainMenu() {
     return [
-      { label: 'File',   submenu: fileMenu },
-      { label: 'Structure', submenu: structureMenu },
-      { label: 'View',   submenu: viewMenu },
-      { label: 'Options...', action: () => this.showWindow('options') },
-      { label: 'Help',   submenu: helpMenu }
+      { label: 'File',
+        submenu: [
+          'Open...',
+          'Save Structure...',
+          'Save Screenshot...'
+        ]
+      },
+      { label: 'Structure',
+        submenu: [
+          'First',
+          'Prev',
+          'Next',
+          'Last',
+          'Jump...',
+          'Search...'
+        ]
+      },
+      { label: 'View',
+        submenu: [
+          'Center',
+          'Along X',
+          'Along Y',
+          'Along Z'
+        ]
+      },
+      { label: 'Options...',
+        submenu: null
+      },
+      { label: 'Help',
+        submenu: [
+          'About Gavrog...'
+        ]
+      }
     ];
   }
 
   renderMainDialog() {
-    const stripSubmenu = menu => menu.map(({ label }) => label);
-
-    const stripMenu = menu => menu.map(({ label, submenu }) =>
-      ({ label, submenu: submenu ? stripSubmenu(submenu) : null }));
-
-    const mapMenu = menu => menu.map(({ action, submenu }) =>
-      submenu ? mapMenu(submenu) : action);
-
-    const toAction = mapMenu(this.mainMenu());
-
-      const handler = ([i, j]) => {
-          if (i != null) {
-              const a = toAction[i];
-              if (typeof a == 'function')
-                  a();
-              else if (j != null) {
-                  const b = a[j];
-                  if (typeof b == 'function')
-                      b();
-              }
-          }
-      };
-
-      const handlePorts = ports => {
-          this.setState((state, props) => ({
-              titlePort: ports.titles,
-              logPort: ports.log
-          }));
-          ports.send.subscribe(handler);
-      };
+    const handlePorts = ports => {
+      this.setState((state, props) => ({
+        titlePort: ports.titles,
+        logPort: ports.log
+      }));
+      ports.send.subscribe(name => this.execute(name));
+    };
 
     return (
       <Elm src={MainMenu}
-           flags={ stripMenu(this.mainMenu()) }
+           flags={ this.mainMenu() }
            ports={ handlePorts } />
     );
   }
