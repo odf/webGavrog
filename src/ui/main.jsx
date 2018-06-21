@@ -306,7 +306,6 @@ class App extends React.Component {
       ['Along X']: sendCmd('viewAlongX'),
       ['Along Y']: sendCmd('viewAlongY'),
       ['Along Z']: sendCmd('viewAlongZ'),
-      ['About Gavrog...']: () => this.showWindow('about'),
       ['Options...']: () => this.showWindow('options')
     };
 
@@ -321,33 +320,16 @@ class App extends React.Component {
         titlePort: ports.titles,
         logPort: ports.log
       }));
-      ports.send.subscribe(execute);
+      ports.menuSelection.subscribe(execute);
     };
 
     return (
-      <Elm src={MainMenu} ports={ handlePorts } />
-    );
-  }
-
-  renderAboutDialog() {
-    if (!this.state.windowsActive.about)
-      return;
-
-    return (
-      <div className="floatable centered infoBox"
-           onClick={() => this.hideWindow('about')}>
-        <img width="48" className="infoBoxLogo" src="3dt.ico"/>
-        <h3 className="infoBoxHeader">Gavrog for the Web</h3>
-        <span className="clearFix">
-          by Olaf Delgado-Friedrichs 2018<br/>
-          The Australian National University
-        </span>
-        <p>
-          <b>Version:</b> 0.0.0 (pre-alpha)<br/>
-          <b>Revision:</b> {version.gitRev}<br/>
-          <b>Timestamp:</b> {version.gitDate}
-        </p>
-      </div>
+      <Elm src={MainMenu}
+           flags={{
+             revision: version.gitRev,
+             timestamp: version.gitDate
+           }}
+           ports={ handlePorts } />
     );
   }
 
@@ -439,7 +421,6 @@ class App extends React.Component {
       <div>
         {this.render3dScene()}
         {this.renderMainDialog()}
-        {this.renderAboutDialog()}
         {this.renderJumpDialog()}
         {this.renderSearchDialog()}
         {this.renderOptionsDialog()}

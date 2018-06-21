@@ -2,11 +2,13 @@ port module MainMenu exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onWithOptions)
+import Json.Decode as Json
 import Menu
 
 
 main =
-    Html.program
+    Html.programWithFlags
         { init = init
         , update = update
         , view = view
@@ -20,6 +22,7 @@ type Msg
     | Select
     | SetTitle String
     | SetStatus String
+    | HideAbout
 
 
 
@@ -32,7 +35,7 @@ port titles : (String -> msg) -> Sub msg
 port log : (String -> msg) -> Sub msg
 
 
-port send : Maybe String -> Cmd msg
+port menuSelection : Maybe String -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -47,18 +50,29 @@ subscriptions _ =
 -- MODEL
 
 
+type alias Flags =
+    { revision : String
+    , timestamp : String
+    }
+
+
 type alias Model =
-    { menuConfig : Menu.Config Msg
+    { revision : String
+    , timestamp : String
+    , menuConfig : Menu.Config Msg
     , menuState : Menu.State
     , activeLabel : Maybe String
     , title : String
     , status : String
+    , showAbout : Bool
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    { menuConfig =
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    { revision = flags.revision
+    , timestamp = flags.timestamp
+    , menuConfig =
         { classes = initClasses
         , actions = initActions
         , items = initItems
@@ -67,6 +81,7 @@ init =
     , activeLabel = Nothing
     , title = ""
     , status = "Welcome!"
+    , showAbout = False
     }
         ! []
 
@@ -153,15 +168,23 @@ update msg model =
             updateActiveSub model item ! []
 
         Select ->
-            ( { model | menuState = initState }
-            , send <| model.activeLabel
-            )
+            let
+                newModel =
+                    { model | menuState = initState }
+            in
+                if model.activeLabel == Just "About Gavrog..." then
+                    { newModel | showAbout = True } ! []
+                else
+                    ( newModel, menuSelection model.activeLabel )
 
         SetTitle title ->
             { model | title = title } ! []
 
         SetStatus status ->
             { model | status = status } ! []
+
+        HideAbout ->
+            { model | showAbout = False } ! []
 
 
 updateActive : Model -> Maybe ( Int, String ) -> Model
@@ -214,6 +237,17 @@ updateActiveSub model item =
 
 view : Model -> Html Msg
 view model =
+    div []
+        [ viewMain model
+        , if model.showAbout then
+            viewAbout model
+          else
+            span [] []
+        ]
+
+
+viewMain : Model -> Html Msg
+viewMain model =
     div [ class "floatable infoBox" ]
         [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
         , h3 [ class "infoBoxHeader" ] [ text "Gavrog" ]
@@ -224,3 +258,40 @@ view model =
             ]
         , Menu.view model.menuConfig model.menuState
         ]
+
+
+viewAbout : Model -> Html Msg
+viewAbout model =
+    div
+        [ class "floatable centered infoBox"
+        , onClick HideAbout
+        ]
+        [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
+        , h3 [ class "infoBoxHeader" ] [ text "Gavrog for the Web" ]
+        , span [ class "clearFix" ]
+            [ text "by Olaf Delgado-Friedrichs 2018"
+            , br [] []
+            , text "The Australian National University"
+            ]
+        , p []
+            [ b [] [ text "Version: " ]
+            , text "0.0.0 (pre-alpha)"
+            , br [] []
+            , b [] [ text "Revision: " ]
+            , text model.revision
+            , br [] []
+            , b [] [ text "Timestamp: " ]
+            , text model.timestamp
+            , br [] []
+            ]
+        ]
+
+
+onClick : msg -> Attribute msg
+onClick msg =
+    onWithOptions
+        "click"
+        { stopPropagation = True
+        , preventDefault = False
+        }
+        (Json.succeed msg)
