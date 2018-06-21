@@ -289,7 +289,7 @@ class App extends React.Component {
     );
   }
 
-  execute(actionName) {
+  renderMainDialog() {
     const sendCmd = cmd => () => this.state.commandPort.send(cmd);
 
     const action = {
@@ -310,62 +310,22 @@ class App extends React.Component {
       ['Options...']: () => this.showWindow('options')
     };
 
-    const fn = action[actionName];
-    if (fn)
-      fn();
-  }
+    const execute = name => {
+      const fn = action[name];
+      if (fn)
+        fn();
+    }
 
-  mainMenu() {
-    return [
-      { label: 'File',
-        submenu: [
-          'Open...',
-          'Save Structure...',
-          'Save Screenshot...'
-        ]
-      },
-      { label: 'Structure',
-        submenu: [
-          'First',
-          'Prev',
-          'Next',
-          'Last',
-          'Jump...',
-          'Search...'
-        ]
-      },
-      { label: 'View',
-        submenu: [
-          'Center',
-          'Along X',
-          'Along Y',
-          'Along Z'
-        ]
-      },
-      { label: 'Options...',
-        submenu: null
-      },
-      { label: 'Help',
-        submenu: [
-          'About Gavrog...'
-        ]
-      }
-    ];
-  }
-
-  renderMainDialog() {
     const handlePorts = ports => {
       this.setState((state, props) => ({
         titlePort: ports.titles,
         logPort: ports.log
       }));
-      ports.send.subscribe(name => this.execute(name));
+      ports.send.subscribe(execute);
     };
 
     return (
-      <Elm src={MainMenu}
-           flags={ this.mainMenu() }
-           ports={ handlePorts } />
+      <Elm src={MainMenu} ports={ handlePorts } />
     );
   }
 

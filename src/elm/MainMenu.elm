@@ -6,7 +6,7 @@ import Menu
 
 
 main =
-    Html.programWithFlags
+    Html.program
         { init = init
         , update = update
         , view = view
@@ -56,12 +56,12 @@ type alias Model =
     }
 
 
-init : List Menu.ItemSpec -> ( Model, Cmd Msg )
-init items =
+init : ( Model, Cmd Msg )
+init =
     { menuConfig =
         { classes = initClasses
         , actions = initActions
-        , items = items
+        , items = initItems
         }
     , menuState = initState
     , activeLabel = Nothing
@@ -87,6 +87,49 @@ initActions =
     , activateSubItem = ActivateSub
     , selectCurrentItem = Select
     }
+
+
+initItems : List Menu.ItemSpec
+initItems =
+    [ { label = "File"
+      , submenu =
+            Just
+                [ "Open..."
+                , "Save Structure..."
+                , "Save Screenshot..."
+                ]
+      }
+    , { label = "Structure"
+      , submenu =
+            Just
+                [ "First"
+                , "Prev"
+                , "Next"
+                , "Last"
+                , "Jump..."
+                , "Search..."
+                ]
+      }
+    , { label = "View"
+      , submenu =
+            Just
+                [ "Center"
+                , "Along X"
+                , "Along Y"
+                , "Along Z"
+                ]
+      }
+    , { label = "Options..."
+      , submenu =
+            Nothing
+      }
+    , { label = "Help"
+      , submenu =
+            Just
+                [ "About Gavrog..."
+                ]
+      }
+    ]
 
 
 initState : Menu.State
