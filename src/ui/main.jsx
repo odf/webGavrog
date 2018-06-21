@@ -170,7 +170,7 @@ class App extends React.Component {
   }
 
   log(s) {
-    this.setState((state, props) => ({ log: s }));
+    this.state.logPort.send(s);
   }
 
   setStructure(i) {
@@ -178,8 +178,9 @@ class App extends React.Component {
       try {
         const model = yield toStructure(this.state.model, i,
                                         s => this.log(s));
-        this.setState((state, props) => ({ model }));
-        this.state.scenePort.send(currentScene(model));
+          this.setState((state, props) => ({ model }));
+          this.state.titlePort.send(title(model));
+          this.state.scenePort.send(currentScene(model));
       } catch (ex) {
         this.log(`ERROR processing structure ${i}!!!`);
         console.error(ex);
@@ -201,7 +202,8 @@ class App extends React.Component {
       try {
         const model = yield parseFileData(this.state.model, file, data,
                                           s => this.log(s));
-        this.setState((state, props) => ({ model }));
+          this.state.titlePort.send(title(model));
+          this.setState((state, props) => ({ model }));
       } catch (ex) {
         loadError = true;
         this.log(`ERROR loading from file "${file.name}"!!!`);
@@ -325,7 +327,7 @@ class App extends React.Component {
     ];
   }
 
-  renderMenu() {
+  renderMainDialog() {
     const stripSubmenu = menu => menu.map(({ label }) => label);
 
     const stripMenu = menu => menu.map(({ label, submenu }) =>
@@ -336,37 +338,31 @@ class App extends React.Component {
 
     const toAction = mapMenu(this.mainMenu());
 
-    const handler = ([i, j]) => {
-      if (i != null) {
-        const a = toAction[i];
-        if (typeof a == 'function')
-          a();
-        else if (j != null) {
-          const b = a[j];
-          if (typeof b == 'function')
-            b();
-        }
-      }
-    };
+      const handler = ([i, j]) => {
+          if (i != null) {
+              const a = toAction[i];
+              if (typeof a == 'function')
+                  a();
+              else if (j != null) {
+                  const b = a[j];
+                  if (typeof b == 'function')
+                      b();
+              }
+          }
+      };
+
+      const handlePorts = ports => {
+          this.setState((state, props) => ({
+              titlePort: ports.titles,
+              logPort: ports.log
+          }));
+          ports.send.subscribe(handler);
+      };
 
     return (
       <Elm src={MainMenu}
            flags={ stripMenu(this.mainMenu()) }
-           ports={ ports => ports.send.subscribe(handler) } />
-    );
-  }
-
-  renderMainDialog() {
-    return (
-      <div className="floatable infoBox">
-        <img width="48" className="infoBoxLogo" src="3dt.ico"/>
-        <h3 className="infoBoxHeader">Gavrog</h3>
-        <span className="clearFix">
-          {title(this.state.model)}<br/>
-      {this.state.log || "Welcome!"}
-        </span>
-        {this.renderMenu()}
-      </div>
+           ports={ handlePorts } />
     );
   }
 
