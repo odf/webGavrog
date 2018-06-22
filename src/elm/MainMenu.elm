@@ -157,14 +157,7 @@ update msg model =
             updateActiveSub model item ! []
 
         Select ->
-            let
-                newModel =
-                    { model | menuState = initState }
-            in
-                if model.activeLabel == Just "About Gavrog..." then
-                    { newModel | showAbout = True } ! []
-                else
-                    ( newModel, menuSelection model.activeLabel )
+            handleSelection model
 
         SetTitle title ->
             { model | title = title } ! []
@@ -218,6 +211,18 @@ updateActiveSub model item =
                     | menuState = { state | activeSub = Just i }
                     , activeLabel = Just s
                 }
+
+
+handleSelection : Model -> ( Model, Cmd Msg )
+handleSelection model =
+    let
+        newModel =
+            { model | menuState = initState }
+    in
+        if model.activeLabel == Just "About Gavrog..." then
+            { newModel | showAbout = True } ! []
+        else
+            ( newModel, menuSelection model.activeLabel )
 
 
 
