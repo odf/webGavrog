@@ -2,7 +2,7 @@ port module MainMenu exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onWithOptions)
+import Html.Events exposing (onInput, onWithOptions)
 import Json.Decode as Json
 import Menu
 
@@ -20,9 +20,16 @@ type Msg
     = Activate (Maybe ( Int, String ))
     | ActivateSub (Maybe ( Int, String ))
     | Select
+    | JumpDialogInput String
+    | JumpDialogSubmit
+    | JumpDialogCancel
+    | SearchDialogInput String
+    | SearchDialogSubmit
+    | SearchDialogCancel
     | SetTitle String
     | SetStatus String
     | HideAbout
+    | Ignore
 
 
 
@@ -36,6 +43,12 @@ port log : (String -> msg) -> Sub msg
 
 
 port menuSelection : Maybe String -> Cmd msg
+
+
+port jumpTo : String -> Cmd msg
+
+
+port search : String -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -56,12 +69,27 @@ type alias Flags =
     }
 
 
+type alias TextBoxConfig =
+    { label : String
+    , placeholder : String
+    , onInput : String -> Msg
+    , onSubmit : Msg
+    , onCancel : Msg
+    }
+
+
 type alias Model =
     { revision : String
     , timestamp : String
     , menuConfig : Menu.Config Msg
     , menuState : Menu.State
     , activeLabel : Maybe String
+    , jumpDialogConfig : TextBoxConfig
+    , jumpDialogContent : String
+    , jumpDialogVisible : Bool
+    , searchDialogConfig : TextBoxConfig
+    , searchDialogContent : String
+    , searchDialogVisible : Bool
     , title : String
     , status : String
     , showAbout : Bool
@@ -81,6 +109,12 @@ init flags =
     , title = ""
     , status = "Welcome!"
     , showAbout = False
+    , jumpDialogConfig = jumpDialogConfig
+    , jumpDialogContent = ""
+    , jumpDialogVisible = False
+    , searchDialogConfig = searchDialogConfig
+    , searchDialogContent = ""
+    , searchDialogVisible = False
     }
         ! []
 
@@ -143,6 +177,26 @@ initState =
     }
 
 
+jumpDialogConfig : TextBoxConfig
+jumpDialogConfig =
+    { label = "Jump to"
+    , placeholder = "Number"
+    , onInput = JumpDialogInput
+    , onSubmit = JumpDialogSubmit
+    , onCancel = JumpDialogCancel
+    }
+
+
+searchDialogConfig : TextBoxConfig
+searchDialogConfig =
+    { label = "Search by name"
+    , placeholder = "Regex"
+    , onInput = SearchDialogInput
+    , onSubmit = SearchDialogSubmit
+    , onCancel = SearchDialogCancel
+    }
+
+
 
 -- UPDATE
 
@@ -167,6 +221,31 @@ update msg model =
 
         HideAbout ->
             { model | showAbout = False } ! []
+
+        JumpDialogInput text ->
+            { model | jumpDialogContent = text } ! []
+
+        JumpDialogSubmit ->
+            ( { model | jumpDialogVisible = False }
+            , jumpTo model.jumpDialogContent
+            )
+
+        JumpDialogCancel ->
+            { model | jumpDialogVisible = False } ! []
+
+        SearchDialogInput text ->
+            { model | searchDialogContent = text } ! []
+
+        SearchDialogSubmit ->
+            ( { model | searchDialogVisible = False }
+            , search model.searchDialogContent
+            )
+
+        SearchDialogCancel ->
+            { model | searchDialogVisible = False } ! []
+
+        Ignore ->
+            model ! []
 
 
 updateActive : Model -> Maybe ( Int, String ) -> Model
@@ -221,6 +300,10 @@ handleSelection model =
     in
         if model.activeLabel == Just "About Gavrog..." then
             { newModel | showAbout = True } ! []
+        else if model.activeLabel == Just "Jump..." then
+            { newModel | jumpDialogVisible = True } ! []
+        else if model.activeLabel == Just "Search..." then
+            { newModel | searchDialogVisible = True } ! []
         else
             ( newModel, menuSelection model.activeLabel )
 
@@ -232,12 +315,23 @@ handleSelection model =
 view : Model -> Html Msg
 view model =
     div []
-        [ viewMain model
-        , if model.showAbout then
-            viewAbout model
-          else
-            span [] []
-        ]
+        ([ viewMain model ]
+            ++ (if model.showAbout then
+                    [ viewAbout model ]
+                else
+                    []
+               )
+            ++ (if model.jumpDialogVisible then
+                    [ viewTextBox model.jumpDialogConfig ]
+                else
+                    []
+               )
+            ++ (if model.searchDialogVisible then
+                    [ viewTextBox model.searchDialogConfig ]
+                else
+                    []
+               )
+        )
 
 
 viewMain : Model -> Html Msg
@@ -281,10 +375,52 @@ viewAbout model =
         ]
 
 
+viewTextBox : TextBoxConfig -> Html Msg
+viewTextBox config =
+    div
+        [ class "floatable centered infoBox" ]
+        [ div [ class "form-element" ]
+            [ label [] [ text config.label ]
+            , input
+                [ type_ "text"
+                , placeholder config.placeholder
+                , onInput config.onInput
+                , onKeyUp Ignore
+                , onKeyDown Ignore
+                ]
+                []
+            , p [ class "form-buttons" ]
+                [ button [ onClick config.onSubmit ] [ text "OK" ]
+                , button [ onClick config.onCancel ] [ text "Cancel" ]
+                ]
+            ]
+        ]
+
+
 onClick : msg -> Attribute msg
 onClick msg =
     onWithOptions
         "click"
+        { stopPropagation = True
+        , preventDefault = False
+        }
+        (Json.succeed msg)
+
+
+onKeyUp : msg -> Attribute msg
+onKeyUp msg =
+    onWithOptions
+        "keyup"
+        { stopPropagation = True
+        , preventDefault = False
+        }
+        (Json.succeed msg)
+
+
+onKeyDown : msg -> Attribute msg
+onKeyDown msg =
+    onWithOptions
+        "keydown"
         { stopPropagation = True
         , preventDefault = False
         }

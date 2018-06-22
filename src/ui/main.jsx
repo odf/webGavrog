@@ -10,7 +10,6 @@ import { structures } from './builtinStructures';
 import makeScene     from './makeScene';
 import Elm           from './ElmComponent';
 
-import { TextInput } from '../elm/TextInput';
 import { Options }   from '../elm/Options';
 import { MainMenu }  from '../elm/MainMenu';
 import { View3d }    from '../elm/View3d';
@@ -300,8 +299,6 @@ class App extends React.Component {
       ['Prev']: () => this.previousStructure(),
       ['Next']: () => this.nextStructure(),
       ['Last']: () => this.setStructure(-1),
-      ['Jump...']: () => this.showWindow('jump'),
-      ['Search...']: () => this.showWindow('search'),
       ['Center']: sendCmd('center'),
       ['Along X']: sendCmd('viewAlongX'),
       ['Along Y']: sendCmd('viewAlongY'),
@@ -309,18 +306,37 @@ class App extends React.Component {
       ['Options...']: () => this.showWindow('options')
     };
 
-    const execute = name => {
+    const handleMenuSelect = name => {
       const fn = action[name];
       if (fn)
         fn();
-    }
+    };
+
+    const handleJump = text => {
+      const number = parseInt(text);
+      if (!Number.isNaN(number))
+        this.setStructure(number - (number > 0));
+    };
+
+    const handleSearch = text => {
+      if (text) {
+        const i = findStructureByName(this.state.model, text);
+
+        if (i >= 0)
+          this.setStructure(i);
+        else
+          this.log(`Name "${text}" not found.`);
+      }
+    };
 
     const handlePorts = ports => {
       this.setState((state, props) => ({
         titlePort: ports.titles,
         logPort: ports.log
       }));
-      ports.menuSelection.subscribe(execute);
+      ports.menuSelection.subscribe(handleMenuSelect);
+      ports.jumpTo.subscribe(handleJump);
+      ports.search.subscribe(handleSearch);
     };
 
     return (
@@ -330,54 +346,6 @@ class App extends React.Component {
              timestamp: version.gitDate
            }}
            ports={ handlePorts } />
-    );
-  }
-
-  handleJumpSubmit(text) {
-    this.hideWindow('jump');
-
-    const number = parseInt(text);
-
-    if (!Number.isNaN(number))
-      this.setStructure(number - (number > 0));
-  }
-
-  renderJumpDialog() {
-    if (!this.state.windowsActive.jump)
-      return;
-
-    const handler = text => this.handleJumpSubmit(text);
-
-    return (
-      <Elm src={TextInput}
-           flags={{ label: 'Jump to', placeholder: 'Number' }}
-           ports={ ports => ports.send.subscribe(handler) } />
-    );
-  }
-
-  handleSearchSubmit(text) {
-    this.hideWindow('search');
-
-    if (text) {
-      const i = findStructureByName(this.state.model, text);
-
-      if (i >= 0)
-        this.setStructure(i);
-      else
-        this.log(`Name "${text}" not found.`);
-    }
-  }
-
-  renderSearchDialog() {
-    if (!this.state.windowsActive.search)
-      return;
-
-    const handler = text => this.handleSearchSubmit(text);
-
-    return (
-      <Elm src={TextInput}
-           flags={{ label: 'Search by name', placeholder: 'Regex' }}
-           ports={ ports => ports.send.subscribe(handler) } />
     );
   }
 
@@ -421,8 +389,6 @@ class App extends React.Component {
       <div>
         {this.render3dScene()}
         {this.renderMainDialog()}
-        {this.renderJumpDialog()}
-        {this.renderSearchDialog()}
         {this.renderOptionsDialog()}
       </div>
     );
