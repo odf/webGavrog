@@ -1,4 +1,4 @@
-port module Menu exposing (view, ItemSpec, Classes, Actions, Config, State)
+port module Menu exposing (view, ItemSpec, Actions, Config, State)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -15,15 +15,6 @@ type alias ItemSpec =
     }
 
 
-type alias Classes =
-    { menu : String
-    , item : String
-    , submenu : String
-    , subitem : String
-    , highlight : String
-    }
-
-
 type alias Actions msg =
     { activateTopItem : Maybe ( Int, String ) -> msg
     , activateSubItem : Maybe ( Int, String ) -> msg
@@ -32,8 +23,7 @@ type alias Actions msg =
 
 
 type alias Config msg =
-    { classes : Classes
-    , actions : Actions msg
+    { actions : Actions msg
     , items : List ItemSpec
     }
 
@@ -51,7 +41,7 @@ type alias State =
 view : Config msg -> State -> Html msg
 view config state =
     ul
-        [ class config.classes.menu ]
+        [ class "infoBoxMenu" ]
         (List.indexedMap (viewItem config state) config.items)
 
 
@@ -74,8 +64,8 @@ viewItem config state index item =
     in
         li
             [ classList
-                [ ( config.classes.item, True )
-                , ( config.classes.highlight, isActive )
+                [ ( "infoBoxMenuItem", True )
+                , ( "infoBoxMenuHighlight", isActive )
                 ]
             , onMouseEnter <|
                 config.actions.activateTopItem (Just ( index, item.label ))
@@ -88,7 +78,7 @@ viewItem config state index item =
 viewSubMenu : Config msg -> State -> List String -> Html msg
 viewSubMenu config state labels =
     ul
-        [ class config.classes.submenu ]
+        [ class "infoBoxMenuSubmenu" ]
         (List.indexedMap (viewSubItem config state) labels)
 
 
@@ -96,8 +86,8 @@ viewSubItem : Config msg -> State -> Int -> String -> Html msg
 viewSubItem config state index label =
     li
         [ classList
-            [ ( config.classes.subitem, True )
-            , ( config.classes.highlight, state.activeSub == Just index )
+            [ ( "infoBoxMenuSubmenuItem", True )
+            , ( "infoBoxMenuHighlight", state.activeSub == Just index )
             ]
         , onMouseEnter <|
             config.actions.activateSubItem (Just ( index, label ))

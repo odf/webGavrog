@@ -73,8 +73,7 @@ init flags =
     { revision = flags.revision
     , timestamp = flags.timestamp
     , menuConfig =
-        { classes = initClasses
-        , actions = initActions
+        { actions = initActions
         , items = initItems
         }
     , menuState = initState
@@ -84,16 +83,6 @@ init flags =
     , showAbout = False
     }
         ! []
-
-
-initClasses : Menu.Classes
-initClasses =
-    { menu = "infoBoxMenu"
-    , item = "infoBoxMenuItem"
-    , submenu = "infoBoxMenuSubmenu"
-    , subitem = "infoBoxMenuSubmenuItem"
-    , highlight = "infoBoxMenuHighlight"
-    }
 
 
 initActions : Menu.Actions Msg
