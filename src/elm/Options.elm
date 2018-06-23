@@ -1,18 +1,8 @@
-port module Options exposing (main)
+port module Options exposing (view, toggle, Spec, Msg(..))
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-
-
-main =
-    Html.programWithFlags
-        { init = init
-        , view = view
-        , subscriptions = \_ -> Sub.none
-        , update = update
-        }
-
 
 
 -- MODEL
@@ -25,20 +15,8 @@ type alias Spec =
     }
 
 
-type alias Model =
-    List Spec
-
-
-init : Model -> ( Model, Cmd Msg )
-init options =
-    options ! []
-
-
 
 -- UPDATE
-
-
-port send : ( Model, Bool ) -> Cmd msg
 
 
 type Msg
@@ -54,43 +32,42 @@ toggleIfKey key spec =
         spec
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Toggle key ->
-            List.map (toggleIfKey key) model ! []
-
-        Submit ok ->
-            ( model, send ( model, ok ) )
+toggle : String -> List Spec -> List Spec
+toggle key specs =
+    List.map (toggleIfKey key) specs
 
 
 
 -- VIEW
 
 
-view : Model -> Html Msg
-view model =
+view : (Msg -> msg) -> List Spec -> Html msg
+view toMsg specs =
     div
         [ class "floatable centered infoBox" ]
         [ fieldset [ class "form-section" ]
-            (List.map checkbox model
+            (List.map (checkbox toMsg) specs
                 ++ [ p [ class "form-buttons" ]
-                        [ button [ onClick (Submit True) ] [ text "OK" ]
-                        , button [ onClick (Submit False) ] [ text "Cancel" ]
+                        [ button
+                            [ onClick <| toMsg <| Submit True ]
+                            [ text "OK" ]
+                        , button
+                            [ onClick <| toMsg <| Submit False ]
+                            [ text "Cancel" ]
                         ]
                    ]
             )
         ]
 
 
-checkbox : Spec -> Html Msg
-checkbox spec =
+checkbox : (Msg -> msg) -> Spec -> Html msg
+checkbox toMsg spec =
     div [ class "form-element" ]
         [ label [] [ text spec.label ]
         , input
             [ type_ "checkbox"
             , checked spec.value
-            , onClick (Toggle spec.key)
+            , onClick <| toMsg <| Toggle spec.key
             ]
             []
         ]

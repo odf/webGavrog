@@ -60,26 +60,8 @@ const fileSaver = () => {
 };
 
 
-const defaultOptions = {
-  colorByTranslationClass: false,
-  skipRelaxation: false,
-  extraSmooth: false,
-  showSurfaceMesh: false /*,
-  highlightPicked: false */
-};
-
-
-const optionLabel = {
-  colorByTranslationClass: "Color By Translations",
-  skipRelaxation: "Skip Relaxation",
-  extraSmooth: "Extra-Smooth Faces",
-  showSurfaceMesh: "Show Surface Mesh" /*,
-  highlightPicked: "Highlight On Mouseover" */
-};
-
-
 const initialModel = {
-  options: defaultOptions,
+  options: {},
   filename: null,
   structures,
   index: null,
@@ -302,8 +284,7 @@ class App extends React.Component {
       ['Center']: sendCmd('center'),
       ['Along X']: sendCmd('viewAlongX'),
       ['Along Y']: sendCmd('viewAlongY'),
-      ['Along Z']: sendCmd('viewAlongZ'),
-      ['Options...']: () => this.showWindow('options')
+      ['Along Z']: sendCmd('viewAlongZ')
     };
 
     const handleMenuSelect = name => {
@@ -329,6 +310,16 @@ class App extends React.Component {
       }
     };
 
+    const handleOptions = data => {
+      const options = {};
+      for (const { key, value } of data)
+        options[key] = value;
+
+      const model = setOptions(this.state.model, options);
+      this.setState((state, props) => ({ model }));
+      this.setStructure(currentIndex(this.state.model));
+    };
+
     const handlePorts = ports => {
       this.setState((state, props) => ({
         titlePort: ports.titles,
@@ -337,6 +328,7 @@ class App extends React.Component {
       ports.menuSelection.subscribe(handleMenuSelect);
       ports.jumpTo.subscribe(handleJump);
       ports.search.subscribe(handleSearch);
+      ports.options.subscribe(handleOptions);
     };
 
     return (
@@ -349,39 +341,6 @@ class App extends React.Component {
     );
   }
 
-  handleOptionsSubmit(data, value) {
-    this.hideWindow('options');
-
-    if (value) {
-      const options = {};
-      for (const { key, value } of data)
-        options[key] = value;
-
-      const model = setOptions(this.state.model, options);
-      this.setState((state, props) => ({ model }));
-      this.setStructure(currentIndex(this.state.model));
-    }
-  }
-
-  renderOptionsDialog() {
-    if (!this.state.windowsActive.options)
-      return;
-
-    const handler = ([data, value]) => this.handleOptionsSubmit(data, value);
-    const options = currentOptions(this.state.model);
-    const flags = Object.keys(options).map(key => ({
-      key: key,
-      label: optionLabel[key],
-      value: options[key]
-    }));
-
-    return (
-      <Elm src={Options}
-           flags={flags}
-           ports={ports => ports.send.subscribe(handler)} />
-    );
-  }
-
   render() {
     const message = this.state.log || "Welcome!";
 
@@ -389,7 +348,6 @@ class App extends React.Component {
       <div>
         {this.render3dScene()}
         {this.renderMainDialog()}
-        {this.renderOptionsDialog()}
       </div>
     );
   }

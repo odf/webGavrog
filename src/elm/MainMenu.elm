@@ -5,6 +5,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onWithOptions)
 import Json.Decode as Json
 import Menu
+import Options
 
 
 main =
@@ -24,6 +25,7 @@ type Msg
     | JumpDialogSubmit Bool
     | SearchDialogInput String
     | SearchDialogSubmit Bool
+    | OptionsMsg Options.Msg
     | SetTitle String
     | SetStatus String
     | HideAbout
@@ -47,6 +49,9 @@ port jumpTo : String -> Cmd msg
 
 
 port search : String -> Cmd msg
+
+
+port options : List Options.Spec -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -87,6 +92,9 @@ type alias Model =
     , searchDialogConfig : TextBoxConfig
     , searchDialogContent : String
     , searchDialogVisible : Bool
+    , optionSpecs : List Options.Spec
+    , optionSpecsTmp : List Options.Spec
+    , optionsDialogVisible : Bool
     , title : String
     , status : String
     , showAbout : Bool
@@ -112,6 +120,9 @@ init flags =
     , searchDialogConfig = searchDialogConfig
     , searchDialogContent = ""
     , searchDialogVisible = False
+    , optionSpecs = initOptionSpecs
+    , optionSpecsTmp = []
+    , optionsDialogVisible = False
     }
         ! []
 
@@ -192,6 +203,27 @@ searchDialogConfig =
     }
 
 
+initOptionSpecs : List Options.Spec
+initOptionSpecs =
+    [ { key = "colorByTranslationClass"
+      , label = "Color By Translations"
+      , value = False
+      }
+    , { key = "skipRelaxation"
+      , label = "Skip Relaxation"
+      , value = False
+      }
+    , { key = "extraSmooth"
+      , label = "Extra-Smooth Faces"
+      , value = False
+      }
+    , { key = "showSurfaceMesh"
+      , label = "Show Surface Mesh"
+      , value = False
+      }
+    ]
+
+
 
 -- UPDATE
 
@@ -238,6 +270,9 @@ update msg model =
               else
                 Cmd.none
             )
+
+        OptionsMsg msg ->
+            updateOptions model msg
 
         Ignore ->
             model ! []
@@ -299,8 +334,35 @@ handleSelection model =
             { newModel | jumpDialogVisible = True } ! []
         else if model.activeLabel == Just "Search..." then
             { newModel | searchDialogVisible = True } ! []
+        else if model.activeLabel == Just "Options..." then
+            { newModel
+                | optionsDialogVisible = True
+                , optionSpecsTmp = model.optionSpecs
+            }
+                ! []
         else
             ( newModel, menuSelection model.activeLabel )
+
+
+updateOptions : Model -> Options.Msg -> ( Model, Cmd Msg )
+updateOptions model msg =
+    case msg of
+        Options.Submit ok ->
+            if ok then
+                ( { model
+                    | optionsDialogVisible = False
+                    , optionSpecs = model.optionSpecsTmp
+                  }
+                , options model.optionSpecsTmp
+                )
+            else
+                { model | optionsDialogVisible = False } ! []
+
+        Options.Toggle key ->
+            { model
+                | optionSpecsTmp = Options.toggle key model.optionSpecsTmp
+            }
+                ! []
 
 
 
@@ -323,6 +385,11 @@ view model =
                )
             ++ (if model.searchDialogVisible then
                     [ viewTextBox model.searchDialogConfig ]
+                else
+                    []
+               )
+            ++ (if model.optionsDialogVisible then
+                    [ Options.view OptionsMsg model.optionSpecsTmp ]
                 else
                     []
                )
