@@ -139,31 +139,15 @@ initItems : List Menu.ItemSpec
 initItems =
     [ { label = "File"
       , submenu =
-            Just
-                [ "Open..."
-                , "Save Structure..."
-                , "Save Screenshot..."
-                ]
+            Just [ "Open...", "Save Structure...", "Save Screenshot..." ]
       }
     , { label = "Structure"
       , submenu =
-            Just
-                [ "First"
-                , "Prev"
-                , "Next"
-                , "Last"
-                , "Jump..."
-                , "Search..."
-                ]
+            Just [ "First", "Prev", "Next", "Last", "Jump...", "Search..." ]
       }
     , { label = "View"
       , submenu =
-            Just
-                [ "Center"
-                , "Along X"
-                , "Along Y"
-                , "Along Z"
-                ]
+            Just [ "Center", "Along X", "Along Y", "Along Z" ]
       }
     , { label = "Options..."
       , submenu =
@@ -171,9 +155,7 @@ initItems =
       }
     , { label = "Help"
       , submenu =
-            Just
-                [ "About Gavrog..."
-                ]
+            Just [ "About Gavrog..." ]
       }
     ]
 
