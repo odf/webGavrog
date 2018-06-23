@@ -5,6 +5,7 @@ import Char
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Json.Decode as Json
 import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
@@ -16,7 +17,6 @@ import Camera
 import Mesh exposing (..)
 import Renderer
 import Scene exposing (..)
-import WheelEvent
 import Window
 
 
@@ -305,6 +305,16 @@ view model =
                 ]
             , Html.Attributes.id "main-3d-canvas"
             , Html.Events.onMouseDown MouseDownMsg
-            , WheelEvent.onMouseWheel WheelMsg
+            , onMouseWheel WheelMsg
             ]
             entities
+
+
+onMouseWheel : (Float -> msg) -> Html.Attribute msg
+onMouseWheel toMsg =
+    Html.Events.onWithOptions
+        "wheel"
+        { stopPropagation = True
+        , preventDefault = True
+        }
+        (Json.map toMsg <| Json.at [ "deltaY" ] Json.float)
