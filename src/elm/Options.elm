@@ -9,7 +9,7 @@ main =
     Html.programWithFlags
         { init = init
         , view = view
-        , subscriptions = subscriptions
+        , subscriptions = \_ -> Sub.none
         , update = update
         }
 
@@ -43,8 +43,7 @@ port send : ( Model, Bool ) -> Cmd msg
 
 type Msg
     = Toggle String
-    | Send
-    | Cancel
+    | Submit Bool
 
 
 toggleIfKey : String -> Spec -> Spec
@@ -61,11 +60,8 @@ update msg model =
         Toggle key ->
             List.map (toggleIfKey key) model ! []
 
-        Send ->
-            ( model, send ( model, True ) )
-
-        Cancel ->
-            ( model, send ( model, False ) )
+        Submit ok ->
+            ( model, send ( model, ok ) )
 
 
 
@@ -79,8 +75,8 @@ view model =
         [ fieldset [ class "form-section" ]
             (List.map checkbox model
                 ++ [ p [ class "form-buttons" ]
-                        [ button [ onClick Send ] [ text "OK" ]
-                        , button [ onClick Cancel ] [ text "Cancel" ]
+                        [ button [ onClick (Submit True) ] [ text "OK" ]
+                        , button [ onClick (Submit False) ] [ text "Cancel" ]
                         ]
                    ]
             )
@@ -98,12 +94,3 @@ checkbox spec =
             ]
             []
         ]
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch []
