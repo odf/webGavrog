@@ -32,6 +32,16 @@ type Msg
     | Ignore
 
 
+type alias OutData =
+    { mode : String
+    , text : Maybe String
+    , options : List Options.Spec
+    }
+
+
+port toJS : OutData -> Cmd msg
+
+
 
 -- SUBSCRIPTIONS
 
@@ -40,18 +50,6 @@ port titles : (String -> msg) -> Sub msg
 
 
 port log : (String -> msg) -> Sub msg
-
-
-port menuSelection : Maybe String -> Cmd msg
-
-
-port jumpTo : String -> Cmd msg
-
-
-port search : String -> Cmd msg
-
-
-port options : List Options.Spec -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -237,7 +235,7 @@ update msg model =
         JumpDialogSubmit ok ->
             ( { model | jumpDialogVisible = False }
             , if ok then
-                jumpTo model.jumpDialogContent
+                toJS <| OutData "jump" (Just model.jumpDialogContent) []
               else
                 Cmd.none
             )
@@ -248,7 +246,7 @@ update msg model =
         SearchDialogSubmit ok ->
             ( { model | searchDialogVisible = False }
             , if ok then
-                search model.searchDialogContent
+                toJS <| OutData "search" (Just model.searchDialogContent) []
               else
                 Cmd.none
             )
@@ -323,7 +321,7 @@ handleSelection model =
             }
                 ! []
         else
-            ( newModel, menuSelection model.activeLabel )
+            ( newModel, toJS <| OutData "selected" model.activeLabel [] )
 
 
 updateOptions : Model -> Options.Msg -> ( Model, Cmd Msg )
@@ -335,7 +333,7 @@ updateOptions model msg =
                     | optionsDialogVisible = False
                     , optionSpecs = model.optionSpecsTmp
                   }
-                , options model.optionSpecsTmp
+                , toJS <| OutData "options" Nothing model.optionSpecsTmp
                 )
             else
                 { model | optionsDialogVisible = False } ! []

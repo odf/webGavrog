@@ -274,28 +274,32 @@ class App extends React.Component {
       ['Along Z']: sendCmd('viewAlongZ')
     };
 
-    const handleJump = text => {
-      const number = parseInt(text);
-      if (!Number.isNaN(number))
-        this.setStructure(number - (number > 0));
-    };
+    const handleElmData = ({ mode, text, options: data }) => {
+      if (mode == "jump") {
+        const number = parseInt(text);
+        if (!Number.isNaN(number))
+          this.setStructure(number - (number > 0));
+      }
+      else if (mode == "search") {
+        const i = text ? findStructureByName(this.state.model, text) : -1;
+        if (i >= 0)
+          this.setStructure(i);
+        else
+          this.log(`Name "${text}" not found.`);
+      }
+      else if (mode == "selected") {
+        if (action[text])
+          action[text]()
+      }
+      else if (mode == "options") {
+        const options = {};
+        for (const { key, value } of data)
+          options[key] = value;
 
-    const handleSearch = text => {
-      const i = text ? findStructureByName(this.state.model, text) : -1;
-      if (i >= 0)
-        this.setStructure(i);
-      else
-        this.log(`Name "${text}" not found.`);
-    };
-
-    const handleOptions = data => {
-      const options = {};
-      for (const { key, value } of data)
-        options[key] = value;
-
-      const model = setOptions(this.state.model, options);
-      this.setState((state, props) => ({ model }));
-      this.setStructure(currentIndex(this.state.model));
+        const model = setOptions(this.state.model, options);
+        this.setState((state, props) => ({ model }));
+        this.setStructure(currentIndex(this.state.model));
+      }
     };
 
     const handlePorts = ports => {
@@ -303,10 +307,7 @@ class App extends React.Component {
         titlePort: ports.titles,
         logPort: ports.log
       }));
-      ports.menuSelection.subscribe(name => action[name] && action[name]());
-      ports.jumpTo.subscribe(handleJump);
-      ports.search.subscribe(handleSearch);
-      ports.options.subscribe(handleOptions);
+      ports.toJS.subscribe(handleElmData);
     };
 
     return (
