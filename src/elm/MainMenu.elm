@@ -21,11 +21,9 @@ type Msg
     | ActivateSub (Maybe ( Int, String ))
     | Select
     | JumpDialogInput String
-    | JumpDialogSubmit
-    | JumpDialogCancel
+    | JumpDialogSubmit Bool
     | SearchDialogInput String
-    | SearchDialogSubmit
-    | SearchDialogCancel
+    | SearchDialogSubmit Bool
     | SetTitle String
     | SetStatus String
     | HideAbout
@@ -73,8 +71,7 @@ type alias TextBoxConfig =
     { label : String
     , placeholder : String
     , onInput : String -> Msg
-    , onSubmit : Msg
-    , onCancel : Msg
+    , onSubmit : Bool -> Msg
     }
 
 
@@ -183,7 +180,6 @@ jumpDialogConfig =
     , placeholder = "Number"
     , onInput = JumpDialogInput
     , onSubmit = JumpDialogSubmit
-    , onCancel = JumpDialogCancel
     }
 
 
@@ -193,7 +189,6 @@ searchDialogConfig =
     , placeholder = "Regex"
     , onInput = SearchDialogInput
     , onSubmit = SearchDialogSubmit
-    , onCancel = SearchDialogCancel
     }
 
 
@@ -225,24 +220,24 @@ update msg model =
         JumpDialogInput text ->
             { model | jumpDialogContent = text } ! []
 
-        JumpDialogSubmit ->
+        JumpDialogSubmit ok ->
             ( { model | jumpDialogVisible = False }
-            , jumpTo model.jumpDialogContent
+            , if ok then
+                jumpTo model.jumpDialogContent
+              else
+                Cmd.none
             )
-
-        JumpDialogCancel ->
-            { model | jumpDialogVisible = False } ! []
 
         SearchDialogInput text ->
             { model | searchDialogContent = text } ! []
 
-        SearchDialogSubmit ->
+        SearchDialogSubmit ok ->
             ( { model | searchDialogVisible = False }
-            , search model.searchDialogContent
+            , if ok then
+                search model.searchDialogContent
+              else
+                Cmd.none
             )
-
-        SearchDialogCancel ->
-            { model | searchDialogVisible = False } ! []
 
         Ignore ->
             model ! []
@@ -390,8 +385,8 @@ viewTextBox config =
                 ]
                 []
             , p [ class "form-buttons" ]
-                [ button [ onClick config.onSubmit ] [ text "OK" ]
-                , button [ onClick config.onCancel ] [ text "Cancel" ]
+                [ button [ onClick (config.onSubmit True) ] [ text "OK" ]
+                , button [ onClick (config.onSubmit False) ] [ text "Cancel" ]
                 ]
             ]
         ]
