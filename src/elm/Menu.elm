@@ -1,4 +1,4 @@
-port module Menu exposing (view, ItemSpec, Actions, Config, State)
+module Menu exposing (view, ItemSpec, Actions, Config, State)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)

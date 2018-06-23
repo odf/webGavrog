@@ -10,7 +10,6 @@ import { structures } from './builtinStructures';
 import makeScene     from './makeScene';
 import Elm           from './ElmComponent';
 
-import { Options }   from '../elm/Options';
 import { MainMenu }  from '../elm/MainMenu';
 import { View3d }    from '../elm/View3d';
 
@@ -141,7 +140,7 @@ const parseFileData = (model, file, data, log) => csp.go(function*() {
 class App extends React.Component {
   constructor() {
     super();
-    this.state = { windowsActive: {}, model: initialModel };
+    this.state = { model: initialModel };
     this.loadFile = fileLoader(this.handleFileData.bind(this));
     this.saveFile = fileSaver();
   }
@@ -236,33 +235,21 @@ class App extends React.Component {
       this.log('ERROR: could not save screenshot - no canvas element found');
   }
 
-  showWindow(key) {
-    this.setState((state, props) => ({
-      windowsActive: { ...state.windowsActive, [key]: true }
-    }));
-  }
-
-  hideWindow(key) {
-    this.setState((state, props) => ({
-      windowsActive: { ...state.windowsActive, [key]: false }
-    }));
-  }
-
-  handleKeyPress(code) {
-    const key = String.fromCharCode(code).toLowerCase();
-    if (key == 'p')
-      this.previousStructure();
-    else if (key == 'n')
-      this.nextStructure();
-  }
-
   render3dScene() {
+    const handleKeyPress = code => {
+      const key = String.fromCharCode(code).toLowerCase();
+      if (key == 'p')
+        this.previousStructure();
+      else if (key == 'n')
+        this.nextStructure();
+    };
+
     const handlePorts = ports => {
       this.setState((state, props) => ({
         scenePort: ports.scenes,
         commandPort: ports.commands
       }));
-      ports.keyPresses.subscribe(code => this.handleKeyPress(code));
+      ports.keyPresses.subscribe(handleKeyPress);
     };
 
     return (
@@ -287,12 +274,6 @@ class App extends React.Component {
       ['Along Z']: sendCmd('viewAlongZ')
     };
 
-    const handleMenuSelect = name => {
-      const fn = action[name];
-      if (fn)
-        fn();
-    };
-
     const handleJump = text => {
       const number = parseInt(text);
       if (!Number.isNaN(number))
@@ -300,14 +281,11 @@ class App extends React.Component {
     };
 
     const handleSearch = text => {
-      if (text) {
-        const i = findStructureByName(this.state.model, text);
-
-        if (i >= 0)
-          this.setStructure(i);
-        else
-          this.log(`Name "${text}" not found.`);
-      }
+      const i = text ? findStructureByName(this.state.model, text) : -1;
+      if (i >= 0)
+        this.setStructure(i);
+      else
+        this.log(`Name "${text}" not found.`);
     };
 
     const handleOptions = data => {
@@ -325,7 +303,7 @@ class App extends React.Component {
         titlePort: ports.titles,
         logPort: ports.log
       }));
-      ports.menuSelection.subscribe(handleMenuSelect);
+      ports.menuSelection.subscribe(name => action[name] && action[name]());
       ports.jumpTo.subscribe(handleJump);
       ports.search.subscribe(handleSearch);
       ports.options.subscribe(handleOptions);
@@ -333,10 +311,8 @@ class App extends React.Component {
 
     return (
       <Elm src={MainMenu}
-           flags={{
-             revision: version.gitRev,
-             timestamp: version.gitDate
-           }}
+           flags={{ revision: version.gitRev,
+                    timestamp: version.gitDate }}
            ports={ handlePorts } />
     );
   }

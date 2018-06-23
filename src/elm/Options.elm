@@ -1,11 +1,8 @@
-port module Options exposing (view, toggle, Spec, Msg(..))
+module Options exposing (view, toggle, Spec, Msg(..))
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-
-
--- MODEL
 
 
 type alias Spec =
@@ -15,30 +12,21 @@ type alias Spec =
     }
 
 
-
--- UPDATE
-
-
 type Msg
     = Toggle String
     | Submit Bool
 
 
-toggleIfKey : String -> Spec -> Spec
-toggleIfKey key spec =
-    if spec.key == key then
-        { spec | value = not spec.value }
-    else
-        spec
-
-
 toggle : String -> List Spec -> List Spec
 toggle key specs =
-    List.map (toggleIfKey key) specs
-
-
-
--- VIEW
+    List.map
+        (\spec ->
+            if spec.key == key then
+                { spec | value = not spec.value }
+            else
+                spec
+        )
+        specs
 
 
 view : (Msg -> msg) -> List Spec -> Html msg
