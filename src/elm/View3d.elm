@@ -1,7 +1,6 @@
 port module View3d
     exposing
-        ( main
-        , init
+        ( init
         , view
         , subscriptions
         , update
@@ -27,17 +26,6 @@ import Mesh exposing (..)
 import Renderer
 import Scene exposing (..)
 import Window
-
-
-main : Program Never Model Msg
-main =
-    Html.program
-        { init = init identity
-        , view = view identity
-        , subscriptions = subscriptions identity
-        , update = update
-        }
-
 
 
 -- MODEL

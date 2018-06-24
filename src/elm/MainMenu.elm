@@ -6,6 +6,7 @@ import Html.Events exposing (onInput, onWithOptions)
 import Json.Decode as Json
 import Menu
 import Options
+import View3d
 
 
 main =
@@ -18,7 +19,8 @@ main =
 
 
 type Msg
-    = Activate (Maybe ( Int, String ))
+    = ViewMsg View3d.Msg
+    | Activate (Maybe ( Int, String ))
     | ActivateSub (Maybe ( Int, String ))
     | Select
     | JumpDialogInput String
@@ -53,11 +55,12 @@ port log : (String -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ titles SetTitle
-        , log SetStatus
-        ]
+subscriptions model =
+    [ titles SetTitle
+    , log SetStatus
+    , View3d.subscriptions ViewMsg model.viewState
+    ]
+        |> Sub.batch
 
 
 
@@ -79,7 +82,8 @@ type alias TextBoxConfig =
 
 
 type alias Model =
-    { revision : String
+    { viewState : View3d.Model
+    , revision : String
     , timestamp : String
     , menuConfig : Menu.Config Msg
     , menuState : Menu.State
@@ -101,28 +105,34 @@ type alias Model =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    { revision = flags.revision
-    , timestamp = flags.timestamp
-    , menuConfig =
-        { actions = initActions
-        , items = initItems
-        }
-    , menuState = initState
-    , activeLabel = Nothing
-    , title = ""
-    , status = "Welcome!"
-    , showAbout = False
-    , jumpDialogConfig = jumpDialogConfig
-    , jumpDialogContent = ""
-    , jumpDialogVisible = False
-    , searchDialogConfig = searchDialogConfig
-    , searchDialogContent = ""
-    , searchDialogVisible = False
-    , optionSpecs = initOptionSpecs
-    , optionSpecsTmp = []
-    , optionsDialogVisible = False
-    }
-        ! []
+    let
+        ( state, cmd ) =
+            View3d.init ViewMsg
+    in
+        ( { viewState = state
+          , revision = flags.revision
+          , timestamp = flags.timestamp
+          , menuConfig =
+                { actions = initActions
+                , items = initItems
+                }
+          , menuState = initState
+          , activeLabel = Nothing
+          , title = ""
+          , status = "Welcome!"
+          , showAbout = False
+          , jumpDialogConfig = jumpDialogConfig
+          , jumpDialogContent = ""
+          , jumpDialogVisible = False
+          , searchDialogConfig = searchDialogConfig
+          , searchDialogContent = ""
+          , searchDialogVisible = False
+          , optionSpecs = initOptionSpecs
+          , optionSpecsTmp = []
+          , optionsDialogVisible = False
+          }
+        , cmd
+        )
 
 
 initActions : Menu.Actions Msg
@@ -211,6 +221,13 @@ initOptionSpecs =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ViewMsg msg ->
+            let
+                ( state, cmd ) =
+                    View3d.update msg model.viewState
+            in
+                ( { model | viewState = state }, Cmd.map ViewMsg cmd )
+
         Activate item ->
             updateActive model item ! []
 
@@ -352,7 +369,9 @@ updateOptions model msg =
 view : Model -> Html Msg
 view model =
     div []
-        ([ viewMain model ]
+        ([ View3d.view ViewMsg model.viewState
+         , viewMain model
+         ]
             ++ (if model.showAbout then
                     [ viewAbout model ]
                 else

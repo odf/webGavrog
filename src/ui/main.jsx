@@ -11,7 +11,6 @@ import makeScene     from './makeScene';
 import Elm           from './ElmComponent';
 
 import { MainMenu }  from '../elm/MainMenu';
-import { View3d }    from '../elm/View3d';
 
 
 const worker = webworkers.create('js/sceneWorker.js');
@@ -235,29 +234,7 @@ class App extends React.Component {
       this.log('ERROR: could not save screenshot - no canvas element found');
   }
 
-  render3dScene() {
-    const handleKeyPress = code => {
-      const key = String.fromCharCode(code).toLowerCase();
-      if (key == 'p')
-        this.previousStructure();
-      else if (key == 'n')
-        this.nextStructure();
-    };
-
-    const handlePorts = ports => {
-      this.setState((state, props) => ({
-        scenePort: ports.scenes,
-        commandPort: ports.commands
-      }));
-      ports.keyPresses.subscribe(handleKeyPress);
-    };
-
-    return (
-      <Elm src={View3d} ports={handlePorts} />
-    );
-  }
-
-  renderMainDialog() {
+  render() {
     const sendCmd = cmd => () => this.state.commandPort.send(cmd);
 
     const action = {
@@ -302,12 +279,23 @@ class App extends React.Component {
       }
     };
 
+    const handleKeyPress = code => {
+      const key = String.fromCharCode(code).toLowerCase();
+      if (key == 'p')
+        this.previousStructure();
+      else if (key == 'n')
+        this.nextStructure();
+    };
+
     const handlePorts = ports => {
       this.setState((state, props) => ({
         titlePort: ports.titles,
-        logPort: ports.log
+        logPort: ports.log,
+        scenePort: ports.scenes,
+        commandPort: ports.commands
       }));
       ports.toJS.subscribe(handleElmData);
+      ports.keyPresses.subscribe(handleKeyPress);
     };
 
     return (
@@ -315,17 +303,6 @@ class App extends React.Component {
            flags={{ revision: version.gitRev,
                     timestamp: version.gitDate }}
            ports={ handlePorts } />
-    );
-  }
-
-  render() {
-    const message = this.state.log || "Welcome!";
-
-    return (
-      <div>
-        {this.render3dScene()}
-        {this.renderMainDialog()}
-      </div>
     );
   }
 }
