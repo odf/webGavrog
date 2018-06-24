@@ -235,8 +235,6 @@ class App extends React.Component {
   }
 
   render() {
-    const sendCmd = cmd => () => this.state.commandPort.send(cmd);
-
     const action = {
       ['Open...']: () => this.loadFile(),
       ['Save Structure...']: () => this.saveStructure(),
@@ -244,11 +242,7 @@ class App extends React.Component {
       ['First']: () => this.setStructure(0),
       ['Prev']: () => this.previousStructure(),
       ['Next']: () => this.nextStructure(),
-      ['Last']: () => this.setStructure(-1),
-      ['Center']: sendCmd('center'),
-      ['Along X']: sendCmd('viewAlongX'),
-      ['Along Y']: sendCmd('viewAlongY'),
-      ['Along Z']: sendCmd('viewAlongZ')
+      ['Last']: () => this.setStructure(-1)
     };
 
     const handleElmData = ({ mode, text, options: data }) => {

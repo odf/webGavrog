@@ -337,6 +337,14 @@ handleSelection model =
                 , optionSpecsTmp = model.optionSpecs
             }
                 ! []
+        else if model.activeLabel == Just "Center" then
+            update (ViewMsg <| View3d.Execute "center") newModel
+        else if model.activeLabel == Just "Along X" then
+            update (ViewMsg <| View3d.Execute "viewAlongX") newModel
+        else if model.activeLabel == Just "Along Y" then
+            update (ViewMsg <| View3d.Execute "viewAlongY") newModel
+        else if model.activeLabel == Just "Along Z" then
+            update (ViewMsg <| View3d.Execute "viewAlongZ") newModel
         else
             ( newModel, toJS <| OutData "selected" model.activeLabel [] )
 

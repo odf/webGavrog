@@ -5,7 +5,7 @@ port module View3d
         , subscriptions
         , update
         , Model
-        , Msg
+        , Msg(Execute)
         )
 
 import AnimationFrame
