@@ -1,4 +1,13 @@
-port module View3d exposing (main)
+port module View3d
+    exposing
+        ( main
+        , init
+        , view
+        , subscriptions
+        , update
+        , Model
+        , Msg
+        )
 
 import AnimationFrame
 import Char
@@ -23,9 +32,9 @@ import Window
 main : Program Never Model Msg
 main =
     Html.program
-        { init = init
-        , view = view
-        , subscriptions = subscriptions
+        { init = init identity
+        , view = view identity
+        , subscriptions = subscriptions identity
         , update = update
         }
 
@@ -56,8 +65,8 @@ type alias GlScene =
         }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : (Msg -> msg) -> ( Model, Cmd msg )
+init toMsg =
     ( { size = { width = 0, height = 0 }
       , cameraState = Camera.initialState
       , scene = []
@@ -65,7 +74,7 @@ init =
       , radius = 0
       , modifiers = { shift = False, ctrl = False }
       }
-    , Task.perform ResizeMsg Window.size
+    , Task.perform (toMsg << ResizeMsg) Window.size
     )
 
 
@@ -117,25 +126,23 @@ type Msg
     | Execute String
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    let
-        animation =
-            if Camera.isMoving model.cameraState then
-                [ AnimationFrame.times FrameMsg ]
-            else
-                []
-    in
-        Sub.batch <|
-            animation
-                ++ [ Mouse.moves MouseMoveMsg
-                   , Mouse.ups MouseUpMsg
-                   , Keyboard.downs KeyDownMsg
-                   , Keyboard.ups KeyUpMsg
-                   , Window.resizes ResizeMsg
-                   , scenes SetScene
-                   , commands Execute
-                   ]
+subscriptions : (Msg -> msg) -> Model -> Sub msg
+subscriptions toMsg model =
+    (if Camera.isMoving model.cameraState then
+        [ AnimationFrame.times FrameMsg ]
+     else
+        []
+    )
+        ++ [ Mouse.moves MouseMoveMsg
+           , Mouse.ups MouseUpMsg
+           , Keyboard.downs KeyDownMsg
+           , Keyboard.ups KeyUpMsg
+           , Window.resizes ResizeMsg
+           , scenes SetScene
+           , commands Execute
+           ]
+        |> Sub.batch
+        |> Sub.map toMsg
 
 
 
@@ -278,8 +285,8 @@ setScene spec model =
 -- VIEW
 
 
-view : Model -> Html Msg
-view model =
+view : (Msg -> msg) -> Model -> Html msg
+view toMsg model =
     let
         viewing =
             Camera.viewingMatrix model.cameraState
@@ -304,8 +311,8 @@ view model =
                 , ( "background", "white" )
                 ]
             , Html.Attributes.id "main-3d-canvas"
-            , Html.Events.onMouseDown MouseDownMsg
-            , onMouseWheel WheelMsg
+            , Html.Events.onMouseDown (toMsg MouseDownMsg)
+            , onMouseWheel (toMsg << WheelMsg)
             ]
             entities
 
