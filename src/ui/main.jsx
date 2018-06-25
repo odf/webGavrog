@@ -1,5 +1,3 @@
-import * as React    from 'react';
-import * as ReactDOM from 'react-dom';
 import * as csp      from 'plexus-csp';
 
 import * as webworkers from '../common/webworkers';
@@ -8,7 +6,6 @@ import parseDSymbols from '../io/ds';
 
 import { structures } from './builtinStructures';
 import makeScene     from './makeScene';
-import Elm           from './ElmComponent';
 
 import { MainMenu }  from '../elm/MainMenu';
 
@@ -136,30 +133,25 @@ const parseFileData = (model, file, data, log) => csp.go(function*() {
 });
 
 
-class App extends React.Component {
+class App {
   constructor() {
-    super();
-    this.state = { model: initialModel };
+    this.model = initialModel;
     this.loadFile = fileLoader(this.handleFileData.bind(this));
     this.saveFile = fileSaver();
   }
 
-  componentDidMount() {
-    this.setStructure(0);
-  }
-
   log(s) {
-    this.state.logPort.send(s);
+    this.ports.logPort.send(s);
   }
 
   setStructure(i) {
     csp.go(function*() {
       try {
-        const model = yield toStructure(this.state.model, i,
+        const model = yield toStructure(this.model, i,
                                         s => this.log(s));
-          this.setState((state, props) => ({ model }));
-          this.state.titlePort.send(title(model));
-          this.state.scenePort.send(currentScene(model));
+          this.model = model;
+          this.ports.titlePort.send(title(model));
+          this.ports.scenePort.send(currentScene(model));
       } catch (ex) {
         this.log(`ERROR processing structure ${i}!!!`);
         console.error(ex);
@@ -168,21 +160,21 @@ class App extends React.Component {
   }
 
   previousStructure() {
-    this.setStructure(currentIndex(this.state.model) - 1);
+    this.setStructure(currentIndex(this.model) - 1);
   }
 
   nextStructure() {
-    this.setStructure(currentIndex(this.state.model) + 1);
+    this.setStructure(currentIndex(this.model) + 1);
   }
 
   handleFileData(file, data) {
     csp.go(function*() {
       let loadError = false;
       try {
-        const model = yield parseFileData(this.state.model, file, data,
+        const model = yield parseFileData(this.model, file, data,
                                           s => this.log(s));
-          this.state.titlePort.send(title(model));
-          this.setState((state, props) => ({ model }));
+          this.ports.titlePort.send(title(model));
+          this.model = model;
       } catch (ex) {
         loadError = true;
         this.log(`ERROR loading from file "${file.name}"!!!`);
@@ -195,7 +187,7 @@ class App extends React.Component {
   }
 
   saveStructure() {
-    const structure = currentStructure(this.state.model);
+    const structure = currentStructure(this.model);
 
     if (structure.type == 'tiling') {
       const text = structure.symbol.toString();
@@ -210,7 +202,7 @@ class App extends React.Component {
     const canvas = document.getElementById('main-3d-canvas');
 
     if (canvas) {
-      this.state.commandPort.send('redrawsOn');
+      this.ports.commandPort.send('redrawsOn');
 
       window.requestAnimationFrame(() => {
         if (canvas.toBlob)
@@ -227,14 +219,14 @@ class App extends React.Component {
           this.saveFile(blob, 'gavrog.png');
         }
 
-        this.state.commandPort.send('redrawsOff');
+        this.ports.commandPort.send('redrawsOff');
       });
     }
     else
       this.log('ERROR: could not save screenshot - no canvas element found');
   }
 
-  render() {
+  render(domNode) {
     const action = {
       ['Open...']: () => this.loadFile(),
       ['Save Structure...']: () => this.saveStructure(),
@@ -252,7 +244,7 @@ class App extends React.Component {
           this.setStructure(number - (number > 0));
       }
       else if (mode == "search") {
-        const i = text ? findStructureByName(this.state.model, text) : -1;
+        const i = text ? findStructureByName(this.model, text) : -1;
         if (i >= 0)
           this.setStructure(i);
         else
@@ -267,9 +259,9 @@ class App extends React.Component {
         for (const { key, value } of data)
           options[key] = value;
 
-        const model = setOptions(this.state.model, options);
-        this.setState((state, props) => ({ model }));
-        this.setStructure(currentIndex(this.state.model));
+        const model = setOptions(this.model, options);
+        this.model = model;
+        this.setStructure(currentIndex(this.model));
       }
     };
 
@@ -282,24 +274,26 @@ class App extends React.Component {
     };
 
     const handlePorts = ports => {
-      this.setState((state, props) => ({
+      this.ports = {
         titlePort: ports.titles,
         logPort: ports.log,
         scenePort: ports.scenes,
         commandPort: ports.commands
-      }));
+      };
       ports.toJS.subscribe(handleElmData);
       ports.keyPresses.subscribe(handleKeyPress);
     };
 
-    return (
-      <Elm src={MainMenu}
-           flags={{ revision: version.gitRev,
-                    timestamp: version.gitDate }}
-           ports={ handlePorts } />
-    );
+    const flags = {
+      revision: version.gitRev,
+      timestamp: version.gitDate };
+
+    const app = MainMenu.embed(domNode, flags);
+    handlePorts(app.ports);
+    this.setStructure(0);
   }
 }
 
 
-ReactDOM.render(<App/>, document.getElementById('react-main'));
+const app = new App();
+app.render(document.getElementById('react-main'));

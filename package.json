@@ -15,10 +15,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "plexus-csp": "^0.2.0",
-    "prop-types": "^15.5.4",
-    "react": "^16.0.0",
-    "react-dom": "^16.0.0"
+    "plexus-csp": "^0.2.0"
   },
   "devDependencies": {
     "babel-core": "^6.4.0",
