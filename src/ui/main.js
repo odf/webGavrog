@@ -79,22 +79,33 @@ const title = model => {
 };
 
 
-const toStructure = (model, i, log) => csp.go(function*() {
-  const structures = model.structures;
-  const n = structures.length;
-  const index = i < 0 ? n + i % n : i % n;
+const toStructure = (config, model, i) => csp.go(function*() {
+  try {
+    const structures = model.structures;
+    const n = structures.length;
+    const index = i < 0 ? n + i % n : i % n;
 
-  if (structures[index].isRaw) {
-    log('Converting structure data...');
-    structures[index] = yield callWorker({
-      cmd: 'processCGD',
-      val: structures[index]
-    });
+    if (structures[index].isRaw) {
+      config.log('Converting structure data...');
+      structures[index] = yield callWorker({
+        cmd: 'processCGD',
+        val: structures[index]
+      });
+    }
+
+    const scene = yield makeScene(
+      structures[index], model.options, callWorker, config.log);
+    const newModel = Object.assign({}, model, { structures, index, scene });
+
+    config.sendTitle(title(newModel));
+    config.sendScene(scene);
+
+    return newModel;
+  } catch (ex) {
+    config.log(`ERROR processing structure ${i}!!!`);
+    console.error(ex);
+    return model;
   }
-
-  const scene = yield makeScene(
-      structures[index], model.options, callWorker, log);
-  return Object.assign({}, model, { structures, index, scene });
 });
 
 
@@ -136,14 +147,7 @@ const parseFileData = (model, file, data, log) => csp.go(function*() {
 class App {
   setStructure(i) {
     csp.go(function*() {
-      try {
-        this.model = yield toStructure(this.model, i, this.config.log);
-        this.config.sendTitle(title(this.model));
-        this.config.sendScene(currentScene(this.model));
-      } catch (ex) {
-        this.config.log(`ERROR processing structure ${i}!!!`);
-        console.error(ex);
-      }
+      this.model = yield toStructure(this.config, this.model, i);
     }.bind(this));
   }
 
