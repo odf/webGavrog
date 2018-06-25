@@ -166,7 +166,7 @@ const saveStructure = (config, model) => {
     config.saveFile(blob, 'gavrog.ds');
   }
   else
-    throw new Error(`save not yet implemented for '${structure.type}'`);
+    config.log(`ERROR: not yet implemented for '${structure.type}'`);
 };
 
 
