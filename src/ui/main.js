@@ -29,7 +29,7 @@ const fileLoader = (accept, multiple=false, binary=false) => {
       const file = files[i];
       const reader = new FileReader();
 
-      reader.onload = event => callback(file, event.target.result);
+      reader.onload = event => callback({ file, data: event.target.result });
 
       if (binary)
         reader.readAsDataURL(file);
@@ -131,7 +131,7 @@ const currentScene = model => model.scene;
 const currentOptions = model => model.options;
 
 
-const newFile = (config, model, file, data) => csp.go(function*() {
+const newFile = (config, model, { file, data }) => csp.go(function*() {
     try {
         const filename = file.name;
         let structures = [];
@@ -214,9 +214,9 @@ class App {
     this.setStructure(currentIndex(this.model) + 1);
   }
 
-  handleFileData(file, data) {
+  handleFileData({ file, data }) {
       csp.go(function*() {
-          this.model = yield newFile(this.config, this.model, file, data);
+          this.model = yield newFile(this.config, this.model, { file, data });
       }.bind(this));
   }
 
