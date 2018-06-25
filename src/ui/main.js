@@ -131,20 +131,29 @@ const currentScene = model => model.scene;
 const currentOptions = model => model.options;
 
 
-const parseFileData = (model, file, data, log) => csp.go(function*() {
-  const filename = file.name;
-  let structures = [];
+const newFile = (config, model, file, data) => csp.go(function*() {
+    try {
+        const filename = file.name;
+        let structures = [];
 
-  if (filename.match(/\.(ds|tgs)$/)) {
-    log('Parsing .ds data...');
-    structures = Array.from(parseDSymbols(data));
-  }
-  else if (filename.match(/\.(cgd|pgr)$/)) {
-    log('Parsing .cgd data...');
-    structures = yield callWorker({ cmd: 'parseCGD', val: data });
-  }
+        if (filename.match(/\.(ds|tgs)$/)) {
+            config.log('Parsing .ds data...');
+            structures = Array.from(parseDSymbols(data));
+        }
+        else if (filename.match(/\.(cgd|pgr)$/)) {
+            config.log('Parsing .cgd data...');
+            structures = yield callWorker({ cmd: 'parseCGD', val: data });
+        }
 
-  return Object.assign({}, model, { filename, structures, index: null });
+        const newModel =
+              Object.assign({}, model, { filename, structures, index: null });
+
+        config.sendTitle(title(newModel));
+        return yield toStructure(config, newModel, 0);
+    } catch (ex) {
+        config.log(`ERROR loading from file "${file.name}"!!!`);
+        console.error(ex);
+    }
 });
 
 
@@ -206,21 +215,9 @@ class App {
   }
 
   handleFileData(file, data) {
-    csp.go(function*() {
-      let loadError = false;
-      try {
-        this.model =
-          yield parseFileData(this.model, file, data, this.config.log);
-        this.config.sendTitle(title(this.model));
-      } catch (ex) {
-        loadError = true;
-        this.config.log(`ERROR loading from file "${file.name}"!!!`);
-        console.error(ex);
-      }
-
-      if (!loadError)
-        this.setStructure(0);
-    }.bind(this));
+      csp.go(function*() {
+          this.model = yield newFile(this.config, this.model, file, data);
+      }.bind(this));
   }
 
   saveStructure() {
