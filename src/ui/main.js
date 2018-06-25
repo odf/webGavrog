@@ -134,20 +134,14 @@ const parseFileData = (model, file, data, log) => csp.go(function*() {
 
 
 class App {
-  constructor() {
-    this.model = initialModel;
-    this.loadFile = fileLoader(this.handleFileData.bind(this));
-    this.saveFile = fileSaver();
-  }
-
   setStructure(i) {
     csp.go(function*() {
       try {
-        this.model = yield toStructure(this.model, i, this.log);
-        this.titlePort.send(title(this.model));
-        this.scenePort.send(currentScene(this.model));
+        this.model = yield toStructure(this.model, i, this.config.log);
+        this.config.sendTitle(title(this.model));
+        this.config.sendScene(currentScene(this.model));
       } catch (ex) {
-        this.log(`ERROR processing structure ${i}!!!`);
+        this.config.log(`ERROR processing structure ${i}!!!`);
         console.error(ex);
       }
     }.bind(this));
@@ -165,11 +159,12 @@ class App {
     csp.go(function*() {
       let loadError = false;
       try {
-        this.model = yield parseFileData(this.model, file, data, this.log);
-        this.titlePort.send(title(this.model));
+        this.model =
+          yield parseFileData(this.model, file, data, this.config.log);
+        this.config.sendTitle(title(this.model));
       } catch (ex) {
         loadError = true;
-        this.log(`ERROR loading from file "${file.name}"!!!`);
+        this.config.log(`ERROR loading from file "${file.name}"!!!`);
         console.error(ex);
       }
 
@@ -184,7 +179,7 @@ class App {
     if (structure.type == 'tiling') {
       const text = structure.symbol.toString();
       const blob = new Blob([text], { type: 'text/plain' });
-      this.saveFile(blob, 'gavrog.ds');
+      this.config.saveFile(blob, 'gavrog.ds');
     }
     else
       throw new Error(`save not yet implemented for '${structure.type}'`);
@@ -194,11 +189,11 @@ class App {
     const canvas = document.getElementById('main-3d-canvas');
 
     if (canvas) {
-      this.commandPort.send('redrawsOn');
+      this.config.sendCommand('redrawsOn');
 
       window.requestAnimationFrame(() => {
         if (canvas.toBlob)
-          canvas.toBlob(blob => this.saveFile(blob, 'gavrog.png'));
+          canvas.toBlob(blob => this.config.saveFile(blob, 'gavrog.png'));
         else {
           const binStr = atob(canvas.toDataURL().split(',')[1]);
 
@@ -208,19 +203,20 @@ class App {
             arr[i] = binStr.charCodeAt(i);
 
           const blob = new Blob([arr], { type: 'image/png' });
-          this.saveFile(blob, 'gavrog.png');
+          this.config.saveFile(blob, 'gavrog.png');
         }
 
-        this.commandPort.send('redrawsOff');
+        this.config.sendCommand('redrawsOff');
       });
     }
     else
-      this.log('ERROR: could not save screenshot - no canvas element found');
+      this.config.log(
+        'ERROR: could not save screenshot - no canvas element found');
   }
 
   render(domNode) {
     const action = {
-      ['Open...']: () => this.loadFile(),
+      ['Open...']: () => this.config.loadFile(),
       ['Save Structure...']: () => this.saveStructure(),
       ['Save Screenshot...']: () => this.saveScreenshot(),
       ['First']: () => this.setStructure(0),
@@ -240,7 +236,7 @@ class App {
         if (i >= 0)
           this.setStructure(i);
         else
-          this.log(`Name "${text}" not found.`);
+          this.config.log(`Name "${text}" not found.`);
       }
       else if (mode == "selected") {
         if (action[text])
@@ -264,23 +260,23 @@ class App {
         this.nextStructure();
     };
 
-    const handlePorts = ports => {
-      this.titlePort = ports.titles;
-      this.scenePort = ports.scenes;
-      this.commandPort = ports.commands;
+    const app = MainMenu.embed(domNode, {
+      revision: version.gitRev,
+      timestamp: version.gitDate });
 
-      this.log = s => ports.log.send(s);
-
-      ports.toJS.subscribe(handleElmData);
-      ports.keyPresses.subscribe(handleKeyPress);
+    this.config = {
+      loadFile: fileLoader(this.handleFileData.bind(this)),
+      saveFile: fileSaver(),
+      log: app.ports.log.send,
+      sendTitle: app.ports.titles.send,
+      sendScene: app.ports.scenes.send,
+      sendCommand: app.ports.commands.send
     };
 
-    const flags = {
-      revision: version.gitRev,
-      timestamp: version.gitDate };
+    app.ports.toJS.subscribe(handleElmData);
+    app.ports.keyPresses.subscribe(handleKeyPress);
 
-    const app = MainMenu.embed(domNode, flags);
-    handlePorts(app.ports);
+    this.model = initialModel;
     this.setStructure(0);
   }
 }
