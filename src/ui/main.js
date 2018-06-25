@@ -132,28 +132,28 @@ const currentOptions = model => model.options;
 
 
 const newFile = (config, model, { file, data }) => csp.go(function*() {
-    try {
-        const filename = file.name;
-        let structures = [];
+  try {
+    const filename = file.name;
+    let structures = [];
 
-        if (filename.match(/\.(ds|tgs)$/)) {
-            config.log('Parsing .ds data...');
-            structures = Array.from(parseDSymbols(data));
-        }
-        else if (filename.match(/\.(cgd|pgr)$/)) {
-            config.log('Parsing .cgd data...');
-            structures = yield callWorker({ cmd: 'parseCGD', val: data });
-        }
-
-        const newModel =
-              Object.assign({}, model, { filename, structures, index: null });
-
-        config.sendTitle(title(newModel));
-        return yield toStructure(config, newModel, 0);
-    } catch (ex) {
-        config.log(`ERROR loading from file "${file.name}"!!!`);
-        console.error(ex);
+    if (filename.match(/\.(ds|tgs)$/)) {
+      config.log('Parsing .ds data...');
+      structures = Array.from(parseDSymbols(data));
     }
+    else if (filename.match(/\.(cgd|pgr)$/)) {
+      config.log('Parsing .cgd data...');
+      structures = yield callWorker({ cmd: 'parseCGD', val: data });
+    }
+
+    const newModel =
+          Object.assign({}, model, { filename, structures, index: null });
+
+    config.sendTitle(title(newModel));
+    return yield toStructure(config, newModel, 0);
+  } catch (ex) {
+    config.log(`ERROR loading from file "${file.name}"!!!`);
+    console.error(ex);
+  }
 });
 
 
@@ -214,10 +214,10 @@ class App {
     this.setStructure(currentIndex(this.model) + 1);
   }
 
-  handleFileData({ file, data }) {
-      csp.go(function*() {
-          this.model = yield newFile(this.config, this.model, { file, data });
-      }.bind(this));
+  openFile() {
+    this.config.loadFile(({ file, data }) => csp.go(function*() {
+      this.model = yield newFile(this.config, this.model, { file, data });
+    }.bind(this)));
   }
 
   saveStructure() {
@@ -230,7 +230,7 @@ class App {
 
   render(domNode) {
     const action = {
-      ['Open...']: () => this.config.loadFile(this.handleFileData.bind(this)),
+      ['Open...']: () => this.openFile(),
       ['Save Structure...']: () => this.saveStructure(),
       ['Save Screenshot...']: () => this.saveScreenshot(),
       ['First']: () => this.setStructure(0),
