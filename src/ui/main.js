@@ -144,6 +144,48 @@ const parseFileData = (model, file, data, log) => csp.go(function*() {
 });
 
 
+const saveStructure = (config, model) => {
+  const structure = currentStructure(model);
+
+  if (structure.type == 'tiling') {
+    const text = structure.symbol.toString();
+    const blob = new Blob([text], { type: 'text/plain' });
+    config.saveFile(blob, 'gavrog.ds');
+  }
+  else
+    throw new Error(`save not yet implemented for '${structure.type}'`);
+};
+
+
+const saveScreenshot = (config, model) => {
+  const canvas = document.getElementById('main-3d-canvas');
+
+  if (canvas) {
+    config.sendCommand('redrawsOn');
+
+    window.requestAnimationFrame(() => {
+      if (canvas.toBlob)
+        canvas.toBlob(blob => config.saveFile(blob, 'gavrog.png'));
+      else {
+        const binStr = atob(canvas.toDataURL().split(',')[1]);
+
+        const len = binStr.length;
+        const arr = new Uint8Array(len);
+        for (let i = 0; i < len; i++ )
+          arr[i] = binStr.charCodeAt(i);
+
+        const blob = new Blob([arr], { type: 'image/png' });
+        config.saveFile(blob, 'gavrog.png');
+      }
+
+      config.sendCommand('redrawsOff');
+    });
+  }
+  else
+    config.log('ERROR: could not save screenshot - no canvas element found');
+};
+
+
 class App {
   setStructure(i) {
     csp.go(function*() {
@@ -178,44 +220,11 @@ class App {
   }
 
   saveStructure() {
-    const structure = currentStructure(this.model);
-
-    if (structure.type == 'tiling') {
-      const text = structure.symbol.toString();
-      const blob = new Blob([text], { type: 'text/plain' });
-      this.config.saveFile(blob, 'gavrog.ds');
-    }
-    else
-      throw new Error(`save not yet implemented for '${structure.type}'`);
+    saveStructure(this.config, this.model);
   }
 
   saveScreenshot() {
-    const canvas = document.getElementById('main-3d-canvas');
-
-    if (canvas) {
-      this.config.sendCommand('redrawsOn');
-
-      window.requestAnimationFrame(() => {
-        if (canvas.toBlob)
-          canvas.toBlob(blob => this.config.saveFile(blob, 'gavrog.png'));
-        else {
-          const binStr = atob(canvas.toDataURL().split(',')[1]);
-
-          const len = binStr.length;
-          const arr = new Uint8Array(len);
-          for (let i = 0; i < len; i++ )
-            arr[i] = binStr.charCodeAt(i);
-
-          const blob = new Blob([arr], { type: 'image/png' });
-          this.config.saveFile(blob, 'gavrog.png');
-        }
-
-        this.config.sendCommand('redrawsOff');
-      });
-    }
-    else
-      this.config.log(
-        'ERROR: could not save screenshot - no canvas element found');
+    saveScreenshot(this.config, this.model);
   }
 
   render(domNode) {
