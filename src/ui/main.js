@@ -1,13 +1,13 @@
-import * as csp      from 'plexus-csp';
+import * as csp from 'plexus-csp';
 
 import * as webworkers from '../common/webworkers';
-import * as version  from '../version';
+import * as version from '../version';
 import parseDSymbols from '../io/ds';
 
 import { structures } from './builtinStructures';
-import makeScene     from './makeScene';
+import makeScene from './makeScene';
 
-import { MainMenu }  from '../elm/MainMenu';
+import { MainMenu } from '../elm/MainMenu';
 
 
 const worker = webworkers.create('js/sceneWorker.js');
@@ -140,18 +140,12 @@ class App {
     this.saveFile = fileSaver();
   }
 
-  log(s) {
-    this.ports.logPort.send(s);
-  }
-
   setStructure(i) {
     csp.go(function*() {
       try {
-        const model = yield toStructure(this.model, i,
-                                        s => this.log(s));
-          this.model = model;
-          this.ports.titlePort.send(title(model));
-          this.ports.scenePort.send(currentScene(model));
+        this.model = yield toStructure(this.model, i, this.log);
+        this.titlePort.send(title(this.model));
+        this.scenePort.send(currentScene(this.model));
       } catch (ex) {
         this.log(`ERROR processing structure ${i}!!!`);
         console.error(ex);
@@ -171,10 +165,8 @@ class App {
     csp.go(function*() {
       let loadError = false;
       try {
-        const model = yield parseFileData(this.model, file, data,
-                                          s => this.log(s));
-          this.ports.titlePort.send(title(model));
-          this.model = model;
+        this.model = yield parseFileData(this.model, file, data, this.log);
+        this.titlePort.send(title(this.model));
       } catch (ex) {
         loadError = true;
         this.log(`ERROR loading from file "${file.name}"!!!`);
@@ -202,7 +194,7 @@ class App {
     const canvas = document.getElementById('main-3d-canvas');
 
     if (canvas) {
-      this.ports.commandPort.send('redrawsOn');
+      this.commandPort.send('redrawsOn');
 
       window.requestAnimationFrame(() => {
         if (canvas.toBlob)
@@ -219,7 +211,7 @@ class App {
           this.saveFile(blob, 'gavrog.png');
         }
 
-        this.ports.commandPort.send('redrawsOff');
+        this.commandPort.send('redrawsOff');
       });
     }
     else
@@ -259,8 +251,7 @@ class App {
         for (const { key, value } of data)
           options[key] = value;
 
-        const model = setOptions(this.model, options);
-        this.model = model;
+        this.model = setOptions(this.model, options);
         this.setStructure(currentIndex(this.model));
       }
     };
@@ -274,12 +265,12 @@ class App {
     };
 
     const handlePorts = ports => {
-      this.ports = {
-        titlePort: ports.titles,
-        logPort: ports.log,
-        scenePort: ports.scenes,
-        commandPort: ports.commands
-      };
+      this.titlePort = ports.titles;
+      this.scenePort = ports.scenes;
+      this.commandPort = ports.commands;
+
+      this.log = s => ports.log.send(s);
+
       ports.toJS.subscribe(handleElmData);
       ports.keyPresses.subscribe(handleKeyPress);
     };
@@ -296,4 +287,4 @@ class App {
 
 
 const app = new App();
-app.render(document.getElementById('react-main'));
+app.render(document.getElementById('main'));
