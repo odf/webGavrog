@@ -29,8 +29,7 @@ const fileLoader = (accept, multiple=false, binary=false) => {
       const file = files[i];
       const reader = new FileReader();
 
-        reader.onload =
-            event => callback(null, { file, data: event.target.result });
+      reader.onload = event => callback({ file, data: event.target.result });
 
       if (binary)
         reader.readAsDataURL(file);
@@ -201,13 +200,6 @@ const saveScreenshot = (config, model) => {
 
 
 class App {
-    openFile() {
-        csp.go(function*() {
-            const { file, data } = yield this.config.loadFile();
-            this.model = yield newFile(this.config, this.model, { file, data });
-        }.bind(this));
-    }
-
   setStructure(i) {
     csp.go(function*() {
       this.model = yield toStructure(this.config, this.model, i);
@@ -222,6 +214,12 @@ class App {
     this.setStructure(currentIndex(this.model) + 1);
   }
 
+  handleFileData({ file, data }) {
+      csp.go(function*() {
+          this.model = yield newFile(this.config, this.model, { file, data });
+      }.bind(this));
+  }
+
   saveStructure() {
     saveStructure(this.config, this.model);
   }
@@ -232,7 +230,7 @@ class App {
 
   render(domNode) {
     const action = {
-      ['Open...']: () => this.openFile(),
+      ['Open...']: () => this.config.loadFile(this.handleFileData.bind(this)),
       ['Save Structure...']: () => this.saveStructure(),
       ['Save Screenshot...']: () => this.saveScreenshot(),
       ['First']: () => this.setStructure(0),
@@ -281,7 +279,7 @@ class App {
       timestamp: version.gitDate });
 
     this.config = {
-      loadFile: csp.nbind(fileLoader(), null),
+      loadFile: fileLoader(),
       saveFile: fileSaver(),
       log: app.ports.log.send,
       sendTitle: app.ports.titles.send,
