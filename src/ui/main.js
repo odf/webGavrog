@@ -14,8 +14,9 @@ const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
 
 
-const fileLoader = (onData, accept, multiple=false, binary=false) => {
+const fileLoader = (accept, multiple=false, binary=false) => {
   const input = document.createElement('input');
+  let callback = () => {};
 
   input.type = 'file';
   input.accept = accept;
@@ -28,7 +29,7 @@ const fileLoader = (onData, accept, multiple=false, binary=false) => {
       const file = files[i];
       const reader = new FileReader();
 
-      reader.onload = event => onData(file, event.target.result);
+      reader.onload = event => callback(file, event.target.result);
 
       if (binary)
         reader.readAsDataURL(file);
@@ -37,7 +38,10 @@ const fileLoader = (onData, accept, multiple=false, binary=false) => {
     }
   });
 
-  return () => input.click();
+  return (onData) => {
+    callback = onData;
+    input.click();
+  };
 };
 
 
@@ -229,7 +233,7 @@ class App {
 
   render(domNode) {
     const action = {
-      ['Open...']: () => this.config.loadFile(),
+      ['Open...']: () => this.config.loadFile(this.handleFileData.bind(this)),
       ['Save Structure...']: () => this.saveStructure(),
       ['Save Screenshot...']: () => this.saveScreenshot(),
       ['First']: () => this.setStructure(0),
@@ -278,7 +282,7 @@ class App {
       timestamp: version.gitDate });
 
     this.config = {
-      loadFile: fileLoader(this.handleFileData.bind(this)),
+      loadFile: fileLoader(),
       saveFile: fileSaver(),
       log: app.ports.log.send,
       sendTitle: app.ports.titles.send,
