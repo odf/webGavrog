@@ -5,6 +5,7 @@ port module View3d
         , subscriptions
         , update
         , lookAlong
+        , encompass
         , Model
         , Msg(Execute)
         )
@@ -170,9 +171,7 @@ update msg model =
             setScene spec model
 
         Execute command ->
-            if command == "center" then
-                updateCamera (Camera.encompass model.center model.radius) model
-            else if command == "redrawsOn" then
+            if command == "redrawsOn" then
                 updateCamera (Camera.setRedraws True) model
             else if command == "redrawsOff" then
                 updateCamera (Camera.setRedraws False) model
@@ -204,6 +203,11 @@ lookAlong axis up model =
     updateCamera (Camera.lookAlong axis up) model
 
 
+encompass : Model -> Model
+encompass model =
+    updateCamera (Camera.encompass model.center model.radius) model
+
+
 setScene : RawSceneSpec -> Model -> Model
 setScene spec model =
     let
@@ -219,11 +223,9 @@ setScene spec model =
         radius =
             Vec3.length <| Vec3.sub box.minima center
     in
-        updateCamera
-            ((Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
-                >> (Camera.encompass center radius)
-            )
-            { model | scene = glScene scene, center = center, radius = radius }
+        { model | scene = glScene scene, center = center, radius = radius }
+            |> lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+            |> encompass
 
 
 

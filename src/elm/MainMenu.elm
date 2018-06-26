@@ -347,10 +347,7 @@ handleSelection model =
             }
                 ! []
         else if model.activeLabel == Just "Center" then
-            updateView3d
-                (View3d.update <| View3d.Execute "center")
-                newModel
-                ! []
+            updateView3d View3d.encompass model ! []
         else if model.activeLabel == Just "Along X" then
             lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel ! []
         else if model.activeLabel == Just "Along Y" then
@@ -396,10 +393,7 @@ handleKeyPress code model =
                 ( model, toJS <| OutData "selected" (Just "Prev") [] )
 
             '0' ->
-                updateView3d
-                    (View3d.update <| View3d.Execute "center")
-                    model
-                    ! []
+                updateView3d View3d.encompass model ! []
 
             'x' ->
                 lookAlong (vec3 -1 0 0) (vec3 0 1 0) model ! []
