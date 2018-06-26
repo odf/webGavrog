@@ -4,6 +4,7 @@ port module View3d
         , view
         , subscriptions
         , update
+        , lookAlong
         , Model
         , Msg(Execute)
         )
@@ -171,12 +172,6 @@ update msg model =
         Execute command ->
             if command == "center" then
                 updateCamera (Camera.encompass model.center model.radius) model
-            else if command == "viewAlongX" then
-                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model
-            else if command == "viewAlongY" then
-                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model
-            else if command == "viewAlongZ" then
-                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
             else if command == "redrawsOn" then
                 updateCamera (Camera.setRedraws True) model
             else if command == "redrawsOff" then

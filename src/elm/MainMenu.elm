@@ -6,6 +6,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onWithOptions)
 import Json.Decode as Json
 import Keyboard
+import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Menu
 import Options
 import View3d
@@ -226,7 +227,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ViewMsg msg ->
-            updateView3d msg model ! []
+            updateView3d (View3d.update msg) model ! []
 
         Activate item ->
             updateActive model item ! []
@@ -278,13 +279,9 @@ update msg model =
             model ! []
 
 
-updateView3d : View3d.Msg -> Model -> Model
-updateView3d msg model =
-    let
-        state =
-            View3d.update msg model.viewState
-    in
-        { model | viewState = state }
+updateView3d : (View3d.Model -> View3d.Model) -> Model -> Model
+updateView3d fn model =
+    { model | viewState = fn model.viewState }
 
 
 updateActive : Model -> Maybe ( Int, String ) -> Model
@@ -350,13 +347,16 @@ handleSelection model =
             }
                 ! []
         else if model.activeLabel == Just "Center" then
-            updateView3d (View3d.Execute "center") newModel ! []
+            updateView3d
+                (View3d.update <| View3d.Execute "center")
+                newModel
+                ! []
         else if model.activeLabel == Just "Along X" then
-            updateView3d (View3d.Execute "viewAlongX") newModel ! []
+            lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel ! []
         else if model.activeLabel == Just "Along Y" then
-            updateView3d (View3d.Execute "viewAlongY") newModel ! []
+            lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel ! []
         else if model.activeLabel == Just "Along Z" then
-            updateView3d (View3d.Execute "viewAlongZ") newModel ! []
+            lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel ! []
         else
             ( newModel, toJS <| OutData "selected" model.activeLabel [] )
 
@@ -396,19 +396,39 @@ handleKeyPress code model =
                 ( model, toJS <| OutData "selected" (Just "Prev") [] )
 
             '0' ->
-                updateView3d (View3d.Execute "center") model ! []
+                updateView3d
+                    (View3d.update <| View3d.Execute "center")
+                    model
+                    ! []
 
             'x' ->
-                updateView3d (View3d.Execute "viewAlongX") model ! []
+                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model ! []
 
             'y' ->
-                updateView3d (View3d.Execute "viewAlongY") model ! []
+                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model ! []
 
             'z' ->
-                updateView3d (View3d.Execute "viewAlongZ") model ! []
+                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model ! []
+
+            'a' ->
+                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
+
+            'b' ->
+                lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model ! []
+
+            'c' ->
+                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
+
+            'd' ->
+                lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model ! []
 
             _ ->
                 model ! []
+
+
+lookAlong : Vec3 -> Vec3 -> Model -> Model
+lookAlong axis up model =
+    updateView3d (View3d.lookAlong axis up) model
 
 
 
