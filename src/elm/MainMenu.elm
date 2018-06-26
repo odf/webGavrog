@@ -1,9 +1,11 @@
 port module MainMenu exposing (main)
 
+import Char
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onWithOptions)
 import Json.Decode as Json
+import Keyboard
 import Menu
 import Options
 import View3d
@@ -31,6 +33,7 @@ type Msg
     | SetTitle String
     | SetStatus String
     | HideAbout
+    | KeyUp Int
     | Ignore
 
 
@@ -58,6 +61,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     [ titles SetTitle
     , log SetStatus
+    , Keyboard.ups KeyUp
     , View3d.subscriptions ViewMsg model.viewState
     ]
         |> Sub.batch
@@ -222,11 +226,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ViewMsg msg ->
-            let
-                ( state, cmd ) =
-                    View3d.update msg model.viewState
-            in
-                ( { model | viewState = state }, Cmd.map ViewMsg cmd )
+            updateView3d msg model ! []
 
         Activate item ->
             updateActive model item ! []
@@ -271,8 +271,20 @@ update msg model =
         OptionsMsg msg ->
             updateOptions model msg
 
+        KeyUp code ->
+            handleKeyPress code model
+
         Ignore ->
             model ! []
+
+
+updateView3d : View3d.Msg -> Model -> Model
+updateView3d msg model =
+    let
+        state =
+            View3d.update msg model.viewState
+    in
+        { model | viewState = state }
 
 
 updateActive : Model -> Maybe ( Int, String ) -> Model
@@ -338,13 +350,13 @@ handleSelection model =
             }
                 ! []
         else if model.activeLabel == Just "Center" then
-            update (ViewMsg <| View3d.Execute "center") newModel
+            updateView3d (View3d.Execute "center") newModel ! []
         else if model.activeLabel == Just "Along X" then
-            update (ViewMsg <| View3d.Execute "viewAlongX") newModel
+            updateView3d (View3d.Execute "viewAlongX") newModel ! []
         else if model.activeLabel == Just "Along Y" then
-            update (ViewMsg <| View3d.Execute "viewAlongY") newModel
+            updateView3d (View3d.Execute "viewAlongY") newModel ! []
         else if model.activeLabel == Just "Along Z" then
-            update (ViewMsg <| View3d.Execute "viewAlongZ") newModel
+            updateView3d (View3d.Execute "viewAlongZ") newModel ! []
         else
             ( newModel, toJS <| OutData "selected" model.activeLabel [] )
 
@@ -368,6 +380,35 @@ updateOptions model msg =
                 | optionSpecsTmp = Options.toggle key model.optionSpecsTmp
             }
                 ! []
+
+
+handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
+handleKeyPress code model =
+    let
+        char =
+            Char.toLower <| Char.fromCode code
+    in
+        case char of
+            'n' ->
+                ( model, toJS <| OutData "selected" (Just "Next") [] )
+
+            'p' ->
+                ( model, toJS <| OutData "selected" (Just "Prev") [] )
+
+            '0' ->
+                updateView3d (View3d.Execute "center") model ! []
+
+            'x' ->
+                updateView3d (View3d.Execute "viewAlongX") model ! []
+
+            'y' ->
+                updateView3d (View3d.Execute "viewAlongY") model ! []
+
+            'z' ->
+                updateView3d (View3d.Execute "viewAlongZ") model ! []
+
+            _ ->
+                model ! []
 
 
 

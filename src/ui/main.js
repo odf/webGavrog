@@ -266,14 +266,6 @@ class App {
       }
     };
 
-    const handleKeyPress = code => {
-      const key = String.fromCharCode(code).toLowerCase();
-      if (key == 'p')
-        this.previousStructure();
-      else if (key == 'n')
-        this.nextStructure();
-    };
-
     const app = MainMenu.embed(domNode, {
       revision: version.gitRev,
       timestamp: version.gitDate });
@@ -288,7 +280,6 @@ class App {
     };
 
     app.ports.toJS.subscribe(handleElmData);
-    app.ports.keyPresses.subscribe(handleKeyPress);
 
     this.model = initialModel;
     this.setStructure(0);

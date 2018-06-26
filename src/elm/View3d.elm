@@ -98,9 +98,6 @@ port scenes : (RawSceneSpec -> msg) -> Sub msg
 port commands : (String -> msg) -> Sub msg
 
 
-port keyPresses : Char.KeyCode -> Cmd msg
-
-
 type Msg
     = ResizeMsg Window.Size
     | FrameMsg Time
@@ -137,7 +134,7 @@ subscriptions toMsg model =
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> Model
 update msg model =
     case msg of
         ResizeMsg size ->
@@ -163,10 +160,10 @@ update msg model =
                 model
 
         KeyDownMsg code ->
-            setModifiers code True model ! []
+            setModifiers code True model
 
         KeyUpMsg code ->
-            handleKeyPress code <| setModifiers code False model
+            setModifiers code False model
 
         SetScene spec ->
             setScene spec model
@@ -185,12 +182,12 @@ update msg model =
             else if command == "redrawsOff" then
                 updateCamera (Camera.setRedraws False) model
             else
-                model ! []
+                model
 
 
-updateCamera : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )
+updateCamera : (Camera.State -> Camera.State) -> Model -> Model
 updateCamera fn model =
-    { model | cameraState = fn model.cameraState } ! []
+    { model | cameraState = fn model.cameraState }
 
 
 setModifiers : Char.KeyCode -> Bool -> Model -> Model
@@ -207,47 +204,12 @@ setModifiers keyCode value model =
             model
 
 
-handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
-handleKeyPress code model =
-    let
-        char =
-            Char.toLower <| Char.fromCode code
-    in
-        case char of
-            '0' ->
-                updateCamera (Camera.encompass model.center model.radius) model
-
-            'a' ->
-                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model
-
-            'b' ->
-                lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model
-
-            'c' ->
-                lookAlong (vec3 -1 -1 0) (vec3 0 1 0) model
-
-            'd' ->
-                lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model
-
-            'x' ->
-                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model
-
-            'y' ->
-                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model
-
-            'z' ->
-                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
-
-            _ ->
-                ( model, keyPresses code )
-
-
-lookAlong : Vec3 -> Vec3 -> Model -> ( Model, Cmd Msg )
+lookAlong : Vec3 -> Vec3 -> Model -> Model
 lookAlong axis up model =
     updateCamera (Camera.lookAlong axis up) model
 
 
-setScene : RawSceneSpec -> Model -> ( Model, Cmd Msg )
+setScene : RawSceneSpec -> Model -> Model
 setScene spec model =
     let
         scene =
