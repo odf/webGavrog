@@ -9,6 +9,7 @@ import Keyboard
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Menu
 import Options
+import Scene exposing (RawSceneSpec)
 import View3d
 
 
@@ -33,6 +34,8 @@ type Msg
     | OptionsMsg Options.Msg
     | SetTitle String
     | SetStatus String
+    | SetScene RawSceneSpec
+    | Execute String
     | HideAbout
     | KeyUp Int
     | Ignore
@@ -58,10 +61,18 @@ port titles : (String -> msg) -> Sub msg
 port log : (String -> msg) -> Sub msg
 
 
+port scenes : (RawSceneSpec -> msg) -> Sub msg
+
+
+port commands : (String -> msg) -> Sub msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     [ titles SetTitle
     , log SetStatus
+    , scenes SetScene
+    , commands Execute
     , Keyboard.ups KeyUp
     , View3d.subscriptions ViewMsg model.viewState
     ]
@@ -243,6 +254,17 @@ update msg model =
 
         SetStatus status ->
             { model | status = status } ! []
+
+        SetScene spec ->
+            updateView3d (View3d.setScene spec) model ! []
+
+        Execute command ->
+            if command == "redrawsOn" then
+                updateView3d (View3d.setRedraws True) model ! []
+            else if command == "redrawsOff" then
+                updateView3d (View3d.setRedraws False) model ! []
+            else
+                model ! []
 
         HideAbout ->
             { model | showAbout = False } ! []

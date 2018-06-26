@@ -1,4 +1,4 @@
-port module View3d
+module View3d
     exposing
         ( init
         , view
@@ -6,8 +6,10 @@ port module View3d
         , update
         , lookAlong
         , encompass
+        , setScene
+        , setRedraws
         , Model
-        , Msg(Execute)
+        , Msg
         )
 
 import AnimationFrame
@@ -94,12 +96,6 @@ glScene scene =
 -- SUBSCRIPTIONS
 
 
-port scenes : (RawSceneSpec -> msg) -> Sub msg
-
-
-port commands : (String -> msg) -> Sub msg
-
-
 type Msg
     = ResizeMsg Window.Size
     | FrameMsg Time
@@ -109,8 +105,6 @@ type Msg
     | KeyDownMsg Int
     | KeyUpMsg Int
     | WheelMsg Float
-    | SetScene RawSceneSpec
-    | Execute String
 
 
 subscriptions : (Msg -> msg) -> Model -> Sub msg
@@ -125,8 +119,6 @@ subscriptions toMsg model =
            , Keyboard.downs KeyDownMsg
            , Keyboard.ups KeyUpMsg
            , Window.resizes ResizeMsg
-           , scenes SetScene
-           , commands Execute
            ]
         |> Sub.batch
         |> Sub.map toMsg
@@ -166,17 +158,6 @@ update msg model =
 
         KeyUpMsg code ->
             setModifiers code False model
-
-        SetScene spec ->
-            setScene spec model
-
-        Execute command ->
-            if command == "redrawsOn" then
-                updateCamera (Camera.setRedraws True) model
-            else if command == "redrawsOff" then
-                updateCamera (Camera.setRedraws False) model
-            else
-                model
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> Model
@@ -226,6 +207,11 @@ setScene spec model =
         { model | scene = glScene scene, center = center, radius = radius }
             |> lookAlong (vec3 0 0 -1) (vec3 0 1 0)
             |> encompass
+
+
+setRedraws : Bool -> Model -> Model
+setRedraws onOff model =
+    updateCamera (Camera.setRedraws onOff) model
 
 
 
