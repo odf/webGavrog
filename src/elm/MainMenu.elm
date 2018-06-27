@@ -22,6 +22,21 @@ main =
         }
 
 
+type alias OutData =
+    { mode : String
+    , text : Maybe String
+    , options : List Options.Spec
+    }
+
+
+type alias InData =
+    { title : Maybe String
+    , log : Maybe String
+    , scene : Maybe RawSceneSpec
+    , command : Maybe String
+    }
+
+
 type Msg
     = ViewMsg View3d.Msg
     | Activate (Maybe ( Int, String ))
@@ -32,47 +47,25 @@ type Msg
     | SearchDialogInput String
     | SearchDialogSubmit Bool
     | OptionsMsg Options.Msg
-    | SetTitle String
-    | SetStatus String
-    | SetScene RawSceneSpec
-    | Execute String
+    | JSData InData
     | HideAbout
     | KeyUp Int
     | Ignore
 
 
-type alias OutData =
-    { mode : String
-    , text : Maybe String
-    , options : List Options.Spec
-    }
-
-
 port toJS : OutData -> Cmd msg
+
+
+port fromJS : (InData -> msg) -> Sub msg
 
 
 
 -- SUBSCRIPTIONS
 
 
-port titles : (String -> msg) -> Sub msg
-
-
-port log : (String -> msg) -> Sub msg
-
-
-port scenes : (RawSceneSpec -> msg) -> Sub msg
-
-
-port commands : (String -> msg) -> Sub msg
-
-
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    [ titles SetTitle
-    , log SetStatus
-    , scenes SetScene
-    , commands Execute
+    [ fromJS JSData
     , Keyboard.ups KeyUp
     , View3d.subscriptions ViewMsg model.viewState
     ]
@@ -249,22 +242,8 @@ update msg model =
         Select ->
             handleSelection model
 
-        SetTitle title ->
-            { model | title = title } ! []
-
-        SetStatus status ->
-            { model | status = status } ! []
-
-        SetScene spec ->
-            updateView3d (View3d.setScene spec) model ! []
-
-        Execute command ->
-            if command == "redrawsOn" then
-                updateView3d (View3d.setRedraws True) model ! []
-            else if command == "redrawsOff" then
-                updateView3d (View3d.setRedraws False) model ! []
-            else
-                model ! []
+        JSData data ->
+            handleJSData data model ! []
 
         HideAbout ->
             { model | showAbout = False } ! []
@@ -378,6 +357,45 @@ handleSelection model =
             lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel ! []
         else
             ( newModel, toJS <| OutData "selected" model.activeLabel [] )
+
+
+handleJSData : InData -> Model -> Model
+handleJSData data model =
+    model
+        |> (case data.title of
+                Nothing ->
+                    identity
+
+                Just s ->
+                    \m -> { m | title = s }
+           )
+        |> (case data.log of
+                Nothing ->
+                    identity
+
+                Just s ->
+                    \m -> { m | status = s }
+           )
+        |> (case data.scene of
+                Nothing ->
+                    identity
+
+                Just s ->
+                    updateView3d (View3d.setScene s)
+           )
+        |> (case data.command of
+                Nothing ->
+                    identity
+
+                Just "redrawsOn" ->
+                    updateView3d (View3d.setRedraws True)
+
+                Just "redrawsOff" ->
+                    updateView3d (View3d.setRedraws False)
+
+                Just _ ->
+                    identity
+           )
 
 
 updateOptions : Model -> Options.Msg -> ( Model, Cmd Msg )

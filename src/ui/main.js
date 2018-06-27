@@ -106,8 +106,8 @@ const toStructure = (config, model, i) => csp.go(function*() {
 
     return newModel;
   } catch (ex) {
-    config.log(`ERROR processing structure ${i}!!!`);
     console.error(ex);
+    config.log(`ERROR processing structure ${i}!!!`);
     return model;
   }
 });
@@ -151,8 +151,8 @@ const newFile = (config, model, { file, data }) => csp.go(function*() {
     config.sendTitle(title(newModel));
     return yield toStructure(config, newModel, 0);
   } catch (ex) {
-    config.log(`ERROR loading from file "${file.name}"!!!`);
     console.error(ex);
+    config.log(`ERROR loading from file "${file.name}"!!!`);
   }
 });
 
@@ -270,13 +270,20 @@ class App {
       revision: version.gitRev,
       timestamp: version.gitDate });
 
+    const send = key => val => app.ports.fromJS.send(Object.assign({
+      title: null,
+      log: null,
+      scene: null,
+      command: null
+    }, { [key]: val }));
+
     this.config = {
       loadFile: fileLoader(),
       saveFile: fileSaver(),
-      log: app.ports.log.send,
-      sendTitle: app.ports.titles.send,
-      sendScene: app.ports.scenes.send,
-      sendCommand: app.ports.commands.send
+      log: send('log'),
+      sendTitle: send('title'),
+      sendScene: send('scene'),
+      sendCommand: send('command')
     };
 
     app.ports.toJS.subscribe(handleElmData);
