@@ -62,14 +62,19 @@ type alias RawSceneSpec =
 
 
 type alias Instance =
-    { mesh : Mesh Vertex
-    , material : Material
+    { material : Material
     , transform : Mat4
     }
 
 
+type alias MeshWithInstances =
+    { mesh : Mesh Vertex
+    , instances : List Instance
+    }
+
+
 type alias Scene =
-    List Instance
+    List MeshWithInstances
 
 
 type alias Box =
@@ -130,27 +135,31 @@ makeTransform { basis, shift } =
             (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
 
 
-makeInstance : List (Mesh Vertex) -> RawInstanceSpec -> Maybe Instance
-makeInstance meshes spec =
-    meshes
-        |> List.drop spec.meshIndex
-        |> List.head
-        |> Maybe.map
-            (\mesh ->
-                { mesh = mesh
-                , material = makeMaterial spec.material
-                , transform = makeTransform spec.transform
-                }
-            )
+makeInstance : RawInstanceSpec -> Instance
+makeInstance spec =
+    { material = makeMaterial spec.material
+    , transform = makeTransform spec.transform
+    }
+
+
+makeMeshWithInstances :
+    List RawInstanceSpec
+    -> Int
+    -> Mesh Vertex
+    -> MeshWithInstances
+makeMeshWithInstances instances index mesh =
+    { mesh = mesh
+    , instances =
+        instances
+            |> List.filter (\instance -> instance.meshIndex == index)
+            |> List.map makeInstance
+    }
 
 
 makeScene : RawSceneSpec -> Scene
 makeScene spec =
-    let
-        meshes =
-            List.map makeMesh spec.meshes
-    in
-        List.filterMap (makeInstance meshes) spec.instances
+    List.map makeMesh spec.meshes
+        |> List.indexedMap (makeMeshWithInstances spec.instances)
 
 
 pointSetForMesh : Mesh Vertex -> List Vec3
@@ -168,9 +177,15 @@ pointSetForMesh mesh =
 pointSetForScene : Scene -> List Vec3
 pointSetForScene scene =
     List.concatMap
-        (\{ mesh, transform } ->
-            pointSetForMesh mesh
-                |> List.map (\v -> Mat4.transform transform v)
+        (\{ mesh, instances } ->
+            let
+                points =
+                    pointSetForMesh mesh
+            in
+                instances
+                    |> List.map .transform
+                    |> List.concatMap
+                        (\t -> List.map (\v -> Mat4.transform t v) points)
         )
         scene
 

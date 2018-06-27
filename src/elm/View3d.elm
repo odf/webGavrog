@@ -52,8 +52,11 @@ type alias GlMesh =
 type alias GlScene =
     List
         { mesh : GlMesh
-        , material : Renderer.Material
-        , transform : Mat4
+        , instances :
+            List
+                { material : Renderer.Material
+                , transform : Mat4
+                }
         }
 
 
@@ -81,10 +84,9 @@ glMesh mesh =
 glScene : Scene -> GlScene
 glScene scene =
     List.map
-        (\instance ->
-            { mesh = glMesh instance.mesh
-            , material = instance.material
-            , transform = instance.transform
+        (\{ mesh, instances } ->
+            { mesh = glMesh mesh
+            , instances = instances
             }
         )
         scene
@@ -191,7 +193,7 @@ setScene : RawSceneSpec -> Model -> Model
 setScene spec model =
     let
         scene =
-            makeScene spec
+            (Debug.log "scene" <| makeScene spec)
 
         box =
             boundingBoxForScene scene
@@ -223,14 +225,18 @@ view toMsg model =
             Camera.viewingMatrix model.cameraState
 
         entities =
-            List.map
-                (\{ mesh, material, transform } ->
-                    Renderer.entity
-                        mesh
-                        material
-                        (Camera.cameraDistance model.cameraState)
-                        (Mat4.mul viewing transform)
-                        (Camera.perspectiveMatrix model.cameraState)
+            List.concatMap
+                (\{ mesh, instances } ->
+                    List.map
+                        (\{ material, transform } ->
+                            Renderer.entity
+                                mesh
+                                material
+                                (Camera.cameraDistance model.cameraState)
+                                (Mat4.mul viewing transform)
+                                (Camera.perspectiveMatrix model.cameraState)
+                        )
+                        instances
                 )
                 model.scene
     in
