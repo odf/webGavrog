@@ -189,7 +189,7 @@ const saveScreenshot = (config, model) => {
         config.saveFile(blob, 'gavrog.png');
       }
 
-      config.log('Screenshot saved.');
+      config.log('Screenshot taken.');
     });
   }
   else
