@@ -61,17 +61,26 @@ viewItem config state index item =
                         [ viewSubMenu config state sub ]
                     else
                         []
+
+        maybeClickHandler =
+            case item.submenu of
+                Nothing ->
+                    [ onClick config.actions.selectCurrentItem ]
+
+                Just _ ->
+                    []
     in
         li
-            [ classList
+            ([ classList
                 [ ( "infoBoxMenuItem", True )
                 , ( "infoBoxMenuHighlight", isActive )
                 ]
-            , onMouseEnter <|
+             , onMouseEnter <|
                 config.actions.activateTopItem (Just ( index, item.label ))
-            , onMouseLeave <| config.actions.activateTopItem Nothing
-            , onClick config.actions.selectCurrentItem
-            ]
+             , onMouseLeave <| config.actions.activateTopItem Nothing
+             ]
+                ++ maybeClickHandler
+            )
             ([ text item.label ] ++ maybeSubMenu)
 
 
