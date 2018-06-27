@@ -33,7 +33,6 @@ type alias InData =
     { title : Maybe String
     , log : Maybe String
     , scene : Maybe RawSceneSpec
-    , command : Maybe String
     }
 
 
@@ -355,13 +354,17 @@ handleSelection model =
             lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel ! []
         else if model.activeLabel == Just "Along Z" then
             lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel ! []
+        else if model.activeLabel == Just "Save Screenshot..." then
+            ( updateView3d (View3d.setRedraws True) newModel
+            , toJS <| OutData "selected" model.activeLabel []
+            )
         else
             ( newModel, toJS <| OutData "selected" model.activeLabel [] )
 
 
 handleJSData : InData -> Model -> Model
 handleJSData data model =
-    model
+    updateView3d (View3d.setRedraws False) model
         |> (case data.title of
                 Nothing ->
                     identity
@@ -382,19 +385,6 @@ handleJSData data model =
 
                 Just s ->
                     updateView3d (View3d.setScene s)
-           )
-        |> (case data.command of
-                Nothing ->
-                    identity
-
-                Just "redrawsOn" ->
-                    updateView3d (View3d.setRedraws True)
-
-                Just "redrawsOff" ->
-                    updateView3d (View3d.setRedraws False)
-
-                Just _ ->
-                    identity
            )
 
 

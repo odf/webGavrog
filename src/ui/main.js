@@ -174,8 +174,6 @@ const saveScreenshot = (config, model) => {
   const canvas = document.getElementById('main-3d-canvas');
 
   if (canvas) {
-    config.sendCommand('redrawsOn');
-
     window.requestAnimationFrame(() => {
       if (canvas.toBlob)
         canvas.toBlob(blob => config.saveFile(blob, 'gavrog.png'));
@@ -191,7 +189,7 @@ const saveScreenshot = (config, model) => {
         config.saveFile(blob, 'gavrog.png');
       }
 
-      config.sendCommand('redrawsOff');
+      config.log('Screenshot saved.');
     });
   }
   else
@@ -273,8 +271,7 @@ class App {
     const send = key => val => app.ports.fromJS.send(Object.assign({
       title: null,
       log: null,
-      scene: null,
-      command: null
+      scene: null
     }, { [key]: val }));
 
     this.config = {
@@ -282,8 +279,7 @@ class App {
       saveFile: fileSaver(),
       log: send('log'),
       sendTitle: send('title'),
-      sendScene: send('scene'),
-      sendCommand: send('command')
+      sendScene: send('scene')
     };
 
     app.ports.toJS.subscribe(handleElmData);
