@@ -6,6 +6,7 @@ module View3d
         , update
         , lookAlong
         , encompass
+        , setSize
         , setScene
         , setRedraws
         , Model
@@ -22,7 +23,6 @@ import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
-import Task
 import Time exposing (Time)
 import WebGL
 import Camera
@@ -57,17 +57,15 @@ type alias GlScene =
         }
 
 
-init : (Msg -> msg) -> ( Model, Cmd msg )
-init toMsg =
-    ( { size = { width = 0, height = 0 }
-      , cameraState = Camera.initialState
-      , scene = []
-      , center = vec3 0 0 0
-      , radius = 0
-      , modifiers = { shift = False, ctrl = False }
-      }
-    , Task.perform (toMsg << ResizeMsg) Window.size
-    )
+init : Model
+init =
+    { size = { width = 0, height = 0 }
+    , cameraState = Camera.initialState
+    , scene = []
+    , center = vec3 0 0 0
+    , radius = 0
+    , modifiers = { shift = False, ctrl = False }
+    }
 
 
 glMesh : Mesh Renderer.Vertex -> GlMesh
@@ -97,8 +95,7 @@ glScene scene =
 
 
 type Msg
-    = ResizeMsg Window.Size
-    | FrameMsg Time
+    = FrameMsg Time
     | MouseUpMsg Mouse.Position
     | MouseDownMsg
     | MouseMoveMsg Mouse.Position
@@ -118,7 +115,6 @@ subscriptions toMsg model =
            , Mouse.ups MouseUpMsg
            , Keyboard.downs KeyDownMsg
            , Keyboard.ups KeyUpMsg
-           , Window.resizes ResizeMsg
            ]
         |> Sub.batch
         |> Sub.map toMsg
@@ -131,9 +127,6 @@ subscriptions toMsg model =
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        ResizeMsg size ->
-            updateCamera (Camera.setFrameSize size) { model | size = size }
-
         FrameMsg time ->
             updateCamera (Camera.nextFrame time) model
 
@@ -187,6 +180,11 @@ lookAlong axis up model =
 encompass : Model -> Model
 encompass model =
     updateCamera (Camera.encompass model.center model.radius) model
+
+
+setSize : Window.Size -> Model -> Model
+setSize size model =
+    updateCamera (Camera.setFrameSize size) { model | size = size }
 
 
 setScene : RawSceneSpec -> Model -> Model

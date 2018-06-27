@@ -7,6 +7,8 @@ import Html.Events exposing (onInput, onWithOptions)
 import Json.Decode as Json
 import Keyboard
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Task
+import Window
 import Menu
 import Options
 import Scene exposing (RawSceneSpec)
@@ -37,7 +39,8 @@ type alias InData =
 
 
 type Msg
-    = ViewMsg View3d.Msg
+    = Resize Window.Size
+    | ViewMsg View3d.Msg
     | Activate (Maybe ( Int, String ))
     | ActivateSub (Maybe ( Int, String ))
     | Select
@@ -67,6 +70,7 @@ subscriptions model =
     [ fromJS JSData
     , Keyboard.ups KeyUp
     , View3d.subscriptions ViewMsg model.viewState
+    , Window.resizes Resize
     ]
         |> Sub.batch
 
@@ -113,34 +117,30 @@ type alias Model =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    let
-        ( state, cmd ) =
-            View3d.init ViewMsg
-    in
-        ( { viewState = state
-          , revision = flags.revision
-          , timestamp = flags.timestamp
-          , menuConfig =
-                { actions = initActions
-                , items = initItems
-                }
-          , menuState = initState
-          , activeLabel = Nothing
-          , title = ""
-          , status = "Welcome!"
-          , showAbout = False
-          , jumpDialogConfig = jumpDialogConfig
-          , jumpDialogContent = ""
-          , jumpDialogVisible = False
-          , searchDialogConfig = searchDialogConfig
-          , searchDialogContent = ""
-          , searchDialogVisible = False
-          , optionSpecs = initOptionSpecs
-          , optionSpecsTmp = []
-          , optionsDialogVisible = False
-          }
-        , cmd
-        )
+    ( { viewState = View3d.init
+      , revision = flags.revision
+      , timestamp = flags.timestamp
+      , menuConfig =
+            { actions = initActions
+            , items = initItems
+            }
+      , menuState = initState
+      , activeLabel = Nothing
+      , title = ""
+      , status = "Welcome!"
+      , showAbout = False
+      , jumpDialogConfig = jumpDialogConfig
+      , jumpDialogContent = ""
+      , jumpDialogVisible = False
+      , searchDialogConfig = searchDialogConfig
+      , searchDialogContent = ""
+      , searchDialogVisible = False
+      , optionSpecs = initOptionSpecs
+      , optionSpecsTmp = []
+      , optionsDialogVisible = False
+      }
+    , Task.perform Resize Window.size
+    )
 
 
 initActions : Menu.Actions Msg
@@ -229,6 +229,9 @@ initOptionSpecs =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Resize size ->
+            updateView3d (View3d.setSize size) model ! []
+
         ViewMsg msg ->
             updateView3d (View3d.update msg) model ! []
 
