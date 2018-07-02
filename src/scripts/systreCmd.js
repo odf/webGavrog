@@ -1,8 +1,12 @@
 import * as csp from 'plexus-csp';
 
+import * as periodic from '../pgraphs/periodic';
 import * as tilings  from '../dsymbols/tilings';
 import parseDSymbols from '../io/ds';
 import * as cgd from '../io/cgd';
+
+
+const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
 
 
 export const prefixedLineWriter = (prefix='') => (s='') => {
@@ -30,6 +34,45 @@ const nets = function*(data, fileName) {
       yield g;
     }
 };
+
+
+const group = graph => graph.group || (graph.dim == 2 ? 'p1' : 'P1');
+
+const showGraphBasics = (graph, writeInfo) => {
+  writeInfo(`   Input structure described as ${graph.dim}-periodic.`);
+  writeInfo(`   Given space group is ${group(graph)}.`);
+
+  const nv = pluralize(periodic.vertices(graph).length, 'node');
+  const ne = pluralize(graph.edges.length, 'edge');
+  writeInfo(`   ${nv} and ${ne} in repeat unit as given.`);
+  writeInfo();
+};
+
+
+const checkGraph = (graph, writeInfo) => {
+  if (!periodic.isLocallyStable(graph)) {
+    const msg = ("Structure has collisions between next-nearest neighbors."
+                 + " Systre does not currently support such structures.");
+    reportSystreError("STRUCTURE", msg, writeInfo)
+    return false
+  }
+};
+
+
+export const processGraph = (
+  graph,
+  name,
+  options,
+  writeInfo=prefixedLineWriter(),
+  writeData=prefixedLineWriter(),
+  archives=[],
+  outputArchiveFp=null
+) => csp.go(function*() {
+  showGraphBasics(graph, writeInfo);
+
+  if (!checkGraph(graph, writeInfo))
+    return;
+});
 
 
 export const processData = (
@@ -71,7 +114,17 @@ export const processData = (
       reportSystreError('INPUT', s, writeInfo)
 
     if (input.errors.length == 0) {
-      // TODO process graph
+      try {
+        yield processGraph(input.graph,
+                           input.name,
+                           options,
+                           writeInfo=writeInfo,
+                           writeData=writeData,
+                           archives=archives,
+                           outputArchiveFp=outputArchiveFp)
+      } catch(ex) {
+        reportSystreError('INTERNAL', ex, writeInfo);
+      }
     }
 
     writeInfo(`Finished structure #${count} - "${name}".`);
@@ -86,7 +139,9 @@ if (require.main == module) {
   csp.top(csp.go(function*() {
     const data1 = `
 #@ name bcu
-<1.1:2 3:2,1 2,1 2,2:4,4 2,6>`;
+<1.1:2 3:2,1 2,1 2,2:4,4 2,6>
+#@ name bad1
+<1.1:5:2 3 5,1 3 4 5,4 5 3:3 8,8 3>`;
     
     yield processData(data1, "x.ds", {});
 
