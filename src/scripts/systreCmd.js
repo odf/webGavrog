@@ -1,7 +1,8 @@
 import * as csp from 'plexus-csp';
 
+import * as tilings  from '../dsymbols/tilings';
 import parseDSymbols from '../io/ds';
-import { structures } from '../io/cgd';
+import * as cgd from '../io/cgd';
 
 
 export const prefixedLineWriter = (prefix='') => (s='') => {
@@ -15,6 +16,19 @@ const reportSystreError = (errorType, message, writeInfo) => {
   writeInfo(`!!! ERROR (${errorType}) - ${message}`);
   writeInfo("==================================================");
   writeInfo();
+};
+
+
+const nets = function*(data, fileName) {
+  if (fileName.match(/\.(ds|tgs)$/))
+    for (const t of parseDSymbols(data)) {
+      const g = tilings.skeleton(tilings.makeCover(t.symbol));
+      yield Object.assign({ warnings: [], errors: [] }, g, t);
+    }
+  else if (fileName.match(/\.(cgd|pgr)$/))
+    for (const g of cgd.structures(data)) {
+      yield g;
+    }
 };
 
 
@@ -32,12 +46,7 @@ export const processData = (
 
   writeInfo(`Data file "${fileName}".`);
   
-  let inputs = [];
-
-  if (fileName.match(/\.(ds|tgs)$/))
-    inputs = parseDSymbols(data);
-  else if (fileName.match(/\.(cgd|pgr)$/))
-    inputs = structures(data);
+  const inputs = nets(data, fileName);
 
   for (const input of inputs) {
     writeInfo();
@@ -52,16 +61,16 @@ export const processData = (
     writeInfo(`Structure #${count} - "${name}".`);
     writeInfo();
 
-    if (input.warnings && input.warnings.length) {
+    if (input.warnings.length) {
       for (const s of input.warnings)
         writeInfo(`   (${s})`);
       writeInfo();
     }
 
-    for (const s of input.errors || [])
+    for (const s of input.errors)
       reportSystreError('INPUT', s, writeInfo)
 
-    if (input.errors && input.errors.length == 0) {
+    if (input.errors.length == 0) {
       // TODO process graph
     }
 
