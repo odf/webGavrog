@@ -167,6 +167,32 @@ export const isMinimal = graph => {
 }
 
 
+export const isLadder = graph => {
+  if (pg.isStable(graph) || !pg.isLocallyStable(graph))
+    return false;
+
+  const id = ops.identityMatrix(graph.dim);
+  const verts = pg.vertices(graph);
+  const start = verts[0];
+  const pos = pg.barycentricPlacement(graph);
+  const adj = pg.adjacencies(graph);
+  const ebv = edgesByVector(graph, pos, adj);
+
+  for (const v of verts) {
+    if (v == start)
+      continue;
+
+    const d = ops.minus(pos[v], pos[start]);
+    if (d.every(x => ops.eq(ops.mod(x, 1), 0))) {
+      if (automorphism(graph, start, v, id, ebv) != null)
+        return true;
+    }
+  }
+
+  return false;
+};
+
+
 const translationalEquivalences = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);

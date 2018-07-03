@@ -1,10 +1,14 @@
 import * as csp from 'plexus-csp';
 
+import { rationalLinearAlgebra } from '../arithmetic/types';
 import * as periodic from '../pgraphs/periodic';
-import * as tilings  from '../dsymbols/tilings';
+import * as symmetries from '../pgraphs/symmetries';
+import * as tilings from '../dsymbols/tilings';
 import parseDSymbols from '../io/ds';
 import * as cgd from '../io/cgd';
 
+
+const ops = rationalLinearAlgebra;
 
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
 
@@ -50,9 +54,22 @@ const showGraphBasics = (graph, writeInfo) => {
 
 
 const checkGraph = (graph, writeInfo) => {
+  if (!periodic.isConnected(graph)) {
+    const msg = ("Structure is disconnected."
+                 + " Only connected structures are supported at this point.");
+    reportSystreError("STRUCTURE", msg, writeInfo)
+    return false
+  }
+
   if (!periodic.isLocallyStable(graph)) {
     const msg = ("Structure has collisions between next-nearest neighbors."
                  + " Systre does not currently support such structures.");
+    reportSystreError("STRUCTURE", msg, writeInfo)
+    return false
+  }
+
+  if (symmetries.isLadder(graph)) {
+    const msg = "Structure is non-crystallographic (a 'ladder')";
     reportSystreError("STRUCTURE", msg, writeInfo)
     return false
   }
@@ -123,7 +140,7 @@ export const processData = (
                            archives=archives,
                            outputArchiveFp=outputArchiveFp)
       } catch(ex) {
-        reportSystreError('INTERNAL', ex, writeInfo);
+        reportSystreError('INTERNAL', ex + '\n' + ex.stack, writeInfo);
       }
     }
 
@@ -140,21 +157,31 @@ if (require.main == module) {
     const data1 = `
 #@ name bcu
 <1.1:2 3:2,1 2,1 2,2:4,4 2,6>
-#@ name bad1
-<1.1:5:2 3 5,1 3 4 5,4 5 3:3 8,8 3>`;
-    
+#@ name non-locally-stable
+<1.1:5:2 3 5,1 3 4 5,4 5 3:3 8,8 3>
+`;
     yield processData(data1, "x.ds", {});
 
     const data2 = `
 PERIODIC_GRAPH
   NAME bcu-net
   EDGES
-      1   1     1 -1 -1
-      1   1     1 -1  0
-      1   1     1  0 -1
-      1   1     1  0  0
-END`;
-    
+      1 1  1 -1 -1
+      1 1  1 -1  0
+      1 1  1  0 -1
+      1 1  1  0  0
+END
+
+PERIODIC_GRAPH
+  NAME ladder
+  EDGES
+      1 1  1 0
+      1 1  0 1
+      2 2  1 0
+      2 2  0 1
+      1 2  0 0
+END
+`;
     yield processData(data2, "x.cgd", {});
   }));
 }
