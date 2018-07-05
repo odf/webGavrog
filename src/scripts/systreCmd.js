@@ -103,6 +103,19 @@ export const processGraph = (
 
   if (!checkGraph(graph, writeInfo))
     return;
+
+  const G = symmetries.minimalImage(graph);
+
+  if (G.edges.length < graph.edges.length) {
+    const n = G.edges.length;
+    const m = graph.edges.length;
+    writeInfo(`   Ideal repeat unit smaller than given (${n} vs ${m} edges).`);
+  }
+  else
+    writeInfo('   Given repeat unit is accurate.');
+
+  const ops = symmetries.symmetries(graph).symmetries;
+  writeInfo(`   Point group has ${ops.length} elements.`);
 });
 
 
@@ -224,6 +237,15 @@ PERIODIC_GRAPH
       6 7  0 0
       6 7  1 0
       1 4  0 0
+END
+
+PERIODIC_GRAPH
+  NAME non-minimal
+  EDGES
+      1 2  0 0
+      1 2  0 1
+      1 1  1 0
+      2 2  1 0
 END
 `;
     yield processData(data2, "x.cgd", {});
