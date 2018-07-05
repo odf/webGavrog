@@ -114,8 +114,11 @@ export const processGraph = (
   else
     writeInfo('   Given repeat unit is accurate.');
 
-  const ops = symmetries.symmetries(graph).symmetries;
+  const ops = symmetries.symmetries(G).symmetries;
   writeInfo(`   Point group has ${ops.length} elements.`);
+  const nk = pluralize(symmetries.nodeOrbits(G, ops).length, 'kind');
+  writeInfo(`   ${nk} of node.`);
+  writeInfo();
 });
 
 

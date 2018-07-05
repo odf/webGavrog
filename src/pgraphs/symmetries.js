@@ -387,6 +387,29 @@ export const symmetries = graph => {
 };
 
 
+export const nodeOrbits = (graph, syms) => {
+  const seen = {};
+  const p = new part.Partition();
+
+  for (const v of pg.vertices(graph)) {
+    if (seen[v])
+      continue;
+    seen[v] = true;
+
+    for (const phi of syms) {
+      const w = phi.src2img[v];
+      if (seen[w])
+        continue;
+      seen[w] = true;
+
+      p.union(v, w);
+    }
+  }
+
+  return equivalenceClasses(p, Object.keys(seen));
+}
+
+
 export const edgeOrbits = (graph, syms) => {
   const seen = {};
   const p = new part.Partition();
