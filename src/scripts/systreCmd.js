@@ -57,22 +57,36 @@ const checkGraph = (graph, writeInfo) => {
   if (!periodic.isConnected(graph)) {
     const msg = ("Structure is disconnected."
                  + " Only connected structures are supported at this point.");
-    reportSystreError("STRUCTURE", msg, writeInfo)
-    return false
+    reportSystreError("STRUCTURE", msg, writeInfo);
+    return false;
   }
 
   if (!periodic.isLocallyStable(graph)) {
     const msg = ("Structure has collisions between next-nearest neighbors."
                  + " Systre does not currently support such structures.");
-    reportSystreError("STRUCTURE", msg, writeInfo)
-    return false
+    reportSystreError("STRUCTURE", msg, writeInfo);
+    return false;
   }
 
   if (symmetries.isLadder(graph)) {
     const msg = "Structure is non-crystallographic (a 'ladder')";
-    reportSystreError("STRUCTURE", msg, writeInfo)
-    return false
+    reportSystreError("STRUCTURE", msg, writeInfo);
+    return false;
   }
+
+  if (periodic.hasSecondOrderCollisions(graph)) {
+    const msg = ("Structure has second-order collisions."
+                 + " Systre does not currently support such structures.");
+    reportSystreError("STRUCTURE", msg, writeInfo);
+    return false;
+  }
+
+  if (!periodic.isStable(graph)) {
+    writeInfo("Structure has collisions.");
+    writeInfo();
+  }
+
+  return true;
 };
 
 
@@ -155,9 +169,9 @@ export const processData = (
 if (require.main == module) {
   csp.top(csp.go(function*() {
     const data1 = `
-#@ name bcu
+#@ name bcu-tiling
 <1.1:2 3:2,1 2,1 2,2:4,4 2,6>
-#@ name non-locally-stable
+#@ name locally-unstable
 <1.1:5:2 3 5,1 3 4 5,4 5 3:3 8,8 3>
 `;
     yield processData(data1, "x.ds", {});
@@ -180,6 +194,36 @@ PERIODIC_GRAPH
       2 2  1 0
       2 2  0 1
       1 2  0 0
+END
+
+PERIODIC_GRAPH
+  NAME unstable
+  EDGES
+      1 1  1 0
+      2 2  0 1
+      1 2  0 0
+END
+
+PERIODIC_GRAPH
+  NAME second-order-unstable
+  EDGES
+      1 2  0 0
+      1 2  1 0
+      1 3  0 0
+      1 3  0 1
+      2 3  0 0
+      2 3  0 1
+      2 3 -1 0
+      2 3 -1 1
+      4 5  0 0
+      4 5  1 0
+      4 6  0 0
+      4 6  0 1
+      5 7  0 0
+      5 7  0 1
+      6 7  0 0
+      6 7  1 0
+      1 4  0 0
 END
 `;
     yield processData(data2, "x.cgd", {});

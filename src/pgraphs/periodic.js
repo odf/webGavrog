@@ -339,6 +339,28 @@ export const isLocallyStable = graph => {
 };
 
 
+export const hasSecondOrderCollisions = graph => {
+  const pos = barycentricPlacement(graph);
+  const adj = adjacencies(graph);
+  const verts = vertices(graph);
+  const seen = {};
+
+  for (const v of verts) {
+    const vectors = allIncidences(graph, v, adj)
+          .map(e => edgeVector(e, pos))
+          .sort((v, w) => ops.cmp(v, w));
+
+    const key = encode([].concat([pos[v].map(x => ops.mod(x, 1))], vectors));
+    if (seen[key])
+      return true;
+    else
+      seen[key] = true;
+  }
+
+  return false;
+};
+
+
 export const allIncidences = (graph, v, adj=adjacencies(graph)) =>
   adj[v].map(({v: w, s}) => makeEdge(v, w, s));
 
