@@ -18,11 +18,17 @@ const tokenizeLine = rawLine => {
 
       if (line[j] == '"')
         ++j;
-      else
-        return { fields, start: i, pos: j, msg: "no closing quotes" };
+      else {
+        const msg = "the line ended in the middle of a quoted text";
+        fields.push(line.slice(i) + '"');
+        return { fields, start: i, pos: j, msg };
+      }
 
-      if (j < line.length && line[j].trim() && line[j] != '#')
-        return { fields, start: i, pos: j, msg: "missing space after string" };
+      if (j < line.length && line[j].trim() && line[j] != '#') {
+        const msg = "missing space after a quoted text";
+        fields.push(line.slice(i, j));
+        return { fields, start: i, pos: j, msg };
+      }
     }
     else {
       while (j < line.length && line[j].trim() && line[j] != '#')
@@ -38,6 +44,98 @@ const tokenizeLine = rawLine => {
 };
 
 
+const parseToken = token => token; // TODO placeholder
+
+
+const newBlock = () => ({
+  type: null,
+  entriesInOrder: [],
+  entriesByKey: {},
+  start: null,
+  end: null,
+  errors: []
+});
+
+
+export function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
+  let lineno = 0;
+  let block = null;
+  let key = null;
+  let originalKey = null;
+
+  for (const line of lines) {
+    ++lineno;
+
+    if (block == null) {
+      block = newBlock(lineno)
+      key = defaultKey;
+      originalKey = null;
+    }
+
+    const { fields, start, pos, msg } = tokenizeLine(line);
+    if (msg)
+      block.errors.push({ lineno, line, start, pos, msg });
+
+    if (fields.length == 0)
+      continue;
+
+    const newKey = fields[0].toLowerCase();
+
+    if (newKey == 'end') {
+      block.end = lineno;
+      yield block;
+      block = null;
+    }
+    else if (block.type == null) {
+      if (newKey.match(/^[a-z]/)) {
+        block.start = lineno;
+        block.type = newKey;
+      }
+      else {
+        const msg = `extra data found before this block started`;
+        block.errors.push({ lineno, line, msg });
+      }
+    }
+    else {
+      if (newKey.match(/^[a-z]/)) {
+        if (synonyms[newKey]) {
+          originalKey = newKey;
+          key = synonyms[newKey];
+        }
+        else {
+          originalKey = null;
+          key = newKey;
+        }
+
+        fields.shift();
+      }
+
+      if (fields.length) {
+        if (key) {
+          const data = fields.map(parseToken);
+          const entry = { lineno, line, originalKey, key, data };
+
+          if (!block.entriesByKey[key])
+            block.entriesByKey[key] = [];
+          block.entriesByKey[key].push(entry);
+          block.entriesInOrder.push(entry)
+        }
+        else {
+          const msg = 'data found without a keyword saying what it means';
+          block.errors.push({ lineno, line, msg });
+        }
+      }
+    }
+  }
+
+  if (block) {
+    const msg = 'the final block is missing an "end" statement';
+    block.errors.push({ lineno, msg });
+    yield block;
+  }
+};
+
+
 if (require.main == module) {
   const testTokenizer = s => {
     console.log(`'${s}' =>`);
@@ -48,4 +146,31 @@ if (require.main == module) {
   testTokenizer('  s = "Hi there!"');
   testTokenizer('  s = "Hi there!"a');
   testTokenizer('  s = "Hi there!');
+  console.log();
+  console.log();
+
+  const testBlockParser = s => {
+    console.log(`'${s}' => `);
+    for (const block of parsedDataBlocks(s.split('\n'))) {
+      console.log(JSON.stringify(block, null, 2));
+      console.log();
+    }
+  }
+
+  testBlockParser(`
+FIRST
+  Data 1 "two"
+       3 "four
+  Name "Gavrog"
+  Data some more "s"a
+END
+
+SECOND
+  456
+END
+
+123
+
+THIRD
+`);
 }
