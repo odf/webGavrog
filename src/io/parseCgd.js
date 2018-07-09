@@ -1,3 +1,7 @@
+import { rationals } from '../arithmetic/types';
+const ops = rationals;
+
+
 const tokenizeLine = rawLine => {
   const line = rawLine.trim();
 
@@ -44,7 +48,16 @@ const tokenizeLine = rawLine => {
 };
 
 
-const parseToken = token => token; // TODO placeholder
+const parseToken = token => {
+  if (token.match(/^".*"$/))
+    return token.slice(1, -1);
+  else if (token.match(/^\d+(\/\d+)?$/))
+    return ops.rational(token);
+  else if (token.match(/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/))
+    return parseFloat(token);
+  else
+    return token;
+};
 
 
 const newBlock = () => ({
@@ -159,10 +172,10 @@ if (require.main == module) {
 
   testBlockParser(`
 FIRST
-  Data 1 "two"
-       3 "four
+  Data 1 two 27/25
+       3 four +27.25E-3
   Name "Gavrog"
-  Data some more "s"a
+  Data "some more" "s"a
 END
 
 SECOND
