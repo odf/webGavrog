@@ -70,7 +70,7 @@ const newBlock = () => ({
 });
 
 
-export function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
+function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
   let lineno = 0;
   let block = null;
   let key = null;
@@ -125,8 +125,8 @@ export function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
 
       if (fields.length) {
         if (key) {
-          const data = fields.map(parseToken);
-          const entry = { lineno, line, originalKey, key, data };
+          const args = fields.map(parseToken);
+          const entry = { lineno, line, originalKey, key, args };
 
           if (!block.entriesByKey[key])
             block.entriesByKey[key] = [];
@@ -141,12 +141,15 @@ export function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
     }
   }
 
-  if (block) {
+  if (block && block.type) {
     const msg = 'the final block is missing an "end" statement';
     block.errors.push({ lineno, msg });
     yield block;
   }
 };
+
+
+export default parsedDataBlocks;
 
 
 if (require.main == module) {

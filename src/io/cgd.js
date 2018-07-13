@@ -1,10 +1,11 @@
-const parser = require('./cgdParser');
-
 const ops = require('../geometry/types').affineTransformationsQ;
 
 import * as pg from '../pgraphs/periodic';
 import * as sg from './sgtable';
 import * as cr from './crystal';
+
+import parseBlocks from './parseCgd';
+import parseOperator from './parseOperator';
 
 
 const translation = {
@@ -35,7 +36,7 @@ const translation = {
 
 const unknown = data => {
   return {
-    content: data,
+    entriesInOrder: data,
     errors : ["Unknown type"]
   }
 };
@@ -46,28 +47,11 @@ const capitalize = s => s[0].toUpperCase() + s.slice(1);
 
 const findGroup = args => sg.settingByName(args.join(''));
 
-const makeCoordinate = x =>
-  typeof x == 'number' ? x : ops.toJS(ops.div(x.n, x.d));
-
-
-const makeOperator = spec => {
-  const d = spec.length;
-  return spec.map(row => {
-    if (Array.isArray(row)) {
-      const r = new Array(d).fill(0);
-      for (const { i, f } of row)
-        r[i == 0 ? d : i-1] = makeCoordinate(f);
-      return r;
-    }
-    else
-      return makeCoordinate(row);
-  });
-};
-
-
 const eps    = Math.pow(2, -50);
 const trim   = x => Math.abs(x) < eps ? 0 : x;
 const cosdeg = deg => trim(Math.cos(deg * Math.PI / 180.0));
+
+const asFloats = v => v.map(x => ops.typeOf(x) == 'Float' ? x : ops.toJS(x));
 
 
 const makeGramMatrix = args => {
@@ -131,7 +115,7 @@ const extractSingleValue = (state, key, options = {}) => {
 
 
 const processPeriodicGraphData = data => {
-  const state = initialState(data.content);
+  const state = initialState(data.entriesInOrder);
   const edges = [];
   let dim = null;
 
@@ -171,7 +155,7 @@ const processPeriodicGraphData = data => {
 
 
 const processSymmetricNet = data => {
-  const state = initialState(data.content);
+  const state = initialState(data.entriesInOrder);
   const nodes = {};
   const edges = [];
   let dim = null;
@@ -181,41 +165,43 @@ const processSymmetricNet = data => {
 
   for (const { key, args } of state.input) {
     if (key == 'node') {
-      const [name, pos, ...rest] = args;
-
-      if (rest.length)
-        state.warnings.push(`Extra arguments for node '${name}'`);
+      const [name, ...rest] = args;
+      const pos = parseOperator(rest.join(''));
+      const d = ops.dimension(pos);
 
       if (dim == null)
-        dim = pos.length
-      else if (pos.length != dim)
+        dim = d;
+      else if (d != dim)
         state.errors.push("Inconsistent dimensions");
 
       if (nodes[name] != null)
         state.errors.push(`Node '${name}' specified twice`);
       else
-        nodes[name] = makeOperator(pos);
+        nodes[name] = pos;
     }
     else if (key == 'edge') {
-      let [v, w, shift, ...rest] = args;
-
-      if (rest.length)
-        state.warnings.push('Extra arguments for edge');
+      let [v, w, ...rest] = args;
 
       if (w == null)
         state.errors.push("Incomplete edge specification");
       else {
-        if (shift.length == 0 && dim != null) {
+        let shift;
+
+        if (rest.length == 0 && dim != null) {
           state.warnings.push("Missing shift vector");
           shift = new Array(dim).fill(0);
         }
+        else
+          shift = parseOperator(rest.join(''));
+
+        const d = ops.dimension(shift);
 
         if (dim == null)
-          dim = shift.length
-        else if (shift.length != dim)
+          dim = d;
+        else if (d != dim)
           state.errors.push("Inconsistent dimensions");
 
-        edges.push([v, w, makeOperator(shift)]);
+        edges.push([v, w, shift]);
       }
     }
     else
@@ -233,7 +219,7 @@ const processSymmetricNet = data => {
 
 
 const processCrystal = data => {
-  const state = initialState(data.content);
+  const state = initialState(data.entriesInOrder);
   const { errors, warnings, output } = state;
   const nodes = [];
   const edges = [];
@@ -271,17 +257,16 @@ const processCrystal = data => {
         nodes.push({
           name,
           coordination,
-          position: makeOperator(position)
+          position: asFloats(position)
         });
         seen[name] = true;
       }
     }
     else if (key == 'edge') {
       if (args.length == 2 * dim)
-        edges.push([makeOperator(args.slice(0, dim)),
-                    makeOperator(args.slice(dim))]);
+        edges.push([asFloats(args.slice(0, dim)), asFloats(args.slice(dim))]);
       else if (args.length == 1 + dim)
-        edges.push([args[0], makeOperator(args.slice(1))]);
+        edges.push([args[0], asFloats(args.slice(1))]);
       else if (args.length == 2)
         edges.push(args);
       else
@@ -304,7 +289,7 @@ const processCrystal = data => {
 
 
 const processFaceListData = data => {
-  const state = initialState(data.content);
+  const state = initialState(data.entriesInOrder);
   const { errors, warnings, output } = state;
   const faces = [];
   const tiles = [];
@@ -340,7 +325,7 @@ const processFaceListData = data => {
           if (currentFaceData.length == currentFaceSize * dim) {
             const face = [];
             for (let i = 0; i < currentFaceData.length; i += dim)
-              face.push(makeOperator(currentFaceData.slice(i, i + dim)));
+              face.push(currentFaceData.slice(i, i + dim));
 
             if (tiles.length)
               tiles[tiles.length - 1].push(faces.length);
@@ -378,15 +363,6 @@ const makeStructure = {
 };
 
 
-const preprocessBlock = ({ type, content }) => ({
-  type,
-  content: content.map(({ key, args }) => ({
-    key: translation[key] || key,
-    args
-  }))
-});
-
-
 const reportError = (text, ex) => {
   if (ex.location) {
     var n = ex.location.start.line - 1;
@@ -408,19 +384,14 @@ const reportError = (text, ex) => {
 };
 
 
-export const blocks = text => {
-  try {
-    return parser.parse(text).map(s => ({ ...s, isRaw: true }));
-  } catch(ex) {
-    reportError(text, ex);
-    throw ex;
-  }
+export function *blocks(text) {
+  for (const s of parseBlocks(text.split('\n'), translation))
+    yield { ...s, isRaw: true };
 };
 
 
 export const processed = block => {
-  const data = preprocessBlock(block);
-  const output = (makeStructure[data.type] || unknown)(data);
+  const output = (makeStructure[block.type] || unknown)(block);
 
   return { ...output, type: block.type };
 };

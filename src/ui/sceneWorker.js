@@ -35,9 +35,9 @@ const handlers = {
   },
 
   parseCGD(data) {
-    const blocks = cgd.blocks(data);
+    const blocks = Array.from(cgd.blocks(data));
     for (const b of blocks) {
-      const spec = b.content.find(s => s.key == 'name');
+      const spec = b.entriesInOrder.find(s => s.key == 'name');
       b.name = ((spec || {}).args || [])[0];
     }
     return blocks;
