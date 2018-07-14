@@ -1,53 +1,43 @@
-const parser = require('./sgtableParser');
 const ops = require('../geometry/types').affineTransformationsQ;
 
-
-const makeOperator = spec => {
-  const d = spec.length;
-  const M = ops.matrix(d, d);
-  const t = ops.vector(d);
-
-  spec.forEach((row, k) => {
-    row.forEach(({i, f}) => {
-      const x = typeof f == 'number' ? f : ops.div(f.n, f.d);
-      if (i == 0)
-        t[k] = x;
-      else
-        M[k][i-1] = x;
-    })
-  });
-
-  return ops.affineTransformation(M, t);
-};
+import parseOperator from './parseOperator';
 
 
-const postProcess = rawData => {
+const parseSpaceGroupData = data => {
   const lookup = [];
   const alias  = {};
   const table  = {};
+  let currentName = null;
 
-  for (const entry of rawData) {
-    const { type, name } = entry;
+  for (const line of data.split('\n')) {
+    if (line.trim().length == 0 || line.trim()[0] == '#')
+      continue;
 
-    if (type == 'alias') {
-      alias[name] = entry.fullName;
+    if (line[0] == ' ') {
+      table[currentName].operators.push(parseOperator(line));
     }
-    else if (type == 'lookup') {
-      lookup.push({
-        name,
-        system    : entry.system,
-        centering : entry.centering,
-        fromStd   : makeOperator(entry.fromStd)
-      });
+    else {
+      const fields = line.trim().split(/\s+/);
+
+      if (fields[0].toLowerCase() == 'alias') {
+        alias[fields[1]] = fields[2];
+      }
+      else if (fields[0].toLowerCase() == 'lookup') {
+        lookup.push({
+          name: fields[1],
+          system: fields[2],
+          centering: fields[3],
+          fromStd: parseOperator(fields.slice(4).join(''))
+        });
+      }
+      else {
+        currentName = fields[0];
+        table[currentName] = {
+          transform: parseOperator(fields.slice(1).join('')),
+          operators: []
+        };
+      }
     }
-    else if (type == 'setting') {
-      table[name] = {
-        transform: makeOperator(entry.transform),
-        operators: entry.operators.map(makeOperator)
-      };
-    }
-    else
-      throw new Error(`unknown entry type ${type}`);
   }
 
   return { lookup, alias, table };
@@ -95,7 +85,7 @@ const _settingByName = (name, alias, table, options = {}) => {
 
 
 const { lookup, alias, table } =
-  postProcess(parser.parse(require('../data/sgtable').default));
+      parseSpaceGroupData(require('../data/sgtable').default);
 
 
 export const settingByName = (name, options = {}) =>

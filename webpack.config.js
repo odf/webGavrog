@@ -30,12 +30,11 @@ module.exports = [ "main", "sceneWorker" ].map(function(name) {
         { test: /\.elm$/,
           exclude: [/node_modules/, /elm-stuff/],
           use: "elm-webpack-loader" },
-        { test: /\.json$/, use: "json-loader" },
-        { test: /\.pegjs$/, use: "pegjs-loader" }
+        { test: /\.json$/, use: "json-loader" }
       ]
     },
     resolve: {
-      extensions: [ ".js", ".elm", ".pegjs", ".json" ]
+      extensions: [ ".js", ".elm", ".json" ]
     }
   };
 });
