@@ -1,6 +1,5 @@
-const ops = require('../geometry/types').affineTransformationsQ;
-
 import parseOperator from './parseOperator';
+import spaceGroupData from '../data/sgtable';
 
 
 const parseSpaceGroupData = data => {
@@ -44,6 +43,9 @@ const parseSpaceGroupData = data => {
 };
 
 
+const { lookup, alias, table } = parseSpaceGroupData(spaceGroupData);
+
+
 const candidates = (base, extension, options) => {
   if (base[0] == 'R') {
     if (extension == 'R')
@@ -66,7 +68,7 @@ const candidates = (base, extension, options) => {
 };
 
 
-const _settingByName = (name, alias, table, options = {}) => {
+export const settingByName = (name, options = {}) => {
   const [rawBase, ...rest] = name.split(':');
   const base = alias[rawBase] || rawBase;
   const extension = rest.join(':').toUpperCase();
@@ -82,14 +84,6 @@ const _settingByName = (name, alias, table, options = {}) => {
 
   return { error: `Unrecognized group setting ${name}` };
 };
-
-
-const { lookup, alias, table } =
-      parseSpaceGroupData(require('../data/sgtable').default);
-
-
-export const settingByName = (name, options = {}) =>
-  _settingByName(name, alias, table, options);
 
 
 if (require.main == module) {
