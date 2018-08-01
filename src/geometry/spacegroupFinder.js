@@ -281,17 +281,22 @@ basisNormalizer[CS_2D_HEXAGONAL] = b => ({
 
 basisNormalizer[CS_3D_CUBIC] = b => {
   const r = V.abs(b[0].find(x => V.ne(0, x)));
-  const n = b[0].map(x => V.ne(0, x)).reduce((a, b) => a + b);
+  const n = b[0].filter(x => V.ne(0, x)).length;
 
-  const [a, c] = (n == 1) ? [r, 'P'] : [V.times(r, 2), (n == 2) ? 'F' : 'I'];
+  const [a, c] = (n == 1) ?
+    [r, 'P'] :
+    [V.times(r, 2), (n == 2) ? 'F' : 'I'];
 
   return { basis: [[a, 0, 0], [0, a, 0], [0, 0, a]], centering: c };
 };
 
 
 basisNormalizer[CS_3D_HEXAGONAL] = b => {
-  const w = b.find(v => vectorsCollinear([0, 0, 1], v));
-  const u = b.find(v => !vectorsCollinear([0, 0, 1], v));
+  const [u, w] = vectorsCollinear([0, 0, 1], b[0]) ?
+    [b[2], b[0]] : vectorsCollinear([0, 0, 1], b[1]) ?
+    [b[0], b[1]] :
+    [b[0], b[2]];
+
   const v = V.times([[0, -1, 0], [1, -1, 0], [0, 0, 1]], u);
 
   return { basis: [u, v, w], centering: 'P' };
