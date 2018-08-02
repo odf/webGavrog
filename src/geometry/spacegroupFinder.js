@@ -59,6 +59,9 @@ const vectorsCollinear = (v, w) =>
        V.abs(V.times(V.times(v, v), V.times(w, w))));
 
 
+const vectorsOrthogonal = (v, w) => V.eq(0, V.times(v, w));
+
+
 const operatorType = op => {
   const dimension = V.dimension(op);
   const A = V.linearPart(op);
@@ -300,6 +303,64 @@ basisNormalizer[CS_3D_HEXAGONAL] = b => {
   const v = V.times([[0, -1, 0], [1, -1, 0], [0, 0, 1]], u);
 
   return { basis: [u, v, w], centering: 'P' };
+};
+
+
+basisNormalizer[CS_3D_TRIGONAL] = b => {
+  const basis = vectorsCollinear([0, 0, 1], b[0]) ?
+    [b[1], b[2], b[0]] : vectorsCollinear([0, 0, 1], b[1]) ?
+    [b[0], b[2], b[1]] :
+    [b[0], b[1], b[2]];
+
+  const r =
+    basis.find(v => !vectorsCollinear([0, 0, 1], v) && V.ne(0, v[2]));
+
+  if (r) {
+    if (V.lt(r[2], 0)) {
+      basis[0] = V.times([[2, -1, 0], [1, 1, 0], [0, 0, 0]], r);
+      basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, -3]], r);
+    }
+    else {
+      basis[0] = V.times([[1, 1, 0], [-1, 2, 0], [0, 0, 0]], r);
+      basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 3]], r);
+    }
+  }
+
+  basis[1] = V.times([[0, -1, 0], [1, -1, 0], [0, 0, 1]], basis[0]);
+
+  return { basis, centering: r ? 'R' : 'P' };
+};
+
+
+basisNormalizer[CS_3D_TETRAGONAL] = b => {
+  const basis = [b[0], b[1], b[2]];
+  let centering = 'P';
+
+  if (vectorsCollinear([0, 0, 1], basis[0])) {
+    [basis[0], basis[2]] = [basis[1], basis[0]];
+    if (!vectorsOrthogonal([0, 0, 1], basis[0])) {
+      centering = 'I';
+      basis[0] = V.times([[1, -1, 0], [1, 1, 0], [0, 0, 0]], basis[0]);
+    } 
+  }
+  else if (vectorsOrthogonal([0, 0, 1], basis[0])) {
+    if (!vectorsOrthogonal([0, 0, 1], basis[1]))
+      basis[2] = basis[1];
+
+    if (!vectorsCollinear([0, 0, 1], basis[2])) {
+      centering = 'I';
+      basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 2]], basis[2]);
+    }
+  }
+  else {
+    centering = 'I';
+    basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 2]], basis[0]);
+    basis[0] = V.times([[1, -1, 0], [1, 1, 0], [0, 0, 0]], basis[0]);
+  }
+
+  basis[1] = V.times([[0, -1, 0], [1, 0, 0], [0, 0, 1]], basis[0]);
+
+  return { basis, centering };
 };
 
 
