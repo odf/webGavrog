@@ -364,6 +364,115 @@ basisNormalizer[CS_3D_TETRAGONAL] = b => {
 };
 
 
+basisNormalizer[CS_3D_ORTHORHOMBIC] = b => {
+  const d = b.map(v => v.filter(x => V.ne(0, x)).length);
+  const x = [1, 0, 0];
+  const y = [0, 1, 0];
+  const z = [0, 0, 1];
+  const copy = [b[0], b[1], b[2]];
+  const left = [b[1], b[2], b[0]];
+  const right = [b[2], b[0], b[1]];
+
+  let v;
+  if (d[0] == 3)
+    v = copy;
+  else if (d[1] == 3)
+    v = left;
+  else if (d[2] == 3)
+    v = right;
+  else if (d[0] == 2 && vectorsOrthogonal(z, b[0]))
+    v = copy;
+  else if (d[1] == 2 && vectorsOrthogonal(z, b[1]))
+    v = left;
+  else if (d[2] == 2 && vectorsOrthogonal(z, b[2]))
+    v = right;
+  else if (d[0] == 2 && vectorsOrthogonal(y, b[0]))
+    v = copy;
+  else if (d[1] == 2 && vectorsOrthogonal(y, b[1]))
+    v = left;
+  else if (d[2] == 2 && vectorsOrthogonal(y, b[2]))
+    v = right;
+  else if (vectorsCollinear(x, b[0]))
+    v = copy;
+  else if (vectorsCollinear(x, b[1]))
+    v = left;
+  else if (vectorsCollinear(x, b[2]))
+    v = right;
+  else
+    v = copy;
+
+  const n = v[0].filter(x => V.ne(0, x)).length;
+
+  let a, b, c, centering;
+  if (n == 3) {
+    [a, b, c] = V.times(2, v[0]);
+    centering = 'I';
+  }
+  else if (n == 2) {
+    const p = v.findIndex(x => V.eq(0, x));
+    const v1p = V.abs(v[1][p]);
+    const v2p = V.abs(v[2][p]);
+
+    let m;
+    if (V.eq(0, v2p) || (V.ne(0, v1p) && V.gt(v2p, v1p))) {
+      [v[1], v[2]] = [v[2], v[1]];
+      m = d[1];
+    }
+    else
+      m = d[2];
+
+    if (p == 1) {
+      a = V.times(v[0][0], 2);
+      b = V.times(v[2][1], m);
+      c = V.times(v[0][2], 2);
+      centering = m == 2 ? 'F' : 'B';
+    }
+    else {
+      a = V.times(v[0][0], 2);
+      b = V.times(v[0][1], 2);
+      c = V.times(v[2][2], m);
+      centering = m == 2 ? 'F' : 'C';
+    }
+  }
+  else {
+    const v11 = V.abs(v[1][1]);
+    const v21 = V.abs(v[2][1]);
+
+    let m;
+    if (V.eq(0, v11) || (V.ne(0, v21) && V.gt(v11, v21))) {
+      [v[1], v[2]] = [v[2], v[1]];
+      m = d[2];
+    }
+    else
+      m = d[1];
+
+    a = v[0][0];
+    if (m == 2) {
+      [_, b, c] = V.times(v[1], 2);
+      centering = 'A';
+    }
+    else {
+      if (!V.ne(0, v[1][1])) {
+        b = v[1][1];
+        c = v[2][2];
+      }
+      else {
+        b = v[2][1];
+        c = v[1][2];
+      }
+    }
+    centering = 'P';
+  }
+
+  if (centering == 'A')
+    return { basis: [[0, b, 0], [0, 0, c], [a, 0, 0]], centering: 'C' };
+  else if (centering == 'B')
+    return { basis: [[0, 0, c], [a, 0, 0], [0, b, 0]], centering: 'C' };
+  else
+    return { basis: [[a, 0, 0], [0, b, 0], [0, 0, c]], centering };
+};
+
+
 if (require.main == module) {
   const testOp = A => {
     console.log(`A = ${JSON.stringify(A)}`);
