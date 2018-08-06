@@ -473,6 +473,51 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = b => {
 };
 
 
+basisNormalizer[CS_3D_MONOCLINIC] = b => {
+  const z = [0, 0, 1];
+  let centering, v;
+
+  if (vectorsCollinear(z, b[0]))
+    v = [b[1], b[2], b[0]];
+  else if (vectorsCollinear(z, b[1]))
+    v = [b[0], V.times(-1, b[2]), b[1]];
+  else
+    v = [b[0], b[1], b[2]];
+
+  if (vectorsOrthogonal(z, v[1]))
+    v = [V.times(-1, v[1]), v[0], v[2]];
+  else
+    v = [v[2], v[0], v[1]];
+
+  if (!vectorsOrthogonal(z, v[0]))
+      v[0] = V.times([[1, 0, 0], [0, 1, 0], [0, 0, 0]], V.plus(v[0], v[1]));
+
+  if (!vectorsCollinear(z, v[2])) {
+    if (vectorsOrthogonal(z, v[1])) {
+      if (vectorsCollinear(
+        v[0], V.times([[2, 0, 0], [0, 2, 0], [0, 0, 0]], v[2])))
+      {
+        v[0] = v[1];
+      }
+      v[1] = v[2];
+    }
+    v[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 2]], v[2]);
+  }
+
+  if (!vectorsOrthogonal(z, v[1])) {
+    v[1] = V.times([[2, 0, 0], [0, 2, 0], [0, 0, 0]], v[1]);
+    centering = 'A';
+  }
+  else
+    centering = 'P';
+
+  return { basis: v, centering };
+};
+
+
+basisNormalizer[CS_3D_TRICLINIC] = b => ({ basis: b, centering: 'P' });
+
+
 if (require.main == module) {
   const testOp = A => {
     console.log(`A = ${JSON.stringify(A)}`);
