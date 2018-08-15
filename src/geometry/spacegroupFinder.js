@@ -1,4 +1,3 @@
-import { rationalLinearAlgebra } from '../arithmetic/types';
 import { affineTransformationsQ } from './types';
 const V = affineTransformationsQ;
 
@@ -43,7 +42,7 @@ const operatorAxis = op => {
     M = V.negative(M);
 
   const R = V.minus(M, V.identityMatrix(d));
-  const Z = V.transposed(rationalLinearAlgebra.nullSpace(R) || []);
+  const Z = V.transposed(V.nullSpace(R) || []);
 
   if (Z.length != 1)
     return null;
