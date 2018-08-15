@@ -364,14 +364,14 @@ basisNormalizer[CS_3D_TETRAGONAL] = b => {
 };
 
 
-basisNormalizer[CS_3D_ORTHORHOMBIC] = b => {
-  const d = b.map(v => v.filter(x => V.ne(0, x)).length);
+basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
+  const d = basis.map(v => v.filter(x => V.ne(0, x)).length);
   const x = [1, 0, 0];
   const y = [0, 1, 0];
   const z = [0, 0, 1];
-  const copy = [b[0], b[1], b[2]];
-  const left = [b[1], b[2], b[0]];
-  const right = [b[2], b[0], b[1]];
+  const copy = [basis[0], basis[1], basis[2]];
+  const left = [basis[1], basis[2], basis[0]];
+  const right = [basis[2], basis[0], basis[1]];
 
   let v;
   if (d[0] == 3)
@@ -380,23 +380,23 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = b => {
     v = left;
   else if (d[2] == 3)
     v = right;
-  else if (d[0] == 2 && vectorsOrthogonal(z, b[0]))
+  else if (d[0] == 2 && vectorsOrthogonal(z, basis[0]))
     v = copy;
-  else if (d[1] == 2 && vectorsOrthogonal(z, b[1]))
+  else if (d[1] == 2 && vectorsOrthogonal(z, basis[1]))
     v = left;
-  else if (d[2] == 2 && vectorsOrthogonal(z, b[2]))
+  else if (d[2] == 2 && vectorsOrthogonal(z, basis[2]))
     v = right;
-  else if (d[0] == 2 && vectorsOrthogonal(y, b[0]))
+  else if (d[0] == 2 && vectorsOrthogonal(y, basis[0]))
     v = copy;
-  else if (d[1] == 2 && vectorsOrthogonal(y, b[1]))
+  else if (d[1] == 2 && vectorsOrthogonal(y, basis[1]))
     v = left;
-  else if (d[2] == 2 && vectorsOrthogonal(y, b[2]))
+  else if (d[2] == 2 && vectorsOrthogonal(y, basis[2]))
     v = right;
-  else if (vectorsCollinear(x, b[0]))
+  else if (vectorsCollinear(x, basis[0]))
     v = copy;
-  else if (vectorsCollinear(x, b[1]))
+  else if (vectorsCollinear(x, basis[1]))
     v = left;
-  else if (vectorsCollinear(x, b[2]))
+  else if (vectorsCollinear(x, basis[2]))
     v = right;
   else
     v = copy;
