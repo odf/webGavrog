@@ -1,4 +1,5 @@
 import { affineTransformationsQ } from './types';
+import { reducedLatticeBasis } from './lattices';
 const V = affineTransformationsQ;
 
 
@@ -515,6 +516,82 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
 
 
 basisNormalizer[CS_3D_TRICLINIC] = b => ({ basis: b, centering: 'P' });
+
+
+const normalizedBasis = (crystalSystem, basis) => {
+  const reduced = reducedLatticeBasis(basis);
+  const normalized = basisNormalizer[crystalSystem](reduced);
+
+  if (V.le(V.determinant(normalized), 0)) {
+    const n = normalized.length;
+    normalized[n - 1] = V.negative(normalized[n - 1]);
+  }
+
+  return normalized;
+};
+
+
+const variations = (crystalSystem, centering) => {
+  if (crystalSystem == CS_3D_MONOCLINIC) {
+    if (centering == 'A')
+      return [
+        [[ 1, 0, 0], [ 0, 1, 0], [0, 0,  1]],
+        [[-1, 0, 0], [-1, 1, 0], [0, 0, -1]]
+      ];
+    else
+      return [
+        [[ 1,  0, 0], [ 0,  1, 0], [0, 0, 1]],
+        [[ 0, -1, 0], [ 1, -1, 0], [0, 0, 1]],
+        [[-1,  1, 0], [-1,  0, 0], [0, 0, 1]]
+      ];
+  }
+  else if (crystalSystem == CS_3D_ORTHORHOMBIC) {
+    if (centering == 'C')
+      return [
+        [[1, 0, 0], [0, 1, 0], [0, 0,  1]],
+        [[0, 1, 0], [1, 0, 0], [0, 0, -1]]
+      ];
+    else
+      return [
+        [[1, 0, 0], [0, 1, 0], [ 0,  0,  1]],
+        [[0, 0, 1], [1, 0, 0], [ 0,  1,  0]],
+        [[0, 1, 0], [0, 0, 1], [ 1,  0,  0]],
+        [[0, 1, 0], [1, 0, 0], [ 0,  0, -1]],
+        [[1, 0, 0], [0, 0, 1], [ 0, -1,  0]],
+        [[0, 0, 1], [0, 1, 0], [-1,  0,  0]]
+      ];
+  }
+  else if (crystalSystem == CS_3D_TRIGONAL) {
+    if (centering == 'P')
+      return [
+        [[1,  0, 0], [0, 1, 0], [0, 0, 1]],
+        [[1, -1, 0], [1, 0, 0], [0, 0, 1]]
+      ];
+    else
+      return [
+        [[1,  0, 0], [0, 1, 0], [0, 0, 1]]
+      ];
+  }
+  else if (crystalSystem == CS_3D_CUBIC)
+    return [
+      [[1,  0, 0], [0, 1, 0], [0, 0, 1]],
+      [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+    ];
+  else if (crystalSystem == CS_3D_HEXAGONAL ||
+           crystalSystem == CS_3D_TETRAGONAL)
+    return [
+      [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    ];
+  else if (crystalSystem == CS_2D_RECTANGULAR)
+    return [
+      [[1, 0], [ 0, 1]],
+      [[0, 1], [-1, 0]]
+    ];
+  else
+    return [
+      [[1, 0], [ 0, 1]]
+    ];
+};
 
 
 if (require.main == module) {
