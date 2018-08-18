@@ -294,14 +294,14 @@ basisNormalizer[CS_2D_OBLIQUE] = b => ({ basis: b, centering: 'p' });
 basisNormalizer[CS_2D_RECTANGULAR] = b => {
   if (V.ne(0, b[0][0]) && V.ne(0, b[0][1]))
     return {
-      basis: [ V.times([[0, 0], [0, 2]], b[0]),
-               V.times([[2, 0], [0, 0]], b[0]) ],
+      basis: [ V.times(operator("0, 2y"), b[0]),
+               V.times(operator("2x, 0"), b[0]) ],
       centering: 'c'
     };
   else if (V.ne(0, b[1][0]) && V.ne(0, b[1][1]))
     return {
-      basis: [ V.times([[0, 0], [0, 2]], b[1]),
-               V.times([[2, 0], [0, 0]], b[1]) ],
+      basis: [ V.times(operator("0, 2y"), b[1]),
+               V.times(operator("2x, 0"), b[1]) ],
       centering: 'c'
     };
   else if (V.eq(0, b[0][1]))
@@ -312,13 +312,13 @@ basisNormalizer[CS_2D_RECTANGULAR] = b => {
 
 
 basisNormalizer[CS_2D_SQUARE] = b => ({
-  basis: [ b[0], V.times([[0, -1], [1, 0]], b[0]) ],
+  basis: [ b[0], V.times(operator("-y, x"), b[0]) ],
   centering: 'p'
 });
 
 
 basisNormalizer[CS_2D_HEXAGONAL] = b => ({
-  basis: [ b[0], V.times([[0, -1], [1, -1]], b[0]) ],
+  basis: [ b[0], V.times(operator("-y, x-y"), b[0]) ],
   centering: 'p'
 });
 
@@ -341,7 +341,7 @@ basisNormalizer[CS_3D_HEXAGONAL] = b => {
     [b[0], b[1]] :
     [b[0], b[2]];
 
-  const v = V.times([[0, -1, 0], [1, -1, 0], [0, 0, 1]], u);
+  const v = V.times(operator("-y, x-y, z"), u);
 
   return { basis: [u, v, w], centering: 'P' };
 };
@@ -358,16 +358,16 @@ basisNormalizer[CS_3D_TRIGONAL] = b => {
 
   if (r) {
     if (V.lt(r[2], 0)) {
-      basis[0] = V.times([[2, -1, 0], [1, 1, 0], [0, 0, 0]], r);
-      basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, -3]], r);
+      basis[0] = V.times(operator("2x-y,x+y, 0"), r);
+      basis[2] = V.times(operator("0, 0, -3z"), r);
     }
     else {
-      basis[0] = V.times([[1, 1, 0], [-1, 2, 0], [0, 0, 0]], r);
-      basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 3]], r);
+      basis[0] = V.times(operator("x+y, 2y-x, 0"), r);
+      basis[2] = V.times(operator("0, 0, 3z"), r);
     }
   }
 
-  basis[1] = V.times([[0, -1, 0], [1, -1, 0], [0, 0, 1]], basis[0]);
+  basis[1] = V.times(operator("-y, x-y, z"), basis[0]);
 
   return { basis, centering: r ? 'R' : 'P' };
 };
@@ -381,7 +381,7 @@ basisNormalizer[CS_3D_TETRAGONAL] = b => {
     [basis[0], basis[2]] = [basis[1], basis[0]];
     if (!vectorsOrthogonal([0, 0, 1], basis[0])) {
       centering = 'I';
-      basis[0] = V.times([[1, -1, 0], [1, 1, 0], [0, 0, 0]], basis[0]);
+      basis[0] = V.times(operator("x-y, x+y, 0"), basis[0]);
     } 
   }
   else if (vectorsOrthogonal([0, 0, 1], basis[0])) {
@@ -390,16 +390,16 @@ basisNormalizer[CS_3D_TETRAGONAL] = b => {
 
     if (!vectorsCollinear([0, 0, 1], basis[2])) {
       centering = 'I';
-      basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 2]], basis[2]);
+      basis[2] = V.times(operator("0, 0, 2z"), basis[2]);
     }
   }
   else {
     centering = 'I';
-    basis[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 2]], basis[0]);
-    basis[0] = V.times([[1, -1, 0], [1, 1, 0], [0, 0, 0]], basis[0]);
+    basis[2] = V.times(operator("0, 0, 2z"), basis[0]);
+    basis[0] = V.times(operator("x-y, x+y, 0"), basis[0]);
   }
 
-  basis[1] = V.times([[0, -1, 0], [1, 0, 0], [0, 0, 1]], basis[0]);
+  basis[1] = V.times(operator("-y, x, z"), basis[0]);
 
   return { basis, centering };
 };
@@ -531,22 +531,20 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
     v = [v[2], v[0], v[1]];
 
   if (!vectorsOrthogonal(z, v[0]))
-      v[0] = V.times([[1, 0, 0], [0, 1, 0], [0, 0, 0]], V.plus(v[0], v[1]));
+      v[0] = V.times(operator("x,y,0"), V.plus(v[0], v[1]));
 
   if (!vectorsCollinear(z, v[2])) {
     if (vectorsOrthogonal(z, v[1])) {
-      if (vectorsCollinear(
-        v[0], V.times([[2, 0, 0], [0, 2, 0], [0, 0, 0]], v[2])))
-      {
+      if (vectorsCollinear(v[0], V.times(operator("2x,2y,0"), v[2])))
         v[0] = v[1];
-      }
+
       v[1] = v[2];
     }
-    v[2] = V.times([[0, 0, 0], [0, 0, 0], [0, 0, 2]], v[2]);
+    v[2] = V.times(operator("0,0,2z"), v[2]);
   }
 
   if (!vectorsOrthogonal(z, v[1])) {
-    v[1] = V.times([[2, 0, 0], [0, 2, 0], [0, 0, 0]], v[1]);
+    v[1] = V.times(operator("2x,2y,0"), v[1]);
     centering = 'A';
   }
   else
