@@ -20,6 +20,47 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
+const operator = s => {
+  const parts = s.replace(/\s+/g, '').split(',');
+  const d = parts.length;
+
+  if (d > 3)
+    throw new Error('only up to 3 coordinates are recognized');
+
+  const M = ops.matrix(d, d);
+  const v = ops.vector(d);
+
+  for (let i = 0; i < d; ++i) {
+    for (const term of parts[i].split(/(?=[+-])/)) {
+      const [matched, sign, coeff, axis] =
+            term.match(/^([+-])?(\d+(?:\/\d+)?)?(?:\*?([xyz]))?$/) || [];
+
+      if (!matched)
+        throw new Error(`illegal term ${term} in coordinate ${i}`);
+
+      let val;
+      if (coeff)
+        val = ops.rational(coeff);
+      else
+        val = 1;
+      if (sign == '-')
+        val = ops.negative(val);
+
+      if (axis) {
+        const j = 'xyz'.indexOf(axis);
+        if (j >= d)
+          throw new Error(`no ${axis}-axis in ${d}-dimensional operator`);
+        M[i][j] = ops.plus(M[i][j], val);
+      }
+      else
+        v[i] = ops.plus(v[i], val);
+    }
+  }
+
+  return ops.affineTransformation(M, v);
+};
+
+
 const matrixOrder = (M, max) => {
   const I = V.identityMatrix(V.dimension(M));
   let A = M;
@@ -534,63 +575,33 @@ const normalizedBasis = (crystalSystem, basis) => {
 const variations = (crystalSystem, centering) => {
   if (crystalSystem == CS_3D_MONOCLINIC) {
     if (centering == 'A')
-      return [
-        [[ 1, 0, 0], [ 0, 1, 0], [0, 0,  1]],
-        [[-1, 0, 0], [-1, 1, 0], [0, 0, -1]]
-      ];
+      return [ "x,y,z", "-x,y-x,-z" ].map(operator);
     else
-      return [
-        [[ 1,  0, 0], [ 0,  1, 0], [0, 0, 1]],
-        [[ 0, -1, 0], [ 1, -1, 0], [0, 0, 1]],
-        [[-1,  1, 0], [-1,  0, 0], [0, 0, 1]]
-      ];
+      return [ "x,y,z", "-y,x-y,z", "y-x,-x,z" ].map(operator);
   }
   else if (crystalSystem == CS_3D_ORTHORHOMBIC) {
     if (centering == 'C')
-      return [
-        [[1, 0, 0], [0, 1, 0], [0, 0,  1]],
-        [[0, 1, 0], [1, 0, 0], [0, 0, -1]]
-      ];
+      return [ "x,y,z", "y,x,-z" ].map(operator);
     else
       return [
-        [[1, 0, 0], [0, 1, 0], [ 0,  0,  1]],
-        [[0, 0, 1], [1, 0, 0], [ 0,  1,  0]],
-        [[0, 1, 0], [0, 0, 1], [ 1,  0,  0]],
-        [[0, 1, 0], [1, 0, 0], [ 0,  0, -1]],
-        [[1, 0, 0], [0, 0, 1], [ 0, -1,  0]],
-        [[0, 0, 1], [0, 1, 0], [-1,  0,  0]]
-      ];
+        "x,y,z", "z,x,y", "y,z,x", "y,x,-z", "x,z,-y", "z,y,-x"
+      ].map(operator);
   }
   else if (crystalSystem == CS_3D_TRIGONAL) {
     if (centering == 'P')
-      return [
-        [[1,  0, 0], [0, 1, 0], [0, 0, 1]],
-        [[1, -1, 0], [1, 0, 0], [0, 0, 1]]
-      ];
+      return [ "x,y,z", "x-y,x,z" ].map(operator);
     else
-      return [
-        [[1,  0, 0], [0, 1, 0], [0, 0, 1]]
-      ];
+      return [ "x,y,z" ].map(operator);
   }
   else if (crystalSystem == CS_3D_CUBIC)
-    return [
-      [[1,  0, 0], [0, 1, 0], [0, 0, 1]],
-      [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
-    ];
+    return [ "x,y,z", "-y,x,z" ].map(operator);
   else if (crystalSystem == CS_3D_HEXAGONAL ||
            crystalSystem == CS_3D_TETRAGONAL)
-    return [
-      [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    ];
+    return [ "x,y,z" ].map(operator);
   else if (crystalSystem == CS_2D_RECTANGULAR)
-    return [
-      [[1, 0], [ 0, 1]],
-      [[0, 1], [-1, 0]]
-    ];
+    return [ "x,y", "y,-x" ].map(operator);
   else
-    return [
-      [[1, 0], [ 0, 1]]
-    ];
+    return [ "x,y" ].map(operator);
 };
 
 
