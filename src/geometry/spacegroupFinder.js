@@ -27,8 +27,8 @@ const operator = s => {
   if (d > 3)
     throw new Error('only up to 3 coordinates are recognized');
 
-  const M = ops.matrix(d, d);
-  const v = ops.vector(d);
+  const M = V.matrix(d, d);
+  const v = V.vector(d);
 
   for (let i = 0; i < d; ++i) {
     for (const term of parts[i].split(/(?=[+-])/)) {
@@ -40,24 +40,24 @@ const operator = s => {
 
       let val;
       if (coeff)
-        val = ops.rational(coeff);
+        val = V.rational(coeff);
       else
         val = 1;
       if (sign == '-')
-        val = ops.negative(val);
+        val = V.negative(val);
 
       if (axis) {
         const j = 'xyz'.indexOf(axis);
         if (j >= d)
           throw new Error(`no ${axis}-axis in ${d}-dimensional operator`);
-        M[i][j] = ops.plus(M[i][j], val);
+        M[i][j] = V.plus(M[i][j], val);
       }
       else
-        v[i] = ops.plus(v[i], val);
+        v[i] = V.plus(v[i], val);
     }
   }
 
-  return ops.affineTransformation(M, v);
+  return V.affineTransformation(M, v);
 };
 
 
@@ -604,8 +604,10 @@ const variations = (crystalSystem, centering) => {
 
 
 if (require.main == module) {
-  const testOp = A => {
-    console.log(`A = ${JSON.stringify(A)}`);
+  const testOp = op => {
+    const A = operator(op);
+
+    console.log(`op = ${op}`);
     console.log(`  axis     : ${JSON.stringify(operatorAxis(A))}`);
 
     const { dimension, order, direct, clockwise } = operatorType(A);
@@ -618,7 +620,7 @@ if (require.main == module) {
 
   const testGroup2d = ops => {
     console.log(`ops = ${JSON.stringify(ops)}`);
-    const { crystalSystem, basis } = crystalSystemAndBasis2d(ops);
+    const { crystalSystem, basis } = crystalSystemAndBasis2d(ops.map(operator));
     console.log(`  ${crystalSystem}`);
     console.log(`  basis: ${ JSON.stringify(basis) }`);
     console.log();
@@ -626,69 +628,34 @@ if (require.main == module) {
 
   const testGroup3d = ops => {
     console.log(`ops = ${JSON.stringify(ops)}`);
-    const { crystalSystem, basis } = crystalSystemAndBasis3d(ops);
+    const { crystalSystem, basis } = crystalSystemAndBasis3d(ops.map(operator));
     console.log(`  ${crystalSystem}`);
     console.log(`  basis: ${ JSON.stringify(basis) }`);
     console.log();
   };
 
-  testOp([[1, 0], [0, 1]]);
-  testOp([[1, 0], [0, -1]]);
-  testOp([[0, -1], [1, 0]]);
-  testOp([[0, 1], [-1, 0]]);
-  testOp([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
-  testOp([[-1, 0, 0], [0, -1, 0], [0, 0, -1]]);
-  testOp([[0, 0, 1], [1, 0, 0], [0, 1, 0]]);
-  testOp([[0, 1, 0], [0, 0, 1], [1, 0, 0]]);
-  testOp([[0, 0, -1], [-1, 0, 0], [0, -1, 0]]);
-  testOp([[0, -1, 0], [0, 0, -1], [-1, 0, 0]]);
+  testOp("x,y");
+  testOp("x,-y");
+  testOp("-y,x");
+  testOp("y,-x");
+  testOp("x,y,z");
+  testOp("-x,-y,-z");
+  testOp("z,x,y");
+  testOp("y,z,x");
+  testOp("-z,-x,-y");
+  testOp("-y,-z,-x");
 
-  testGroup2d([V.affineTransformation([[1, 0], [0, 1]], [1, 0])]);
+  testGroup2d(["x+1,y"]);
+  testGroup2d(["x,y", "1-x,-y"]);
+  testGroup2d(["x,y", "x,-y"]);
+  testGroup2d(["x,y", "x,-y", "-x,y", "-x,-y"]);
+  testGroup2d(["x,y", "-y,x", "-x,-y", "y,-x"]);
+  testGroup2d(["x,y", "-y,x-y", "-x,y-x"]);
+  testGroup2d(["x,y", "x-y,x", "-y,x-y", "-x,-y", "y-x,-x", "y,y-x"]);
 
-  testGroup2d([[[ 1, 0], [0,  1]],
-               V.affineTransformation([[-1, 0], [0, -1]], [1, 0])]);
-
-  testGroup2d([[[ 1, 0], [0,  1]],
-               [[ 1, 0], [0, -1]]]);
-
-  testGroup2d([[[ 1, 0], [0,  1]],
-               [[ 1, 0], [0, -1]],
-               [[-1, 0], [0,  1]],
-               [[-1, 0], [0, -1]]]);
-
-  testGroup2d([[[ 1,  0], [ 0,  1]],
-               [[ 0, -1], [ 1,  0]],
-               [[-1,  0], [ 0, -1]],
-               [[ 0,  1], [-1,  0]]]);
-
-  testGroup2d([[[ 1,  0], [ 0,  1]],
-               [[ 0, -1], [ 1, -1]],
-               [[-1,  0], [-1,  1]]]);
-
-  testGroup2d([[[ 1,  0], [ 0,  1]],
-               [[ 1, -1], [ 1,  0]],
-               [[ 0, -1], [ 1, -1]],
-               [[-1,  0], [ 0, -1]],
-               [[-1,  1], [-1,  0]],
-               [[ 0,  1], [-1,  1]]]);
-
-  testGroup3d([[[ 1, 0, 0], [0,  1, 0], [0, 0,  1]],
-               [[-1, 0, 0], [0, -1, 0], [0, 0, -1]]]);
-
-  testGroup3d([[[1, 0, 0], [0, 1, 0], [0, 0,  1]],
-               [[1, 0, 0], [0, 1, 0], [0, 0, -1]]]);
-
-  testGroup3d([[[1, 0, 0], [0,  1, 0], [0, 0,  1]],
-               [[1, 0, 0], [0,  1, 0], [0, 0, -1]],
-               [[1, 0, 0], [0, -1, 0], [0, 0,  1]],
-               [[1, 0, 0], [0, -1, 0], [0, 0, -1]]]);
-
-  testGroup3d([[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-               [[0, 1, 0], [0, 0, 1], [1, 0, 0]],
-               [[0, 0, 1], [1, 0, 0], [0, 1, 0]]]);
-
-  testGroup3d([[[ 1,  0, 0], [ 0,  1, 0], [0, 0, 1]],
-               [[ 0, -1, 0], [ 1,  0, 0], [0, 0, 1]],
-               [[-1,  0, 0], [ 0, -1, 0], [0, 0, 1]],
-               [[ 0,  1, 0], [-1,  0, 0], [0, 0, 1]]]);
+  testGroup3d(["x,y,z", "-x,-y,-z"]);
+  testGroup3d(["x,y,z", "x,y,-z"]);
+  testGroup3d(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
+  testGroup3d(["x,y,z", "y,z,x", "z,x,y"]);
+  testGroup3d(["x,y,z", "-y,x,z", "-x,-y,z", "y,-x,z"]);
 }
