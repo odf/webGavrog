@@ -86,6 +86,14 @@ export const settingByName = (name, options = {}) => {
 };
 
 
+export function* lookupSettings(crystalSystem, centeringType) {
+  for (const { name, system, centering, fromStd } of lookup) {
+    if (system == crystalSystem && centering == centeringType)
+      yield { name, fromStd };
+  }
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';

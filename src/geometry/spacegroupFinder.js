@@ -1,6 +1,9 @@
 import { affineTransformationsQ } from './types';
 import { reducedLatticeBasis } from './lattices';
 import operator from './parseOperator';
+import * as sg from './spacegroups';
+import * as sgtable from './sgtable';
+
 const V = affineTransformationsQ;
 
 
@@ -560,6 +563,25 @@ const variations = (crystalSystem, centering) => {
     return [ "x,y", "y,-x" ].map(operator);
   else
     return [ "x,y" ].map(operator);
+};
+
+
+const matchOperators = (ops, toPrimitive, system, centering) => {
+  for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
+    const { name: cname, transform, operators } = sgtable.settingByName(name);
+    const opsToMatch = sg.primitiveSetting(operators).ops
+          .map(op => V.times(fromStd, op)).sort();
+
+    for (const M of variations(system, centering)) {
+      const probes = ops.map(op => V.times(M, op)).sort();
+
+      if (!probes.every((_, i) => V.eq(probes[i].linearPart,
+                                       opsToMatch[i].linearPart)))
+        continue;
+
+      // TODO finish the implementation
+    }
+  }
 };
 
 

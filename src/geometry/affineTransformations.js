@@ -54,6 +54,15 @@ export const extend = pointAndVectorOps => {
     V.point(V.plus(V.times(t.linear, V.vector(p)), t.shift));
 
 
+  const compare = (m1, s1, m2, s2) => {
+    const d = V.cmp(m1, m2);
+    if (d)
+      return d;
+    else
+      return V.cmp(s1, s2);
+  };
+
+
   const methods = {
     __context__: () =>
       `affineTransformations(${pointAndVectorOps.__context__()})`,
@@ -96,6 +105,20 @@ export const extend = pointAndVectorOps => {
       Matrix: {
         AffineTransformation: (M, T) =>
           make(V.times(M, T.linear), V.times(M, T.shift))
+      }
+    },
+
+    cmp: {
+      AffineTransformation: {
+        AffineTransformation: (S, T) =>
+          compare(S.linear, S.shift, T.linear, T.shift),
+
+        Matrix: (S, M) =>
+          compare(S.linear, S.shift, M, V.vector(M.length))
+      },
+      Matrix: {
+        AffineTransformation: (M, T) =>
+          compare(M, V.vector(M.length), T.linear, T.shift)
       }
     }
   };
