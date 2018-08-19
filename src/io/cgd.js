@@ -1,11 +1,11 @@
 const ops = require('../geometry/types').affineTransformationsQ;
 
 import * as pg from '../pgraphs/periodic';
-import * as sg from './sgtable';
+import * as sg from '../geometry/sgtable';
 import * as cr from './crystal';
 
 import parseBlocks from './parseCgd';
-import parseOperator from './parseOperator';
+import parseOperator from '../geometry/parseOperator';
 
 
 const translation = {

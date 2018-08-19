@@ -1,7 +1,7 @@
 import * as spacegroups from '../geometry/spacegroups';
 import * as lattices from '../geometry/lattices';
 import * as pg from '../pgraphs/periodic';
-import * as sgtable from './sgtable';
+import * as sgtable from '../geometry/sgtable';
 import * as delaney from '../dsymbols/delaney';
 import * as derived from '../dsymbols/derived';
 

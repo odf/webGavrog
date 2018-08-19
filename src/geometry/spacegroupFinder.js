@@ -1,5 +1,6 @@
 import { affineTransformationsQ } from './types';
 import { reducedLatticeBasis } from './lattices';
+import operator from './parseOperator';
 const V = affineTransformationsQ;
 
 
@@ -18,47 +19,6 @@ const CS_3D_TETRAGONAL   = "Crystal System 3d Tetragonal";
 const CS_3D_TRIGONAL     = "Crystal System 3d Trigonal";
 const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
-
-
-const operator = s => {
-  const parts = s.replace(/\s+/g, '').split(',');
-  const d = parts.length;
-
-  if (d > 3)
-    throw new Error('only up to 3 coordinates are recognized');
-
-  const M = V.matrix(d, d);
-  const v = V.vector(d);
-
-  for (let i = 0; i < d; ++i) {
-    for (const term of parts[i].split(/(?=[+-])/)) {
-      const [matched, sign, coeff, axis] =
-            term.match(/^([+-])?(\d+(?:\/\d+)?)?(?:\*?([xyz]))?$/) || [];
-
-      if (!matched)
-        throw new Error(`illegal term ${term} in coordinate ${i}`);
-
-      let val;
-      if (coeff)
-        val = V.rational(coeff);
-      else
-        val = 1;
-      if (sign == '-')
-        val = V.negative(val);
-
-      if (axis) {
-        const j = 'xyz'.indexOf(axis);
-        if (j >= d)
-          throw new Error(`no ${axis}-axis in ${d}-dimensional operator`);
-        M[i][j] = V.plus(M[i][j], val);
-      }
-      else
-        v[i] = V.plus(v[i], val);
-    }
-  }
-
-  return V.affineTransformation(M, v);
-};
 
 
 const matrixOrder = (M, max) => {
