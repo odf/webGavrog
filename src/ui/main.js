@@ -59,15 +59,6 @@ const fileSaver = () => {
 };
 
 
-const initialModel = {
-  options: {},
-  filename: null,
-  structures,
-  index: null,
-  scene: null
-};
-
-
 const title = model => {
   if (model.structures && model.index != null) {
     const fname = model.filename;
@@ -113,24 +104,6 @@ const toStructure = (config, model, i) => csp.go(function*() {
 });
 
 
-const setOptions = (model, options) => {
-  const newOptions = Object.assign({}, model.options, options);
-  return Object.assign({}, model, { options: newOptions });
-};
-
-
-const findStructureByName = (model, regexText) => {
-  const pattern = new RegExp(`\\b${regexText}\\b`, 'i');
-  return model.structures.findIndex(s => !!pattern.exec(s.name));
-};
-
-
-const currentIndex = model => model.index;
-const currentStructure = model => model.structures[model.index];
-const currentScene = model => model.scene;
-const currentOptions = model => model.options;
-
-
 const newFile = (config, model, { file, data }) => csp.go(function*() {
   try {
     const filename = file.name;
@@ -158,7 +131,7 @@ const newFile = (config, model, { file, data }) => csp.go(function*() {
 
 
 const saveStructure = (config, model) => {
-  const structure = currentStructure(model);
+  const structure = model.structures[model.index];
 
   if (structure.type == 'tiling') {
     const text = structure.symbol.toString();
@@ -197,98 +170,71 @@ const saveScreenshot = (config, model) => {
 };
 
 
-class App {
-  setStructure(i) {
-    csp.go(function*() {
-      this.model = yield toStructure(this.config, this.model, i);
-    }.bind(this));
-  }
+const render = domNode => {
+  const model = { options: {}, structures };
 
-  previousStructure() {
-    this.setStructure(currentIndex(this.model) - 1);
-  }
+  const app = MainMenu.embed(domNode, {
+    revision: version.gitRev,
+    timestamp: version.gitDate });
 
-  nextStructure() {
-    this.setStructure(currentIndex(this.model) + 1);
-  }
+  const send = key => val => app.ports.fromJS.send(
+    Object.assign({ title: null, log: null, scene: null }, { [key]: val }));
 
-  openFile() {
-    this.config.loadFile(({ file, data }) => csp.go(function*() {
-      this.model = yield newFile(this.config, this.model, { file, data });
-    }.bind(this)));
-  }
+  const config = {
+    loadFile: fileLoader(),
+    saveFile: fileSaver(),
+    log: send('log'),
+    sendTitle: send('title'),
+    sendScene: send('scene')
+  };
 
-  saveStructure() {
-    saveStructure(this.config, this.model);
-  }
+  const openFile = () => config.loadFile(
+    ({ file, data }) => csp.go(function*() {
+      Object.assign(model, yield newFile(config, model, { file, data }));
+    })
+  );
 
-  saveScreenshot() {
-    saveScreenshot(this.config, this.model);
-  }
+  const setStructure = i => csp.go(function*() {
+    Object.assign(model, yield toStructure(config, model, i));
+  });
 
-  render(domNode) {
-    const action = {
-      ['Open...']: () => this.openFile(),
-      ['Save Structure...']: () => this.saveStructure(),
-      ['Save Screenshot...']: () => this.saveScreenshot(),
-      ['First']: () => this.setStructure(0),
-      ['Prev']: () => this.previousStructure(),
-      ['Next']: () => this.nextStructure(),
-      ['Last']: () => this.setStructure(-1)
-    };
+  const action = {
+    ['Open...']: openFile,
+    ['Save Structure...']: () => saveStructure(config, model),
+    ['Save Screenshot...']: () => saveScreenshot(config, model),
+    ['First']: () => setStructure(0),
+    ['Prev']: () => setStructure(model.index - 1),
+    ['Next']: () => setStructure(model.index + 1),
+    ['Last']: () => setStructure(-1)
+  };
 
-    const handleElmData = ({ mode, text, options: data }) => {
-      if (mode == "jump") {
-        const number = parseInt(text);
-        if (!Number.isNaN(number))
-          this.setStructure(number - (number > 0));
-      }
-      else if (mode == "search") {
-        const i = text ? findStructureByName(this.model, text) : -1;
-        if (i >= 0)
-          this.setStructure(i);
-        else
-          this.config.log(`Name "${text}" not found.`);
-      }
-      else if (mode == "selected") {
-        if (action[text])
-          action[text]()
-      }
-      else if (mode == "options") {
-        const options = {};
-        for (const { key, value } of data)
-          options[key] = value;
+  app.ports.toJS.subscribe(({ mode, text, options }) => {
+    if (mode == "jump") {
+      const number = parseInt(text);
+      if (!Number.isNaN(number))
+        setStructure(number - (number > 0));
+    }
+    else if (mode == "search" && text) {
+      const pattern = new RegExp(`\\b${text}\\b`, 'i');
+      const i = model.structures.findIndex(s => !!pattern.exec(s.name));
 
-        this.model = setOptions(this.model, options);
-        this.setStructure(currentIndex(this.model));
-      }
-    };
+      if (i >= 0)
+        setStructure(i);
+      else
+        config.log(`Name "${text}" not found.`);
+    }
+    else if (mode == "selected" && action[text])
+      action[text]();
+    else if (mode == "options") {
+      for (const { key, value } of options)
+        model.options[key] = value;
 
-    const app = MainMenu.embed(domNode, {
-      revision: version.gitRev,
-      timestamp: version.gitDate });
+      setStructure(model.index);
+    }
+  });
 
-    const send = key => val => app.ports.fromJS.send(Object.assign({
-      title: null,
-      log: null,
-      scene: null
-    }, { [key]: val }));
-
-    this.config = {
-      loadFile: fileLoader(),
-      saveFile: fileSaver(),
-      log: send('log'),
-      sendTitle: send('title'),
-      sendScene: send('scene')
-    };
-
-    app.ports.toJS.subscribe(handleElmData);
-
-    this.model = initialModel;
-    this.setStructure(0);
-  }
-}
+  setStructure(0);
+};
 
 
-const app = new App();
-app.render(document.getElementById('main'));
+render(document.getElementById('main'));
