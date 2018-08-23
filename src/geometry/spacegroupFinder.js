@@ -575,17 +575,18 @@ const matchOperators = (ops, toPrimitive, system, centering) => {
     for (const M of variations(system, centering)) {
       const probes = ops.map(op => V.times(M, op)).sort();
 
-      if (!probes.every((_, i) => V.eq(probes[i].linearPart,
-                                       opsToMatch[i].linearPart)))
-        continue;
+      if (probes.some((_, i) => V.eq(probes[i].linearPart,
+                                     opsToMatch[i].linearPart)))
+        throw new RuntimeError("linear parts should be equal here");
 
-      // TODO finish the implementation
     }
   }
 };
 
 
 if (require.main == module) {
+  const {serialize} = require('../common/pickler');
+
   const testOp = op => {
     const A = operator(op);
 
@@ -640,4 +641,13 @@ if (require.main == module) {
   testGroup3d(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
   testGroup3d(["x,y,z", "y,z,x", "z,x,y"]);
   testGroup3d(["x,y,z", "-y,x,z", "-x,-y,z", "y,-x,z"]);
+
+  const ops = ["1-x,-y", "x,y", "2-x,-y", "x,2y", "1-2x,-y"];
+
+  console.log("Operator sorting - before:");
+  console.log(ops.map(operator).map(serialize));
+  console.log();
+
+  console.log("Operator sorting - after:");
+  console.log(ops.map(operator).sort().map(serialize));
 }
