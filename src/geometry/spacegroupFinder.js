@@ -569,16 +569,35 @@ const variations = (crystalSystem, centering) => {
 const matchOperators = (ops, toPrimitive, system, centering) => {
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
     const { name: cname, transform, operators } = sgtable.settingByName(name);
-    const opsToMatch = sg.primitiveSetting(operators).ops
-          .map(op => V.times(fromStd, op)).sort();
+    const primitive = sg.primitiveSetting(operators);
+    const opsToMatch = primitive.ops.map(op => V.times(fromStd, op)).sort();
+    const I = V.identityMatrix(V.dimension(ops[0]));
 
     for (const M of variations(system, centering)) {
       const probes = ops.map(op => V.times(M, op)).sort();
 
-      if (probes.some((_, i) => V.eq(probes[i].linearPart,
-                                     opsToMatch[i].linearPart)))
+      if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
+                                     V.linearPart(opsToMatch[i]))))
         throw new RuntimeError("linear parts should be equal here");
 
+      const As = [], bs = [];
+      for (let i = 0; i < probes.length; ++i) {
+        As.push(V.minus(V.linearPart(probes[i]), I));
+        bs.push(V.minus(V.shift(opsToMatch[i])), V.shift(probes[i]));
+      }
+
+      const A = [].concat(...As);
+      const b = [].concat(...bs);
+      const s = V.solve(A, V.transposed(b));
+
+      if (s) {
+        const origin = V.times(primitive.fromStd, V.transposed(s));
+        const T = V.affineTransformation(I, origin);
+        return {
+          name,
+          transform: V.times(V.times(M, T), V.inverse(fromStd))
+        };
+      }
     }
   }
 };
