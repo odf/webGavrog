@@ -522,14 +522,15 @@ basisNormalizer[CS_3D_TRICLINIC] = b => ({ basis: b, centering: 'P' });
 
 const normalizedBasis = (crystalSystem, basis) => {
   const reduced = reducedLatticeBasis(basis);
-  const normalized = basisNormalizer[crystalSystem](reduced);
+  const { basis: normalized, centering } =
+        basisNormalizer[crystalSystem](reduced);
 
   if (V.le(V.determinant(normalized), 0)) {
     const n = normalized.length;
     normalized[n - 1] = V.negative(normalized[n - 1]);
   }
 
-  return normalized;
+  return { normalized, centering };
 };
 
 
@@ -608,6 +609,9 @@ const matchOperators = (ops, toPrimitive, system, centering) => {
 };
 
 
+const abs = v => V.sgn(v) < 0 ? V.negative(v) : v;
+
+
 export const identifySpacegroup = ops => {
   const dim = V.dimensions(ops[0] || []);
 
@@ -630,6 +634,37 @@ export const identifySpacegroup = ops => {
   else {
     const { crystalSystem, basis: preliminaryBasis } =
           dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
+    const toPreliminary =
+          V.coordinateChange(V.inverse(V.transposed(preliminaryBasis)));
+
+    const primitive = sg.primitiveSetting(ops);
+    const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
+    const { normalized, centering } = normalizedBasis(pCell);
+    const pre2Normal = V.coordinateChange(V.inverse(V.transposed(normalized)));
+    const toNormalized = V.times(pre2Normal, toPreliminary);
+
+    const prim2normal = V.times(toNormalized, V.inverse(primitive.fromStd));
+    const pCellNormal = primitiveCell.map(v => abs(V.times(pre2Normal, v)));
+    pCellNormal.sort();
+
+    const { name, toStd } = matchOperators(
+      primitive.ops.map(op => sg.opModZ(V.times(prim2normal, op))),
+      V.coordinateChange(V.inverse(V.transposed(pCellNormal))),
+      crystalSystem,
+      centering
+    ) || {};
+
+    if (name) {
+      const [groupName, extension] = name.split(':');
+
+      return {
+        crystalSystem,
+        centering,
+        groupName,
+        extension,
+        toStd: V.times(toStd, toNormalized)
+      }
+    }
   }
 };
 
