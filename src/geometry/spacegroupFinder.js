@@ -573,6 +573,9 @@ const matchOperators = (ops, toPrimitive, system, centering) => {
     const opsToMatch = primitive.ops.map(op => V.times(fromStd, op)).sort();
     const I = V.identityMatrix(V.dimension(ops[0]));
 
+    if (opsToMatch.length != ops.length)
+      throw new RuntimeError("operator lists should have equal lengths here");
+
     for (const M of variations(system, centering)) {
       const probes = ops.map(op => V.times(M, op)).sort();
 
@@ -582,8 +585,10 @@ const matchOperators = (ops, toPrimitive, system, centering) => {
 
       const As = [], bs = [];
       for (let i = 0; i < probes.length; ++i) {
-        As.push(V.minus(V.linearPart(probes[i]), I));
-        bs.push(V.minus(V.shift(opsToMatch[i])), V.shift(probes[i]));
+        const op1 = V.times(toPrimitive, probes[i]);
+        const op2 = V.times(toPrimitive, opsToMatch[i]);
+        As.push(V.minus(V.linearPart(op1), I));
+        bs.push(V.minus(V.shift(op2), V.shift(op1)));
       }
 
       const A = [].concat(...As);
@@ -591,14 +596,40 @@ const matchOperators = (ops, toPrimitive, system, centering) => {
       const s = V.solve(A, V.transposed(b));
 
       if (s) {
-        const origin = V.times(primitive.fromStd, V.transposed(s));
+        const origin = V.times(V.inverse(toPrimitive), V.transposed(s));
         const T = V.affineTransformation(I, origin);
         return {
           name,
-          transform: V.times(V.times(M, T), V.inverse(fromStd))
+          toStd: V.times(V.inverse(fromStd), V.times(T, M))
         };
       }
     }
+  }
+};
+
+
+export const identifySpacegroup = ops => {
+  const dim = V.dimensions(ops[0] || []);
+
+  if (dim == 0) {
+    return { crystalSystem: CS_0D };
+  }
+  else if (dim == 1) {
+    const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
+    const mirrors = opsWithTypes.filter(op => !op.direct);
+
+    return {
+      crystalSystem: CS_1D,
+      groupName: mirrors.length ? 'opm' : 'op1',
+      toStd: V.identityMatrix(1)
+    };
+  }
+  else if (dim > 3) {
+    throw new RuntimeError("only implemented for dimensions up to 3");
+  }
+  else {
+    const { crystalSystem, basis: preliminaryBasis } =
+          dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
   }
 };
 
@@ -660,13 +691,4 @@ if (require.main == module) {
   testGroup3d(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
   testGroup3d(["x,y,z", "y,z,x", "z,x,y"]);
   testGroup3d(["x,y,z", "-y,x,z", "-x,-y,z", "y,-x,z"]);
-
-  const ops = ["1-x,-y", "x,y", "2-x,-y", "x,2y", "1-2x,-y"];
-
-  console.log("Operator sorting - before:");
-  console.log(ops.map(operator).map(serialize));
-  console.log();
-
-  console.log("Operator sorting - after:");
-  console.log(ops.map(operator).sort().map(serialize));
 }
