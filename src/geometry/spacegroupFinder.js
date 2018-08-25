@@ -25,6 +25,21 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
+const mappedCrystalSystem = {
+  [CS_2D_OBLIQUE     ]: 'oblique',
+  [CS_2D_RECTANGULAR ]: 'rectangular',
+  [CS_2D_SQUARE      ]: 'square',
+  [CS_2D_HEXAGONAL   ]: 'hexagonal',
+  [CS_3D_CUBIC       ]: 'cubic',
+  [CS_3D_ORTHORHOMBIC]: 'orthorhombic',
+  [CS_3D_HEXAGONAL   ]: 'hexagonal',
+  [CS_3D_TETRAGONAL  ]: 'tetragonal',
+  [CS_3D_TRIGONAL    ]: 'trigonal',
+  [CS_3D_MONOCLINIC  ]: 'monoclinic',
+  [CS_3D_TRICLINIC   ]: 'triclinic'
+};
+
+
 const matrixOrder = (M, max) => {
   const I = V.identityMatrix(V.dimension(M));
   let A = M;
@@ -568,29 +583,34 @@ const variations = (crystalSystem, centering) => {
 };
 
 
-const matchOperators = (ops, toPrimitive, system, centering) => {
+const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
+  const system = mappedCrystalSystem[crystalSystem];
+
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
-    const { name: cname, transform, operators } = sgtable.settingByName(name);
+    console.log(`    ..lookup: name = ${name}`);
+    console.log(`    ..fromStd = ${serialize(fromStd)}`);
+
+    const { operators } = sgtable.settingByName(name);
     const primitive = sg.primitiveSetting(operators);
     const opsToMatch = primitive.ops.map(op => V.times(fromStd, op)).sort();
     const I = V.identityMatrix(V.dimension(ops[0]));
 
     if (opsToMatch.length != ops.length)
-      throw new RuntimeError("operator lists should have equal lengths here");
+      continue;
 
     for (const M of variations(system, centering)) {
       const probes = ops.map(op => V.times(M, op)).sort();
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
                                      V.linearPart(opsToMatch[i]))))
-        throw new RuntimeError("linear parts should be equal here");
+        throw new Error("linear parts should be equal here");
 
       const As = [], bs = [];
       for (let i = 0; i < probes.length; ++i) {
         const op1 = V.times(toPrimitive, probes[i]);
         const op2 = V.times(toPrimitive, opsToMatch[i]);
         As.push(V.minus(V.linearPart(op1), I));
-        bs.push(V.minus(V.shift(op2), V.shift(op1)));
+        bs.push(V.minus(V.shiftPart(op2), V.shiftPart(op1)));
       }
 
       const A = [].concat(...As);
@@ -598,7 +618,7 @@ const matchOperators = (ops, toPrimitive, system, centering) => {
       const s = V.solve(A, V.transposed(b));
 
       if (s) {
-        const origin = V.times(V.inverse(toPrimitive), V.transposed(s));
+        const origin = V.times(V.inverse(toPrimitive), V.transposed(s)[0]);
         const T = V.affineTransformation(I, origin);
         return {
           name,
@@ -630,7 +650,7 @@ export const identifySpacegroup = ops => {
     };
   }
   else if (dim > 3) {
-    throw new RuntimeError("only implemented for dimensions up to 3");
+    throw new Error("only implemented for dimensions up to 3");
   }
   else {
     const analyze =
@@ -684,7 +704,7 @@ export const identifySpacegroup = ops => {
         centering,
         groupName,
         extension,
-        toStd: V.times(toStd, toNormalized)
+        toStd: V.times(V.coordinateChange(toStd), toNormalized)
       }
     }
   }
@@ -707,7 +727,7 @@ if (require.main == module) {
         console.log(`  toStd        : ${result.toStd}`);
       }
     } catch(ex) {
-      console.log(`  Error!`);
+      console.log(ex);
     }
     console.log();
   };
