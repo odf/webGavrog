@@ -1,10 +1,11 @@
-import { affineTransformationsQ } from './types';
+import { serialize } from '../common/pickler';
+import { coordinateChangesQ } from './types';
 import { reducedLatticeBasis } from './lattices';
 import operator from './parseOperator';
 import * as sg from './spacegroups';
 import * as sgtable from './sgtable';
 
-const V = affineTransformationsQ;
+const V = coordinateChangesQ;
 
 
 const CS_0D              = "Crystal System 0d";
@@ -613,7 +614,7 @@ const abs = v => V.sgn(v) < 0 ? V.negative(v) : v;
 
 
 export const identifySpacegroup = ops => {
-  const dim = V.dimensions(ops[0] || []);
+  const dim = V.dimension(ops[0] || []);
 
   if (dim == 0) {
     return { crystalSystem: CS_0D };
@@ -632,27 +633,48 @@ export const identifySpacegroup = ops => {
     throw new RuntimeError("only implemented for dimensions up to 3");
   }
   else {
-    const { crystalSystem, basis: preliminaryBasis } =
+    const analyze =
           dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
-    const toPreliminary =
-          V.coordinateChange(V.inverse(V.transposed(preliminaryBasis)));
+    const { crystalSystem, basis } = analyze(ops);
+    console.log(`  ..crystalSystem = ${crystalSystem}`);
+    console.log(`  ..basis = ${serialize(basis)}`);
+
+    const toPreliminary = V.coordinateChange(V.inverse(V.transposed(basis)));
+    console.log(`  ..toPreliminary = ${serialize(toPreliminary)}`);
 
     const primitive = sg.primitiveSetting(ops);
+    console.log(`  ..primitive = ${serialize(primitive)}`);
+
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
-    const { normalized, centering } = normalizedBasis(pCell);
+    console.log(`  ..pCell = ${serialize(pCell)}`);
+
+    const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
+    console.log(`  ..normalized = ${serialize(normalized)}`);
+    console.log(`  ..centering = ${centering}`);
+
     const pre2Normal = V.coordinateChange(V.inverse(V.transposed(normalized)));
+    console.log(`  ..pre2Normal = ${serialize(pre2Normal)}`);
+
     const toNormalized = V.times(pre2Normal, toPreliminary);
+    console.log(`  ..toNormalized = ${serialize(toNormalized)}`);
 
     const prim2normal = V.times(toNormalized, V.inverse(primitive.fromStd));
-    const pCellNormal = primitiveCell.map(v => abs(V.times(pre2Normal, v)));
-    pCellNormal.sort();
+    console.log(`  ..prim2normal = ${serialize(prim2normal)}`);
 
-    const { name, toStd } = matchOperators(
-      primitive.ops.map(op => sg.opModZ(V.times(prim2normal, op))),
-      V.coordinateChange(V.inverse(V.transposed(pCellNormal))),
-      crystalSystem,
-      centering
-    ) || {};
+    const pCellNormal = pCell.map(v => abs(V.times(pre2Normal, v)));
+    pCellNormal.sort().reverse();
+    console.log(`  ..pCellNormal = ${serialize(pCellNormal)}`);
+
+    const pOps = primitive.ops.map(op => sg.opModZ(V.times(prim2normal, op)));
+    console.log(`  ..pOps = ${serialize(pOps)}`);
+
+    const toPNormal = V.coordinateChange(V.inverse(V.transposed(pCellNormal)));
+    console.log(`  ..toPNormal = ${serialize(toPNormal)}`);
+
+    const { name, toStd } =
+          matchOperators(pOps, toPNormal, crystalSystem, centering ) || {};
+    console.log(`  ..name = ${name}`);
+    console.log(`  ..toStd = ${serialize(toStd)}`);
 
     if (name) {
       const [groupName, extension] = name.split(':');
@@ -670,60 +692,37 @@ export const identifySpacegroup = ops => {
 
 
 if (require.main == module) {
-  const {serialize} = require('../common/pickler');
-
-  const testOp = op => {
-    const A = operator(op);
-
-    console.log(`op = ${op}`);
-    console.log(`  axis     : ${JSON.stringify(operatorAxis(A))}`);
-
-    const { dimension, order, direct, clockwise } = operatorType(A);
-    console.log(`  dimension: ${dimension}`);
-    console.log(`  order    : ${order}`);
-    console.log(`  direct   : ${direct}`);
-    console.log(`  clockwise: ${clockwise}`);
-    console.log();
-  };
-
-  const testGroup2d = ops => {
+  const testGroup = ops => {
     console.log(`ops = ${JSON.stringify(ops)}`);
-    const { crystalSystem, basis } = crystalSystemAndBasis2d(ops.map(operator));
-    console.log(`  ${crystalSystem}`);
-    console.log(`  basis: ${ JSON.stringify(basis) }`);
+    try {
+      const result = identifySpacegroup(ops.map(operator));
+
+      if (result == null)
+        console.log(`  null`);
+      else {
+        console.log(`  crystalSystem: ${result.crystalSystem}`);
+        console.log(`  centering    : ${result.centering}`);
+        console.log(`  groupName    : ${result.groupName}`);
+        console.log(`  extension    : ${result.extension}`);
+        console.log(`  toStd        : ${result.toStd}`);
+      }
+    } catch(ex) {
+      console.log(`  Error!`);
+    }
     console.log();
   };
 
-  const testGroup3d = ops => {
-    console.log(`ops = ${JSON.stringify(ops)}`);
-    const { crystalSystem, basis } = crystalSystemAndBasis3d(ops.map(operator));
-    console.log(`  ${crystalSystem}`);
-    console.log(`  basis: ${ JSON.stringify(basis) }`);
-    console.log();
-  };
+  testGroup(["x+1,y"]);
+  testGroup(["x,y", "1-x,-y"]);
+  testGroup(["x,y", "x,-y"]);
+  testGroup(["x,y", "x,-y", "-x,y", "-x,-y"]);
+  testGroup(["x,y", "-y,x", "-x,-y", "y,-x"]);
+  testGroup(["x,y", "-y,x-y", "-x,y-x"]);
+  testGroup(["x,y", "x-y,x", "-y,x-y", "-x,-y", "y-x,-x", "y,y-x"]);
 
-  testOp("x,y");
-  testOp("x,-y");
-  testOp("-y,x");
-  testOp("y,-x");
-  testOp("x,y,z");
-  testOp("-x,-y,-z");
-  testOp("z,x,y");
-  testOp("y,z,x");
-  testOp("-z,-x,-y");
-  testOp("-y,-z,-x");
-
-  testGroup2d(["x+1,y"]);
-  testGroup2d(["x,y", "1-x,-y"]);
-  testGroup2d(["x,y", "x,-y"]);
-  testGroup2d(["x,y", "x,-y", "-x,y", "-x,-y"]);
-  testGroup2d(["x,y", "-y,x", "-x,-y", "y,-x"]);
-  testGroup2d(["x,y", "-y,x-y", "-x,y-x"]);
-  testGroup2d(["x,y", "x-y,x", "-y,x-y", "-x,-y", "y-x,-x", "y,y-x"]);
-
-  testGroup3d(["x,y,z", "-x,-y,-z"]);
-  testGroup3d(["x,y,z", "x,y,-z"]);
-  testGroup3d(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
-  testGroup3d(["x,y,z", "y,z,x", "z,x,y"]);
-  testGroup3d(["x,y,z", "-y,x,z", "-x,-y,z", "y,-x,z"]);
+  testGroup(["x,y,z", "-x,-y,-z"]);
+  testGroup(["x,y,z", "x,y,-z"]);
+  testGroup(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
+  testGroup(["x,y,z", "y,z,x", "z,x,y"]);
+  testGroup(["x,y,z", "-y,x,z", "-x,-y,z", "y,-x,z"]);
 }

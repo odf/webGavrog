@@ -42,7 +42,9 @@ export const extend = transformationOps => {
         Point : (C, p) => V.times(C.oldToNew, p),
         Vector: (C, v) => V.times(C.oldToNew, v),
         Matrix: applyToOp,
-        AffineTransformation: applyToOp
+        AffineTransformation: applyToOp,
+        CoordinateChange: (C, D) => new CoordinateChange(
+          V.times(C.oldToNew, D.oldToNew), V.times(D.newToOld, C.newToOld))
       }
     }
   };
