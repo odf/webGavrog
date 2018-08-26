@@ -1,11 +1,12 @@
 import { serialize } from '../common/pickler';
 import { coordinateChangesQ } from './types';
-import { reducedLatticeBasis } from './lattices';
+import { lattices } from './lattices';
 import operator from './parseOperator';
 import * as sg from './spacegroups';
 import * as sgtable from './sgtable';
 
 const V = coordinateChangesQ;
+const { reducedLatticeBasis } = lattices(V);
 
 
 const CS_0D              = "Crystal System 0d";
@@ -472,7 +473,7 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
       centering = 'A';
     }
     else {
-      if (!V.ne(0, v[1][1])) {
+      if (V.ne(0, v[1][1])) {
         b = v[1][1];
         c = v[2][2];
       }
@@ -480,8 +481,8 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
         b = v[2][1];
         c = v[1][2];
       }
+      centering = 'P';
     }
-    centering = 'P';
   }
 
   if (centering == 'A')
@@ -538,6 +539,7 @@ basisNormalizer[CS_3D_TRICLINIC] = b => ({ basis: b, centering: 'P' });
 
 const normalizedBasis = (crystalSystem, basis) => {
   const reduced = reducedLatticeBasis(basis);
+  console.log(`    ..reduced = ${serialize(reduced)}`);
   const { basis: normalized, centering } =
         basisNormalizer[crystalSystem](reduced);
 
@@ -574,7 +576,8 @@ const variations = (crystalSystem, centering) => {
   else if (crystalSystem == CS_3D_CUBIC)
     return [ "x,y,z", "-y,x,z" ].map(operator);
   else if (crystalSystem == CS_3D_HEXAGONAL ||
-           crystalSystem == CS_3D_TETRAGONAL)
+           crystalSystem == CS_3D_TETRAGONAL ||
+           crystalSystem == CS_3D_TRICLINIC)
     return [ "x,y,z" ].map(operator);
   else if (crystalSystem == CS_2D_RECTANGULAR)
     return [ "x,y", "y,-x" ].map(operator);
@@ -598,7 +601,8 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
     if (opsToMatch.length != ops.length)
       continue;
 
-    for (const M of variations(system, centering)) {
+    for (const M of variations(crystalSystem, centering)) {
+      console.log(`      ..M = ${serialize(M)}`);
       const probes = ops.map(op => V.times(M, op)).sort();
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
@@ -660,30 +664,18 @@ export const identifySpacegroup = ops => {
     console.log(`  ..basis = ${serialize(basis)}`);
 
     const toPreliminary = V.coordinateChange(V.inverse(V.transposed(basis)));
-    console.log(`  ..toPreliminary = ${serialize(toPreliminary)}`);
-
     const primitive = sg.primitiveSetting(ops);
-    console.log(`  ..primitive = ${serialize(primitive)}`);
 
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
-    console.log(`  ..pCell = ${serialize(pCell)}`);
-
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
     console.log(`  ..normalized = ${serialize(normalized)}`);
     console.log(`  ..centering = ${centering}`);
 
     const pre2Normal = V.coordinateChange(V.inverse(V.transposed(normalized)));
-    console.log(`  ..pre2Normal = ${serialize(pre2Normal)}`);
-
     const toNormalized = V.times(pre2Normal, toPreliminary);
-    console.log(`  ..toNormalized = ${serialize(toNormalized)}`);
-
     const prim2normal = V.times(toNormalized, V.inverse(primitive.fromStd));
-    console.log(`  ..prim2normal = ${serialize(prim2normal)}`);
-
     const pCellNormal = pCell.map(v => abs(V.times(pre2Normal, v)));
     pCellNormal.sort().reverse();
-    console.log(`  ..pCellNormal = ${serialize(pCellNormal)}`);
 
     const pOps = primitive.ops.map(op => sg.opModZ(V.times(prim2normal, op)));
     console.log(`  ..pOps = ${serialize(pOps)}`);
