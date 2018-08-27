@@ -586,16 +586,20 @@ const variations = (crystalSystem, centering) => {
 };
 
 
+const cmpAffine = (S, T) => V.cmp(S, T);
+
+
 const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   const system = mappedCrystalSystem[crystalSystem];
 
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
-    console.log(`    ..lookup: name = ${name}`);
-    console.log(`    ..fromStd = ${serialize(fromStd)}`);
+    console.log(
+      `    ..lookup: name = ${name}, fromStd = ${serialize(fromStd)}`);
 
     const { operators } = sgtable.settingByName(name);
     const primitive = sg.primitiveSetting(operators);
-    const opsToMatch = primitive.ops.map(op => V.times(fromStd, op)).sort();
+    const opsToMatch = primitive.ops.map(op => V.times(fromStd, op));
+    opsToMatch.sort(cmpAffine);
     const I = V.identityMatrix(V.dimension(ops[0]));
 
     if (opsToMatch.length != ops.length)
@@ -603,11 +607,17 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
     for (const M of variations(crystalSystem, centering)) {
       console.log(`      ..M = ${serialize(M)}`);
-      const probes = ops.map(op => V.times(M, op)).sort();
+      const probes = ops.map(op => V.times(M, op));
+      probes.sort(cmpAffine);
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
                                      V.linearPart(opsToMatch[i]))))
-        throw new Error("linear parts should be equal here");
+      {
+        console.log(`      ..probes=${serialize(probes)}`);
+        console.log(`      ..opsToMatch=${serialize(opsToMatch)}`);
+        //throw new Error("linear parts should be equal here");
+        continue;
+      }
 
       const As = [], bs = [];
       for (let i = 0; i < probes.length; ++i) {
