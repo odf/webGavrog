@@ -1,4 +1,3 @@
-import { serialize } from '../common/pickler';
 import { coordinateChangesQ } from './types';
 import { lattices } from './lattices';
 import operator from './parseOperator';
@@ -6,7 +5,7 @@ import * as sg from './spacegroups';
 import * as sgtable from './sgtable';
 
 const V = coordinateChangesQ;
-const { reducedLatticeBasis } = lattices(V);
+const { dirichletVectors, reducedLatticeBasis } = lattices(V);
 
 
 const CS_0D              = "Crystal System 0d";
@@ -661,19 +660,20 @@ export const identifySpacegroup = ops => {
     throw new Error("only implemented for dimensions up to 3");
   }
   else {
-    console.log(`  ..ops = ${serialize(ops)}`);
+    console.log(`  ..ops = ${ops}`);
     const analyze =
           dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
     const { crystalSystem, basis } = analyze(ops);
     console.log(`  ..crystalSystem = ${crystalSystem}`);
-    console.log(`  ..basis = ${serialize(basis)}`);
+    console.log(`  ..basis = ${basis}`);
 
     const toPreliminary = changeToBasis(basis);
     const primitive = sg.primitiveSetting(ops);
 
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
+    console.log(`  ..pCell = ${pCell}`);
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
-    console.log(`  ..normalized = ${serialize(normalized)}`);
+    console.log(`  ..normalized = ${normalized}`);
     console.log(`  ..centering = ${centering}`);
 
     const pre2Normal = changeToBasis(normalized);
@@ -704,6 +704,10 @@ export const identifySpacegroup = ops => {
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
   const testGroup = ops => {
     console.log(`ops = ${JSON.stringify(ops)}`);
     try {
@@ -716,7 +720,7 @@ if (require.main == module) {
         console.log(`  centering    : ${result.centering}`);
         console.log(`  groupName    : ${result.groupName}`);
         console.log(`  extension    : ${result.extension}`);
-        console.log(`  toStd        : ${serialize(result.toStd)}`);
+        console.log(`  toStd        : ${result.toStd}`);
       }
     } catch(ex) {
       console.log(ex);
@@ -736,6 +740,6 @@ if (require.main == module) {
   testGroup(["x,y,z", "-x,-y,-z"]);
   testGroup(["x,y,z", "x,y,-z"]);
   testGroup(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
-  testGroup(["x,y,z", "y,z,x", "z,x,y"]);
   testGroup(["x,y,z", "-y,x,z", "-x,-y,z", "y,-x,z"]);
+  testGroup(["x,y,z", "y,z,x", "z,x,y"]);
 }
