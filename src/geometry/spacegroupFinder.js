@@ -539,7 +539,6 @@ basisNormalizer[CS_3D_TRICLINIC] = b => ({ basis: b, centering: 'P' });
 
 const normalizedBasis = (crystalSystem, basis) => {
   const reduced = reducedLatticeBasis(basis);
-  console.log(`    ..reduced = ${serialize(reduced)}`);
   const { basis: normalized, centering } =
         basisNormalizer[crystalSystem](reduced);
 
@@ -593,9 +592,6 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   const system = mappedCrystalSystem[crystalSystem];
 
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
-    console.log(
-      `    ..lookup: name = ${name}, fromStd = ${serialize(fromStd)}`);
-
     const { operators } = sgtable.settingByName(name);
     const primitive = sg.primitiveSetting(operators);
     const opsToMatch = primitive.ops.map(op => V.times(fromStd, op));
@@ -606,18 +602,12 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
       continue;
 
     for (const M of variations(crystalSystem, centering)) {
-      console.log(`      ..M = ${serialize(M)}`);
       const probes = ops.map(op => V.times(M, op));
       probes.sort(cmpAffine);
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
                                      V.linearPart(opsToMatch[i]))))
-      {
-        console.log(`      ..probes=${serialize(probes)}`);
-        console.log(`      ..opsToMatch=${serialize(opsToMatch)}`);
-        //throw new Error("linear parts should be equal here");
         continue;
-      }
 
       const As = [], bs = [];
       for (let i = 0; i < probes.length; ++i) {
@@ -647,6 +637,10 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 const abs = v => V.sgn(v) < 0 ? V.negative(v) : v;
 
 
+const changeToBasis = basis =>
+      V.coordinateChange(V.inverse(V.transposed(basis)));
+
+
 export const identifySpacegroup = ops => {
   const dim = V.dimension(ops[0] || []);
 
@@ -667,13 +661,14 @@ export const identifySpacegroup = ops => {
     throw new Error("only implemented for dimensions up to 3");
   }
   else {
+    console.log(`  ..ops = ${serialize(ops)}`);
     const analyze =
           dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
     const { crystalSystem, basis } = analyze(ops);
     console.log(`  ..crystalSystem = ${crystalSystem}`);
     console.log(`  ..basis = ${serialize(basis)}`);
 
-    const toPreliminary = V.coordinateChange(V.inverse(V.transposed(basis)));
+    const toPreliminary = changeToBasis(basis);
     const primitive = sg.primitiveSetting(ops);
 
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
@@ -681,22 +676,17 @@ export const identifySpacegroup = ops => {
     console.log(`  ..normalized = ${serialize(normalized)}`);
     console.log(`  ..centering = ${centering}`);
 
-    const pre2Normal = V.coordinateChange(V.inverse(V.transposed(normalized)));
+    const pre2Normal = changeToBasis(normalized);
     const toNormalized = V.times(pre2Normal, toPreliminary);
     const prim2normal = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pCellNormal = pCell.map(v => abs(V.times(pre2Normal, v)));
     pCellNormal.sort().reverse();
 
     const pOps = primitive.ops.map(op => sg.opModZ(V.times(prim2normal, op)));
-    console.log(`  ..pOps = ${serialize(pOps)}`);
-
-    const toPNormal = V.coordinateChange(V.inverse(V.transposed(pCellNormal)));
-    console.log(`  ..toPNormal = ${serialize(toPNormal)}`);
+    const toPNormal = changeToBasis(pCellNormal);
 
     const { name, toStd } =
           matchOperators(pOps, toPNormal, crystalSystem, centering ) || {};
-    console.log(`  ..name = ${name}`);
-    console.log(`  ..toStd = ${serialize(toStd)}`);
 
     if (name) {
       const [groupName, extension] = name.split(':');
@@ -726,7 +716,7 @@ if (require.main == module) {
         console.log(`  centering    : ${result.centering}`);
         console.log(`  groupName    : ${result.groupName}`);
         console.log(`  extension    : ${result.extension}`);
-        console.log(`  toStd        : ${result.toStd}`);
+        console.log(`  toStd        : ${serialize(result.toStd)}`);
       }
     } catch(ex) {
       console.log(ex);
@@ -739,9 +729,10 @@ if (require.main == module) {
   testGroup(["x,y", "x,-y"]);
   testGroup(["x,y", "x,-y", "-x,y", "-x,-y"]);
   testGroup(["x,y", "-y,x", "-x,-y", "y,-x"]);
-  testGroup(["x,y", "-y,x-y", "-x,y-x"]);
+  testGroup(["x,y", "-y,x-y", "y-x,-x"]);
   testGroup(["x,y", "x-y,x", "-y,x-y", "-x,-y", "y-x,-x", "y,y-x"]);
 
+  testGroup(["x,y,z"]);
   testGroup(["x,y,z", "-x,-y,-z"]);
   testGroup(["x,y,z", "x,y,-z"]);
   testGroup(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
