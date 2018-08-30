@@ -593,7 +593,8 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
     const { operators } = sgtable.settingByName(name);
     const primitive = sg.primitiveSetting(operators);
-    const opsToMatch = primitive.ops.map(op => V.times(fromStd, op));
+    const transform = V.times(fromStd, V.inverse(primitive.fromStd));
+    const opsToMatch = primitive.ops.map(op => V.times(transform, op));
     opsToMatch.sort(cmpAffine);
     const I = V.identityMatrix(V.dimension(ops[0]));
 
