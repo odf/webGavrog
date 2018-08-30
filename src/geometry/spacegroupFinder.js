@@ -661,21 +661,15 @@ export const identifySpacegroup = ops => {
     throw new Error("only implemented for dimensions up to 3");
   }
   else {
-    console.log(`  ..ops = ${ops}`);
     const analyze =
           dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
     const { crystalSystem, basis } = analyze(ops);
-    console.log(`  ..crystalSystem = ${crystalSystem}`);
-    console.log(`  ..basis = ${basis}`);
 
     const toPreliminary = changeToBasis(basis);
     const primitive = sg.primitiveSetting(ops);
 
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
-    console.log(`  ..pCell = ${pCell}`);
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
-    console.log(`  ..normalized = ${normalized}`);
-    console.log(`  ..centering = ${centering}`);
 
     const pre2Normal = changeToBasis(normalized);
     const toNormalized = V.times(pre2Normal, toPreliminary);
