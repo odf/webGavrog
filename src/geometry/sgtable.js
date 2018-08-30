@@ -1,5 +1,8 @@
+import { coordinateChangesQ } from './types';
 import parseOperator from './parseOperator';
 import spaceGroupData from '../data/sgtable';
+
+const V = coordinateChangesQ;
 
 
 const parseSpaceGroupData = data => {
@@ -26,13 +29,15 @@ const parseSpaceGroupData = data => {
           name: fields[1],
           system: fields[2],
           centering: fields[3],
-          fromStd: parseOperator(fields.slice(4).join(''))
+          fromStd: V.coordinateChange(
+            parseOperator(fields.slice(4).join('')))
         });
       }
       else {
         currentName = fields[0];
         table[currentName] = {
-          transform: parseOperator(fields.slice(1).join('')),
+          transform: V.coordinateChange(
+            parseOperator(fields.slice(1).join(''))),
           operators: []
         };
       }
