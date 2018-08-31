@@ -645,13 +645,17 @@ export const identifySpacegroup = ops => {
   const dim = V.dimension(ops[0] || []);
 
   if (dim == 0) {
-    return { crystalSystem: CS_0D };
+    return {
+      dimension: 0,
+      crystalSystem: CS_0D
+    };
   }
   else if (dim == 1) {
     const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
     const mirrors = opsWithTypes.filter(op => !op.direct);
 
     return {
+      dimension: 1,
       crystalSystem: CS_1D,
       groupName: mirrors.length ? 'opm' : 'op1',
       toStd: V.identityMatrix(1)
@@ -687,6 +691,7 @@ export const identifySpacegroup = ops => {
       const [groupName, extension] = name.split(':');
 
       return {
+        dimension: dim,
         crystalSystem,
         centering,
         groupName,
