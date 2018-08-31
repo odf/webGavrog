@@ -506,11 +506,11 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
 
   if (vectorsOrthogonal(z, v[1]))
     v = [V.times(-1, v[1]), v[0], v[2]];
-  else
+  if (vectorsOrthogonal(z, v[2]))
     v = [v[2], v[0], v[1]];
 
   if (!vectorsOrthogonal(z, v[0]))
-      v[0] = V.times(operator("x,y,0"), V.plus(v[0], v[1]));
+    v[0] = V.times(operator("x,y,0"), V.plus(v[0], v[1]));
 
   if (!vectorsCollinear(z, v[2])) {
     if (vectorsOrthogonal(z, v[1])) {
@@ -667,21 +667,24 @@ export const identifySpacegroup = ops => {
   else {
     const analyze =
           dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
-    const { crystalSystem, basis } = analyze(ops);
+    const primitive = sg.primitiveSetting(ops);
+    const primToStd = V.inverse(primitive.fromStd);
+    const primOps = primitive.ops.map(op => V.times(primToStd, op));
+
+    const { crystalSystem, basis } = analyze(primOps);
 
     const toPreliminary = changeToBasis(basis);
-    const primitive = sg.primitiveSetting(ops);
 
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
+
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
 
     const pre2Normal = changeToBasis(normalized);
     const toNormalized = V.times(pre2Normal, toPreliminary);
-    const prim2normal = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pCellNormal = pCell.map(v => abs(V.times(pre2Normal, v)));
     pCellNormal.sort().reverse();
 
-    const pOps = primitive.ops.map(op => sg.opModZ(V.times(prim2normal, op)));
+    const pOps = primOps.map(op => sg.opModZ(V.times(toNormalized, op)));
     const toPNormal = changeToBasis(pCellNormal);
 
     const { name, toStd } =
@@ -730,6 +733,8 @@ if (require.main == module) {
     }
     console.log();
   };
+
+  testGroup(["x,-y,-z", "x+1/2,y,z+1/2"]);
 
   testGroup(["x+5,y"]);
   testGroup(["1-x,-y"]);
