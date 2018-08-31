@@ -97,9 +97,6 @@ const showSpaceGroup = (ops, givenGroup, writeInfo) => {
 
   writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
 
-  if (givenGroup == null)
-    givenGroup = sgInfo.dimension == 2 ? 'p1' : 'P1';
-
   const givenName = sgtable.settingByName(givenGroup).name;
 
   if (sgInfo.groupName != givenName)
@@ -149,7 +146,7 @@ export const processGraph = (
   writeInfo(`   ${nk} of node.`);
   writeInfo();
 
-  showSpaceGroup(ops.map(phi => phi.transform), graph.group, writeInfo);
+  showSpaceGroup(ops.map(phi => phi.transform), group(graph), writeInfo);
 });
 
 
