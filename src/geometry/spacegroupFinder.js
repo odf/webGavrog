@@ -703,10 +703,13 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const testGroup = ops => {
-    console.log(`ops = ${JSON.stringify(ops)}`);
+  const testGroup = opsGiven => {
+    console.log(`opsGiven = ${JSON.stringify(opsGiven)}`);
     try {
-      const result = identifySpacegroup(ops.map(operator));
+      const ops = sg.fullOperatorList(opsGiven.map(operator));
+      console.log(`ops = ${JSON.stringify(ops)}`);
+
+      const result = identifySpacegroup(ops);
 
       if (result == null)
         console.log(`  null`);
@@ -723,18 +726,19 @@ if (require.main == module) {
     console.log();
   };
 
-  testGroup(["x+1,y"]);
-  testGroup(["x,y", "1-x,-y"]);
-  testGroup(["x,y", "x,-y"]);
-  testGroup(["x,y", "x,-y", "-x,y", "-x,-y"]);
-  testGroup(["x,y", "-y,x", "-x,-y", "y,-x"]);
-  testGroup(["x,y", "-y,x-y", "y-x,-x"]);
-  testGroup(["x,y", "x-y,x", "-y,x-y", "-x,-y", "y-x,-x", "y,y-x"]);
+  testGroup(["x+5,y"]);
+  testGroup(["1-x,-y"]);
+  testGroup(["x,-y"]);
+  testGroup(["x,-y", "-x,y"]);
+  testGroup(["-y,x"]);
+  testGroup(["-y,x-y"]);
+  testGroup(["x-y,x"]);
 
   testGroup(["x,y,z"]);
-  testGroup(["x,y,z", "-x,-y,-z"]);
-  testGroup(["x,y,z", "x,y,-z"]);
-  testGroup(["x,y,z", "x,y,-z", "x,-y,z", "x,-y,-z"]);
-  testGroup(["x,y,z", "-y,x,z", "-x,-y,z", "y,-x,z"]);
-  testGroup(["x,y,z", "y,z,x", "z,x,y"]);
+  testGroup(["-x,-y,-z"]);
+  testGroup(["x,y,-z"]);
+  testGroup(["x,y,-z", "x,-y,z"]);
+  testGroup(["-y,x,z"]);
+  testGroup(["y,z,x"]);
+  testGroup(["-y,x-y,z"]);
 }
