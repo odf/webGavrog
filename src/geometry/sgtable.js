@@ -9,6 +9,7 @@ const parseSpaceGroupData = data => {
   const lookup = [];
   const alias  = {};
   const table  = {};
+  let canonicalName = null;
   let currentName = null;
 
   for (const line of data.split('\n')) {
@@ -34,10 +35,16 @@ const parseSpaceGroupData = data => {
         });
       }
       else {
+        const op = parseOperator(fields.slice(1).join(''));
         currentName = fields[0];
+
+        if (V.eq(op, V.identityMatrix(V.dimension(op))))
+          canonicalName = currentName;
+
         table[currentName] = {
-          transform: V.coordinateChange(
-            parseOperator(fields.slice(1).join(''))),
+          name: currentName,
+          canonicalName,
+          transform: V.coordinateChange(op),
           operators: []
         };
       }
@@ -82,9 +89,9 @@ export const settingByName = (name, options = {}) => {
     return { error: `Illegal extension ${extension} in group setting ${name}` };
 
   for (const name of candidates(base, extension, options)) {
-    const { transform, operators } = table[name] || {};
-    if (operators)
-      return { name, transform, operators };
+    const entry = table[name];
+    if (entry)
+      return entry;
   }
 
   return { error: `Unrecognized group setting ${name}` };
@@ -99,6 +106,12 @@ export function* lookupSettings(crystalSystem, centeringType) {
 };
 
 
+export function* allSettings() {
+  for (const name in table)
+    yield table[name];
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -106,6 +119,7 @@ if (require.main == module) {
 
   const names = [
     'P1',
+    'P211',
     'Pmn21',
     'R3',
     'R3:R',
@@ -115,10 +129,11 @@ if (require.main == module) {
 
   for (const key of names) {
     console.log();
-    const { name, transform, operators } = settingByName(key);
-    console.log(`     name: ${name}`);
-    console.log(`transform: ${transform}`);
-    console.log(`operators: ${operators[0]}`);
-    operators.slice(1).forEach(op => console.log(`           ${op}`));
+    const entry = settingByName(key);
+    console.log(`     name: ${entry.name}`);
+    console.log(`canonical: ${entry.canonicalName}`);
+    console.log(`transform: ${entry.transform}`);
+    console.log(`operators: ${entry.operators[0]}`);
+    entry.operators.slice(1).forEach(op => console.log(`           ${op}`));
   }
 };
