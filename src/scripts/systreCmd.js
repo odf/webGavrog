@@ -1,6 +1,8 @@
 import * as csp from 'plexus-csp';
 
 import { rationalLinearAlgebra } from '../arithmetic/types';
+import * as sgtable from '../geometry/sgtable';
+import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 import * as tilings from '../dsymbols/tilings';
@@ -90,6 +92,33 @@ const checkGraph = (graph, writeInfo) => {
 };
 
 
+const showSpaceGroup = (ops, givenGroup, writeInfo) => {
+  const sgInfo = identifySpacegroup(ops);
+
+  writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
+
+  if (givenGroup == null)
+    givenGroup = sgInfo.dimension == 2 ? 'p1' : 'P1';
+
+  const givenName = sgtable.settingByName(givenGroup).name;
+
+  if (sgInfo.groupName != givenName)
+    writeInfo('   Ideal group or setting differs from given ' +
+              `(${sgInfo.groupName} vs ${givenName}).`);
+
+  if (sgInfo.extension == '1')
+    writeInfo('     (using first origin choice)');
+  else if (sgInfo.extension == '2')
+    writeInfo('     (using second origin choice)');
+  else if (sgInfo.extension == 'H')
+    writeInfo('     (using hexagonal setting)');
+  else if (sgInfo.extension == 'R')
+    writeInfo('     (using rhombohedral setting)');
+
+  writeInfo();
+};
+
+
 export const processGraph = (
   graph,
   name,
@@ -119,6 +148,8 @@ export const processGraph = (
   const nk = pluralize(symmetries.nodeOrbits(G, ops).length, 'kind');
   writeInfo(`   ${nk} of node.`);
   writeInfo();
+
+  showSpaceGroup(ops.map(phi => phi.transform), graph.group, writeInfo);
 });
 
 
@@ -183,6 +214,10 @@ export const processData = (
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
   csp.top(csp.go(function*() {
     const data1 = `
 #@ name bcu-tiling
