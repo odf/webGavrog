@@ -746,4 +746,18 @@ if (require.main == module) {
   testGroup(["-y,x,z"]);
   testGroup(["y,z,x"]);
   testGroup(["-y,x-y,z"]);
+
+  for (const entry of sgtable.allSettings()) {
+    console.log(`group ${entry.name} (${entry.canonicalName})`);
+    const ops = entry.operators;
+
+    try {
+      const result = identifySpacegroup(ops) || {};
+
+      if (result.groupName != entry.canonicalName)
+        console.log(`  >>> found ${result.groupName}`);
+    } catch(ex) {
+      console.log(ex);
+    }
+  }
 }
