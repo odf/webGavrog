@@ -102,7 +102,7 @@ export const opModZ = op => {
 };
 
 
-const fullOperatorList = gens => {
+export const fullOperatorList = gens => {
   const seen = {};
   gens.forEach(g => seen[g] = true);
 
