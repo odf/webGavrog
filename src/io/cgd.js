@@ -1,4 +1,4 @@
-const ops = require('../geometry/types').affineTransformationsQ;
+const ops = require('../geometry/types').coordinateChangesQ;
 
 import * as pg from '../pgraphs/periodic';
 import * as sg from '../geometry/sgtable';
