@@ -568,59 +568,61 @@ const normalizedBasis = (crystalSystem, basis) => {
 
 
 const variations = (crystalSystem, centering) => {
+  const change = s => V.coordinateChange(operator(s));
+
   if (crystalSystem == CS_3D_MONOCLINIC) {
     if (centering == 'A')
-      return [ "x,y,z", "-x,y-x,-z" ].map(operator);
+      return [ "x,y,z", "-x,y-x,-z" ].map(change);
     else
-      return [ "x,y,z", "-y,x-y,z", "y-x,-x,z" ].map(operator);
+      return [ "x,y,z", "-y,x-y,z", "y-x,-x,z" ].map(change);
   }
   else if (crystalSystem == CS_3D_ORTHORHOMBIC) {
     if (centering == 'C')
-      return [ "x,y,z", "y,x,-z" ].map(operator);
+      return [ "x,y,z", "y,x,-z" ].map(change);
     else
       return [
         "x,y,z", "z,x,y", "y,z,x", "y,x,-z", "x,z,-y", "z,y,-x"
-      ].map(operator);
+      ].map(change);
   }
   else if (crystalSystem == CS_3D_TRIGONAL) {
     if (centering == 'P')
-      return [ "x,y,z", "x-y,x,z" ].map(operator);
+      return [ "x,y,z", "x-y,x,z" ].map(change);
     else
-      return [ "x,y,z" ].map(operator);
+      return [ "x,y,z" ].map(change);
   }
   else if (crystalSystem == CS_3D_CUBIC)
-    return [ "x,y,z", "-y,x,z" ].map(operator);
+    return [ "x,y,z", "-y,x,z" ].map(change);
   else if (crystalSystem == CS_3D_HEXAGONAL ||
            crystalSystem == CS_3D_TETRAGONAL ||
            crystalSystem == CS_3D_TRICLINIC)
-    return [ "x,y,z" ].map(operator);
+    return [ "x,y,z" ].map(change);
   else if (crystalSystem == CS_2D_RECTANGULAR)
-    return [ "x,y", "y,-x" ].map(operator);
+    return [ "x,y", "y,-x" ].map(change);
   else
-    return [ "x,y" ].map(operator);
+    return [ "x,y" ].map(change);
 };
 
 
-const cmpAffine = (S, T) => V.cmp(S, T);
+const goodOps = ops => {
+  const primitive = sg.primitiveSetting(ops);
+  const toStd = V.inverse(primitive.fromStd);
+  return primitive.ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
+};
 
 
 const matchOperators = (ops, crystalSystem, centering) => {
+  const I = V.identityMatrix(V.dimension(ops[0]));
   const system = mappedCrystalSystem[crystalSystem];
 
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
     const { operators } = sgtable.settingByName(name);
-    const primitive = sg.primitiveSetting(operators);
-    const transform = V.times(fromStd, V.inverse(primitive.fromStd));
-    const opsToMatch = primitive.ops.map(op => V.times(transform, op));
-    opsToMatch.sort(cmpAffine);
-    const I = V.identityMatrix(V.dimension(ops[0]));
+    const opsToMatch = goodOps(operators.map(op => V.times(fromStd, op)));
 
     if (opsToMatch.length != ops.length)
       continue;
 
     for (const M of variations(crystalSystem, centering)) {
-      const probes = ops.map(op => V.times(M, op));
-      probes.sort(cmpAffine);
+      const probes = goodOps(ops.map(op => V.times(M, op)));
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
                                      V.linearPart(opsToMatch[i]))))
@@ -631,7 +633,7 @@ const matchOperators = (ops, crystalSystem, centering) => {
         const op1 = probes[i];
         const op2 = opsToMatch[i];
         As.push(V.minus(V.linearPart(op1), I));
-        bs.push(V.minus(V.shiftPart(op2), V.shiftPart(op1)));
+        bs.push(V.mod(V.minus(V.shiftPart(op2), V.shiftPart(op1)), 1));
       }
 
       const A = [].concat(...As);
@@ -639,7 +641,9 @@ const matchOperators = (ops, crystalSystem, centering) => {
       const s = V.solve(A, V.transposed(b));
 
       if (s) {
-        const T = V.affineTransformation(I, V.transposed(s)[0]);
+        const T = V.coordinateChange(
+          V.affineTransformation(I, V.transposed(s)[0]));
+
         return {
           name,
           toStd: V.times(V.inverse(fromStd), V.times(T, M))
@@ -690,7 +694,7 @@ export const identifySpacegroup = ops => {
     const toNormalized = V.times(changeToBasis(normalized), toPreliminary);
 
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
-    const pOps = primitive.ops.map(op => sg.opModZ(V.times(primToNorm, op)));
+    const pOps = primitive.ops.map(op => V.times(primToNorm, op));
     const match = matchOperators(pOps, crystalSystem, centering);
 
     if (match) {
@@ -703,7 +707,7 @@ export const identifySpacegroup = ops => {
         fullName: match.name,
         groupName,
         extension,
-        toStd: V.times(V.coordinateChange(match.toStd), toNormalized)
+        toStd: V.times(match.toStd, toNormalized)
       }
     }
   }
@@ -711,12 +715,6 @@ export const identifySpacegroup = ops => {
 
 
 const checkEntry = ({ name, canonicalName, operators, transform }) => {
-  const goodOps = ops => {
-    const primitive = sg.primitiveSetting(ops);
-    const toStd = V.inverse(primitive.fromStd);
-    return primitive.ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
-  };
-
   const canon = sgtable.settingByName(canonicalName);
   const opsCanon = goodOps(canon.operators);
   const probes = goodOps(operators.map(op => V.times(transform, op)));
@@ -747,7 +745,7 @@ if (require.main == module) {
     const ops = entry.operators;
 
     const { crystalSystem } = crystalSystemAndBasis(ops);
-    //if (crystalSystem != CS_3D_TRIGONAL)
+    //if (crystalSystem != CS_3D_MONOCLINIC)
     //  continue;
 
     try {
