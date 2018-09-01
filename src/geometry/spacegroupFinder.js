@@ -429,7 +429,7 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
     centering = 'I';
   }
   else if (n == 2) {
-    const p = v.findIndex(x => V.eq(0, x));
+    const p = v[0].findIndex(x => V.eq(0, x));
     const v1p = V.abs(v[1][p]);
     const v2p = V.abs(v[2][p]);
 
@@ -587,7 +587,7 @@ const variations = (crystalSystem, centering) => {
 const cmpAffine = (S, T) => V.cmp(S, T);
 
 
-const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
+const matchOperators = (ops, crystalSystem, centering) => {
   const system = mappedCrystalSystem[crystalSystem];
 
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
@@ -611,8 +611,8 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
       const As = [], bs = [];
       for (let i = 0; i < probes.length; ++i) {
-        const op1 = V.times(toPrimitive, probes[i]);
-        const op2 = V.times(toPrimitive, opsToMatch[i]);
+        const op1 = probes[i];
+        const op2 = opsToMatch[i];
         As.push(V.minus(V.linearPart(op1), I));
         bs.push(V.minus(V.shiftPart(op2), V.shiftPart(op1)));
       }
@@ -622,8 +622,7 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
       const s = V.solve(A, V.transposed(b));
 
       if (s) {
-        const origin = V.times(V.inverse(toPrimitive), V.transposed(s)[0]);
-        const T = V.affineTransformation(I, origin);
+        const T = V.affineTransformation(I, V.transposed(s)[0]);
         return {
           name,
           toStd: V.times(V.inverse(fromStd), V.times(T, M))
@@ -653,11 +652,13 @@ export const identifySpacegroup = ops => {
   else if (dim == 1) {
     const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
     const mirrors = opsWithTypes.filter(op => !op.direct);
+    const name = mirrors.length ? 'opm' : 'op1';
 
     return {
       dimension: 1,
       crystalSystem: CS_1D,
-      groupName: mirrors.length ? 'opm' : 'op1',
+      fullName: name,
+      groupName: name,
       toStd: V.identityMatrix(1)
     };
   }
@@ -665,30 +666,22 @@ export const identifySpacegroup = ops => {
     throw new Error("only implemented for dimensions up to 3");
   }
   else {
-    const analyze =
-          dim == 3 ? crystalSystemAndBasis3d : crystalSystemAndBasis2d;
     const primitive = sg.primitiveSetting(ops);
     const primToStd = V.inverse(primitive.fromStd);
     const primOps = primitive.ops.map(op => V.times(primToStd, op));
 
-    const { crystalSystem, basis } = analyze(primOps);
+    const { crystalSystem, basis } = dim == 3 ?
+          crystalSystemAndBasis3d(primOps) : crystalSystemAndBasis2d(primOps);
 
     const toPreliminary = changeToBasis(basis);
-
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
 
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
-
-    const pre2Normal = changeToBasis(normalized);
-    const toNormalized = V.times(pre2Normal, toPreliminary);
-    const pCellNormal = pCell.map(v => abs(V.times(pre2Normal, v)));
-    pCellNormal.sort().reverse();
-
+    const toNormalized = V.times(changeToBasis(normalized), toPreliminary);
     const pOps = primOps.map(op => sg.opModZ(V.times(toNormalized, op)));
-    const toPNormal = changeToBasis(pCellNormal);
 
     const { name, toStd } =
-          matchOperators(pOps, toPNormal, crystalSystem, centering ) || {};
+          matchOperators(pOps, crystalSystem, centering ) || {};
 
     if (name) {
       const [groupName, extension] = name.split(':');
@@ -697,6 +690,7 @@ export const identifySpacegroup = ops => {
         dimension: dim,
         crystalSystem,
         centering,
+        fullName: name,
         groupName,
         extension,
         toStd: V.times(V.coordinateChange(toStd), toNormalized)
@@ -753,16 +747,18 @@ if (require.main == module) {
   testGroup(["-y,x-y,z"]);
 
   for (const entry of sgtable.allSettings()) {
-    console.log(`group ${entry.name} (${entry.canonicalName})`);
+    const s = `group ${entry.name} (${entry.canonicalName})`;
     const ops = entry.operators;
 
     try {
       const result = identifySpacegroup(ops) || {};
 
-      if (result.groupName != entry.canonicalName)
-        console.log(`  >>> found ${result.groupName}`);
+      if (result.fullName != entry.canonicalName)
+        console.log(`${s} >>> found ${result.fullName}`);
+      else
+        console.log(`${s} OK`);
     } catch(ex) {
-      console.log(ex);
+      console.log(`${s} >>> ${ex.message}`);
     }
   }
 }
