@@ -262,6 +262,18 @@ const crystalSystemAndBasis3d = ops => {
 };
 
 
+const crystalSystemAndBasis = ops => {
+  const primitive = sg.primitiveSetting(ops);
+  const primToStd = V.inverse(primitive.fromStd);
+  const primOps = primitive.ops.map(op => V.times(primToStd, op));
+
+  if (V.dimension(ops[0] || []) == 3)
+    return crystalSystemAndBasis3d(primOps);
+  else
+    return crystalSystemAndBasis2d(primOps);
+};
+
+
 const basisNormalizer = {};
 
 
@@ -666,34 +678,30 @@ export const identifySpacegroup = ops => {
     throw new Error("only implemented for dimensions up to 3");
   }
   else {
-    const primitive = sg.primitiveSetting(ops);
-    const primToStd = V.inverse(primitive.fromStd);
-    const primOps = primitive.ops.map(op => V.times(primToStd, op));
-
-    const { crystalSystem, basis } = dim == 3 ?
-          crystalSystemAndBasis3d(primOps) : crystalSystemAndBasis2d(primOps);
-
+    const { crystalSystem, basis } = crystalSystemAndBasis(ops);
     const toPreliminary = changeToBasis(basis);
+
+    const primitive = sg.primitiveSetting(ops);
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
 
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
     const toNormalized = V.times(changeToBasis(normalized), toPreliminary);
-    const pOps = primOps.map(op => sg.opModZ(V.times(toNormalized, op)));
 
-    const { name, toStd } =
-          matchOperators(pOps, crystalSystem, centering ) || {};
+    const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
+    const pOps = primitive.ops.map(op => sg.opModZ(V.times(primToNorm, op)));
+    const match = matchOperators(pOps, crystalSystem, centering);
 
-    if (name) {
-      const [groupName, extension] = name.split(':');
+    if (match) {
+      const [groupName, extension] = match.name.split(':');
 
       return {
         dimension: dim,
         crystalSystem,
         centering,
-        fullName: name,
+        fullName: match.name,
         groupName,
         extension,
-        toStd: V.times(V.coordinateChange(toStd), toNormalized)
+        toStd: V.times(V.coordinateChange(match.toStd), toNormalized)
       }
     }
   }
@@ -704,47 +712,6 @@ if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
-
-  const testGroup = opsGiven => {
-    console.log(`opsGiven = ${JSON.stringify(opsGiven)}`);
-    try {
-      const ops = sg.fullOperatorList(opsGiven.map(operator));
-      console.log(`ops = ${JSON.stringify(ops)}`);
-
-      const result = identifySpacegroup(ops);
-
-      if (result == null)
-        console.log(`  null`);
-      else {
-        console.log(`  crystalSystem: ${result.crystalSystem}`);
-        console.log(`  centering    : ${result.centering}`);
-        console.log(`  groupName    : ${result.groupName}`);
-        console.log(`  extension    : ${result.extension}`);
-        console.log(`  toStd        : ${result.toStd}`);
-      }
-    } catch(ex) {
-      console.log(ex);
-    }
-    console.log();
-  };
-
-  testGroup(["x,-y,-z", "x+1/2,y,z+1/2"]);
-
-  testGroup(["x+5,y"]);
-  testGroup(["1-x,-y"]);
-  testGroup(["x,-y"]);
-  testGroup(["x,-y", "-x,y"]);
-  testGroup(["-y,x"]);
-  testGroup(["-y,x-y"]);
-  testGroup(["x-y,x"]);
-
-  testGroup(["x,y,z"]);
-  testGroup(["-x,-y,-z"]);
-  testGroup(["x,y,-z"]);
-  testGroup(["x,y,-z", "x,-y,z"]);
-  testGroup(["-y,x,z"]);
-  testGroup(["y,z,x"]);
-  testGroup(["-y,x-y,z"]);
 
   for (const entry of sgtable.allSettings()) {
     const s = `group ${entry.name} (${entry.canonicalName})`;
@@ -759,6 +726,7 @@ if (require.main == module) {
         console.log(`${s} OK`);
     } catch(ex) {
       console.log(`${s} >>> ${ex.message}`);
+      console.log(ex);
     }
   }
 }
