@@ -263,14 +263,19 @@ const crystalSystemAndBasis3d = ops => {
 
 
 const crystalSystemAndBasis = ops => {
+  const dim = V.dimension(ops[0] || []);
   const primitive = sg.primitiveSetting(ops);
   const primToStd = V.inverse(primitive.fromStd);
   const primOps = primitive.ops.map(op => V.times(primToStd, op));
 
-  if (V.dimension(ops[0] || []) == 3)
+  if (dim == 3)
     return crystalSystemAndBasis3d(primOps);
-  else
+  else if (dim == 2)
     return crystalSystemAndBasis2d(primOps);
+  else if (dim == 1)
+    return { crystalSystem: CS_1D };
+  else if (dim == 0)
+    return { crystalSystem: CS_0D };
 };
 
 
@@ -645,9 +650,6 @@ const matchOperators = (ops, crystalSystem, centering) => {
 };
 
 
-const abs = v => V.sgn(v) < 0 ? V.negative(v) : v;
-
-
 const changeToBasis = basis =>
       V.coordinateChange(V.inverse(V.transposed(basis)));
 
@@ -708,6 +710,33 @@ export const identifySpacegroup = ops => {
 };
 
 
+const checkEntry = ({ name, canonicalName, operators, transform }) => {
+  const goodOps = ops => {
+    const primitive = sg.primitiveSetting(ops);
+    const toStd = V.inverse(primitive.fromStd);
+    return primitive.ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
+  };
+
+  const canon = sgtable.settingByName(canonicalName);
+  const opsCanon = goodOps(canon.operators);
+  const probes = goodOps(operators.map(op => V.times(transform, op)));
+
+  if (opsCanon.length != probes.length)
+    throw new Error('lengths do not match');
+
+  let mismatches = 0;
+  for (let i = 0; i < opsCanon.length; ++i) {
+    if (V.ne(opsCanon[i], probes[i])) {
+      console.log(`${opsCanon[i]} <=> ${probes[i]}`);
+      ++mismatches;
+    }
+  }
+
+  if (mismatches)
+    throw new Error('not all operators match');
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
@@ -717,7 +746,12 @@ if (require.main == module) {
     const s = `group ${entry.name} (${entry.canonicalName})`;
     const ops = entry.operators;
 
+    const { crystalSystem } = crystalSystemAndBasis(ops);
+    //if (crystalSystem != CS_3D_TRIGONAL)
+    //  continue;
+
     try {
+      checkEntry(entry);
       const result = identifySpacegroup(ops) || {};
 
       if (result.fullName != entry.canonicalName)
