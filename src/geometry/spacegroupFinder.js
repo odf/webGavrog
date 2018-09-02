@@ -610,7 +610,7 @@ const goodOps = ops => {
 };
 
 
-const matchOperators = (ops, crystalSystem, centering) => {
+const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   const I = V.identityMatrix(V.dimension(ops[0]));
   const system = mappedCrystalSystem[crystalSystem];
 
@@ -630,8 +630,8 @@ const matchOperators = (ops, crystalSystem, centering) => {
 
       const As = [], bs = [];
       for (let i = 0; i < probes.length; ++i) {
-        const op1 = probes[i];
-        const op2 = opsToMatch[i];
+        const op1 = V.times(toPrimitive, probes[i]);
+        const op2 = V.times(toPrimitive, opsToMatch[i]);
         As.push(V.minus(V.linearPart(op1), I));
         bs.push(V.mod(V.minus(V.shiftPart(op2), V.shiftPart(op1)), 1));
       }
@@ -641,8 +641,8 @@ const matchOperators = (ops, crystalSystem, centering) => {
       const s = V.solve(A, V.transposed(b));
 
       if (s) {
-        const T = V.coordinateChange(
-          V.affineTransformation(I, V.transposed(s)[0]));
+        const shift = V.times(V.inverse(toPrimitive), V.transposed(s)[0]);
+        const T = V.coordinateChange(V.affineTransformation(I, shift));
 
         return {
           name,
@@ -691,11 +691,15 @@ export const identifySpacegroup = ops => {
     const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
 
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
-    const toNormalized = V.times(changeToBasis(normalized), toPreliminary);
+    const preToNormal = changeToBasis(normalized);
+    const toNormalized = V.times(preToNormal, toPreliminary);
 
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pOps = primitive.ops.map(op => V.times(primToNorm, op));
-    const match = matchOperators(pOps, crystalSystem, centering);
+
+    const pCellNormal = pCell.map(v => V.times(preToNormal, v));
+    const toPrimNormal = changeToBasis(pCellNormal);
+    const match = matchOperators(pOps, toPrimNormal, crystalSystem, centering);
 
     if (match) {
       const [groupName, extension] = match.name.split(':');
