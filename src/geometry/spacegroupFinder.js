@@ -523,7 +523,7 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
 
   if (vectorsOrthogonal(z, v[1]))
     v = [V.times(-1, v[1]), v[0], v[2]];
-  if (vectorsOrthogonal(z, v[2]))
+  else if (vectorsOrthogonal(z, v[2]))
     v = [v[2], v[0], v[1]];
 
   if (!vectorsOrthogonal(z, v[0]))
