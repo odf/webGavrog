@@ -124,7 +124,7 @@ const crystalSystemAndBasis2d = ops => {
     .reduce((op1, op2) => op2.order > op1.order ? op2 : op1);
 
   const n = spin.order;
-  const R = V.linearPart(spin.op);
+  const R = spin.op;
 
   let crystalSystem;
 
@@ -180,7 +180,7 @@ const crystalSystemAndBasis3d = ops => {
   let crystalSystem, x, y, z, R;
 
   if (sixFold.length > 0) {
-    const A = V.linearPart(sixFold[0].op)
+    const A = sixFold[0].op;
     crystalSystem = CS_3D_HEXAGONAL;
     z = operatorAxis(A);
     R = V.times(A, A);
@@ -188,25 +188,25 @@ const crystalSystemAndBasis3d = ops => {
   else if (fourFold.length > 1) {
     crystalSystem = CS_3D_CUBIC;
     z = operatorAxis(fourFold[0].op);
-    R = V.linearPart(threeFold[0].op);
+    R = threeFold[0].op;
     x = V.times(R, z);
     y = V.times(R, x);
   }
   else if (fourFold.length > 0) {
     crystalSystem = CS_3D_TETRAGONAL;
-    R = V.linearPart(fourFold[0].op);
+    R = fourFold[0].op;
     z = operatorAxis(R);
   }
   else if (threeFold.length > 1) {
     crystalSystem = CS_3D_CUBIC;
     z = operatorAxis(twoFold[0].op);
-    R = V.linearPart(threeFold[0].op);
+    R = threeFold[0].op;
     x = V.times(R, z);
     y = V.times(R, x);
   }
   else if (threeFold.length > 0) {
     crystalSystem = CS_3D_TRIGONAL;
-    R = V.linearPart(threeFold[0].op);
+    R = threeFold[0].op;
     z = operatorAxis(R);
   }
   else if (twoFold.length > 1) {
@@ -237,9 +237,9 @@ const crystalSystemAndBasis3d = ops => {
   if (x == null) {
     x = vectorsCollinear(z, [1, 0, 0]) ? [0, 1, 0] : [1, 0, 0];
     if (mirrors.length > 0)
-      x = V.plus(x, V.times(V.linearPart(mirrors[0].op), x));
+      x = V.plus(x, V.times(mirrors[0].op, x));
     else if (twoFold.length > 0)
-      x = V.minus(x, V.times(V.linearPart(twoFold[0].op), x));
+      x = V.minus(x, V.times(twoFold[0].op, x));
     else if (crystalSystem == CS_3D_TRIGONAL)
       x = V.minus(x, V.times(R, x));
   }
@@ -250,9 +250,9 @@ const crystalSystemAndBasis3d = ops => {
     else {
       y = V.crossProduct(z, x);
       if (mirrors.length > 0)
-        y = V.plus(y, V.times(V.linearPart(mirrors[0].op), y));
+        y = V.plus(y, V.times(mirrors[0].op, y));
       else if (twoFold.length > 0)
-        y = V.minus(y, V.times(V.linearPart(twoFold[0].op), y));
+        y = V.minus(y, V.times(twoFold[0].op, y));
     }
   }
 
