@@ -25,6 +25,9 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
+const DEBUG = true;
+
+
 const mappedCrystalSystem = {
   [CS_2D_OBLIQUE     ]: 'oblique',
   [CS_2D_RECTANGULAR ]: 'rectangular',
@@ -546,6 +549,11 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
   else
     centering = 'P';
 
+  if (DEBUG) {
+    console.log(`\t\t@@@    ${centering}-centered`);
+    console.log(`\t\t@@@    output basis = ${v}`);
+  }
+
   return { basis: v, centering };
 };
 
@@ -685,6 +693,9 @@ export const identifySpacegroup = ops => {
   }
   else {
     const { crystalSystem, basis } = crystalSystemAndBasis(ops);
+    if (DEBUG)
+      console.log(`preliminary basis: ${basis}`);
+
     const toPreliminary = changeToBasis(basis);
 
     const primitive = sg.primitiveSetting(ops);
@@ -693,16 +704,24 @@ export const identifySpacegroup = ops => {
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
     const preToNormal = changeToBasis(normalized);
     const toNormalized = V.times(preToNormal, toPreliminary);
+    if (DEBUG)
+      console.log(`to normalized basis: ${toNormalized}`);
 
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pOps = primitive.ops.map(op => V.times(primToNorm, op));
 
     const pCellNormal = pCell.map(v => V.times(preToNormal, v));
     const toPrimNormal = changeToBasis(pCellNormal);
+    if (DEBUG)
+      console.log(`normalized to primitive: ${toPrimNormal}`);
+
     const match = matchOperators(pOps, toPrimNormal, crystalSystem, centering);
 
     if (match) {
       const [groupName, extension] = match.name.split(':');
+
+      if (DEBUG)
+        console.log(`final coordinate change: ${match.toStd}`);
 
       return {
         dimension: dim,
@@ -741,25 +760,28 @@ const checkEntry = ({ name, canonicalName, operators, transform }) => {
 
 if (require.main == module) {
   Array.prototype.toString = function() {
-    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+    return '[' + this.map(x => x.toString()).join(',') + ']';
   };
 
   for (const entry of sgtable.allSettings()) {
     const s = `group ${entry.name} (${entry.canonicalName})`;
     const ops = entry.operators;
 
+    const dimension = V.dimension(entry.transform);
     const { crystalSystem } = crystalSystemAndBasis(ops);
-    //if (crystalSystem != CS_3D_MONOCLINIC)
-    //  continue;
+    if (dimension != 3)
+      continue;
 
     try {
       checkEntry(entry);
       const result = identifySpacegroup(ops) || {};
 
+      /*
       if (result.fullName != entry.canonicalName)
         console.log(`${s} >>> found ${result.fullName}`);
       else
         console.log(`${s} OK`);
+      */
     } catch(ex) {
       console.log(`${s} >>> ${ex.message}`);
       console.log(ex);
