@@ -25,7 +25,31 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const DEBUG = true;
+const DEBUG = false;
+
+const D = x => {
+  const t = V.typeOf(x);
+
+  if (t == 'CoordinateChange') {
+    const op = x.newToOld;
+    const M = V.transposed(V.linearPart(op));
+    const s = V.shiftPart(op);
+    return `CoordinateChange(Matrix(${M}),Point(${s}))`;
+  }
+  else if (t == 'AffineTransformation') {
+    const M = V.transposed(V.inverse(V.linearPart(x)));
+    const s = V.shiftPart(x);
+    return `Operator(${M.concat([s])})`;
+  }
+  else if (t == 'Matrix') {
+    return `Matrix(${x})`;
+  }
+  else if (t == 'Vector') {
+    return `Vector(${x})`;
+  }
+  else
+    return `${x}`;
+};
 
 
 const mappedCrystalSystem = {
@@ -488,7 +512,7 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
 
     a = v[0][0];
     if (m == 2) {
-      [_, b, c] = V.times(v[1], 2);
+      [b, c] = V.times(v[1], 2).slice(1);
       centering = 'A';
     }
     else {
@@ -514,6 +538,11 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
 
 
 basisNormalizer[CS_3D_MONOCLINIC] = b => {
+  if (DEBUG) {
+    console.log(`\t\t@@@ Monoclinic system`);
+    console.log(`\t\t@@@    input basis = ${D(b[0])} ${D(b[1])} ${D(b[2])}`);
+  }
+
   const z = [0, 0, 1];
   let centering, v;
 
@@ -551,7 +580,7 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
 
   if (DEBUG) {
     console.log(`\t\t@@@    ${centering}-centered`);
-    console.log(`\t\t@@@    output basis = ${v}`);
+    console.log(`\t\t@@@    output basis = ${D(v[0])} ${D(v[1])} ${D(v[2])}`);
   }
 
   return { basis: v, centering };
@@ -694,7 +723,7 @@ export const identifySpacegroup = ops => {
   else {
     const { crystalSystem, basis } = crystalSystemAndBasis(ops);
     if (DEBUG)
-      console.log(`preliminary basis: ${basis}`);
+      console.log(`\n\npreliminary basis: ${D(basis)}`);
 
     const toPreliminary = changeToBasis(basis);
 
@@ -705,7 +734,7 @@ export const identifySpacegroup = ops => {
     const preToNormal = changeToBasis(normalized);
     const toNormalized = V.times(preToNormal, toPreliminary);
     if (DEBUG)
-      console.log(`to normalized basis: ${toNormalized}`);
+      console.log(`to normalized basis: ${D(toNormalized)}`);
 
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pOps = primitive.ops.map(op => V.times(primToNorm, op));
@@ -713,7 +742,7 @@ export const identifySpacegroup = ops => {
     const pCellNormal = pCell.map(v => V.times(preToNormal, v));
     const toPrimNormal = changeToBasis(pCellNormal);
     if (DEBUG)
-      console.log(`normalized to primitive: ${toPrimNormal}`);
+      console.log(`normalized to primitive: ${D(toPrimNormal)}`);
 
     const match = matchOperators(pOps, toPrimNormal, crystalSystem, centering);
 
@@ -721,7 +750,7 @@ export const identifySpacegroup = ops => {
       const [groupName, extension] = match.name.split(':');
 
       if (DEBUG)
-        console.log(`final coordinate change: ${match.toStd}`);
+        console.log(`final coordinate change: ${D(match.toStd)}`);
 
       return {
         dimension: dim,
@@ -776,12 +805,12 @@ if (require.main == module) {
       checkEntry(entry);
       const result = identifySpacegroup(ops) || {};
 
-      /*
-      if (result.fullName != entry.canonicalName)
-        console.log(`${s} >>> found ${result.fullName}`);
-      else
-        console.log(`${s} OK`);
-      */
+      if (!DEBUG) {
+        if (result.fullName != entry.canonicalName)
+          console.log(`${s} >>> found ${result.fullName}`);
+        else
+          console.log(`${s} OK`);
+      }
     } catch(ex) {
       console.log(`${s} >>> ${ex.message}`);
       console.log(ex);
