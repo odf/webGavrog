@@ -25,7 +25,7 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const DEBUG = false;
+const DEBUG = true;
 
 const D = x => {
   const t = V.typeOf(x);
@@ -37,9 +37,9 @@ const D = x => {
     return `CoordinateChange(Matrix(${M}),Point(${s.join(',')}))`;
   }
   else if (t == 'AffineTransformation') {
-    const M = V.transposed(V.inverse(V.linearPart(x)));
+    const M = V.transposed(V.linearPart(x));
     const s = V.shiftPart(x);
-    return `Operator(${M.concat([s])})`;
+    return `AffineTransformation(Matrix(${M}),Point(${s.join(',')}))`;
   }
   else if (t == 'Matrix') {
     return `Matrix(${x})`;
@@ -50,6 +50,15 @@ const D = x => {
   else
     return `${x}`;
 };
+
+
+const O = x => {
+  const M = V.transposed(V.linearPart(x));
+  const s = V.shiftPart(x);
+  const A = M.map(v => v.concat(0)).concat([s.concat(1)]);
+  return `Operator(${A})`;
+};
+
 
 const capitalize = s => s[0].toUpperCase() + s.slice(1);
 
@@ -683,7 +692,7 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
         if (DEBUG) {
           console.log("    operator lists have different linear parts");
           for (let i = 0; i < ops.length; ++i)
-            console.log(`      ${D(probes[i])} <-> ${D(opsToMatch[i])}`);
+            console.log(`      ${O(probes[i])} <-> ${O(opsToMatch[i])}`);
         }
         continue;
       }
