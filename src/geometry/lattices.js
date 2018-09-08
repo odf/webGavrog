@@ -74,7 +74,7 @@ export const lattices = (ops, eps=0, dot=ops.times) => {
 
 
   const compareVectors = (v, w) =>
-        ops.minus(dot(v, v), dot(w, w)) || cmp(abs(w), abs(v));
+        ops.sgn(ops.minus(dot(v, v), dot(w, w))) || cmp(abs(w), abs(v));
 
 
   const reducedLatticeBasis = vs => {
