@@ -695,6 +695,9 @@ const changeToBasis = basis =>
       V.coordinateChange(V.inverse(V.transposed(basis)));
 
 
+const Vabs = v => V.sgn(v) < 0 ? V.negative(v) : v;
+
+
 export const identifySpacegroup = ops => {
   const dim = V.dimension(ops[0] || []);
 
@@ -739,7 +742,8 @@ export const identifySpacegroup = ops => {
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pOps = primitive.ops.map(op => V.times(primToNorm, op));
 
-    const pCellNormal = pCell.map(v => V.times(preToNormal, v));
+    const pCellNormal = pCell.map(v => Vabs(V.times(preToNormal, v)))
+          .sort((v, w) => V.sgn(V.minus(Vabs(w), Vabs(v))));
     const toPrimNormal = changeToBasis(pCellNormal);
     if (DEBUG)
       console.log(`normalized to primitive: ${D(toPrimNormal)}`);
