@@ -25,7 +25,7 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const DEBUG = false;
+const DEBUG = true;
 
 const D = x => {
   const t = V.typeOf(x);
@@ -34,7 +34,7 @@ const D = x => {
     const op = x.newToOld;
     const M = V.transposed(V.linearPart(op));
     const s = V.shiftPart(op);
-    return `CoordinateChange(Matrix(${M}),Point(${s}))`;
+    return `CoordinateChange(Matrix(${M}),Point(${s.join(',')}))`;
   }
   else if (t == 'AffineTransformation') {
     const M = V.transposed(V.inverse(V.linearPart(x)));
@@ -45,11 +45,13 @@ const D = x => {
     return `Matrix(${x})`;
   }
   else if (t == 'Vector') {
-    return `Vector(${x})`;
+    return `Vector(${x.join(',')})`;
   }
   else
     return `${x}`;
 };
+
+const capitalize = s => s[0].toUpperCase() + s.slice(1);
 
 
 const mappedCrystalSystem = {
@@ -651,19 +653,35 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   const I = V.identityMatrix(V.dimension(ops[0]));
   const system = mappedCrystalSystem[crystalSystem];
 
+  if (DEBUG) {
+    console.log('\nStarting lookup process...');
+    console.log(`  centering = ${centering}, system = ${capitalize(system)}`);
+  }
+
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
+    if (DEBUG)
+      console.log(`  comparing with group ${name}`);
+
     const { operators } = sgtable.settingByName(name);
     const opsToMatch = goodOps(operators.map(op => V.times(fromStd, op)));
 
-    if (opsToMatch.length != ops.length)
+    if (opsToMatch.length != ops.length) {
+      if (DEBUG)
+        console.log("    operator lists have different sizes: "
+                    + `${ops.length} <-> ${opsToMatch.length}`);
       continue;
+    }
 
     for (const M of variations(crystalSystem, centering)) {
       const probes = goodOps(ops.map(op => V.times(M, op)));
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
-                                     V.linearPart(opsToMatch[i]))))
+                                     V.linearPart(opsToMatch[i])))) {
+        console.log("    operator lists have different linear parts");
+        for (let i = 0; i < ops.length; ++i)
+          console.log(`      ${D(probes[i])} <-> ${D(opsToMatch[i])}`);
         continue;
+      }
 
       const As = [], bs = [];
       for (let i = 0; i < probes.length; ++i) {
@@ -675,19 +693,31 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
       const A = [].concat(...As);
       const b = [].concat(...bs);
+
+      if (DEBUG)
+        console.log(`    solving p * ${D(V.transposed(A))} = ${D([b])}`);
+
       const s = V.solve(A, V.transposed(b));
 
       if (s) {
         const shift = V.times(V.inverse(toPrimitive), V.transposed(s)[0]);
         const T = V.coordinateChange(V.affineTransformation(I, shift));
 
-        return {
+        const res = {
           name,
           toStd: V.times(V.inverse(fromStd), V.times(T, M))
         };
+
+        if (DEBUG)
+          console.log(`    success: (${res.name}, ${D(res.toStd)})`);
+
+        return res;
       }
     }
   }
+
+  if (DEBUG)
+    console.log('no success');
 };
 
 
