@@ -2,9 +2,9 @@ import { numericalLinearAlgebra } from '../arithmetic/types';
 
 
 export const lattices = (ops, eps=0, dot=ops.times) => {
-  const sum  = (...args) => args.reduce((a, b) => ops.plus(a, b));
-  const abs = v => v.map(x => Math.abs(x));
-  const cmp = (v, w) => (v > w) - (v < w);
+  const sum = (...args) => args.reduce((a, b) => ops.plus(a, b));
+  const abs = v => ops.sgn(v) < 0 ? ops.negative(v) : v;
+  const cmp = (v, w) => ops.cmp(v, w);
 
 
   const gaussReduced = (u, v) => {
