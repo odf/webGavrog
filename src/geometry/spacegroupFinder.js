@@ -25,7 +25,7 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const DEBUG = true;
+const DEBUG = false;
 
 const D = x => {
   const t = V.typeOf(x);
@@ -645,7 +645,10 @@ const variations = (crystalSystem, centering) => {
 const goodOps = ops => {
   const primitive = sg.primitiveSetting(ops);
   const toStd = V.inverse(primitive.fromStd);
-  return primitive.ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
+  return primitive.ops
+    .map(op => sg.opModZ(V.times(toStd, op)))
+    .sort((a, b) => (V.cmp(V.linearPart(a), V.linearPart(b)) ||
+                     V.cmp(V.shiftPart(a), V.shiftPart(b))));
 };
 
 
@@ -677,9 +680,11 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
                                      V.linearPart(opsToMatch[i])))) {
-        console.log("    operator lists have different linear parts");
-        for (let i = 0; i < ops.length; ++i)
-          console.log(`      ${D(probes[i])} <-> ${D(opsToMatch[i])}`);
+        if (DEBUG) {
+          console.log("    operator lists have different linear parts");
+          for (let i = 0; i < ops.length; ++i)
+            console.log(`      ${D(probes[i])} <-> ${D(opsToMatch[i])}`);
+        }
         continue;
       }
 
