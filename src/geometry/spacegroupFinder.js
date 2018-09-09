@@ -25,8 +25,6 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const DEBUG = true;
-
 const D = x => {
   const t = V.typeOf(x);
 
@@ -440,6 +438,12 @@ basisNormalizer[CS_3D_TETRAGONAL] = b => {
 
 
 basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
+  if (DEBUG) {
+    console.log('\t\t@@@ Orthorombic system');
+    console.log('\t\t@@@    input basis = ' +
+                `${D(basis[0])} ${D(basis[1])} ${D(basis[2])}`);
+  }
+
   const d = basis.map(v => v.filter(x => V.ne(0, x)).length);
   const x = [1, 0, 0];
   const y = [0, 1, 0];
@@ -476,6 +480,10 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
   else
     v = copy;
 
+  if (DEBUG)
+    console.log('\t\t@@@    reordered basis = ' +
+                `${D(v[0])} ${D(v[1])} ${D(v[2])}`);
+
   const n = v[0].filter(x => V.ne(0, x)).length;
 
   let a, b, c, centering;
@@ -502,14 +510,19 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
       c = V.times(v[0][2], 2);
       centering = m == 2 ? 'F' : 'B';
     }
-    else {
+    else if (p == 2) {
       a = V.times(v[0][0], 2);
       b = V.times(v[0][1], 2);
       c = V.times(v[2][2], m);
       centering = m == 2 ? 'F' : 'C';
     }
+    else
+      throw new RuntimeError('this should not happen');
   }
   else {
+    if (!vectorsCollinear(x, v[0]))
+      throw new RuntimeError('this should not happen');
+
     const v11 = V.abs(v[1][1]);
     const v21 = V.abs(v[2][1]);
 
@@ -834,6 +847,8 @@ const checkEntry = ({ name, canonicalName, operators, transform }) => {
     throw new Error('not all operators match');
 };
 
+
+const DEBUG = false;
 
 if (require.main == module) {
   Array.prototype.toString = function() {
