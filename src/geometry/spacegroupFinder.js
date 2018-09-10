@@ -667,10 +667,7 @@ const variations = (crystalSystem, centering) => {
 const goodOps = ops => {
   const primitive = sg.primitiveSetting(ops);
   const toStd = V.inverse(primitive.fromStd);
-  return primitive.ops
-    .map(op => sg.opModZ(V.times(toStd, op)))
-    .sort((a, b) => (V.cmp(V.linearPart(a), V.linearPart(b)) ||
-                     V.cmp(V.shiftPart(a), V.shiftPart(b))));
+  return primitive.ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
 };
 
 
@@ -688,7 +685,8 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
       console.log(`  comparing with group ${name}`);
 
     const { operators } = sgtable.settingByName(name);
-    const opsToMatch = goodOps(operators.map(op => V.times(fromStd, op)));
+    const opsToMatch = goodOps(operators).map(op => V.times(fromStd, op));
+    opsToMatch.sort((a, b) => V.cmp(V.linearPart(a), V.linearPart(b)));
 
     if (opsToMatch.length != ops.length) {
       if (DEBUG)
@@ -698,7 +696,8 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
     }
 
     for (const M of variations(crystalSystem, centering)) {
-      const probes = goodOps(ops.map(op => V.times(M, op)));
+      const probes = ops.map(op => V.times(M, op));
+      probes.sort((a, b) => V.cmp(V.linearPart(a), V.linearPart(b)));
 
       if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
                                      V.linearPart(opsToMatch[i])))) {
@@ -797,7 +796,7 @@ export const identifySpacegroup = ops => {
       console.log(`to normalized basis: ${D(toNormalized)}`);
 
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
-    const pOps = primitive.ops.map(op => V.times(primToNorm, op));
+    const pOps = primitive.ops.map(op => sg.opModZ(V.times(primToNorm, op)));
 
     const pCellNormal = pCell.map(v => Vabs(V.times(preToNormal, v)))
           .sort((v, w) => V.sgn(V.minus(Vabs(w), Vabs(v))));
