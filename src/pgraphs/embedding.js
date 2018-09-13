@@ -32,7 +32,7 @@ const _coordinateParametrization = (graph, syms) => {
   const positions = pg.barycentricPlacement(graph);
   const I = opsR.identityMatrix(graph.dim + 1);
   const rot = A => A.slice().reverse().map(row => row.slice().reverse());
-  const normalized = A => rot(opsR.reducedBasis(rot(A)));
+  const normalized = A => rot(opsR.reducedBasis(rot(A), null));
 
   const nodeInfo = {};
   let next = 0;
@@ -409,8 +409,8 @@ if (require.main == module) {
     console.log();
   };
 
-  test(cgd.processed(cgd.blocks(
-    `
+
+  const input = `
 CRYSTAL
   NAME esp
   GROUP p4gm
@@ -427,11 +427,7 @@ CRYSTAL
   EDGE  0.08485 0.04918   0.04872 0.18310
   EDGE  0.04872 0.18310   0.08494 0.31699
 END
-    `
-  )[0]).graph);
 
-  test(cgd.processed(cgd.blocks(
-    `
 CRYSTAL
   NAME sig
   GROUP P42/mnm
@@ -483,8 +479,10 @@ CRYSTAL
   EDGE  0.39369 0.39369 0.38554   0.39369 0.39369 0.61446
   EDGE  0.10640 0.27362 0.00000   0.22247 0.30809 0.00000
 END
-    `
-  )[0]).graph);
+`;
+
+  for (const g of cgd.structures(input))
+    test(g.graph);
 
 
   console.log('----------------------------------------');
