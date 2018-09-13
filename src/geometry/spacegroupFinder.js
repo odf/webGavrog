@@ -1,9 +1,11 @@
+import { rationalLinearAlgebraModular } from '../arithmetic/types';
 import { coordinateChangesQ } from './types';
 import { lattices } from './lattices';
 import operator from './parseOperator';
 import * as sg from './spacegroups';
 import * as sgtable from './sgtable';
 
+const reducedBasis = rationalLinearAlgebraModular.reducedBasis;
 const V = coordinateChangesQ;
 const { dirichletVectors, reducedLatticeBasis } = lattices(V);
 
@@ -664,6 +666,51 @@ const variations = (crystalSystem, centering) => {
 };
 
 
+const isWhole = x => V.eq(0, V.mod(x, 1));
+
+
+const solveModuloZ = (lft, rgt) => {
+  const [rowsLft, colsLft] = V.shape(lft);
+  const [rowsRgt, colsRgt] = V.shape(rgt);
+  if (rowsLft != rowsRgt)
+    throw new Error('left and right side must have equal number of rows');
+
+  [lft, rgt] = reducedBasis(lft, rgt);
+
+  if (lft == null)
+    return V.matrix(colsLft, colsRgt);
+  else if (V.rank(lft) < lft.length) {
+    const n = V.rank(lft);
+
+    if (rgt.slice(n).some(v => v.some(x => !isWhole(x))))
+      return null;
+    else
+      [lft, rgt] = [lft.slice(0, n), rgt.slice(0, n)];
+  }
+
+  const [n, m] = V.shape(lft);
+  const [B, U] = reducedBasis(V.transposed(lft), V.identityMatrix(m))
+        .map(t => V.transposed(t));
+
+  const y = [];
+  for (const i in rgt) {
+    const d = B[i][i];
+    const v = V.minus(rgt[i], V.times(B[i].slice(0, i), y));
+
+    if (V.eq(d, 0)) {
+      if (v.some(x => !isWhole(x)))
+        return null;
+      else
+        y.push(v.map(x => 0));
+    }
+    else
+      y.push(v.map(x => V.div(x, d)));
+  }
+
+  return V.times(U, y.concat(V.matrix(m - n, y[0].length)));
+};
+
+
 const goodOps = ops => {
   const primitive = sg.primitiveSetting(ops);
   const toStd = V.inverse(primitive.fromStd);
@@ -723,7 +770,7 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
       if (DEBUG)
         console.log(`    solving p * ${D(V.transposed(A))} = ${D([b])}`);
 
-      const s = V.solve(A, V.transposed(b));
+      const s = solveModuloZ(A, V.transposed(b));
 
       if (s) {
         const shift = V.times(V.inverse(toPrimitive), V.transposed(s)[0]);
