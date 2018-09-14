@@ -711,16 +711,41 @@ const solveModuloZ = (lft, rgt) => {
 };
 
 
-const goodOps = ops => {
+const primitiveOps = ops => {
   const primitive = sg.primitiveSetting(ops);
   const toStd = V.inverse(primitive.fromStd);
-  return primitive.ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
+  return primitive.ops.map(op => sg.opModZ(V.times(toStd, op)));
+};
+
+
+const cmpLinearParts = (a, b) => V.cmp(V.linearPart(a), V.linearPart(b));
+
+
+const matchingOriginShift = (opsToMatch, probes) => {
+  if (probes.some((op, i) => cmpLinearParts(op, opsToMatch[i]))) {
+    if (DEBUG)
+      console.log("    operator lists have different linear parts");
+  }
+  else {
+    const I = V.identityMatrix(V.dimension(opsToMatch[0]));
+    const As = [], bs = [];
+    for (let i = 0; i < probes.length; ++i) {
+      As.push(V.minus(V.linearPart(probes[i]), I));
+      bs.push(V.transposed(V.minus(V.shiftPart(opsToMatch[i]),
+                                   V.shiftPart(probes[i]))));
+    }
+
+    const s = solveModuloZ([].concat(...As), [].concat(...bs));
+
+    if (s)
+      return V.coordinateChange(V.shift(V.transposed(s)[0]));
+  }
 };
 
 
 const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
-  const I = V.identityMatrix(V.dimension(ops[0]));
   const system = mappedCrystalSystem[crystalSystem];
+  const fromPrimitive = V.inverse(toPrimitive);
 
   if (DEBUG) {
     console.log('\nStarting lookup process...');
@@ -731,9 +756,11 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
     if (DEBUG)
       console.log(`  comparing with group ${name}`);
 
+    const lookupToStd = V.inverse(fromStd);
     const { operators } = sgtable.settingByName(name);
-    const opsToMatch = goodOps(operators).map(op => V.times(fromStd, op));
-    opsToMatch.sort((a, b) => V.cmp(V.linearPart(a), V.linearPart(b)));
+    const opsToMatch = primitiveOps(operators)
+          .map(op => V.times(toPrimitive, V.times(fromStd, op)))
+          .sort(cmpLinearParts);
 
     if (opsToMatch.length != ops.length) {
       if (DEBUG)
@@ -743,54 +770,19 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
     }
 
     for (const M of variations(crystalSystem, centering)) {
-      const probes = ops.map(op => V.times(M, op));
-      probes.sort((a, b) => V.cmp(V.linearPart(a), V.linearPart(b)));
+      const probes = ops.map(op => V.times(toPrimitive, V.times(M, op)))
+            .sort(cmpLinearParts);
 
-      if (probes.some((_, i) => V.ne(V.linearPart(probes[i]),
-                                     V.linearPart(opsToMatch[i])))) {
-        if (DEBUG) {
-          console.log("    operator lists have different linear parts");
-          for (let i = 0; i < ops.length; ++i)
-            console.log(`      ${O(probes[i])} <-> ${O(opsToMatch[i])}`);
-        }
-        continue;
-      }
+      const shift = matchingOriginShift(opsToMatch, probes);
 
-      const As = [], bs = [];
-      for (let i = 0; i < probes.length; ++i) {
-        const op1 = V.times(toPrimitive, probes[i]);
-        const op2 = V.times(toPrimitive, opsToMatch[i]);
-        As.push(V.minus(V.linearPart(op1), I));
-        bs.push(V.mod(V.minus(V.shiftPart(op2), V.shiftPart(op1)), 1));
-      }
-
-      const A = [].concat(...As);
-      const b = [].concat(...bs);
-
-      if (DEBUG)
-        console.log(`    solving p * ${D(V.transposed(A))} = ${D([b])}`);
-
-      const s = solveModuloZ(A, V.transposed(b));
-
-      if (s) {
-        const shift = V.times(V.inverse(toPrimitive), V.transposed(s)[0]);
-        const T = V.coordinateChange(V.affineTransformation(I, shift));
-
-        const res = {
+      if (shift)
+        return {
           name,
-          toStd: V.times(V.inverse(fromStd), V.times(T, M))
+          toStd: [lookupToStd, fromPrimitive, shift, toPrimitive, M]
+            .reduce((a, b) => V.times(a, b))
         };
-
-        if (DEBUG)
-          console.log(`    success: (${res.name}, ${D(res.toStd)})`);
-
-        return res;
-      }
     }
   }
-
-  if (DEBUG)
-    console.log('no success');
 };
 
 
@@ -873,10 +865,10 @@ export const identifySpacegroup = ops => {
 };
 
 
-const checkEntry = ({ name, canonicalName, operators, transform }) => {
+const checkEntry = ({ name, canonicalName, operators: ops, transform }) => {
   const canon = sgtable.settingByName(canonicalName);
-  const opsCanon = goodOps(canon.operators);
-  const probes = goodOps(operators.map(op => V.times(transform, op)));
+  const opsCanon = primitiveOps(canon.operators).sort();
+  const probes = primitiveOps(ops.map(op => V.times(transform, op))).sort();
 
   if (opsCanon.length != probes.length)
     throw new Error('lengths do not match');
