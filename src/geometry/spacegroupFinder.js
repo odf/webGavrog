@@ -820,22 +820,21 @@ export const identifySpacegroup = ops => {
 
 
 const checkTestResult = ({ operators: ops, transform }, { toStd }) => {
-  const cmpOps = (a, b) => V.cmp(a, b);
-  const originalOps = ops.map(op => V.times(transform, op)).sort(cmpOps);
-  const mappedOps = ops.map(op => V.times(toStd, op)).sort(cmpOps);
+  const originalOps = ops.map(op => sg.opModZ(V.times(transform, op))).sort();
+  const mappedOps = ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
 
   if (originalOps.length != mappedOps.length)
     throw new Error('lengths do not match');
 
   let mismatches = 0;
   for (let i = 0; i < originalOps.length; ++i) {
-    if (V.ne(sg.opModZ(originalOps[i]), sg.opModZ(mappedOps[i])))
+    if (V.ne(originalOps[i], mappedOps[i]))
       ++mismatches;
   }
 
   if (mismatches) {
     for (let i = 0; i < originalOps.length; ++i)
-      console.log(`  ${sg.opModZ(originalOps[i])} <=> ${sg.opModZ(mappedOps[i])}`);
+      console.log(`  ${originalOps[i]} <=> ${mappedOps[i]}`);
   }
 };
 
@@ -861,7 +860,7 @@ if (require.main == module) {
         console.log(`${s} >>> found ${result.fullName}`);
       else {
         console.log(`${s} OK`);
-        //checkTestResult(entry, result);
+        checkTestResult(entry, result);
       }
     } catch(ex) {
       console.log(`${s} >>> ${ex.message}`);
