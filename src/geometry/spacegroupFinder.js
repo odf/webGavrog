@@ -440,12 +440,6 @@ basisNormalizer[CS_3D_TETRAGONAL] = b => {
 
 
 basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
-  if (DEBUG) {
-    console.log('\t\t@@@ Orthorombic system');
-    console.log('\t\t@@@    input basis = ' +
-                `${D(basis[0])} ${D(basis[1])} ${D(basis[2])}`);
-  }
-
   const d = basis.map(v => v.filter(x => V.ne(0, x)).length);
   const x = [1, 0, 0];
   const y = [0, 1, 0];
@@ -481,10 +475,6 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
     v = right;
   else
     v = copy;
-
-  if (DEBUG)
-    console.log('\t\t@@@    reordered basis = ' +
-                `${D(v[0])} ${D(v[1])} ${D(v[2])}`);
 
   const n = v[0].filter(x => V.ne(0, x)).length;
 
@@ -564,11 +554,6 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
 
 
 basisNormalizer[CS_3D_MONOCLINIC] = b => {
-  if (DEBUG) {
-    console.log(`\t\t@@@ Monoclinic system`);
-    console.log(`\t\t@@@    input basis = ${D(b[0])} ${D(b[1])} ${D(b[2])}`);
-  }
-
   const z = [0, 0, 1];
   let centering, v;
 
@@ -603,11 +588,6 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
   }
   else
     centering = 'P';
-
-  if (DEBUG) {
-    console.log(`\t\t@@@    ${centering}-centered`);
-    console.log(`\t\t@@@    output basis = ${D(v[0])} ${D(v[1])} ${D(v[2])}`);
-  }
 
   return { basis: v, centering };
 };
@@ -722,11 +702,7 @@ const cmpLinearParts = (a, b) => V.cmp(V.linearPart(a), V.linearPart(b));
 
 
 const matchingOriginShift = (imgOps, srcOps) => {
-  if (srcOps.some((op, i) => cmpLinearParts(op, imgOps[i]))) {
-    if (DEBUG)
-      console.log("    operator lists have different linear parts");
-  }
-  else {
+  if (srcOps.every((op, i) => 0 == cmpLinearParts(op, imgOps[i]))) {
     const I = V.identityMatrix(V.dimension(imgOps[0]));
     const As = [], bs = [];
     for (let i = 0; i < srcOps.length; ++i) {
@@ -751,37 +727,24 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   const system = mappedCrystalSystem[crystalSystem];
   const fromPrimitive = V.inverse(toPrimitive);
 
-  if (DEBUG) {
-    console.log('\nStarting lookup process...');
-    console.log(`  centering = ${centering}, system = ${capitalize(system)}`);
-  }
-
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
-    if (DEBUG)
-      console.log(`  comparing with group ${name}`);
-
     const lookupToStd = V.inverse(fromStd);
     const { operators } = sgtable.settingByName(name);
     const opsToMatch = transformedAndSorted(
       primitiveOps(operators), V.times(toPrimitive, fromStd));
 
-    if (opsToMatch.length != ops.length) {
-      if (DEBUG)
-        console.log("    operator lists have different sizes: "
-                    + `${ops.length} <-> ${opsToMatch.length}`);
-      continue;
-    }
+    if (opsToMatch.length == ops.length) {
+      for (const M of variations(crystalSystem, centering)) {
+        const probes = transformedAndSorted(ops, V.times(toPrimitive, M));
+        const shift = matchingOriginShift(opsToMatch, probes);
 
-    for (const M of variations(crystalSystem, centering)) {
-      const probes = transformedAndSorted(ops, V.times(toPrimitive, M));
-      const shift = matchingOriginShift(opsToMatch, probes);
-
-      if (shift)
-        return {
-          name,
-          toStd: [lookupToStd, fromPrimitive, shift, toPrimitive, M]
-            .reduce((a, b) => V.times(a, b))
-        };
+        if (shift)
+          return {
+            name,
+            toStd: [lookupToStd, fromPrimitive, shift, toPrimitive, M]
+              .reduce((a, b) => V.times(a, b))
+          };
+      }
     }
   }
 };
@@ -821,9 +784,6 @@ export const identifySpacegroup = ops => {
   }
   else {
     const { crystalSystem, basis } = crystalSystemAndBasis(ops);
-    if (DEBUG)
-      console.log(`\n\npreliminary basis: ${D(basis)}`);
-
     const toPreliminary = changeToBasis(basis);
 
     const primitive = sg.primitiveSetting(ops);
@@ -832,8 +792,6 @@ export const identifySpacegroup = ops => {
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
     const preToNormal = changeToBasis(normalized);
     const toNormalized = V.times(preToNormal, toPreliminary);
-    if (DEBUG)
-      console.log(`to normalized basis: ${D(toNormalized)}`);
 
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pOps = primitive.ops.map(op => sg.opModZ(V.times(primToNorm, op)));
@@ -841,16 +799,11 @@ export const identifySpacegroup = ops => {
     const pCellNormal = pCell.map(v => Vabs(V.times(preToNormal, v)))
           .sort((v, w) => V.sgn(V.minus(Vabs(w), Vabs(v))));
     const toPrimNormal = changeToBasis(pCellNormal);
-    if (DEBUG)
-      console.log(`normalized to primitive: ${D(toPrimNormal)}`);
 
     const match = matchOperators(pOps, toPrimNormal, crystalSystem, centering);
 
     if (match) {
       const [groupName, extension] = match.name.split(':');
-
-      if (DEBUG)
-        console.log(`final coordinate change: ${D(match.toStd)}`);
 
       return {
         dimension: dim,
@@ -887,8 +840,6 @@ const checkEntry = ({ name, canonicalName, operators: ops, transform }) => {
 };
 
 
-const DEBUG = false;
-
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[' + this.map(x => x.toString()).join(',') + ']';
@@ -907,12 +858,10 @@ if (require.main == module) {
       checkEntry(entry);
       const result = identifySpacegroup(ops) || {};
 
-      if (!DEBUG) {
-        if (result.fullName != entry.canonicalName)
-          console.log(`${s} >>> found ${result.fullName}`);
-        else
-          console.log(`${s} OK`);
-      }
+      if (result.fullName != entry.canonicalName)
+        console.log(`${s} >>> found ${result.fullName}`);
+      else
+        console.log(`${s} OK`);
     } catch(ex) {
       console.log(`${s} >>> ${ex.message}`);
       console.log(ex);
