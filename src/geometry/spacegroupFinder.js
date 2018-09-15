@@ -27,42 +27,6 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const D = x => {
-  const t = V.typeOf(x);
-
-  if (t == 'CoordinateChange') {
-    const op = x.newToOld;
-    const M = V.transposed(V.linearPart(op));
-    const s = V.shiftPart(op);
-    return `CoordinateChange(Matrix(${M}),Point(${s.join(',')}))`;
-  }
-  else if (t == 'AffineTransformation') {
-    const M = V.transposed(V.linearPart(x));
-    const s = V.shiftPart(x);
-    return `AffineTransformation(Matrix(${M}),Point(${s.join(',')}))`;
-  }
-  else if (t == 'Matrix') {
-    return `Matrix(${x})`;
-  }
-  else if (t == 'Vector') {
-    return `Vector(${x.join(',')})`;
-  }
-  else
-    return `${x}`;
-};
-
-
-const O = x => {
-  const M = V.transposed(V.linearPart(x));
-  const s = V.shiftPart(x);
-  const A = M.map(v => v.concat(0)).concat([s.concat(1)]);
-  return `Operator(${A})`;
-};
-
-
-const capitalize = s => s[0].toUpperCase() + s.slice(1);
-
-
 const mappedCrystalSystem = {
   [CS_2D_OBLIQUE     ]: 'oblique',
   [CS_2D_RECTANGULAR ]: 'rectangular',
@@ -646,9 +610,6 @@ const variations = (crystalSystem, centering) => {
 };
 
 
-const isWhole = x => V.eq(0, V.mod(x, 1));
-
-
 const solveModuloZ = (lft, rgt) => {
   const [rowsLft, colsLft] = V.shape(lft);
   const [rowsRgt, colsRgt] = V.shape(rgt);
@@ -662,7 +623,7 @@ const solveModuloZ = (lft, rgt) => {
   else if (V.rank(lft) < lft.length) {
     const n = V.rank(lft);
 
-    if (rgt.slice(n).some(v => v.some(x => !isWhole(x))))
+    if (rgt.slice(n).some(v => v.some(x => !V.isInteger(x))))
       return null;
     else
       [lft, rgt] = [lft.slice(0, n), rgt.slice(0, n)];
@@ -678,7 +639,7 @@ const solveModuloZ = (lft, rgt) => {
     const v = V.minus(rgt[i], V.times(B[i].slice(0, i), y));
 
     if (V.eq(d, 0)) {
-      if (v.some(x => !isWhole(x)))
+      if (v.some(x => !V.isInteger(x)))
         return null;
       else
         y.push(v.map(x => 0));
@@ -820,21 +781,12 @@ export const identifySpacegroup = ops => {
 
 
 const checkTestResult = ({ operators: ops, transform }, { toStd }) => {
-  const originalOps = ops.map(op => sg.opModZ(V.times(transform, op))).sort();
-  const mappedOps = ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
+  const expected = ops.map(op => sg.opModZ(V.times(transform, op))).sort();
+  const seen = ops.map(op => sg.opModZ(V.times(toStd, op))).sort();
 
-  if (originalOps.length != mappedOps.length)
-    throw new Error('lengths do not match');
-
-  let mismatches = 0;
-  for (let i = 0; i < originalOps.length; ++i) {
-    if (V.ne(originalOps[i], mappedOps[i]))
-      ++mismatches;
-  }
-
-  if (mismatches) {
-    for (let i = 0; i < originalOps.length; ++i)
-      console.log(`  ${originalOps[i]} <=> ${mappedOps[i]}`);
+  if (expected.some((_, i) => V.ne(expected[i], seen[i]))) {
+    for (let i = 0; i < expected.length; ++i)
+      console.log(`  ${expected[i]} <=> ${seen[i]}`);
   }
 };
 
