@@ -721,18 +721,18 @@ const primitiveOps = ops => {
 const cmpLinearParts = (a, b) => V.cmp(V.linearPart(a), V.linearPart(b));
 
 
-const matchingOriginShift = (opsToMatch, probes) => {
-  if (probes.some((op, i) => cmpLinearParts(op, opsToMatch[i]))) {
+const matchingOriginShift = (imgOps, srcOps) => {
+  if (srcOps.some((op, i) => cmpLinearParts(op, imgOps[i]))) {
     if (DEBUG)
       console.log("    operator lists have different linear parts");
   }
   else {
-    const I = V.identityMatrix(V.dimension(opsToMatch[0]));
+    const I = V.identityMatrix(V.dimension(imgOps[0]));
     const As = [], bs = [];
-    for (let i = 0; i < probes.length; ++i) {
-      As.push(V.minus(V.linearPart(probes[i]), I));
-      bs.push(V.transposed(V.minus(V.shiftPart(opsToMatch[i]),
-                                   V.shiftPart(probes[i]))));
+    for (let i = 0; i < srcOps.length; ++i) {
+      As.push(V.minus(V.linearPart(srcOps[i]), I));
+      bs.push(V.transposed(V.minus(V.shiftPart(imgOps[i]),
+                                   V.shiftPart(srcOps[i]))));
     }
 
     const s = solveModuloZ([].concat(...As), [].concat(...bs));
@@ -741,6 +741,10 @@ const matchingOriginShift = (opsToMatch, probes) => {
       return V.coordinateChange(V.shift(V.transposed(s)[0]));
   }
 };
+
+
+const transformedAndSorted = (ops, transform) =>
+      ops.map(op => V.times(transform, op)).sort(cmpLinearParts);
 
 
 const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
@@ -758,9 +762,8 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
     const lookupToStd = V.inverse(fromStd);
     const { operators } = sgtable.settingByName(name);
-    const opsToMatch = primitiveOps(operators)
-          .map(op => V.times(toPrimitive, V.times(fromStd, op)))
-          .sort(cmpLinearParts);
+    const opsToMatch = transformedAndSorted(
+      primitiveOps(operators), V.times(toPrimitive, fromStd));
 
     if (opsToMatch.length != ops.length) {
       if (DEBUG)
@@ -770,9 +773,7 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
     }
 
     for (const M of variations(crystalSystem, centering)) {
-      const probes = ops.map(op => V.times(toPrimitive, V.times(M, op)))
-            .sort(cmpLinearParts);
-
+      const probes = transformedAndSorted(ops, V.times(toPrimitive, M));
       const shift = matchingOriginShift(opsToMatch, probes);
 
       if (shift)
