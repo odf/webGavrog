@@ -707,8 +707,8 @@ const matchingOriginShift = (imgOps, srcOps) => {
     const As = [], bs = [];
     for (let i = 0; i < srcOps.length; ++i) {
       As.push(V.minus(V.linearPart(srcOps[i]), I));
-      bs.push(V.transposed(V.minus(V.shiftPart(imgOps[i]),
-                                   V.shiftPart(srcOps[i]))));
+      bs.push(V.transposed(V.minus(V.shiftPart(srcOps[i]),
+                                   V.shiftPart(imgOps[i]))));
     }
 
     const s = solveModuloZ([].concat(...As), [].concat(...bs));
@@ -819,24 +819,24 @@ export const identifySpacegroup = ops => {
 };
 
 
-const checkEntry = ({ name, canonicalName, operators: ops, transform }) => {
-  const canon = sgtable.settingByName(canonicalName);
-  const opsCanon = primitiveOps(canon.operators).sort();
-  const probes = primitiveOps(ops.map(op => V.times(transform, op))).sort();
+const checkTestResult = ({ operators: ops, transform }, { toStd }) => {
+  const cmpOps = (a, b) => V.cmp(a, b);
+  const originalOps = ops.map(op => V.times(transform, op)).sort(cmpOps);
+  const mappedOps = ops.map(op => V.times(toStd, op)).sort(cmpOps);
 
-  if (opsCanon.length != probes.length)
+  if (originalOps.length != mappedOps.length)
     throw new Error('lengths do not match');
 
   let mismatches = 0;
-  for (let i = 0; i < opsCanon.length; ++i) {
-    if (V.ne(opsCanon[i], probes[i])) {
-      console.log(`${opsCanon[i]} <=> ${probes[i]}`);
+  for (let i = 0; i < originalOps.length; ++i) {
+    if (V.ne(sg.opModZ(originalOps[i]), sg.opModZ(mappedOps[i])))
       ++mismatches;
-    }
   }
 
-  if (mismatches)
-    throw new Error('not all operators match');
+  if (mismatches) {
+    for (let i = 0; i < originalOps.length; ++i)
+      console.log(`  ${sg.opModZ(originalOps[i])} <=> ${sg.opModZ(mappedOps[i])}`);
+  }
 };
 
 
@@ -855,13 +855,14 @@ if (require.main == module) {
       continue;
 
     try {
-      checkEntry(entry);
       const result = identifySpacegroup(ops) || {};
 
       if (result.fullName != entry.canonicalName)
         console.log(`${s} >>> found ${result.fullName}`);
-      else
+      else {
         console.log(`${s} OK`);
+        //checkTestResult(entry, result);
+      }
     } catch(ex) {
       console.log(`${s} >>> ${ex.message}`);
       console.log(ex);
