@@ -725,25 +725,25 @@ const transformedAndSorted = (ops, transform) =>
 
 const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   const system = mappedCrystalSystem[crystalSystem];
-  const fromPrimitive = V.inverse(toPrimitive);
 
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
-    const lookupToStd = V.inverse(fromStd);
+    const stdToPrimitive = V.times(toPrimitive, fromStd);
     const { operators } = sgtable.settingByName(name);
-    const opsToMatch = transformedAndSorted(
-      primitiveOps(operators), V.times(toPrimitive, fromStd));
+    const opsToMatch =
+          transformedAndSorted(primitiveOps(operators), stdToPrimitive);
 
     if (opsToMatch.length == ops.length) {
       for (const M of variations(crystalSystem, centering)) {
         const probes = transformedAndSorted(ops, V.times(toPrimitive, M));
         const shift = matchingOriginShift(opsToMatch, probes);
 
-        if (shift)
-          return {
-            name,
-            toStd: [lookupToStd, fromPrimitive, shift, toPrimitive, M]
-              .reduce((a, b) => V.times(a, b))
-          };
+        if (shift) {
+          const toStdRaw = [V.inverse(stdToPrimitive), shift, toPrimitive, M]
+                .reduce((a, b) => V.times(a, b));
+          const toStd = V.coordinateChange(sg.opModZ(toStdRaw.oldToNew));
+
+          return { name, toStd };
+        }
       }
     }
   }
@@ -794,7 +794,7 @@ export const identifySpacegroup = ops => {
     const toNormalized = V.times(preToNormal, toPreliminary);
 
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
-    const pOps = primitive.ops.map(op => sg.opModZ(V.times(primToNorm, op)));
+    const pOps = primitive.ops.map(op => V.times(primToNorm, op));
 
     const pCellNormal = pCell.map(v => Vabs(V.times(preToNormal, v)))
           .sort((v, w) => V.sgn(V.minus(Vabs(w), Vabs(v))));
