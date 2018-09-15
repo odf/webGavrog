@@ -46,6 +46,12 @@ export const extend = transformationOps => {
         CoordinateChange: (C, D) => new CoordinateChange(
           V.times(C.oldToNew, D.oldToNew), V.times(D.newToOld, C.newToOld))
       }
+    },
+
+    cmp: {
+      CoordinateChange: {
+        CoordinateChange: (a, b) => V.cmp(a.oldToNew, b.oldToNew)
+      }
     }
   };
 
