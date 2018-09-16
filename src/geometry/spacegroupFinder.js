@@ -652,22 +652,14 @@ const solveModuloZ = (lft, rgt) => {
 };
 
 
-const primitiveOps = ops => {
-  const primitive = sg.primitiveSetting(ops);
-  const toStd = V.inverse(primitive.fromStd);
-  return primitive.ops.map(op => sg.opModZ(V.times(toStd, op)));
-};
-
-
-const cmpLinearParts = (a, b) => V.cmp(V.linearPart(a), V.linearPart(b));
-
-
 const matchingOriginShift = (imgOps, srcOps) => {
-  if (srcOps.every((op, i) => 0 == cmpLinearParts(op, imgOps[i]))) {
+  const linearParts = srcOps.map(op => V.linearPart(op));
+
+  if (linearParts.every((m, i) => V.eq(m, V.linearPart(imgOps[i])))) {
     const I = V.identityMatrix(V.dimension(imgOps[0]));
     const As = [], bs = [];
     for (let i = 0; i < srcOps.length; ++i) {
-      As.push(V.minus(V.linearPart(srcOps[i]), I));
+      As.push(V.minus(linearParts[i], I));
       bs.push(V.transposed(V.minus(V.shiftPart(srcOps[i]),
                                    V.shiftPart(imgOps[i]))));
     }
@@ -680,8 +672,14 @@ const matchingOriginShift = (imgOps, srcOps) => {
 };
 
 
+const primitiveOps = ops => {
+  const primitive = sg.primitiveSetting(ops);
+  return primitive.ops.map(op => V.times(V.inverse(primitive.fromStd), op));
+};
+
+
 const transformedAndSorted = (ops, transform) =>
-      ops.map(op => V.times(transform, op)).sort(cmpLinearParts);
+      ops.map(op => V.times(transform, op)).sort((a, b) => V.cmp(a, b));
 
 
 const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
@@ -713,9 +711,6 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
 const changeToBasis = basis =>
       V.coordinateChange(V.inverse(V.transposed(basis)));
-
-
-const Vabs = v => V.sgn(v) < 0 ? V.negative(v) : v;
 
 
 export const identifySpacegroup = ops => {
@@ -757,8 +752,7 @@ export const identifySpacegroup = ops => {
     const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
     const pOps = primitive.ops.map(op => V.times(primToNorm, op));
 
-    const pCellNormal = pCell.map(v => Vabs(V.times(preToNormal, v)))
-          .sort((v, w) => V.sgn(V.minus(Vabs(w), Vabs(v))));
+    const pCellNormal = pCell.map(v => V.times(preToNormal, v));
     const toPrimNormal = changeToBasis(pCellNormal);
 
     const match = matchOperators(pOps, toPrimNormal, crystalSystem, centering);
