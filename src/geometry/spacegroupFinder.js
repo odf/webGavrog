@@ -740,22 +740,15 @@ export const identifySpacegroup = ops => {
   }
   else {
     const { crystalSystem, basis } = crystalSystemAndBasis(ops);
-    const toPreliminary = changeToBasis(basis);
-
-    const primitive = sg.primitiveSetting(ops);
-    const pCell = primitive.cell.map(v => V.times(toPreliminary, v));
-
+    const pCell = V.times(sg.primitiveSetting(ops).cell, V.inverse(basis));
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
-    const preToNormal = changeToBasis(normalized);
-    const toNormalized = V.times(preToNormal, toPreliminary);
+    const toNormalized = changeToBasis(V.times(normalized, basis));
 
-    const primToNorm = V.times(toNormalized, V.inverse(primitive.fromStd));
-    const pOps = primitive.ops.map(op => V.times(primToNorm, op));
-
-    const pCellNormal = pCell.map(v => V.times(preToNormal, v));
-    const toPrimNormal = changeToBasis(pCellNormal);
-
-    const match = matchOperators(pOps, toPrimNormal, crystalSystem, centering);
+    const match = matchOperators(
+      transformedAndSorted(primitiveOps(ops), toNormalized),
+      changeToBasis(V.times(pCell, V.inverse(normalized))),
+      crystalSystem,
+      centering);
 
     if (match) {
       const [groupName, extension] = match.name.split(':');
