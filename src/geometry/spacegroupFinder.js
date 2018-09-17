@@ -54,14 +54,14 @@ const matrixOrder = (M, max) => {
 };
 
 
-const detSgn = M => V.sgn(V.determinant(M));
+const sgnDet = M => V.sgn(V.determinant(M));
 
 
 const operatorAxis = op => {
   const d = V.dimension(op);
 
   let M = V.linearPart(op);
-  if (d % 2 != 0 && detSgn(M) < 0)
+  if (d % 2 != 0 && sgnDet(M) < 0)
     M = V.negative(M);
 
   const R = V.minus(M, V.identityMatrix(d));
@@ -71,7 +71,7 @@ const operatorAxis = op => {
     return null;
   else {
     const v = Z[0];
-    return V.lt(v, V.vector(d)) ? V.negative(v) : v;
+    return V.sgn(v) < 0 ? V.negative(v) : v;
   }
 };
 
@@ -87,7 +87,7 @@ const vectorsOrthogonal = (v, w) => V.eq(0, V.times(v, w));
 const operatorType = op => {
   const dimension = V.dimension(op);
   const A = V.linearPart(op);
-  const direct = detSgn(A) >= 0;
+  const direct = sgnDet(A) >= 0;
   const M = (dimension % 2 == 1 && !direct) ? V.negative(A) : A;
   const t = V.shiftPart(op);
   const order = matrixOrder(M, 6);
@@ -99,17 +99,15 @@ const operatorType = op => {
       clockwise = false;
     else if (order == 0 || order > 2) {
       const v = [1, 0];
-      const vM = V.times(M, v);
-      clockwise = detSgn([v, vM]) >= 0;
+      clockwise = sgnDet([v, V.times(M, v)]) >= 0;
     }
   }
   else if (dimension == 3) {
     if (order == 0 || order > 2) {
       const a = operatorAxis(M);
       if (a) {
-        const v = (V.eq(0, a[1]) && V.eq(0, a[2])) ? [0, 1, 0] : [1, 0, 0];
-        const vM = V.times(M, v);
-        clockwise = detSgn([a, v, vM]) >= 0;
+        const v = vectorsCollinear([1, 0, 0], a) ? [0, 1, 0] : [1, 0, 0];
+        clockwise = sgnDet([a, v, V.times(M, v)]) >= 0;
       }
     }
   }
@@ -121,12 +119,10 @@ const operatorType = op => {
 const crystalSystemAndBasis2d = ops => {
   const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
   const mirrors = opsWithTypes.filter(op => !op.direct);
-  const spin = opsWithTypes
-    .filter(op => op.direct && op.clockwise)
-    .reduce((op1, op2) => op2.order > op1.order ? op2 : op1);
 
-  const n = spin.order;
-  const R = spin.op;
+  const { order: n, op: R } = opsWithTypes
+        .filter(op => op.direct && op.clockwise)
+        .reduce((op1, op2) => op1.order - op2.order);
 
   let crystalSystem;
 
@@ -153,7 +149,7 @@ const crystalSystemAndBasis2d = ops => {
     y = mirrors.length ? V.minus(t, V.times(mirrors[0].op, t)) : t;
   }
 
-  const basis = detSgn([x, y]) < 0 ? [x, V.negative(y)] : [x, y];
+  const basis = sgnDet([x, y]) < 0 ? [x, V.negative(y)] : [x, y];
 
   return { crystalSystem, basis };
 };
@@ -165,10 +161,11 @@ const isIn = (val, expected) =>
 
 const crystalSystemAndBasis3d = ops => {
   const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
-  const ofType = (order, direct, clockwise) => opsWithTypes.filter(op => (
-    isIn(op.order, order)
+
+  const ofType = (order, direct, clockwise) => opsWithTypes.filter(
+    op => isIn(op.order, order)
       && isIn(op.direct, direct)
-      && isIn(op.clockwise, clockwise)));
+      && isIn(op.clockwise, clockwise));
 
   const mirrors    = ofType([2, 3, 4, 6], false, true);
   const inversions = ofType(1, false, true);
@@ -258,7 +255,7 @@ const crystalSystemAndBasis3d = ops => {
     }
   }
 
-  const basis = detSgn([x, y, z]) < 0 ? [x, y, V.negative(z)] : [x, y, z];
+  const basis = sgnDet([x, y, z]) < 0 ? [x, y, V.negative(z)] : [x, y, z];
 
   return { crystalSystem, basis };
 };
@@ -560,17 +557,14 @@ basisNormalizer[CS_3D_MONOCLINIC] = b => {
 basisNormalizer[CS_3D_TRICLINIC] = b => ({ basis: b, centering: 'P' });
 
 
-const normalizedBasis = (crystalSystem, basis) => {
-  const reduced = reducedLatticeBasis(basis);
-  const { basis: normalized, centering } =
-        basisNormalizer[crystalSystem](reduced);
+const normalizedBasis = (crystalSystem, basisIn) => {
+  const reduced = reducedLatticeBasis(basisIn);
+  const { basis, centering } = basisNormalizer[crystalSystem](reduced);
 
-  if (V.le(V.determinant(normalized), 0)) {
-    const n = normalized.length;
-    normalized[n - 1] = V.negative(normalized[n - 1]);
-  }
+  if (sgnDet(basis) < 0)
+    basis[basis.length - 1] = V.negative(basis[basis.length - 1]);
 
-  return { normalized, centering };
+  return { normalized: basis, centering };
 };
 
 
