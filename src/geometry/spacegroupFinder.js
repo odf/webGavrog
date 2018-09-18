@@ -122,7 +122,7 @@ const crystalSystemAndBasis2d = ops => {
 
   const { order: n, op: R } = opsWithTypes
         .filter(op => op.direct && op.clockwise)
-        .reduce((op1, op2) => op1.order - op2.order);
+        .reduce((op1, op2) => op2.order > op1.order ? op2 : op1);
 
   let crystalSystem;
 
@@ -781,12 +781,10 @@ if (require.main == module) {
     const s = `group ${entry.name} (${entry.canonicalName})`;
     const ops = entry.operators;
 
-    const dimension = V.dimension(entry.transform);
-    const { crystalSystem } = crystalSystemAndBasis(ops);
-    if (dimension != 3)
-      continue;
-
     try {
+      if (V.dimension(entry.transform) != 2)
+        continue;
+
       const result = identifySpacegroup(ops) || {};
 
       if (result.fullName != entry.canonicalName)
