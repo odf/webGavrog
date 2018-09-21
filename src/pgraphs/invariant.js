@@ -126,7 +126,21 @@ export const invariant = graph => {
   }
 
   return _postprocessTraversal(best.toArray()).sort(_cmpSteps);
-}
+};
+
+
+export const systreKey = graph => {
+  const seq = [graph.dim];
+
+  for (const [from, to, shift] of invariant(graph)) {
+    seq.push(from);
+    seq.push(to);
+    for (const x of shift)
+      seq.push(x);
+  }
+
+  return seq.join(' ');
+};
 
 
 if (require.main == module) {

@@ -5,6 +5,7 @@ import * as sgtable from '../geometry/sgtable';
 import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
+import { systreKey } from '../pgraphs/invariant';
 import * as tilings from '../dsymbols/tilings';
 import parseDSymbols from '../io/ds';
 import * as cgd from '../io/cgd';
@@ -147,6 +148,12 @@ export const processGraph = (
   writeInfo();
 
   showSpaceGroup(ops.map(phi => phi.transform), group(graph), writeInfo);
+
+  const key = systreKey(G);
+  if (true) {
+    writeInfo(`   Systre key: "${key}"`);
+    writeInfo();
+  }
 });
 
 
