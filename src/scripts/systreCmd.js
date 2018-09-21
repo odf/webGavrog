@@ -1,6 +1,6 @@
 import * as csp from 'plexus-csp';
 
-import { rationalLinearAlgebra } from '../arithmetic/types';
+import { affineTransformationsQ } from '../geometry/types';
 import * as sgtable from '../geometry/sgtable';
 import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as periodic from '../pgraphs/periodic';
@@ -11,7 +11,7 @@ import parseDSymbols from '../io/ds';
 import * as cgd from '../io/cgd';
 
 
-const ops = rationalLinearAlgebra;
+const V = affineTransformationsQ;
 
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
 
@@ -141,13 +141,14 @@ export const processGraph = (
   else
     writeInfo('   Given repeat unit is accurate.');
 
-  const ops = symmetries.symmetries(G).symmetries;
-  writeInfo(`   Point group has ${ops.length} elements.`);
-  const nk = pluralize(symmetries.nodeOrbits(G, ops).length, 'kind');
+  const syms = symmetries.symmetries(G).symmetries;
+  writeInfo(`   Point group has ${syms.length} elements.`);
+  const nk = pluralize(symmetries.nodeOrbits(G, syms).length, 'kind');
   writeInfo(`   ${nk} of node.`);
   writeInfo();
 
-  showSpaceGroup(ops.map(phi => phi.transform), group(graph), writeInfo);
+  const symOps = syms.map(phi => phi.transform);
+  showSpaceGroup(symOps, group(graph), writeInfo);
 
   const key = systreKey(G);
   if (true) {
@@ -219,7 +220,7 @@ export const processData = (
 
 if (require.main == module) {
   Array.prototype.toString = function() {
-    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+    return '[' + this.map(x => x.toString()).join(',') + ']';
   };
 
   csp.top(csp.go(function*() {
@@ -229,7 +230,7 @@ if (require.main == module) {
 #@ name locally-unstable
 <1.1:5:2 3 5,1 3 4 5,4 5 3:3 8,8 3>
 `;
-    yield processData(data1, "x.ds", {});
+    yield processData(data1, "x.ds", {}, prefixedLineWriter());
 
     const data2 = `
 PERIODIC_GRAPH
@@ -290,6 +291,6 @@ PERIODIC_GRAPH
       2 2  1 0
 END
 `;
-    yield processData(data2, "x.cgd", {});
+    yield processData(data2, "x.cgd", {}, prefixedLineWriter());
   }));
 }
