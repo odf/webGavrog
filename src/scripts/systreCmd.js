@@ -147,7 +147,7 @@ export const processGraph = (
   writeInfo(`   ${nk} of node.`);
   writeInfo();
 
-  const symOps = syms.map(phi => phi.transform);
+  const symOps = syms.map(phi => V.transposed(phi.transform));
   showSpaceGroup(symOps, group(graph), writeInfo);
 
   const key = systreKey(G);
