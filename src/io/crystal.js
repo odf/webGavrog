@@ -240,6 +240,7 @@ const nodeImages = (symOps, equalFn) => (v, index) => {
   const cosetReps = operatorCosets(symOps, stabilizer);
 
   return cosetReps.map(op => ({
+    name,
     pos: opsF.modZ(applyToPoint(op, positionPrimitive)),
     degree: coordination,
     repIndex: index,
@@ -274,17 +275,13 @@ const edgeImages = (symOps, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
 
 
 const applyOpsToNodes = (nodes, symOps, equalFn) =>
-  flatMap(nodeImages(symOps, equalFn), nodes)
-  .map(({ pos, degree, repIndex, operator }, id) => ({
-    id, pos, degree, repIndex, operator
-  }))
+      flatMap(nodeImages(symOps, equalFn), nodes)
+      .map((obj, id) => Object.assign({ id }, obj));
 
 
 const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) =>
-  flatMap(edgeImages(symOps, nodes, pointsEqFn, vectorsEqFn), edges)
-  .map(({ from, to, repIndex, operator }, id) => ({
-    id, from, to, repIndex, operator
-  }));
+      flatMap(edgeImages(symOps, nodes, pointsEqFn, vectorsEqFn), edges)
+      .map((obj, id) => Object.assign({ id }, obj));
 
 
 const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
@@ -627,6 +624,7 @@ export function netFromCrystal(spec) {
     nodeReps: nodesMapped,
     explicitEdgeReps: edgesMapped,
     nodes: allNodes,
+    nodesNames: allNodes.map(({ name }) => name),
     explicitEdges,
     graph,
     warnings,
@@ -744,7 +742,7 @@ CRYSTAL
   NAME nbo
   GROUP Im-3m
   CELL 2.00000 2.00000 2.00000 90.0000 90.0000 90.0000
-  NODE 1 4  0.00000 0.00000 0.50000
+  NODE V1 4  0.00000 0.00000 0.50000
   EDGE  0.00000 0.00000 0.50000   0.00000 0.50000 0.50000
 END
 `;
