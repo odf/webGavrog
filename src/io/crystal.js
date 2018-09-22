@@ -624,7 +624,7 @@ export function netFromCrystal(spec) {
     nodeReps: nodesMapped,
     explicitEdgeReps: edgesMapped,
     nodes: allNodes,
-    nodesNames: allNodes.map(({ name }) => name),
+    nodeNames: allNodes.map(({ name }) => name),
     explicitEdges,
     graph,
     warnings,
