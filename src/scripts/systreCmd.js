@@ -120,6 +120,7 @@ const showSpaceGroup = (ops, givenGroup, writeInfo) => {
 export const processGraph = (
   graph,
   name,
+  nodeNames,
   options,
   writeInfo=prefixedLineWriter(),
   writeData=prefixedLineWriter(),
@@ -200,6 +201,7 @@ export const processData = (
       try {
         yield processGraph(input.graph,
                            input.name,
+                           input.nodeNames,
                            options,
                            writeInfo=writeInfo,
                            writeData=writeData,
