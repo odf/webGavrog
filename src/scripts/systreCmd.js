@@ -132,7 +132,8 @@ export const processGraph = (
   if (!checkGraph(graph, writeInfo))
     return;
 
-  const G = symmetries.minimalImage(graph);
+  const { graph: G, orbits: translationOrbits } =
+        symmetries.minimalImageWithOrbits(graph);
 
   if (G.edges.length < graph.edges.length) {
     const n = G.edges.length;
@@ -144,8 +145,9 @@ export const processGraph = (
 
   const syms = symmetries.symmetries(G).symmetries;
   writeInfo(`   Point group has ${syms.length} elements.`);
-  const nk = pluralize(symmetries.nodeOrbits(G, syms).length, 'kind');
-  writeInfo(`   ${nk} of node.`);
+
+  const orbits = symmetries.nodeOrbits(G, syms);
+  writeInfo(`   ${pluralize(orbits.length, 'kind')} of node.`);
   writeInfo();
 
   const symOps = syms.map(phi => V.transposed(phi.transform));
