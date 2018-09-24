@@ -263,9 +263,9 @@ const fullTranslationBasis = vectors => {
 };
 
 
-export const minimalImage = graph => {
+export const minimalImageWithOrbits = graph => {
   if (isMinimal(graph))
-    return graph;
+    return { graph, orbits: pg.vertices(graph).map(v => [v]) };
   else {
     const pos = pg.barycentricPlacement(graph);
     const equivs = translationalEquivalences(graph);
@@ -291,9 +291,15 @@ export const minimalImage = graph => {
       imgEdges.push([vNew + 1, wNew + 1, sNew]);
     }
 
-    return pg.make(imgEdges);
+    return {
+      graph: pg.make(imgEdges),
+      orbits: classes
+    };
   }
 };
+
+
+export const minimalImage = graph => minimalImageWithOrbits(graph).graph;
 
 
 const isUnimodular = A =>
