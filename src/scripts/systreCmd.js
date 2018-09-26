@@ -56,6 +56,62 @@ const showGraphBasics = (graph, writeInfo) => {
 };
 
 
+const nodeNameMapping = (
+  nodes, nodeNames, translationOrbits, orbits, writeInfo
+) => {
+  if (nodeNames == null)
+    nodeNames = nodes.map(v => v);
+
+  const imageNode2Orbit = {};
+
+  for (let i = 0; i < orbits.length; ++i) {
+    for (const v of orbits[i])
+      imageNode2Orbit[v] = i + 1;
+  }
+
+  const node2Image = {};
+
+  if (translationOrbits) {
+    for (let i = 0; i < translationOrbits.length; ++i) {
+      for (const v of translationOrbits[i])
+        node2Image[v] = i + 1;
+    }
+  }
+  else {
+    for (const v of nodes)
+      node2Image[v] = v;
+  }
+
+  const orbit2name = {};
+  const node2name = {};
+  const mergedNames = [];
+  const mergedNamesSeen = {};
+
+  for (const i in nodes) {
+    const v = nodes[i];
+    const s = nodeNames[i];
+    const name = typeof s == 'string' ? s : `Node ${s}`;
+    const w = node2Image[v];
+    const orbit = imageNode2Orbit[w];
+    const oldName = orbit2name[orbit];
+
+    if (oldName != null && oldName != name) {
+      const pair = [name, oldName];
+      if (!mergedNamesSeen[pair]) {
+        mergedNames.push(pair);
+        mergedNamesSeen[pair] = true;
+      }
+    }
+    else
+      orbit2name[orbit] = name;
+
+    node2name[w] = orbit2name[orbit];
+  }
+
+  return node2name, mergedNames
+};
+
+
 const checkGraph = (graph, writeInfo) => {
   if (!periodic.isConnected(graph)) {
     const msg = ("Structure is disconnected."
@@ -149,6 +205,9 @@ export const processGraph = (
   const orbits = symmetries.nodeOrbits(G, syms);
   writeInfo(`   ${pluralize(orbits.length, 'kind')} of node.`);
   writeInfo();
+
+  const nodes = periodic.vertices(graph);
+  nodeNameMapping(nodes, nodeNames, translationOrbits, orbits, writeInfo);
 
   const symOps = syms.map(phi => V.transposed(phi.transform));
   showSpaceGroup(symOps, group(graph), writeInfo);
@@ -293,6 +352,14 @@ PERIODIC_GRAPH
       1 2  0 1
       1 1  1 0
       2 2  1 0
+END
+
+CRYSTAL
+  NAME  nbo
+  GROUP Im-3m
+  CELL  2.00000 2.00000 2.00000 90.0000 90.0000 90.0000
+  NODE  1 4  0.00000 0.00000 0.50000
+  EDGE  0.00000 0.00000 0.50000   0.00000 0.50000 0.50000
 END
 `;
     yield processData(data2, "x.cgd", {}, prefixedLineWriter());

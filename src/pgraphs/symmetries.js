@@ -265,7 +265,7 @@ const fullTranslationBasis = vectors => {
 
 export const minimalImageWithOrbits = graph => {
   if (isMinimal(graph))
-    return { graph, orbits: pg.vertices(graph).map(v => [v]) };
+    return { graph };
   else {
     const pos = pg.barycentricPlacement(graph);
     const equivs = translationalEquivalences(graph);
