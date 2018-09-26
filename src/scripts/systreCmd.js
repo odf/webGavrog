@@ -108,7 +108,7 @@ const nodeNameMapping = (
     node2name[w] = orbit2name[orbit];
   }
 
-  return node2name, mergedNames
+  return [node2name, mergedNames];
 };
 
 
@@ -207,7 +207,15 @@ export const processGraph = (
   writeInfo();
 
   const nodes = periodic.vertices(graph);
-  nodeNameMapping(nodes, nodeNames, translationOrbits, orbits, writeInfo);
+  const [nodeToName, mergedNames] =
+        nodeNameMapping(nodes, nodeNames, translationOrbits, orbits, writeInfo);
+
+  if (mergedNames.length) {
+    writeInfo("   Equivalences for non-unique nodes:");
+    for (const [oldName, newName] of mergedNames)
+      writeInfo(`      ${oldName} --> ${newName}`);
+    writeInfo();
+  }
 
   const symOps = syms.map(phi => V.transposed(phi.transform));
   showSpaceGroup(symOps, group(graph), writeInfo);
