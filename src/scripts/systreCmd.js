@@ -173,6 +173,48 @@ const showSpaceGroup = (ops, givenGroup, writeInfo) => {
 };
 
 
+const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
+  writeInfo('   Coordination sequences:');
+
+  let cum = 0;
+  let complete = true;
+
+  for (const orbit of nodeOrbits) {
+    const v = orbit[0];
+    const cs = periodic.coordinationSeq(G, v, 10);
+    let s = 1;
+    const out = [`      Node ${nodeToName[v]}:   `];
+
+    for (let i = 1; i <= 10; ++i) {
+      if (s > 100000) {
+        complete = false;
+        out.push('...');
+        break;
+      }
+
+      const x = cs[i];
+      out.push(x);
+      s += x;
+    }
+
+    cum += orbit.length * s;
+    writeInfo(out.join(' '));
+  }
+
+  writeInfo();
+
+  if (complete) {
+    const td10 = cum / periodic.vertices(G).length;
+    writeInfo(`   TD10 = ${Math.round(td10)}`);
+  }
+  else {
+    writeInfo('   TD10 not computed.');
+  }
+
+  writeInfo();
+}
+
+
 export const processGraph = (
   graph,
   name,
@@ -216,6 +258,8 @@ export const processGraph = (
       writeInfo(`      ${oldName} --> ${newName}`);
     writeInfo();
   }
+
+  showCoordinationSequences(G, orbits, nodeToName, writeInfo);
 
   const symOps = syms.map(phi => V.transposed(phi.transform));
   showSpaceGroup(symOps, group(graph), writeInfo);
