@@ -398,21 +398,23 @@ export const nodeOrbits = (graph, syms) => {
   const p = new part.Partition();
 
   for (const v of pg.vertices(graph)) {
-    if (seen[v])
+    const kv = encode(v);
+    if (seen[kv])
       continue;
-    seen[v] = true;
+    seen[kv] = true;
 
     for (const phi of syms) {
       const w = phi.src2img[v];
-      if (seen[w])
+      const kw = encode(w);
+      if (seen[kw])
         continue;
-      seen[w] = true;
+      seen[kw] = true;
 
       p.union(v, w);
     }
   }
 
-  return equivalenceClasses(p, Object.keys(seen));
+  return equivalenceClasses(p, Object.keys(seen).map(decode));
 }
 
 
