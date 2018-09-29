@@ -265,7 +265,7 @@ export const processGraph = (
   showSpaceGroup(symOps, group(graph), writeInfo);
 
   const key = systreKey(G);
-  if (true) {
+  if (options.outputSystreKey) {
     writeInfo(`   Systre key: "${key}"`);
     writeInfo();
   }
