@@ -9,6 +9,7 @@ import { systreKey } from '../pgraphs/invariant';
 import * as tilings from '../dsymbols/tilings';
 import parseDSymbols from '../io/ds';
 import * as cgd from '../io/cgd';
+import { Archive } from '../io/archive';
 
 
 const V = affineTransformationsQ;
@@ -215,15 +216,39 @@ const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
 }
 
 
+const showAndCountGraphMatches = (key, archives, writeInfo) => {
+  let count = 0;
+
+  for (const arc of archives) {
+    const name = arc.name;
+    const found = arc.getByKey(key)
+
+    if (found) {
+      ++count;
+      if (name == '__rcsr__')
+        writeInfo('   Structure was identified with RCSR symbol:');
+      else if (name == '__internal__')
+        writeInfo('   Structure already seen in this run.');
+      else
+        writeInfo(`   Structure was found in archive "${name}":`);
+
+      writeInfo(`       Name:            ${found.id}`);
+      writeInfo();
+    }
+  }
+
+  return count;
+}
+
+
 export const processGraph = (
   graph,
   name,
   nodeNames,
   options,
-  writeInfo=prefixedLineWriter(),
-  writeData=prefixedLineWriter(),
   archives=[],
-  outputArchiveFp=null
+  writeInfo=prefixedLineWriter(),
+  writeData=prefixedLineWriter()
 ) => csp.go(function*() {
   showGraphBasics(graph, writeInfo);
 
@@ -269,6 +294,14 @@ export const processGraph = (
     writeInfo(`   Systre key: "${key}"`);
     writeInfo();
   }
+
+  const countMatches = showAndCountGraphMatches(key, archives, writeInfo);
+
+  if (countMatches == 0) {
+    writeInfo("   Structure is new for this run.");
+    writeInfo();
+    archives.find(arc => arc.name == '__internal__').addNet(G, name);
+  }
 });
 
 
@@ -276,10 +309,9 @@ export const processData = (
   data,
   fileName,
   options,
-  writeInfo=prefixedLineWriter('## '),
-  writeData=prefixedLineWriter(),
   archives=[],
-  outputArchiveFp=null
+  writeInfo=prefixedLineWriter('## '),
+  writeData=prefixedLineWriter()
 ) => csp.go(function*() {
 
   let count = 0;
@@ -316,10 +348,9 @@ export const processData = (
                            input.name,
                            input.nodeNames,
                            options,
-                           writeInfo=writeInfo,
-                           writeData=writeData,
                            archives=archives,
-                           outputArchiveFp=outputArchiveFp)
+                           writeInfo=writeInfo,
+                           writeData=writeData)
       } catch(ex) {
         reportSystreError('INTERNAL', ex + '\n' + ex.stack, writeInfo);
       }
@@ -334,86 +365,25 @@ export const processData = (
 
 
 if (require.main == module) {
-  Array.prototype.toString = function() {
-    return '[' + this.map(x => x.toString()).join(',') + ']';
-  };
+  const fs = require('fs');
+  const path = require('path');
+
+  const args = process.argv.slice(2);
+  const archiveFiles = args.filter(s => path.extname(s) == '.arc');
+  const inputFiles = args.filter(s => path.extname(s) != '.arc');
+
+  const archives = archiveFiles.map(name => {
+    const archive = new Archive('test');
+    archive.addAll(fs.readFileSync(name, { encoding: 'utf8' }));
+    return archive;
+  });
+
+  archives.push(new Archive('__internal__'));
 
   csp.top(csp.go(function*() {
-    const data1 = `
-#@ name bcu-tiling
-<1.1:2 3:2,1 2,1 2,2:4,4 2,6>
-#@ name locally-unstable
-<1.1:5:2 3 5,1 3 4 5,4 5 3:3 8,8 3>
-`;
-    yield processData(data1, "x.ds", {}, prefixedLineWriter());
-
-    const data2 = `
-PERIODIC_GRAPH
-  NAME bcu-net
-  EDGES
-      1 1  1 -1 -1
-      1 1  1 -1  0
-      1 1  1  0 -1
-      1 1  1  0  0
-END
-
-PERIODIC_GRAPH
-  NAME ladder
-  EDGES
-      1 1  1 0
-      1 1  0 1
-      2 2  1 0
-      2 2  0 1
-      1 2  0 0
-END
-
-PERIODIC_GRAPH
-  NAME unstable
-  EDGES
-      1 1  1 0
-      2 2  0 1
-      1 2  0 0
-END
-
-PERIODIC_GRAPH
-  NAME second-order-unstable
-  EDGES
-      1 2  0 0
-      1 2  1 0
-      1 3  0 0
-      1 3  0 1
-      2 3  0 0
-      2 3  0 1
-      2 3 -1 0
-      2 3 -1 1
-      4 5  0 0
-      4 5  1 0
-      4 6  0 0
-      4 6  0 1
-      5 7  0 0
-      5 7  0 1
-      6 7  0 0
-      6 7  1 0
-      1 4  0 0
-END
-
-PERIODIC_GRAPH
-  NAME non-minimal
-  EDGES
-      1 2  0 0
-      1 2  0 1
-      1 1  1 0
-      2 2  1 0
-END
-
-CRYSTAL
-  NAME  nbo
-  GROUP Im-3m
-  CELL  2.00000 2.00000 2.00000 90.0000 90.0000 90.0000
-  NODE  1 4  0.00000 0.00000 0.50000
-  EDGE  0.00000 0.00000 0.50000   0.00000 0.50000 0.50000
-END
-`;
-    yield processData(data2, "x.cgd", {}, prefixedLineWriter());
+    for (const name of inputFiles) {
+      const data = fs.readFileSync(name, { encoding: 'utf8' });
+      yield processData(data, name, {}, archives, prefixedLineWriter());
+    }
   }));
 }

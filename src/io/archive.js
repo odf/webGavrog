@@ -98,7 +98,7 @@ const entryAsString = e => {
 };
 
 
-class Archive {
+export class Archive {
   constructor(name) {
     this._name = name;
     this._entries = [];
