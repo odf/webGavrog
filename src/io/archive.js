@@ -30,7 +30,7 @@ const makeEntry = (source, attributes, warnings, errors) => {
     errors.push('missing structure id');
 
   if (entry.key && entry.id && entry.version) {
-    const checksum = md5(`${key}\n${version}\n${id}`);
+    const checksum = md5(`${entry.key}\n${entry.version}\n${entry.id}`);
     if (entry.checksum && entry.checksum != checksum)
       errors.push(`checksum error: got ${entry.checksum}, need ${checksum}`);
     entry.checksum = checksum;
@@ -56,7 +56,7 @@ function* parseEntries(lines, source) {
     if (startLineNr == null)
       startLineNr = lineNr;
 
-    const fields = line.split(/s+/);
+    const fields = line.split(/\s+/);
     const tag = fields[0];
     const val = fields.slice(1).join(' ');
 
@@ -86,7 +86,7 @@ const entryAsString = e => {
   out.push(`key      ${e.key}`);
   out.push(`version  ${e.version}`);
   out.push(`id       ${e.id}`);
-  out.push(`checksum $[e.checksum}`);
+  out.push(`checksum ${e.checksum}`);
 
   for (const key in e.attributes)
     out.push(`${key}${filler.slice(key.length)} ${e.attributes[key]}`);
@@ -94,7 +94,7 @@ const entryAsString = e => {
   out.push('end');
   out.push('');
 
-  return out.join('');
+  return out.join('\n');
 };
 
 
@@ -109,27 +109,17 @@ class Archive {
 
   get name() { return this._name; }
 
-  get entries() {
-    return function* entries() {
-      for (const e of this._entries)
-        yield e;
-    }
-  }
+  get length() { return this._entries.length; }
 
-  getByKey(key) {
-    return this._entries[this._keyToIndex(key)];
-  }
+  get entries() { return this._entries.slice(); }
 
-  getById(key) {
-    return this._entries[this._idToIndex(key)];
-  }
+  get badEntries() { return this._badEntries.slice(); }
 
-  get badEntries() {
-    return function* badEntries() {
-      for (const e of this._badEntries)
-        yield e;
-    }
-  }
+  getByKey(key) { return this._entries[this._keyToIndex[key]]; }
+
+  getById(id) { return this._entries[this._idToIndex[id]]; }
+
+  toString() { return this._entries.map(entryAsString).join('\n'); }
 
   addEntry(e) {
     if (e.id && this.getById(e.id)) {
@@ -164,3 +154,13 @@ class Archive {
       this.addEntry(e);
   }
 };
+
+
+if (require.main == module) {
+  const fs = require('fs');
+
+  const archive = new Archive('test');
+  archive.addAll(fs.readFileSync(process.argv[2], { encoding: 'utf8' }));
+
+  console.log(archive.toString());
+}
