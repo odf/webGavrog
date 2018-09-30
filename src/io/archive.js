@@ -1,5 +1,7 @@
 import md5 from 'md5';
 
+import { systreKey, keyVersion } from '../pgraphs/invariant';
+
 
 const makeEntry = (source, attributes, warnings, errors) => {
   const entry = {
@@ -38,16 +40,16 @@ const makeEntry = (source, attributes, warnings, errors) => {
 };
 
 
-function* parseEntries(text, source) {
+function* parseEntries(lines, source) {
   let lineNr = 0;
   let startLineNr = null;
   let attributes = {};
   let warnings = [];
   let errors = [];
 
-  for (const lineRaw of text.split(/\r?\n/)) {
+  for (const lineRaw of lines) {
     ++lineNr;
-    const line = line.trim();
+    const line = lineRaw.trim();
     if (!line.length)
       continue;
 
@@ -75,6 +77,25 @@ function* parseEntries(text, source) {
       attributes[tag] = val;
   }
 }
+
+
+const entryAsString = e => {
+  const out = [];
+  const filler = '        ';
+
+  out.push(`key      ${e.key}`);
+  out.push(`version  ${e.version}`);
+  out.push(`id       ${e.id}`);
+  out.push(`checksum $[e.checksum}`);
+
+  for (const key in e.attributes)
+    out.push(`${key}${filler.slice(key.length)} ${e.attributes[key]}`);
+
+  out.push('end');
+  out.push('');
+
+  return out.join('');
+};
 
 
 class Archive {
@@ -110,7 +131,7 @@ class Archive {
     }
   }
 
-  add(e) {
+  addEntry(e) {
     if (e.id && this.getById(e.id)) {
       e.errors.push(`multiple entries with id '${e.id}'`);
     }
@@ -127,5 +148,19 @@ class Archive {
       this._keyToIndex[e.key] = i;
       this._idToIndex[e.key] = i;
     }
+  }
+
+  addNet(G, name, source) {
+    const attributes = {
+      key: systreKey(G),
+      version: keyVersion,
+      id: name
+    };
+    this.addEntry(makeEntry(source, attributes, [], []));
+  }
+
+  addAll(text) {
+    for (const e of parseEntries(text.split(/\r?\n/)))
+      this.addEntry(e);
   }
 };

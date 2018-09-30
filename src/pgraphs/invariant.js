@@ -143,6 +143,9 @@ export const systreKey = graph => {
 };
 
 
+export const keyVersion = '1.0';
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
