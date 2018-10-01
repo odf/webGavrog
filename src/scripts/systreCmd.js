@@ -46,9 +46,9 @@ const nets = function*(data, fileName) {
 
 const group = graph => graph.group || (graph.dim == 2 ? 'p1' : 'P1');
 
-const showGraphBasics = (graph, writeInfo) => {
+const showGraphBasics = (graph, group, writeInfo) => {
   writeInfo(`   Input structure described as ${graph.dim}-periodic.`);
-  writeInfo(`   Given space group is ${group(graph)}.`);
+  writeInfo(`   Given space group is ${group}.`);
 
   const nv = pluralize(periodic.vertices(graph).length, 'node');
   const ne = pluralize(graph.edges.length, 'edge');
@@ -90,8 +90,7 @@ const nodeNameMapping = (
 
   for (const i in nodes) {
     const v = nodes[i];
-    const s = nodeNames[i];
-    const name = typeof s == 'string' ? s : `Node ${s}`;
+    const name = nodeNames[i];
     const w = node2Image[v];
     const orbit = imageNode2Orbit[w];
     const oldName = orbit2name[orbit];
@@ -242,15 +241,16 @@ const showAndCountGraphMatches = (key, archives, writeInfo) => {
 
 
 export const processGraph = (
-  graph,
-  name,
-  nodeNames,
+  input,
   options,
   archives=[],
   writeInfo=prefixedLineWriter(),
   writeData=prefixedLineWriter()
 ) => csp.go(function*() {
-  showGraphBasics(graph, writeInfo);
+  const { graph, name, nodeNames } = input;
+  const group = input.group || (graph.dim == 2 ? 'p1' : 'P1');
+
+  showGraphBasics(graph, group, writeInfo);
 
   if (!checkGraph(graph, writeInfo))
     return;
@@ -287,7 +287,7 @@ export const processGraph = (
   showCoordinationSequences(G, orbits, nodeToName, writeInfo);
 
   const symOps = syms.map(phi => V.transposed(phi.transform));
-  showSpaceGroup(symOps, group(graph), writeInfo);
+  showSpaceGroup(symOps, group, writeInfo);
 
   const key = systreKey(G);
   if (options.outputSystreKey) {
@@ -302,6 +302,8 @@ export const processGraph = (
     writeInfo();
     archives.find(arc => arc.name == '__internal__').addNet(G, name);
   }
+
+  writeInfo();
 });
 
 
@@ -333,7 +335,7 @@ export const processData = (
     writeInfo(`Structure #${count} - "${name}".`);
     writeInfo();
 
-    if (input.warnings.length) {
+    if (input.warnings.length && !options.skipWarnings) {
       for (const s of input.warnings)
         writeInfo(`   (${s})`);
       writeInfo();
@@ -344,9 +346,7 @@ export const processData = (
 
     if (input.errors.length == 0) {
       try {
-        yield processGraph(input.graph,
-                           input.name,
-                           input.nodeNames,
+        yield processGraph(input,
                            options,
                            archives=archives,
                            writeInfo=writeInfo,
@@ -380,10 +380,12 @@ if (require.main == module) {
 
   archives.push(new Archive('__internal__'));
 
+  const options = { skipWarnings: true };
+
   csp.top(csp.go(function*() {
     for (const name of inputFiles) {
       const data = fs.readFileSync(name, { encoding: 'utf8' });
-      yield processData(data, name, {}, archives, prefixedLineWriter());
+      yield processData(data, name, options, archives, prefixedLineWriter());
     }
   }));
 }
