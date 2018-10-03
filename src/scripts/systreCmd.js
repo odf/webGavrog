@@ -240,6 +240,18 @@ const showAndCountGraphMatches = (key, archives, writeInfo) => {
 }
 
 
+const affineSymmetries = (graph, syms) => {
+  const I = V.identityMatrix(graph.dim);
+  const pos = periodic.barycentricPlacement(graph);
+  const v = periodic.vertices(graph)[0];
+
+  return syms.map(({ src2img, transform }) => {
+    const s = V.minus(pos[src2img[v]], V.times(pos[v], transform));
+    return V.times(V.affineTransformation(I, s), V.transposed(transform));
+  });
+}
+
+
 export const processGraph = (
   input,
   options,
@@ -286,7 +298,7 @@ export const processGraph = (
 
   showCoordinationSequences(G, orbits, nodeToName, writeInfo);
 
-  const symOps = syms.map(phi => V.transposed(phi.transform));
+  const symOps = affineSymmetries(G, syms);
   showSpaceGroup(symOps, group, writeInfo);
 
   const key = systreKey(G);
