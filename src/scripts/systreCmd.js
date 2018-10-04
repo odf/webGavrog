@@ -152,6 +152,12 @@ const checkGraph = (graph, writeInfo) => {
 const showSpaceGroup = (ops, givenGroup, writeInfo) => {
   const sgInfo = identifySpacegroup(ops);
 
+  if (sgInfo == null) {
+    const msg = "Space group could not be identified.";
+      reportSystreError("INTERNAL", msg, writeInfo);
+    return;
+  }
+
   writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
 
   const givenName = sgtable.settingByName(givenGroup).name;
