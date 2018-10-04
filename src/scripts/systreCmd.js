@@ -44,8 +44,6 @@ const nets = function*(data, fileName) {
 };
 
 
-const group = graph => graph.group || (graph.dim == 2 ? 'p1' : 'P1');
-
 const showGraphBasics = (graph, group, writeInfo) => {
   writeInfo(`   Input structure described as ${graph.dim}-periodic.`);
   writeInfo(`   Given space group is ${group}.`);
@@ -266,7 +264,7 @@ export const processGraph = (
   writeData=prefixedLineWriter()
 ) => csp.go(function*() {
   const { graph, name, nodeNames } = input;
-  const group = input.group || (graph.dim == 2 ? 'p1' : 'P1');
+  const group = input.group || (/*graph.dim == 2 ? 'p1' :*/ 'P1');
 
   showGraphBasics(graph, group, writeInfo);
 

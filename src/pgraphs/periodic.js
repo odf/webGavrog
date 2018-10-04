@@ -109,7 +109,7 @@ export const vertices = graph => {
     verts.push(e.head);
     verts.push(e.tail);
   }
-  return dedupe(verts).sort((a, b) => a - b);
+  return dedupe(verts)/*.sort((a, b) => a - b)*/;
 };
 
 
