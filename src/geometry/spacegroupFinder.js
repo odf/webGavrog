@@ -401,7 +401,7 @@ basisNormalizer[CS_3D_TETRAGONAL] = b => {
 
 
 basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
-  const d = basis.map(v => v.filter(x => V.ne(0, x)).length);
+  let d = basis.map(v => v.filter(x => V.ne(0, x)).length);
   const x = [1, 0, 0];
   const y = [0, 1, 0];
   const z = [0, 0, 1];
@@ -438,6 +438,7 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
     v = copy;
 
   const n = v[0].filter(x => V.ne(0, x)).length;
+  d = v.map(v => v.filter(x => V.ne(0, x)).length);
 
   let a, b, c, centering;
   if (n == 3) {
