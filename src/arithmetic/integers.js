@@ -209,9 +209,9 @@ export const extend = (baseOps, baseLength = 0) => {
 
   const plus = (a, b) => {
     if (_isZero(a))
-      return b;
+      return make(b.sign, b.digits);
     else if (_isZero(b))
-      return a;
+      return make(a.sign, a.digits);
     else if (a.sign != b.sign)
       return minus(a, new LongInt(-b.sign, b.digits));
     else
@@ -223,7 +223,7 @@ export const extend = (baseOps, baseLength = 0) => {
     if (_isZero(a))
       return negative(b);
     else if (_isZero(b))
-      return a;
+      return make(a.sign, a.digits);
     else if (a.sign != b.sign)
       return plus(a, new LongInt(-b.sign, b.digits));
     else {
@@ -297,10 +297,8 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const times = (a, b) => {
-    if (_isZero(a))
-      return a;
-    else if (_isZero(b))
-      return b;
+    if (_isZero(a) || _isZero(b))
+      return 0;
     else
       return make(a.sign * b.sign, _times(a.digits, b.digits));
   };
