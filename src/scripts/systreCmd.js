@@ -60,6 +60,20 @@ const nodeNameMapping = (
 ) => {
   if (nodeNames == null)
     nodeNames = nodes.map(v => v);
+  else {
+    const nodesSorted = nodes.sort((a, b) => {
+      if (typeof a != typeof b)
+        return (typeof a > typeof b) - (typeof a < typeof b);
+      else
+        return (a > b) - (a < b);
+    });
+
+    const t = {};
+    for (const i in nodesSorted)
+      t[nodesSorted[i]] = nodeNames[i];
+
+    nodeNames = nodes.map(v => t[v]);
+  }
 
   const imageNode2Orbit = {};
 
