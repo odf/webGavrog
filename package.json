@@ -16,7 +16,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "md5": "^2.2.1",
-    "plexus-csp": "^0.2.0"
+    "plexus-csp": "^0.2.1"
   },
   "devDependencies": {
     "babel-core": "^6.4.0",
