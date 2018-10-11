@@ -369,6 +369,33 @@ export const edgeVector = (e, pos) =>
   ops.plus(e.shift, ops.minus(pos[e.tail], pos[e.head]));
 
 
+export const graphWithNormalizedShifts = graph => {
+  const v0 = graph.edges[0].head;
+  const adj = adjacencies(graph);
+  const shifts = { [v0]: ops.vector(graph.dim) };
+  const queue = [v0];
+
+  while (queue.length) {
+    const v = queue.shift();
+
+    for (const { v: w, s } of adj[v]) {
+      if (shifts[w] == null) {
+        shifts[w] = ops.plus(s, shifts[v]);
+        queue.push(w)
+      }
+    }
+  }
+
+  return make(graph.edges.map(e => {
+    const h = e.head;
+    const t = e.tail;
+    const s = e.shift;
+
+    return [h, t, ops.minus(shifts[t], ops.plus(shifts[h], s))];
+  }));
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
