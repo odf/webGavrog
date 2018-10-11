@@ -125,13 +125,6 @@ const nodeNameMapping = (
 
 
 const checkGraph = (graph, writeInfo) => {
-  if (!periodic.isConnected(graph)) {
-    const msg = ("Structure is disconnected."
-                 + " Only connected structures are supported at this point.");
-    reportSystreError("STRUCTURE", msg, writeInfo);
-    return false;
-  }
-
   if (!periodic.isLocallyStable(graph)) {
     const msg = ("Structure has collisions between next-nearest neighbors."
                  + " Systre does not currently support such structures.");
@@ -270,6 +263,26 @@ const affineSymmetries = (graph, syms) => {
 }
 
 
+export const processDisconnectedGraph = (
+  input,
+  options,
+  archives=[],
+  writeInfo=prefixedLineWriter(),
+  writeData=prefixedLineWriter()
+) => csp.go(function*() {
+  const { graph, name, nodeNames } = input;
+  const group = input.group || (/*graph.dim == 2 ? 'p1' :*/ 'P1');
+
+  showGraphBasics(graph, group, writeInfo);
+
+  writeInfo("   Structure is not connected.");
+  writeInfo("   Processing components separately.");
+  writeInfo();
+
+  //TODO implement this
+});
+
+
 export const processGraph = (
   input,
   options,
@@ -330,7 +343,7 @@ export const processGraph = (
   if (countMatches == 0) {
     writeInfo("   Structure is new for this run.");
     writeInfo();
-    archives.find(arc => arc.name == '__internal__').addNet(G, name);
+    archives.find(arc => arc.name == '__internal__').addNet(G, name, key);
   }
 
   writeInfo();
@@ -376,11 +389,14 @@ export const processData = (
 
     if (input.errors.length == 0) {
       try {
-        yield processGraph(input,
-                           options,
-                           archives=archives,
-                           writeInfo=writeInfo,
-                           writeData=writeData)
+        const process = periodic.isConnected(input.graph) ?
+              processGraph : processDisconnectedGraph;
+
+        yield process(input,
+                      options,
+                      archives=archives,
+                      writeInfo=writeInfo,
+                      writeData=writeData)
       } catch(ex) {
         reportSystreError('INTERNAL', ex + '\n' + ex.stack, writeInfo);
       }

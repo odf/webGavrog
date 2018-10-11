@@ -140,9 +140,9 @@ export class Archive {
     }
   }
 
-  addNet(G, name, source) {
+  addNet(G, name, key, source) {
     const attributes = {
-      key: systreKey(G),
+      key: (key || systreKey(G)),
       version: keyVersion,
       id: name
     };
