@@ -354,8 +354,6 @@ const embed = (g, relax=true) => {
 
       const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
       params = result.position;
-
-      console.log(`relaxation pass ${pass} used ${result.steps} amoeba steps`);
     }
   }
 

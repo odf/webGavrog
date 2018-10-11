@@ -6,6 +6,7 @@ import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 import { systreKey } from '../pgraphs/invariant';
+import embed from '../pgraphs/embedding';
 import * as tilings from '../dsymbols/tilings';
 import parseDSymbols from '../io/ds';
 import * as cgd from '../io/cgd';
@@ -17,7 +18,7 @@ const V = affineTransformationsQ;
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
 
 
-export const prefixedLineWriter = (prefix='') => (s='') => {
+const prefixedLineWriter = (prefix='') => (s='') => {
   for (const line of s.split('\n'))
     console.log(`${prefix}${line}`);
 };
@@ -263,7 +264,14 @@ const affineSymmetries = (graph, syms) => {
 }
 
 
-export const processDisconnectedGraph = (
+const showEmbedding = (G, name, options, writeInfo) => {
+  const embedding = embed(G, options.relaxPositions);
+
+  writeInfo();
+};
+
+
+const processDisconnectedGraph = (
   input,
   options,
   archives=[],
@@ -283,7 +291,7 @@ export const processDisconnectedGraph = (
 });
 
 
-export const processGraph = (
+const processGraph = (
   input,
   options,
   archives=[],
@@ -346,7 +354,8 @@ export const processGraph = (
     archives.find(arc => arc.name == '__internal__').addNet(G, name, key);
   }
 
-  writeInfo();
+  if (options.outputEmbedding)
+    showEmbedding(G, name, options, writeInfo);
 });
 
 
@@ -426,7 +435,11 @@ if (require.main == module) {
 
   archives.push(new Archive('__internal__'));
 
-  const options = { skipWarnings: true };
+  const options = {
+    outputEmbedding: true,
+    relaxPositions: true,
+    skipWarnings: true
+  };
 
   csp.top(csp.go(function*() {
     for (const name of inputFiles) {
