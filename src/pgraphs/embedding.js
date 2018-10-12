@@ -1,6 +1,7 @@
 import * as pg from './periodic';
 import * as symmetries from './symmetries';
 import * as sg from '../geometry/spacegroups';
+import * as unitCells from '../geometry/unitCells';
 import amoeba from '../algorithms/amoeba';
 
 import { affineTransformationsQ } from '../geometry/types';
@@ -87,18 +88,8 @@ const _parametersForPosition = (pos, cfg, proj, symmetrizer) => {
 };
 
 
-const symmetrizedGramMatrix = (G, ops) => {
-  const M = ops
-    .map(S => opsR.toJS(affineTransformationsQ.linearPart(S)))
-    .map(S => opsF.times(S, opsF.times(G, opsF.transposed(S))))
-    .reduce((A, B) => opsF.plus(A, B));
-
-  return opsF.div(M, ops.length);
-};
-
-
 const _parametersForGramMatrix = (gram, proj, syms) => {
-  const G = symmetrizedGramMatrix(gram, syms);
+  const G = unitCells.symmetrizedGramMatrix(gram, syms);
   const n = opsF.shape(G)[0];
 
   const a = [];
@@ -330,7 +321,7 @@ const embed = (g, relax=true) => {
   const gramSpaceF = opsR.toJS(gramSpace);
   const gramProjF = opsR.toJS(opsR.solve(gramSpace, id(gramSpace.length)));
 
-  const gram = symmetrizedGramMatrix(id(g.dim), symOps);
+  const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
 
   const posF = {};
   for (const v of Object.keys(positions))

@@ -1,7 +1,8 @@
 import * as spacegroups from '../geometry/spacegroups';
 import * as lattices from '../geometry/lattices';
-import * as pg from '../pgraphs/periodic';
 import * as sgtable from '../geometry/sgtable';
+import * as unitCells from '../geometry/unitCells';
+import * as pg from '../pgraphs/periodic';
 import * as delaney from '../dsymbols/delaney';
 import * as derived from '../dsymbols/derived';
 
@@ -559,16 +560,6 @@ const withInducedEdges = (nodes, givenEdges, gram) => {
 };
 
 
-const symmetrizedGramMatrix = (G, symOps) => {
-  const M = symOps
-    .map(S => opsQ.toJS(opsQ.linearPart(S)))
-    .map(S => opsF.times(S, opsF.times(G, opsF.transposed(S))))
-    .reduce((A, B) => opsF.plus(A, B));
-
-  return opsF.div(M, symOps.length);
-};
-
-
 export function netFromCrystal(spec) {
   _timers && _timers.start('netFromCrystal');
 
@@ -582,7 +573,7 @@ export function netFromCrystal(spec) {
   }
 
   const { name: groupName, transform, operators } = group;
-  const cellGram = symmetrizedGramMatrix(G0, operators);
+  const cellGram = unitCells.symmetrizedGramMatrix(G0, operators);
   if (matrixError(cellGram, G0) > 0.01) {
     warnings.push(`Unit cell resymmetrized to ${unitCellParameters(cellGram)}`);
   }
@@ -590,7 +581,7 @@ export function netFromCrystal(spec) {
   const primitive = spacegroups.primitiveSetting(operators);
   const primitiveCell = opsQ.toJS(primitive.cell);
   const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
-  const primitiveGram = symmetrizedGramMatrix(
+  const primitiveGram = unitCells.symmetrizedGramMatrix(
     opsF.times(primitiveCell,
                opsF.times(cellGram, opsF.transposed(primitiveCell))),
     primitive.ops);
@@ -646,7 +637,7 @@ export const tilingFromFacelist = spec => {
   }
 
   const { name: groupName, transform, operators } = group;
-  const cellGram = symmetrizedGramMatrix(G0, operators);
+  const cellGram = unitCells.symmetrizedGramMatrix(G0, operators);
   if (matrixError(cellGram, G0) > 0.01) {
     warnings.push(`Unit cell resymmetrized to ${unitCellParameters(cellGram)}`);
   }
@@ -654,7 +645,7 @@ export const tilingFromFacelist = spec => {
   const primitive = spacegroups.primitiveSetting(operators);
   const primitiveCell = opsQ.toJS(primitive.cell);
   const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
-  const primitiveGram = symmetrizedGramMatrix(
+  const primitiveGram = unitCells.symmetrizedGramMatrix(
     opsF.times(primitiveCell,
                opsF.times(cellGram, opsF.transposed(primitiveCell))),
     primitive.ops);

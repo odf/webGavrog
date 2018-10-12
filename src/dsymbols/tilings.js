@@ -291,22 +291,7 @@ if (require.main == module) {
 
   const delaney = require('./delaney');
   const embed = require('../pgraphs/embedding').default;
-
-  const invariantBasis = gram => {
-    const dot = (v, w) => opsF.times(opsF.times(v, gram), w);
-
-    const vs = opsF.identityMatrix(gram.length);
-    const ortho = [];
-
-    for (let v of vs) {
-      for (const w of ortho)
-        v = opsF.minus(v, opsF.times(w, dot(v, w)));
-      ortho.push(opsF.div(v, opsF.sqrt(dot(v, v))))
-    }
-
-    return opsF.times(gram, opsF.transposed(ortho));
-  };
-
+  const unitCells = require('../geometry/unitCells');
 
   const test = ds => {
     console.log(`ds = ${ds}`);
@@ -321,7 +306,7 @@ if (require.main == module) {
     const pos = embedding.positions;
     console.log(`vertex positions: ${JSON.stringify(pos)}`);
 
-    const basis = invariantBasis(embedding.gram);
+    const basis = unitCells.invariantBasis(embedding.gram);
     console.log(`invariant basis: ${basis}`);
 
     const surf = tileSurfaces(ds, cov, skel, pos, basis);

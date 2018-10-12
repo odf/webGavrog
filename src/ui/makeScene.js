@@ -4,6 +4,7 @@ import * as util        from '../common/util';
 import * as delaney     from '../dsymbols/delaney';
 import * as tilings     from '../dsymbols/tilings';
 import * as lattices    from '../geometry/lattices';
+import * as unitCells   from '../geometry/unitCells';
 import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
 import {subD}           from '../graphics/surface';
@@ -181,27 +182,11 @@ const baseShifts = dim => dim == 3 ?
   cartesian(range(6), range(6));
 
 
-const invariantBasis = gram => {
-  const dot = (v, w) => ops.times(ops.times(v, gram), w);
-
-  const vs = ops.identityMatrix(gram.length);
-  const ortho = [];
-
-  for (let v of vs) {
-    for (const w of ortho)
-      v = ops.minus(v, ops.times(w, dot(v, w)));
-    ortho.push(ops.div(v, ops.sqrt(dot(v, v))))
-  }
-
-  return ops.times(gram, ops.transposed(ortho));
-};
-
-
 const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
   const graph = periodic.graphWithNormalizedShifts(structure.graph);
 
   const embedding = embed(graph, !options.skipRelaxation);
-  const basis = invariantBasis(embedding.gram);
+  const basis = unitCells.invariantBasis(embedding.gram);
   const pos = embedding.positions;
 
   const nodeIndex = {};
@@ -339,7 +324,7 @@ const makeTilingModel =
   console.log(`${Math.round(t())} msec to compute the embedding`);
 
   yield log('Computing a translation basis...');
-  const basis = yield invariantBasis(embedding.gram);
+  const basis = yield unitCells.invariantBasis(embedding.gram);
   console.log(`${Math.round(t())} msec to compute the translation basis`);
 
   yield log('Making the base tile surfaces...');
