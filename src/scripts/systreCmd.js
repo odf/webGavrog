@@ -3,6 +3,7 @@ import * as csp from 'plexus-csp';
 import { affineTransformationsQ } from '../geometry/types';
 import * as sgtable from '../geometry/sgtable';
 import { identifySpacegroup } from '../geometry/spacegroupFinder';
+import * as unitCells from '../geometry/unitCells';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 import { systreKey } from '../pgraphs/invariant';
@@ -264,9 +265,25 @@ const affineSymmetries = (graph, syms) => {
 }
 
 
-const showEmbedding = (G, name, options, writeInfo) => {
+const showEmbedding = (graph, nodeOrbits, nodeToName, options, writeInfo) => {
+  const G = periodic.graphWithNormalizedShifts(graph);
   const embedding = embed(G, options.relaxPositions);
+  const basis = unitCells.invariantBasis(embedding.gram);
+  const pos = embedding.positions;
+  const posType = options.relaxPositions ? 'Adjusted' : 'Barycentric';
 
+  writeInfo(`   ${posType} positions:`);
+
+  // TODO convert to conventional unit cell
+  // TODO if translational freedom, shift a node to a nice place
+  for (const orbit of nodeOrbits) {
+    const v = orbit[0];
+    const p = pos[v].map(x => x.toFixed(5)).join(' ');
+    writeInfo(`      Node ${nodeToName[v]}:    ${p}`);
+  }
+
+  // TODO print edges
+  // TODO print edge length statistics
   writeInfo();
 };
 
@@ -355,7 +372,7 @@ const processGraph = (
   }
 
   if (options.outputEmbedding)
-    showEmbedding(G, name, options, writeInfo);
+    showEmbedding(G, orbits, nodeToName, options, writeInfo);
 });
 
 
