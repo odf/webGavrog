@@ -272,6 +272,9 @@ const showEmbedding = (graph, nodeOrbits, nodeToName, options, writeInfo) => {
   const pos = embedding.positions;
   const posType = options.relaxPositions ? 'Adjusted' : 'Barycentric';
 
+  // TODO correct to reduced unit cell for monoclinic and triclinic setting
+  // TOTO print unit cell parameters
+
   writeInfo(`   ${posType} positions:`);
 
   // TODO convert to conventional unit cell
