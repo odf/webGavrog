@@ -169,9 +169,9 @@ const showSpaceGroup = (ops, givenGroup, writeInfo) => {
 
   const givenName = sgtable.settingByName(givenGroup).name;
 
-  if (sgInfo.groupName != givenName)
+  if (sgInfo.fullName != givenName)
     writeInfo('   Ideal group or setting differs from given ' +
-              `(${sgInfo.groupName} vs ${givenName}).`);
+              `(${sgInfo.fullName} vs ${givenName}).`);
 
   if (sgInfo.extension == '1')
     writeInfo('     (using first origin choice)');
@@ -268,16 +268,36 @@ const affineSymmetries = (graph, syms) => {
 const showEmbedding = (graph, nodeOrbits, nodeToName, options, writeInfo) => {
   const G = periodic.graphWithNormalizedShifts(graph);
   const embedding = embed(G, options.relaxPositions);
-  const basis = unitCells.invariantBasis(embedding.gram);
+  const gram = embedding.gram;
+  const basis = unitCells.invariantBasis(gram);
   const pos = embedding.positions;
-  const posType = options.relaxPositions ? 'Adjusted' : 'Barycentric';
+  const posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
 
+  // TODO convert to conventional cell
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
-  // TOTO print unit cell parameters
+
+  if (graph.dim == 2) {
+    const [a, b, gamma] = unitCells.unitCellParameters(gram);
+    writeInfo(`   Relaxed cell parameters:`);
+    writeInfo(`       a = ${a.toFixed(5)}, b = ${b.toFixed(5)}`);
+    writeInfo(`       gamma = ${gamma.toFixed(4)}`);
+  }
+  else if (graph.dim == 3) {
+    const [a, b, c, alpha, beta, gamma] = unitCells.unitCellParameters(gram);
+    writeInfo(`   Relaxed cell parameters:`);
+    writeInfo(`       ` +
+              `a = ${a.toFixed(5)}, ` +
+              `b = ${b.toFixed(5)}, ` +
+              `c = ${c.toFixed(5)}`);
+    writeInfo(`       ` +
+              `alpha = ${alpha.toFixed(4)}, ` +
+              `beta = ${beta.toFixed(4)}, ` +
+              `gamma = ${gamma.toFixed(4)}`);
+    writeInfo(`   Cell volume: ${unitCells.unitCellVolume(gram).toFixed(5)}`);
+  }
 
   writeInfo(`   ${posType} positions:`);
 
-  // TODO convert to conventional unit cell
   // TODO if translational freedom, shift a node to a nice place
   for (const orbit of nodeOrbits) {
     const v = orbit[0];

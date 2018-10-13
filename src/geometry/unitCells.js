@@ -53,3 +53,6 @@ export const unitCellParameters = gram => {
     return [a, b, c, alpha, beta, gamma].map(trim);
   }
 };
+
+
+export const unitCellVolume = gram => Math.sqrt(opsF.determinant(gram));
