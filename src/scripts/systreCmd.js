@@ -295,7 +295,6 @@ const showEmbedding = (
   const pos = embedding.positions;
   const posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
 
-  // TODO convert to conventional cell
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
 
   if (graph.dim == 2) {
@@ -321,6 +320,7 @@ const showEmbedding = (
   writeInfo(`   ${posType} positions:`);
 
   // TODO if translational freedom, shift a node to a nice place
+  // TODO pick a nice orbit representative
   for (const orbit of nodeOrbits) {
     const v = orbit[0];
     const p = opsF.times(toStd, pos[v]).map(x => x.toFixed(5)).join(' ');
