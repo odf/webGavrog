@@ -1,6 +1,5 @@
 import * as csp from 'plexus-csp';
 
-import { affineTransformationsQ } from '../geometry/types';
 import * as sgtable from '../geometry/sgtable';
 import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as unitCells from '../geometry/unitCells';
@@ -14,7 +13,14 @@ import * as cgd from '../io/cgd';
 import { Archive } from '../io/archive';
 
 
-const V = affineTransformationsQ;
+import {
+  coordinateChangesQ,
+  coordinateChangesF
+} from '../geometry/types';
+
+const opsQ = coordinateChangesQ;
+const opsF = coordinateChangesF;
+
 
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
 
@@ -156,9 +162,7 @@ const checkGraph = (graph, writeInfo) => {
 };
 
 
-const showSpaceGroup = (ops, givenGroup, writeInfo) => {
-  const sgInfo = identifySpacegroup(ops);
-
+const showSpaceGroup = (sgInfo, givenGroup, writeInfo) => {
   if (sgInfo == null) {
     const msg = "Space group could not be identified.";
       reportSystreError("INTERNAL", msg, writeInfo);
@@ -254,22 +258,40 @@ const showAndCountGraphMatches = (key, archives, writeInfo) => {
 
 
 const affineSymmetries = (graph, syms) => {
-  const I = V.identityMatrix(graph.dim);
+  const I = opsQ.identityMatrix(graph.dim);
   const pos = periodic.barycentricPlacement(graph);
   const v = periodic.vertices(graph)[0];
 
   return syms.map(({ src2img, transform }) => {
-    const s = V.minus(pos[src2img[v]], V.times(pos[v], transform));
-    return V.times(V.affineTransformation(I, s), V.transposed(transform));
+    const s = opsQ.minus(pos[src2img[v]], opsQ.times(pos[v], transform));
+    return opsQ.times(opsQ.affineTransformation(I, s),
+                      opsQ.transposed(transform));
   });
 }
 
 
-const showEmbedding = (graph, nodeOrbits, nodeToName, options, writeInfo) => {
+const coordinateChangeAsFloat = cc => {
+  const tQ = cc.oldToNew;
+  const tF = opsF.affineTransformation(
+    opsQ.toJS(opsQ.linearPart(tQ)), opsQ.toJS(opsQ.shiftPart(tQ)));
+
+  return opsF.coordinateChange(tF);
+};
+
+
+const mapGramMatrix = (t, gram) => {
+  const M = opsF.inverse(opsF.linearPart(t.oldToNew));
+  return opsF.times(opsF.transposed(M), opsF.times(gram, M));
+};
+
+
+const showEmbedding = (
+  graph, sgInfo, nodeOrbits, nodeToName, options, writeInfo
+) => {
   const G = periodic.graphWithNormalizedShifts(graph);
+  const toStd = coordinateChangeAsFloat(sgInfo.toStd);
   const embedding = embed(G, options.relaxPositions);
-  const gram = embedding.gram;
-  const basis = unitCells.invariantBasis(gram);
+  const gram = mapGramMatrix(toStd, embedding.gram);
   const pos = embedding.positions;
   const posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
 
@@ -301,7 +323,7 @@ const showEmbedding = (graph, nodeOrbits, nodeToName, options, writeInfo) => {
   // TODO if translational freedom, shift a node to a nice place
   for (const orbit of nodeOrbits) {
     const v = orbit[0];
-    const p = pos[v].map(x => x.toFixed(5)).join(' ');
+    const p = opsF.times(toStd, pos[v]).map(x => x.toFixed(5)).join(' ');
     writeInfo(`      Node ${nodeToName[v]}:    ${p}`);
   }
 
@@ -378,7 +400,8 @@ const processGraph = (
   showCoordinationSequences(G, orbits, nodeToName, writeInfo);
 
   const symOps = affineSymmetries(G, syms);
-  showSpaceGroup(symOps, group, writeInfo);
+  const sgInfo = identifySpacegroup(symOps);
+  showSpaceGroup(sgInfo, group, writeInfo);
 
   const key = systreKey(G);
   if (options.outputSystreKey) {
@@ -395,7 +418,7 @@ const processGraph = (
   }
 
   if (options.outputEmbedding)
-    showEmbedding(G, orbits, nodeToName, options, writeInfo);
+    showEmbedding(G, sgInfo, orbits, nodeToName, options, writeInfo);
 });
 
 
