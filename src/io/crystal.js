@@ -25,9 +25,6 @@ export function useTimers(timers) {
 
 
 const matrixError = (A, B) => opsF.norm(opsF.minus(A, B)) / opsF.norm(A);
-const eps = Math.pow(2, -50);
-const trim = x => Math.abs(x) < eps ? 0 : x;
-const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
 const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
 
 
@@ -82,24 +79,6 @@ const mapEdge = (coordinateChange, nodes) => {
     from: emap(from),
     to: emap(to)
   });
-};
-
-
-const unitCellParameters = G => {
-  if (G.length == 2) {
-    const a = Math.sqrt(G[0][0]);
-    const b = Math.sqrt(G[1][1]);
-    return [a, b, acosdeg(G[0][1] / a / b)];
-  }
-  else if (G.length == 3) {
-    const a = Math.sqrt(G[0][0]);
-    const b = Math.sqrt(G[1][1]);
-    const c = Math.sqrt(G[2][2]);
-    const alpha = acosdeg(G[1][2] / b / c);
-    const beta  = acosdeg(G[0][2] / a / c);
-    const gamma = acosdeg(G[0][1] / a / b);
-    return [a, b, c, alpha, beta, gamma].map(trim);
-  }
 };
 
 
@@ -575,7 +554,8 @@ export function netFromCrystal(spec) {
   const { name: groupName, transform, operators } = group;
   const cellGram = unitCells.symmetrizedGramMatrix(G0, operators);
   if (matrixError(cellGram, G0) > 0.01) {
-    warnings.push(`Unit cell resymmetrized to ${unitCellParameters(cellGram)}`);
+    const parms = unitCells.unitCellParameters(cellGram);
+    warnings.push(`Unit cell resymmetrized to ${parms}`);
   }
 
   const primitive = spacegroups.primitiveSetting(operators);
@@ -639,7 +619,8 @@ export const tilingFromFacelist = spec => {
   const { name: groupName, transform, operators } = group;
   const cellGram = unitCells.symmetrizedGramMatrix(G0, operators);
   if (matrixError(cellGram, G0) > 0.01) {
-    warnings.push(`Unit cell resymmetrized to ${unitCellParameters(cellGram)}`);
+    const parms = unitCells.unitCellParameters(cellGram);
+    warnings.push(`Unit cell resymmetrized to ${parms}`);
   }
 
   const primitive = spacegroups.primitiveSetting(operators);

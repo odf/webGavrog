@@ -31,3 +31,25 @@ export const symmetrizedGramMatrix = (gram, symOps) => {
 
   return opsF.div(M, symOps.length);
 };
+
+
+export const unitCellParameters = gram => {
+  const eps = Math.pow(2, -50);
+  const trim = x => Math.abs(x) < eps ? 0 : x;
+  const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
+
+  if (gram.length == 2) {
+    const a = Math.sqrt(gram[0][0]);
+    const b = Math.sqrt(gram[1][1]);
+    return [a, b, acosdeg(gram[0][1] / a / b)].map(trim);
+  }
+  else if (gram.length == 3) {
+    const a = Math.sqrt(gram[0][0]);
+    const b = Math.sqrt(gram[1][1]);
+    const c = Math.sqrt(gram[2][2]);
+    const alpha = acosdeg(gram[1][2] / b / c);
+    const beta  = acosdeg(gram[0][2] / a / c);
+    const gamma = acosdeg(gram[0][1] / a / b);
+    return [a, b, c, alpha, beta, gamma].map(trim);
+  }
+};
