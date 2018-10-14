@@ -396,6 +396,63 @@ export const graphWithNormalizedShifts = graph => {
 };
 
 
+export const finiteCover = (graph, cell) => {
+  if (!cell.every(v => v.every(x => ops.isInteger(x))))
+    throw new Error('cell vectors must be integral');
+  else if (ops.eq(0, ops.determinant(cell)))
+    throw new Error('cell vectors must form a basis');
+
+  const lattice = ops.times(ops.identityMatrix(graph.dim), ops.inverse(cell));
+
+  const origin = ops.vector(graph.dim);
+  const latticePoints = [origin];
+  const seen = { [encode(origin)]: true };
+
+  for (let i = 0; i < latticePoints.length; ++i) {
+    const v = latticePoints[i];
+    for (const w of lattice) {
+      const s = ops.mod(ops.plus(v, w), 1);
+      if (!seen[encode(s)]) {
+        latticePoints.push(s);
+        seen[encode(s)] = true;
+      }
+    }
+  }
+
+  const verts = vertices(graph);
+  const pos = barycentricPlacement(graph);
+
+  let nextNode = 1;
+  const coverToNode = {};
+
+  for (const v of verts) {
+    const p = ops.times(pos[v], lattice);
+    for (const s of latticePoints) {
+      coverToNode[encode([v, ops.mod(ops.plus(p, s), 1)])] = nextNode;
+      ++nextNode;
+    }
+  }
+
+  const coverEdges = [];
+  for (const e of graph.edges) {
+    const head = ops.times(pos[e.head], lattice);
+    const tail = ops.times(ops.plus(pos[e.tail], e.shift), lattice);
+    const vec = ops.minus(tail, head);
+    for (const s of latticePoints) {
+      const p = ops.mod(ops.plus(head, s), 1);
+      const q = ops.plus(p, vec);
+      const r = ops.mod(q, 1);
+      const t = ops.minus(q, r);
+      const v = coverToNode[encode([e.head, p])];
+      const w = coverToNode[encode([e.tail, r])];
+      coverEdges.push([v, w, t]);
+    }
+  }
+
+  return make(coverEdges);
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';

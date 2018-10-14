@@ -317,13 +317,18 @@ const showEmbedding = (
     writeInfo(`   Cell volume: ${unitCells.unitCellVolume(gram).toFixed(5)}`);
   }
 
+  const conventionalCell =
+        opsQ.transposed(opsQ.inverse(opsQ.linearPart(sgInfo.toStd.oldToNew)));
+  periodic.finiteCover(G, conventionalCell);
+
   writeInfo(`   ${posType} positions:`);
 
   // TODO if translational freedom, shift a node to a nice place
   // TODO pick a nice orbit representative
   for (const orbit of nodeOrbits) {
     const v = orbit[0];
-    const p = opsF.times(toStd, pos[v]).map(x => x.toFixed(5)).join(' ');
+    const points = orbit.map(v => opsF.mod(opsF.times(toStd, pos[v]), 1));
+    const p = points.sort()[0].map(x => x.toFixed(5)).join(' ');
     writeInfo(`      Node ${nodeToName[v]}:    ${p}`);
   }
 
@@ -483,6 +488,10 @@ export const processData = (
 
 
 if (require.main == module) {
+  Array.prototype.toString = function() {
+    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
+  };
+
   const fs = require('fs');
   const path = require('path');
 
