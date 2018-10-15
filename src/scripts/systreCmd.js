@@ -285,12 +285,45 @@ const mapGramMatrix = (t, gram) => {
 };
 
 
+const countZeros = s => s.filter(x => opsF.lt(opsF.abs(x), 1e-6)).length;
+
+
+const compareCoords = (a, b) => {
+  if (a < 0 && b >= 0)
+    return 1;
+  else if (a >= 0 && b < 0)
+    return -1;
+  else if (Math.abs(Math.abs(a) - Math.abs(b)) < 1e-6)
+    return 0;
+  else
+    return Math.abs(a) - Math.abs(b);
+};
+
+
+const comparePoints = (p, q) => {
+  if (opsF.sgn(p) < 0 && opsF.sgn(q) >= 0)
+    return 1;
+  else if (opsF.sgn(q) < 0 && opsF.sgn(p) >= 0)
+    return -1;
+  else if (countZeros(q) != countZeros(p))
+    return countZeros(q) - countZeros(p);
+  else if (compareCoords(opsF.times(p, p), opsF.times(q, q)))
+    return compareCoords(opsF.times(p, p), opsF.times(q, q));
+  else {
+    for (let i = 0; i < p.length; ++i) {
+      if (compareCoords(p[i], q[i]))
+        return compareCoords(p[i], q[i]);
+    }
+    return 0;
+  }
+};
+
+
 const showEmbedding = (
   graph, sgInfo, nodeOrbits, nodeToName, options, writeInfo
 ) => {
-  const G = periodic.graphWithNormalizedShifts(graph);
   const toStd = coordinateChangeAsFloat(sgInfo.toStd);
-  const embedding = embed(G, options.relaxPositions);
+  const embedding = embed(graph, options.relaxPositions);
   const gram = mapGramMatrix(toStd, embedding.gram);
   const pos = embedding.positions;
   const posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
@@ -319,7 +352,7 @@ const showEmbedding = (
 
   const conventionalCell =
         opsQ.transposed(opsQ.inverse(opsQ.linearPart(sgInfo.toStd.oldToNew)));
-  periodic.finiteCover(G, conventionalCell);
+  periodic.finiteCover(graph, conventionalCell);
 
   writeInfo(`   ${posType} positions:`);
 
@@ -327,8 +360,9 @@ const showEmbedding = (
   // TODO pick a nice orbit representative
   for (const orbit of nodeOrbits) {
     const v = orbit[0];
-    const points = orbit.map(v => opsF.mod(opsF.times(toStd, pos[v]), 1));
-    const p = points.sort()[0].map(x => x.toFixed(5)).join(' ');
+    const points =
+          orbit.map(v => opsF.mod(opsF.times(toStd, opsF.mod(pos[v], 1)), 1));
+    const p = points.sort(comparePoints)[0].map(x => x.toFixed(5)).join(' ');
     writeInfo(`      Node ${nodeToName[v]}:    ${p}`);
   }
 
