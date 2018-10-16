@@ -404,7 +404,7 @@ export function* structures(text) {
 
 
 if (require.main == module) {
-  const input = `
+  const defaultInput = `
 PERIODIC_GRAPH
 ID diamond
 EDGES
@@ -501,6 +501,12 @@ CRYSTAL
     "SI4" 4 0.5396 0.3394 0.3996
 END
 `;
+
+  const fs = require('fs');
+
+  const input = process.argv.length > 2 ?
+        fs.readFileSync(process.argv[2], { encoding: 'utf8' }) :
+        defaultInput;
 
   for (const b of structures(input))
     console.log(JSON.stringify(b, null, 2));
