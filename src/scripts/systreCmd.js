@@ -357,12 +357,14 @@ const showEmbedding = (
   writeInfo(`   ${posType} positions:`);
 
   // TODO if translational freedom, shift a node to a nice place
-  // TODO pick a nice orbit representative
+  // TODO apply centering shifts to node orbits
   for (const orbit of nodeOrbits) {
     const v = orbit[0];
-    const points =
-          orbit.map(v => opsF.mod(opsF.times(toStd, opsF.mod(pos[v], 1)), 1));
-    const p = points.sort(comparePoints)[0].map(x => x.toFixed(5)).join(' ');
+    const p = orbit
+          .map(v => opsF.point(pos[v]))
+          .map(p => opsF.vector(opsF.modZ(opsF.times(toStd, p))))
+          .sort(comparePoints)[0]
+          .map(x => x.toFixed(5)).join(' ');
     writeInfo(`      Node ${nodeToName[v]}:    ${p}`);
   }
 
