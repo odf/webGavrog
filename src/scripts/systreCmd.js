@@ -534,7 +534,7 @@ if (require.main == module) {
   const inputFiles = args.filter(s => path.extname(s) != '.arc');
 
   const archives = archiveFiles.map(name => {
-    const archive = new Archive('test');
+    const archive = new Archive(path.basename(name, '.arc'));
     archive.addAll(fs.readFileSync(name, { encoding: 'utf8' }));
     return archive;
   });
