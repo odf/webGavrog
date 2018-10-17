@@ -1,5 +1,6 @@
 import * as csp from 'plexus-csp';
 
+import * as pickler from '../common/pickler';
 import * as sgtable from '../geometry/sgtable';
 import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as unitCells from '../geometry/unitCells';
@@ -20,6 +21,10 @@ import {
 
 const opsQ = coordinateChangesQ;
 const opsF = coordinateChangesF;
+
+
+const encode = pickler.serialize;
+const decode = pickler.deserialize;
 
 
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
@@ -319,6 +324,28 @@ const comparePoints = (p, q) => {
 };
 
 
+const centeringLatticePoints = toStd => {
+  const lattice = opsQ.transposed(opsQ.linearPart(toStd.oldToNew));
+
+  const origin = opsQ.vector(opsQ.dimension(lattice));
+  const latticePoints = [origin];
+  const seen = { [encode(origin)]: true };
+
+  for (let i = 0; i < latticePoints.length; ++i) {
+    const v = latticePoints[i];
+    for (const w of lattice) {
+      const s = opsQ.mod(opsQ.plus(v, w), 1);
+      if (!seen[encode(s)]) {
+        latticePoints.push(s);
+        seen[encode(s)] = true;
+      }
+    }
+  }
+
+  return latticePoints;
+};
+
+
 const showEmbedding = (
   graph, sgInfo, nodeOrbits, nodeToName, options, writeInfo
 ) => {
@@ -350,22 +377,20 @@ const showEmbedding = (
     writeInfo(`   Cell volume: ${unitCells.unitCellVolume(gram).toFixed(5)}`);
   }
 
-  const conventionalCell =
-        opsQ.transposed(opsQ.inverse(opsQ.linearPart(sgInfo.toStd.oldToNew)));
-  periodic.finiteCover(graph, conventionalCell);
-
   writeInfo(`   ${posType} positions:`);
 
+  const centeringShifts = centeringLatticePoints(sgInfo.toStd)
+        .map(v => opsQ.toJS(v));
+
   // TODO if translational freedom, shift a node to a nice place
-  // TODO apply centering shifts to node orbits
   for (const orbit of nodeOrbits) {
-    const v = orbit[0];
-    const p = orbit
-          .map(v => opsF.point(pos[v]))
-          .map(p => opsF.vector(opsF.modZ(opsF.times(toStd, p))))
-          .sort(comparePoints)[0]
-          .map(x => x.toFixed(5)).join(' ');
-    writeInfo(`      Node ${nodeToName[v]}:    ${p}`);
+    const rawPts = orbit.map(v => opsF.point(pos[v]));
+    const pts = rawPts.map(p => opsF.vector(opsF.modZ(opsF.times(toStd, p))));
+    const allPts = [].concat(
+      ...pts.map(p => centeringShifts.map(v => opsF.mod(opsF.plus(p, v), 1))));
+
+    const p = allPts.sort(comparePoints)[0].map(x => x.toFixed(5)).join(' ');
+    writeInfo(`      Node ${nodeToName[orbit[0]]}:    ${p}`);
   }
 
   // TODO print edges
@@ -390,7 +415,7 @@ const processDisconnectedGraph = (
   writeInfo("   Processing components separately.");
   writeInfo();
 
-  //TODO implement this
+  // TODO implement this
 });
 
 
