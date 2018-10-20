@@ -1,17 +1,16 @@
 port module MainMenu exposing (main)
 
+import Browser.Events as Events
 import Char
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onWithOptions)
 import Json.Decode as Json
-import Keyboard
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Task
-import Window
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Options
 import Scene exposing (RawSceneSpec)
+import Task
 import View3d
 
 
@@ -68,9 +67,9 @@ port fromJS : (InData -> msg) -> Sub msg
 subscriptions : Model -> Sub Msg
 subscriptions model =
     [ fromJS JSData
-    , Keyboard.ups KeyUp
+    , Events.onKeyUp KeyUp
     , View3d.subscriptions ViewMsg model.viewState
-    , Window.resizes Resize
+    , Events.onResize Resize
     ]
         |> Sub.batch
 
@@ -257,6 +256,7 @@ update msg model =
             ( { model | jumpDialogVisible = False }
             , if ok then
                 toJS <| OutData "jump" (Just model.jumpDialogContent) []
+
               else
                 Cmd.none
             )
@@ -268,6 +268,7 @@ update msg model =
             ( { model | searchDialogVisible = False }
             , if ok then
                 toJS <| OutData "search" (Just model.searchDialogContent) []
+
               else
                 Cmd.none
             )
@@ -293,22 +294,22 @@ updateActive model item =
         state =
             model.menuState
     in
-        case item of
-            Nothing ->
-                { model
-                    | menuState = initState
-                    , activeLabel = Nothing
-                }
+    case item of
+        Nothing ->
+            { model
+                | menuState = initState
+                , activeLabel = Nothing
+            }
 
-            Just ( i, s ) ->
-                { model
-                    | menuState =
-                        { state
-                            | active = Just i
-                            , activeSub = Nothing
-                        }
-                    , activeLabel = Just s
-                }
+        Just ( i, s ) ->
+            { model
+                | menuState =
+                    { state
+                        | active = Just i
+                        , activeSub = Nothing
+                    }
+                , activeLabel = Just s
+            }
 
 
 updateActiveSub : Model -> Maybe ( Int, String ) -> Model
@@ -317,18 +318,18 @@ updateActiveSub model item =
         state =
             model.menuState
     in
-        case item of
-            Nothing ->
-                { model
-                    | menuState = { state | activeSub = Nothing }
-                    , activeLabel = Nothing
-                }
+    case item of
+        Nothing ->
+            { model
+                | menuState = { state | activeSub = Nothing }
+                , activeLabel = Nothing
+            }
 
-            Just ( i, s ) ->
-                { model
-                    | menuState = { state | activeSub = Just i }
-                    , activeLabel = Just s
-                }
+        Just ( i, s ) ->
+            { model
+                | menuState = { state | activeSub = Just i }
+                , activeLabel = Just s
+            }
 
 
 handleSelection : Model -> ( Model, Cmd Msg )
@@ -337,32 +338,41 @@ handleSelection model =
         newModel =
             { model | menuState = initState }
     in
-        if model.activeLabel == Just "About Gavrog..." then
-            { newModel | showAbout = True } ! []
-        else if model.activeLabel == Just "Jump..." then
-            { newModel | jumpDialogVisible = True } ! []
-        else if model.activeLabel == Just "Search..." then
-            { newModel | searchDialogVisible = True } ! []
-        else if model.activeLabel == Just "Options..." then
-            { newModel
-                | optionsDialogVisible = True
-                , optionSpecsTmp = model.optionSpecs
-            }
-                ! []
-        else if model.activeLabel == Just "Center" then
-            updateView3d View3d.encompass model ! []
-        else if model.activeLabel == Just "Along X" then
-            lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel ! []
-        else if model.activeLabel == Just "Along Y" then
-            lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel ! []
-        else if model.activeLabel == Just "Along Z" then
-            lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel ! []
-        else if model.activeLabel == Just "Save Screenshot..." then
-            ( updateView3d (View3d.setRedraws True) newModel
-            , toJS <| OutData "selected" model.activeLabel []
-            )
-        else
-            ( newModel, toJS <| OutData "selected" model.activeLabel [] )
+    if model.activeLabel == Just "About Gavrog..." then
+        { newModel | showAbout = True } ! []
+
+    else if model.activeLabel == Just "Jump..." then
+        { newModel | jumpDialogVisible = True } ! []
+
+    else if model.activeLabel == Just "Search..." then
+        { newModel | searchDialogVisible = True } ! []
+
+    else if model.activeLabel == Just "Options..." then
+        { newModel
+            | optionsDialogVisible = True
+            , optionSpecsTmp = model.optionSpecs
+        }
+            ! []
+
+    else if model.activeLabel == Just "Center" then
+        updateView3d View3d.encompass model ! []
+
+    else if model.activeLabel == Just "Along X" then
+        lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel ! []
+
+    else if model.activeLabel == Just "Along Y" then
+        lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel ! []
+
+    else if model.activeLabel == Just "Along Z" then
+        lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel ! []
+
+    else if model.activeLabel == Just "Save Screenshot..." then
+        ( updateView3d (View3d.setRedraws True) newModel
+        , toJS <| OutData "selected" model.activeLabel []
+        )
+
+    else
+        ( newModel, toJS <| OutData "selected" model.activeLabel [] )
 
 
 handleJSData : InData -> Model -> Model
@@ -402,6 +412,7 @@ updateOptions model msg =
                   }
                 , toJS <| OutData "options" Nothing model.optionSpecsTmp
                 )
+
             else
                 { model | optionsDialogVisible = False } ! []
 
@@ -418,39 +429,39 @@ handleKeyPress code model =
         char =
             Char.toLower <| Char.fromCode code
     in
-        case char of
-            'n' ->
-                ( model, toJS <| OutData "selected" (Just "Next") [] )
+    case char of
+        'n' ->
+            ( model, toJS <| OutData "selected" (Just "Next") [] )
 
-            'p' ->
-                ( model, toJS <| OutData "selected" (Just "Prev") [] )
+        'p' ->
+            ( model, toJS <| OutData "selected" (Just "Prev") [] )
 
-            '0' ->
-                updateView3d View3d.encompass model ! []
+        '0' ->
+            updateView3d View3d.encompass model ! []
 
-            'x' ->
-                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model ! []
+        'x' ->
+            lookAlong (vec3 -1 0 0) (vec3 0 1 0) model ! []
 
-            'y' ->
-                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model ! []
+        'y' ->
+            lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model ! []
 
-            'z' ->
-                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model ! []
+        'z' ->
+            lookAlong (vec3 0 0 -1) (vec3 0 1 0) model ! []
 
-            'a' ->
-                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
+        'a' ->
+            lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
 
-            'b' ->
-                lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model ! []
+        'b' ->
+            lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model ! []
 
-            'c' ->
-                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
+        'c' ->
+            lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
 
-            'd' ->
-                lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model ! []
+        'd' ->
+            lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model ! []
 
-            _ ->
-                model ! []
+        _ ->
+            model ! []
 
 
 lookAlong : Vec3 -> Vec3 -> Model -> Model
@@ -470,21 +481,25 @@ view model =
          ]
             ++ (if model.showAbout then
                     [ viewAbout model ]
+
                 else
                     []
                )
             ++ (if model.jumpDialogVisible then
                     [ viewTextBox model.jumpDialogConfig ]
+
                 else
                     []
                )
             ++ (if model.searchDialogVisible then
                     [ viewTextBox model.searchDialogConfig ]
+
                 else
                     []
                )
             ++ (if model.optionsDialogVisible then
                     [ Options.view OptionsMsg model.optionSpecsTmp ]
+
                 else
                     []
                )

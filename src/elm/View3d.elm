@@ -1,35 +1,32 @@
-module View3d
-    exposing
-        ( init
-        , view
-        , subscriptions
-        , update
-        , lookAlong
-        , encompass
-        , setSize
-        , setScene
-        , setRedraws
-        , Model
-        , Msg
-        )
+module View3d exposing
+    ( Model
+    , Msg
+    , encompass
+    , init
+    , lookAlong
+    , setRedraws
+    , setScene
+    , setSize
+    , subscriptions
+    , update
+    , view
+    )
 
-import AnimationFrame
+import Browser.Events as Events
+import Camera
 import Char
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Json.Decode as Json
-import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Mouse
-import Time exposing (Time)
-import WebGL
-import Camera
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Mesh exposing (..)
 import Renderer
 import Scene exposing (..)
-import Window
+import Time exposing (Time)
+import WebGL
+
 
 
 -- MODEL
@@ -109,14 +106,15 @@ type Msg
 subscriptions : (Msg -> msg) -> Model -> Sub msg
 subscriptions toMsg model =
     (if Camera.isMoving model.cameraState then
-        [ AnimationFrame.times FrameMsg ]
+        [ Events.onAnimationFrame FrameMsg ]
+
      else
         []
     )
-        ++ [ Mouse.moves MouseMoveMsg
-           , Mouse.ups MouseUpMsg
-           , Keyboard.downs KeyDownMsg
-           , Keyboard.ups KeyUpMsg
+        ++ [ Events.onMouseMove MouseMoveMsg
+           , Events.onMouseUp MouseUpMsg
+           , Events.onKeyDown KeyDownMsg
+           , Events.onKeyUp KeyUpMsg
            ]
         |> Sub.batch
         |> Sub.map toMsg
@@ -166,12 +164,14 @@ setModifiers keyCode value model =
         oldModifiers =
             model.modifiers
     in
-        if keyCode == 16 then
-            { model | modifiers = { oldModifiers | shift = value } }
-        else if keyCode == 17 then
-            { model | modifiers = { oldModifiers | ctrl = value } }
-        else
-            model
+    if keyCode == 16 then
+        { model | modifiers = { oldModifiers | shift = value } }
+
+    else if keyCode == 17 then
+        { model | modifiers = { oldModifiers | ctrl = value } }
+
+    else
+        model
 
 
 lookAlong : Vec3 -> Vec3 -> Model -> Model
@@ -193,7 +193,7 @@ setScene : RawSceneSpec -> Model -> Model
 setScene spec model =
     let
         scene =
-            (Debug.log "scene" <| makeScene spec)
+            Debug.log "scene" <| makeScene spec
 
         box =
             boundingBoxForScene scene
@@ -204,9 +204,9 @@ setScene spec model =
         radius =
             Vec3.length <| Vec3.sub box.minima center
     in
-        { model | scene = glScene scene, center = center, radius = radius }
-            |> lookAlong (vec3 0 0 -1) (vec3 0 1 0)
-            |> encompass
+    { model | scene = glScene scene, center = center, radius = radius }
+        |> lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+        |> encompass
 
 
 setRedraws : Bool -> Model -> Model
@@ -240,18 +240,18 @@ view toMsg model =
                 )
                 model.scene
     in
-        WebGL.toHtml
-            [ Html.Attributes.width model.size.width
-            , Html.Attributes.height model.size.height
-            , Html.Attributes.style
-                [ ( "display", "block" )
-                , ( "background", "white" )
-                ]
-            , Html.Attributes.id "main-3d-canvas"
-            , Html.Events.onMouseDown (toMsg MouseDownMsg)
-            , onMouseWheel (toMsg << WheelMsg)
+    WebGL.toHtml
+        [ Html.Attributes.width model.size.width
+        , Html.Attributes.height model.size.height
+        , Html.Attributes.style
+            [ ( "display", "block" )
+            , ( "background", "white" )
             ]
-            entities
+        , Html.Attributes.id "main-3d-canvas"
+        , Html.Events.onMouseDown (toMsg MouseDownMsg)
+        , onMouseWheel (toMsg << WheelMsg)
+        ]
+        entities
 
 
 onMouseWheel : (Float -> msg) -> Html.Attribute msg

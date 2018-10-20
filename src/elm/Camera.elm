@@ -1,26 +1,23 @@
-module Camera
-    exposing
-        ( State
-        , initialState
-        , nextFrame
-        , setMousePosition
-        , updateZoom
-        , setFrameSize
-        , startDragging
-        , finishDragging
-        , encompass
-        , lookAlong
-        , perspectiveMatrix
-        , viewingMatrix
-        , cameraDistance
-        , isMoving
-        , setRedraws
-        )
+module Camera exposing
+    ( State
+    , cameraDistance
+    , encompass
+    , finishDragging
+    , initialState
+    , isMoving
+    , lookAlong
+    , nextFrame
+    , perspectiveMatrix
+    , setFrameSize
+    , setMousePosition
+    , setRedraws
+    , startDragging
+    , updateZoom
+    , viewingMatrix
+    )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Mouse
-import Window
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 
 
 type alias Position =
@@ -66,35 +63,39 @@ nextFrame : Float -> State -> State
 nextFrame float (State state) =
     if state.dragging then
         State { state | moved = False }
+
     else if state.moving then
         let
             rotation =
                 orthonormalized <| Mat4.mul state.deltaRot state.rotation
         in
-            State { state | rotation = rotation }
+        State { state | rotation = rotation }
+
     else
         State state
 
 
-setMousePosition : Mouse.Position -> Bool -> State -> State
+setMousePosition : Position -> Bool -> State -> State
 setMousePosition pos alter (State state) =
     let
         xRelative =
-            ((toFloat pos.x) - state.origin.x) / state.size.width
+            (toFloat pos.x - state.origin.x) / state.size.width
 
         yRelative =
-            ((toFloat pos.y) - state.origin.y) / state.size.height
+            (toFloat pos.y - state.origin.y) / state.size.height
 
         ndcPos =
             { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
     in
-        if state.dragging then
-            if alter then
-                panMouse ndcPos (State state)
-            else
-                rotateMouse ndcPos (State state)
+    if state.dragging then
+        if alter then
+            panMouse ndcPos (State state)
+
         else
-            State { state | ndcPos = ndcPos }
+            rotateMouse ndcPos (State state)
+
+    else
+        State { state | ndcPos = ndcPos }
 
 
 updateZoom : Float -> Bool -> State -> State
@@ -103,8 +104,10 @@ updateZoom value alter (State state) =
         factor =
             if value > 0 then
                 0.9
+
             else if value < 0 then
                 1 / 0.9
+
             else
                 1.0
 
@@ -114,13 +117,14 @@ updateZoom value alter (State state) =
                     | fieldOfView =
                         clamp 2.5 150 <| factor * state.fieldOfView
                 }
+
             else
                 { state
                     | cameraDistance =
                         clamp 2.5 1000 <| factor * state.cameraDistance
                 }
     in
-        State newState
+    State newState
 
 
 setFrameSize : Window.Size -> State -> State
@@ -139,7 +143,7 @@ startDragging (State state) =
     State { state | dragging = True, moving = True, moved = False }
 
 
-finishDragging : Mouse.Position -> State -> State
+finishDragging : Position -> State -> State
 finishDragging pos (State state) =
     State { state | dragging = False, moving = state.moved }
 
@@ -155,11 +159,11 @@ encompass center radius (State state) =
         dist =
             radius / sin (degrees state.fieldOfView / 2)
     in
-        State
-            { state
-                | shift = Vec3.scale -1 center
-                , cameraDistance = clamp 2.5 1000 dist
-            }
+    State
+        { state
+            | shift = Vec3.scale -1 center
+            , cameraDistance = clamp 2.5 1000 dist
+        }
 
 
 panMouse : Position -> State -> State
@@ -177,12 +181,12 @@ panMouse ndcPosNew (State state) =
         shift =
             Mat4.transform invRot <| vec3 dx dy 0
     in
-        State
-            { state
-                | ndcPos = ndcPosNew
-                , moved = False
-                , shift = Vec3.add state.shift shift
-            }
+    State
+        { state
+            | ndcPos = ndcPosNew
+            , moved = False
+            , shift = Vec3.add state.shift shift
+        }
 
 
 rotateMouse : Position -> State -> State
@@ -197,25 +201,29 @@ rotateMouse ndcPosNew (State state) =
         rotation =
             orthonormalized <| Mat4.mul deltaRot state.rotation
     in
-        State
-            { state
-                | ndcPos = ndcPosNew
-                , deltaRot = deltaRot
-                , rotation = rotation
-                , moved = angle /= 0
-            }
+    State
+        { state
+            | ndcPos = ndcPosNew
+            , deltaRot = deltaRot
+            , rotation = rotation
+            , moved = angle /= 0
+        }
 
 
 zRotationAngle : Float -> Float -> Float -> Float -> Float
 zRotationAngle px py dx dy =
     if px > 0.9 then
         dy
+
     else if px < -0.9 then
         -dy
+
     else if py > 0.9 then
         -dx
+
     else if py < -0.9 then
         dx
+
     else
         0
 
@@ -235,16 +243,18 @@ rotationParameters newPos oldPos =
         angle =
             if aroundZ then
                 zRotationAngle newPos.x newPos.y dx dy
+
             else
                 dx ^ 2 + dy ^ 2 |> sqrt
 
         axis =
             if angle == 0 || aroundZ then
                 vec3 0 0 1
+
             else
                 vec3 (-dy / angle) (dx / angle) 0
     in
-        ( axis, angle )
+    ( axis, angle )
 
 
 projection : Vec3 -> Vec3 -> Vec3
@@ -275,7 +285,7 @@ orthonormalized m =
             Vec3.normalize
                 (Vec3.sub b3 (Vec3.add (projection b3 n1) (projection b3 n2)))
     in
-        Mat4.makeBasis n1 n2 n3
+    Mat4.makeBasis n1 n2 n3
 
 
 viewingMatrix : State -> Mat4
@@ -290,7 +300,7 @@ viewingMatrix (State state) =
         shift =
             Mat4.makeTranslate state.shift
     in
-        Mat4.mul camMatrix <| Mat4.mul state.rotation shift
+    Mat4.mul camMatrix <| Mat4.mul state.rotation shift
 
 
 perspectiveMatrix : State -> Mat4
@@ -305,10 +315,11 @@ perspectiveMatrix (State state) =
         fovy =
             if aspectRatio >= 1 then
                 fov
+
             else
                 atan (tan (degrees (fov / 2)) / aspectRatio) * 360 / pi
     in
-        Mat4.makePerspective fovy aspectRatio 1 10000
+    Mat4.makePerspective fovy aspectRatio 1 10000
 
 
 cameraDistance : State -> Float
