@@ -1,6 +1,7 @@
 port module MainMenu exposing (main)
 
 import Browser
+import Browser.Dom as Dom
 import Browser.Events as Events
 import Char
 import Html exposing (..)
@@ -143,8 +144,9 @@ init flags =
       , optionSpecsTmp = []
       , optionsDialogVisible = False
       }
-    , Cmd.none
-      -- Task.perform Resize Window.size
+    , Task.perform
+        (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
+        Dom.getViewport
     )
 
 
