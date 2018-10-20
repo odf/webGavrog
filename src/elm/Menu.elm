@@ -3,7 +3,7 @@ module Menu exposing (Actions, Config, ItemSpec, State, view)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onMouseEnter, onMouseLeave, stopPropagationOn)
-import Json.Decode as Json
+import Json.Decode as Decode
 
 
 
@@ -110,7 +110,7 @@ viewSubItem config state index label =
 
 onClick : msg -> Attribute msg
 onClick msg =
-    stopPropagationOn "click" (Json.map always (Json.succeed msg))
+    stopPropagationOn "click" (Decode.map always (Decode.succeed msg))
 
 
 always : msg -> ( msg, Bool )
