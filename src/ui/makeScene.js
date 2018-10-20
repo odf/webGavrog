@@ -115,8 +115,8 @@ const ballAndStick = (
   edges,
   ballRadius=0.1,
   stickRadius=0.04,
-  ballColor={ hue: 0.9, saturation: 0.7, lightness: 0.7 },
-  stickColor={ hue: 4.2, saturation: 0.3, lightness: 0.4 }
+  ballColor={ hue: 0.14, saturation: 0.7, lightness: 0.7 },
+  stickColor={ hue: 0.67, saturation: 0.3, lightness: 0.4 }
 ) => {
   const ball = makeBall(ballRadius);
 
@@ -256,7 +256,7 @@ const tilingModel = (
 
       const mat = Object.assign({}, baseMaterial, {
         diffuseColor: {
-          hue: ((hue0 + a) % 1) * 2 * Math.PI,
+          hue: (hue0 + a) % 1,
           saturation: 1.0,
           lightness: 0.7
         },
