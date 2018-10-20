@@ -14,17 +14,16 @@ module View3d exposing
 
 import Browser.Events as Events
 import Camera
-import Char
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
-import Json.Decode as Json
+import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Mesh exposing (..)
 import Renderer
 import Scene exposing (..)
-import Time exposing (Time)
+import Time exposing (Posix)
 import WebGL
 
 
@@ -33,7 +32,7 @@ import WebGL
 
 
 type alias Model =
-    { size : Window.Size
+    { size : { width : Int, height : Int }
     , cameraState : Camera.State
     , scene : GlScene
     , center : Vec3
@@ -94,10 +93,10 @@ glScene scene =
 
 
 type Msg
-    = FrameMsg Time
-    | MouseUpMsg Mouse.Position
+    = FrameMsg Posix
+    | MouseUpMsg
     | MouseDownMsg
-    | MouseMoveMsg Mouse.Position
+    | MouseMoveMsg { x : Int, y : Int }
     | KeyDownMsg Int
     | KeyUpMsg Int
     | WheelMsg Float
@@ -105,16 +104,25 @@ type Msg
 
 subscriptions : (Msg -> msg) -> Model -> Sub msg
 subscriptions toMsg model =
+    let
+        decodeKey =
+            Decode.at [ "keyCode" ] Decode.int
+
+        decodePos =
+            Decode.map2 (\x y -> { x = x, y = y })
+                (Decode.at [ "screenX" ] Decode.int)
+                (Decode.at [ "screenY" ] Decode.int)
+    in
     (if Camera.isMoving model.cameraState then
         [ Events.onAnimationFrame FrameMsg ]
 
      else
         []
     )
-        ++ [ Events.onMouseMove MouseMoveMsg
-           , Events.onMouseUp MouseUpMsg
-           , Events.onKeyDown KeyDownMsg
-           , Events.onKeyUp KeyUpMsg
+        ++ [ Events.onMouseMove (Decode.map MouseMoveMsg decodePos)
+           , Events.onMouseUp (Decode.succeed MouseUpMsg)
+           , Events.onKeyDown (Decode.map KeyDownMsg decodeKey)
+           , Events.onKeyUp (Decode.map KeyUpMsg decodeKey)
            ]
         |> Sub.batch
         |> Sub.map toMsg
@@ -133,8 +141,8 @@ update msg model =
         MouseDownMsg ->
             updateCamera Camera.startDragging model
 
-        MouseUpMsg pos ->
-            updateCamera (Camera.finishDragging pos) model
+        MouseUpMsg ->
+            updateCamera Camera.finishDragging model
 
         MouseMoveMsg pos ->
             updateCamera
@@ -158,7 +166,7 @@ updateCamera fn model =
     { model | cameraState = fn model.cameraState }
 
 
-setModifiers : Char.KeyCode -> Bool -> Model -> Model
+setModifiers : Int -> Bool -> Model -> Model
 setModifiers keyCode value model =
     let
         oldModifiers =
@@ -184,7 +192,7 @@ encompass model =
     updateCamera (Camera.encompass model.center model.radius) model
 
 
-setSize : Window.Size -> Model -> Model
+setSize : { width : Int, height : Int } -> Model -> Model
 setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
@@ -243,10 +251,8 @@ view toMsg model =
     WebGL.toHtml
         [ Html.Attributes.width model.size.width
         , Html.Attributes.height model.size.height
-        , Html.Attributes.style
-            [ ( "display", "block" )
-            , ( "background", "white" )
-            ]
+        , Html.Attributes.style "display" "block"
+        , Html.Attributes.style "background" "white"
         , Html.Attributes.id "main-3d-canvas"
         , Html.Events.onMouseDown (toMsg MouseDownMsg)
         , onMouseWheel (toMsg << WheelMsg)
@@ -256,9 +262,13 @@ view toMsg model =
 
 onMouseWheel : (Float -> msg) -> Html.Attribute msg
 onMouseWheel toMsg =
-    Html.Events.onWithOptions
+    let
+        toResult value =
+            { message = toMsg value
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Html.Events.custom
         "wheel"
-        { stopPropagation = True
-        , preventDefault = True
-        }
-        (Json.map toMsg <| Json.at [ "deltaY" ] Json.float)
+        (Decode.map toResult <| Decode.at [ "deltaY" ] Decode.float)

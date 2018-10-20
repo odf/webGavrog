@@ -1,8 +1,8 @@
-module Scene exposing (RawSceneSpec, Scene, makeScene, boundingBoxForScene)
+module Scene exposing (RawSceneSpec, Scene, boundingBoxForScene, makeScene)
 
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Mesh exposing (..)
 import Renderer exposing (Material, Vertex)
 
@@ -91,10 +91,10 @@ makeVec3 ( a, b, c ) =
 makeVec3Color : RawColor -> Vec3
 makeVec3Color { hue, saturation, lightness } =
     let
-        { red, green, blue } =
-            Color.toRgb <| Color.hsl hue saturation lightness
+        { red, green, blue, alpha } =
+            Color.toRgba <| Color.hsl hue saturation lightness
     in
-        vec3 (toFloat red / 255) (toFloat green / 255) (toFloat blue / 255)
+    vec3 red green blue
 
 
 makeVertex : RawVertexSpec -> Vertex
@@ -108,6 +108,7 @@ makeMesh : RawMeshSpec -> Mesh Vertex
 makeMesh spec =
     if spec.isWireframe then
         wireframe (List.map makeVertex spec.vertices) spec.faces
+
     else
         mesh (List.map makeVertex spec.vertices) spec.faces
 
@@ -130,9 +131,9 @@ makeTransform { basis, shift } =
         ( u, v, w ) =
             basis
     in
-        Mat4.mul
-            (Mat4.makeTranslate <| makeVec3 shift)
-            (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
+    Mat4.mul
+        (Mat4.makeTranslate <| makeVec3 shift)
+        (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
 
 
 makeInstance : RawInstanceSpec -> Instance
@@ -182,10 +183,10 @@ pointSetForScene scene =
                 points =
                     pointSetForMesh mesh
             in
-                instances
-                    |> List.map .transform
-                    |> List.concatMap
-                        (\t -> List.map (\v -> Mat4.transform t v) points)
+            instances
+                |> List.map .transform
+                |> List.concatMap
+                    (\t -> List.map (\v -> Mat4.transform t v) points)
         )
         scene
 
@@ -211,6 +212,6 @@ boundingBoxForScene scene =
         hi =
             \args -> List.maximum args |> Maybe.withDefault 0
     in
-        Box
-            (vec3 (lo xs) (lo ys) (lo zs))
-            (vec3 (hi xs) (hi ys) (hi zs))
+    Box
+        (vec3 (lo xs) (lo ys) (lo zs))
+        (vec3 (hi xs) (hi ys) (hi zs))

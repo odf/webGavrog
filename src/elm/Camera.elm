@@ -18,6 +18,7 @@ module Camera exposing
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Time exposing (Posix)
 
 
 type alias Position =
@@ -59,8 +60,8 @@ initialState =
         }
 
 
-nextFrame : Float -> State -> State
-nextFrame float (State state) =
+nextFrame : Posix -> State -> State
+nextFrame time (State state) =
     if state.dragging then
         State { state | moved = False }
 
@@ -75,7 +76,7 @@ nextFrame float (State state) =
         State state
 
 
-setMousePosition : Position -> Bool -> State -> State
+setMousePosition : { x : Int, y : Int } -> Bool -> State -> State
 setMousePosition pos alter (State state) =
     let
         xRelative =
@@ -127,7 +128,7 @@ updateZoom value alter (State state) =
     State newState
 
 
-setFrameSize : Window.Size -> State -> State
+setFrameSize : { width : Int, height : Int } -> State -> State
 setFrameSize size (State state) =
     State
         { state
@@ -143,8 +144,8 @@ startDragging (State state) =
     State { state | dragging = True, moving = True, moved = False }
 
 
-finishDragging : Position -> State -> State
-finishDragging pos (State state) =
+finishDragging : State -> State
+finishDragging (State state) =
     State { state | dragging = False, moving = state.moved }
 
 

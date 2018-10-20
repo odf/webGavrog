@@ -1,9 +1,10 @@
-module Menu exposing (view, ItemSpec, Actions, Config, State)
+module Menu exposing (Actions, Config, ItemSpec, State, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onMouseEnter, onMouseLeave, onWithOptions)
+import Html.Events exposing (onMouseEnter, onMouseLeave, stopPropagationOn)
 import Json.Decode as Json
+
 
 
 -- MODEL
@@ -59,6 +60,7 @@ viewItem config state index item =
                 Just sub ->
                     if isActive then
                         [ viewSubMenu config state sub ]
+
                     else
                         []
 
@@ -70,18 +72,18 @@ viewItem config state index item =
                 Just _ ->
                     []
     in
-        li
-            ([ classList
-                [ ( "infoBoxMenuItem", True )
-                , ( "infoBoxMenuHighlight", isActive )
-                ]
-             , onMouseEnter <|
-                config.actions.activateTopItem (Just ( index, item.label ))
-             , onMouseLeave <| config.actions.activateTopItem Nothing
-             ]
-                ++ maybeClickHandler
-            )
-            ([ text item.label ] ++ maybeSubMenu)
+    li
+        ([ classList
+            [ ( "infoBoxMenuItem", True )
+            , ( "infoBoxMenuHighlight", isActive )
+            ]
+         , onMouseEnter <|
+            config.actions.activateTopItem (Just ( index, item.label ))
+         , onMouseLeave <| config.actions.activateTopItem Nothing
+         ]
+            ++ maybeClickHandler
+        )
+        ([ text item.label ] ++ maybeSubMenu)
 
 
 viewSubMenu : Config msg -> State -> List String -> Html msg
@@ -108,9 +110,9 @@ viewSubItem config state index label =
 
 onClick : msg -> Attribute msg
 onClick msg =
-    onWithOptions
-        "click"
-        { stopPropagation = True
-        , preventDefault = False
-        }
-        (Json.succeed msg)
+    stopPropagationOn "click" (Json.map always (Json.succeed msg))
+
+
+always : msg -> ( msg, Bool )
+always msg =
+    ( msg, True )

@@ -1,11 +1,12 @@
 port module MainMenu exposing (main)
 
+import Browser
 import Browser.Events as Events
 import Char
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, onWithOptions)
-import Json.Decode as Json
+import Html.Events exposing (onInput, stopPropagationOn)
+import Json.Decode as Decode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Options
@@ -15,7 +16,7 @@ import View3d
 
 
 main =
-    Html.programWithFlags
+    Browser.document
         { init = init
         , update = update
         , view = view
@@ -38,7 +39,7 @@ type alias InData =
 
 
 type Msg
-    = Resize Window.Size
+    = Resize Int Int
     | ViewMsg View3d.Msg
     | Activate (Maybe ( Int, String ))
     | ActivateSub (Maybe ( Int, String ))
@@ -66,8 +67,12 @@ port fromJS : (InData -> msg) -> Sub msg
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
+    let
+        decodeKey =
+            Decode.at [ "keyCode" ] Decode.int
+    in
     [ fromJS JSData
-    , Events.onKeyUp KeyUp
+    , Events.onKeyUp (Decode.map KeyUp decodeKey)
     , View3d.subscriptions ViewMsg model.viewState
     , Events.onResize Resize
     ]
@@ -138,7 +143,8 @@ init flags =
       , optionSpecsTmp = []
       , optionsDialogVisible = False
       }
-    , Task.perform Resize Window.size
+    , Cmd.none
+      -- Task.perform Resize Window.size
     )
 
 
@@ -228,29 +234,32 @@ initOptionSpecs =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Resize size ->
-            updateView3d (View3d.setSize size) model ! []
+        Resize width height ->
+            ( updateView3d (View3d.setSize { width = width, height = height })
+                model
+            , Cmd.none
+            )
 
-        ViewMsg msg ->
-            updateView3d (View3d.update msg) model ! []
+        ViewMsg viewMsg ->
+            ( updateView3d (View3d.update viewMsg) model, Cmd.none )
 
         Activate item ->
-            updateActive model item ! []
+            ( updateActive model item, Cmd.none )
 
         ActivateSub item ->
-            updateActiveSub model item ! []
+            ( updateActiveSub model item, Cmd.none )
 
         Select ->
             handleSelection model
 
         JSData data ->
-            handleJSData data model ! []
+            ( handleJSData data model, Cmd.none )
 
         HideAbout ->
-            { model | showAbout = False } ! []
+            ( { model | showAbout = False }, Cmd.none )
 
         JumpDialogInput text ->
-            { model | jumpDialogContent = text } ! []
+            ( { model | jumpDialogContent = text }, Cmd.none )
 
         JumpDialogSubmit ok ->
             ( { model | jumpDialogVisible = False }
@@ -262,7 +271,7 @@ update msg model =
             )
 
         SearchDialogInput text ->
-            { model | searchDialogContent = text } ! []
+            ( { model | searchDialogContent = text }, Cmd.none )
 
         SearchDialogSubmit ok ->
             ( { model | searchDialogVisible = False }
@@ -273,14 +282,14 @@ update msg model =
                 Cmd.none
             )
 
-        OptionsMsg msg ->
-            updateOptions model msg
+        OptionsMsg optionMsg ->
+            updateOptions model optionMsg
 
         KeyUp code ->
             handleKeyPress code model
 
         Ignore ->
-            model ! []
+            ( model, Cmd.none )
 
 
 updateView3d : (View3d.Model -> View3d.Model) -> Model -> Model
@@ -339,32 +348,33 @@ handleSelection model =
             { model | menuState = initState }
     in
     if model.activeLabel == Just "About Gavrog..." then
-        { newModel | showAbout = True } ! []
+        ( { newModel | showAbout = True }, Cmd.none )
 
     else if model.activeLabel == Just "Jump..." then
-        { newModel | jumpDialogVisible = True } ! []
+        ( { newModel | jumpDialogVisible = True }, Cmd.none )
 
     else if model.activeLabel == Just "Search..." then
-        { newModel | searchDialogVisible = True } ! []
+        ( { newModel | searchDialogVisible = True }, Cmd.none )
 
     else if model.activeLabel == Just "Options..." then
-        { newModel
+        ( { newModel
             | optionsDialogVisible = True
             , optionSpecsTmp = model.optionSpecs
-        }
-            ! []
+          }
+        , Cmd.none
+        )
 
     else if model.activeLabel == Just "Center" then
-        updateView3d View3d.encompass model ! []
+        ( updateView3d View3d.encompass model, Cmd.none )
 
     else if model.activeLabel == Just "Along X" then
-        lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel ! []
+        ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel, Cmd.none )
 
     else if model.activeLabel == Just "Along Y" then
-        lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel ! []
+        ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel, Cmd.none )
 
     else if model.activeLabel == Just "Along Z" then
-        lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel ! []
+        ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel, Cmd.none )
 
     else if model.activeLabel == Just "Save Screenshot..." then
         ( updateView3d (View3d.setRedraws True) newModel
@@ -414,16 +424,17 @@ updateOptions model msg =
                 )
 
             else
-                { model | optionsDialogVisible = False } ! []
+                ( { model | optionsDialogVisible = False }, Cmd.none )
 
         Options.Toggle key ->
-            { model
+            ( { model
                 | optionSpecsTmp = Options.toggle key model.optionSpecsTmp
-            }
-                ! []
+              }
+            , Cmd.none
+            )
 
 
-handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
+handleKeyPress : Int -> Model -> ( Model, Cmd Msg )
 handleKeyPress code model =
     let
         char =
@@ -437,31 +448,31 @@ handleKeyPress code model =
             ( model, toJS <| OutData "selected" (Just "Prev") [] )
 
         '0' ->
-            updateView3d View3d.encompass model ! []
+            ( updateView3d View3d.encompass model, Cmd.none )
 
         'x' ->
-            lookAlong (vec3 -1 0 0) (vec3 0 1 0) model ! []
+            ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) model, Cmd.none )
 
         'y' ->
-            lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model ! []
+            ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model, Cmd.none )
 
         'z' ->
-            lookAlong (vec3 0 0 -1) (vec3 0 1 0) model ! []
+            ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) model, Cmd.none )
 
         'a' ->
-            lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
+            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
 
         'b' ->
-            lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model ! []
+            ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model, Cmd.none )
 
         'c' ->
-            lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model ! []
+            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
 
         'd' ->
-            lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model ! []
+            ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model, Cmd.none )
 
         _ ->
-            model ! []
+            ( model, Cmd.none )
 
 
 lookAlong : Vec3 -> Vec3 -> Model -> Model
@@ -473,37 +484,41 @@ lookAlong axis up model =
 -- VIEW
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
-    div []
-        ([ View3d.view ViewMsg model.viewState
-         , viewMain model
-         ]
-            ++ (if model.showAbout then
-                    [ viewAbout model ]
+    { title = "Gavrog For The Web"
+    , body =
+        [ div []
+            ([ View3d.view ViewMsg model.viewState
+             , viewMain model
+             ]
+                ++ (if model.showAbout then
+                        [ viewAbout model ]
 
-                else
-                    []
-               )
-            ++ (if model.jumpDialogVisible then
-                    [ viewTextBox model.jumpDialogConfig ]
+                    else
+                        []
+                   )
+                ++ (if model.jumpDialogVisible then
+                        [ viewTextBox model.jumpDialogConfig ]
 
-                else
-                    []
-               )
-            ++ (if model.searchDialogVisible then
-                    [ viewTextBox model.searchDialogConfig ]
+                    else
+                        []
+                   )
+                ++ (if model.searchDialogVisible then
+                        [ viewTextBox model.searchDialogConfig ]
 
-                else
-                    []
-               )
-            ++ (if model.optionsDialogVisible then
-                    [ Options.view OptionsMsg model.optionSpecsTmp ]
+                    else
+                        []
+                   )
+                ++ (if model.optionsDialogVisible then
+                        [ Options.view OptionsMsg model.optionSpecsTmp ]
 
-                else
-                    []
-               )
-        )
+                    else
+                        []
+                   )
+            )
+        ]
+    }
 
 
 viewMain : Model -> Html Msg
@@ -571,29 +586,19 @@ viewTextBox config =
 
 onClick : msg -> Attribute msg
 onClick msg =
-    onWithOptions
-        "click"
-        { stopPropagation = True
-        , preventDefault = False
-        }
-        (Json.succeed msg)
+    stopPropagationOn "click" (Decode.map always (Decode.succeed msg))
 
 
 onKeyUp : msg -> Attribute msg
 onKeyUp msg =
-    onWithOptions
-        "keyup"
-        { stopPropagation = True
-        , preventDefault = False
-        }
-        (Json.succeed msg)
+    stopPropagationOn "keyup" (Decode.map always (Decode.succeed msg))
 
 
 onKeyDown : msg -> Attribute msg
 onKeyDown msg =
-    onWithOptions
-        "keydown"
-        { stopPropagation = True
-        , preventDefault = False
-        }
-        (Json.succeed msg)
+    stopPropagationOn "keydown" (Decode.map always (Decode.succeed msg))
+
+
+always : msg -> ( msg, Bool )
+always msg =
+    ( msg, True )

@@ -15,8 +15,8 @@ pullVertex vertices i =
     vertices |> List.drop i |> List.head
 
 
-corners : List vertex -> FaceSpec -> List vertex
-corners vertices face =
+pullCorners : List vertex -> FaceSpec -> List vertex
+pullCorners vertices face =
     List.filterMap (pullVertex vertices) face
 
 
@@ -27,22 +27,23 @@ triangles corners =
             []
 
         Just u ->
-            List.map2 (,) (List.drop 1 corners) (List.drop 2 corners)
+            List.map2 Tuple.pair (List.drop 1 corners) (List.drop 2 corners)
                 |> List.map (\( v, w ) -> ( u, v, w ))
 
 
 edges : List vertex -> List ( vertex, vertex )
 edges corners =
-    List.map2 (,) corners ((List.drop 1 corners) ++ (List.take 1 corners))
+    (List.drop 1 corners ++ List.take 1 corners)
+        |> List.map2 Tuple.pair corners
 
 
 mesh : List vertex -> List FaceSpec -> Mesh vertex
 mesh vertices faces =
-    List.concatMap (triangles << corners vertices) faces
+    List.concatMap (triangles << pullCorners vertices) faces
         |> Triangles
 
 
 wireframe : List vertex -> List FaceSpec -> Mesh vertex
 wireframe vertices faces =
-    List.concatMap (edges << corners vertices) faces
+    List.concatMap (edges << pullCorners vertices) faces
         |> Lines
