@@ -7,7 +7,7 @@ import parseDSymbols from '../io/ds';
 import { structures } from './builtinStructures';
 import makeScene from './makeScene';
 
-import { MainMenu } from '../elm/MainMenu';
+import { Elm } from '../elm/MainMenu';
 
 
 const worker = webworkers.create('js/sceneWorker.js');
@@ -173,9 +173,12 @@ const saveScreenshot = (config, model) => {
 const render = domNode => {
   const model = { options: {}, structures };
 
-  const app = MainMenu.embed(domNode, {
-    revision: version.gitRev,
-    timestamp: version.gitDate });
+  const app = Elm.MainMenu.init({
+    node: domNode,
+    flags: {
+      revision: version.gitRev,
+      timestamp: version.gitDate
+    }});
 
   const send = key => val => app.ports.fromJS.send(
     Object.assign({ title: null, log: null, scene: null }, { [key]: val }));
