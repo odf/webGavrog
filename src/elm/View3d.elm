@@ -110,8 +110,8 @@ subscriptions toMsg model =
 
         decodePos =
             Decode.map2 (\x y -> { x = x, y = y })
-                (Decode.at [ "screenX" ] Decode.int)
-                (Decode.at [ "screenY" ] Decode.int)
+                (Decode.at [ "clientX" ] Decode.int)
+                (Decode.at [ "clientY" ] Decode.int)
     in
     (if Camera.isMoving model.cameraState then
         [ Events.onAnimationFrame FrameMsg ]
