@@ -491,11 +491,9 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Gavrog For The Web"
     , body =
-        [ div []
-            [ View3d.view ViewMsg model.viewState
-            , viewMain model
-            , viewCurrentDialog model
-            ]
+        [ View3d.view ViewMsg model.viewState
+        , viewMain model
+        , viewCurrentDialog model
         ]
     }
 
@@ -584,19 +582,19 @@ viewTextBox config =
 
 onClick : msg -> Attribute msg
 onClick msg =
-    stopPropagationOn "click" (Decode.map always (Decode.succeed msg))
+    stopPropagationOn "click" <| always msg
 
 
 onKeyUp : msg -> Attribute msg
 onKeyUp msg =
-    stopPropagationOn "keyup" (Decode.map always (Decode.succeed msg))
+    stopPropagationOn "keyup" <| always msg
 
 
 onKeyDown : msg -> Attribute msg
 onKeyDown msg =
-    stopPropagationOn "keydown" (Decode.map always (Decode.succeed msg))
+    stopPropagationOn "keydown" <| always msg
 
 
-always : msg -> ( msg, Bool )
+always : msg -> Decode.Decoder ( msg, Bool )
 always msg =
-    ( msg, True )
+    Decode.map (\m -> ( m, True )) <| Decode.succeed msg
