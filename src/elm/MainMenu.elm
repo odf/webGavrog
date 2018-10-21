@@ -98,6 +98,13 @@ type alias TextBoxConfig =
     }
 
 
+type DialogType
+    = About
+    | Jump
+    | Search
+    | Options
+
+
 type alias Model =
     { viewState : View3d.Model
     , revision : String
@@ -105,18 +112,15 @@ type alias Model =
     , menuConfig : Menu.Config Msg
     , menuState : Menu.State
     , activeLabel : Maybe String
+    , visibleDialog : Maybe DialogType
     , jumpDialogConfig : TextBoxConfig
     , jumpDialogContent : String
-    , jumpDialogVisible : Bool
     , searchDialogConfig : TextBoxConfig
     , searchDialogContent : String
-    , searchDialogVisible : Bool
     , optionSpecs : List Options.Spec
     , optionSpecsTmp : List Options.Spec
-    , optionsDialogVisible : Bool
     , title : String
     , status : String
-    , showAbout : Bool
     }
 
 
@@ -131,18 +135,15 @@ init flags =
             }
       , menuState = initState
       , activeLabel = Nothing
+      , visibleDialog = Nothing
       , title = ""
       , status = "Welcome!"
-      , showAbout = False
       , jumpDialogConfig = jumpDialogConfig
       , jumpDialogContent = ""
-      , jumpDialogVisible = False
       , searchDialogConfig = searchDialogConfig
       , searchDialogContent = ""
-      , searchDialogVisible = False
       , optionSpecs = initOptionSpecs
       , optionSpecsTmp = []
-      , optionsDialogVisible = False
       }
     , Task.perform
         (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
@@ -258,13 +259,13 @@ update msg model =
             ( handleJSData data model, Cmd.none )
 
         HideAbout ->
-            ( { model | showAbout = False }, Cmd.none )
+            ( { model | visibleDialog = Nothing }, Cmd.none )
 
         JumpDialogInput text ->
             ( { model | jumpDialogContent = text }, Cmd.none )
 
         JumpDialogSubmit ok ->
-            ( { model | jumpDialogVisible = False }
+            ( { model | visibleDialog = Nothing }
             , if ok then
                 toJS <| OutData "jump" (Just model.jumpDialogContent) []
 
@@ -276,7 +277,7 @@ update msg model =
             ( { model | searchDialogContent = text }, Cmd.none )
 
         SearchDialogSubmit ok ->
-            ( { model | searchDialogVisible = False }
+            ( { model | visibleDialog = Nothing }
             , if ok then
                 toJS <| OutData "search" (Just model.searchDialogContent) []
 
@@ -350,17 +351,17 @@ handleSelection model =
             { model | menuState = initState }
     in
     if model.activeLabel == Just "About Gavrog..." then
-        ( { newModel | showAbout = True }, Cmd.none )
+        ( { newModel | visibleDialog = Just About }, Cmd.none )
 
     else if model.activeLabel == Just "Jump..." then
-        ( { newModel | jumpDialogVisible = True }, Cmd.none )
+        ( { newModel | visibleDialog = Just Jump }, Cmd.none )
 
     else if model.activeLabel == Just "Search..." then
-        ( { newModel | searchDialogVisible = True }, Cmd.none )
+        ( { newModel | visibleDialog = Just Search }, Cmd.none )
 
     else if model.activeLabel == Just "Options..." then
         ( { newModel
-            | optionsDialogVisible = True
+            | visibleDialog = Just Options
             , optionSpecsTmp = model.optionSpecs
           }
         , Cmd.none
@@ -419,14 +420,14 @@ updateOptions model msg =
         Options.Submit ok ->
             if ok then
                 ( { model
-                    | optionsDialogVisible = False
+                    | visibleDialog = Nothing
                     , optionSpecs = model.optionSpecsTmp
                   }
                 , toJS <| OutData "options" Nothing model.optionSpecsTmp
                 )
 
             else
-                ( { model | optionsDialogVisible = False }, Cmd.none )
+                ( { model | visibleDialog = Nothing }, Cmd.none )
 
         Options.Toggle key ->
             ( { model
@@ -491,34 +492,10 @@ view model =
     { title = "Gavrog For The Web"
     , body =
         [ div []
-            ([ View3d.view ViewMsg model.viewState
-             , viewMain model
-             ]
-                ++ (if model.showAbout then
-                        [ viewAbout model ]
-
-                    else
-                        []
-                   )
-                ++ (if model.jumpDialogVisible then
-                        [ viewTextBox model.jumpDialogConfig ]
-
-                    else
-                        []
-                   )
-                ++ (if model.searchDialogVisible then
-                        [ viewTextBox model.searchDialogConfig ]
-
-                    else
-                        []
-                   )
-                ++ (if model.optionsDialogVisible then
-                        [ Options.view OptionsMsg model.optionSpecsTmp ]
-
-                    else
-                        []
-                   )
-            )
+            [ View3d.view ViewMsg model.viewState
+            , viewMain model
+            , viewCurrentDialog model
+            ]
         ]
     }
 
@@ -535,6 +512,25 @@ viewMain model =
             ]
         , Menu.view model.menuConfig model.menuState
         ]
+
+
+viewCurrentDialog : Model -> Html Msg
+viewCurrentDialog model =
+    case model.visibleDialog of
+        Nothing ->
+            div [] []
+
+        Just About ->
+            viewAbout model
+
+        Just Jump ->
+            viewTextBox model.jumpDialogConfig
+
+        Just Search ->
+            viewTextBox model.searchDialogConfig
+
+        Just Options ->
+            Options.view OptionsMsg model.optionSpecsTmp
 
 
 viewAbout : Model -> Html Msg
