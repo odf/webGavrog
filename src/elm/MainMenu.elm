@@ -492,15 +492,21 @@ view model =
     { title = "Gavrog For The Web"
     , body =
         [ View3d.view ViewMsg model.viewState
-        , viewMain model
-        , viewCurrentDialog model
+        , div [ class "floatable infoBox" ] [ viewMain model ]
+        , case model.visibleDialog of
+            Nothing ->
+                div [] []
+
+            Just dialog ->
+                div [ class "floatable centered infoBox" ]
+                    [ viewCurrentDialog model dialog ]
         ]
     }
 
 
 viewMain : Model -> Html Msg
 viewMain model =
-    div [ class "floatable infoBox" ]
+    div []
         [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
         , h3 [ class "infoBoxHeader" ] [ text "Gavrog" ]
         , span [ class "clearFix" ]
@@ -512,31 +518,25 @@ viewMain model =
         ]
 
 
-viewCurrentDialog : Model -> Html Msg
-viewCurrentDialog model =
-    case model.visibleDialog of
-        Nothing ->
-            div [] []
-
-        Just About ->
+viewCurrentDialog : Model -> DialogType -> Html Msg
+viewCurrentDialog model dialog =
+    case dialog of
+        About ->
             viewAbout model
 
-        Just Jump ->
+        Jump ->
             viewTextBox model.jumpDialogConfig
 
-        Just Search ->
+        Search ->
             viewTextBox model.searchDialogConfig
 
-        Just Options ->
-            Options.view OptionsMsg model.optionSpecsTmp
+        Options ->
+            viewOptions model
 
 
 viewAbout : Model -> Html Msg
 viewAbout model =
-    div
-        [ class "floatable centered infoBox"
-        , onClick HideAbout
-        ]
+    div [ onClick HideAbout ]
         [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
         , h3 [ class "infoBoxHeader" ] [ text "Gavrog for the Web" ]
         , span [ class "clearFix" ]
@@ -560,24 +560,26 @@ viewAbout model =
 
 viewTextBox : TextBoxConfig -> Html Msg
 viewTextBox config =
-    div
-        [ class "floatable centered infoBox" ]
-        [ div [ class "form-element" ]
-            [ label [] [ text config.label ]
-            , input
-                [ type_ "text"
-                , placeholder config.placeholder
-                , onInput config.onInput
-                , onKeyUp Ignore
-                , onKeyDown Ignore
-                ]
-                []
-            , p [ class "form-buttons" ]
-                [ button [ onClick (config.onSubmit True) ] [ text "OK" ]
-                , button [ onClick (config.onSubmit False) ] [ text "Cancel" ]
-                ]
+    div [ class "form-element" ]
+        [ label [] [ text config.label ]
+        , input
+            [ type_ "text"
+            , placeholder config.placeholder
+            , onInput config.onInput
+            , onKeyUp Ignore
+            , onKeyDown Ignore
+            ]
+            []
+        , p [ class "form-buttons" ]
+            [ button [ onClick (config.onSubmit True) ] [ text "OK" ]
+            , button [ onClick (config.onSubmit False) ] [ text "Cancel" ]
             ]
         ]
+
+
+viewOptions : Model -> Html Msg
+viewOptions model =
+    Options.view OptionsMsg model.optionSpecsTmp
 
 
 onClick : msg -> Attribute msg

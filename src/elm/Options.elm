@@ -1,4 +1,4 @@
-module Options exposing (view, toggle, Spec, Msg(..))
+module Options exposing (Msg(..), Spec, toggle, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -23,6 +23,7 @@ toggle key specs =
         (\spec ->
             if spec.key == key then
                 { spec | value = not spec.value }
+
             else
                 spec
         )
@@ -31,21 +32,18 @@ toggle key specs =
 
 view : (Msg -> msg) -> List Spec -> Html msg
 view toMsg specs =
-    div
-        [ class "floatable centered infoBox" ]
-        [ fieldset [ class "form-section" ]
-            (List.map (checkbox toMsg) specs
-                ++ [ p [ class "form-buttons" ]
-                        [ button
-                            [ onClick <| toMsg <| Submit True ]
-                            [ text "OK" ]
-                        , button
-                            [ onClick <| toMsg <| Submit False ]
-                            [ text "Cancel" ]
-                        ]
-                   ]
-            )
-        ]
+    fieldset [ class "form-section" ]
+        (List.map (checkbox toMsg) specs
+            ++ [ p [ class "form-buttons" ]
+                    [ button
+                        [ onClick <| toMsg <| Submit True ]
+                        [ text "OK" ]
+                    , button
+                        [ onClick <| toMsg <| Submit False ]
+                        [ text "Cancel" ]
+                    ]
+               ]
+        )
 
 
 checkbox : (Msg -> msg) -> Spec -> Html msg
