@@ -570,7 +570,7 @@ viewTextBox config =
             , onKeyDown Ignore
             ]
             []
-        , p [ class "form-buttons" ]
+        , p []
             [ button [ onClick (config.onSubmit True) ] [ text "OK" ]
             , button [ onClick (config.onSubmit False) ] [ text "Cancel" ]
             ]

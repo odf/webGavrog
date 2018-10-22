@@ -32,18 +32,17 @@ toggle key specs =
 
 view : (Msg -> msg) -> List Spec -> Html msg
 view toMsg specs =
-    fieldset [ class "form-section" ]
-        (List.map (checkbox toMsg) specs
-            ++ [ p [ class "form-buttons" ]
-                    [ button
-                        [ onClick <| toMsg <| Submit True ]
-                        [ text "OK" ]
-                    , button
-                        [ onClick <| toMsg <| Submit False ]
-                        [ text "Cancel" ]
-                    ]
-               ]
-        )
+    div []
+        [ div [] (List.map (checkbox toMsg) specs)
+        , p []
+            [ button
+                [ onClick <| toMsg <| Submit True ]
+                [ text "OK" ]
+            , button
+                [ onClick <| toMsg <| Submit False ]
+                [ text "Cancel" ]
+            ]
+        ]
 
 
 checkbox : (Msg -> msg) -> Spec -> Html msg
