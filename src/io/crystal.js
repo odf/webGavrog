@@ -564,7 +564,7 @@ export function netFromCrystal(spec) {
   const primitiveGram = unitCells.symmetrizedGramMatrix(
     opsF.times(primitiveCell,
                opsF.times(cellGram, opsF.transposed(primitiveCell))),
-    primitive.ops);
+    primitive.ops.map(op => opsQ.transposed(opsQ.linearPart(op))));
 
   const nodesMapped = nodes.map(mapNode(toPrimitive));
   const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
@@ -629,7 +629,7 @@ export const tilingFromFacelist = spec => {
   const primitiveGram = unitCells.symmetrizedGramMatrix(
     opsF.times(primitiveCell,
                opsF.times(cellGram, opsF.transposed(primitiveCell))),
-    primitive.ops);
+    primitive.ops.map(op => opsQ.transposed(opsQ.linearPart(op))));
 
   const facesMapped = faces.map(
     f => f.map(p => opsF.times(toPrimitive, opsF.point(p))));
