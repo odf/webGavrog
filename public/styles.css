@@ -76,20 +76,6 @@ body {
     color: black;
 }
 
-.clearFix:before,
-.clearFix:after {
-  content: ' ';
-  display: table;
-}
-
-.clearFix:after {
-  clear: both;
-}
-
-.form-section {
-    border: none;
-}
-
 .form-element {
     position: relative;
 }

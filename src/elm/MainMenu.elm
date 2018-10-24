@@ -7,6 +7,7 @@ import Char
 import Element
 import Element.Events as Elevents
 import Element.Font as Font
+import Element.Input as Input
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, stopPropagationOn)
@@ -539,10 +540,10 @@ viewCurrentDialog model dialog =
             viewAbout model
 
         Jump ->
-            viewTextBox model.jumpDialogConfig
+            viewTextBox model.jumpDialogConfig model.jumpDialogContent
 
         Search ->
-            viewTextBox model.searchDialogConfig
+            viewTextBox model.searchDialogConfig model.searchDialogContent
 
         Options ->
             viewOptions model
@@ -592,23 +593,32 @@ viewAbout model =
         )
 
 
-viewTextBox : TextBoxConfig -> Html Msg
-viewTextBox config =
-    div [ class "form-element" ]
-        [ label [] [ text config.label ]
-        , input
-            [ type_ "text"
-            , placeholder config.placeholder
-            , onInput config.onInput
-            , onKeyUp Ignore
-            , onKeyDown Ignore
+viewTextBox : TextBoxConfig -> String -> Html Msg
+viewTextBox config text =
+    Element.layout [ Font.size 16 ]
+        (Element.column [ Element.spacing 8, Element.padding 16 ]
+            [ Input.text
+                []
+                { onChange = config.onInput
+                , text = text
+                , placeholder =
+                    Just <|
+                        Input.placeholder [] <|
+                            Element.text config.placeholder
+                , label = Input.labelAbove [] <| Element.text config.label
+                }
+            , Element.row [ Element.spacing 32, Element.centerX ]
+                [ Input.button []
+                    { onPress = Just (config.onSubmit True)
+                    , label = Element.text "OK"
+                    }
+                , Input.button []
+                    { onPress = Just (config.onSubmit False)
+                    , label = Element.text "Cancel"
+                    }
+                ]
             ]
-            []
-        , p []
-            [ button [ onClick (config.onSubmit True) ] [ text "OK" ]
-            , button [ onClick (config.onSubmit False) ] [ text "Cancel" ]
-            ]
-        ]
+        )
 
 
 viewOptions : Model -> Html Msg
