@@ -95,11 +95,18 @@ glScene scene =
 type Msg
     = FrameMsg Posix
     | MouseUpMsg
-    | MouseDownMsg
+    | MouseDownMsg { x : Int, y : Int }
     | MouseMoveMsg { x : Int, y : Int }
     | KeyDownMsg Int
     | KeyUpMsg Int
     | WheelMsg Float
+
+
+decodePos : Decode.Decoder { x : Int, y : Int }
+decodePos =
+    Decode.map2 (\x y -> { x = x, y = y })
+        (Decode.at [ "clientX" ] Decode.int)
+        (Decode.at [ "clientY" ] Decode.int)
 
 
 subscriptions : (Msg -> msg) -> Model -> Sub msg
@@ -108,19 +115,23 @@ subscriptions toMsg model =
         decodeKey =
             Decode.at [ "keyCode" ] Decode.int
 
-        decodePos =
-            Decode.map2 (\x y -> { x = x, y = y })
-                (Decode.at [ "clientX" ] Decode.int)
-                (Decode.at [ "clientY" ] Decode.int)
-    in
-    (if Camera.isMoving model.cameraState then
-        [ Events.onAnimationFrame FrameMsg ]
+        frameEvent =
+            if Camera.isMoving model.cameraState then
+                Events.onAnimationFrame FrameMsg
 
-     else
-        []
-    )
-        ++ [ Events.onMouseMove (Decode.map MouseMoveMsg decodePos)
-           , Events.onMouseUp (Decode.succeed MouseUpMsg)
+            else
+                Sub.none
+
+        moveEvent =
+            if Camera.isDragging model.cameraState then
+                Events.onMouseMove (Decode.map MouseMoveMsg decodePos)
+
+            else
+                Sub.none
+    in
+    frameEvent
+        :: moveEvent
+        :: [ Events.onMouseUp (Decode.succeed MouseUpMsg)
            , Events.onKeyDown (Decode.map KeyDownMsg decodeKey)
            , Events.onKeyUp (Decode.map KeyUpMsg decodeKey)
            ]
@@ -138,8 +149,8 @@ update msg model =
         FrameMsg time ->
             updateCamera (Camera.nextFrame time) model
 
-        MouseDownMsg ->
-            updateCamera Camera.startDragging model
+        MouseDownMsg pos ->
+            updateCamera (Camera.startDragging pos) model
 
         MouseUpMsg ->
             updateCamera Camera.finishDragging model
@@ -254,10 +265,24 @@ view toMsg model =
         , Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" "white"
         , Html.Attributes.id "main-3d-canvas"
-        , Html.Events.onMouseDown (toMsg MouseDownMsg)
+        , onMouseDown (toMsg << MouseDownMsg)
         , onMouseWheel (toMsg << WheelMsg)
         ]
         entities
+
+
+onMouseDown : ({ x : Int, y : Int } -> msg) -> Html.Attribute msg
+onMouseDown toMsg =
+    let
+        toResult value =
+            { message = toMsg value
+            , stopPropagation = False
+            , preventDefault = False
+            }
+    in
+    Html.Events.custom
+        "mousedown"
+        (Decode.map toResult decodePos)
 
 
 onMouseWheel : (Float -> msg) -> Html.Attribute msg

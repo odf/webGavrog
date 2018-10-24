@@ -98,6 +98,13 @@ type alias TextBoxConfig =
     }
 
 
+type DialogType
+    = About
+    | Jump
+    | Search
+    | Options
+
+
 type alias Model =
     { viewState : View3d.Model
     , revision : String
@@ -105,18 +112,15 @@ type alias Model =
     , menuConfig : Menu.Config Msg
     , menuState : Menu.State
     , activeLabel : Maybe String
+    , visibleDialog : Maybe DialogType
     , jumpDialogConfig : TextBoxConfig
     , jumpDialogContent : String
-    , jumpDialogVisible : Bool
     , searchDialogConfig : TextBoxConfig
     , searchDialogContent : String
-    , searchDialogVisible : Bool
     , optionSpecs : List Options.Spec
     , optionSpecsTmp : List Options.Spec
-    , optionsDialogVisible : Bool
     , title : String
     , status : String
-    , showAbout : Bool
     }
 
 
@@ -131,18 +135,15 @@ init flags =
             }
       , menuState = initState
       , activeLabel = Nothing
+      , visibleDialog = Nothing
       , title = ""
       , status = "Welcome!"
-      , showAbout = False
       , jumpDialogConfig = jumpDialogConfig
       , jumpDialogContent = ""
-      , jumpDialogVisible = False
       , searchDialogConfig = searchDialogConfig
       , searchDialogContent = ""
-      , searchDialogVisible = False
       , optionSpecs = initOptionSpecs
       , optionSpecsTmp = []
-      , optionsDialogVisible = False
       }
     , Task.perform
         (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
@@ -258,13 +259,13 @@ update msg model =
             ( handleJSData data model, Cmd.none )
 
         HideAbout ->
-            ( { model | showAbout = False }, Cmd.none )
+            ( { model | visibleDialog = Nothing }, Cmd.none )
 
         JumpDialogInput text ->
             ( { model | jumpDialogContent = text }, Cmd.none )
 
         JumpDialogSubmit ok ->
-            ( { model | jumpDialogVisible = False }
+            ( { model | visibleDialog = Nothing }
             , if ok then
                 toJS <| OutData "jump" (Just model.jumpDialogContent) []
 
@@ -276,7 +277,7 @@ update msg model =
             ( { model | searchDialogContent = text }, Cmd.none )
 
         SearchDialogSubmit ok ->
-            ( { model | searchDialogVisible = False }
+            ( { model | visibleDialog = Nothing }
             , if ok then
                 toJS <| OutData "search" (Just model.searchDialogContent) []
 
@@ -350,17 +351,17 @@ handleSelection model =
             { model | menuState = initState }
     in
     if model.activeLabel == Just "About Gavrog..." then
-        ( { newModel | showAbout = True }, Cmd.none )
+        ( { newModel | visibleDialog = Just About }, Cmd.none )
 
     else if model.activeLabel == Just "Jump..." then
-        ( { newModel | jumpDialogVisible = True }, Cmd.none )
+        ( { newModel | visibleDialog = Just Jump }, Cmd.none )
 
     else if model.activeLabel == Just "Search..." then
-        ( { newModel | searchDialogVisible = True }, Cmd.none )
+        ( { newModel | visibleDialog = Just Search }, Cmd.none )
 
     else if model.activeLabel == Just "Options..." then
         ( { newModel
-            | optionsDialogVisible = True
+            | visibleDialog = Just Options
             , optionSpecsTmp = model.optionSpecs
           }
         , Cmd.none
@@ -419,14 +420,14 @@ updateOptions model msg =
         Options.Submit ok ->
             if ok then
                 ( { model
-                    | optionsDialogVisible = False
+                    | visibleDialog = Nothing
                     , optionSpecs = model.optionSpecsTmp
                   }
                 , toJS <| OutData "options" Nothing model.optionSpecsTmp
                 )
 
             else
-                ( { model | optionsDialogVisible = False }, Cmd.none )
+                ( { model | visibleDialog = Nothing }, Cmd.none )
 
         Options.Toggle key ->
             ( { model
@@ -490,42 +491,22 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Gavrog For The Web"
     , body =
-        [ div []
-            ([ View3d.view ViewMsg model.viewState
-             , viewMain model
-             ]
-                ++ (if model.showAbout then
-                        [ viewAbout model ]
+        [ View3d.view ViewMsg model.viewState
+        , div [ class "floatable infoBox" ] [ viewMain model ]
+        , case model.visibleDialog of
+            Nothing ->
+                div [] []
 
-                    else
-                        []
-                   )
-                ++ (if model.jumpDialogVisible then
-                        [ viewTextBox model.jumpDialogConfig ]
-
-                    else
-                        []
-                   )
-                ++ (if model.searchDialogVisible then
-                        [ viewTextBox model.searchDialogConfig ]
-
-                    else
-                        []
-                   )
-                ++ (if model.optionsDialogVisible then
-                        [ Options.view OptionsMsg model.optionSpecsTmp ]
-
-                    else
-                        []
-                   )
-            )
+            Just dialog ->
+                div [ class "floatable centered infoBox" ]
+                    [ viewCurrentDialog model dialog ]
         ]
     }
 
 
 viewMain : Model -> Html Msg
 viewMain model =
-    div [ class "floatable infoBox" ]
+    div []
         [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
         , h3 [ class "infoBoxHeader" ] [ text "Gavrog" ]
         , span [ class "clearFix" ]
@@ -537,12 +518,25 @@ viewMain model =
         ]
 
 
+viewCurrentDialog : Model -> DialogType -> Html Msg
+viewCurrentDialog model dialog =
+    case dialog of
+        About ->
+            viewAbout model
+
+        Jump ->
+            viewTextBox model.jumpDialogConfig
+
+        Search ->
+            viewTextBox model.searchDialogConfig
+
+        Options ->
+            viewOptions model
+
+
 viewAbout : Model -> Html Msg
 viewAbout model =
-    div
-        [ class "floatable centered infoBox"
-        , onClick HideAbout
-        ]
+    div [ onClick HideAbout ]
         [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
         , h3 [ class "infoBoxHeader" ] [ text "Gavrog for the Web" ]
         , span [ class "clearFix" ]
@@ -566,41 +560,43 @@ viewAbout model =
 
 viewTextBox : TextBoxConfig -> Html Msg
 viewTextBox config =
-    div
-        [ class "floatable centered infoBox" ]
-        [ div [ class "form-element" ]
-            [ label [] [ text config.label ]
-            , input
-                [ type_ "text"
-                , placeholder config.placeholder
-                , onInput config.onInput
-                , onKeyUp Ignore
-                , onKeyDown Ignore
-                ]
-                []
-            , p [ class "form-buttons" ]
-                [ button [ onClick (config.onSubmit True) ] [ text "OK" ]
-                , button [ onClick (config.onSubmit False) ] [ text "Cancel" ]
-                ]
+    div [ class "form-element" ]
+        [ label [] [ text config.label ]
+        , input
+            [ type_ "text"
+            , placeholder config.placeholder
+            , onInput config.onInput
+            , onKeyUp Ignore
+            , onKeyDown Ignore
+            ]
+            []
+        , p []
+            [ button [ onClick (config.onSubmit True) ] [ text "OK" ]
+            , button [ onClick (config.onSubmit False) ] [ text "Cancel" ]
             ]
         ]
 
 
+viewOptions : Model -> Html Msg
+viewOptions model =
+    Options.view OptionsMsg model.optionSpecsTmp
+
+
 onClick : msg -> Attribute msg
 onClick msg =
-    stopPropagationOn "click" (Decode.map always (Decode.succeed msg))
+    stopPropagationOn "click" <| always msg
 
 
 onKeyUp : msg -> Attribute msg
 onKeyUp msg =
-    stopPropagationOn "keyup" (Decode.map always (Decode.succeed msg))
+    stopPropagationOn "keyup" <| always msg
 
 
 onKeyDown : msg -> Attribute msg
 onKeyDown msg =
-    stopPropagationOn "keydown" (Decode.map always (Decode.succeed msg))
+    stopPropagationOn "keydown" <| always msg
 
 
-always : msg -> ( msg, Bool )
+always : msg -> Decode.Decoder ( msg, Bool )
 always msg =
-    ( msg, True )
+    Decode.map (\m -> ( m, True )) <| Decode.succeed msg

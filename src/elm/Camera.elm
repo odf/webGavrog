@@ -4,6 +4,7 @@ module Camera exposing
     , encompass
     , finishDragging
     , initialState
+    , isDragging
     , isMoving
     , lookAlong
     , nextFrame
@@ -76,17 +77,23 @@ nextFrame time (State state) =
         State state
 
 
-setMousePosition : { x : Int, y : Int } -> Bool -> State -> State
-setMousePosition pos alter (State state) =
+positionToNdc : { x : Int, y : Int } -> State -> Position
+positionToNdc pos (State state) =
     let
         xRelative =
             (toFloat pos.x - state.origin.x) / state.size.width
 
         yRelative =
             (toFloat pos.y - state.origin.y) / state.size.height
+    in
+    { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
 
+
+setMousePosition : { x : Int, y : Int } -> Bool -> State -> State
+setMousePosition pos alter (State state) =
+    let
         ndcPos =
-            { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
+            positionToNdc pos (State state)
     in
     if state.dragging then
         if alter then
@@ -139,9 +146,15 @@ setFrameSize size (State state) =
         }
 
 
-startDragging : State -> State
-startDragging (State state) =
-    State { state | dragging = True, moving = True, moved = False }
+startDragging : { x : Int, y : Int } -> State -> State
+startDragging pos (State state) =
+    State
+        { state
+            | dragging = True
+            , moving = True
+            , moved = False
+            , ndcPos = positionToNdc pos (State state)
+        }
 
 
 finishDragging : State -> State
@@ -326,6 +339,11 @@ perspectiveMatrix (State state) =
 cameraDistance : State -> Float
 cameraDistance (State state) =
     state.cameraDistance
+
+
+isDragging : State -> Bool
+isDragging (State state) =
+    state.dragging
 
 
 isMoving : State -> Bool
