@@ -4,6 +4,8 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
 import Char
+import Element
+import Element.Font as Font
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, stopPropagationOn)
@@ -492,13 +494,13 @@ view model =
     { title = "Gavrog For The Web"
     , body =
         [ View3d.view ViewMsg model.viewState
-        , div [ class "floatable infoBox" ] [ viewMain model ]
+        , div [ class "floatable" ] [ viewMain model ]
         , case model.visibleDialog of
             Nothing ->
                 div [] []
 
             Just dialog ->
-                div [ class "floatable centered infoBox" ]
+                div [ class "floatable centered" ]
                     [ viewCurrentDialog model dialog ]
         ]
     }
@@ -506,16 +508,25 @@ view model =
 
 viewMain : Model -> Html Msg
 viewMain model =
-    div []
-        [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
-        , h3 [ class "infoBoxHeader" ] [ text "Gavrog" ]
-        , span [ class "clearFix" ]
-            [ text model.title
-            , br [] []
-            , text model.status
+    Element.layout [ Font.size 16 ]
+        (Element.wrappedRow [ Element.spacing 16 ]
+            [ Element.image []
+                { src = "3dt.ico", description = "Gavrog Logo" }
+            , Element.el
+                [ Font.size 32
+                , Font.color <| Element.rgb255 0 0 139
+                , Font.variant Font.smallCaps
+                , Font.semiBold
+                ]
+                (Element.text "Gavrog")
+            , Element.column []
+                [ Element.text model.title
+                , Element.text model.status
+                ]
+            , Element.html <|
+                Menu.view model.menuConfig model.menuState
             ]
-        , Menu.view model.menuConfig model.menuState
-        ]
+        )
 
 
 viewCurrentDialog : Model -> DialogType -> Html Msg

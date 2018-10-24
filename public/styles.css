@@ -16,14 +16,12 @@ body {
 .floatable {
     zIndex       : 10;
     position     : fixed;
-    top          : 10px;
-    left         : 10px;
+    top          : 0px;
+    left         : 0px;
     margin       : 0;
     padding      : 4px 10px;
     background   : #fff4d2;
     border       : 1px solid #aaa;
-    border-radius: 10px;
-    box-shadow   : 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .centered {
@@ -31,10 +29,6 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-}
-
-.infoBox {
-    min-width: 18em;
 }
 
 .infoBoxHeader {
