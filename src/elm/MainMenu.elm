@@ -5,6 +5,7 @@ import Browser.Dom as Dom
 import Browser.Events as Events
 import Char
 import Element
+import Element.Events as Elevents
 import Element.Font as Font
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -547,26 +548,37 @@ viewCurrentDialog model dialog =
 
 viewAbout : Model -> Html Msg
 viewAbout model =
-    div [ onClick HideAbout ]
-        [ img [ class "infoBoxLogo", width 48, src "3dt.ico" ] []
-        , h3 [ class "infoBoxHeader" ] [ text "Gavrog for the Web" ]
-        , span [ class "clearFix" ]
-            [ text "by Olaf Delgado-Friedrichs 2018"
-            , br [] []
-            , text "The Australian National University"
+    Element.layout [ Font.size 16, Elevents.onClick HideAbout ]
+        (Element.column [ Element.spacing 4, Element.padding 8 ]
+            [ Element.row [ Element.spacing 16 ]
+                [ Element.image []
+                    { src = "3dt.ico", description = "Gavrog Logo" }
+                , Element.column [ Element.spacing 4, Element.padding 8 ]
+                    [ Element.el
+                        [ Font.size 32
+                        , Font.color <| Element.rgb255 0 0 139
+                        , Font.variant Font.smallCaps
+                        , Font.semiBold
+                        ]
+                        (Element.text "Gavrog for the Web")
+                    , Element.text "by Olaf Delgado-Friedrichs 2018"
+                    , Element.text "The Australian National University"
+                    ]
+                ]
+            , Element.paragraph []
+                [ Element.el [ Font.bold ] (Element.text "Version: ")
+                , Element.text "0.0.0 (pre-alpha)"
+                ]
+            , Element.paragraph []
+                [ Element.el [ Font.bold ] (Element.text "Revision: ")
+                , Element.text model.revision
+                ]
+            , Element.paragraph []
+                [ Element.el [ Font.bold ] (Element.text "Timestamp: ")
+                , Element.text model.timestamp
+                ]
             ]
-        , p []
-            [ b [] [ text "Version: " ]
-            , text "0.0.0 (pre-alpha)"
-            , br [] []
-            , b [] [ text "Revision: " ]
-            , text model.revision
-            , br [] []
-            , b [] [ text "Timestamp: " ]
-            , text model.timestamp
-            , br [] []
-            ]
-        ]
+        )
 
 
 viewTextBox : TextBoxConfig -> Html Msg
