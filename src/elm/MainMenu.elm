@@ -510,23 +510,25 @@ view model =
 viewMain : Model -> Html Msg
 viewMain model =
     Element.layout [ Font.size 16 ]
-        (Element.wrappedRow [ Element.spacing 16 ]
-            [ Element.image []
-                { src = "3dt.ico", description = "Gavrog Logo" }
-            , Element.el
-                [ Font.size 32
-                , Font.color <| Element.rgb255 0 0 139
-                , Font.variant Font.smallCaps
-                , Font.semiBold
+        (Element.el [ Element.paddingXY 32 4 ]
+            (Element.wrappedRow [ Element.spacing 16 ]
+                [ Element.image []
+                    { src = "3dt.ico", description = "Gavrog Logo" }
+                , Element.el
+                    [ Font.size 32
+                    , Font.color <| Element.rgb255 0 0 139
+                    , Font.variant Font.smallCaps
+                    , Font.semiBold
+                    ]
+                    (Element.text "Gavrog")
+                , Element.html <|
+                    Menu.view model.menuConfig model.menuState
+                , Element.column []
+                    [ Element.text model.title
+                    , Element.text model.status
+                    ]
                 ]
-                (Element.text "Gavrog")
-            , Element.html <|
-                Menu.view model.menuConfig model.menuState
-            , Element.column []
-                [ Element.text model.title
-                , Element.text model.status
-                ]
-            ]
+            )
         )
 
 
@@ -548,8 +550,17 @@ viewCurrentDialog model dialog =
 
 viewAbout : Model -> Html Msg
 viewAbout model =
-    Element.layout [ Font.size 16, Elevents.onClick HideAbout ]
-        (Element.column [ Element.spacing 4, Element.padding 8 ]
+    Element.layout [ Font.size 16 ]
+        (Element.column
+            [ Elevents.onClick HideAbout
+            , Element.spacing 4
+            , Element.paddingEach
+                { top = 4
+                , bottom = 16
+                , left = 16
+                , right = 16
+                }
+            ]
             [ Element.row [ Element.spacing 16 ]
                 [ Element.image []
                     { src = "3dt.ico", description = "Gavrog Logo" }
