@@ -520,12 +520,12 @@ viewMain model =
                 , Font.semiBold
                 ]
                 (Element.text "Gavrog")
+            , Element.html <|
+                Menu.view model.menuConfig model.menuState
             , Element.column []
                 [ Element.text model.title
                 , Element.text model.status
                 ]
-            , Element.html <|
-                Menu.view model.menuConfig model.menuState
             ]
         )
 
