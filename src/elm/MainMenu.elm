@@ -420,23 +420,22 @@ handleJSData data model =
 
 updateOptions : Model -> Options.Msg -> ( Model, Cmd Msg )
 updateOptions model msg =
+    let
+        specsTmp =
+            model.optionSpecsTmp
+    in
     case msg of
         Options.Submit ok ->
             if ok then
-                ( { model
-                    | visibleDialog = Nothing
-                    , optionSpecs = model.optionSpecsTmp
-                  }
-                , toJS <| OutData "options" Nothing model.optionSpecsTmp
+                ( { model | visibleDialog = Nothing, optionSpecs = specsTmp }
+                , toJS <| OutData "options" Nothing specsTmp
                 )
 
             else
                 ( { model | visibleDialog = Nothing }, Cmd.none )
 
-        Options.Toggle key ->
-            ( { model
-                | optionSpecsTmp = Options.toggle key model.optionSpecsTmp
-              }
+        Options.Toggle onOff key ->
+            ( { model | optionSpecsTmp = Options.toggle onOff key specsTmp }
             , Cmd.none
             )
 
@@ -595,6 +594,19 @@ viewAbout model =
 
 viewTextBox : TextBoxConfig -> String -> Html Msg
 viewTextBox config text =
+    let
+        buttonRow =
+            Element.row [ Element.spacing 32, Element.centerX ]
+                [ Input.button []
+                    { onPress = Just (config.onSubmit True)
+                    , label = Element.text "OK"
+                    }
+                , Input.button []
+                    { onPress = Just (config.onSubmit False)
+                    , label = Element.text "Cancel"
+                    }
+                ]
+    in
     Element.layout [ Font.size 16 ]
         (Element.column [ Element.spacing 8, Element.padding 16 ]
             [ Input.text
@@ -607,23 +619,15 @@ viewTextBox config text =
                             Element.text config.placeholder
                 , label = Input.labelAbove [] <| Element.text config.label
                 }
-            , Element.row [ Element.spacing 32, Element.centerX ]
-                [ Input.button []
-                    { onPress = Just (config.onSubmit True)
-                    , label = Element.text "OK"
-                    }
-                , Input.button []
-                    { onPress = Just (config.onSubmit False)
-                    , label = Element.text "Cancel"
-                    }
-                ]
+            , buttonRow
             ]
         )
 
 
 viewOptions : Model -> Html Msg
 viewOptions model =
-    Options.view OptionsMsg model.optionSpecsTmp
+    Element.layout [ Font.size 16 ] <|
+        Options.view OptionsMsg model.optionSpecsTmp
 
 
 onClick : msg -> Attribute msg
