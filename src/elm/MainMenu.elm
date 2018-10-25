@@ -8,9 +8,8 @@ import Element
 import Element.Events as Elevents
 import Element.Font as Font
 import Element.Input as Input
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, stopPropagationOn)
+import Html
+import Html.Attributes
 import Json.Decode as Decode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
@@ -495,44 +494,47 @@ view model =
     { title = "Gavrog For The Web"
     , body =
         [ View3d.view ViewMsg model.viewState
-        , div [ class "floatable" ] [ viewMain model ]
+        , Html.div [ Html.Attributes.class "floatable" ]
+            [ Element.layout [ Font.size 16 ] <|
+                viewMain model
+            ]
         , case model.visibleDialog of
             Nothing ->
-                div [] []
+                Html.div [] []
 
             Just dialog ->
-                div [ class "floatable centered" ]
-                    [ viewCurrentDialog model dialog ]
+                Html.div [ Html.Attributes.class "floatable centered" ]
+                    [ Element.layout [ Font.size 16 ] <|
+                        viewCurrentDialog model dialog
+                    ]
         ]
     }
 
 
-viewMain : Model -> Html Msg
+viewMain : Model -> Element.Element Msg
 viewMain model =
-    Element.layout [ Font.size 16 ]
-        (Element.el [ Element.paddingXY 32 4 ]
-            (Element.wrappedRow [ Element.spacing 16 ]
-                [ Element.image []
-                    { src = "3dt.ico", description = "Gavrog Logo" }
-                , Element.el
-                    [ Font.size 32
-                    , Font.color <| Element.rgb255 0 0 139
-                    , Font.variant Font.smallCaps
-                    , Font.semiBold
-                    ]
-                    (Element.text "Gavrog")
-                , Element.html <|
-                    Menu.view model.menuConfig model.menuState
-                , Element.column []
-                    [ Element.text model.title
-                    , Element.text model.status
-                    ]
+    Element.el [ Element.paddingXY 32 4 ]
+        (Element.wrappedRow [ Element.spacing 16 ]
+            [ Element.image []
+                { src = "3dt.ico", description = "Gavrog Logo" }
+            , Element.el
+                [ Font.size 32
+                , Font.color <| Element.rgb255 0 0 139
+                , Font.variant Font.smallCaps
+                , Font.semiBold
                 ]
-            )
+                (Element.text "Gavrog")
+            , Element.html <|
+                Menu.view model.menuConfig model.menuState
+            , Element.column []
+                [ Element.text model.title
+                , Element.text model.status
+                ]
+            ]
         )
 
 
-viewCurrentDialog : Model -> DialogType -> Html Msg
+viewCurrentDialog : Model -> DialogType -> Element.Element Msg
 viewCurrentDialog model dialog =
     case dialog of
         About ->
@@ -545,54 +547,52 @@ viewCurrentDialog model dialog =
             viewTextBox model.searchDialogConfig model.searchDialogContent
 
         Options ->
-            viewOptions model
+            Options.view OptionsMsg model.optionSpecsTmp
 
 
-viewAbout : Model -> Html Msg
+viewAbout : Model -> Element.Element Msg
 viewAbout model =
-    Element.layout [ Font.size 16 ]
-        (Element.column
-            [ Elevents.onClick HideAbout
-            , Element.spacing 4
-            , Element.paddingEach
-                { top = 4
-                , bottom = 16
-                , left = 16
-                , right = 16
-                }
-            ]
-            [ Element.row [ Element.spacing 16 ]
-                [ Element.image []
-                    { src = "3dt.ico", description = "Gavrog Logo" }
-                , Element.column [ Element.spacing 4, Element.padding 8 ]
-                    [ Element.el
-                        [ Font.size 32
-                        , Font.color <| Element.rgb255 0 0 139
-                        , Font.variant Font.smallCaps
-                        , Font.semiBold
-                        ]
-                        (Element.text "Gavrog for the Web")
-                    , Element.text "by Olaf Delgado-Friedrichs 2018"
-                    , Element.text "The Australian National University"
+    Element.column
+        [ Elevents.onClick HideAbout
+        , Element.spacing 4
+        , Element.paddingEach
+            { top = 4
+            , bottom = 16
+            , left = 16
+            , right = 16
+            }
+        ]
+        [ Element.row [ Element.spacing 16 ]
+            [ Element.image []
+                { src = "3dt.ico", description = "Gavrog Logo" }
+            , Element.column [ Element.spacing 4, Element.padding 8 ]
+                [ Element.el
+                    [ Font.size 32
+                    , Font.color <| Element.rgb255 0 0 139
+                    , Font.variant Font.smallCaps
+                    , Font.semiBold
                     ]
-                ]
-            , Element.paragraph []
-                [ Element.el [ Font.bold ] (Element.text "Version: ")
-                , Element.text "0.0.0 (pre-alpha)"
-                ]
-            , Element.paragraph []
-                [ Element.el [ Font.bold ] (Element.text "Revision: ")
-                , Element.text model.revision
-                ]
-            , Element.paragraph []
-                [ Element.el [ Font.bold ] (Element.text "Timestamp: ")
-                , Element.text model.timestamp
+                    (Element.text "Gavrog for the Web")
+                , Element.text "by Olaf Delgado-Friedrichs 2018"
+                , Element.text "The Australian National University"
                 ]
             ]
-        )
+        , Element.paragraph []
+            [ Element.el [ Font.bold ] (Element.text "Version: ")
+            , Element.text "0.0.0 (pre-alpha)"
+            ]
+        , Element.paragraph []
+            [ Element.el [ Font.bold ] (Element.text "Revision: ")
+            , Element.text model.revision
+            ]
+        , Element.paragraph []
+            [ Element.el [ Font.bold ] (Element.text "Timestamp: ")
+            , Element.text model.timestamp
+            ]
+        ]
 
 
-viewTextBox : TextBoxConfig -> String -> Html Msg
+viewTextBox : TextBoxConfig -> String -> Element.Element Msg
 viewTextBox config text =
     let
         buttonRow =
@@ -607,44 +607,16 @@ viewTextBox config text =
                     }
                 ]
     in
-    Element.layout [ Font.size 16 ]
-        (Element.column [ Element.spacing 8, Element.padding 16 ]
-            [ Input.text
-                []
-                { onChange = config.onInput
-                , text = text
-                , placeholder =
-                    Just <|
-                        Input.placeholder [] <|
-                            Element.text config.placeholder
-                , label = Input.labelAbove [] <| Element.text config.label
-                }
-            , buttonRow
-            ]
-        )
-
-
-viewOptions : Model -> Html Msg
-viewOptions model =
-    Element.layout [ Font.size 16 ] <|
-        Options.view OptionsMsg model.optionSpecsTmp
-
-
-onClick : msg -> Attribute msg
-onClick msg =
-    stopPropagationOn "click" <| always msg
-
-
-onKeyUp : msg -> Attribute msg
-onKeyUp msg =
-    stopPropagationOn "keyup" <| always msg
-
-
-onKeyDown : msg -> Attribute msg
-onKeyDown msg =
-    stopPropagationOn "keydown" <| always msg
-
-
-always : msg -> Decode.Decoder ( msg, Bool )
-always msg =
-    Decode.map (\m -> ( m, True )) <| Decode.succeed msg
+    Element.column [ Element.spacing 8, Element.padding 16 ]
+        [ Input.text
+            []
+            { onChange = config.onInput
+            , text = text
+            , placeholder =
+                Just <|
+                    Input.placeholder [] <|
+                        Element.text config.placeholder
+            , label = Input.labelAbove [] <| Element.text config.label
+            }
+        , buttonRow
+        ]
