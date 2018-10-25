@@ -2,10 +2,12 @@ port module MainMenu exposing (main)
 
 import Browser
 import Browser.Dom as Dom
-import Browser.Events as Events
+import Browser.Events
 import Char
 import Element
-import Element.Events as Elevents
+import Element.Background as Background
+import Element.Border as Border
+import Element.Events
 import Element.Font as Font
 import Element.Input as Input
 import Html
@@ -76,9 +78,9 @@ subscriptions model =
             Decode.at [ "keyCode" ] Decode.int
     in
     [ fromJS JSData
-    , Events.onKeyUp (Decode.map KeyUp decodeKey)
+    , Browser.Events.onKeyUp (Decode.map KeyUp decodeKey)
     , View3d.subscriptions ViewMsg model.viewState
-    , Events.onResize Resize
+    , Browser.Events.onResize Resize
     ]
         |> Sub.batch
 
@@ -493,11 +495,11 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Gavrog For The Web"
     , body =
-        [ View3d.view ViewMsg model.viewState
-        , Html.div [ Html.Attributes.class "floatable" ]
-            [ Element.layout [ Font.size 16 ] <|
-                viewMain model
-            ]
+        [ Element.layout [ Font.size 16 ] <|
+            Element.column []
+                [ viewMain model
+                , Element.html <| View3d.view ViewMsg model.viewState
+                ]
         , case model.visibleDialog of
             Nothing ->
                 Html.div [] []
@@ -513,25 +515,31 @@ view model =
 
 viewMain : Model -> Element.Element Msg
 viewMain model =
-    Element.el [ Element.paddingXY 32 4 ]
-        (Element.wrappedRow [ Element.spacing 16 ]
-            [ Element.image []
-                { src = "3dt.ico", description = "Gavrog Logo" }
-            , Element.el
-                [ Font.size 32
-                , Font.color <| Element.rgb255 0 0 139
-                , Font.variant Font.smallCaps
-                , Font.semiBold
-                ]
-                (Element.text "Gavrog")
-            , Element.html <|
-                Menu.view model.menuConfig model.menuState
-            , Element.column []
-                [ Element.text model.title
-                , Element.text model.status
-                ]
+    Element.wrappedRow
+        [ Element.width Element.fill
+        , Element.spacing 16
+        , Element.paddingXY 32 4
+        , Background.color <| Element.rgb255 255 244 210
+        , Border.solid
+        , Border.color <| Element.rgb255 170 170 170
+        , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
+        ]
+        [ Element.image []
+            { src = "3dt.ico", description = "Gavrog Logo" }
+        , Element.el
+            [ Font.size 32
+            , Font.color <| Element.rgb255 0 0 139
+            , Font.variant Font.smallCaps
+            , Font.semiBold
             ]
-        )
+            (Element.text "Gavrog")
+        , Element.html <|
+            Menu.view model.menuConfig model.menuState
+        , Element.column []
+            [ Element.text model.title
+            , Element.text model.status
+            ]
+        ]
 
 
 viewCurrentDialog : Model -> DialogType -> Element.Element Msg
@@ -553,7 +561,7 @@ viewCurrentDialog model dialog =
 viewAbout : Model -> Element.Element Msg
 viewAbout model =
     Element.column
-        [ Elevents.onClick HideAbout
+        [ Element.Events.onClick HideAbout
         , Element.spacing 4
         , Element.paddingEach
             { top = 4

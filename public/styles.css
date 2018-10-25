@@ -1,18 +1,3 @@
-*, *:before, *:after {
-  -moz-box-sizing   : border-box;
-  -webkit-box-sizing: border-box;
-  box-sizing        : border-box;
-}
-
-html {
-    font-size  : 13px;
-    font-family: arial, sans-serif;
-}
-
-body {
-    margin: 0;
-}
-
 .floatable {
     zIndex       : 10;
     position     : fixed;
@@ -74,13 +59,4 @@ body {
     margin-bottom: -1px;
     overflow: hidden;
     color: black;
-}
-
-.form-element {
-    position: relative;
-}
-
-.form-element label {
-    display: inline-block;
-    width: 12em;
 }

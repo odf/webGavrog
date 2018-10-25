@@ -260,11 +260,11 @@ view toMsg model =
                 model.scene
     in
     WebGL.toHtml
-        [ Html.Attributes.width model.size.width
-        , Html.Attributes.height model.size.height
-        , Html.Attributes.style "display" "block"
+        [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" "white"
         , Html.Attributes.id "main-3d-canvas"
+        , Html.Attributes.width model.size.width
+        , Html.Attributes.height model.size.height
         , onMouseDown (toMsg << MouseDownMsg)
         , onMouseWheel (toMsg << WheelMsg)
         ]
