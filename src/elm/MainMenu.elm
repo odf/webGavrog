@@ -511,8 +511,11 @@ view model =
 
 viewMain : Model -> Element.Element Msg
 viewMain model =
-    viewBox [ Element.width Element.fill ] <|
-        Element.wrappedRow
+    viewBox
+        [ Element.width Element.fill
+        , Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 }
+        ]
+        (Element.wrappedRow
             [ Element.width Element.fill
             , Element.spacing 16
             ]
@@ -532,6 +535,7 @@ viewMain model =
                 , Element.text model.status
                 ]
             ]
+        )
 
 
 viewCurrentDialog : Model -> Element.Element Msg
