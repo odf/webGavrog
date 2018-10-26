@@ -1,6 +1,8 @@
 module Options exposing (Msg(..), Spec, toggle, view)
 
 import Element
+import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 
@@ -33,15 +35,27 @@ toggle onOff key specs =
 view : (Msg -> msg) -> List Spec -> Element.Element msg
 view toMsg specs =
     let
+        buttonStyle =
+            [ Background.color <| Element.rgb255 140 140 140
+            , Font.color <| Element.rgb255 255 255 255
+            , Font.semiBold
+            , Element.width <| Element.px 96
+            , Element.paddingXY 16 8
+            , Border.rounded 16
+            ]
+
+        buttonText content =
+            Element.el [ Element.centerX ] (Element.text content)
+
         buttonRow =
             Element.row [ Element.spacing 32, Element.centerX ]
-                [ Input.button []
+                [ Input.button buttonStyle
                     { onPress = Just (toMsg <| Submit True)
-                    , label = Element.text "OK"
+                    , label = buttonText "OK"
                     }
-                , Input.button []
+                , Input.button buttonStyle
                     { onPress = Just (toMsg <| Submit False)
-                    , label = Element.text "Cancel"
+                    , label = buttonText "Cancel"
                     }
                 ]
     in

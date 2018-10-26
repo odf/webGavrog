@@ -624,15 +624,28 @@ viewAbout model =
 viewTextBox : TextBoxConfig -> String -> Element.Element Msg
 viewTextBox config text =
     let
+        -- TODO extract code common with Options.elm
+        buttonStyle =
+            [ Background.color <| Element.rgb255 140 140 140
+            , Font.color <| Element.rgb255 255 255 255
+            , Font.semiBold
+            , Element.width <| Element.px 96
+            , Element.paddingXY 16 8
+            , Border.rounded 16
+            ]
+
+        buttonText content =
+            Element.el [ Element.centerX ] (Element.text content)
+
         buttonRow =
             Element.row [ Element.spacing 32, Element.centerX ]
-                [ Input.button []
+                [ Input.button buttonStyle
                     { onPress = Just (config.onSubmit True)
-                    , label = Element.text "OK"
+                    , label = buttonText "OK"
                     }
-                , Input.button []
+                , Input.button buttonStyle
                     { onPress = Just (config.onSubmit False)
-                    , label = Element.text "Cancel"
+                    , label = buttonText "Cancel"
                     }
                 ]
     in
