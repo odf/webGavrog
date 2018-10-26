@@ -496,16 +496,15 @@ view model =
         [ Element.layout
             [ Element.width Element.fill
             , Font.size 16
-            ]
-            (Element.column [ Element.width Element.fill ]
-                [ Element.el
+            , Element.inFront
+                (Element.el
                     [ Element.width Element.fill
                     , Element.below <| viewCurrentDialog model
                     ]
                     (viewMain model)
-                , Element.html <| View3d.view ViewMsg model.viewState
-                ]
-            )
+                )
+            ]
+            (Element.html <| View3d.view ViewMsg model.viewState)
         ]
     }
 
