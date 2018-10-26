@@ -10,8 +10,6 @@ import Element.Border as Border
 import Element.Events
 import Element.Font as Font
 import Element.Input as Input
-import Html
-import Html.Attributes
 import Json.Decode as Decode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
@@ -495,67 +493,91 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Gavrog For The Web"
     , body =
-        [ Element.layout [ Font.size 16 ] <|
-            Element.column []
-                [ viewMain model
+        [ Element.layout
+            [ Element.width Element.fill
+            , Font.size 16
+            ]
+            (Element.column [ Element.width Element.fill ]
+                [ Element.el
+                    [ Element.width Element.fill
+                    , Element.below <| viewCurrentDialog model
+                    ]
+                    (viewMain model)
                 , Element.html <| View3d.view ViewMsg model.viewState
                 ]
-        , case model.visibleDialog of
-            Nothing ->
-                Html.div [] []
-
-            Just dialog ->
-                Html.div [ Html.Attributes.class "floatable centered" ]
-                    [ Element.layout [ Font.size 16 ] <|
-                        viewCurrentDialog model dialog
-                    ]
+            )
         ]
     }
 
 
 viewMain : Model -> Element.Element Msg
 viewMain model =
-    Element.wrappedRow
-        [ Element.width Element.fill
-        , Element.spacing 16
-        , Element.paddingXY 32 4
-        , Background.color <| Element.rgb255 255 244 210
-        , Border.solid
-        , Border.color <| Element.rgb255 170 170 170
-        , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
-        ]
-        [ Element.image []
-            { src = "3dt.ico", description = "Gavrog Logo" }
-        , Element.el
-            [ Font.size 32
-            , Font.color <| Element.rgb255 0 0 139
-            , Font.variant Font.smallCaps
-            , Font.semiBold
+    viewBox [ Element.width Element.fill ] <|
+        Element.wrappedRow
+            [ Element.width Element.fill
+            , Element.spacing 16
             ]
-            (Element.text "Gavrog")
-        , Element.html <|
-            Menu.view model.menuConfig model.menuState
-        , Element.column []
-            [ Element.text model.title
-            , Element.text model.status
+            [ Element.image []
+                { src = "3dt.ico", description = "Gavrog Logo" }
+            , Element.el
+                [ Font.size 32
+                , Font.color <| Element.rgb255 0 0 139
+                , Font.variant Font.smallCaps
+                , Font.semiBold
+                ]
+                (Element.text "Gavrog")
+            , Element.html <|
+                Menu.view model.menuConfig model.menuState
+            , Element.column []
+                [ Element.text model.title
+                , Element.text model.status
+                ]
             ]
-        ]
 
 
-viewCurrentDialog : Model -> DialogType -> Element.Element Msg
-viewCurrentDialog model dialog =
-    case dialog of
-        About ->
-            viewAbout model
+viewCurrentDialog : Model -> Element.Element Msg
+viewCurrentDialog model =
+    let
+        wrap =
+            viewBox [ Element.moveDown 128 ]
+    in
+    case model.visibleDialog of
+        Nothing ->
+            Element.none
 
-        Jump ->
-            viewTextBox model.jumpDialogConfig model.jumpDialogContent
+        Just About ->
+            wrap <|
+                viewAbout model
 
-        Search ->
-            viewTextBox model.searchDialogConfig model.searchDialogContent
+        Just Jump ->
+            wrap <|
+                viewTextBox model.jumpDialogConfig model.jumpDialogContent
 
-        Options ->
-            Options.view OptionsMsg model.optionSpecsTmp
+        Just Search ->
+            wrap <|
+                viewTextBox model.searchDialogConfig model.searchDialogContent
+
+        Just Options ->
+            wrap <|
+                Options.view OptionsMsg model.optionSpecsTmp
+
+
+viewBox :
+    List (Element.Attribute Msg)
+    -> Element.Element Msg
+    -> Element.Element Msg
+viewBox customAttributes content =
+    let
+        defaultAttributes =
+            [ Background.color <| Element.rgb255 255 244 210
+            , Border.solid
+            , Border.width 1
+            , Border.color <| Element.rgb255 170 170 170
+            , Element.centerX
+            , Element.paddingXY 32 4
+            ]
+    in
+    Element.el (defaultAttributes ++ customAttributes) content
 
 
 viewAbout : Model -> Element.Element Msg
