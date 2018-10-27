@@ -15,6 +15,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Options
 import Scene exposing (RawSceneSpec)
+import Styling
 import Task
 import View3d
 
@@ -511,7 +512,7 @@ view model =
 
 viewMain : Model -> Element.Element Msg
 viewMain model =
-    viewBox
+    Styling.box
         [ Element.width Element.fill
         , Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 }
         ]
@@ -521,13 +522,7 @@ viewMain model =
             ]
             [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
-            , Element.el
-                [ Font.size 32
-                , Font.color <| Element.rgb255 0 0 139
-                , Font.variant Font.smallCaps
-                , Font.semiBold
-                ]
-                (Element.text "Gavrog")
+            , Styling.logoText "Gavrog"
             , Element.html <|
                 Menu.view model.menuConfig model.menuState
             , Element.column []
@@ -542,7 +537,7 @@ viewCurrentDialog : Model -> Element.Element Msg
 viewCurrentDialog model =
     let
         wrap =
-            viewBox [ Element.moveDown 128 ]
+            Styling.box [ Element.moveDown 128 ]
     in
     case model.visibleDialog of
         Nothing ->
@@ -565,24 +560,6 @@ viewCurrentDialog model =
                 Options.view OptionsMsg model.optionSpecsTmp
 
 
-viewBox :
-    List (Element.Attribute Msg)
-    -> Element.Element Msg
-    -> Element.Element Msg
-viewBox customAttributes content =
-    let
-        defaultAttributes =
-            [ Background.color <| Element.rgb255 255 244 210
-            , Border.solid
-            , Border.width 1
-            , Border.color <| Element.rgb255 170 170 170
-            , Element.centerX
-            , Element.paddingXY 32 4
-            ]
-    in
-    Element.el (defaultAttributes ++ customAttributes) content
-
-
 viewAbout : Model -> Element.Element Msg
 viewAbout model =
     Element.column
@@ -599,13 +576,7 @@ viewAbout model =
             [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Element.column [ Element.spacing 4, Element.padding 8 ]
-                [ Element.el
-                    [ Font.size 32
-                    , Font.color <| Element.rgb255 0 0 139
-                    , Font.variant Font.smallCaps
-                    , Font.semiBold
-                    ]
-                    (Element.text "Gavrog for the Web")
+                [ Styling.logoText "Gavrog for the Web"
                 , Element.text "by Olaf Delgado-Friedrichs 2018"
                 , Element.text "The Australian National University"
                 ]
@@ -627,32 +598,6 @@ viewAbout model =
 
 viewTextBox : TextBoxConfig -> String -> Element.Element Msg
 viewTextBox config text =
-    let
-        -- TODO extract code common with Options.elm
-        buttonStyle =
-            [ Background.color <| Element.rgb255 140 140 140
-            , Font.color <| Element.rgb255 255 255 255
-            , Font.semiBold
-            , Element.width <| Element.px 96
-            , Element.paddingXY 16 8
-            , Border.rounded 16
-            ]
-
-        buttonText content =
-            Element.el [ Element.centerX ] (Element.text content)
-
-        buttonRow =
-            Element.row [ Element.spacing 32, Element.centerX ]
-                [ Input.button buttonStyle
-                    { onPress = Just (config.onSubmit True)
-                    , label = buttonText "OK"
-                    }
-                , Input.button buttonStyle
-                    { onPress = Just (config.onSubmit False)
-                    , label = buttonText "Cancel"
-                    }
-                ]
-    in
     Element.column [ Element.spacing 8, Element.padding 16 ]
         [ Input.text
             []
@@ -664,5 +609,8 @@ viewTextBox config text =
                         Element.text config.placeholder
             , label = Input.labelAbove [] <| Element.text config.label
             }
-        , buttonRow
+        , Element.row [ Element.spacing 32, Element.centerX ]
+            [ Styling.button (config.onSubmit True) "OK"
+            , Styling.button (config.onSubmit False) "Cancel"
+            ]
         ]
