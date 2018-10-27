@@ -510,8 +510,7 @@ viewMain model =
                 [ Element.el [ Element.centerX ] <| Element.text model.title
                 , Element.el [ Element.centerX ] <| Element.text model.status
                 ]
-            , Element.html <|
-                Menu.view model.menuConfig model.menuState
+            , Menu.view model.menuConfig model.menuState
             ]
         )
 
