@@ -4,6 +4,7 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events
 import Char
+import Dict exposing (Dict)
 import Element
 import Element.Background as Background
 import Element.Border as Border
@@ -441,44 +442,42 @@ updateOptions model msg =
             )
 
 
+hotKeyActions : Dict Char ( Model -> Model, Cmd Msg )
+hotKeyActions =
+    Dict.fromList
+        [ ( 'n', ( identity, toJS <| OutData "selected" (Just "Next") [] ) )
+        , ( 'p', ( identity, toJS <| OutData "selected" (Just "Prev") [] ) )
+        , ( '0', ( updateView3d View3d.encompass, Cmd.none ) )
+        , ( 'x', ( lookAlong (vec3 -1 0 0) (vec3 0 1 0), Cmd.none ) )
+        , ( 'y', ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1), Cmd.none ) )
+        , ( 'z', ( lookAlong (vec3 0 0 -1) (vec3 0 1 0), Cmd.none ) )
+        , ( 'a', ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0), Cmd.none ) )
+        , ( 'b', ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0), Cmd.none ) )
+        , ( 'c', ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0), Cmd.none ) )
+        , ( 'd', ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0), Cmd.none ) )
+        ]
+
+
+isHotKey : Int -> Bool
+isHotKey code =
+    let
+        char =
+            Char.toLower <| Char.fromCode code
+    in
+    List.member char (Dict.keys hotKeyActions)
+
+
 handleKeyPress : Int -> Model -> ( Model, Cmd Msg )
 handleKeyPress code model =
     let
         char =
             Char.toLower <| Char.fromCode code
     in
-    case char of
-        'n' ->
-            ( model, toJS <| OutData "selected" (Just "Next") [] )
+    case Dict.get char hotKeyActions of
+        Just ( action, cmd ) ->
+            ( action model, cmd )
 
-        'p' ->
-            ( model, toJS <| OutData "selected" (Just "Prev") [] )
-
-        '0' ->
-            ( updateView3d View3d.encompass model, Cmd.none )
-
-        'x' ->
-            ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) model, Cmd.none )
-
-        'y' ->
-            ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model, Cmd.none )
-
-        'z' ->
-            ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) model, Cmd.none )
-
-        'a' ->
-            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
-
-        'b' ->
-            ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model, Cmd.none )
-
-        'c' ->
-            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
-
-        'd' ->
-            ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model, Cmd.none )
-
-        _ ->
+        Nothing ->
             ( model, Cmd.none )
 
 
@@ -620,13 +619,10 @@ viewTextBox config text =
 onKeyUp : (Int -> msg) -> Element.Attribute msg
 onKeyUp toMsg =
     let
-        passThrough value =
-            value /= 16 && value /= 17
-
         toResult value =
             { message = toMsg value
-            , stopPropagation = passThrough value
-            , preventDefault = passThrough value
+            , stopPropagation = isHotKey value
+            , preventDefault = isHotKey value
             }
     in
     Element.htmlAttribute <|
