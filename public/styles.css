@@ -17,6 +17,8 @@
 .menuList {
     list-style: none;
     padding: 0;
+    padding-top: 5px;
+    padding-bottom: 5px;
     margin-top: 0;
     display: inline-block;
     position: absolute;
