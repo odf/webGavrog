@@ -1,44 +1,48 @@
-.infoBoxMenu {
+.menuWrapper {
     margin: 1em;
     padding: 0;
     list-style: none;
     outline: none;
 }
 
-.infoBoxMenuItem {
+.menuTop {
     display: inline;
-    padding: 2px 1em;
+    padding: 5px 1em;
     border: 1px solid lightgray;
-    margin-left: -1px;
     background-color: white;
-    font-weight: bold;
     cursor: pointer;
     position: relative;
 }
 
-.infoBoxMenuHighlight, .infoBoxMenuSubmenuHighlight {
-    background-color: lightgray;
-}
-
-.infoBoxMenuSubmenu {
+.menuList {
     list-style: none;
     padding: 0;
     margin-top: 0;
-    margin-bottom: 1px;
     display: inline-block;
     position: absolute;
     top: 100%;
-    left: -1px;
+    right: -1px;
     z-index: 5;
     background-color: white;
+    border: 1px solid lightgray;
     box-shadow: 4px 4px 10px rgba(0,0,0,0.2);
 }
 
-.infoBoxMenuSubmenuItem {
+.menuItem {
     white-space: nowrap;
-    padding: 2px 5px;
-    border: 1px solid lightgray;
-    margin-bottom: -1px;
+    padding: 5px 1em;
     overflow: hidden;
     color: black;
+}
+
+.menuActive {
+    background-color: lightgray;
+}
+
+
+.menuSeparator {
+    padding: 0;
+    border-bottom: 1px solid lightgray;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }

@@ -135,11 +135,8 @@ init flags =
     ( { viewState = View3d.init
       , revision = flags.revision
       , timestamp = flags.timestamp
-      , menuConfig =
-            { actions = initActions
-            , items = initItems
-            }
-      , menuState = initState
+      , menuConfig = initMenuConfig
+      , menuState = initMenuState
       , activeLabel = Nothing
       , visibleDialog = Nothing
       , title = ""
@@ -157,9 +154,11 @@ init flags =
     )
 
 
-initActions : Menu.Actions Msg
-initActions =
-    { activate = ActivateMenu
+initMenuConfig : Menu.Config Msg
+initMenuConfig =
+    { label = "Actions"
+    , items = initItems
+    , activate = ActivateMenu
     , activateItem = ActivateItem
     , selectCurrentItem = Select
     }
@@ -170,26 +169,27 @@ initItems =
     [ "Open..."
     , "Save Structure..."
     , "Save Screenshot..."
-    , ""
+    , "--"
     , "First"
     , "Prev"
     , "Next"
     , "Last"
     , "Jump..."
     , "Search..."
-    , ""
+    , "--"
     , "Center"
     , "Along X"
     , "Along Y"
     , "Along Z"
-    , ""
+    , "--"
     , "Options..."
+    , "--"
     , "About Gavrog..."
     ]
 
 
-initState : Menu.State
-initState =
+initMenuState : Menu.State
+initMenuState =
     { visible = False, active = Nothing }
 
 
@@ -334,7 +334,7 @@ handleSelection : Model -> ( Model, Cmd Msg )
 handleSelection model =
     let
         newModel =
-            { model | menuState = initState }
+            { model | menuState = initMenuState }
     in
     if model.activeLabel == Just "About Gavrog..." then
         ( { newModel | visibleDialog = Just About }, Cmd.none )
@@ -503,12 +503,15 @@ viewMain model =
             [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"
+            , Element.column
+                [ Element.width Element.fill
+                , Element.spacing 8
+                ]
+                [ Element.el [ Element.centerX ] <| Element.text model.title
+                , Element.el [ Element.centerX ] <| Element.text model.status
+                ]
             , Element.html <|
                 Menu.view model.menuConfig model.menuState
-            , Element.column []
-                [ Element.text model.title
-                , Element.text model.status
-                ]
             ]
         )
 

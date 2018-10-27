@@ -1,25 +1,20 @@
-module Menu exposing (Actions, Config, State, view)
+module Menu exposing (Config, State, view)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onMouseEnter, onMouseLeave, stopPropagationOn)
-import Json.Decode as Decode
+import Html exposing (Html)
+import Html.Attributes as Attributes
+import Html.Events as Events
 
 
 
 -- MODEL
 
 
-type alias Actions msg =
-    { activate : Bool -> msg
+type alias Config msg =
+    { label : String
+    , items : List String
+    , activate : Bool -> msg
     , activateItem : Maybe ( Int, String ) -> msg
     , selectCurrentItem : msg
-    }
-
-
-type alias Config msg =
-    { actions : Actions msg
-    , items : List String
     }
 
 
@@ -38,43 +33,37 @@ view config state =
     let
         maybeMenu =
             if state.visible then
-                [ ul [ class "infoBoxMenuSubmenu" ]
-                    (List.indexedMap (viewSubItem config state) config.items)
+                [ Html.ul [ Attributes.class "menuList" ]
+                    (List.indexedMap (viewItem config state) config.items)
                 ]
 
             else
                 []
     in
-    ul
-        [ class "infoBoxMenu" ]
-        [ li
-            [ class "infoBoxMenuItem"
-            , onMouseEnter <| config.actions.activate True
-            , onMouseLeave <| config.actions.activate False
+    Html.ul
+        [ Attributes.class "menuWrapper" ]
+        [ Html.li
+            [ Attributes.class "menuTop"
+            , Events.onMouseEnter <| config.activate True
+            , Events.onMouseLeave <| config.activate False
             ]
-            ([ text "Menu" ] ++ maybeMenu)
+            ([ Html.text config.label ] ++ maybeMenu)
         ]
 
 
-viewSubItem : Config msg -> State -> Int -> String -> Html msg
-viewSubItem config state index label =
-    li
-        [ classList
-            [ ( "infoBoxMenuSubmenuItem", True )
-            , ( "infoBoxMenuHighlight", state.active == Just index )
+viewItem : Config msg -> State -> Int -> String -> Html msg
+viewItem config state index label =
+    if label == "--" then
+        Html.li [ Attributes.class "menuSeparator" ] []
+
+    else
+        Html.li
+            [ Attributes.classList
+                [ ( "menuItem", True )
+                , ( "menuActive", state.active == Just index )
+                ]
+            , Events.onMouseEnter <| config.activateItem (Just ( index, label ))
+            , Events.onMouseLeave <| config.activateItem Nothing
+            , Events.onClick config.selectCurrentItem
             ]
-        , onMouseEnter <| config.actions.activateItem (Just ( index, label ))
-        , onMouseLeave <| config.actions.activateItem Nothing
-        , onClick config.actions.selectCurrentItem
-        ]
-        [ text label ]
-
-
-onClick : msg -> Attribute msg
-onClick msg =
-    stopPropagationOn "click" (Decode.map always (Decode.succeed msg))
-
-
-always : msg -> ( msg, Bool )
-always msg =
-    ( msg, True )
+            [ Html.text label ]
