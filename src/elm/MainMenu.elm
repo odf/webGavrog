@@ -537,7 +537,15 @@ viewCurrentDialog : Model -> Element.Element Msg
 viewCurrentDialog model =
     let
         wrap =
-            Styling.box [ Element.moveDown 128 ]
+            Styling.box
+                [ Element.moveDown 128
+                , Border.shadow
+                    { offset = ( 0.0, 8.0 )
+                    , size = 0.0
+                    , blur = 16.0
+                    , color = Element.rgba 0.0 0.0 0.0 0.2
+                    }
+                ]
     in
     case model.visibleDialog of
         Nothing ->

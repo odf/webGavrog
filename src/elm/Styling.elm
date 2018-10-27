@@ -15,6 +15,12 @@ box customAttributes content =
             , Border.solid
             , Border.width 1
             , Border.color <| El.rgb255 170 170 170
+            , Border.shadow
+                { offset = ( 0.0, 4.0 )
+                , size = 0.0
+                , blur = 4.0
+                , color = El.rgba 0.0 0.0 0.0 0.1
+                }
             , El.centerX
             , El.paddingXY 32 4
             ]
