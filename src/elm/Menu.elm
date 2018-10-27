@@ -1,4 +1,4 @@
-module Menu exposing (Actions, Config, ItemSpec, State, view)
+module Menu exposing (Actions, Config, State, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -10,28 +10,22 @@ import Json.Decode as Decode
 -- MODEL
 
 
-type alias ItemSpec =
-    { label : String
-    , submenu : Maybe (List String)
-    }
-
-
 type alias Actions msg =
-    { activateTopItem : Maybe ( Int, String ) -> msg
-    , activateSubItem : Maybe ( Int, String ) -> msg
+    { activate : Bool -> msg
+    , activateItem : Maybe ( Int, String ) -> msg
     , selectCurrentItem : msg
     }
 
 
 type alias Config msg =
     { actions : Actions msg
-    , items : List ItemSpec
+    , items : List String
     }
 
 
 type alias State =
-    { active : Maybe Int
-    , activeSub : Maybe Int
+    { visible : Bool
+    , active : Maybe Int
     }
 
 
@@ -41,56 +35,25 @@ type alias State =
 
 view : Config msg -> State -> Html msg
 view config state =
+    let
+        maybeMenu =
+            if state.visible then
+                [ ul [ class "infoBoxMenuSubmenu" ]
+                    (List.indexedMap (viewSubItem config state) config.items)
+                ]
+
+            else
+                []
+    in
     ul
         [ class "infoBoxMenu" ]
-        (List.indexedMap (viewItem config state) config.items)
-
-
-viewItem : Config msg -> State -> Int -> ItemSpec -> Html msg
-viewItem config state index item =
-    let
-        isActive =
-            state.active == Just index
-
-        maybeSubMenu =
-            case item.submenu of
-                Nothing ->
-                    []
-
-                Just sub ->
-                    if isActive then
-                        [ viewSubMenu config state sub ]
-
-                    else
-                        []
-
-        maybeClickHandler =
-            case item.submenu of
-                Nothing ->
-                    [ onClick config.actions.selectCurrentItem ]
-
-                Just _ ->
-                    []
-    in
-    li
-        ([ classList
-            [ ( "infoBoxMenuItem", True )
-            , ( "infoBoxMenuHighlight", isActive )
+        [ li
+            [ class "infoBoxMenuItem"
+            , onMouseEnter <| config.actions.activate True
+            , onMouseLeave <| config.actions.activate False
             ]
-         , onMouseEnter <|
-            config.actions.activateTopItem (Just ( index, item.label ))
-         , onMouseLeave <| config.actions.activateTopItem Nothing
-         ]
-            ++ maybeClickHandler
-        )
-        ([ text item.label ] ++ maybeSubMenu)
-
-
-viewSubMenu : Config msg -> State -> List String -> Html msg
-viewSubMenu config state labels =
-    ul
-        [ class "infoBoxMenuSubmenu" ]
-        (List.indexedMap (viewSubItem config state) labels)
+            ([ text "Menu" ] ++ maybeMenu)
+        ]
 
 
 viewSubItem : Config msg -> State -> Int -> String -> Html msg
@@ -98,11 +61,10 @@ viewSubItem config state index label =
     li
         [ classList
             [ ( "infoBoxMenuSubmenuItem", True )
-            , ( "infoBoxMenuHighlight", state.activeSub == Just index )
+            , ( "infoBoxMenuHighlight", state.active == Just index )
             ]
-        , onMouseEnter <|
-            config.actions.activateSubItem (Just ( index, label ))
-        , onMouseLeave <| config.actions.activateSubItem Nothing
+        , onMouseEnter <| config.actions.activateItem (Just ( index, label ))
+        , onMouseLeave <| config.actions.activateItem Nothing
         , onClick config.actions.selectCurrentItem
         ]
         [ text label ]

@@ -48,8 +48,8 @@ type alias InData =
 type Msg
     = Resize Int Int
     | ViewMsg View3d.Msg
-    | Activate (Maybe ( Int, String ))
-    | ActivateSub (Maybe ( Int, String ))
+    | ActivateMenu Bool
+    | ActivateItem (Maybe ( Int, String ))
     | Select
     | JumpDialogInput String
     | JumpDialogSubmit Bool
@@ -159,42 +159,38 @@ init flags =
 
 initActions : Menu.Actions Msg
 initActions =
-    { activateTopItem = Activate
-    , activateSubItem = ActivateSub
+    { activate = ActivateMenu
+    , activateItem = ActivateItem
     , selectCurrentItem = Select
     }
 
 
-initItems : List Menu.ItemSpec
+initItems : List String
 initItems =
-    [ { label = "File"
-      , submenu =
-            Just [ "Open...", "Save Structure...", "Save Screenshot..." ]
-      }
-    , { label = "Structure"
-      , submenu =
-            Just [ "First", "Prev", "Next", "Last", "Jump...", "Search..." ]
-      }
-    , { label = "View"
-      , submenu =
-            Just [ "Center", "Along X", "Along Y", "Along Z" ]
-      }
-    , { label = "Options..."
-      , submenu =
-            Nothing
-      }
-    , { label = "Help"
-      , submenu =
-            Just [ "About Gavrog..." ]
-      }
+    [ "Open..."
+    , "Save Structure..."
+    , "Save Screenshot..."
+    , ""
+    , "First"
+    , "Prev"
+    , "Next"
+    , "Last"
+    , "Jump..."
+    , "Search..."
+    , ""
+    , "Center"
+    , "Along X"
+    , "Along Y"
+    , "Along Z"
+    , ""
+    , "Options..."
+    , "About Gavrog..."
     ]
 
 
 initState : Menu.State
 initState =
-    { active = Nothing
-    , activeSub = Nothing
-    }
+    { visible = False, active = Nothing }
 
 
 jumpDialogConfig : TextBoxConfig
@@ -252,11 +248,11 @@ update msg model =
         ViewMsg viewMsg ->
             ( updateView3d (View3d.update viewMsg) model, Cmd.none )
 
-        Activate item ->
-            ( updateActive model item, Cmd.none )
+        ActivateMenu onOff ->
+            ( updateMenuActive model onOff, Cmd.none )
 
-        ActivateSub item ->
-            ( updateActiveSub model item, Cmd.none )
+        ActivateItem item ->
+            ( updateItemActive model item, Cmd.none )
 
         Select ->
             handleSelection model
@@ -306,8 +302,16 @@ updateView3d fn model =
     { model | viewState = fn model.viewState }
 
 
-updateActive : Model -> Maybe ( Int, String ) -> Model
-updateActive model item =
+updateMenuActive : Model -> Bool -> Model
+updateMenuActive model onOff =
+    { model
+        | menuState = { visible = onOff, active = Nothing }
+        , activeLabel = Nothing
+    }
+
+
+updateItemActive : Model -> Maybe ( Int, String ) -> Model
+updateItemActive model item =
     let
         state =
             model.menuState
@@ -315,37 +319,13 @@ updateActive model item =
     case item of
         Nothing ->
             { model
-                | menuState = initState
+                | menuState = { state | active = Nothing }
                 , activeLabel = Nothing
             }
 
         Just ( i, s ) ->
             { model
-                | menuState =
-                    { state
-                        | active = Just i
-                        , activeSub = Nothing
-                    }
-                , activeLabel = Just s
-            }
-
-
-updateActiveSub : Model -> Maybe ( Int, String ) -> Model
-updateActiveSub model item =
-    let
-        state =
-            model.menuState
-    in
-    case item of
-        Nothing ->
-            { model
-                | menuState = { state | activeSub = Nothing }
-                , activeLabel = Nothing
-            }
-
-        Just ( i, s ) ->
-            { model
-                | menuState = { state | activeSub = Just i }
+                | menuState = { state | active = Just i }
                 , activeLabel = Just s
             }
 
