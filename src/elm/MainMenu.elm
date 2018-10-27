@@ -10,6 +10,7 @@ import Element.Border as Border
 import Element.Events
 import Element.Font as Font
 import Element.Input as Input
+import Html.Events
 import Json.Decode as Decode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
@@ -600,7 +601,7 @@ viewTextBox : TextBoxConfig -> String -> Element.Element Msg
 viewTextBox config text =
     Element.column [ Element.spacing 8, Element.padding 16 ]
         [ Input.text
-            []
+            [ onKeyUp (\n -> Ignore) ]
             { onChange = config.onInput
             , text = text
             , placeholder =
@@ -614,3 +615,21 @@ viewTextBox config text =
             , Styling.button (config.onSubmit False) "Cancel"
             ]
         ]
+
+
+onKeyUp : (Int -> msg) -> Element.Attribute msg
+onKeyUp toMsg =
+    let
+        passThrough value =
+            value /= 16 && value /= 17
+
+        toResult value =
+            { message = toMsg value
+            , stopPropagation = passThrough value
+            , preventDefault = passThrough value
+            }
+    in
+    Element.htmlAttribute <|
+        Html.Events.custom
+            "keyup"
+            (Decode.map toResult <| Decode.at [ "keyCode" ] Decode.int)
