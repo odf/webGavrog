@@ -566,7 +566,7 @@ viewAbout model =
             [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Element.column [ Element.spacing 4, Element.padding 8 ]
-                [ Styling.logoText "Gavrog for the Web"
+                [ Styling.logoText "Gavrog For Web"
                 , Element.text "by Olaf Delgado-Friedrichs 2018"
                 , Element.text "The Australian National University"
                 ]
