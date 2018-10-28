@@ -93,7 +93,7 @@ glScene scene =
 
 
 type Msg
-    = FrameMsg Posix
+    = FrameMsg Float
     | MouseUpMsg
     | MouseDownMsg { x : Int, y : Int }
     | MouseMoveMsg { x : Int, y : Int }
@@ -117,7 +117,7 @@ subscriptions toMsg model =
 
         frameEvent =
             if Camera.isMoving model.cameraState then
-                Events.onAnimationFrame FrameMsg
+                Events.onAnimationFrameDelta FrameMsg
 
             else
                 Sub.none

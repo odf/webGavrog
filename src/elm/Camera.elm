@@ -40,7 +40,7 @@ type State
         , shift : Vec3
         , rotation : Mat4
         , deltaRot : Mat4
-        , moved : Bool
+        , milliSecsSinceMoved : Float
         }
 
 
@@ -56,15 +56,19 @@ initialState =
         , ndcPos = { x = 0, y = 0 }
         , rotation = Mat4.identity
         , deltaRot = Mat4.identity
-        , moved = False
+        , milliSecsSinceMoved = 0
         , shift = vec3 0 0 0
         }
 
 
-nextFrame : Posix -> State -> State
-nextFrame time (State state) =
+nextFrame : Float -> State -> State
+nextFrame timeInMilliSecs (State state) =
     if state.dragging then
-        State { state | moved = False }
+        State
+            { state
+                | milliSecsSinceMoved =
+                    state.milliSecsSinceMoved + timeInMilliSecs
+            }
 
     else if state.moving then
         let
@@ -152,14 +156,18 @@ startDragging pos (State state) =
         { state
             | dragging = True
             , moving = True
-            , moved = False
+            , milliSecsSinceMoved = 0
             , ndcPos = positionToNdc pos (State state)
         }
 
 
 finishDragging : State -> State
 finishDragging (State state) =
-    State { state | dragging = False, moving = state.moved }
+    State
+        { state
+            | dragging = False
+            , moving = state.milliSecsSinceMoved < 100
+        }
 
 
 lookAlong : Vec3 -> Vec3 -> State -> State
@@ -198,7 +206,7 @@ panMouse ndcPosNew (State state) =
     State
         { state
             | ndcPos = ndcPosNew
-            , moved = False
+            , milliSecsSinceMoved = 0
             , shift = Vec3.add state.shift shift
         }
 
@@ -220,7 +228,12 @@ rotateMouse ndcPosNew (State state) =
             | ndcPos = ndcPosNew
             , deltaRot = deltaRot
             , rotation = rotation
-            , moved = angle /= 0
+            , milliSecsSinceMoved =
+                if angle /= 0 then
+                    0
+
+                else
+                    state.milliSecsSinceMoved
         }
 
 
