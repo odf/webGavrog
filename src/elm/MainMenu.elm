@@ -156,7 +156,7 @@ init flags =
 
 initMenuConfig : Menu.Config Msg
 initMenuConfig =
-    { label = "Actions"
+    { label = Styling.navIcon
     , items = initItems
     , activate = ActivateMenu
     , activateItem = ActivateItem
@@ -500,10 +500,10 @@ viewMain model =
             [ Element.width Element.fill
             , Element.spacing 16
             ]
-            [ Element.image []
+            [ Menu.view model.menuConfig model.menuState
+            , Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"
-            , Menu.view model.menuConfig model.menuState
             , Element.column
                 [ Element.width Element.fill
                 , Element.spacing 8

@@ -1,4 +1,4 @@
-module Styling exposing (box, button, logoText)
+module Styling exposing (box, button, logoText, navIcon)
 
 import Element as El
 import Element.Background as Background
@@ -52,3 +52,14 @@ logoText text =
         , Font.semiBold
         ]
         (El.text text)
+
+
+navIcon : El.Element msg
+navIcon =
+    El.el
+        [ Font.size 28
+        , Font.bold
+        , Font.color <| El.rgb255 140 140 140
+        , El.padding 8
+        ]
+        (El.text "☰")

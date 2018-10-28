@@ -11,7 +11,7 @@ import Element.Events as Events
 
 
 type alias Config msg =
-    { label : String
+    { label : Element.Element msg
     , items : List String
     , activate : Bool -> msg
     , activateItem : Maybe ( Int, String ) -> msg
@@ -35,8 +35,7 @@ view config state =
         maybeMenu =
             if state.visible then
                 Element.column
-                    [ Element.alignRight
-                    , Element.moveRight 1
+                    [ Element.alignLeft
                     , Element.paddingXY 0 4
                     , Background.color <| Element.rgb255 255 255 255
                     , Border.color <| Element.rgb255 170 170 170
@@ -57,13 +56,9 @@ view config state =
         [ Element.below maybeMenu
         , Events.onMouseEnter <| config.activate True
         , Events.onMouseLeave <| config.activate False
-        , Element.paddingXY 16 8
         , Element.pointer
-        , Background.color <| Element.rgb255 255 255 255
-        , Border.color <| Element.rgb255 170 170 170
-        , Border.width 1
         ]
-        (Element.text config.label)
+        config.label
 
 
 viewItem : Config msg -> State -> Int -> String -> Element.Element msg
