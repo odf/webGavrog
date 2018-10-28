@@ -14,7 +14,7 @@ box customAttributes content =
             [ Background.color <| El.rgb255 255 244 210
             , Border.solid
             , Border.width 1
-            , Border.color <| El.rgb255 170 170 170
+            , Border.color <| El.rgb255 221 175 44
             , Border.shadow
                 { offset = ( 0.0, 4.0 )
                 , size = 0.0
