@@ -503,6 +503,7 @@ viewMain model =
             [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"
+            , Menu.view model.menuConfig model.menuState
             , Element.column
                 [ Element.width Element.fill
                 , Element.spacing 8
@@ -510,7 +511,6 @@ viewMain model =
                 [ Element.el [ Element.centerX ] <| Element.text model.title
                 , Element.el [ Element.centerX ] <| Element.text model.status
                 ]
-            , Menu.view model.menuConfig model.menuState
             ]
         )
 
