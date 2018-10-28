@@ -472,7 +472,7 @@ lookAlong axis up model =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Gavrog For The Web"
+    { title = "Gavrog For Web"
     , body =
         [ Element.layout
             [ Element.width Element.fill
