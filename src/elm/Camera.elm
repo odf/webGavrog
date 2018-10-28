@@ -156,7 +156,6 @@ startDragging pos (State state) =
         { state
             | dragging = True
             , moving = True
-            , milliSecsSinceMoved = 0
             , ndcPos = positionToNdc pos (State state)
         }
 
@@ -206,7 +205,6 @@ panMouse ndcPosNew (State state) =
     State
         { state
             | ndcPos = ndcPosNew
-            , milliSecsSinceMoved = 0
             , shift = Vec3.add state.shift shift
         }
 
@@ -228,12 +226,7 @@ rotateMouse ndcPosNew (State state) =
             | ndcPos = ndcPosNew
             , deltaRot = deltaRot
             , rotation = rotation
-            , milliSecsSinceMoved =
-                if angle /= 0 then
-                    0
-
-                else
-                    state.milliSecsSinceMoved
+            , milliSecsSinceMoved = 0
         }
 
 
