@@ -376,7 +376,7 @@ handleSelection model =
 
 handleJSData : InData -> Model -> Model
 handleJSData data model =
-    updateView3d (View3d.setRedraws False) model
+    model
         |> (case data.title of
                 Nothing ->
                     identity

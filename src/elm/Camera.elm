@@ -157,6 +157,7 @@ startDragging pos (State state) =
             | dragging = True
             , moving = True
             , ndcPos = positionToNdc pos (State state)
+            , deltaRot = Mat4.identity
         }
 
 
@@ -359,4 +360,4 @@ isMoving (State state) =
 
 setRedraws : Bool -> State -> State
 setRedraws onOff (State state) =
-    State { state | moving = onOff, deltaRot = Mat4.identity }
+    State { state | moving = onOff }
