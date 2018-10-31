@@ -39,7 +39,8 @@ type State
         , ndcPos : Position
         , shift : Vec3
         , rotation : Mat4
-        , deltaRot : Mat4
+        , spinAxis : Vec3
+        , spinAngle : Float
         , milliSecsSinceMoved : Float
         }
 
@@ -55,7 +56,8 @@ initialState =
         , moving = False
         , ndcPos = { x = 0, y = 0 }
         , rotation = Mat4.identity
-        , deltaRot = Mat4.identity
+        , spinAxis = vec3 0 0 1
+        , spinAngle = 0
         , milliSecsSinceMoved = 0
         , shift = vec3 0 0 0
         }
@@ -72,8 +74,14 @@ nextFrame timeInMilliSecs (State state) =
 
     else if state.moving then
         let
+            angle =
+                state.spinAngle * timeInMilliSecs
+
+            deltaRot =
+                Mat4.makeRotate angle state.spinAxis
+
             rotation =
-                orthonormalized <| Mat4.mul state.deltaRot state.rotation
+                orthonormalized <| Mat4.mul deltaRot state.rotation
         in
         State { state | rotation = rotation }
 
@@ -157,7 +165,7 @@ startDragging pos (State state) =
             | dragging = True
             , moving = True
             , ndcPos = positionToNdc pos (State state)
-            , deltaRot = Mat4.identity
+            , spinAngle = 0
         }
 
 
@@ -225,7 +233,8 @@ rotateMouse ndcPosNew (State state) =
     State
         { state
             | ndcPos = ndcPosNew
-            , deltaRot = deltaRot
+            , spinAxis = axis
+            , spinAngle = 60 * angle / 1000
             , rotation = rotation
             , milliSecsSinceMoved = 0
         }
