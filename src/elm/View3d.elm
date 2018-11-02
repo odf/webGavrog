@@ -310,7 +310,7 @@ onMouseWheel toMsg =
 
 touchCoordinates : Touch.Event -> Position
 touchCoordinates touchEvent =
-    List.head touchEvent.changedTouches
+    List.head (Debug.log "touch event" touchEvent).changedTouches
         |> Maybe.map .clientPos
         |> Maybe.withDefault ( 0, 0 )
         |> (\( x, y ) -> { x = round x, y = round y })
