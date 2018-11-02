@@ -119,32 +119,20 @@ setMousePosition pos alter (State state) =
 
 
 updateZoom : Float -> Bool -> State -> State
-updateZoom value alter (State state) =
-    let
-        factor =
-            if value > 0 then
-                0.9
+updateZoom factor alter (State state) =
+    if alter then
+        State
+            { state
+                | fieldOfView =
+                    clamp 2.5 150 <| factor * state.fieldOfView
+            }
 
-            else if value < 0 then
-                1 / 0.9
-
-            else
-                1.0
-
-        newState =
-            if alter then
-                { state
-                    | fieldOfView =
-                        clamp 2.5 150 <| factor * state.fieldOfView
-                }
-
-            else
-                { state
-                    | cameraDistance =
-                        clamp 2.5 1000 <| factor * state.cameraDistance
-                }
-    in
-    State newState
+    else
+        State
+            { state
+                | cameraDistance =
+                    clamp 2.5 1000 <| factor * state.cameraDistance
+            }
 
 
 setFrameSize : { width : Int, height : Int } -> State -> State

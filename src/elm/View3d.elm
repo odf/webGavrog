@@ -153,6 +153,10 @@ subscriptions toMsg model =
 
 update : Msg -> Model -> Model
 update msg model =
+    let
+        alter =
+            model.modifiers.shift
+    in
     case msg of
         FrameMsg time ->
             updateCamera (Camera.nextFrame time) model
@@ -164,9 +168,7 @@ update msg model =
             updateCamera Camera.finishDragging model
 
         MouseMoveMsg pos ->
-            updateCamera
-                (Camera.setMousePosition pos model.modifiers.shift)
-                model
+            updateCamera (Camera.setMousePosition pos alter) model
 
         TouchStartMsg posList ->
             touchStartUpdate posList model
@@ -178,9 +180,7 @@ update msg model =
             updateCamera Camera.finishDragging model
 
         WheelMsg val ->
-            updateCamera
-                (Camera.updateZoom val model.modifiers.shift)
-                model
+            updateCamera (Camera.updateZoom (wheelZoomFactor val) alter) model
 
         KeyDownMsg code ->
             setModifiers code True model
@@ -216,6 +216,18 @@ touchMoveUpdate posList model =
 
     else
         model
+
+
+wheelZoomFactor : Float -> Float
+wheelZoomFactor wheelVal =
+    if wheelVal > 0 then
+        0.9
+
+    else if wheelVal < 0 then
+        1.0 / 0.9
+
+    else
+        1.0
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> Model
