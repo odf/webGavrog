@@ -102,6 +102,9 @@ type Msg
     | MouseUpMsg
     | MouseDownMsg Position
     | MouseMoveMsg Position
+    | TouchStartMsg (List Position)
+    | TouchMoveMsg (List Position)
+    | TouchEndMsg
     | KeyDownMsg Int
     | KeyUpMsg Int
     | WheelMsg Float
@@ -165,6 +168,15 @@ update msg model =
                 (Camera.setMousePosition pos model.modifiers.shift)
                 model
 
+        TouchStartMsg posList ->
+            touchStartUpdate posList model
+
+        TouchMoveMsg posList ->
+            touchMoveUpdate posList model
+
+        TouchEndMsg ->
+            updateCamera Camera.finishDragging model
+
         WheelMsg val ->
             updateCamera
                 (Camera.updateZoom val model.modifiers.shift)
@@ -175,6 +187,35 @@ update msg model =
 
         KeyUpMsg code ->
             setModifiers code False model
+
+
+touchStartUpdate : List Position -> Model -> Model
+touchStartUpdate posList model =
+    if List.length posList == 1 then
+        let
+            pos =
+                List.head posList |> Maybe.withDefault { x = 0, y = 0 }
+        in
+        updateCamera (Camera.startDragging pos) model
+
+    else
+        model
+
+
+touchMoveUpdate : List Position -> Model -> Model
+touchMoveUpdate posList model =
+    if List.length posList == 1 then
+        let
+            pos =
+                List.head posList |> Maybe.withDefault { x = 0, y = 0 }
+
+            alter =
+                model.modifiers.shift
+        in
+        updateCamera (Camera.setMousePosition pos alter) model
+
+    else
+        model
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> Model
@@ -272,10 +313,10 @@ view toMsg model =
         , Html.Attributes.height model.size.height
         , onMouseDown (toMsg << MouseDownMsg)
         , onMouseWheel (toMsg << WheelMsg)
-        , onTouchStart (toMsg << MouseDownMsg)
-        , onTouchMove (toMsg << MouseMoveMsg)
-        , onTouchEnd (toMsg MouseUpMsg)
-        , onTouchCancel (toMsg MouseUpMsg)
+        , onTouchStart (toMsg << TouchStartMsg)
+        , onTouchMove (toMsg << TouchMoveMsg)
+        , onTouchEnd (toMsg TouchEndMsg)
+        , onTouchCancel (toMsg TouchEndMsg)
         ]
         entities
 
@@ -308,20 +349,19 @@ onMouseWheel toMsg =
         (Decode.map toResult <| Decode.at [ "deltaY" ] Decode.float)
 
 
-touchCoordinates : Touch.Event -> Position
+touchCoordinates : Touch.Event -> List Position
 touchCoordinates touchEvent =
-    List.head (Debug.log "touch event" touchEvent).changedTouches
-        |> Maybe.map .clientPos
-        |> Maybe.withDefault ( 0, 0 )
-        |> (\( x, y ) -> { x = round x, y = round y })
+    touchEvent.targetTouches
+        |> List.map .clientPos
+        |> List.map (\( x, y ) -> { x = round x, y = round y })
 
 
-onTouchStart : (Position -> msg) -> Html.Attribute msg
+onTouchStart : (List Position -> msg) -> Html.Attribute msg
 onTouchStart toMsg =
     Touch.onStart (toMsg << touchCoordinates)
 
 
-onTouchMove : (Position -> msg) -> Html.Attribute msg
+onTouchMove : (List Position -> msg) -> Html.Attribute msg
 onTouchMove toMsg =
     Touch.onMove (toMsg << touchCoordinates)
 
