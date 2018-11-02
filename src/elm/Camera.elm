@@ -1,6 +1,7 @@
 module Camera exposing
     ( State
     , cameraDistance
+    , dragTo
     , encompass
     , finishDragging
     , initialState
@@ -10,7 +11,6 @@ module Camera exposing
     , nextFrame
     , perspectiveMatrix
     , setFrameSize
-    , setMousePosition
     , setRedraws
     , startDragging
     , updateZoom
@@ -101,23 +101,6 @@ positionToNdc pos (State state) =
     { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
 
 
-setMousePosition : { x : Int, y : Int } -> Bool -> State -> State
-setMousePosition pos alter (State state) =
-    let
-        ndcPos =
-            positionToNdc pos (State state)
-    in
-    if state.dragging then
-        if alter then
-            panMouse ndcPos (State state)
-
-        else
-            rotateMouse ndcPos (State state)
-
-    else
-        State { state | ndcPos = ndcPos }
-
-
 updateZoom : Float -> Bool -> State -> State
 updateZoom factor alter (State state) =
     if alter then
@@ -157,6 +140,23 @@ startDragging pos (State state) =
         }
 
 
+dragTo : { x : Int, y : Int } -> Bool -> State -> State
+dragTo pos alter (State state) =
+    let
+        ndcPos =
+            positionToNdc pos (State state)
+    in
+    if state.dragging then
+        if alter then
+            panTo ndcPos (State state)
+
+        else
+            rotateTo ndcPos (State state)
+
+    else
+        State { state | ndcPos = ndcPos }
+
+
 finishDragging : State -> State
 finishDragging (State state) =
     State
@@ -166,26 +166,8 @@ finishDragging (State state) =
         }
 
 
-lookAlong : Vec3 -> Vec3 -> State -> State
-lookAlong axis up (State state) =
-    State { state | rotation = Mat4.makeLookAt (vec3 0 0 0) axis up }
-
-
-encompass : Vec3 -> Float -> State -> State
-encompass center radius (State state) =
-    let
-        dist =
-            radius / sin (degrees state.fieldOfView / 2)
-    in
-    State
-        { state
-            | shift = Vec3.scale -1 center
-            , cameraDistance = clamp 2.5 1000 dist
-        }
-
-
-panMouse : Position -> State -> State
-panMouse ndcPosNew (State state) =
+panTo : Position -> State -> State
+panTo ndcPosNew (State state) =
     let
         dx =
             ndcPosNew.x - state.ndcPos.x
@@ -206,8 +188,8 @@ panMouse ndcPosNew (State state) =
         }
 
 
-rotateMouse : Position -> State -> State
-rotateMouse ndcPosNew (State state) =
+rotateTo : Position -> State -> State
+rotateTo ndcPosNew (State state) =
     let
         ( axis, angle ) =
             rotationParameters ndcPosNew state.ndcPos
@@ -228,22 +210,22 @@ rotateMouse ndcPosNew (State state) =
         }
 
 
-zRotationAngle : Float -> Float -> Float -> Float -> Float
-zRotationAngle px py dx dy =
-    if px > 0.9 then
-        dy
+lookAlong : Vec3 -> Vec3 -> State -> State
+lookAlong axis up (State state) =
+    State { state | rotation = Mat4.makeLookAt (vec3 0 0 0) axis up }
 
-    else if px < -0.9 then
-        -dy
 
-    else if py > 0.9 then
-        -dx
-
-    else if py < -0.9 then
-        dx
-
-    else
-        0
+encompass : Vec3 -> Float -> State -> State
+encompass center radius (State state) =
+    let
+        dist =
+            radius / sin (degrees state.fieldOfView / 2)
+    in
+    State
+        { state
+            | shift = Vec3.scale -1 center
+            , cameraDistance = clamp 2.5 1000 dist
+        }
 
 
 rotationParameters : Position -> Position -> ( Vec3, Float )
@@ -273,6 +255,24 @@ rotationParameters newPos oldPos =
                 vec3 (-dy / angle) (dx / angle) 0
     in
     ( axis, angle )
+
+
+zRotationAngle : Float -> Float -> Float -> Float -> Float
+zRotationAngle px py dx dy =
+    if px > 0.9 then
+        dy
+
+    else if px < -0.9 then
+        -dy
+
+    else if py > 0.9 then
+        -dx
+
+    else if py < -0.9 then
+        dx
+
+    else
+        0
 
 
 projection : Vec3 -> Vec3 -> Vec3

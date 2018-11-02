@@ -168,7 +168,7 @@ update msg model =
             updateCamera Camera.finishDragging model
 
         MouseMoveMsg pos ->
-            updateCamera (Camera.setMousePosition pos alter) model
+            updateCamera (Camera.dragTo pos alter) model
 
         TouchStartMsg posList ->
             touchStartUpdate posList model
@@ -212,7 +212,7 @@ touchMoveUpdate posList model =
             alter =
                 model.modifiers.shift
         in
-        updateCamera (Camera.setMousePosition pos alter) model
+        updateCamera (Camera.dragTo pos alter) model
 
     else
         model
