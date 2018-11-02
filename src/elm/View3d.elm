@@ -17,6 +17,7 @@ import Camera
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -92,17 +93,21 @@ glScene scene =
 -- SUBSCRIPTIONS
 
 
+type alias Position =
+    { x : Int, y : Int }
+
+
 type Msg
     = FrameMsg Float
     | MouseUpMsg
-    | MouseDownMsg { x : Int, y : Int }
-    | MouseMoveMsg { x : Int, y : Int }
+    | MouseDownMsg Position
+    | MouseMoveMsg Position
     | KeyDownMsg Int
     | KeyUpMsg Int
     | WheelMsg Float
 
 
-decodePos : Decode.Decoder { x : Int, y : Int }
+decodePos : Decode.Decoder Position
 decodePos =
     Decode.map2 (\x y -> { x = x, y = y })
         (Decode.at [ "clientX" ] Decode.int)
@@ -212,7 +217,7 @@ setScene : RawSceneSpec -> Model -> Model
 setScene spec model =
     let
         scene =
-            Debug.log "scene" <| makeScene spec
+            makeScene spec
 
         box =
             boundingBoxForScene scene
@@ -267,11 +272,15 @@ view toMsg model =
         , Html.Attributes.height model.size.height
         , onMouseDown (toMsg << MouseDownMsg)
         , onMouseWheel (toMsg << WheelMsg)
+        , onTouchStart (toMsg << MouseDownMsg)
+        , onTouchMove (toMsg << MouseMoveMsg)
+        , onTouchEnd (toMsg MouseUpMsg)
+        , onTouchCancel (toMsg MouseUpMsg)
         ]
         entities
 
 
-onMouseDown : ({ x : Int, y : Int } -> msg) -> Html.Attribute msg
+onMouseDown : (Position -> msg) -> Html.Attribute msg
 onMouseDown toMsg =
     let
         toResult value =
@@ -297,3 +306,31 @@ onMouseWheel toMsg =
     Html.Events.custom
         "wheel"
         (Decode.map toResult <| Decode.at [ "deltaY" ] Decode.float)
+
+
+touchCoordinates : Touch.Event -> Position
+touchCoordinates touchEvent =
+    List.head touchEvent.changedTouches
+        |> Maybe.map .clientPos
+        |> Maybe.withDefault ( 0, 0 )
+        |> (\( x, y ) -> { x = round x, y = round y })
+
+
+onTouchStart : (Position -> msg) -> Html.Attribute msg
+onTouchStart toMsg =
+    Touch.onStart (toMsg << touchCoordinates)
+
+
+onTouchMove : (Position -> msg) -> Html.Attribute msg
+onTouchMove toMsg =
+    Touch.onMove (toMsg << touchCoordinates)
+
+
+onTouchEnd : msg -> Html.Attribute msg
+onTouchEnd theMsg =
+    Touch.onEnd (\e -> theMsg)
+
+
+onTouchCancel : msg -> Html.Attribute msg
+onTouchCancel theMsg =
+    Touch.onCancel (\e -> theMsg)
