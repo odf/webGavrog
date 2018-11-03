@@ -193,6 +193,20 @@ update msg model =
             setModifiers code False model
 
 
+centerPosition : List Position -> Position
+centerPosition posList =
+    let
+        n =
+            List.length posList |> max 1 |> toFloat
+
+        sum =
+            List.foldl (\p q -> { x = p.x + q.x, y = p.y + q.y })
+                { x = 0, y = 0 }
+                posList
+    in
+    { x = sum.x / n, y = sum.y / n }
+
+
 touchStartUpdate : List Position -> Model -> Model
 touchStartUpdate posList model =
     case posList of
@@ -201,6 +215,9 @@ touchStartUpdate posList model =
 
         posA :: posB :: [] ->
             updateCamera (Camera.startPinching posA posB) model
+
+        posA :: posB :: posC :: [] ->
+            updateCamera (Camera.startDragging <| centerPosition posList) model
 
         _ ->
             model
@@ -214,10 +231,13 @@ touchMoveUpdate posList model =
     in
     case posList of
         pos :: [] ->
-            updateCamera (Camera.dragTo pos alter) model
+            updateCamera (Camera.dragTo pos False) model
 
         posA :: posB :: [] ->
             updateCamera (Camera.pinchTo posA posB alter) model
+
+        posA :: posB :: posC :: [] ->
+            updateCamera (Camera.dragTo (centerPosition posList) True) model
 
         _ ->
             model
