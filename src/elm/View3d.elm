@@ -195,31 +195,32 @@ update msg model =
 
 touchStartUpdate : List Position -> Model -> Model
 touchStartUpdate posList model =
-    if List.length posList == 1 then
-        let
-            pos =
-                List.head posList |> Maybe.withDefault { x = 0, y = 0 }
-        in
-        updateCamera (Camera.startDragging pos) model
+    case posList of
+        pos :: [] ->
+            updateCamera (Camera.startDragging pos) model
 
-    else
-        model
+        posA :: posB :: [] ->
+            updateCamera (Camera.startPinching posA posB) model
+
+        _ ->
+            model
 
 
 touchMoveUpdate : List Position -> Model -> Model
 touchMoveUpdate posList model =
-    if List.length posList == 1 then
-        let
-            pos =
-                List.head posList |> Maybe.withDefault { x = 0, y = 0 }
+    let
+        alter =
+            model.modifiers.shift
+    in
+    case posList of
+        pos :: [] ->
+            updateCamera (Camera.dragTo pos alter) model
 
-            alter =
-                model.modifiers.shift
-        in
-        updateCamera (Camera.dragTo pos alter) model
+        posA :: posB :: [] ->
+            updateCamera (Camera.pinchTo posA posB alter) model
 
-    else
-        model
+        _ ->
+            model
 
 
 wheelZoomFactor : Float -> Float

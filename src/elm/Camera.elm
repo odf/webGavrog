@@ -10,9 +10,11 @@ module Camera exposing
     , lookAlong
     , nextFrame
     , perspectiveMatrix
+    , pinchTo
     , setFrameSize
     , setRedraws
     , startDragging
+    , startPinching
     , updateZoom
     , viewingMatrix
     )
@@ -39,6 +41,7 @@ type State
         , dragging : Bool
         , moving : Bool
         , ndcPos : Position
+        , pinchDist : Float
         , shift : Vec3
         , rotation : Mat4
         , spinAxis : Vec3
@@ -57,12 +60,18 @@ initialState =
         , dragging = False
         , moving = False
         , ndcPos = { x = 0, y = 0 }
+        , pinchDist = 0
         , rotation = Mat4.identity
         , spinAxis = vec3 0 0 1
         , spinAngle = 0
         , milliSecsSinceMoved = 0
         , shift = vec3 0 0 0
         }
+
+
+setFrameSize : FrameSize -> State -> State
+setFrameSize size (State state) =
+    State { state | size = size }
 
 
 nextFrame : Float -> State -> State
@@ -120,9 +129,29 @@ updateZoom factor alter (State state) =
             }
 
 
-setFrameSize : FrameSize -> State -> State
-setFrameSize size (State state) =
-    State { state | size = size }
+distance : Position -> Position -> Float
+distance posA posB =
+    sqrt ((posA.x - posB.x) ^ 2 + (posA.y - posB.y) ^ 2)
+
+
+startPinching : Position -> Position -> State -> State
+startPinching posA posB (State state) =
+    State { state | pinchDist = distance posA posB }
+
+
+pinchTo : Position -> Position -> Bool -> State -> State
+pinchTo posA posB alter (State state) =
+    let
+        d =
+            distance posA posB
+
+        f =
+            clamp 0.2 5.0 (state.pinchDist / d)
+
+        (State s) =
+            updateZoom f alter (State state)
+    in
+    State { s | pinchDist = d }
 
 
 startDragging : Position -> State -> State
