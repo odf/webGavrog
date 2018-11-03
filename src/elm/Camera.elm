@@ -23,9 +23,7 @@ import Time exposing (Posix)
 
 
 type alias Position =
-    { x : Float
-    , y : Float
-    }
+    { x : Float, y : Float }
 
 
 type State
@@ -89,14 +87,14 @@ nextFrame timeInMilliSecs (State state) =
         State state
 
 
-positionToNdc : { x : Int, y : Int } -> State -> Position
+positionToNdc : Position -> State -> Position
 positionToNdc pos (State state) =
     let
         xRelative =
-            (toFloat pos.x - state.origin.x) / state.size.width
+            (pos.x - state.origin.x) / state.size.width
 
         yRelative =
-            (toFloat pos.y - state.origin.y) / state.size.height
+            (pos.y - state.origin.y) / state.size.height
     in
     { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
 
@@ -129,7 +127,7 @@ setFrameSize size (State state) =
         }
 
 
-startDragging : { x : Int, y : Int } -> State -> State
+startDragging : Position -> State -> State
 startDragging pos (State state) =
     State
         { state
@@ -140,7 +138,7 @@ startDragging pos (State state) =
         }
 
 
-dragTo : { x : Int, y : Int } -> Bool -> State -> State
+dragTo : Position -> Bool -> State -> State
 dragTo pos alter (State state) =
     let
         ndcPos =

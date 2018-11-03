@@ -94,7 +94,7 @@ glScene scene =
 
 
 type alias Position =
-    { x : Int, y : Int }
+    { x : Float, y : Float }
 
 
 type Msg
@@ -112,7 +112,7 @@ type Msg
 
 decodePos : Decode.Decoder Position
 decodePos =
-    Decode.map2 (\x y -> { x = x, y = y })
+    Decode.map2 (\x y -> { x = toFloat x, y = toFloat y })
         (Decode.at [ "clientX" ] Decode.int)
         (Decode.at [ "clientY" ] Decode.int)
 
@@ -365,7 +365,7 @@ touchCoordinates : Touch.Event -> List Position
 touchCoordinates touchEvent =
     touchEvent.targetTouches
         |> List.map .clientPos
-        |> List.map (\( x, y ) -> { x = round x, y = round y })
+        |> List.map (\( x, y ) -> { x = x, y = y })
 
 
 onTouchStart : (List Position -> msg) -> Html.Attribute msg
