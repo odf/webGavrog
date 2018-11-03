@@ -22,13 +22,17 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Time exposing (Posix)
 
 
+type alias FrameSize =
+    { width : Float, height : Float }
+
+
 type alias Position =
     { x : Float, y : Float }
 
 
 type State
     = State
-        { size : { width : Float, height : Float }
+        { size : FrameSize
         , origin : Position
         , cameraDistance : Float
         , fieldOfView : Float
@@ -116,15 +120,9 @@ updateZoom factor alter (State state) =
             }
 
 
-setFrameSize : { width : Int, height : Int } -> State -> State
+setFrameSize : FrameSize -> State -> State
 setFrameSize size (State state) =
-    State
-        { state
-            | size =
-                { width = toFloat size.width
-                , height = toFloat size.height
-                }
-        }
+    State { state | size = size }
 
 
 startDragging : Position -> State -> State

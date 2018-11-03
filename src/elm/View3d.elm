@@ -32,8 +32,12 @@ import WebGL
 -- MODEL
 
 
+type alias FrameSize =
+    { width : Float, height : Float }
+
+
 type alias Model =
-    { size : { width : Int, height : Int }
+    { size : FrameSize
     , cameraState : Camera.State
     , scene : GlScene
     , center : Vec3
@@ -261,7 +265,7 @@ encompass model =
     updateCamera (Camera.encompass model.center model.radius) model
 
 
-setSize : { width : Int, height : Int } -> Model -> Model
+setSize : FrameSize -> Model -> Model
 setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
@@ -321,8 +325,8 @@ view toMsg model =
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" "white"
         , Html.Attributes.id "main-3d-canvas"
-        , Html.Attributes.width model.size.width
-        , Html.Attributes.height model.size.height
+        , Html.Attributes.width (floor model.size.width)
+        , Html.Attributes.height (floor model.size.height)
         , onMouseDown (toMsg << MouseDownMsg)
         , onMouseWheel (toMsg << WheelMsg)
         , onTouchStart (toMsg << TouchStartMsg)

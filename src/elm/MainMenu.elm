@@ -240,7 +240,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Resize width height ->
-            ( updateView3d (View3d.setSize { width = width, height = height })
+            ( updateView3d
+                (View3d.setSize
+                    { width = toFloat width, height = toFloat height }
+                )
                 model
             , Cmd.none
             )
