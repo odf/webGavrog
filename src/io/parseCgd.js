@@ -62,8 +62,7 @@ const parseToken = token => {
 
 const newBlock = () => ({
   type: null,
-  entriesInOrder: [],
-  entriesByKey: {},
+  entries: [],
   start: null,
   end: null,
   errors: []
@@ -74,7 +73,6 @@ function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
   let lineno = 0;
   let block = null;
   let key = null;
-  let originalKey = null;
 
   for (const line of lines) {
     ++lineno;
@@ -82,7 +80,6 @@ function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
     if (block == null) {
       block = newBlock(lineno)
       key = defaultKey;
-      originalKey = null;
     }
 
     const { fields, start, pos, msg } = tokenizeLine(line);
@@ -111,27 +108,14 @@ function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
     }
     else {
       if (newKey.match(/^[a-z]/)) {
-        if (synonyms[newKey]) {
-          originalKey = newKey;
-          key = synonyms[newKey];
-        }
-        else {
-          originalKey = null;
-          key = newKey;
-        }
-
+        key = synonyms[newKey] || newKey;
         fields.shift();
       }
 
       if (fields.length) {
         if (key) {
           const args = fields.map(parseToken);
-          const entry = { lineno, line, originalKey, key, args };
-
-          if (!block.entriesByKey[key])
-            block.entriesByKey[key] = [];
-          block.entriesByKey[key].push(entry);
-          block.entriesInOrder.push(entry)
+          block.entries.push({ lineno, line, key, args })
         }
         else {
           const msg = 'data found without a keyword saying what it means';

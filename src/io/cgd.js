@@ -36,7 +36,7 @@ const translation = {
 
 const unknown = data => {
   return {
-    entriesInOrder: data,
+    entries: data,
     errors : ["Unknown type"]
   }
 };
@@ -115,7 +115,7 @@ const extractSingleValue = (state, key, options = {}) => {
 
 
 const processPeriodicGraphData = data => {
-  const state = initialState(data.entriesInOrder);
+  const state = initialState(data.entries);
   const edges = [];
   let dim = null;
 
@@ -155,7 +155,7 @@ const processPeriodicGraphData = data => {
 
 
 const processSymmetricNet = data => {
-  const state = initialState(data.entriesInOrder);
+  const state = initialState(data.entries);
   const nodes = {};
   const edges = [];
   let dim = null;
@@ -219,7 +219,7 @@ const processSymmetricNet = data => {
 
 
 const processCrystal = data => {
-  const state = initialState(data.entriesInOrder);
+  const state = initialState(data.entries);
   const { errors, warnings, output } = state;
   const nodes = [];
   const edges = [];
@@ -289,7 +289,7 @@ const processCrystal = data => {
 
 
 const processFaceListData = data => {
-  const state = initialState(data.entriesInOrder);
+  const state = initialState(data.entries);
   const { errors, warnings, output } = state;
   const faces = [];
   const tiles = [];
