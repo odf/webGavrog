@@ -588,15 +588,7 @@ export function netFromCrystal(spec) {
   return {
     name,
     group: group.name,
-    cellGram,
-    primitiveCell,
-    primitiveGram,
-    toPrimitive,
-    nodeReps: nodesMapped,
-    explicitEdgeReps: edgesMapped,
     nodes: allNodes,
-    nodeNames: allNodes.map(({ name }) => name),
-    explicitEdges,
     graph,
     warnings,
     errors
@@ -648,10 +640,6 @@ export const tilingFromFacelist = spec => {
   return {
     name,
     group: group.name,
-    cellGram,
-    primitiveCell,
-    primitiveGram,
-    toPrimitive,
     symbol: derived.minimal(ds),
     cover: ds,
     warnings,

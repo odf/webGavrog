@@ -426,7 +426,7 @@ const processGraph = (
   writeInfo=prefixedLineWriter(),
   writeData=prefixedLineWriter()
 ) => csp.go(function*() {
-  const { graph, name, nodeNames } = input;
+  const { graph, name, nodes: originalNodes } = input;
   const group = input.group || (/*graph.dim == 2 ? 'p1' :*/ 'P1');
 
   showGraphBasics(graph, group, writeInfo);
@@ -452,6 +452,7 @@ const processGraph = (
   writeInfo(`   ${pluralize(orbits.length, 'kind')} of node.`);
   writeInfo();
 
+  const nodeNames = originalNodes && originalNodes.map(({ name }) => name);
   const nodes = periodic.vertices(graph);
   const [nodeToName, mergedNames] =
         nodeNameMapping(nodes, nodeNames, translationOrbits, orbits, writeInfo);
