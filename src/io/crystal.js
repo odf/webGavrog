@@ -634,6 +634,7 @@ export const tilingFromFacelist = spec => {
   const ds = buildTiling(pos, allFaces);
 
   // TODO also support the case were tiles are given explicitly
+  // TODO include original vertex positions in output
 
   _timers && _timers.stop('tilingFromFacelist');
 
