@@ -346,9 +346,7 @@ const centeringLatticePoints = toStd => {
 };
 
 
-const showEmbedding = (
-  graph, sgInfo, nodeOrbits, nodeToName, options, writeInfo
-) => {
+const showEmbedding = (graph, sgInfo, syms, nodeToName, options, writeInfo) => {
   const toStd = coordinateChangeAsFloat(sgInfo.toStd);
   const embedding = embed(graph, options.relaxPositions);
   const gram = mapGramMatrix(toStd, embedding.gram);
@@ -383,7 +381,7 @@ const showEmbedding = (
         .map(v => opsQ.toJS(v));
 
   // TODO if translational freedom, shift a node to a nice place
-  for (const orbit of nodeOrbits) {
+  for (const orbit of symmetries.nodeOrbits(graph, syms)) {
     const rawPts = orbit.map(v => opsF.point(pos[v]));
     const pts = rawPts.map(p => opsF.vector(opsF.modZ(opsF.times(toStd, p))));
     const allPts = [].concat(
@@ -448,14 +446,14 @@ const processGraph = (
   const syms = symmetries.symmetries(G).symmetries;
   writeInfo(`   Point group has ${syms.length} elements.`);
 
-  const orbits = symmetries.nodeOrbits(G, syms);
-  writeInfo(`   ${pluralize(orbits.length, 'kind')} of node.`);
+  const nodeOrbits = symmetries.nodeOrbits(G, syms);
+  writeInfo(`   ${pluralize(nodeOrbits.length, 'kind')} of node.`);
   writeInfo();
 
   const nodeNames = originalNodes && originalNodes.map(({ name }) => name);
   const nodes = periodic.vertices(graph);
-  const [nodeToName, mergedNames] =
-        nodeNameMapping(nodes, nodeNames, translationOrbits, orbits, writeInfo);
+  const [nodeToName, mergedNames] = nodeNameMapping(
+    nodes, nodeNames, translationOrbits, nodeOrbits, writeInfo);
 
   if (mergedNames.length) {
     writeInfo("   Equivalences for non-unique nodes:");
@@ -464,7 +462,7 @@ const processGraph = (
     writeInfo();
   }
 
-  showCoordinationSequences(G, orbits, nodeToName, writeInfo);
+  showCoordinationSequences(G, nodeOrbits, nodeToName, writeInfo);
 
   const symOps = affineSymmetries(G, syms);
   const sgInfo = identifySpacegroup(symOps);
@@ -485,7 +483,7 @@ const processGraph = (
   }
 
   if (options.outputEmbedding)
-    showEmbedding(G, sgInfo, orbits, nodeToName, options, writeInfo);
+    showEmbedding(G, sgInfo, syms, nodeToName, options, writeInfo);
 });
 
 
