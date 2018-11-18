@@ -324,6 +324,13 @@ const comparePoints = (p, q) => {
 };
 
 
+const compareEdges = ([p, v], [q, w]) =>
+      comparePoints(p, q) || comparePoints(opsF.plus(p, v), opsF.plus(q, w));
+
+
+const formatPoint = p => p.map(x => x.toFixed(5)).join(' ');
+
+
 const centeringLatticePoints = toStd => {
   const lattice = opsQ.transposed(opsQ.linearPart(toStd.oldToNew));
 
@@ -387,11 +394,34 @@ const showEmbedding = (graph, sgInfo, syms, nodeToName, options, writeInfo) => {
     const allPts = [].concat(
       ...pts.map(p => centeringShifts.map(v => opsF.mod(opsF.plus(p, v), 1))));
 
-    const p = allPts.sort(comparePoints)[0].map(x => x.toFixed(5)).join(' ');
-    writeInfo(`      Node ${nodeToName[orbit[0]]}:    ${p}`);
+    const p = allPts.sort(comparePoints)[0];
+    writeInfo(`      Node ${nodeToName[orbit[0]]}:    ${formatPoint(p)}`);
   }
 
-  // TODO print edges
+  writeInfo('   Edges:');
+
+  for (const orbit of symmetries.edgeOrbits(graph, syms)) {
+    const rawEdges = [].concat(...orbit.map(e => {
+      const [p, q] = [pos[e.head], pos[e.tail]];
+      const v = opsF.minus(opsF.plus(e.shift, q), p);
+      return [[opsF.point(p), v], [opsF.point(q), opsF.negative(v)]];
+    }));
+    const edges = rawEdges.map(([p, s]) => [
+      opsF.vector(opsF.modZ(opsF.times(toStd, p))),
+      opsF.times(toStd, s)
+    ]);
+    const allEdges = [].concat(
+      ...edges.map(([p, s]) => centeringShifts.map(v => [
+        opsF.mod(opsF.plus(p, v), 1),
+        s
+      ])));
+
+    const [p, v] = allEdges.sort(compareEdges)[0];
+    writeInfo(`      ${formatPoint(p)}  <->  ${formatPoint(opsF.plus(p, v))}`);
+  }
+
+  // TODO print edge centers
+
   // TODO print edge length statistics
   writeInfo();
 };
