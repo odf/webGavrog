@@ -353,54 +353,20 @@ const centeringLatticePoints = toStd => {
 };
 
 
-const showEmbedding = (graph, sgInfo, syms, nodeToName, options, writeInfo) => {
-  const toStd = coordinateChangeAsFloat(sgInfo.toStd);
-  const embedding = embed(graph, options.relaxPositions);
-  const gram = mapGramMatrix(toStd, embedding.gram);
-  const pos = embedding.positions;
-  const posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
-
-  // TODO correct to reduced unit cell for monoclinic and triclinic setting
-
-  if (graph.dim == 2) {
-    const [a, b, gamma] = unitCells.unitCellParameters(gram);
-    writeInfo(`   Relaxed cell parameters:`);
-    writeInfo(`       a = ${a.toFixed(5)}, b = ${b.toFixed(5)}`);
-    writeInfo(`       gamma = ${gamma.toFixed(4)}`);
-  }
-  else if (graph.dim == 3) {
-    const [a, b, c, alpha, beta, gamma] = unitCells.unitCellParameters(gram);
-    writeInfo(`   Relaxed cell parameters:`);
-    writeInfo(`       ` +
-              `a = ${a.toFixed(5)}, ` +
-              `b = ${b.toFixed(5)}, ` +
-              `c = ${c.toFixed(5)}`);
-    writeInfo(`       ` +
-              `alpha = ${alpha.toFixed(4)}, ` +
-              `beta = ${beta.toFixed(4)}, ` +
-              `gamma = ${gamma.toFixed(4)}`);
-    writeInfo(`   Cell volume: ${unitCells.unitCellVolume(gram).toFixed(5)}`);
-  }
-
-  writeInfo(`   ${posType} positions:`);
-
-  const centeringShifts = centeringLatticePoints(sgInfo.toStd)
-        .map(v => opsQ.toJS(v));
-
-  // TODO if translational freedom, shift a node to a nice place
-  for (const orbit of symmetries.nodeOrbits(graph, syms)) {
+const nodeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
+  symmetries.nodeOrbits(graph, syms).map(orbit => {
     const rawPts = orbit.map(v => opsF.point(pos[v]));
     const pts = rawPts.map(p => opsF.vector(opsF.modZ(opsF.times(toStd, p))));
     const allPts = [].concat(
       ...pts.map(p => centeringShifts.map(v => opsF.mod(opsF.plus(p, v), 1))));
 
-    const p = allPts.sort(comparePoints)[0];
-    writeInfo(`      Node ${nodeToName[orbit[0]]}:    ${formatPoint(p)}`);
-  }
+    return [allPts.sort(comparePoints)[0], orbit[0]];
+  })
+);
 
-  const ereps = [];
 
-  for (const orbit of symmetries.edgeOrbits(graph, syms)) {
+const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
+  symmetries.edgeOrbits(graph, syms).map(orbit => {
     const rawEdges = [].concat(...orbit.map(e => {
       const [p, q] = [pos[e.head], pos[e.tail]];
       const v = opsF.minus(opsF.plus(e.shift, q), p);
@@ -416,8 +382,57 @@ const showEmbedding = (graph, sgInfo, syms, nodeToName, options, writeInfo) => {
         s
       ])));
 
-    ereps.push(allEdges.sort(compareEdges)[0]);
+    return allEdges.sort(compareEdges)[0];
+  })
+);
+
+
+const showUnitCellParameters = (gram, writeInfo) => {
+  if (opsF.dimension(gram) == 2) {
+    const [a, b, gamma] = unitCells.unitCellParameters(gram);
+    writeInfo(`   Relaxed cell parameters:`);
+    writeInfo(`       a = ${a.toFixed(5)}, b = ${b.toFixed(5)}`);
+    writeInfo(`       gamma = ${gamma.toFixed(4)}`);
   }
+  else if (opsF.dimension(gram) == 3) {
+    const [a, b, c, alpha, beta, gamma] = unitCells.unitCellParameters(gram);
+    writeInfo(`   Relaxed cell parameters:`);
+    writeInfo(`       ` +
+              `a = ${a.toFixed(5)}, ` +
+              `b = ${b.toFixed(5)}, ` +
+              `c = ${c.toFixed(5)}`);
+    writeInfo(`       ` +
+              `alpha = ${alpha.toFixed(4)}, ` +
+              `beta = ${beta.toFixed(4)}, ` +
+              `gamma = ${gamma.toFixed(4)}`);
+    writeInfo(`   Cell volume: ${unitCells.unitCellVolume(gram).toFixed(5)}`);
+  }
+};
+
+
+const showEmbedding = (graph, sgInfo, syms, nodeToName, options, writeInfo) => {
+  const toStd = coordinateChangeAsFloat(sgInfo.toStd);
+  const embedding = embed(graph, options.relaxPositions);
+  const gram = mapGramMatrix(toStd, embedding.gram);
+  const pos = embedding.positions;
+  const posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
+
+  // TODO correct to reduced unit cell for monoclinic and triclinic setting
+
+  showUnitCellParameters(gram, writeInfo);
+
+  const centeringShifts = centeringLatticePoints(sgInfo.toStd)
+        .map(v => opsQ.toJS(v));
+
+  // TODO if translational freedom, shift one of the nodes to a nice place
+
+  const vreps = nodeRepresentatives(graph, syms, pos, toStd, centeringShifts);
+  const ereps = edgeRepresentatives(graph, syms, pos, toStd, centeringShifts);
+
+  writeInfo(`   ${posType} positions:`);
+
+  for (const [p, node] of vreps)
+    writeInfo(`      Node ${nodeToName[node]}:    ${formatPoint(p)}`);
 
   writeInfo('   Edges:');
   for (const [p, v] of ereps)
