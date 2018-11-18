@@ -398,7 +398,7 @@ const showEmbedding = (graph, sgInfo, syms, nodeToName, options, writeInfo) => {
     writeInfo(`      Node ${nodeToName[orbit[0]]}:    ${formatPoint(p)}`);
   }
 
-  writeInfo('   Edges:');
+  const ereps = [];
 
   for (const orbit of symmetries.edgeOrbits(graph, syms)) {
     const rawEdges = [].concat(...orbit.map(e => {
@@ -416,11 +416,16 @@ const showEmbedding = (graph, sgInfo, syms, nodeToName, options, writeInfo) => {
         s
       ])));
 
-    const [p, v] = allEdges.sort(compareEdges)[0];
-    writeInfo(`      ${formatPoint(p)}  <->  ${formatPoint(opsF.plus(p, v))}`);
+    ereps.push(allEdges.sort(compareEdges)[0]);
   }
 
-  // TODO print edge centers
+  writeInfo('   Edges:');
+  for (const [p, v] of ereps)
+    writeInfo(`      ${formatPoint(p)}  <->  ${formatPoint(opsF.plus(p, v))}`);
+
+  writeInfo('   Edge centers:');
+  for (const [p, v] of ereps)
+    writeInfo(`      ${formatPoint(opsF.plus(p, opsF.times(0.5, v)))}`);
 
   // TODO print edge length statistics
   writeInfo();
