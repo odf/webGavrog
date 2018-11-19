@@ -451,6 +451,34 @@ const showEmbedding = (
 };
 
 
+const writeCgd = (
+  name,
+  group,
+  { cellParameters, cellVolume, nodeReps, edgeReps, posType },
+  nodeNames,
+  degrees,
+  writeData
+) => {
+  writeData('CRYSTAL');
+  writeData(`  NAME ${name}`);
+  writeData(`  GROUP ${group}`);
+  writeData(`  CELL ${cellParameters.map(x => x.toFixed(5)).join(' ')}`);
+
+  for (const [p, node] of nodeReps)
+    writeData(`  NODE ${nodeNames[node]} ${degrees[node]}  ${formatPoint(p)}`);
+
+  for (const [p, v] of edgeReps)
+    writeData(`  EDGE  ${formatPoint(p)}   ${formatPoint(opsF.plus(p, v))}`);
+
+  for (const [p, v] of edgeReps) {
+    const c = formatPoint(opsF.plus(p, opsF.times(0.5, v)));
+    writeData(`# EDGE_CENTER  ${c}`);
+  }
+
+  writeData('END');
+};
+
+
 const processDisconnectedGraph = (
   input,
   options,
@@ -536,9 +564,18 @@ const processGraph = (
     archives.find(arc => arc.name == '__internal__').addNet(G, name, key);
   }
 
-  if (options.outputEmbedding) {
-    const data = embeddingData(G, sgInfo, syms, options);
+  const data = embeddingData(G, sgInfo, syms, options);
+
+  if (options.outputEmbedding)
     showEmbedding(data, nodeToName, writeInfo);
+
+  if (options.outputCgd) {
+    const adj = periodic.adjacencies(G);
+    const degrees = {};
+    for (const v of periodic.vertices(G))
+      degrees[v] = adj[v].length;
+
+    writeCgd(name, group, data, nodeToName, degrees, writeData);
   }
 });
 
