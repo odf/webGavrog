@@ -1,5 +1,5 @@
-import * as lattices from '../geometry/lattices';
-import { pointsF }    from '../geometry/types';
+import { lattices } from '../geometry/lattices';
+import { pointsF }  from '../geometry/types';
 
 const ops = pointsF;
 
@@ -101,15 +101,19 @@ const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x, y]), xs);
 
 
 const fromPointCloud = (rawPoints, explicitEdges, dot) => {
+  const eps = Math.pow(2, -40);
+  const { dirichletVectors, shiftIntoDirichletDomain } =
+        lattices(ops, eps, dot);
+
   const basis  = ops.identityMatrix(ops.dimension(rawPoints[0].pos));
-  const dvs    = lattices.dirichletVectors(basis, dot);
+  const dvs    = dirichletVectors(basis);
   const dvs2   = ops.times(2, dvs);
   const origin = ops.times(0, dvs[0]);
 
   const points = cartesian(rawPoints, [origin].concat(dvs))
     .map(([{ id, pos, degree }, shift], i) => {
       const p = ops.plus(pos, shift);
-      const s = lattices.shiftIntoDirichletDomain(ops.vector(p), dvs2, dot);
+      const s = shiftIntoDirichletDomain(ops.vector(p), dvs2);
       return {
         id: i,
         pos: ops.plus(p, s),

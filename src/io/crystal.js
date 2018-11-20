@@ -1,5 +1,5 @@
 import * as spacegroups from '../geometry/spacegroups';
-import * as lattices from '../geometry/lattices';
+import { lattices } from '../geometry/lattices';
 import * as sgtable from '../geometry/sgtable';
 import * as unitCells from '../geometry/unitCells';
 import * as pg from '../pgraphs/periodic';
@@ -119,7 +119,10 @@ const pointsAreCloseModZ = (gram, maxDist) => {
   const n = gram.length;
   const limit = maxDist * maxDist;
   const dot = dotProduct(gram);
-  const vecs = lattices.dirichletVectors(opsF.identityMatrix(n), dot);
+  const eps = Math.pow(2, -40);
+  const { dirichletVectors } = lattices(opsF, eps, dot);
+
+  const vecs = dirichletVectors(opsF.identityMatrix(n));
 
   return (p, q) => {
     _timers && _timers.start("pointsAreCloseModZ");
