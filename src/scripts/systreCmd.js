@@ -382,9 +382,24 @@ const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
         s
       ])));
 
-    return allEdges.sort(compareEdges)[0];
+    return allEdges.sort(compareEdges)[0].concat(orbit.length);
   })
 );
+
+
+const edgeStatistics = (ereps, gram) => {
+  const len = v => opsF.sqrt(opsF.times(v, opsF.times(v, gram)));
+  const sum = v => v.reduce((x, y) => x + y);
+
+  const lengths = ereps.map(([_, v, wgt]) => len(v));
+  const weights = ereps.map(([_, v, wgt]) => wgt);
+
+  const minimum = Math.min(...lengths);
+  const maximum = Math.max(...lengths);
+  const average = opsF.times(lengths, weights) / sum(weights)
+
+  return { minimum, maximum, average };
+};
 
 
 const embeddingData = (graph, sgInfo, syms, options) => {
@@ -404,12 +419,16 @@ const embeddingData = (graph, sgInfo, syms, options) => {
   const nodeReps = nodeRepresentatives(graph, syms, pos, toStd, centering);
   const edgeReps = edgeRepresentatives(graph, syms, pos, toStd, centering);
 
-  return { cellParameters, cellVolume, nodeReps, edgeReps, posType };
+  const edgeStats = edgeStatistics(edgeReps, gram);
+
+  return {
+    cellParameters, cellVolume, nodeReps, edgeReps, edgeStats, posType
+  };
 };
 
 
 const showEmbedding = (
-  { cellParameters, cellVolume, nodeReps, edgeReps, posType },
+  { cellParameters, cellVolume, nodeReps, edgeReps, edgeStats, posType },
   nodeToName,
   writeInfo
 ) => {
@@ -446,8 +465,18 @@ const showEmbedding = (
   for (const [p, v] of edgeReps)
     writeInfo(`      ${formatPoint(opsF.plus(p, opsF.times(0.5, v)))}`);
 
-  // TODO print edge length statistics
   writeInfo();
+
+  const { minimum, maximum, average } = edgeStats;
+  writeInfo('   Edge statistics: ' +
+            `minimum = ${minimum.toFixed(5)}, ` +
+            `maximum = ${maximum.toFixed(5)}, ` +
+            `average = ${average.toFixed(5)}`);
+
+  writeInfo();
+
+  //TODO print angle statistics
+  //TODO print shortest non-bonded distance
 };
 
 
