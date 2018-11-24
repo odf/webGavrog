@@ -140,9 +140,7 @@ const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
 );
 
 
-const edgeStatistics = (ereps, gram) => {
-  const dot = dotProduct(gram);
-
+const edgeStatistics = (ereps, dot) => {
   const lengths = ereps.map(([_, v, wgt]) => opsF.sqrt(dot(v, v)));
   const weights = ereps.map(([_, v, wgt]) => wgt);
 
@@ -154,8 +152,7 @@ const edgeStatistics = (ereps, gram) => {
 };
 
 
-const angleStatistics = (graph, syms, pos, toStd, gram) => {
-  const dot = dotProduct(gram);
+const angleStatistics = (graph, syms, pos, toStd, dot) => {
   const adj = periodic.adjacencies(graph);
   const angles = [];
 
@@ -186,8 +183,7 @@ const angleStatistics = (graph, syms, pos, toStd, gram) => {
 };
 
 
-const shortestNonEdge = (graph, syms, pos, toStd, gram) => {
-  const dot = dotProduct(gram);
+const shortestNonEdge = (graph, pos, toStd, dot) => {
   const adj = periodic.adjacencies(graph);
 
   const nodes = periodic.vertices(graph).map(v => ({
@@ -226,6 +222,7 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
 
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
   const gram = mapGramMatrix(toStd, embedding.gram);
+  const dot = dotProduct(gram);
   const cellParameters = unitCells.unitCellParameters(gram);
   const cellVolume = unitCells.unitCellVolume(gram);
 
@@ -237,10 +234,10 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
   const nodeReps = nodeRepresentatives(graph, syms, pos, toStd, centering);
   const edgeReps = edgeRepresentatives(graph, syms, pos, toStd, centering);
 
-  const edgeStats = edgeStatistics(edgeReps, gram);
-  const angleStats = angleStatistics(graph, syms, pos, toStd, gram);
+  const edgeStats = edgeStatistics(edgeReps, dot);
+  const angleStats = angleStatistics(graph, syms, pos, toStd, dot);
 
-  const shortestSeparation = shortestNonEdge(graph, syms, pos, toStd, gram);
+  const shortestSeparation = shortestNonEdge(graph, pos, toStd, dot);
 
   return {
     cellParameters,
