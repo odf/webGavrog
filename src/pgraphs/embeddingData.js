@@ -140,19 +140,25 @@ const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
 );
 
 
-const edgeStatistics = (ereps, dot) => {
-  const lengths = ereps.map(([_, v, wgt]) => opsF.sqrt(dot(v, v)));
-  const weights = ereps.map(([_, v, wgt]) => wgt);
+const edgeStatistics = (graph, pos, dot) => {
+  const lengths = [];
+
+  for (const e of graph.edges) {
+    const p = pos[e.head];
+    const q = pos[e.tail];
+    const d = opsF.minus(opsF.plus(e.shift, q), p);
+    lengths.push(opsF.sqrt(dot(d, d)));
+  }
 
   const minimum = Math.min(...lengths);
   const maximum = Math.max(...lengths);
-  const average = opsF.times(lengths, weights) / sum(weights)
+  const average = sum(lengths) / lengths.length;
 
   return { minimum, maximum, average };
 };
 
 
-const angleStatistics = (graph, syms, pos, toStd, dot) => {
+const angleStatistics = (graph, pos, dot) => {
   const adj = periodic.adjacencies(graph);
   const angles = [];
 
@@ -162,12 +168,12 @@ const angleStatistics = (graph, syms, pos, toStd, dot) => {
 
     for (let i = 0; i < neighbors.length - 1; ++i) {
       const { tail: u, shift: su } = neighbors[i];
-      const du = opsF.times(toStd, opsF.minus(opsF.plus(su, pos[u]), pv));
+      const du = opsF.minus(opsF.plus(su, pos[u]), pv);
       const lu = opsF.sqrt(dot(du, du));
 
       for (let j = i + 1; j < neighbors.length; ++j) {
         const { tail: w, shift: sw } = neighbors[j];
-        const dw = opsF.times(toStd, opsF.minus(opsF.plus(sw, pos[w]), pv));
+        const dw = opsF.minus(opsF.plus(sw, pos[w]), pv);
         const lw = opsF.sqrt(dot(dw, dw));
 
         angles.push(Math.acos(dot(du, dw) / (lu * lw)) / Math.PI * 180.0);
@@ -183,12 +189,12 @@ const angleStatistics = (graph, syms, pos, toStd, dot) => {
 };
 
 
-const shortestNonEdge = (graph, pos, toStd, dot) => {
+const shortestNonEdge = (graph, pos, dot) => {
   const adj = periodic.adjacencies(graph);
 
   const nodes = periodic.vertices(graph).map(v => ({
     id: v,
-    pos: opsF.times(toStd, opsF.point(pos[v])),
+    pos: opsF.point(pos[v]),
     degree: adj[v].length + 1
   }));
 
@@ -196,7 +202,7 @@ const shortestNonEdge = (graph, pos, toStd, dot) => {
   for (const e of graph.edges) {
     const p = pos[e.head];
     const q = pos[e.tail];
-    const v = opsF.times(toStd, opsF.minus(opsF.plus(e.shift, q), p));
+    const v = opsF.minus(opsF.plus(e.shift, q), p);
     seen[encode([e.head, v])] = true;
     seen[encode([e.tail, opsF.negative(v)])] = true;
   }
@@ -207,7 +213,7 @@ const shortestNonEdge = (graph, pos, toStd, dot) => {
   for (const [head, tail, shift] of closest) {
     const p = pos[head];
     const q = pos[tail];
-    const v = opsF.times(toStd, opsF.minus(opsF.plus(shift, q), p));
+    const v = opsF.minus(opsF.plus(shift, q), p);
     if (!seen[encode([head, v])])
       extra.push(opsF.sqrt(dot(v, v)));
   }
@@ -221,10 +227,9 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
   const embedding = embed(graph, options.relaxPositions);
 
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
-  const gram = mapGramMatrix(toStd, embedding.gram);
-  const dot = dotProduct(gram);
-  const cellParameters = unitCells.unitCellParameters(gram);
-  const cellVolume = unitCells.unitCellVolume(gram);
+  const stdGram = mapGramMatrix(toStd, embedding.gram);
+  const cellParameters = unitCells.unitCellParameters(stdGram);
+  const cellVolume = unitCells.unitCellVolume(stdGram);
 
   // TODO if translational freedom, shift one of the nodes to a nice place
   const pos = embedding.positions;
@@ -234,10 +239,10 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
   const nodeReps = nodeRepresentatives(graph, syms, pos, toStd, centering);
   const edgeReps = edgeRepresentatives(graph, syms, pos, toStd, centering);
 
-  const edgeStats = edgeStatistics(edgeReps, dot);
-  const angleStats = angleStatistics(graph, syms, pos, toStd, dot);
-
-  const shortestSeparation = shortestNonEdge(graph, pos, toStd, dot);
+  const dot = dotProduct(embedding.gram);
+  const edgeStats = edgeStatistics(graph, pos, dot);
+  const angleStats = angleStatistics(graph, pos, dot);
+  const shortestSeparation = shortestNonEdge(graph, pos, dot);
 
   return {
     cellParameters,
