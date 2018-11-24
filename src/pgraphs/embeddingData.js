@@ -1,9 +1,10 @@
 import * as pickler from '../common/pickler';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
-import embed from '../pgraphs/embedding';
 import * as unitCells from '../geometry/unitCells';
 
+import embed from '../pgraphs/embedding';
+import fromPointCloud from '../pgraphs/fromPointCloud';
 
 import {
   coordinateChangesQ,
@@ -16,6 +17,18 @@ const opsF = coordinateChangesF;
 
 const encode = pickler.serialize;
 const decode = pickler.deserialize;
+
+
+const sum = v => v.reduce((x, y) => x + y);
+
+
+const dotProduct = gram => (v, w) => {
+  let s = 0;
+  for (const i in v)
+    for (const j in w)
+      s += v[i] * gram[i][j] * w[j];
+  return s;
+};
 
 
 const coordinateChangeAsFloat = cc => {
@@ -128,10 +141,9 @@ const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
 
 
 const edgeStatistics = (ereps, gram) => {
-  const len = v => opsF.sqrt(opsF.times(v, opsF.times(v, gram)));
-  const sum = v => v.reduce((x, y) => x + y);
+  const dot = dotProduct(gram);
 
-  const lengths = ereps.map(([_, v, wgt]) => len(v));
+  const lengths = ereps.map(([_, v, wgt]) => opsF.sqrt(dot(v, v)));
   const weights = ereps.map(([_, v, wgt]) => wgt);
 
   const minimum = Math.min(...lengths);
@@ -143,7 +155,7 @@ const edgeStatistics = (ereps, gram) => {
 
 
 const angleStatistics = (graph, syms, pos, toStd, gram) => {
-  const dot = (u, v) => opsF.times(u, opsF.times(v, gram));
+  const dot = dotProduct(gram);
   const adj = periodic.adjacencies(graph);
   const angles = [];
 
@@ -168,7 +180,7 @@ const angleStatistics = (graph, syms, pos, toStd, gram) => {
 
   const minimum = Math.min(...angles);
   const maximum = Math.max(...angles);
-  const average = angles.reduce((a, b) => a + b) / angles.length;
+  const average = sum(angles) / angles.length;
 
   return { minimum, maximum, average };
 };
