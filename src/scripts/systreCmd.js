@@ -402,6 +402,38 @@ const edgeStatistics = (ereps, gram) => {
 };
 
 
+const angleStatistics = (graph, syms, pos, toStd, gram) => {
+  const dot = (u, v) => opsF.times(u, opsF.times(v, gram));
+  const adj = periodic.adjacencies(graph);
+  const angles = [];
+
+  for (const v of periodic.vertices(graph)) {
+    const neighbors = periodic.allIncidences(graph, v, adj);
+    const pv = pos[v];
+
+    for (let i = 0; i < neighbors.length - 1; ++i) {
+      const { tail: u, shift: su } = neighbors[i];
+      const du = opsF.times(toStd, opsF.minus(opsF.plus(su, pos[u]), pv));
+      const lu = opsF.sqrt(dot(du, du));
+
+      for (let j = i + 1; j < neighbors.length; ++j) {
+        const { tail: w, shift: sw } = neighbors[j];
+        const dw = opsF.times(toStd, opsF.minus(opsF.plus(sw, pos[w]), pv));
+        const lw = opsF.sqrt(dot(dw, dw));
+
+        angles.push(Math.acos(dot(du, dw) / (lu * lw)) / Math.PI * 180.0);
+      }
+    }
+  }
+
+  const minimum = Math.min(...angles);
+  const maximum = Math.max(...angles);
+  const average = angles.reduce((a, b) => a + b) / angles.length;
+
+  return { minimum, maximum, average };
+};
+
+
 const embeddingData = (graph, sgInfo, syms, options) => {
   const toStd = coordinateChangeAsFloat(sgInfo.toStd);
   const embedding = embed(graph, options.relaxPositions);
@@ -420,15 +452,30 @@ const embeddingData = (graph, sgInfo, syms, options) => {
   const edgeReps = edgeRepresentatives(graph, syms, pos, toStd, centering);
 
   const edgeStats = edgeStatistics(edgeReps, gram);
+  const angleStats = angleStatistics(graph, syms, pos, toStd, gram);
 
   return {
-    cellParameters, cellVolume, nodeReps, edgeReps, edgeStats, posType
+    cellParameters,
+    cellVolume,
+    nodeReps,
+    edgeReps,
+    edgeStats,
+    angleStats,
+    posType
   };
 };
 
 
 const showEmbedding = (
-  { cellParameters, cellVolume, nodeReps, edgeReps, edgeStats, posType },
+  {
+    cellParameters,
+    cellVolume,
+    nodeReps,
+    edgeReps,
+    edgeStats,
+    angleStats,
+    posType
+  },
   nodeToName,
   writeInfo
 ) => {
@@ -467,15 +514,20 @@ const showEmbedding = (
 
   writeInfo();
 
-  const { minimum, maximum, average } = edgeStats;
+  const { minimum: emin, maximum: emax, average: eavg } = edgeStats;
   writeInfo('   Edge statistics: ' +
-            `minimum = ${minimum.toFixed(5)}, ` +
-            `maximum = ${maximum.toFixed(5)}, ` +
-            `average = ${average.toFixed(5)}`);
+            `minimum = ${emin.toFixed(5)}, ` +
+            `maximum = ${emax.toFixed(5)}, ` +
+            `average = ${eavg.toFixed(5)}`);
+
+  const { minimum: amin, maximum: amax, average: aavg } = angleStats;
+  writeInfo('   Angle statistics: ' +
+            `minimum = ${amin.toFixed(5)}, ` +
+            `maximum = ${amax.toFixed(5)}, ` +
+            `average = ${aavg.toFixed(5)}`);
 
   writeInfo();
 
-  //TODO print angle statistics
   //TODO print shortest non-bonded distance
 };
 
