@@ -186,6 +186,40 @@ const angleStatistics = (graph, syms, pos, toStd, gram) => {
 };
 
 
+const shortestNonEdge = (graph, syms, pos, toStd, gram) => {
+  const dot = dotProduct(gram);
+  const adj = periodic.adjacencies(graph);
+
+  const nodes = periodic.vertices(graph).map(v => ({
+    id: v,
+    pos: opsF.times(toStd, opsF.point(pos[v])),
+    degree: adj[v].length + 1
+  }));
+
+  const seen = {};
+  for (const e of graph.edges) {
+    const p = pos[e.head];
+    const q = pos[e.tail];
+    const v = opsF.times(toStd, opsF.minus(opsF.plus(e.shift, q), p));
+    seen[encode([e.head, v])] = true;
+    seen[encode([e.tail, opsF.negative(v)])] = true;
+  }
+
+  const closest = fromPointCloud(nodes, [], dot);
+
+  const extra = [];
+  for (const [head, tail, shift] of closest) {
+    const p = pos[head];
+    const q = pos[tail];
+    const v = opsF.times(toStd, opsF.minus(opsF.plus(shift, q), p));
+    if (!seen[encode([head, v])])
+      extra.push(opsF.sqrt(dot(v, v)));
+  }
+
+  return Math.min(...extra);
+};
+
+
 export const embeddingData = (graph, sgInfo, syms, options) => {
   const toStd = coordinateChangeAsFloat(sgInfo.toStd);
   const embedding = embed(graph, options.relaxPositions);
@@ -206,6 +240,8 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
   const edgeStats = edgeStatistics(edgeReps, gram);
   const angleStats = angleStatistics(graph, syms, pos, toStd, gram);
 
+  const shortestSeparation = shortestNonEdge(graph, syms, pos, toStd, gram);
+
   return {
     cellParameters,
     cellVolume,
@@ -213,6 +249,7 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
     edgeReps,
     edgeStats,
     angleStats,
-    posType
+    posType,
+    shortestSeparation
   };
 };

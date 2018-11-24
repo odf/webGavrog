@@ -280,7 +280,8 @@ const showEmbedding = (
     edgeReps,
     edgeStats,
     angleStats,
-    posType
+    posType,
+    shortestSeparation
   },
   nodeToName,
   writeInfo
@@ -332,9 +333,10 @@ const showEmbedding = (
             `maximum = ${amax.toFixed(5)}, ` +
             `average = ${aavg.toFixed(5)}`);
 
-  writeInfo();
+  const d = shortestSeparation;
+  writeInfo(`   Shortest non-bonded distance = ${d.toFixed(5)}`);
 
-  //TODO print shortest non-bonded distance
+  writeInfo();
 };
 
 
