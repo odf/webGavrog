@@ -306,7 +306,8 @@ const embed = (g, relax=true) => {
   const positions = pg.barycentricPlacement(g);
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
-  const angleOrbits = symmetries.angleOrbits(g, syms);
+  const angleOrbits = symmetries.angleOrbits(g, syms)
+        .map(orb => orb.map(([e, _]) => e));
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = _coordinateParametrization(g, syms);
   for (const v in posSpace) {

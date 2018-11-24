@@ -462,17 +462,18 @@ export const angleOrbits = (graph, syms, adj=pg.adjacencies(graph)) => {
     {
       const s = ops.minus(sw, su);
       const c = ops.plus(s, ops.minus(pos[w], pos[u]));
-      const ka = encode(pg.makeEdge(u, w, s).canonical());
+      const ka = encode([pg.makeEdge(u, w, s).canonical(), v]);
 
       if (!seen[ka]) {
         seen[ka] = true;
 
         for (const { src2img, transform } of syms) {
           const ux = src2img[u];
+          const vx = src2img[v];
           const wx = src2img[w];
           const d = ops.minus(pos[wx], pos[ux]);
           const sx = ops.minus(ops.times(c, transform), d);
-          const kb = encode(pg.makeEdge(ux, wx, sx).canonical());
+          const kb = encode([pg.makeEdge(ux, wx, sx).canonical(), vx]);
 
           seen[kb] = true;
           p.union(ka, kb);
