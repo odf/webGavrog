@@ -1,5 +1,6 @@
 import * as pg from './periodic';
 import * as symmetries from './symmetries';
+import * as stats from './statistics';
 import * as sg from '../geometry/spacegroups';
 import * as unitCells from '../geometry/unitCells';
 import amoeba from '../algorithms/amoeba';
@@ -240,6 +241,15 @@ const determinant = M => {
 };
 
 
+const dotProduct = gram => (v, w) => {
+  let s = 0;
+  for (const i in v)
+    for (const j in w)
+      s += v[i] * gram[i][j] * w[j];
+  return s;
+};
+
+
 const _energyEvaluator = (
   positionSpace,
   gramSpace,
@@ -302,6 +312,21 @@ const _energyEvaluator = (
 const id = dim => opsR.identityMatrix(dim);
 
 
+const embedStep = (
+  params, passNr, posSpace, gramSpace, edgeOrbits, angleOrbits
+) => {
+  const volumeWeight = Math.pow(10, -passNr);
+  const penaltyWeight = passNr == 2 ? 1 : 0;
+
+  const energy = _energyEvaluator(
+    posSpace, gramSpace, edgeOrbits, angleOrbits, volumeWeight, penaltyWeight);
+
+  const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
+
+  return result.position;
+};
+
+
 const embed = (g, relax=true) => {
   const positions = pg.barycentricPlacement(g);
   const syms = symmetries.symmetries(g).symmetries;
@@ -334,23 +359,28 @@ const embed = (g, relax=true) => {
   let params = startParams;
 
   if (relax) {
-    for (let pass = 0; pass < 3; ++pass) {
-      const volumeWeight = Math.pow(10, -pass);
-      const penaltyWeight = pass == 2 ? 1 : 0;
+    for (let pass = 0; pass < 5; ++pass) {
+      const newParams = embedStep(
+        params, pass, posSpace, gramSpaceF, edgeOrbits, angleOrbits);
+      const { positions, gram } = _configurationFromParameters(
+        g, newParams, gramSpaceF, posSpace);
 
-      const energy = _energyEvaluator(
-        posSpace, gramSpaceF,
-        edgeOrbits, angleOrbits,
-        volumeWeight, penaltyWeight);
+      const dot = dotProduct(gram);
+      const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
+      const separation = stats.shortestNonEdge(g, positions, dot);
 
-      const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
-      params = result.position;
+      const good = separation >= maximum;
+      const done = (maximum - minimum) < 1.0e-5;
+
+      if (good)
+        params = newParams;
+
+      if (done || !good)
+        break;
     }
   }
 
-  const result = _configurationFromParameters(g, params, gramSpaceF, posSpace);
-
-  return result;
+  return _configurationFromParameters(g, params, gramSpaceF, posSpace);
 };
 
 
