@@ -183,12 +183,18 @@ const baseShifts = dim => dim == 3 ?
 
 
 const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
+  yield log('Normalizing shifts...');
   const graph = periodic.graphWithNormalizedShifts(structure.graph);
 
-  const embedding = embed(graph, !options.skipRelaxation);
+  yield log('Computing an embedding...');
+  const embedding = yield runJob({
+    cmd: 'embedding',
+    val: { graph, relax: !options.skipRelaxation }
+  });
   const basis = unitCells.invariantBasis(embedding.gram);
   const pos = embedding.positions;
 
+  yield log('Constructing an abstract final subnet...');
   const nodeIndex = {};
   const points = [];
   const edges = [];
@@ -208,6 +214,7 @@ const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
     }
   }
 
+  yield log('Making the net geometry...');
   return ballAndStick(points, edges);
 });
 
