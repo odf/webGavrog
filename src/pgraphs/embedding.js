@@ -254,9 +254,7 @@ const _energyEvaluator = (
   positionSpace,
   gramSpace,
   edgeOrbits,
-  angleOrbits,
   volumeWeight,
-  penaltyWeight,
   fixedPositions=null
 ) => {
   return params => {
@@ -268,12 +266,11 @@ const _energyEvaluator = (
     const edgeLength = _edgeLength(
       positionParams, positionSpace, gram, fixedPositions);
 
-    const weightedLengths = edgeOrbits.concat(angleOrbits).map(orb => ({
+    const weightedEdgeLengths = edgeOrbits.map(orb => ({
       length: edgeLength(orb[0]),
       weight: orb.length
     }));
 
-    const weightedEdgeLengths = weightedLengths.slice(0, edgeOrbits.length);
     const edgeWeightSum = sum(weightedEdgeLengths.map(({ weight }) => weight));
 
     const avgEdgeLength = 1.0 / edgeWeightSum * sum(
@@ -287,24 +284,12 @@ const _energyEvaluator = (
       return t * t * weight / edgeWeightSum;
     }));
 
-    const penalty = sum(weightedLengths.map(({ length, weight }) => {
-      const scaledLength = length * scaling;
-      if (scaledLength < 0.5) {
-        const x = Math.max(scaledLength, 1e-12);
-        return Math.exp(Math.tan((0.25 - x) * 2.0 * Math.PI)) * weight;
-      }
-      else
-        return 0.0;
-    }));
-
     const cellVolumePerNode = opsF.sqrt(determinant(gram)) *
       Math.pow(scaling, gram.length) / Object.keys(positionSpace).length;
 
     const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
 
-    return (edgeVariance +
-            volumeWeight * volumePenalty +
-            penaltyWeight * penalty);
+    return edgeVariance + volumeWeight * volumePenalty;
   };
 };
 
@@ -312,14 +297,9 @@ const _energyEvaluator = (
 const id = dim => opsR.identityMatrix(dim);
 
 
-const embedStep = (
-  params, passNr, posSpace, gramSpace, edgeOrbits, angleOrbits
-) => {
-  const volumeWeight = Math.pow(10, -passNr);
-  const penaltyWeight = passNr == 2 ? 1 : 0;
-
-  const energy = _energyEvaluator(
-    posSpace, gramSpace, edgeOrbits, angleOrbits, volumeWeight, penaltyWeight);
+const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
+  const volWeight = Math.pow(10, -passNr);
+  const energy = _energyEvaluator(posSpace, gramSpace, edgeOrbits, volWeight);
 
   const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
 
@@ -331,7 +311,6 @@ const embed = (g, relax=true) => {
   const positions = pg.barycentricPlacement(g);
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
-  const angleOrbits = symmetries.angleOrbits(g, syms);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = _coordinateParametrization(g, syms);
   for (const v in posSpace) {
@@ -361,7 +340,7 @@ const embed = (g, relax=true) => {
   if (relax) {
     for (let pass = 0; pass < 5; ++pass) {
       const newParams = embedStep(
-        params, pass, posSpace, gramSpaceF, edgeOrbits, angleOrbits);
+        params, pass, posSpace, gramSpaceF, edgeOrbits);
       const { positions, gram } = _configurationFromParameters(
         g, newParams, gramSpaceF, posSpace);
 
