@@ -57,7 +57,7 @@ const geometry = (vertsIn, faces, isWireframe=false) => {
 };
 
 
-const stick = (p, q, radius, segments) => {
+const makeStick = (p, q, radius, segments) => {
   const normalized = v => ops.div(v, ops.norm(v));
 
   if (p.length == 2) {
@@ -118,9 +118,11 @@ const ballAndStick = (
   ballColor={ hue: 0.14, saturation: 0.7, lightness: 0.7 },
   stickColor={ hue: 0.67, saturation: 0.3, lightness: 0.4 }
 ) => {
+  const normalized = v => ops.div(v, ops.norm(v));
   const ball = makeBall(ballRadius);
+  const stick = makeStick([0, 0, 0], [0, 0, 1], stickRadius, 12);
 
-  const meshes = [ ball ];
+  const meshes = [ ball, stick ];
   const instances = [];
 
   const ballMaterial = Object.assign({}, baseMaterial, {
@@ -145,17 +147,23 @@ const ballAndStick = (
   });
 
   edges.forEach(e => {
-    const u = positions[e[0]];
-    const v = positions[e[1]];
+    const p = positions[e[0]];
+    const q = positions[e[1]];
 
-    meshes.push(stick(u, v, stickRadius, 12));
+    const w = ops.minus(q, p);
+    const d = normalized(w);
+    const ex = [1,0,0];
+    const ey = [0,1,0];
+    const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
+    const u = normalized(ops.crossProduct(d, t));
+    const v = normalized(ops.crossProduct(d, u));
 
     instances.push({
-      meshIndex: meshes.length - 1,
+      meshIndex: 1,
       material: stickMaterial,
       transform: {
-        basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
-        shift: [ 0, 0, 0 ]
+        basis: [ u, v, w ],
+        shift: [ p[0], p[1], p[2] || 0 ]
       }
     })
   });
@@ -380,7 +388,7 @@ const makeScene = (structure, options, runJob, log) => csp.go(function*() {
 
   const model = yield builder(structure, options, runJob, log);
 
-  log('Scene complete!');
+  log('');
   return model;
 });
 
