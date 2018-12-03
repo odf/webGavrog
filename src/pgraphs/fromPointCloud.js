@@ -4,15 +4,15 @@ import { pointsF }  from '../geometry/types';
 const ops = pointsF;
 
 
-const norm     = (v, dot)    => ops.sqrt(dot(v, v));
+const norm = (v, dot) => dot(v, v);
 const distance = (p, q, dot) => norm(ops.minus(p, q), dot);
-const sortBy   = (a, key)    => a.sort((x, y) => ops.cmp(x[key], y[key]));
+const sortByDist = (a, key) => a.sort((x, y) => x.dist - y.dist);
 
 const withDistances = (pos, points, dot) =>
   points.map(p => ({point: p, dist: distance(pos, p.pos, dot) }));
 
 const withClosestDistances = (pos, points, dot, limit) =>
-  sortBy(withDistances(pos, points, dot), 'dist').slice(0, limit);
+  sortByDist(withDistances(pos, points, dot)).slice(0, limit);
 
 const withRelevantDistances = (p, points, dot) =>
   withClosestDistances(p.pos, points, dot, p.degree+1)
@@ -23,7 +23,7 @@ const withRelevantDistances = (p, points, dot) =>
 const allDistances = (points, nrSeeds, dot) => {
   const tmp = points.slice(0, nrSeeds)
         .map(p => withRelevantDistances(p, points, dot));
-  return sortBy([].concat(...tmp), 'dist');
+  return sortByDist([].concat(...tmp));
 };
 
 const induceEdges = (points, nrSeeds, graph, dot = ops.times) => {
