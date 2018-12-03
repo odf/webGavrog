@@ -8,15 +8,12 @@ const norm = (v, dot) => dot(v, v);
 const distance = (p, q, dot) => norm(ops.minus(p, q), dot);
 const sortByDist = (a, key) => a.sort((x, y) => x.dist - y.dist);
 
-const withDistances = (pos, points, dot) =>
-  points.map(p => ({point: p, dist: distance(pos, p.pos, dot) }));
-
-const withClosestDistances = (pos, points, dot, limit) =>
-  sortByDist(withDistances(pos, points, dot)).slice(0, limit);
-
 const withRelevantDistances = (p, points, dot) => (
-  withClosestDistances(p.pos, points.filter(q => q.id > p.id), dot, p.degree)
-    .map(q => ({ base: p, neighbor: q.point, dist: q.dist }))
+  points
+    .filter(q => q.id > p.id)
+    .map(q => ({ base: p, neighbor: q, dist: distance(p.pos, q.pos, dot) }))
+    .sort((x, y) => x.dist - y.dist)
+    .slice(0, p.degree)
 );
 
 const allDistances = (points, nrSeeds, dot) => {
