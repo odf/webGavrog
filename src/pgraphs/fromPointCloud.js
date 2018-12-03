@@ -14,11 +14,10 @@ const withDistances = (pos, points, dot) =>
 const withClosestDistances = (pos, points, dot, limit) =>
   sortByDist(withDistances(pos, points, dot)).slice(0, limit);
 
-const withRelevantDistances = (p, points, dot) =>
-  withClosestDistances(p.pos, points, dot, p.degree+1)
-  .filter(q => q.point.id != p.id)
-  .slice(0, p.degree)
-  .map(q => ({ base: p, neighbor: q.point, dist: q.dist }));
+const withRelevantDistances = (p, points, dot) => (
+  withClosestDistances(p.pos, points.filter(q => q.id > p.id), dot, p.degree)
+    .map(q => ({ base: p, neighbor: q.point, dist: q.dist }))
+);
 
 const allDistances = (points, nrSeeds, dot) => {
   const tmp = points.slice(0, nrSeeds)
