@@ -20,16 +20,18 @@ const withRelevantDistances = (p, points, dot) =>
   .slice(0, p.degree)
   .map(q => ({ base: p, neighbor: q.point, dist: q.dist }));
 
-const allDistances = (points, dot) => {
-  const tmp = points.map(p => withRelevantDistances(p, points, dot));
+const allDistances = (points, nrSeeds, dot) => {
+  const tmp = points.slice(0, nrSeeds)
+        .map(p => withRelevantDistances(p, points, dot));
   return sortBy([].concat(...tmp), 'dist');
 };
 
-const induceEdges = (points, graph, dot = ops.times) => {
-  allDistances(points, dot).forEach(({ base: p, neighbor: q, dist: d }) => {
-    if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
-      graph.addEdge(p, q);
-  });
+const induceEdges = (points, nrSeeds, graph, dot = ops.times) => {
+  allDistances(points, nrSeeds, dot).forEach(
+    ({ base: p, neighbor: q, dist: d }) => {
+      if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
+        graph.addEdge(p, q);
+    });
 };
 
 
@@ -110,8 +112,8 @@ const fromPointCloud = (rawPoints, explicitEdges, dot) => {
   const dvs2   = ops.times(2, dvs);
   const origin = ops.times(0, dvs[0]);
 
-  const points = cartesian(rawPoints, [origin].concat(dvs))
-    .map(([{ id, pos, degree }, shift], i) => {
+  const points = cartesian([origin].concat(dvs), rawPoints).map(
+    ([shift, { id, pos, degree }], i) => {
       const p = ops.plus(pos, shift);
       const s = shiftIntoDirichletDomain(ops.vector(p), dvs2);
       return {
@@ -126,7 +128,7 @@ const fromPointCloud = (rawPoints, explicitEdges, dot) => {
 
   const G = pgraph();
   explicitEdges.forEach(G.addPlainEdge);
-  induceEdges(points, G, dot);
+  induceEdges(points, rawPoints.length, G, dot);
   return G.edges();
 };
 
