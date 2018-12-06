@@ -383,11 +383,32 @@ const processDisconnectedGraph = (
 
   showGraphBasics(graph, group, writeInfo);
 
-  writeInfo("   Structure is not connected.");
-  writeInfo("   Processing components separately.");
+  writeInfo('   Structure is not connected.');
+  writeInfo('   Processing components separately.');
   writeInfo();
+  writeInfo('   ==========');
 
-  // TODO implement this
+  const components = periodic.connectedComponents(graph);
+  for (let i = 1; i <= components.length; ++i) {
+    const comp = components[i - 1];
+    writeInfo(`   Processing component ${i}`);
+
+    if (comp.graph.dim < graph.dim)
+      writeInfo(`      dimension = ${comp.graph.dim}`);
+    else
+      writeInfo(`      multiplicity = ${comp.multiplicity}`);
+
+    yield processGraph({ graph: comp.graph, name: `${name}_component_${i}` },
+                       options,
+                       archives=archives,
+                       writeInfo=writeInfo,
+                       writeData=writeData);
+
+    writeInfo();
+    writeInfo(`   Finished component ${i}`);
+    writeInfo();
+    writeInfo(`   ==========`);
+  }
 });
 
 
