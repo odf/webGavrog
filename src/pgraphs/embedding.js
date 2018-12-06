@@ -192,7 +192,11 @@ const _configurationFromParameters = (
   const lengths = graph.edges.map(edgeLength);
   const avgEdgeLength = sum(lengths) / lengths.length;
 
-  return { gram: opsF.div(gram, avgEdgeLength * avgEdgeLength), positions };
+  return {
+    gram: opsF.div(gram, avgEdgeLength * avgEdgeLength),
+    positions,
+    params
+  };
 };
 
 

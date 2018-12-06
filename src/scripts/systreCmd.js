@@ -281,7 +281,8 @@ const showEmbedding = (
     edgeStats,
     angleStats,
     posType,
-    shortestSeparation
+    shortestSeparation,
+    degreesOfFreedom
   },
   nodeToName,
   writeInfo
@@ -335,7 +336,9 @@ const showEmbedding = (
 
   const d = shortestSeparation;
   writeInfo(`   Shortest non-bonded distance = ${d.toFixed(5)}`);
+  writeInfo();
 
+  writeInfo(`   Degrees of freedom: ${degreesOfFreedom}`);
   writeInfo();
 };
 

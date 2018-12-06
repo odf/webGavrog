@@ -2,6 +2,7 @@ import * as pickler from '../common/pickler';
 import * as symmetries from '../pgraphs/symmetries';
 import * as stats from '../pgraphs/statistics';
 import * as unitCells from '../geometry/unitCells';
+import * as spacegroups from '../geometry/spacegroups';
 
 import embed from '../pgraphs/embedding';
 
@@ -157,6 +158,9 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
   const angleStats = stats.angleStatistics(graph, pos, dot);
   const shortestSeparation = stats.shortestNonEdge(graph, pos, dot);
 
+  const shiftSpace = spacegroups.shiftSpace(syms.map(s => s.transform)) || [];
+  const degreesOfFreedom = embedding.params.length - shiftSpace.length;
+
   return {
     cellParameters,
     cellVolume,
@@ -165,6 +169,7 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
     edgeStats,
     angleStats,
     posType,
-    shortestSeparation
+    shortestSeparation,
+    degreesOfFreedom
   };
 };

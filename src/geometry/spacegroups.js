@@ -200,7 +200,7 @@ export const gramMatrixConfigurationSpace = ops => {
 };
 
 
-const shiftSpace = ops => {
+export const shiftSpace = ops => {
   const d = V.dimension(ops[0]);
   const I = V.identityMatrix(d);
   const primitive = primitiveSetting(ops);
