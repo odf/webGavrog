@@ -191,8 +191,11 @@ const baseShifts = dim => dim == 3 ?
 
 
 const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
+  const t = util.timer();
+
   yield log('Normalizing shifts...');
   const graph = periodic.graphWithNormalizedShifts(structure.graph);
+  console.log(`${Math.round(t())} msec to normalize shifts`);
 
   yield log('Computing an embedding...');
   const embedding = yield runJob({
@@ -201,8 +204,9 @@ const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
   });
   const basis = unitCells.invariantBasis(embedding.gram);
   const pos = embedding.positions;
+  console.log(`${Math.round(t())} msec to compute an embedding`);
 
-  yield log('Constructing an abstract final subnet...');
+  yield log('Constructing an abstract finite subnet...');
   const nodeIndex = {};
   const points = [];
   const edges = [];
@@ -221,9 +225,14 @@ const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
         }));
     }
   }
+  console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
   yield log('Making the net geometry...');
-  return ballAndStick(points, edges);
+  const model = ballAndStick(points, edges);
+  console.log(`${Math.round(t())} msec to make the net geometry`);
+
+  yield log('Done making the net model.');
+  return model;
 });
 
 
@@ -367,6 +376,7 @@ const makeTilingModel =
     refinedTemplates, tiles, options, basis, extensionFactor, shifts);
   console.log(`${Math.round(t())} msec to make the tiling geometry`);
 
+  yield log('Done making the tiling model.');
   return model;
 });
 
@@ -388,7 +398,7 @@ const makeScene = (structure, options, runJob, log) => csp.go(function*() {
 
   const model = yield builder(structure, options, runJob, log);
 
-  log('');
+  yield log('');
   return model;
 });
 
