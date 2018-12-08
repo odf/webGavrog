@@ -1,4 +1,4 @@
-module Mesh exposing (Mesh(..), mesh, wireframe)
+module Mesh exposing (Mesh(..), surface, wireframe)
 
 
 type Mesh vertex
@@ -37,8 +37,8 @@ edges corners =
         |> List.map2 Tuple.pair corners
 
 
-mesh : List vertex -> List FaceSpec -> Mesh vertex
-mesh vertices faces =
+surface : List vertex -> List FaceSpec -> Mesh vertex
+surface vertices faces =
     List.concatMap (triangles << pullCorners vertices) faces
         |> Triangles
 

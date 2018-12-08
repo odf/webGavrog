@@ -3,8 +3,8 @@ module Scene exposing (RawSceneSpec, Scene, boundingBoxForScene, makeScene)
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Mesh exposing (..)
-import Renderer exposing (Material, Vertex)
+import Mesh exposing (Mesh)
+import Renderer
 
 
 type alias RawVec3 =
@@ -62,13 +62,13 @@ type alias RawSceneSpec =
 
 
 type alias Instance =
-    { material : Material
+    { material : Renderer.Material
     , transform : Mat4
     }
 
 
 type alias MeshWithInstances =
-    { mesh : Mesh Vertex
+    { mesh : Mesh Renderer.Vertex
     , instances : List Instance
     }
 
@@ -97,23 +97,23 @@ makeVec3Color { hue, saturation, lightness } =
     vec3 red green blue
 
 
-makeVertex : RawVertexSpec -> Vertex
+makeVertex : RawVertexSpec -> Renderer.Vertex
 makeVertex v =
     { pos = makeVec3 v.pos
     , normal = makeVec3 v.normal
     }
 
 
-makeMesh : RawMeshSpec -> Mesh Vertex
+makeMesh : RawMeshSpec -> Mesh Renderer.Vertex
 makeMesh spec =
     if spec.isWireframe then
-        wireframe (List.map makeVertex spec.vertices) spec.faces
+        Mesh.wireframe (List.map makeVertex spec.vertices) spec.faces
 
     else
-        mesh (List.map makeVertex spec.vertices) spec.faces
+        Mesh.surface (List.map makeVertex spec.vertices) spec.faces
 
 
-makeMaterial : RawMaterial -> Material
+makeMaterial : RawMaterial -> Renderer.Material
 makeMaterial mat =
     { ambientColor = makeVec3Color mat.ambientColor
     , diffuseColor = makeVec3Color mat.diffuseColor
@@ -146,7 +146,7 @@ makeInstance spec =
 makeMeshWithInstances :
     List RawInstanceSpec
     -> Int
-    -> Mesh Vertex
+    -> Mesh Renderer.Vertex
     -> MeshWithInstances
 makeMeshWithInstances instances index mesh =
     { mesh = mesh
@@ -163,14 +163,14 @@ makeScene spec =
         |> List.indexedMap (makeMeshWithInstances spec.instances)
 
 
-pointSetForMesh : Mesh Vertex -> List Vec3
+pointSetForMesh : Mesh Renderer.Vertex -> List Vec3
 pointSetForMesh mesh =
     case mesh of
-        Lines lines ->
+        Mesh.Lines lines ->
             List.concatMap (\( u, v ) -> [ u, v ]) lines
                 |> List.map .pos
 
-        Triangles triangles ->
+        Mesh.Triangles triangles ->
             List.concatMap (\( u, v, w ) -> [ u, v, w ]) triangles
                 |> List.map .pos
 
