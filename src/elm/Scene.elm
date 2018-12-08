@@ -163,55 +163,74 @@ makeScene spec =
         |> List.indexedMap (makeMeshWithInstances spec.instances)
 
 
-pointSetForMesh : Mesh Renderer.Vertex -> List Vec3
-pointSetForMesh mesh =
+minVec : Vec3 -> Vec3 -> Vec3
+minVec v w =
+    vec3
+        (min (Vec3.getX v) (Vec3.getX w))
+        (min (Vec3.getY v) (Vec3.getY w))
+        (min (Vec3.getZ v) (Vec3.getZ w))
+
+
+maxVec : Vec3 -> Vec3 -> Vec3
+maxVec v w =
+    vec3
+        (max (Vec3.getX v) (Vec3.getX w))
+        (max (Vec3.getY v) (Vec3.getY w))
+        (max (Vec3.getZ v) (Vec3.getZ w))
+
+
+boxWithVector : Vec3 -> Maybe Box -> Maybe Box
+boxWithVector v box =
+    case box of
+        Nothing ->
+            Just <| Box v v
+
+        Just b ->
+            Just <| Box (minVec v b.minima) (maxVec v b.maxima)
+
+
+boxWithMappedVertices : List Vec3 -> Mat4 -> Maybe Box -> Maybe Box
+boxWithMappedVertices verts mat box =
+    List.foldl (\v b -> boxWithVector (Mat4.transform mat v) b) box verts
+
+
+boxWithInstancedMesh :
+    Mesh Renderer.Vertex
+    -> Instance
+    -> Maybe Box
+    -> Maybe Box
+boxWithInstancedMesh mesh instance box =
+    let
+        mat =
+            instance.transform
+    in
     case mesh of
         Mesh.Lines lines ->
-            List.concatMap (\( u, v ) -> [ u, v ]) lines
-                |> List.map .pos
+            List.foldl
+                (\( u, v ) b ->
+                    boxWithMappedVertices [ u.pos, v.pos ] mat b
+                )
+                box
+                lines
 
         Mesh.Triangles triangles ->
-            List.concatMap (\( u, v, w ) -> [ u, v, w ]) triangles
-                |> List.map .pos
-
-
-pointSetForScene : Scene -> List Vec3
-pointSetForScene scene =
-    List.concatMap
-        (\{ mesh, instances } ->
-            let
-                points =
-                    pointSetForMesh mesh
-            in
-            instances
-                |> List.map .transform
-                |> List.concatMap
-                    (\t -> List.map (\v -> Mat4.transform t v) points)
-        )
-        scene
+            List.foldl
+                (\( u, v, w ) b ->
+                    boxWithMappedVertices [ u.pos, v.pos, w.pos ] mat b
+                )
+                box
+                triangles
 
 
 boundingBoxForScene : Scene -> Box
 boundingBoxForScene scene =
-    let
-        pointsAsRecords =
-            pointSetForScene scene |> List.map Vec3.toRecord
-
-        xs =
-            List.map .x pointsAsRecords
-
-        ys =
-            List.map .y pointsAsRecords
-
-        zs =
-            List.map .z pointsAsRecords
-
-        lo =
-            \args -> List.minimum args |> Maybe.withDefault 0
-
-        hi =
-            \args -> List.maximum args |> Maybe.withDefault 0
-    in
-    Box
-        (vec3 (lo xs) (lo ys) (lo zs))
-        (vec3 (hi xs) (hi ys) (hi zs))
+    List.foldl
+        (\{ mesh, instances } box ->
+            List.foldl
+                (\inst b -> boxWithInstancedMesh mesh inst b)
+                box
+                instances
+        )
+        Nothing
+        scene
+        |> Maybe.withDefault (Box (vec3 0 0 0) (vec3 0 0 0))
