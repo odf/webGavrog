@@ -1,4 +1,4 @@
-module Scene exposing (RawSceneSpec, Scene, boundingBoxForScene, makeScene)
+module Scene exposing (RawSceneSpec, Scene, boundingBox, makeScene)
 
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -194,43 +194,26 @@ boxWithMappedVertices verts mat box =
     List.foldl (\v b -> boxWithVector (Mat4.transform mat v) b) box verts
 
 
-boxWithInstancedMesh :
-    Mesh Renderer.Vertex
-    -> Instance
-    -> Maybe Box
-    -> Maybe Box
-boxWithInstancedMesh mesh instance box =
+boundingBox : RawSceneSpec -> Box
+boundingBox { meshes, instances } =
     let
-        mat =
-            instance.transform
+        positions m =
+            List.map (\v -> makeVec3 v.pos) m.vertices
+
+        withTransforms index posList =
+            instances
+                |> List.filter (\inst -> inst.meshIndex == index)
+                |> List.map (.transform >> makeTransform)
+                |> List.map (\t -> ( posList, t ))
+
+        allWithTransforms =
+            meshes
+                |> List.map positions
+                |> List.indexedMap withTransforms
+                |> List.concat
     in
-    case mesh of
-        Mesh.Lines lines ->
-            List.foldl
-                (\( u, v ) b ->
-                    boxWithMappedVertices [ u.pos, v.pos ] mat b
-                )
-                box
-                lines
-
-        Mesh.Triangles triangles ->
-            List.foldl
-                (\( u, v, w ) b ->
-                    boxWithMappedVertices [ u.pos, v.pos, w.pos ] mat b
-                )
-                box
-                triangles
-
-
-boundingBoxForScene : Scene -> Box
-boundingBoxForScene scene =
     List.foldl
-        (\{ mesh, instances } box ->
-            List.foldl
-                (\inst b -> boxWithInstancedMesh mesh inst b)
-                box
-                instances
-        )
+        (\( verts, mat ) -> boxWithMappedVertices verts mat)
         Nothing
-        scene
+        allWithTransforms
         |> Maybe.withDefault (Box (vec3 0 0 0) (vec3 0 0 0))

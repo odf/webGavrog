@@ -294,11 +294,11 @@ setSize size model =
 setScene : RawSceneSpec -> Model -> Model
 setScene spec model =
     let
+        box =
+            boundingBox spec
+
         scene =
             makeScene spec
-
-        box =
-            boundingBoxForScene scene
 
         center =
             Vec3.add box.minima box.maxima |> Vec3.scale (1 / 2)
