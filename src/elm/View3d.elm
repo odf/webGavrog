@@ -21,9 +21,9 @@ import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Mesh exposing (..)
+import Mesh exposing (Mesh)
 import Renderer
-import Scene exposing (..)
+import Scene exposing (Scene)
 import Time exposing (Posix)
 import WebGL
 
@@ -75,10 +75,10 @@ init =
 glMesh : Mesh Renderer.Vertex -> GlMesh
 glMesh mesh =
     case mesh of
-        Lines lines ->
+        Mesh.Lines lines ->
             WebGL.lines lines
 
-        Triangles triangles ->
+        Mesh.Triangles triangles ->
             WebGL.triangles triangles
 
 
@@ -291,14 +291,14 @@ setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
 
-setScene : RawSceneSpec -> Model -> Model
+setScene : Scene.RawSceneSpec -> Model -> Model
 setScene spec model =
     let
         box =
-            boundingBox spec
+            Scene.boundingBox spec
 
         scene =
-            makeScene spec
+            Scene.makeScene spec
 
         center =
             Vec3.add box.minima box.maxima |> Vec3.scale (1 / 2)

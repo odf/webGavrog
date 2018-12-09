@@ -1,7 +1,7 @@
-module Renderer exposing (Vertex, Material, entity)
+module Renderer exposing (Material, Vertex, entity, uniforms)
 
 import Math.Matrix4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL
 
 
@@ -53,29 +53,34 @@ scaleTo length vec =
     vec |> Vec3.normalize |> Vec3.scale length
 
 
+uniforms : Material -> Float -> Mat4 -> Mat4 -> Uniforms
+uniforms material camDist viewingMatrix perspectiveMatrix =
+    { viewing = viewingMatrix
+    , perspective = perspectiveMatrix
+    , cameraPos = vec3 0 0 camDist
+    , light1Pos = vec3 2 1 2 |> Vec3.scale (camDist / 2)
+    , light1Color = vec3 1 1 1 |> Vec3.scale (2 / 3)
+    , light2Pos = vec3 -2 -1 4 |> Vec3.scale (camDist / 4)
+    , light2Color = vec3 1 1 1 |> Vec3.scale (1 / 3)
+    , light3Pos = vec3 1 1 -4 |> Vec3.scale (camDist / 4)
+    , light3Color = vec3 0 0 1 |> Vec3.scale (1 / 5)
+    , ambientColor = material.ambientColor
+    , diffuseColor = material.diffuseColor
+    , specularColor = material.specularColor
+    , ka = material.ka
+    , kd = material.kd
+    , ks = material.ks
+    , shininess = material.shininess
+    }
+
+
 entity : WebGL.Mesh Vertex -> Material -> Float -> Mat4 -> Mat4 -> WebGL.Entity
 entity mesh material camDist viewingMatrix perspectiveMatrix =
     let
-        uniforms =
-            { viewing = viewingMatrix
-            , perspective = perspectiveMatrix
-            , cameraPos = vec3 0 0 camDist
-            , light1Pos = vec3 2 1 2 |> Vec3.scale (camDist / 2)
-            , light1Color = vec3 1 1 1 |> Vec3.scale (2 / 3)
-            , light2Pos = vec3 -2 -1 4 |> Vec3.scale (camDist / 4)
-            , light2Color = vec3 1 1 1 |> Vec3.scale (1 / 3)
-            , light3Pos = vec3 1 1 -4 |> Vec3.scale (camDist / 4)
-            , light3Color = vec3 0 0 1 |> Vec3.scale (1 / 5)
-            , ambientColor = material.ambientColor
-            , diffuseColor = material.diffuseColor
-            , specularColor = material.specularColor
-            , ka = material.ka
-            , kd = material.kd
-            , ks = material.ks
-            , shininess = material.shininess
-            }
+        currentUniforms =
+            uniforms material camDist viewingMatrix perspectiveMatrix
     in
-        WebGL.entity vertexShader fragmentShader mesh uniforms
+    WebGL.entity vertexShader fragmentShader mesh currentUniforms
 
 
 vertexShader : WebGL.Shader Vertex Uniforms Varyings
