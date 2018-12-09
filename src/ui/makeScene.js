@@ -122,9 +122,6 @@ const ballAndStick = (
   const ball = makeBall(ballRadius);
   const stick = makeStick([0, 0, 0], [0, 0, 1], stickRadius, 12);
 
-  const meshes = [ ball, stick ];
-  const instances = [];
-
   const ballMaterial = Object.assign({}, baseMaterial, {
     diffuseColor: ballColor,
     shininess: 50.0
@@ -135,10 +132,14 @@ const ballAndStick = (
     shininess: 50.0
   });
 
+  const meshes = [ ball, stick ];
+  const materials = [ ballMaterial, stickMaterial ];
+  const instances = [];
+
   positions.forEach(p => {
     instances.push({
       meshIndex: 0,
-      material: ballMaterial,
+      materialIndex: 0,
       transform: {
         basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
         shift: [ p[0], p[1], p[2] || 0 ]
@@ -160,7 +161,7 @@ const ballAndStick = (
 
     instances.push({
       meshIndex: 1,
-      material: stickMaterial,
+      materialIndex: 1,
       transform: {
         basis: [ u, v, w ],
         shift: [ p[0], p[1], p[2] || 0 ]
@@ -168,7 +169,7 @@ const ballAndStick = (
     })
   });
 
-  return { meshes, instances };
+  return { meshes, materials, instances };
 };
 
 
@@ -236,6 +237,22 @@ const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
 });
 
 
+const tileMaterial = hue => Object.assign({}, baseMaterial, {
+  diffuseColor: {
+    hue,
+    saturation: 1.0,
+    lightness: 0.7
+  },
+  shininess: 15.0
+});
+
+
+const materialPalette = (initialHue, nrHues) => (
+  Array(nrHues).fill()
+    .map((_, i) => tileMaterial((initialHue + i / nrHues) % 1))
+);
+
+
 const tilingModel = (
   surfaces, instances, options, basis, extensionFactor, shifts=[[0, 0, 0]]
 ) => {
@@ -250,9 +267,20 @@ const tilingModel = (
       surfaces.map(({ pos, faces }) => geometry(pos, faces, true))
     : []);
 
-  const model = { meshes: meshes.concat(extraMeshes), instances: [] };
+  const nrMaterials =
+        options.colorByTranslationClass ? instances.length : surfaces.length;
 
-  for (const i in instances) {
+  const materials = materialPalette(hue0, nrMaterials);
+  if (options.showSurfaceMesh)
+    materials.push(baseMaterial);
+
+  const model = {
+    meshes: meshes.concat(extraMeshes),
+    materials,
+    instances: []
+  };
+
+  for (let i = 0; i < instances.length; ++i) {
     const { templateIndex: kind, symmetry, center } = instances[i];
 
     const transform = {};
@@ -274,25 +302,12 @@ const tilingModel = (
     }
 
     for (const s0 of shifts) {
-      const a = options.colorByTranslationClass ?
-        i / instances.length :
-        kind / surfaces.length;
-
-      const mat = Object.assign({}, baseMaterial, {
-        diffuseColor: {
-          hue: (hue0 + a) % 1,
-          saturation: 1.0,
-          lightness: 0.7
-        },
-        shininess: 15.0
-      });
-
       const c = ops.plus(center, s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
       model.instances.push({
         meshIndex: kind,
-        material: mat,
+        materialIndex: options.colorByTranslationClass ? i : kind,
         transform: {
           basis: transform.basis,
           shift: ops.plus(transform.shift, [s[0], s[1], s[2] || 0])
@@ -302,7 +317,7 @@ const tilingModel = (
       if (options.showSurfaceMesh) {
         model.instances.push({
           meshIndex: kind + surfaces.length,
-          material: baseMaterial,
+          materialIndex: materials.length - 1,
           transform: {
             basis: transform.basis,
             shift: ops.plus(transform.shift, [s[0], s[1], s[2] || 0])

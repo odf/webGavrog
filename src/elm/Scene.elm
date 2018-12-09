@@ -50,13 +50,14 @@ type alias RawTransform =
 
 type alias RawInstanceSpec =
     { meshIndex : Int
-    , material : RawMaterial
+    , materialIndex : Int
     , transform : RawTransform
     }
 
 
 type alias RawSceneSpec =
     { meshes : List RawMeshSpec
+    , materials : List RawMaterial
     , instances : List RawInstanceSpec
     }
 
@@ -80,6 +81,18 @@ type alias Scene =
 type alias Box =
     { minima : Vec3
     , maxima : Vec3
+    }
+
+
+defaultMaterial : Renderer.Material
+defaultMaterial =
+    { ambientColor = vec3 0 0 0
+    , diffuseColor = vec3 0 0 0
+    , specularColor = vec3 0 0 0
+    , ka = 0
+    , kd = 0
+    , ks = 0
+    , shininess = 0
     }
 
 
@@ -136,31 +149,39 @@ makeTransform { basis, shift } =
         (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
 
 
-makeInstance : RawInstanceSpec -> Instance
-makeInstance spec =
-    { material = makeMaterial spec.material
+makeInstance : List Renderer.Material -> RawInstanceSpec -> Instance
+makeInstance materials spec =
+    { material =
+        List.drop spec.materialIndex materials
+            |> List.head
+            |> Maybe.withDefault defaultMaterial
     , transform = makeTransform spec.transform
     }
 
 
 makeMeshWithInstances :
     List RawInstanceSpec
+    -> List Renderer.Material
     -> Int
     -> Mesh Renderer.Vertex
     -> MeshWithInstances
-makeMeshWithInstances instances index mesh =
+makeMeshWithInstances instances materials index mesh =
     { mesh = mesh
     , instances =
         instances
             |> List.filter (\instance -> instance.meshIndex == index)
-            |> List.map makeInstance
+            |> List.map (makeInstance materials)
     }
 
 
 makeScene : RawSceneSpec -> Scene
 makeScene spec =
+    let
+        materials =
+            List.map makeMaterial spec.materials
+    in
     List.map makeMesh spec.meshes
-        |> List.indexedMap (makeMeshWithInstances spec.instances)
+        |> List.indexedMap (makeMeshWithInstances spec.instances materials)
 
 
 minVec : Vec3 -> Vec3 -> Vec3
