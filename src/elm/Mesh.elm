@@ -37,13 +37,23 @@ edges corners =
         |> List.map2 Tuple.pair corners
 
 
-surface : List vertex -> List FaceSpec -> Mesh vertex
-surface vertices faces =
-    List.concatMap (triangles << pullCorners vertices) faces
+surface : List (List vertex) -> List (List FaceSpec) -> Mesh vertex
+surface vertexLists faceLists =
+    let
+        single vertices faces =
+            List.concatMap (triangles << pullCorners vertices) faces
+    in
+    List.map2 single vertexLists faceLists
+        |> List.concat
         |> Triangles
 
 
-wireframe : List vertex -> List FaceSpec -> Mesh vertex
-wireframe vertices faces =
-    List.concatMap (edges << pullCorners vertices) faces
+wireframe : List (List vertex) -> List (List FaceSpec) -> Mesh vertex
+wireframe vertexLists faceLists =
+    let
+        single vertices faces =
+            List.concatMap (edges << pullCorners vertices) faces
+    in
+    List.map2 single vertexLists faceLists
+        |> List.concat
         |> Lines

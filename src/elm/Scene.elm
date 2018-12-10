@@ -1,4 +1,10 @@
-module Scene exposing (RawSceneSpec, Scene, boundingBox, makeScene)
+module Scene exposing
+    ( RawSceneSpec
+    , Scene
+    , boundingBox
+    , makeOptimizedScene
+    , makeScene
+    )
 
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -120,10 +126,10 @@ makeVertex v =
 makeMesh : RawMeshSpec -> Mesh Renderer.Vertex
 makeMesh spec =
     if spec.isWireframe then
-        Mesh.wireframe (List.map makeVertex spec.vertices) spec.faces
+        Mesh.wireframe [ List.map makeVertex spec.vertices ] [ spec.faces ]
 
     else
-        Mesh.surface (List.map makeVertex spec.vertices) spec.faces
+        Mesh.surface [ List.map makeVertex spec.vertices ] [ spec.faces ]
 
 
 makeMaterial : RawMaterial -> Renderer.Material
@@ -147,6 +153,15 @@ makeTransform { basis, shift } =
     Mat4.mul
         (Mat4.makeTranslate <| makeVec3 shift)
         (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
+
+
+makeLinearTransform : RawTransform -> Mat4
+makeLinearTransform { basis } =
+    let
+        ( u, v, w ) =
+            basis
+    in
+    Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w)
 
 
 makeInstance : List Renderer.Material -> RawInstanceSpec -> Instance
@@ -182,6 +197,97 @@ makeScene spec =
     in
     List.map makeMesh spec.meshes
         |> List.indexedMap (makeMeshWithInstances spec.instances materials)
+
+
+resolveMesh :
+    List RawMeshSpec
+    -> RawInstanceSpec
+    -> Maybe ( RawInstanceSpec, RawMeshSpec )
+resolveMesh meshes instance =
+    meshes
+        |> List.drop instance.meshIndex
+        |> List.head
+        |> Maybe.map (\mesh -> ( instance, mesh ))
+
+
+mappedVertex : RawInstanceSpec -> RawVertexSpec -> Renderer.Vertex
+mappedVertex inst { pos, normal } =
+    { pos =
+        Mat4.transform (makeTransform inst.transform) (makeVec3 pos)
+    , normal =
+        Mat4.transform (makeLinearTransform inst.transform) (makeVec3 normal)
+    }
+
+
+mappedMeshSpec :
+    RawInstanceSpec
+    -> RawMeshSpec
+    -> ( List Renderer.Vertex, List (List Int) )
+mappedMeshSpec inst mesh =
+    ( List.map (mappedVertex inst) mesh.vertices, mesh.faces )
+
+
+combinedMesh :
+    Bool
+    -> List RawInstanceSpec
+    -> List RawMeshSpec
+    -> Int
+    -> Renderer.Material
+    -> MeshWithInstances
+combinedMesh wireframe instances meshes index material =
+    let
+        test =
+            if wireframe then
+                \mesh -> mesh.isWireframe
+
+            else
+                \mesh -> not mesh.isWireframe
+
+        build =
+            if wireframe then
+                Mesh.wireframe
+
+            else
+                Mesh.surface
+
+        pairs =
+            instances
+                |> List.filter (\inst -> inst.materialIndex == index)
+                |> List.filterMap (resolveMesh meshes)
+                |> List.filter (\( inst, mesh ) -> test mesh)
+                |> List.map (\( inst, mesh ) -> mappedMeshSpec inst mesh)
+    in
+    { mesh =
+        build (List.map Tuple.first pairs) (List.map Tuple.second pairs)
+    , instances =
+        [ { material = material
+          , transform = Mat4.identity
+          }
+        ]
+    }
+
+
+makeOptimizedScene : RawSceneSpec -> Scene
+makeOptimizedScene spec =
+    let
+        instances =
+            spec.instances
+
+        meshes =
+            spec.meshes
+
+        materials =
+            List.map makeMaterial spec.materials
+
+        combinedSurface =
+            combinedMesh False
+
+        combinedWireframe =
+            combinedMesh True
+    in
+    List.append
+        (List.indexedMap (combinedSurface instances meshes) materials)
+        (List.indexedMap (combinedWireframe instances meshes) materials)
 
 
 minVec : Vec3 -> Vec3 -> Vec3
