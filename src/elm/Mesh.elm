@@ -27,8 +27,10 @@ triangles corners =
             []
 
         Just u ->
-            List.map2 Tuple.pair (List.drop 1 corners) (List.drop 2 corners)
-                |> List.map (\( v, w ) -> ( u, v, w ))
+            List.map2
+                (\v w -> ( u, v, w ))
+                (List.drop 1 corners)
+                (List.drop 2 corners)
 
 
 edges : List vertex -> List ( vertex, vertex )
