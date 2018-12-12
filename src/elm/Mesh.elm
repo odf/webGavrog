@@ -3,7 +3,7 @@ module Mesh exposing (Mesh(..), surface, wireframe)
 
 type Mesh vertex
     = Lines (List ( vertex, vertex ))
-    | Triangles (List ( vertex, vertex, vertex ))
+    | IndexedTriangles (List vertex) (List ( Int, Int, Int ))
 
 
 type alias FaceSpec =
@@ -39,8 +39,8 @@ edges corners =
 
 surface : List vertex -> List FaceSpec -> Mesh vertex
 surface vertices faces =
-    List.concatMap (triangles << pullCorners vertices) faces
-        |> Triangles
+    List.concatMap triangles faces
+        |> IndexedTriangles vertices
 
 
 wireframe : List vertex -> List FaceSpec -> Mesh vertex

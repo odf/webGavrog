@@ -78,8 +78,8 @@ glMesh mesh =
         Mesh.Lines lines ->
             WebGL.lines lines
 
-        Mesh.Triangles triangles ->
-            WebGL.triangles triangles
+        Mesh.IndexedTriangles vertices triangles ->
+            WebGL.indexedTriangles vertices triangles
 
 
 glScene : Scene -> GlScene
