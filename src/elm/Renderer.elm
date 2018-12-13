@@ -1,6 +1,6 @@
-module Renderer exposing (Material, Vertex, entity, uniforms)
+module Renderer exposing (Material, Vertex, entities)
 
-import Math.Matrix4 exposing (Mat4)
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL
 
@@ -20,6 +20,14 @@ type alias Material =
     , ks : Float
     , shininess : Float
     }
+
+
+type alias Scene =
+    List
+        { mesh : WebGL.Mesh Vertex
+        , material : Material
+        , transform : Mat4
+        }
 
 
 type alias Uniforms =
@@ -72,6 +80,19 @@ uniforms material camDist viewingMatrix perspectiveMatrix =
     , ks = material.ks
     , shininess = material.shininess
     }
+
+
+entities : Scene -> Float -> Mat4 -> Mat4 -> List WebGL.Entity
+entities scene camDist viewingMatrix perspectiveMatrix =
+    List.map
+        (\{ mesh, material, transform } ->
+            let
+                viewing =
+                    Mat4.mul viewingMatrix transform
+            in
+            entity mesh material camDist viewing perspectiveMatrix
+        )
+        scene
 
 
 entity : WebGL.Mesh Vertex -> Material -> Float -> Mat4 -> Mat4 -> WebGL.Entity

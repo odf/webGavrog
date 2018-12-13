@@ -325,22 +325,6 @@ setRedraws onOff model =
 
 view : (Msg -> msg) -> Model -> Html msg
 view toMsg model =
-    let
-        viewing =
-            Camera.viewingMatrix model.cameraState
-
-        entities =
-            List.map
-                (\{ mesh, material, transform } ->
-                    Renderer.entity
-                        mesh
-                        material
-                        (Camera.cameraDistance model.cameraState)
-                        (Mat4.mul viewing transform)
-                        (Camera.perspectiveMatrix model.cameraState)
-                )
-                model.scene
-    in
     WebGL.toHtml
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" "white"
@@ -354,7 +338,12 @@ view toMsg model =
         , onTouchEnd (toMsg TouchEndMsg)
         , onTouchCancel (toMsg TouchEndMsg)
         ]
-        entities
+        (Renderer.entities
+            model.scene
+            (Camera.cameraDistance model.cameraState)
+            (Camera.viewingMatrix model.cameraState)
+            (Camera.perspectiveMatrix model.cameraState)
+        )
 
 
 onMouseDown : (Position -> msg) -> Html.Attribute msg
