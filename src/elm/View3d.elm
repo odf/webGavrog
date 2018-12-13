@@ -53,11 +53,8 @@ type alias GlMesh =
 type alias GlScene =
     List
         { mesh : GlMesh
-        , instances :
-            List
-                { material : Renderer.Material
-                , transform : Mat4
-                }
+        , material : Renderer.Material
+        , transform : Mat4
         }
 
 
@@ -84,11 +81,17 @@ glMesh mesh =
 
 glScene : Scene -> GlScene
 glScene scene =
-    List.map
-        (\{ mesh, instances } ->
-            { mesh = glMesh mesh
-            , instances = instances
-            }
+    List.concatMap
+        (\entry ->
+            let
+                mesh =
+                    glMesh entry.mesh
+            in
+            List.map
+                (\{ material, transform } ->
+                    { mesh = mesh, material = material, transform = transform }
+                )
+                entry.instances
         )
         scene
 
@@ -327,18 +330,14 @@ view toMsg model =
             Camera.viewingMatrix model.cameraState
 
         entities =
-            List.concatMap
-                (\{ mesh, instances } ->
-                    List.map
-                        (\{ material, transform } ->
-                            Renderer.entity
-                                mesh
-                                material
-                                (Camera.cameraDistance model.cameraState)
-                                (Mat4.mul viewing transform)
-                                (Camera.perspectiveMatrix model.cameraState)
-                        )
-                        instances
+            List.map
+                (\{ mesh, material, transform } ->
+                    Renderer.entity
+                        mesh
+                        material
+                        (Camera.cameraDistance model.cameraState)
+                        (Mat4.mul viewing transform)
+                        (Camera.perspectiveMatrix model.cameraState)
                 )
                 model.scene
     in
