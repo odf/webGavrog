@@ -39,23 +39,11 @@ type alias FrameSize =
 type alias Model =
     { size : FrameSize
     , cameraState : Camera.State
-    , scene : GlScene
+    , scene : Renderer.Scene
     , center : Vec3
     , radius : Float
     , modifiers : { shift : Bool, ctrl : Bool }
     }
-
-
-type alias GlMesh =
-    WebGL.Mesh Renderer.Vertex
-
-
-type alias GlScene =
-    List
-        { mesh : GlMesh
-        , material : Renderer.Material
-        , transform : Mat4
-        }
 
 
 init : Model
@@ -69,7 +57,7 @@ init =
     }
 
 
-glMesh : Mesh Renderer.Vertex -> GlMesh
+glMesh : Mesh Renderer.Vertex -> WebGL.Mesh Renderer.Vertex
 glMesh mesh =
     case mesh of
         Mesh.Lines lines ->
@@ -79,7 +67,7 @@ glMesh mesh =
             WebGL.indexedTriangles vertices triangles
 
 
-glScene : Scene -> GlScene
+glScene : Scene -> Renderer.Scene
 glScene scene =
     List.concatMap
         (\entry ->

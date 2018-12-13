@@ -1,4 +1,4 @@
-module Renderer exposing (Material, Vertex, entities)
+module Renderer exposing (Material, Scene, Vertex, entities)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
