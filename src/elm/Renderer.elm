@@ -31,7 +31,8 @@ type alias Scene =
 
 
 type alias Uniforms =
-    { viewing : Mat4
+    { transform : Mat4
+    , viewing : Mat4
     , perspective : Mat4
     , cameraPos : Vec3
     , light1Pos : Vec3
@@ -56,52 +57,50 @@ type alias Varyings =
     }
 
 
-scaleTo : Float -> Vec3 -> Vec3
-scaleTo length vec =
-    vec |> Vec3.normalize |> Vec3.scale length
-
-
-uniforms : Material -> Float -> Mat4 -> Mat4 -> Uniforms
-uniforms material camDist viewingMatrix perspectiveMatrix =
-    { viewing = viewingMatrix
-    , perspective = perspectiveMatrix
-    , cameraPos = vec3 0 0 camDist
-    , light1Pos = vec3 2 1 2 |> Vec3.scale (camDist / 2)
-    , light1Color = vec3 1 1 1 |> Vec3.scale (2 / 3)
-    , light2Pos = vec3 -2 -1 4 |> Vec3.scale (camDist / 4)
-    , light2Color = vec3 1 1 1 |> Vec3.scale (1 / 3)
-    , light3Pos = vec3 1 1 -4 |> Vec3.scale (camDist / 4)
-    , light3Color = vec3 0 0 1 |> Vec3.scale (1 / 5)
-    , ambientColor = material.ambientColor
-    , diffuseColor = material.diffuseColor
-    , specularColor = material.specularColor
-    , ka = material.ka
-    , kd = material.kd
-    , ks = material.ks
-    , shininess = material.shininess
-    }
-
-
 entities : Scene -> Float -> Mat4 -> Mat4 -> List WebGL.Entity
 entities scene camDist viewingMatrix perspectiveMatrix =
+    let
+        black =
+            vec3 0 0 0
+
+        baseUniforms =
+            { transform = Mat4.identity
+            , viewing = viewingMatrix
+            , perspective = perspectiveMatrix
+            , cameraPos = vec3 0 0 camDist
+            , light1Pos = vec3 2 1 2 |> Vec3.scale (camDist / 2)
+            , light1Color = vec3 1 1 1 |> Vec3.scale (2 / 3)
+            , light2Pos = vec3 -2 -1 4 |> Vec3.scale (camDist / 4)
+            , light2Color = vec3 1 1 1 |> Vec3.scale (1 / 3)
+            , light3Pos = vec3 1 1 -4 |> Vec3.scale (camDist / 4)
+            , light3Color = vec3 0 0 1 |> Vec3.scale (1 / 5)
+            , ambientColor = black
+            , diffuseColor = black
+            , specularColor = black
+            , ka = 0
+            , kd = 0
+            , ks = 0
+            , shininess = 0
+            }
+    in
     List.map
         (\{ mesh, material, transform } ->
             let
-                viewing =
-                    Mat4.mul viewingMatrix transform
+                uniforms =
+                    { baseUniforms
+                        | transform = transform
+                        , ambientColor = material.ambientColor
+                        , diffuseColor = material.diffuseColor
+                        , specularColor = material.specularColor
+                        , ka = material.ka
+                        , kd = material.kd
+                        , ks = material.ks
+                        , shininess = material.shininess
+                    }
             in
-            entity mesh material camDist viewing perspectiveMatrix
+            WebGL.entity vertexShader fragmentShader mesh uniforms
         )
         scene
-
-
-entity : WebGL.Mesh Vertex -> Material -> Float -> Mat4 -> Mat4 -> WebGL.Entity
-entity mesh material camDist viewingMatrix perspectiveMatrix =
-    let
-        currentUniforms =
-            uniforms material camDist viewingMatrix perspectiveMatrix
-    in
-    WebGL.entity vertexShader fragmentShader mesh currentUniforms
 
 
 vertexShader : WebGL.Shader Vertex Uniforms Varyings
@@ -110,15 +109,16 @@ vertexShader =
 
     attribute vec3 pos;
     attribute vec3 normal;
+    uniform mat4 transform;
     uniform mat4 viewing;
     uniform mat4 perspective;
     varying vec3 vpos;
     varying vec3 vnormal;
 
     void main () {
-        vpos = (viewing * vec4(pos, 1.0)).xyz;
-        vnormal = (viewing * vec4(normal, 0.0)).xyz;
-        gl_Position = perspective * viewing * vec4(pos, 1.0);
+        vpos = (viewing * transform * vec4(pos, 1.0)).xyz;
+        vnormal = (viewing * transform * vec4(normal, 0.0)).xyz;
+        gl_Position = perspective * viewing * transform * vec4(pos, 1.0);
     }
 
     |]
