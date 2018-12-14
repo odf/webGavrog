@@ -1,4 +1,4 @@
-module Mesh exposing (Mesh(..), surface, wireframe)
+module View3d.Mesh exposing (Mesh(..), surface, wireframe)
 
 
 type Mesh vertex

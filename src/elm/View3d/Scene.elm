@@ -1,10 +1,10 @@
-module Scene exposing (RawSceneSpec, Scene, boundingBox, makeScene)
+module View3d.Scene exposing (RawSceneSpec, Scene, boundingBox, makeScene)
 
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Mesh exposing (Mesh)
-import Renderer
+import View3d.Mesh as Mesh exposing (Mesh)
+import View3d.Renderer as Renderer
 
 
 type alias RawVec3 =

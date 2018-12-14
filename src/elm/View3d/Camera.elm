@@ -1,4 +1,4 @@
-module Camera exposing
+module View3d.Camera exposing
     ( State
     , cameraDistance
     , dragTo

@@ -16,10 +16,10 @@ import Json.Decode as Decode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Options
-import Scene exposing (RawSceneSpec)
 import Styling
 import Task
-import View3d
+import View3d.Main as View3d
+import View3d.Scene exposing (RawSceneSpec)
 
 
 main =

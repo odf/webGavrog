@@ -1,4 +1,4 @@
-module View3d exposing
+module View3d.Main exposing
     ( Model
     , Msg
     , encompass
@@ -13,7 +13,6 @@ module View3d exposing
     )
 
 import Browser.Events as Events
-import Camera
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -21,10 +20,11 @@ import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Mesh exposing (Mesh)
-import Renderer
-import Scene exposing (Scene)
 import Time exposing (Posix)
+import View3d.Camera as Camera
+import View3d.Mesh as Mesh exposing (Mesh)
+import View3d.Renderer as Renderer
+import View3d.Scene as Scene exposing (Scene)
 import WebGL
 
 
