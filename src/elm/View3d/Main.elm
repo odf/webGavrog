@@ -36,11 +36,21 @@ type alias FrameSize =
     { width : Float, height : Float }
 
 
+type alias PickingScene =
+    List
+        { mesh : Mesh Vec3
+        , transform : Mat4
+        , idxMesh : Int
+        , idxInstance : Int
+        }
+
+
 type alias Model =
     { size : FrameSize
     , cameraState : Camera.State
     , pickingRay : Maybe Camera.Ray
     , scene : Renderer.Scene
+    , pickingScene : PickingScene
     , center : Vec3
     , radius : Float
     , modifiers : { shift : Bool, ctrl : Bool }
@@ -53,6 +63,7 @@ init =
     , cameraState = Camera.initialState
     , pickingRay = Nothing
     , scene = []
+    , pickingScene = []
     , center = vec3 0 0 0
     , radius = 0
     , modifiers = { shift = False, ctrl = False }
@@ -84,6 +95,44 @@ glScene scene =
                 entry.instances
         )
         scene
+
+
+pickingMesh : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
+pickingMesh mesh =
+    case mesh of
+        Mesh.Lines lines ->
+            Nothing
+
+        Mesh.IndexedTriangles vertices triangles ->
+            Just
+                (Mesh.IndexedTriangles
+                    (List.map (\v -> v.pos) vertices)
+                    triangles
+                )
+
+
+pickingScene : Scene -> PickingScene
+pickingScene scene =
+    scene
+        |> List.indexedMap
+            (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
+        |> List.filterMap
+            (\( mesh, instances, idxMesh ) ->
+                pickingMesh mesh
+                    |> Maybe.map (\m -> ( m, instances, idxMesh ))
+            )
+        |> List.concatMap
+            (\( mesh, instances, idxMesh ) ->
+                List.indexedMap
+                    (\idxInstance { transform } ->
+                        { mesh = mesh
+                        , transform = transform
+                        , idxMesh = idxMesh
+                        , idxInstance = idxInstance
+                        }
+                    )
+                    instances
+            )
 
 
 
@@ -306,7 +355,12 @@ setScene spec model =
         radius =
             Vec3.length <| Vec3.sub box.minima center
     in
-    { model | scene = glScene scene, center = center, radius = radius }
+    { model
+        | scene = glScene scene
+        , pickingScene = pickingScene scene
+        , center = center
+        , radius = radius
+    }
         |> lookAlong (vec3 0 0 -1) (vec3 0 1 0)
         |> encompass
 
