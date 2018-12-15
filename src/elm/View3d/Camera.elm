@@ -1,5 +1,6 @@
 module View3d.Camera exposing
-    ( State
+    ( Ray
+    , State
     , cameraDistance
     , dragTo
     , encompass
@@ -10,6 +11,7 @@ module View3d.Camera exposing
     , lookAlong
     , nextFrame
     , perspectiveMatrix
+    , pickingRay
     , pinchTo
     , setFrameSize
     , setRedraws
@@ -48,6 +50,10 @@ type State
         , spinAngle : Float
         , milliSecsSinceMoved : Float
         }
+
+
+type alias Ray =
+    { origin : Vec3, direction : Vec3 }
 
 
 initialState : State
@@ -110,6 +116,29 @@ positionToNdc pos (State state) =
             (pos.y - state.origin.y) / state.size.height
     in
     { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
+
+
+pickingRay : Position -> State -> Maybe Ray
+pickingRay pos state =
+    let
+        makeRay mat =
+            let
+                posNdc =
+                    positionToNdc pos state
+
+                eye =
+                    Mat4.transform mat (vec3 posNdc.x posNdc.y -1)
+
+                center =
+                    Mat4.transform mat (vec3 posNdc.x posNdc.y 0)
+            in
+            { origin = eye
+            , direction = Vec3.sub center eye |> Vec3.normalize
+            }
+    in
+    Mat4.mul (perspectiveMatrix state) (viewingMatrix state)
+        |> Mat4.inverse
+        |> Maybe.map makeRay
 
 
 updateZoom : Float -> Bool -> State -> State

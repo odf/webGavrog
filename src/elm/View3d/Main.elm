@@ -39,6 +39,7 @@ type alias FrameSize =
 type alias Model =
     { size : FrameSize
     , cameraState : Camera.State
+    , pickingRay : Maybe Camera.Ray
     , scene : Renderer.Scene
     , center : Vec3
     , radius : Float
@@ -50,6 +51,7 @@ init : Model
 init =
     { size = { width = 0, height = 0 }
     , cameraState = Camera.initialState
+    , pickingRay = Nothing
     , scene = []
     , center = vec3 0 0 0
     , radius = 0
@@ -157,7 +159,14 @@ update msg model =
             updateCamera (Camera.nextFrame time) model
 
         MouseDownMsg pos ->
-            updateCamera (Camera.startDragging pos) model
+            let
+                ray =
+                    Camera.pickingRay pos model.cameraState
+
+                updated =
+                    updateCamera (Camera.startDragging pos) model
+            in
+            { updated | pickingRay = ray }
 
         MouseUpMsg ->
             updateCamera Camera.finishDragging model
