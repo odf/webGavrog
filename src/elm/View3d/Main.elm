@@ -39,7 +39,7 @@ type alias FrameSize =
 type alias PickingScene =
     List
         { mesh : Mesh Vec3
-        , transform : Mat4
+        , inverseTransform : Mat4
         , idxMesh : Int
         , idxInstance : Int
         }
@@ -113,6 +113,27 @@ pickingMesh mesh =
 
 pickingScene : Scene -> PickingScene
 pickingScene scene =
+    let
+        convertInstances ( mesh, instances, idxMesh ) =
+            instances
+                |> List.indexedMap
+                    (\idxInstance { transform } ->
+                        ( transform, idxInstance )
+                    )
+                |> List.filterMap
+                    (\( transform, idxInstance ) ->
+                        Mat4.inverse transform
+                            |> Maybe.map (\inv -> ( inv, idxInstance ))
+                    )
+                |> List.map
+                    (\( inv, idxInstance ) ->
+                        { mesh = mesh
+                        , inverseTransform = inv
+                        , idxMesh = idxMesh
+                        , idxInstance = idxInstance
+                        }
+                    )
+    in
     scene
         |> List.indexedMap
             (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
@@ -121,18 +142,7 @@ pickingScene scene =
                 pickingMesh mesh
                     |> Maybe.map (\m -> ( m, instances, idxMesh ))
             )
-        |> List.concatMap
-            (\( mesh, instances, idxMesh ) ->
-                List.indexedMap
-                    (\idxInstance { transform } ->
-                        { mesh = mesh
-                        , transform = transform
-                        , idxMesh = idxMesh
-                        , idxInstance = idxInstance
-                        }
-                    )
-                    instances
-            )
+        |> List.concatMap convertInstances
 
 
 
