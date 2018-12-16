@@ -1,5 +1,8 @@
 module View3d.Mesh exposing (Mesh(..), surface, wireframe)
 
+import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector3 as Vec3 exposing (Vec3)
+
 
 type Mesh vertex
     = Lines (List ( vertex, vertex ))
@@ -49,3 +52,62 @@ wireframe : List vertex -> List FaceSpec -> Mesh vertex
 wireframe vertices faces =
     List.concatMap (edges << pullCorners vertices) faces
         |> Lines
+
+
+
+-- Möller-Trumbore algorithm for ray-triangle intersection:
+
+
+rayTriangleIntersection :
+    Vec3
+    -> Vec3
+    -> ( Vec3, Vec3, Vec3 )
+    -> Maybe ( Float, Float, Float )
+rayTriangleIntersection orig dir ( vert0, vert1, vert2 ) =
+    let
+        edge1 =
+            Vec3.sub vert1 vert0
+
+        edge2 =
+            Vec3.sub vert2 vert0
+
+        pvec =
+            Vec3.cross dir edge2
+
+        det =
+            Vec3.dot edge1 pvec
+    in
+    if abs det < 1.0e-6 then
+        Nothing
+
+    else
+        let
+            invDet =
+                1 / det
+
+            tvec =
+                Vec3.sub orig vert0
+
+            u =
+                Vec3.dot tvec pvec * invDet
+        in
+        if u < 0 || u > 1 then
+            Nothing
+
+        else
+            let
+                qvec =
+                    Vec3.cross tvec edge1
+
+                v =
+                    Vec3.dot dir qvec * invDet
+            in
+            if v < 0 || u + v > 1 then
+                Nothing
+
+            else
+                let
+                    t =
+                        Vec3.dot edge2 qvec * invDet
+                in
+                Just ( t, u, v )
