@@ -76,6 +76,9 @@ glMesh mesh =
         Mesh.Lines lines ->
             WebGL.lines lines
 
+        Mesh.Triangles triangles ->
+            WebGL.triangles triangles
+
         Mesh.IndexedTriangles vertices triangles ->
             WebGL.indexedTriangles vertices triangles
 
@@ -102,6 +105,11 @@ pickingMesh mesh =
     case mesh of
         Mesh.Lines lines ->
             Nothing
+
+        Mesh.Triangles triangles ->
+            List.map (\( u, v, w ) -> ( u.pos, v.pos, w.pos )) triangles
+                |> Mesh.Triangles
+                |> Just
 
         Mesh.IndexedTriangles vertices triangles ->
             Just
