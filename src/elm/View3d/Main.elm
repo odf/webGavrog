@@ -153,6 +153,44 @@ pickingScene scene =
         |> List.concatMap convertInstances
 
 
+minimumBy : (a -> comparable) -> List a -> Maybe a
+minimumBy fn xs =
+    List.foldl
+        (\x acc ->
+            case acc of
+                Nothing ->
+                    Just x
+
+                Just val ->
+                    if fn x < fn val then
+                        Just x
+
+                    else
+                        acc
+        )
+        Nothing
+        xs
+
+
+pick : Camera.Ray -> PickingScene -> Maybe ( Float, Int, Int )
+pick ray pscene =
+    let
+        orig =
+            ray.origin
+
+        dir =
+            ray.direction
+    in
+    pscene
+        |> List.filterMap
+            (\{ mesh, inverseTransform, idxMesh, idxInstance } ->
+                Mesh.mappedRayMeshIntersection orig dir inverseTransform mesh
+                    |> Maybe.map (\t -> ( t, idxMesh, idxInstance ))
+            )
+        |> minimumBy (\( t, m, i ) -> t)
+        |> Maybe.map (\( t, m, i ) -> ( t, m, i ))
+
+
 
 -- SUBSCRIPTIONS
 
@@ -228,12 +266,19 @@ update msg model =
         MouseDownMsg pos ->
             let
                 ray =
-                    Camera.pickingRay pos model.cameraState
+                    Debug.log "ray" <| Camera.pickingRay pos model.cameraState
 
-                updated =
-                    updateCamera (Camera.startDragging pos) model
+                camState =
+                    Camera.startDragging pos model.cameraState
+
+                {--
+                dummy =
+                    ray
+                        |> Maybe.map (\r -> pick r model.pickingScene)
+                        |> Maybe.map (Debug.log "picked")
+                --}
             in
-            { updated | pickingRay = ray }
+            { model | cameraState = camState, pickingRay = ray }
 
         MouseUpMsg ->
             updateCamera Camera.finishDragging model

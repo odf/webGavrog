@@ -1,4 +1,9 @@
-module View3d.Mesh exposing (Mesh(..), surface, wireframe)
+module View3d.Mesh exposing
+    ( Mesh(..)
+    , mappedRayMeshIntersection
+    , surface
+    , wireframe
+    )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
@@ -141,3 +146,25 @@ rayMeshIntersection orig dir mesh =
                 |> List.map (\( i, j, k ) -> [ i, j, k ])
                 |> List.concatMap (makeTriangles << pullCorners vertices)
                 |> intersect
+
+
+mappedRayMeshIntersection : Vec3 -> Vec3 -> Mat4 -> Mesh Vec3 -> Maybe Float
+mappedRayMeshIntersection orig dir mat mesh =
+    let
+        target =
+            Vec3.add orig dir
+
+        mappedOrig =
+            Mat4.transform mat orig
+
+        mappedTarget =
+            Mat4.transform mat target
+
+        scaleFactor =
+            Vec3.length (Vec3.sub mappedTarget mappedOrig)
+
+        mappedDir =
+            Vec3.normalize (Vec3.sub mappedTarget mappedOrig)
+    in
+    rayMeshIntersection mappedOrig mappedDir mesh
+        |> Maybe.map ((/) scaleFactor)
