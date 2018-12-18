@@ -113,9 +113,9 @@ pickingMesh mesh =
 
         Mesh.IndexedTriangles vertices triangles ->
             Just
-                (Mesh.IndexedTriangles
+                (Mesh.resolvedSurface
                     (List.map (\v -> v.pos) vertices)
-                    triangles
+                    (List.map (\( i, j, k ) -> [ i, j, k ]) triangles)
                 )
 
 
@@ -276,6 +276,7 @@ update msg model =
                     ray
                         |> Maybe.map (\r -> pick r model.pickingScene)
                         |> Maybe.map (Debug.log "picked")
+
                 --}
             in
             { model | cameraState = camState, pickingRay = ray }

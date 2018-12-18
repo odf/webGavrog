@@ -1,6 +1,7 @@
 module View3d.Mesh exposing
     ( Mesh(..)
     , mappedRayMeshIntersection
+    , resolvedSurface
     , surface
     , wireframe
     )
