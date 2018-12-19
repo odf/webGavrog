@@ -161,11 +161,11 @@ mappedRayMeshIntersection orig dir mat mesh =
         mappedTarget =
             Mat4.transform mat target
 
-        scaleFactor =
-            Vec3.length (Vec3.sub mappedTarget mappedOrig)
+        factor =
+            1 / Vec3.length (Vec3.sub mappedTarget mappedOrig)
 
         mappedDir =
-            Vec3.normalize (Vec3.sub mappedTarget mappedOrig)
+            Vec3.scale factor (Vec3.sub mappedTarget mappedOrig)
     in
     rayMeshIntersection mappedOrig mappedDir mesh
-        |> Maybe.map ((/) scaleFactor)
+        |> Maybe.map ((*) factor)
