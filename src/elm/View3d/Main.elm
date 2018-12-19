@@ -266,7 +266,7 @@ update msg model =
         MouseDownMsg pos ->
             let
                 ray =
-                    Debug.log "ray" <| Camera.pickingRay pos model.cameraState
+                    Camera.pickingRay pos model.cameraState
 
                 camState =
                     Camera.startDragging pos model.cameraState
