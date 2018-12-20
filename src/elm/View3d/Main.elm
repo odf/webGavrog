@@ -282,6 +282,11 @@ update msg model =
             { model | cameraState = camState, pickingRay = ray }
 
         MouseUpMsg ->
+            let
+                clicked =
+                    not (Camera.wasDragged model.cameraState)
+                        |> Debug.log "clicked"
+            in
             updateCamera Camera.finishDragging model
 
         MouseMoveMsg pos ->

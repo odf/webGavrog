@@ -19,6 +19,7 @@ module View3d.Camera exposing
     , startPinching
     , updateZoom
     , viewingMatrix
+    , wasDragged
     )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -43,6 +44,8 @@ type State
         , dragging : Bool
         , moving : Bool
         , ndcPos : Position
+        , ndcPosDragStart : Position
+        , wasDragged : Bool
         , pinchDist : Float
         , shift : Vec3
         , rotation : Mat4
@@ -66,6 +69,8 @@ initialState =
         , dragging = False
         , moving = False
         , ndcPos = { x = 0, y = 0 }
+        , ndcPosDragStart = { x = 0, y = 0 }
+        , wasDragged = False
         , pinchDist = 0
         , rotation = Mat4.identity
         , spinAxis = vec3 0 0 1
@@ -185,11 +190,17 @@ pinchTo posA posB alter (State state) =
 
 startDragging : Position -> State -> State
 startDragging pos (State state) =
+    let
+        ndcPos =
+            positionToNdc pos (State state)
+    in
     State
         { state
             | dragging = True
             , moving = True
-            , ndcPos = positionToNdc pos (State state)
+            , wasDragged = False
+            , ndcPos = ndcPos
+            , ndcPosDragStart = ndcPos
             , spinAngle = 0
         }
 
@@ -199,16 +210,23 @@ dragTo pos alter (State state) =
     let
         ndcPos =
             positionToNdc pos (State state)
+
+        dragged =
+            state.wasDragged || (ndcPos /= state.ndcPosDragStart)
     in
     if state.dragging then
         if alter then
-            panTo ndcPos (State state)
+            panTo ndcPos (State { state | wasDragged = dragged })
 
         else
-            rotateTo ndcPos (State state)
+            rotateTo ndcPos (State { state | wasDragged = dragged })
 
     else
-        State { state | ndcPos = ndcPos }
+        State
+            { state
+                | ndcPos = ndcPos
+                , wasDragged = dragged
+            }
 
 
 finishDragging : State -> State
@@ -407,6 +425,11 @@ isDragging (State state) =
 isMoving : State -> Bool
 isMoving (State state) =
     state.moving
+
+
+wasDragged : State -> Bool
+wasDragged (State state) =
+    state.wasDragged
 
 
 setRedraws : Bool -> State -> State
