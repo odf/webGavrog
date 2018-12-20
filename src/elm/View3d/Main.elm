@@ -201,7 +201,7 @@ type alias Position =
 
 type Msg
     = FrameMsg Float
-    | MouseUpMsg
+    | MouseUpMsg Position
     | MouseDownMsg Position
     | MouseMoveMsg Position
     | TouchStartMsg (List Position)
@@ -241,7 +241,7 @@ subscriptions toMsg model =
     in
     frameEvent
         :: moveEvent
-        :: [ Events.onMouseUp (Decode.succeed MouseUpMsg)
+        :: [ Events.onMouseUp (Decode.map MouseUpMsg decodePos)
            , Events.onKeyDown (Decode.map KeyDownMsg decodeKey)
            , Events.onKeyUp (Decode.map KeyUpMsg decodeKey)
            ]
@@ -264,30 +264,27 @@ update msg model =
             updateCamera (Camera.nextFrame time) model
 
         MouseDownMsg pos ->
+            updateCamera (Camera.startDragging pos) model
+
+        MouseUpMsg pos ->
             let
-                ray =
-                    Camera.pickingRay pos model.cameraState
-
-                camState =
-                    Camera.startDragging pos model.cameraState
-
-                {--
-                dummy =
-                    ray
-                        |> Maybe.map (\r -> pick r model.pickingScene)
-                        |> Maybe.map (Debug.log "picked")
-
-                --}
+                newModel =
+                    updateCamera Camera.finishDragging model
             in
-            { model | cameraState = camState, pickingRay = ray }
+            if Camera.wasDragged model.cameraState then
+                newModel
 
-        MouseUpMsg ->
-            let
-                clicked =
-                    not (Camera.wasDragged model.cameraState)
-                        |> Debug.log "clicked"
-            in
-            updateCamera Camera.finishDragging model
+            else
+                let
+                    ray =
+                        Camera.pickingRay pos model.cameraState
+
+                    dummy =
+                        ray
+                            |> Maybe.map (\r -> pick r model.pickingScene)
+                            |> Maybe.map (Debug.log "clicked on")
+                in
+                newModel
 
         MouseMoveMsg pos ->
             updateCamera (Camera.dragTo pos alter) model
