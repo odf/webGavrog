@@ -172,7 +172,7 @@ minimumBy fn xs =
         xs
 
 
-pick : Camera.Ray -> PickingScene -> Maybe ( Float, Int, Int )
+pick : Camera.Ray -> PickingScene -> Maybe ( Int, Int )
 pick ray pscene =
     let
         orig =
@@ -188,7 +188,7 @@ pick ray pscene =
                     |> Maybe.map (\t -> ( t, idxMesh, idxInstance ))
             )
         |> minimumBy (\( t, m, i ) -> t)
-        |> Maybe.map (\( t, m, i ) -> ( t, m, i ))
+        |> Maybe.map (\( t, m, i ) -> ( m, i ))
 
 
 
