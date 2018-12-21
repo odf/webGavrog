@@ -129,11 +129,25 @@ rayTriangleIntersection orig dir ( vert0, vert1, vert2 ) =
 rayMeshIntersection : Vec3 -> Vec3 -> Mesh Vec3 -> Maybe Float
 rayMeshIntersection orig dir mesh =
     let
-        intersect triangles =
-            triangles
-                |> List.filterMap (rayTriangleIntersection orig dir)
-                |> List.map (\( t, u, v ) -> t)
-                |> List.minimum
+        step triangle bestSoFar =
+            case rayTriangleIntersection orig dir triangle of
+                Nothing ->
+                    bestSoFar
+
+                Just ( tNew, _, _ ) ->
+                    case bestSoFar of
+                        Nothing ->
+                            Just tNew
+
+                        Just tOld ->
+                            if tNew < tOld then
+                                Just tNew
+
+                            else
+                                bestSoFar
+
+        intersect =
+            List.foldl step Nothing
     in
     case mesh of
         Lines _ ->

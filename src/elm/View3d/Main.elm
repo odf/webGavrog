@@ -175,20 +175,34 @@ minimumBy fn xs =
 pick : Camera.Ray -> PickingScene -> Maybe ( Int, Int )
 pick ray pscene =
     let
-        orig =
-            ray.origin
+        step { mesh, inverseTransform, idxMesh, idxInstance } bestSoFar =
+            let
+                intersection =
+                    Mesh.mappedRayMeshIntersection
+                        ray.origin
+                        ray.direction
+                        inverseTransform
+                        mesh
+            in
+            case intersection of
+                Nothing ->
+                    bestSoFar
 
-        dir =
-            ray.direction
+                Just tNew ->
+                    case bestSoFar of
+                        Nothing ->
+                            Just ( tNew, idxMesh, idxInstance )
+
+                        Just ( tOld, _, _ ) ->
+                            if tNew < tOld then
+                                Just ( tNew, idxMesh, idxInstance )
+
+                            else
+                                bestSoFar
     in
     pscene
-        |> List.filterMap
-            (\{ mesh, inverseTransform, idxMesh, idxInstance } ->
-                Mesh.mappedRayMeshIntersection orig dir inverseTransform mesh
-                    |> Maybe.map (\t -> ( t, idxMesh, idxInstance ))
-            )
-        |> minimumBy (\( t, m, i ) -> t)
-        |> Maybe.map (\( t, m, i ) -> ( m, i ))
+        |> List.foldl step Nothing
+        |> Maybe.map (\( _, idxMesh, idxInstance ) -> ( idxMesh, idxInstance ))
 
 
 
