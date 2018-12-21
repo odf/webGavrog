@@ -140,7 +140,7 @@ rayMeshIntersection orig dir mesh =
                             Just tNew
 
                         Just tOld ->
-                            if tNew < tOld then
+                            if tNew < tOld && tNew > 0 then
                                 Just tNew
 
                             else
