@@ -249,7 +249,19 @@ update msg model =
             )
 
         ViewMsg viewMsg ->
-            ( updateView3d (View3d.update viewMsg) model, Cmd.none )
+            let
+                ( viewState, outcome ) =
+                    View3d.update viewMsg model.viewState
+
+                dummy =
+                    case outcome of
+                        View3d.None ->
+                            Nothing
+
+                        _ ->
+                            Just <| Debug.log "outcome" outcome
+            in
+            ( { model | viewState = viewState }, Cmd.none )
 
         ActivateMenu onOff ->
             ( updateMenuActive model onOff, Cmd.none )

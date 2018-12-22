@@ -1,6 +1,7 @@
 module View3d.Main exposing
     ( Model
     , Msg
+    , Outcome(..)
     , encompass
     , init
     , lookAlong
@@ -55,6 +56,11 @@ type alias Model =
     , radius : Float
     , modifiers : { shift : Bool, ctrl : Bool }
     }
+
+
+type Outcome
+    = None
+    | Picked { modelIndex : Int, instanceIndex : Int }
 
 
 init : Model
@@ -267,7 +273,7 @@ subscriptions toMsg model =
 -- UPDATE
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Outcome )
 update msg model =
     let
         alter =
@@ -275,51 +281,55 @@ update msg model =
     in
     case msg of
         FrameMsg time ->
-            updateCamera (Camera.nextFrame time) model
+            ( updateCamera (Camera.nextFrame time) model, None )
 
         MouseDownMsg pos ->
-            updateCamera (Camera.startDragging pos) model
+            ( updateCamera (Camera.startDragging pos) model, None )
 
         MouseUpMsg pos ->
             let
-                newModel =
-                    updateCamera Camera.finishDragging model
+                outcome =
+                    if Camera.wasDragged model.cameraState then
+                        None
+
+                    else
+                        pickingOutcome pos model
             in
-            if Camera.wasDragged model.cameraState then
-                newModel
-
-            else
-                let
-                    ray =
-                        Camera.pickingRay pos model.cameraState
-
-                    dummy =
-                        ray
-                            |> Maybe.map (\r -> pick r model.pickingScene)
-                            |> Maybe.map (Debug.log "clicked on")
-                in
-                newModel
+            ( updateCamera Camera.finishDragging model, outcome )
 
         MouseMoveMsg pos ->
-            updateCamera (Camera.dragTo pos alter) model
+            ( updateCamera (Camera.dragTo pos alter) model, None )
 
         TouchStartMsg posList ->
-            touchStartUpdate posList model
+            ( touchStartUpdate posList model, None )
 
         TouchMoveMsg posList ->
-            touchMoveUpdate posList model
+            ( touchMoveUpdate posList model, None )
 
         TouchEndMsg ->
-            updateCamera Camera.finishDragging model
+            ( updateCamera Camera.finishDragging model, None )
 
         WheelMsg val ->
-            updateCamera (Camera.updateZoom (wheelZoomFactor val) alter) model
+            ( updateCamera (Camera.updateZoom (wheelZoomFactor val) alter) model
+            , None
+            )
 
         KeyDownMsg code ->
-            setModifiers code True model
+            ( setModifiers code True model, None )
 
         KeyUpMsg code ->
-            setModifiers code False model
+            ( setModifiers code False model, None )
+
+
+pickingOutcome : Position -> Model -> Outcome
+pickingOutcome pos model =
+    Camera.pickingRay pos model.cameraState
+        |> Maybe.andThen
+            (\r -> pick r model.pickingScene)
+        |> Maybe.map
+            (\( m, i ) -> Picked { modelIndex = m, instanceIndex = i })
+        |> Maybe.withDefault
+            None
 
 
 centerPosition : List Position -> Position
