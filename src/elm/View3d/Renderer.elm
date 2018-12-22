@@ -27,6 +27,8 @@ type alias Scene =
         { mesh : WebGL.Mesh Vertex
         , material : Material
         , transform : Mat4
+        , idxMesh : Int
+        , idxInstance : Int
         }
 
 

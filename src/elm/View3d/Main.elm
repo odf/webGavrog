@@ -95,19 +95,26 @@ glMesh mesh =
 
 glScene : Scene -> Renderer.Scene
 glScene scene =
-    List.concatMap
-        (\entry ->
-            let
-                mesh =
-                    glMesh entry.mesh
-            in
-            List.map
-                (\{ material, transform } ->
-                    { mesh = mesh, material = material, transform = transform }
-                )
-                entry.instances
-        )
-        scene
+    scene
+        |> List.indexedMap
+            (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
+        |> List.concatMap
+            (\( rawMesh, instances, idxMesh ) ->
+                let
+                    mesh =
+                        glMesh rawMesh
+                in
+                List.indexedMap
+                    (\idxInstance { material, transform } ->
+                        { mesh = mesh
+                        , material = material
+                        , transform = transform
+                        , idxMesh = idxMesh
+                        , idxInstance = idxInstance
+                        }
+                    )
+                    instances
+            )
 
 
 pickingMesh : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
