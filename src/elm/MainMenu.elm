@@ -316,18 +316,37 @@ updateView3d fn model =
 handleView3dOutcome : View3d.Outcome -> Model -> Model
 handleView3dOutcome outcome model =
     let
-        selected =
+        oldSelection =
+            model.viewState.selected
+
+        newSelection =
             case outcome of
                 View3d.None ->
-                    model.viewState.selected
+                    oldSelection
 
-                View3d.PickEmpty ->
-                    Set.empty
+                View3d.PickEmpty { modifiers } ->
+                    if modifiers.ctrl || modifiers.shift then
+                        oldSelection
+
+                    else
+                        Set.empty
 
                 View3d.Pick { modelIndex, instanceIndex, modifiers } ->
-                    Set.singleton ( modelIndex, instanceIndex )
+                    let
+                        item =
+                            ( modelIndex, instanceIndex )
+                    in
+                    if modifiers.ctrl || modifiers.shift then
+                        if Set.member item oldSelection then
+                            Set.remove item oldSelection
+
+                        else
+                            Set.insert item oldSelection
+
+                    else
+                        Set.singleton item
     in
-    { model | viewState = View3d.setSelection selected model.viewState }
+    { model | viewState = View3d.setSelection newSelection model.viewState }
 
 
 updateMenuActive : Model -> Bool -> Model

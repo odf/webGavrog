@@ -64,6 +64,8 @@ type alias Model =
 type Outcome
     = None
     | PickEmpty
+        { modifiers : { shift : Bool, ctrl : Bool }
+        }
     | Pick
         { modelIndex : Int
         , instanceIndex : Int
@@ -351,7 +353,7 @@ pickingOutcome pos model =
                     }
             )
         |> Maybe.withDefault
-            PickEmpty
+            (PickEmpty { modifiers = model.modifiers })
 
 
 centerPosition : List Position -> Position
