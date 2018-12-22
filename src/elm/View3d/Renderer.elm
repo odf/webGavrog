@@ -100,10 +100,10 @@ entities scene selected camDist viewingMatrix perspectiveMatrix =
                         { baseUniforms
                             | transform = transform
                             , ambientColor = vec3 1 0 0
-                            , diffuseColor = material.diffuseColor
+                            , diffuseColor = vec3 1 1 1
                             , specularColor = material.specularColor
-                            , ka = 0.8
-                            , kd = material.kd
+                            , ka = 0.5
+                            , kd = 0.5
                             , ks = material.ks
                             , shininess = material.shininess
                         }
