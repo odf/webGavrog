@@ -63,7 +63,8 @@ type alias Model =
 
 type Outcome
     = None
-    | Picked
+    | PickEmpty
+    | Pick
         { modelIndex : Int
         , instanceIndex : Int
         , modifiers : { shift : Bool, ctrl : Bool }
@@ -343,14 +344,14 @@ pickingOutcome pos model =
             (\r -> pick r model.pickingScene)
         |> Maybe.map
             (\( m, i ) ->
-                Picked
+                Pick
                     { modelIndex = m
                     , instanceIndex = i
                     , modifiers = model.modifiers
                     }
             )
         |> Maybe.withDefault
-            None
+            PickEmpty
 
 
 centerPosition : List Position -> Position
@@ -469,6 +470,7 @@ setScene spec model =
     { model
         | scene = glScene scene
         , pickingScene = pickingScene scene
+        , selected = Set.empty
         , center = center
         , radius = radius
     }
