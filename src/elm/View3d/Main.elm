@@ -7,6 +7,7 @@ module View3d.Main exposing
     , lookAlong
     , setRedraws
     , setScene
+    , setSelection
     , setSize
     , subscriptions
     , update
@@ -21,6 +22,7 @@ import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Set exposing (Set)
 import Time exposing (Posix)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
@@ -52,6 +54,7 @@ type alias Model =
     , pickingRay : Maybe Camera.Ray
     , scene : Renderer.Scene
     , pickingScene : PickingScene
+    , selected : Set ( Int, Int )
     , center : Vec3
     , radius : Float
     , modifiers : { shift : Bool, ctrl : Bool }
@@ -74,6 +77,7 @@ init =
     , pickingRay = Nothing
     , scene = []
     , pickingScene = []
+    , selected = Set.empty
     , center = vec3 0 0 0
     , radius = 0
     , modifiers = { shift = False, ctrl = False }
@@ -470,6 +474,15 @@ setScene spec model =
     }
         |> lookAlong (vec3 0 0 -1) (vec3 0 1 0)
         |> encompass
+
+
+setSelection : Set ( Int, Int ) -> Model -> Model
+setSelection selected model =
+    let
+        dummy =
+            Debug.log "selected" selected
+    in
+    { model | selected = selected }
 
 
 setRedraws : Bool -> Model -> Model

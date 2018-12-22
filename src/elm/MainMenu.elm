@@ -16,6 +16,7 @@ import Json.Decode as Decode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Options
+import Set exposing (Set)
 import Styling
 import Task
 import View3d.Main as View3d
@@ -250,18 +251,13 @@ update msg model =
 
         ViewMsg viewMsg ->
             let
-                ( viewState, outcome ) =
+                ( viewStateTmp, outcome ) =
                     View3d.update viewMsg model.viewState
-
-                dummy =
-                    case outcome of
-                        View3d.None ->
-                            Nothing
-
-                        _ ->
-                            Just <| Debug.log "outcome" outcome
             in
-            ( { model | viewState = viewState }, Cmd.none )
+            ( { model | viewState = viewStateTmp }
+                |> handleView3dOutcome outcome
+            , Cmd.none
+            )
 
         ActivateMenu onOff ->
             ( updateMenuActive model onOff, Cmd.none )
@@ -315,6 +311,21 @@ update msg model =
 updateView3d : (View3d.Model -> View3d.Model) -> Model -> Model
 updateView3d fn model =
     { model | viewState = fn model.viewState }
+
+
+handleView3dOutcome : View3d.Outcome -> Model -> Model
+handleView3dOutcome outcome model =
+    case outcome of
+        View3d.None ->
+            model
+
+        View3d.Picked { modelIndex, instanceIndex, modifiers } ->
+            { model
+                | viewState =
+                    View3d.setSelection
+                        (Set.singleton ( modelIndex, instanceIndex ))
+                        model.viewState
+            }
 
 
 updateMenuActive : Model -> Bool -> Model
