@@ -60,7 +60,11 @@ type alias Model =
 
 type Outcome
     = None
-    | Picked { modelIndex : Int, instanceIndex : Int }
+    | Picked
+        { modelIndex : Int
+        , instanceIndex : Int
+        , modifiers : { shift : Bool, ctrl : Bool }
+        }
 
 
 init : Model
@@ -327,7 +331,13 @@ pickingOutcome pos model =
         |> Maybe.andThen
             (\r -> pick r model.pickingScene)
         |> Maybe.map
-            (\( m, i ) -> Picked { modelIndex = m, instanceIndex = i })
+            (\( m, i ) ->
+                Picked
+                    { modelIndex = m
+                    , instanceIndex = i
+                    , modifiers = model.modifiers
+                    }
+            )
         |> Maybe.withDefault
             None
 
