@@ -478,10 +478,6 @@ setScene spec model =
 
 setSelection : Set ( Int, Int ) -> Model -> Model
 setSelection selected model =
-    let
-        dummy =
-            Debug.log "selected" selected
-    in
     { model | selected = selected }
 
 
@@ -511,6 +507,7 @@ view toMsg model =
         ]
         (Renderer.entities
             model.scene
+            model.selected
             (Camera.cameraDistance model.cameraState)
             (Camera.viewingMatrix model.cameraState)
             (Camera.perspectiveMatrix model.cameraState)

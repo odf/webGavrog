@@ -2,6 +2,7 @@ module View3d.Renderer exposing (Material, Scene, Vertex, entities)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Set exposing (Set)
 import WebGL
 
 
@@ -59,8 +60,14 @@ type alias Varyings =
     }
 
 
-entities : Scene -> Float -> Mat4 -> Mat4 -> List WebGL.Entity
-entities scene camDist viewingMatrix perspectiveMatrix =
+entities :
+    Scene
+    -> Set ( Int, Int )
+    -> Float
+    -> Mat4
+    -> Mat4
+    -> List WebGL.Entity
+entities scene selected camDist viewingMatrix perspectiveMatrix =
     let
         black =
             vec3 0 0 0
@@ -86,19 +93,32 @@ entities scene camDist viewingMatrix perspectiveMatrix =
             }
     in
     List.map
-        (\{ mesh, material, transform } ->
+        (\{ mesh, material, transform, idxMesh, idxInstance } ->
             let
                 uniforms =
-                    { baseUniforms
-                        | transform = transform
-                        , ambientColor = material.ambientColor
-                        , diffuseColor = material.diffuseColor
-                        , specularColor = material.specularColor
-                        , ka = material.ka
-                        , kd = material.kd
-                        , ks = material.ks
-                        , shininess = material.shininess
-                    }
+                    if Set.member ( idxMesh, idxInstance ) selected then
+                        { baseUniforms
+                            | transform = transform
+                            , ambientColor = vec3 1 0 0
+                            , diffuseColor = material.diffuseColor
+                            , specularColor = material.specularColor
+                            , ka = 0.8
+                            , kd = material.kd
+                            , ks = material.ks
+                            , shininess = material.shininess
+                        }
+
+                    else
+                        { baseUniforms
+                            | transform = transform
+                            , ambientColor = material.ambientColor
+                            , diffuseColor = material.diffuseColor
+                            , specularColor = material.specularColor
+                            , ka = material.ka
+                            , kd = material.kd
+                            , ks = material.ks
+                            , shininess = material.shininess
+                        }
             in
             WebGL.entity vertexShader fragmentShader mesh uniforms
         )
