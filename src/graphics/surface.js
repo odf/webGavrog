@@ -11,6 +11,38 @@ const centroid = pos => ops.div(sum(pos), S.seq(pos).length);
 const normalized = v => ops.div(v, ops.norm(v));
 
 
+export const tightened = ({ faces, pos, isFixed }) => {
+  pos = pos.slice();
+
+  for (let s = 0; s < 10; ++s) {
+    const gradients = pos.map(v => ops.times(v, 0));
+
+    for (const f of faces) {
+      const m = f.length;
+      for (let i = 0; i < m; ++i) {
+        const u = f[i];
+        const v = f[(i + 1) % m];
+        const w = f[(i + 2) % m];
+
+        const a = ops.minus(pos[u], pos[v]);
+        const b = ops.minus(pos[w], pos[v]);
+        const c = ops.minus(pos[w], pos[u]);
+        const n = ops.crossProduct(b, a);
+        const g = ops.div(ops.crossProduct(n, c), ops.norm(n));
+
+        gradients[v] = ops.plus(gradients[v], g);
+      }
+    }
+
+    pos = pos.map(
+      (v, i) => isFixed[i] ? v : ops.plus(v, ops.times(0.1, gradients[i]))
+    );
+  }
+
+  return { faces, pos, isFixed };
+};
+
+
 const edgeIndexes = faces => {
   const edges = [];
   const edgeIndex = {};

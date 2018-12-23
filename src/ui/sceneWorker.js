@@ -13,6 +13,7 @@ const handlers = {
     return solidsIn.map(({ pos, faces, isFixed, subDLevel }) => {
       const t1 = surface.withFlattenedCenterFaces({ pos, faces, isFixed });
       const t2 = Array(subDLevel).fill(0).reduce(s => surface.subD(s), t1);
+      //const t2a = surface.tightened(t2);
       const t3 = surface.insetAt(t2, 0.02, t2.isFixed);
       return surface.beveledAt(t3, 0.01, t2.isFixed);
     });
