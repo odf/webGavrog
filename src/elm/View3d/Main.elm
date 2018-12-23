@@ -39,21 +39,17 @@ type alias FrameSize =
     { width : Float, height : Float }
 
 
-type alias PickingScene =
-    List
-        { mesh : Mesh Vec3
-        , inverseTransform : Mat4
-        , idxMesh : Int
-        , idxInstance : Int
-        }
+type alias PickingInfo =
+    { pickingMesh : Maybe (Mesh Vec3)
+    , inverseTransform : Maybe Mat4
+    }
 
 
 type alias Model =
     { size : FrameSize
     , cameraState : Camera.State
     , pickingRay : Maybe Camera.Ray
-    , scene : Renderer.Scene
-    , pickingScene : PickingScene
+    , scene : Renderer.Scene PickingInfo
     , selected : Set ( Int, Int )
     , center : Vec3
     , radius : Float
@@ -79,7 +75,6 @@ init =
     , cameraState = Camera.initialState
     , pickingRay = Nothing
     , scene = []
-    , pickingScene = []
     , selected = Set.empty
     , center = vec3 0 0 0
     , radius = 0
@@ -87,8 +82,8 @@ init =
     }
 
 
-glMesh : Mesh Renderer.Vertex -> WebGL.Mesh Renderer.Vertex
-glMesh mesh =
+meshForRenderer : Mesh Renderer.Vertex -> WebGL.Mesh Renderer.Vertex
+meshForRenderer mesh =
     case mesh of
         Mesh.Lines lines ->
             WebGL.lines lines
@@ -100,32 +95,8 @@ glMesh mesh =
             WebGL.indexedTriangles vertices triangles
 
 
-glScene : Scene -> Renderer.Scene
-glScene scene =
-    scene
-        |> List.indexedMap
-            (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
-        |> List.concatMap
-            (\( rawMesh, instances, idxMesh ) ->
-                let
-                    mesh =
-                        glMesh rawMesh
-                in
-                List.indexedMap
-                    (\idxInstance { material, transform } ->
-                        { mesh = mesh
-                        , material = material
-                        , transform = transform
-                        , idxMesh = idxMesh
-                        , idxInstance = idxInstance
-                        }
-                    )
-                    instances
-            )
-
-
-pickingMesh : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
-pickingMesh mesh =
+meshForPicking : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
+meshForPicking mesh =
     case mesh of
         Mesh.Lines lines ->
             Nothing
@@ -143,70 +114,46 @@ pickingMesh mesh =
                 )
 
 
-pickingScene : Scene -> PickingScene
-pickingScene scene =
-    let
-        convertInstances ( mesh, instances, idxMesh ) =
-            instances
-                |> List.indexedMap
-                    (\idxInstance { transform } ->
-                        ( transform, idxInstance )
-                    )
-                |> List.filterMap
-                    (\( transform, idxInstance ) ->
-                        Mat4.inverse transform
-                            |> Maybe.map (\inv -> ( inv, idxInstance ))
-                    )
-                |> List.map
-                    (\( inv, idxInstance ) ->
+processedScene : Scene -> Renderer.Scene PickingInfo
+processedScene scene =
+    scene
+        |> List.indexedMap
+            (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
+        |> List.concatMap
+            (\( rawMesh, instances, idxMesh ) ->
+                let
+                    mesh =
+                        meshForRenderer rawMesh
+
+                    pickingMesh =
+                        meshForPicking rawMesh
+                in
+                List.indexedMap
+                    (\idxInstance { material, transform } ->
                         { mesh = mesh
-                        , inverseTransform = inv
+                        , pickingMesh = pickingMesh
+                        , material = material
+                        , transform = transform
+                        , inverseTransform = Mat4.inverse transform
                         , idxMesh = idxMesh
                         , idxInstance = idxInstance
                         }
                     )
-    in
-    scene
-        |> List.indexedMap
-            (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
-        |> List.filterMap
-            (\( mesh, instances, idxMesh ) ->
-                pickingMesh mesh
-                    |> Maybe.map (\m -> ( m, instances, idxMesh ))
+                    instances
             )
-        |> List.concatMap convertInstances
 
 
-minimumBy : (a -> comparable) -> List a -> Maybe a
-minimumBy fn xs =
-    List.foldl
-        (\x acc ->
-            case acc of
-                Nothing ->
-                    Just x
-
-                Just val ->
-                    if fn x < fn val then
-                        Just x
-
-                    else
-                        acc
-        )
-        Nothing
-        xs
-
-
-pick : Camera.Ray -> PickingScene -> Maybe ( Int, Int )
+pick : Camera.Ray -> Renderer.Scene PickingInfo -> Maybe ( Int, Int )
 pick ray pscene =
     let
-        step { mesh, inverseTransform, idxMesh, idxInstance } bestSoFar =
+        intersect =
+            Mesh.mappedRayMeshIntersection ray.origin ray.direction
+
+        step { pickingMesh, inverseTransform, idxMesh, idxInstance } bestSoFar =
             let
                 intersection =
-                    Mesh.mappedRayMeshIntersection
-                        ray.origin
-                        ray.direction
-                        inverseTransform
-                        mesh
+                    Maybe.map2 Tuple.pair inverseTransform pickingMesh
+                        |> Maybe.andThen (\( t, m ) -> intersect t m)
             in
             case intersection of
                 Nothing ->
@@ -343,7 +290,7 @@ pickingOutcome : Position -> Model -> Outcome
 pickingOutcome pos model =
     Camera.pickingRay pos model.cameraState
         |> Maybe.andThen
-            (\r -> pick r model.pickingScene)
+            (\r -> pick r model.scene)
         |> Maybe.map
             (\( m, i ) ->
                 Pick
@@ -460,9 +407,6 @@ setScene spec model =
         box =
             Scene.boundingBox spec
 
-        scene =
-            Scene.makeScene spec
-
         center =
             Vec3.add box.minima box.maxima |> Vec3.scale (1 / 2)
 
@@ -470,8 +414,7 @@ setScene spec model =
             Vec3.length <| Vec3.sub box.minima center
     in
     { model
-        | scene = glScene scene
-        , pickingScene = pickingScene scene
+        | scene = processedScene <| Scene.makeScene spec
         , selected = Set.empty
         , center = center
         , radius = radius

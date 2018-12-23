@@ -23,13 +23,14 @@ type alias Material =
     }
 
 
-type alias Scene =
+type alias Scene a =
     List
-        { mesh : WebGL.Mesh Vertex
-        , material : Material
-        , transform : Mat4
-        , idxMesh : Int
-        , idxInstance : Int
+        { a
+            | mesh : WebGL.Mesh Vertex
+            , material : Material
+            , transform : Mat4
+            , idxMesh : Int
+            , idxInstance : Int
         }
 
 
@@ -61,7 +62,7 @@ type alias Varyings =
 
 
 entities :
-    Scene
+    Scene a
     -> Set ( Int, Int )
     -> Float
     -> Mat4
