@@ -48,7 +48,6 @@ type alias PickingInfo =
 type alias Model =
     { size : FrameSize
     , cameraState : Camera.State
-    , pickingRay : Maybe Camera.Ray
     , scene : Renderer.Scene PickingInfo
     , selected : Set ( Int, Int )
     , center : Vec3
@@ -73,7 +72,6 @@ init : Model
 init =
     { size = { width = 0, height = 0 }
     , cameraState = Camera.initialState
-    , pickingRay = Nothing
     , scene = []
     , selected = Set.empty
     , center = vec3 0 0 0
