@@ -1,5 +1,6 @@
 module View3d.Mesh exposing
     ( Mesh(..)
+    , getVertices
     , mappedRayMeshIntersection
     , resolvedSurface
     , surface
@@ -67,6 +68,21 @@ wireframe vertices faces =
         |> Lines
 
 
+getVertices : Mesh vertex -> List vertex
+getVertices mesh =
+    case mesh of
+        Lines lines ->
+            lines
+                |> List.concatMap (\( u, v ) -> [ u, v ])
+
+        Triangles triangles ->
+            triangles
+                |> List.concatMap (\( u, v, w ) -> [ u, v, w ])
+
+        IndexedTriangles vertices _ ->
+            vertices
+
+
 
 -- Möller-Trumbore algorithm for ray-triangle intersection:
 
@@ -126,45 +142,68 @@ rayTriangleIntersection orig dir ( vert0, vert1, vert2 ) =
                 Just ( t, u, v )
 
 
-rayMeshIntersection : Vec3 -> Vec3 -> Mesh Vec3 -> Maybe Float
-rayMeshIntersection orig dir mesh =
+rayIntersectsSphere : Vec3 -> Vec3 -> Vec3 -> Float -> Bool
+rayIntersectsSphere orig dir center radius =
     let
-        step triangle bestSoFar =
-            case rayTriangleIntersection orig dir triangle of
-                Nothing ->
-                    bestSoFar
+        t =
+            Vec3.sub center orig
 
-                Just ( tNew, _, _ ) ->
-                    case bestSoFar of
-                        Nothing ->
-                            Just tNew
+        lambda =
+            Vec3.dot t dir
+    in
+    Vec3.lengthSquared t - lambda ^ 2 <= radius ^ 2
 
-                        Just tOld ->
-                            if tNew < tOld && tNew > 0 then
+
+rayMeshIntersection : Vec3 -> Vec3 -> Mesh Vec3 -> Vec3 -> Float -> Maybe Float
+rayMeshIntersection orig dir mesh center radius =
+    if rayIntersectsSphere orig dir center radius then
+        let
+            step triangle bestSoFar =
+                case rayTriangleIntersection orig dir triangle of
+                    Nothing ->
+                        bestSoFar
+
+                    Just ( tNew, _, _ ) ->
+                        case bestSoFar of
+                            Nothing ->
                                 Just tNew
 
-                            else
-                                bestSoFar
+                            Just tOld ->
+                                if tNew < tOld && tNew > 0 then
+                                    Just tNew
 
-        intersect =
-            List.foldl step Nothing
-    in
-    case mesh of
-        Lines _ ->
-            Nothing
+                                else
+                                    bestSoFar
 
-        Triangles triangles ->
-            intersect triangles
+            intersect =
+                List.foldl step Nothing
+        in
+        case mesh of
+            Lines _ ->
+                Nothing
 
-        IndexedTriangles vertices triplets ->
-            triplets
-                |> List.map (\( i, j, k ) -> [ i, j, k ])
-                |> List.concatMap (makeTriangles << pullCorners vertices)
-                |> intersect
+            Triangles triangles ->
+                intersect triangles
+
+            IndexedTriangles vertices triplets ->
+                triplets
+                    |> List.map (\( i, j, k ) -> [ i, j, k ])
+                    |> List.concatMap (makeTriangles << pullCorners vertices)
+                    |> intersect
+
+    else
+        Nothing
 
 
-mappedRayMeshIntersection : Vec3 -> Vec3 -> Mat4 -> Mesh Vec3 -> Maybe Float
-mappedRayMeshIntersection orig dir mat mesh =
+mappedRayMeshIntersection :
+    Vec3
+    -> Vec3
+    -> Mat4
+    -> Mesh Vec3
+    -> Vec3
+    -> Float
+    -> Maybe Float
+mappedRayMeshIntersection orig dir mat mesh center radius =
     let
         target =
             Vec3.add orig dir
@@ -181,5 +220,5 @@ mappedRayMeshIntersection orig dir mat mesh =
         mappedDir =
             Vec3.scale factor (Vec3.sub mappedTarget mappedOrig)
     in
-    rayMeshIntersection mappedOrig mappedDir mesh
+    rayMeshIntersection mappedOrig mappedDir mesh center radius
         |> Maybe.map ((*) factor)

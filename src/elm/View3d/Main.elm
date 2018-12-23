@@ -40,7 +40,9 @@ type alias FrameSize =
 
 
 type alias PickingInfo =
-    { pickingMesh : Maybe (Mesh Vec3)
+    { centroid : Vec3
+    , radius : Float
+    , pickingMesh : Maybe (Mesh Vec3)
     , inverseTransform : Maybe Mat4
     }
 
@@ -125,11 +127,30 @@ processedScene scene =
 
                     pickingMesh =
                         meshForPicking rawMesh
+
+                    vertices =
+                        List.map .pos (Mesh.getVertices rawMesh)
+
+                    n =
+                        List.length vertices
+
+                    centroid =
+                        vertices
+                            |> List.foldl Vec3.add (vec3 0 0 0)
+                            |> Vec3.scale (1 / toFloat n)
+
+                    radius =
+                        vertices
+                            |> List.map (\v -> Vec3.distance v centroid)
+                            |> List.maximum
+                            |> Maybe.withDefault 0.0
                 in
                 List.indexedMap
                     (\idxInstance { material, transform } ->
                         { mesh = mesh
                         , pickingMesh = pickingMesh
+                        , centroid = centroid
+                        , radius = radius
                         , material = material
                         , transform = transform
                         , inverseTransform = Mat4.inverse transform
@@ -147,11 +168,23 @@ pick ray pscene =
         intersect =
             Mesh.mappedRayMeshIntersection ray.origin ray.direction
 
-        step { pickingMesh, inverseTransform, idxMesh, idxInstance } bestSoFar =
+        step item bestSoFar =
             let
+                mat =
+                    item.inverseTransform
+
+                mesh =
+                    item.pickingMesh
+
+                c =
+                    item.centroid
+
+                r =
+                    item.radius
+
                 intersection =
-                    Maybe.map2 Tuple.pair inverseTransform pickingMesh
-                        |> Maybe.andThen (\( t, m ) -> intersect t m)
+                    Maybe.map2 Tuple.pair mat mesh
+                        |> Maybe.andThen (\( t, m ) -> intersect t m c r)
             in
             case intersection of
                 Nothing ->
@@ -160,11 +193,11 @@ pick ray pscene =
                 Just tNew ->
                     case bestSoFar of
                         Nothing ->
-                            Just ( tNew, idxMesh, idxInstance )
+                            Just ( tNew, item.idxMesh, item.idxInstance )
 
                         Just ( tOld, _, _ ) ->
                             if tNew < tOld then
-                                Just ( tNew, idxMesh, idxInstance )
+                                Just ( tNew, item.idxMesh, item.idxInstance )
 
                             else
                                 bestSoFar
