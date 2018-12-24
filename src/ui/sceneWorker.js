@@ -11,11 +11,20 @@ import embed         from '../pgraphs/embedding';
 const handlers = {
   processSolids(solidsIn) {
     return solidsIn.map(({ pos, faces, isFixed, subDLevel }) => {
-      const t1 = surface.withFlattenedCenterFaces({ pos, faces, isFixed });
-      const t2 = Array(subDLevel).fill(0).reduce(s => surface.subD(s), t1);
-      //const t2a = surface.tightened(t2);
-      const t3 = surface.insetAt(t2, 0.02, t2.isFixed);
-      return surface.beveledAt(t3, 0.01, t2.isFixed);
+      let t = { pos, faces, isFixed };
+
+      t = surface.withFlattenedCenterFaces(t);
+      for (let i = 1; i < subDLevel; ++i)
+        t = surface.subD(t);
+
+      const t1 = t;
+      t = surface.insetAt(t, 0.03, t1.isFixed);
+      t = surface.beveledAt(t, 0.01, t1.isFixed);
+
+      if (subDLevel > 0)
+        t = surface.subD(t);
+
+      return t;
     });
   },
 
