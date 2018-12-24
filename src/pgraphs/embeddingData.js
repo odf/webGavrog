@@ -138,7 +138,9 @@ const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
 
 export const embeddingData = (graph, sgInfo, syms, options) => {
   const toStd = coordinateChangeAsFloat(sgInfo.toStd);
-  const embedding = embed(graph, options.relaxPositions);
+  const embedResult = embed(graph);
+  const embedding =
+        options.relaxPositions ? embedResult.relaxed : embedResult.barycentric;
 
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
   const stdGram = mapGramMatrix(toStd, embedding.gram);

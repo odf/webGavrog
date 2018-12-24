@@ -302,7 +302,7 @@ if (require.main == module) {
     const skel = skeleton(cov);
     console.log(`skeleton = ${skel.graph}`);
 
-    const embedding = embed(skel.graph, false);
+    const embedding = embed(skel.graph).relaxed;
     const pos = embedding.positions;
     console.log(`vertex positions: ${JSON.stringify(pos)}`);
 

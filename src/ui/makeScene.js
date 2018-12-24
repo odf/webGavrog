@@ -9,8 +9,6 @@ import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
 import {subD}           from '../graphics/surface';
 
-import embed from '../pgraphs/embedding';
-
 import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
@@ -199,10 +197,13 @@ const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
   console.log(`${Math.round(t())} msec to normalize shifts`);
 
   yield log('Computing an embedding...');
-  const embedding = yield runJob({
+  const embedResult = yield runJob({
     cmd: 'embedding',
-    val: { graph, relax: !options.skipRelaxation }
+    val: graph
   });
+  const embedding =
+        options.skipRelaxation ? embedResult.barycentric : embedResult.relaxed;
+
   const basis = unitCells.invariantBasis(embedding.gram);
   const pos = embedding.positions;
   console.log(`${Math.round(t())} msec to compute an embedding`);
@@ -355,10 +356,12 @@ const makeTilingModel =
   console.log(`${Math.round(t())} msec to extract the skeleton`);
 
   yield log('Computing an embedding...');
-  const embedding = yield runJob({
+  const embedResult = yield runJob({
     cmd: 'embedding',
-    val: { graph: skel.graph, relax: !options.skipRelaxation }
+    val: skel.graph
   });
+  const embedding =
+        options.skipRelaxation ? embedResult.barycentric : embedResult.relaxed;
   const pos = embedding.positions;
   console.log(`${Math.round(t())} msec to compute the embedding`);
 

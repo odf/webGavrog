@@ -32,8 +32,8 @@ const handlers = {
     return tilings.makeCover(ds);
   },
 
-  embedding({ graph, relax }) {
-    return embed(graph, relax);
+  embedding(graph) {
+    return embed(graph);
   },
 
   skeleton(cov) {

@@ -339,9 +339,13 @@ const embed = (g, relax=true) => {
   const startParams = _parametersForConfiguration(
     g, gram, posF, gramProjF, posSpace, symF);
 
-  let params = startParams;
+  const result = {};
+  result.barycentric =
+    _configurationFromParameters(g, startParams, gramSpaceF, posSpace);
 
   if (relax) {
+    let params = startParams;
+
     for (let pass = 0; pass < 5; ++pass) {
       const newParams = embedStep(
         params, pass, posSpace, gramSpaceF, edgeOrbits);
@@ -361,9 +365,12 @@ const embed = (g, relax=true) => {
       if (done || !good)
         break;
     }
+
+    result.relaxed =
+      _configurationFromParameters(g, params, gramSpaceF, posSpace);
   }
 
-  return _configurationFromParameters(g, params, gramSpaceF, posSpace);
+  return result;
 };
 
 
@@ -391,7 +398,9 @@ if (require.main == module) {
 
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
-      let embeddings = embed(g, false);
+      const embedResult = embed(g);
+
+      let embeddings = embedResult.barycentric;
 
       console.log(`  initial gram: ${embeddings.gram}`);
       console.log(`  initial positions:`);
@@ -399,7 +408,7 @@ if (require.main == module) {
         console.log(`    ${v} -> ${embeddings.positions[v]}`);
       console.log();
 
-      embeddings = embed(g);
+      embeddings = embedResult.relaxed;
 
       console.log(`  relaxed gram: ${embeddings.gram}`);
       console.log(`  relaxed positions:`);
