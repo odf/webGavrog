@@ -336,12 +336,11 @@ handleView3dOutcome outcome model =
                         item =
                             ( modelIndex, instanceIndex )
                     in
-                    if modifiers.ctrl || modifiers.shift then
-                        if Set.member item oldSelection then
-                            Set.remove item oldSelection
+                    if Set.member item oldSelection then
+                        Set.remove item oldSelection
 
-                        else
-                            Set.insert item oldSelection
+                    else if modifiers.ctrl || modifiers.shift then
+                        Set.insert item oldSelection
 
                     else
                         Set.singleton item
