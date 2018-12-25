@@ -43,6 +43,7 @@ type alias InData =
     { title : Maybe String
     , log : Maybe String
     , scene : Maybe RawSceneSpec
+    , reset : Bool
     }
 
 
@@ -443,6 +444,15 @@ handleJSData data model =
 
                 Just s ->
                     updateView3d (View3d.setScene s)
+           )
+        |> (if data.reset then
+                updateView3d
+                    (View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+                        >> View3d.encompass
+                    )
+
+            else
+                identity
            )
 
 

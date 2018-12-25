@@ -416,8 +416,6 @@ setScene spec model =
         , center = center
         , radius = radius
     }
-        |> lookAlong (vec3 0 0 -1) (vec3 0 1 0)
-        |> encompass
 
 
 setSelection : Set ( Int, Int ) -> Model -> Model

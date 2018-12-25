@@ -94,7 +94,7 @@ const toStructure = (config, model, i) => csp.go(function*() {
     const newModel =
           Object.assign({}, model, { structures, index, data, scene });
 
-    yield config.sendScene(scene);
+    yield config.sendScene(scene, true);
     yield config.sendTitle(title(newModel));
 
     return newModel;
@@ -111,7 +111,7 @@ const updateStructure = (config, model) => csp.go(function*() {
     const scene = yield makeScene(
       model.data, model.options, callWorker, config.log);
 
-    yield config.sendScene(scene);
+    yield config.sendScene(scene, false);
     return Object.assign({}, model, { scene } );
   } catch (ex) {
     console.error(ex);
@@ -198,14 +198,18 @@ const render = domNode => {
     }});
 
   const send = key => val => app.ports.fromJS.send(
-    Object.assign({ title: null, log: null, scene: null }, { [key]: val }));
+    Object.assign({ title: null, log: null, scene: null, reset: false },
+                  { [key]: val }));
+
+  const sendScene = (scene, reset) => app.ports.fromJS.send(
+    { title: null, log: null, scene, reset });
 
   const config = {
     loadFile: fileLoader(),
     saveFile: fileSaver(),
     log: send('log'),
     sendTitle: send('title'),
-    sendScene: send('scene')
+    sendScene
   };
 
   const openFile = () => config.loadFile(
