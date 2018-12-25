@@ -361,9 +361,10 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     const nrTemplates = properties.orbitReps(ds, idcs).length;
     const nrTiles = properties.orbitReps(cov, idcs).length;
 
+    const hue0 = Math.random();
     const materials = [
-      materialPalette(Math.random(), nrTemplates),
-      materialPalette(Math.random(), nrTiles)
+      materialPalette(hue0, nrTemplates),
+      materialPalette(hue0, nrTiles)
     ];
 
     return { type: structure.type, ds, cov, skel, embeddings, materials };
