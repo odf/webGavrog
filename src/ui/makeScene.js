@@ -2,6 +2,7 @@ import * as csp   from 'plexus-csp';
 
 import * as util        from '../common/util';
 import * as delaney     from '../dsymbols/delaney';
+import * as properties  from '../dsymbols/properties';
 import * as tilings     from '../dsymbols/tilings';
 import * as lattices    from '../geometry/lattices';
 import * as unitCells   from '../geometry/unitCells';
@@ -265,10 +266,8 @@ const materialPalette = (initialHue, nrHues) => (
 
 
 const tilingModel = (
-  surfaces, instances, options, basis, extensionFactor, shifts=[[0, 0, 0]]
+  surfaces, instances, options, basis, palette, extensionFactor, shifts
 ) => {
-  const hue0 = Math.random();
-
   const extend = v => ops.times(v, extensionFactor);
   const dVecs = lattices.dirichletVectors(basis).map(extend);
 
@@ -278,10 +277,7 @@ const tilingModel = (
       surfaces.map(({ pos, faces }) => geometry(pos, faces, true))
     : []);
 
-  const nrMaterials =
-        options.colorByTranslationClass ? instances.length : surfaces.length;
-
-  const materials = materialPalette(hue0, nrMaterials);
+  const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
   if (options.showSurfaceMesh)
     materials.push(baseMaterial);
 
@@ -360,17 +356,27 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    return { type: structure.type, ds, cov, skel, embeddings };
+    const dim = delaney.dim(ds);
+    const idcs = [...Array(dim).keys()];
+    const nrTemplates = properties.orbitReps(ds, idcs).length;
+    const nrTiles = properties.orbitReps(cov, idcs).length;
+
+    const materials = [
+      materialPalette(Math.random(), nrTemplates),
+      materialPalette(Math.random(), nrTiles)
+    ];
+
+    return { type: structure.type, ds, cov, skel, embeddings, materials };
   }
 );
 
 
 const makeTilingModel = (data, options, runJob, log) => csp.go(
   function*() {
-    const { ds, cov, skel, embeddings } = data;
+    const { ds, cov, skel, embeddings, materials } = data;
 
     const dim = delaney.dim(ds);
-    const extensionFactor = dim == 3 ? 2 : 6;
+    const extFactor = dim == 3 ? 2 : 6;
 
     const embedding =
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
@@ -401,7 +407,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     yield log('Making the tiling geometry...');
     const shifts = baseShifts(dim).map(s => ops.times(s, basis));
     const model = tilingModel(
-      refinedTemplates, tiles, options, basis, extensionFactor, shifts);
+      refinedTemplates, tiles, options, basis, materials, extFactor, shifts);
     console.log(`${Math.round(t())} msec to make the tiling geometry`);
 
     yield log('Done making the tiling model.');
