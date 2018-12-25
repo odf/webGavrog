@@ -5,7 +5,7 @@ import * as version from '../version';
 import parseDSymbols from '../io/ds';
 
 import { structures } from './builtinStructures';
-import makeScene from './makeScene';
+import { preprocess, makeScene } from './makeScene';
 
 import { Elm } from '../elm/MainMenu';
 
@@ -88,9 +88,11 @@ const toStructure = (config, model, i) => csp.go(function*() {
       });
     }
 
-    const scene = yield makeScene(
-      structures[index], model.options, callWorker, config.log);
-    const newModel = Object.assign({}, model, { structures, index, scene });
+    const data = yield preprocess(structures[index], callWorker, config.log);
+    const scene = yield makeScene(data, model.options, callWorker, config.log);
+
+    const newModel =
+          Object.assign({}, model, { structures, index, data, scene });
 
     yield config.sendScene(scene);
     yield config.sendTitle(title(newModel));
@@ -99,6 +101,21 @@ const toStructure = (config, model, i) => csp.go(function*() {
   } catch (ex) {
     console.error(ex);
     yield config.log(`ERROR processing structure ${i}!!!`);
+    return model;
+  }
+});
+
+
+const updateStructure = (config, model) => csp.go(function*() {
+  try {
+    const scene = yield makeScene(
+      model.data, model.options, callWorker, config.log);
+
+    yield config.sendScene(scene);
+    return Object.assign({}, model, { scene } );
+  } catch (ex) {
+    console.error(ex);
+    yield config.log(`ERROR updating structure ${i}!!!`);
     return model;
   }
 });
@@ -232,7 +249,9 @@ const render = domNode => {
       for (const { key, value } of options)
         model.options[key] = value;
 
-      setStructure(model.index);
+      csp.go(function*() {
+        Object.assign(model, yield updateStructure(config, model));
+      });
     }
   });
 

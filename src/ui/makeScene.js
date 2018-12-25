@@ -201,14 +201,14 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     const embeddings = yield runJob({ cmd: 'embedding', val: graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    return { graph, embeddings };
+    return { type: structure.type, graph, embeddings };
   }
 );
 
 
-const makeNetModel = (structure, options, runJob, log) => csp.go(
+const makeNetModel = (data, options, runJob, log) => csp.go(
   function*() {
-    const { graph, embeddings } = yield preprocessNet(structure, runJob, log);
+    const { graph, embeddings } = data;
 
     const embedding =
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
@@ -360,15 +360,14 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    return { ds, cov, skel, embeddings };
+    return { type: structure.type, ds, cov, skel, embeddings };
   }
 );
 
 
-const makeTilingModel = (structure, options, runJob, log) => csp.go(
+const makeTilingModel = (data, options, runJob, log) => csp.go(
   function*() {
-    const { ds, cov, skel, embeddings } =
-          yield preprocessTiling(structure, runJob, log);
+    const { ds, cov, skel, embeddings } = data;
 
     const dim = delaney.dim(ds);
     const extensionFactor = dim == 3 ? 2 : 6;
@@ -411,6 +410,14 @@ const makeTilingModel = (structure, options, runJob, log) => csp.go(
 );
 
 
+const preprocessors = {
+  tiling        : preprocessTiling,
+  periodic_graph: preprocessNet,
+  net           : preprocessNet,
+  crystal       : preprocessNet
+};
+
+
 const builders = {
   tiling        : makeTilingModel,
   periodic_graph: makeNetModel,
@@ -419,18 +426,33 @@ const builders = {
 };
 
 
-const makeScene = (structure, options, runJob, log) => csp.go(function*() {
-  const type = structure.type;
-  const builder = builders[type];
+export const preprocess = (structure, runJob, log) => csp.go(
+  function*() {
+    const type = structure.type;
+    const preprocessor = preprocessors[type];
 
-  if (builder == null)
-    throw new Error(`rendering not implemented for type ${type}`);
+    if (preprocessor == null)
+      throw new Error(`preprocessing not implemented for type ${type}`);
 
-  const model = yield builder(structure, options, runJob, log);
+    const result = yield preprocessor(structure, runJob, log);
 
-  yield log('');
-  return model;
-});
+    yield log('');
+    return result;
+  }
+);
 
 
-export default makeScene;
+export const makeScene = (data, options, runJob, log) => csp.go(
+  function*() {
+    const type = data.type;
+    const builder = builders[type];
+
+    if (builder == null)
+      throw new Error(`rendering not implemented for type ${type}`);
+
+    const model = yield builder(data, options, runJob, log);
+
+    yield log('');
+    return model;
+  }
+);
