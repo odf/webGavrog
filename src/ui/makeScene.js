@@ -189,53 +189,63 @@ const baseShifts = dim => dim == 3 ?
   cartesian(range(6), range(6));
 
 
-const makeNetModel = (structure, options, runJob, log) => csp.go(function*() {
-  const t = util.timer();
+const preprocessNet = (structure, runJob, log) => csp.go(
+  function*() {
+    const t = util.timer();
 
-  yield log('Normalizing shifts...');
-  const graph = periodic.graphWithNormalizedShifts(structure.graph);
-  console.log(`${Math.round(t())} msec to normalize shifts`);
+    yield log('Normalizing shifts...');
+    const graph = periodic.graphWithNormalizedShifts(structure.graph);
+    console.log(`${Math.round(t())} msec to normalize shifts`);
 
-  yield log('Computing an embedding...');
-  const embedResult = yield runJob({
-    cmd: 'embedding',
-    val: graph
-  });
-  const embedding =
-        options.skipRelaxation ? embedResult.barycentric : embedResult.relaxed;
+    yield log('Computing an embedding...');
+    const embeddings = yield runJob({ cmd: 'embedding', val: graph });
+    console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-  const basis = unitCells.invariantBasis(embedding.gram);
-  const pos = embedding.positions;
-  console.log(`${Math.round(t())} msec to compute an embedding`);
-
-  yield log('Constructing an abstract finite subnet...');
-  const nodeIndex = {};
-  const points = [];
-  const edges = [];
-
-  for (const s of baseShifts(graph.dim)) {
-    for (const e of graph.edges) {
-      edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
-        ([node, shift]) => {
-          const key = JSON.stringify([node, shift]);
-          const idx = nodeIndex[key] || points.length;
-          if (idx == points.length) {
-            points.push(ops.times(ops.plus(pos[node], shift), basis));
-            nodeIndex[key] = idx;
-          }
-          return idx;
-        }));
-    }
+    return { graph, embeddings };
   }
-  console.log(`${Math.round(t())} msec to construct a finite subnet`);
+);
 
-  yield log('Making the net geometry...');
-  const model = ballAndStick(points, edges);
-  console.log(`${Math.round(t())} msec to make the net geometry`);
 
-  yield log('Done making the net model.');
-  return model;
-});
+const makeNetModel = (structure, options, runJob, log) => csp.go(
+  function*() {
+    const { graph, embeddings } = yield preprocessNet(structure, runJob, log);
+
+    const embedding =
+          options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
+    const pos = embedding.positions;
+    const basis = unitCells.invariantBasis(embedding.gram);
+
+    const t = util.timer();
+
+    yield log('Constructing an abstract finite subnet...');
+    const nodeIndex = {};
+    const points = [];
+    const edges = [];
+
+    for (const s of baseShifts(graph.dim)) {
+      for (const e of graph.edges) {
+        edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
+          ([node, shift]) => {
+            const key = JSON.stringify([node, shift]);
+            const idx = nodeIndex[key] || points.length;
+            if (idx == points.length) {
+              points.push(ops.times(ops.plus(pos[node], shift), basis));
+              nodeIndex[key] = idx;
+            }
+            return idx;
+          }));
+      }
+    }
+    console.log(`${Math.round(t())} msec to construct a finite subnet`);
+
+    yield log('Making the net geometry...');
+    const model = ballAndStick(points, edges);
+    console.log(`${Math.round(t())} msec to make the net geometry`);
+
+    yield log('Done making the net model.');
+    return model;
+  }
+);
 
 
 const tileMaterial = hue => Object.assign({}, baseMaterial, {
@@ -332,71 +342,73 @@ const tilingModel = (
 };
 
 
-const makeTilingModel =
-  (structure, options, runJob, log) => csp.go(function*() {
+const preprocessTiling = (structure, runJob, log) => csp.go(
+  function*() {
+    const t = util.timer();
+    const ds = structure.symbol;
 
-  const ds = structure.symbol;
-  const dim = delaney.dim(ds);
-  const extensionFactor = dim == 3 ? 2 : 6;
+    yield log('Finding the pseudo-toroidal cover...');
+    const cov = yield structure.cover ||
+          (yield runJob({ cmd: 'dsCover', val: ds }));
+    console.log(`${Math.round(t())} msec to compute the cover`);
 
-  const t = util.timer();
+    yield log('Extracting the skeleton...');
+    const skel = yield runJob({ cmd: 'skeleton', val: cov });
+    console.log(`${Math.round(t())} msec to extract the skeleton`);
 
-  yield log('Finding the pseudo-toroidal cover...');
-  const cov = yield structure.cover || (yield runJob({
-    cmd: 'dsCover',
-    val: ds
-  }));
-  console.log(`${Math.round(t())} msec to compute the cover`);
+    yield log('Computing an embedding...');
+    const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
+    console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-  yield log('Extracting the skeleton...');
-  const skel = yield runJob({
-    cmd: 'skeleton',
-    val: cov
-  });
-  console.log(`${Math.round(t())} msec to extract the skeleton`);
+    return { ds, cov, skel, embeddings };
+  }
+);
 
-  yield log('Computing an embedding...');
-  const embedResult = yield runJob({
-    cmd: 'embedding',
-    val: skel.graph
-  });
-  const embedding =
-        options.skipRelaxation ? embedResult.barycentric : embedResult.relaxed;
-  const pos = embedding.positions;
-  console.log(`${Math.round(t())} msec to compute the embedding`);
 
-  yield log('Computing a translation basis...');
-  const basis = yield unitCells.invariantBasis(embedding.gram);
-  console.log(`${Math.round(t())} msec to compute the translation basis`);
+const makeTilingModel = (structure, options, runJob, log) => csp.go(
+  function*() {
+    const { ds, cov, skel, embeddings } =
+          yield preprocessTiling(structure, runJob, log);
 
-  yield log('Making the base tile surfaces...');
-  const { templates, tiles } = yield runJob({
-    cmd: 'tileSurfaces',
-    val: { ds, cov, skel, pos, basis }
-  });
-  console.log(`${Math.round(t())} msec to make the base surfaces`);
+    const dim = delaney.dim(ds);
+    const extensionFactor = dim == 3 ? 2 : 6;
 
-  yield log('Refining the tile surfaces...');
-  const refinedTemplates = yield runJob({
-    cmd: 'processSolids',
-    val: templates.map(({ pos, faces }) => ({
-      pos,
-      faces,
-      isFixed: pos.map(_ => true),
-      subDLevel: options.extraSmooth ? 3 : 2
-    }))
-  });
-  console.log(`${Math.round(t())} msec to refine the surfaces`);
+    const embedding =
+          options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
+    const pos = embedding.positions;
+    const basis = unitCells.invariantBasis(embedding.gram);
 
-  yield log('Making the tiling geometry...');
-  const shifts = baseShifts(dim).map(s => ops.times(s, basis));
-  const model = tilingModel(
-    refinedTemplates, tiles, options, basis, extensionFactor, shifts);
-  console.log(`${Math.round(t())} msec to make the tiling geometry`);
+    const t = util.timer();
 
-  yield log('Done making the tiling model.');
-  return model;
-});
+    yield log('Making the base tile surfaces...');
+    const { templates, tiles } = yield runJob({
+      cmd: 'tileSurfaces',
+      val: { ds, cov, skel, pos, basis }
+    });
+    console.log(`${Math.round(t())} msec to make the base surfaces`);
+
+    yield log('Refining the tile surfaces...');
+    const refinedTemplates = yield runJob({
+      cmd: 'processSolids',
+      val: templates.map(({ pos, faces }) => ({
+        pos,
+        faces,
+        isFixed: pos.map(_ => true),
+        subDLevel: options.extraSmooth ? 3 : 2
+      }))
+    });
+    console.log(`${Math.round(t())} msec to refine the surfaces`);
+
+    yield log('Making the tiling geometry...');
+    const shifts = baseShifts(dim).map(s => ops.times(s, basis));
+    const model = tilingModel(
+      refinedTemplates, tiles, options, basis, extensionFactor, shifts);
+    console.log(`${Math.round(t())} msec to make the tiling geometry`);
+
+    yield log('Done making the tiling model.');
+    return model;
+  }
+);
 
 
 const builders = {
