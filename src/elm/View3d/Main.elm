@@ -54,20 +54,13 @@ type alias Model =
     , selected : Set ( Int, Int )
     , center : Vec3
     , radius : Float
-    , modifiers : { shift : Bool, ctrl : Bool }
     }
 
 
 type Outcome
     = None
-    | PickEmpty
-        { modifiers : { shift : Bool, ctrl : Bool }
-        }
-    | Pick
-        { modelIndex : Int
-        , instanceIndex : Int
-        , modifiers : { shift : Bool, ctrl : Bool }
-        }
+    | PickEmpty Touch.Keys
+    | Pick Touch.Keys { modelIndex : Int, instanceIndex : Int }
 
 
 init : Model
@@ -78,7 +71,6 @@ init =
     , selected = Set.empty
     , center = vec3 0 0 0
     , radius = 0
-    , modifiers = { shift = False, ctrl = False }
     }
 
 
@@ -217,15 +209,13 @@ type alias Position =
 
 type Msg
     = FrameMsg Float
-    | MouseUpMsg Position
+    | MouseUpMsg Position Touch.Keys
     | MouseDownMsg Position
-    | MouseMoveMsg Position
+    | MouseMoveMsg Position Touch.Keys
     | TouchStartMsg (List Position)
-    | TouchMoveMsg (List Position)
+    | TouchMoveMsg (List Position) Touch.Keys
     | TouchEndMsg
-    | KeyDownMsg Int
-    | KeyUpMsg Int
-    | WheelMsg Float
+    | WheelMsg Float Touch.Keys
 
 
 decodePos : Decode.Decoder Position
@@ -235,12 +225,17 @@ decodePos =
         (Decode.at [ "clientY" ] Decode.int)
 
 
+decodeModifiers : Decode.Decoder Touch.Keys
+decodeModifiers =
+    Decode.map3 (\alt ctrl shift -> { alt = alt, ctrl = ctrl, shift = shift })
+        (Decode.at [ "altKey" ] Decode.bool)
+        (Decode.at [ "ctrlKey" ] Decode.bool)
+        (Decode.at [ "shiftKey" ] Decode.bool)
+
+
 subscriptions : (Msg -> msg) -> Model -> Sub msg
 subscriptions toMsg model =
     let
-        decodeKey =
-            Decode.at [ "keyCode" ] Decode.int
-
         frameEvent =
             if Camera.isMoving model.cameraState then
                 Events.onAnimationFrameDelta FrameMsg
@@ -248,19 +243,24 @@ subscriptions toMsg model =
             else
                 Sub.none
 
+        decoder msg =
+            Decode.map2 msg decodePos decodeModifiers
+
         moveEvent =
             if Camera.isDragging model.cameraState then
-                Events.onMouseMove (Decode.map MouseMoveMsg decodePos)
+                Events.onMouseMove (decoder MouseMoveMsg)
+
+            else
+                Sub.none
+
+        upEvent =
+            if Camera.isDragging model.cameraState then
+                Events.onMouseUp (decoder MouseUpMsg)
 
             else
                 Sub.none
     in
-    frameEvent
-        :: moveEvent
-        :: [ Events.onMouseUp (Decode.map MouseUpMsg decodePos)
-           , Events.onKeyDown (Decode.map KeyDownMsg decodeKey)
-           , Events.onKeyUp (Decode.map KeyUpMsg decodeKey)
-           ]
+    [ frameEvent, moveEvent, upEvent ]
         |> Sub.batch
         |> Sub.map toMsg
 
@@ -271,10 +271,6 @@ subscriptions toMsg model =
 
 update : Msg -> Model -> ( Model, Outcome )
 update msg model =
-    let
-        alter =
-            model.modifiers.shift
-    in
     case msg of
         FrameMsg time ->
             ( updateCamera (Camera.nextFrame time) model, None )
@@ -282,56 +278,46 @@ update msg model =
         MouseDownMsg pos ->
             ( updateCamera (Camera.startDragging pos) model, None )
 
-        MouseUpMsg pos ->
+        MouseUpMsg pos modifiers ->
             let
                 outcome =
                     if Camera.wasDragged model.cameraState then
                         None
 
                     else
-                        pickingOutcome pos model
+                        pickingOutcome pos modifiers model
             in
             ( updateCamera Camera.finishDragging model, outcome )
 
-        MouseMoveMsg pos ->
-            ( updateCamera (Camera.dragTo pos alter) model, None )
+        MouseMoveMsg pos modifiers ->
+            ( updateCamera (Camera.dragTo pos modifiers.shift) model, None )
 
         TouchStartMsg posList ->
             ( touchStartUpdate posList model, None )
 
-        TouchMoveMsg posList ->
-            ( touchMoveUpdate posList model, None )
+        TouchMoveMsg posList modifiers ->
+            ( touchMoveUpdate posList modifiers model, None )
 
         TouchEndMsg ->
             ( updateCamera Camera.finishDragging model, None )
 
-        WheelMsg val ->
-            ( updateCamera (Camera.updateZoom (wheelZoomFactor val) alter) model
+        WheelMsg val modifiers ->
+            ( updateCamera
+                (Camera.updateZoom (wheelZoomFactor val) modifiers.shift)
+                model
             , None
             )
 
-        KeyDownMsg code ->
-            ( setModifiers code True model, None )
 
-        KeyUpMsg code ->
-            ( setModifiers code False model, None )
-
-
-pickingOutcome : Position -> Model -> Outcome
-pickingOutcome pos model =
+pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
+pickingOutcome pos mods model =
     Camera.pickingRay pos model.cameraState
         |> Maybe.andThen
             (\r -> pick r model.scene)
         |> Maybe.map
-            (\( m, i ) ->
-                Pick
-                    { modelIndex = m
-                    , instanceIndex = i
-                    , modifiers = model.modifiers
-                    }
-            )
+            (\( m, i ) -> Pick mods { modelIndex = m, instanceIndex = i })
         |> Maybe.withDefault
-            (PickEmpty { modifiers = model.modifiers })
+            (PickEmpty mods)
 
 
 centerPosition : List Position -> Position
@@ -364,18 +350,14 @@ touchStartUpdate posList model =
             model
 
 
-touchMoveUpdate : List Position -> Model -> Model
-touchMoveUpdate posList model =
-    let
-        alter =
-            model.modifiers.shift
-    in
+touchMoveUpdate : List Position -> Touch.Keys -> Model -> Model
+touchMoveUpdate posList modifiers model =
     case posList of
         pos :: [] ->
             updateCamera (Camera.dragTo pos False) model
 
         posA :: posB :: [] ->
-            updateCamera (Camera.pinchTo posA posB alter) model
+            updateCamera (Camera.pinchTo posA posB modifiers.shift) model
 
         posA :: posB :: posC :: [] ->
             updateCamera (Camera.dragTo (centerPosition posList) True) model
@@ -399,22 +381,6 @@ wheelZoomFactor wheelVal =
 updateCamera : (Camera.State -> Camera.State) -> Model -> Model
 updateCamera fn model =
     { model | cameraState = fn model.cameraState }
-
-
-setModifiers : Int -> Bool -> Model -> Model
-setModifiers keyCode value model =
-    let
-        oldModifiers =
-            model.modifiers
-    in
-    if keyCode == 16 then
-        { model | modifiers = { oldModifiers | shift = value } }
-
-    else if keyCode == 17 then
-        { model | modifiers = { oldModifiers | ctrl = value } }
-
-    else
-        model
 
 
 lookAlong : Vec3 -> Vec3 -> Model -> Model
@@ -477,9 +443,9 @@ view toMsg model =
         , Html.Attributes.width (floor model.size.width)
         , Html.Attributes.height (floor model.size.height)
         , onMouseDown (toMsg << MouseDownMsg)
-        , onMouseWheel (toMsg << WheelMsg)
+        , onMouseWheel (\dy mods -> toMsg (WheelMsg dy mods))
         , onTouchStart (toMsg << TouchStartMsg)
-        , onTouchMove (toMsg << TouchMoveMsg)
+        , onTouchMove (\pos mods -> toMsg (TouchMoveMsg pos mods))
         , onTouchEnd (toMsg TouchEndMsg)
         , onTouchCancel (toMsg TouchEndMsg)
         ]
@@ -506,18 +472,22 @@ onMouseDown toMsg =
         (Decode.map toResult decodePos)
 
 
-onMouseWheel : (Float -> msg) -> Html.Attribute msg
+onMouseWheel : (Float -> Touch.Keys -> msg) -> Html.Attribute msg
 onMouseWheel toMsg =
     let
-        toResult value =
-            { message = toMsg value
+        toResult dy mods =
+            { message = toMsg dy mods
             , stopPropagation = True
             , preventDefault = True
             }
     in
     Html.Events.custom
         "wheel"
-        (Decode.map toResult <| Decode.at [ "deltaY" ] Decode.float)
+        (Decode.map2
+            toResult
+            (Decode.at [ "deltaY" ] Decode.float)
+            decodeModifiers
+        )
 
 
 touchCoordinates : Touch.Event -> List Position
@@ -532,9 +502,13 @@ onTouchStart toMsg =
     Touch.onStart (toMsg << touchCoordinates)
 
 
-onTouchMove : (List Position -> msg) -> Html.Attribute msg
+onTouchMove : (List Position -> Touch.Keys -> msg) -> Html.Attribute msg
 onTouchMove toMsg =
-    Touch.onMove (toMsg << touchCoordinates)
+    let
+        makeMsg event =
+            toMsg (touchCoordinates event) event.keys
+    in
+    Touch.onMove makeMsg
 
 
 onTouchEnd : msg -> Html.Attribute msg

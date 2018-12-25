@@ -324,14 +324,14 @@ handleView3dOutcome outcome model =
                 View3d.None ->
                     oldSelection
 
-                View3d.PickEmpty { modifiers } ->
-                    if modifiers.ctrl || modifiers.shift then
+                View3d.PickEmpty { ctrl, shift } ->
+                    if ctrl || shift then
                         oldSelection
 
                     else
                         Set.empty
 
-                View3d.Pick { modelIndex, instanceIndex, modifiers } ->
+                View3d.Pick { ctrl, shift } { modelIndex, instanceIndex } ->
                     let
                         item =
                             ( modelIndex, instanceIndex )
@@ -339,7 +339,7 @@ handleView3dOutcome outcome model =
                     if Set.member item oldSelection then
                         Set.remove item oldSelection
 
-                    else if modifiers.ctrl || modifiers.shift then
+                    else if ctrl || shift then
                         Set.insert item oldSelection
 
                     else
