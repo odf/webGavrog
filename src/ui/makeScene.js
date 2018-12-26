@@ -56,6 +56,37 @@ const geometry = (vertsIn, faces, isWireframe=false) => {
 };
 
 
+const splitGeometry = ({ vertices, faces, isWireframe }, faceLabels) => {
+  const facesByLabel = {};
+
+  for (let f = 0; f < faces.length; ++f) {
+    const label = faceLabels[f];
+    if (facesByLabel[label] == null)
+      facesByLabel[label] = [];
+    facesByLabel[label].push(faces[f]);
+  }
+
+  const subMeshes = [];
+  for (const label of Object.keys(facesByLabel)) {
+    const vertexMap = {};
+    const subVerts = [];
+    for (const vs of facesByLabel[label]) {
+      for (const v of vs) {
+        if (vertexMap[v] == null) {
+          vertexMap[v] = subVerts.length;
+          subVerts.push(vertices[v]);
+        }
+      }
+    };
+
+    const subFaces = facesByLabel[label].map(vs => vs.map(v => vertexMap[v]));
+    subMeshes.push({ vertices: subVerts, faces: subFaces, isWireframe });
+  }
+
+  return subMeshes;
+};
+
+
 const makeStick = (p, q, radius, segments) => {
   const normalized = v => ops.div(v, ops.norm(v));
 
@@ -265,6 +296,28 @@ const materialPalette = (initialHue, nrHues) => (
 );
 
 
+const splitModel = ({ meshes, materials, instances }, faceLabelLists) => {
+  const meshesOut = [];
+  const meshMap = [];
+  for (let i = 0; i < meshes.length; ++i) {
+    const subMeshes = splitGeometry(meshes[i], faceLabelLists[i]);
+    meshMap[i] = [];
+    for (let j = 0; j < subMeshes.length; ++j) {
+      meshMap[i].push(meshesOut.length);
+      meshesOut.push(subMeshes[j]);
+    }
+  }
+
+  const instancesOut = [];
+  for (const { meshIndex, materialIndex, transform } of instances) {
+    for (const k of meshMap[meshIndex])
+      instancesOut.push({ meshIndex: k, materialIndex, transform });
+  }
+
+  return { meshes: meshesOut, materials, instances: instancesOut };
+};
+
+
 const tilingModel = (
   surfaces, instances, options, basis, palette, extensionFactor, shifts
 ) => {
@@ -276,6 +329,11 @@ const tilingModel = (
     options.showSurfaceMesh ?
       surfaces.map(({ pos, faces }) => geometry(pos, faces, true))
     : []);
+
+  const faceLabelLists = [].concat(
+    surfaces.map(({ faceLabels }) => faceLabels),
+    surfaces.map(({ faceLabels }) => faceLabels)
+  );
 
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
   if (options.showSurfaceMesh)
@@ -334,7 +392,7 @@ const tilingModel = (
     }
   }
 
-  return model;
+  return splitModel(model, faceLabelLists);
 };
 
 
