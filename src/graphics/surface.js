@@ -11,7 +11,7 @@ const centroid = pos => ops.div(sum(pos), S.seq(pos).length);
 const normalized = v => ops.div(v, ops.norm(v));
 
 
-export const tightened = ({ faces, pos, isFixed }) => {
+export const tightened = ({ faces, pos, isFixed, faceLabels }) => {
   pos = pos.slice();
 
   for (let s = 0; s < 10; ++s) {
@@ -39,7 +39,7 @@ export const tightened = ({ faces, pos, isFixed }) => {
     );
   }
 
-  return { faces, pos, isFixed };
+  return { faces, pos, isFixed, faceLabels };
 };
 
 
@@ -88,19 +88,25 @@ const adjustedPositions = (faces, pos, isFixed) => {
 };
 
 
-export const subD = ({ faces, pos, isFixed }) => {
+export const subD = ({ faces, pos, isFixed, faceLabels }) => {
   const n = pos.length;
   const m = faces.length;
   const { edges, lookup } = edgeIndexes(faces);
 
+  if (faceLabels == null)
+    faceLabels = [...faces.keys()];
+
   const newFaces = [];
+  const newFaceLabels = [];
   for (let f = 0; f < faces.length; ++f) {
     const vs = faces[f];
     const edge = i => n + m + lookup[f][i];
     const prev = i => (i + vs.length - 1) % vs.length;
 
-    for (let i = 0; i < vs.length; ++i)
+    for (let i = 0; i < vs.length; ++i) {
       newFaces.push([vs[i], edge(i), n + f, edge(prev(i))]);
+      newFaceLabels.push(faceLabels[f]);
+    }
   }
 
   const ffix = Array(faces.length).fill(false);
@@ -124,21 +130,29 @@ export const subD = ({ faces, pos, isFixed }) => {
   return {
     faces: newFaces,
     pos: adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
-    isFixed: isFixed.concat(ffix, efix)
+    isFixed: isFixed.concat(ffix, efix),
+    faceLabels: newFaceLabels
   };
 };
 
 
-const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
+const withCenterFaces = ({ faces, pos, isFixed, faceLabels }, fn) => {
   const newFaces = [];
+  const newFaceLabels = [];
   const newPos = pos.slice();
   const newIsFixed = isFixed.slice();
 
-  for (const is of faces) {
+  if (faceLabels == null)
+    faceLabels = [...faces.keys()];
+
+  for (let f = 0; f < faces.length; ++f) {
+    const is = faces[f];
     const centerFace = fn(is.map(i => pos[i]));
 
-    if (centerFace == null)
+    if (centerFace == null) {
       newFaces.push(is);
+      newFaceLabels.push(faceLabels[f]);
+    }
     else {
       const k = newPos.length;
       const m = centerFace.length;
@@ -149,14 +163,21 @@ const withCenterFaces = ({ faces, pos, isFixed }, fn) => {
       }
 
       newFaces.push(S.range(k, k + m).toArray());
+      newFaceLabels.push(faceLabels[f]);
       for (let i = 0; i < m; ++i) {
         const j = (i + 1) % m;
         newFaces.push([is[i], is[j], j + k, i + k]);
+        newFaceLabels.push(faceLabels[f]);
       }
     }
   }
 
-  return { faces: newFaces, pos: newPos, isFixed: newIsFixed };
+  return {
+    faces: newFaces,
+    pos: newPos,
+    isFixed: newIsFixed,
+    faceLabels: newFaceLabels
+  };
 };
 
 
@@ -166,7 +187,8 @@ const faceNormal = vs => normalized(sum(
 
 const projection = (normal, origin=ops.times(0, normal)) => p => {
   const d = ops.minus(p, origin);
-  return ops.plus(origin, ops.minus(d, ops.times(ops.times(normal, d), normal)));
+  return ops.plus(origin,
+                  ops.minus(d, ops.times(ops.times(normal, d), normal)));
 };
 
 
@@ -312,14 +334,18 @@ const connectors = (oldFaces, newFaces) => {
 };
 
 
-export const insetAt = ({ faces, pos, isFixed }, wd, isCorner) => {
+export const insetAt = ({ faces, pos, isFixed, faceLabels }, wd, isCorner) => {
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
+
+  if (faceLabels == null)
+    faceLabels = [...faces.keys()];
 
   return {
     faces: modifiedFaces.concat(connectors(faces, modifiedFaces)),
     pos: pos.concat(newPos),
-    isFixed: isFixed.concat(newPos.map(i => true))
+    isFixed: isFixed.concat(newPos.map(i => true)),
+    faceLabels
   };
 };
 
@@ -345,9 +371,13 @@ const cycles = m => {
 };
 
 
-export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
+export const beveledAt = (surfaceIn, wd, isCorner) => {
+  let { faces, pos, isFixed, faceLabels } = surfaceIn;
   const { pos: newPos, faces: modifiedFaces } =
     shrunkAt({ faces, pos, isFixed }, wd, isCorner);
+
+  if (faceLabels == null)
+    faceLabels = [...faces.keys()];
 
   const edgeFaces = [];
   const seen = {};
@@ -369,7 +399,8 @@ export const beveledAt = ({ faces, pos, isFixed }, wd, isCorner) => {
   return {
     faces: modifiedFaces.concat(edgeFaces).concat(cycles(m)),
     pos: pos.concat(newPos),
-    isFixed: isFixed.concat(newPos.map(i => true))
+    isFixed: isFixed.concat(newPos.map(i => true)),
+    faceLabels
   };
 };
 
