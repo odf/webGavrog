@@ -57,6 +57,9 @@ const geometry = (vertsIn, faces, isWireframe=false) => {
 
 
 const splitGeometry = ({ vertices, faces, isWireframe }, faceLabels) => {
+  if (isWireframe)
+    return { 0: { vertices, faces, isWireframe } };
+
   const facesByLabel = {};
 
   for (let f = 0; f < faces.length; ++f) {
