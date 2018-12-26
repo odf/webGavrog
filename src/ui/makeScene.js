@@ -293,11 +293,7 @@ const tileMaterial = hue => Object.assign({}, baseMaterial, {
 });
 
 const edgeMaterial = Object.assign({}, baseMaterial, {
-  diffuseColor: {
-    hue: 0.0,
-    saturation: 1.0,
-    lightness: 1.0
-  },
+  diffuseColor: white,
   shininess: 15.0
 });
 
