@@ -66,7 +66,7 @@ const splitGeometry = ({ vertices, faces, isWireframe }, faceLabels) => {
     facesByLabel[label].push(faces[f]);
   }
 
-  const subMeshes = [];
+  const subMeshes = {};
   for (const label of Object.keys(facesByLabel)) {
     const vertexMap = {};
     const subVerts = [];
@@ -80,7 +80,7 @@ const splitGeometry = ({ vertices, faces, isWireframe }, faceLabels) => {
     };
 
     const subFaces = facesByLabel[label].map(vs => vs.map(v => vertexMap[v]));
-    subMeshes.push({ vertices: subVerts, faces: subFaces, isWireframe });
+    subMeshes[label] = { vertices: subVerts, faces: subFaces, isWireframe };
   }
 
   return subMeshes;
@@ -289,6 +289,15 @@ const tileMaterial = hue => Object.assign({}, baseMaterial, {
   shininess: 15.0
 });
 
+const edgeMaterial = Object.assign({}, baseMaterial, {
+  diffuseColor: {
+    hue: 0.0,
+    saturation: 1.0,
+    lightness: 1.0
+  },
+  shininess: 15.0
+});
+
 
 const materialPalette = (initialHue, nrHues) => (
   Array(nrHues).fill()
@@ -296,25 +305,41 @@ const materialPalette = (initialHue, nrHues) => (
 );
 
 
-const splitModel = ({ meshes, materials, instances }, faceLabelLists) => {
+const splitModel = (
+  { meshes, materials, instances }, faceLabelLists, options
+) => {
   const meshesOut = [];
   const meshMap = [];
   for (let i = 0; i < meshes.length; ++i) {
     const subMeshes = splitGeometry(meshes[i], faceLabelLists[i]);
-    meshMap[i] = [];
-    for (let j = 0; j < subMeshes.length; ++j) {
-      meshMap[i].push(meshesOut.length);
-      meshesOut.push(subMeshes[j]);
+    meshMap[i] = {};
+    for (const label of Object.keys(subMeshes)) {
+      meshMap[i][label] = meshesOut.length;
+      meshesOut.push(subMeshes[label]);
     }
   }
 
+  const materialsOut = materials.concat(edgeMaterial);
+
   const instancesOut = [];
   for (const { meshIndex, materialIndex, transform } of instances) {
-    for (const k of meshMap[meshIndex])
-      instancesOut.push({ meshIndex: k, materialIndex, transform });
+    for (const label of Object.keys(meshMap[meshIndex])) {
+      const matIdx = (label == 'undefined' && options.highlightEdges) ?
+            materials.length : materialIndex;
+
+      instancesOut.push({
+        meshIndex: meshMap[meshIndex][label],
+        materialIndex: matIdx,
+        transform
+      });
+    }
   }
 
-  return { meshes: meshesOut, materials, instances: instancesOut };
+  return {
+    meshes: meshesOut,
+    materials: materialsOut,
+    instances: instancesOut
+  };
 };
 
 
@@ -392,7 +417,7 @@ const tilingModel = (
     }
   }
 
-  return splitModel(model, faceLabelLists);
+  return splitModel(model, faceLabelLists, options);
 };
 
 

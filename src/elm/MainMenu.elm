@@ -219,6 +219,10 @@ initOptionSpecs =
       , label = "Color By Translations"
       , value = False
       }
+    , { key = "highlightEdges"
+      , label = "Highlight Edges"
+      , value = False
+      }
     , { key = "skipRelaxation"
       , label = "Skip Relaxation"
       , value = False
