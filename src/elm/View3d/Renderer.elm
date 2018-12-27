@@ -73,6 +73,12 @@ entities scene selected camDist viewingMatrix perspectiveMatrix =
         black =
             vec3 0 0 0
 
+        white =
+            vec3 1 1 1
+
+        red =
+            vec3 1 0 0
+
         baseUniforms =
             { transform = Mat4.identity
             , viewing = viewingMatrix
@@ -100,12 +106,12 @@ entities scene selected camDist viewingMatrix perspectiveMatrix =
                     if Set.member ( idxMesh, idxInstance ) selected then
                         { baseUniforms
                             | transform = transform
-                            , ambientColor = vec3 1 0 0
-                            , diffuseColor = vec3 1 1 1
-                            , specularColor = material.specularColor
-                            , ka = 0.5
-                            , kd = 0.5
-                            , ks = material.ks
+                            , ambientColor = red
+                            , diffuseColor = red
+                            , specularColor = white
+                            , ka = 0.1
+                            , kd = 0.9
+                            , ks = 0.7
                             , shininess = material.shininess
                         }
 
