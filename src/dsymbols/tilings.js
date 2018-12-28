@@ -252,6 +252,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
   const templates = [];
   const tileOrbitReps = [];
   const dsChamberToTemplateIndex = {};
+  const covChamberToTileIndex = {};
   const tiles = [];
 
   for (const elms of tileOrbits) {
@@ -276,8 +277,25 @@ export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
       symmetry = affineSymmetry(D0, D1, pos);
     }
 
+    for (const E of elms)
+      covChamberToTileIndex[E] = tiles.length;
+
     const center = pos[elms[0]][dim];
-    tiles.push({ templateIndex, symmetry, center });
+    tiles.push({ templateIndex, symmetry, center, chambers: elms });
+  }
+
+  const e2t = _edgeTranslations(cov);
+
+  for (const tile of tiles) {
+    const neighbors = [];
+    for (const D of properties.orbitReps(cov, [0, 1], tile.chambers)) {
+      const E = cov.s(dim, D);
+      const iE = covChamberToTileIndex[E];
+      const t = opsF.minus(pos[D][0], pos[E][0]);
+      neighbors.push({ tileIndex: iE, shift: t });
+    }
+
+    tile.neighbors = neighbors;
   }
 
   return { templates, tiles };
