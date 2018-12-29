@@ -1,4 +1,4 @@
-port module MainMenu exposing (main)
+port module GuiMain exposing (main)
 
 import Browser
 import Browser.Dom as Dom
@@ -50,8 +50,8 @@ type alias InData =
 type Msg
     = Resize Int Int
     | ViewMsg View3d.Msg
-    | ActivateMenu Bool
-    | ActivateItem (Maybe ( Int, String ))
+    | MainMenuActivate Bool
+    | MainMenuSetItem (Maybe ( Int, String ))
     | Select
     | JumpDialogInput String
     | JumpDialogSubmit Bool
@@ -117,8 +117,8 @@ type alias Model =
     { viewState : View3d.Model
     , revision : String
     , timestamp : String
-    , menuConfig : Menu.Config Msg
-    , menuState : Menu.State
+    , mainMenuConfig : Menu.Config Msg
+    , mainMenuState : Menu.State
     , activeLabel : Maybe String
     , visibleDialog : Maybe DialogType
     , jumpDialogConfig : TextBoxConfig
@@ -137,8 +137,8 @@ init flags =
     ( { viewState = View3d.init
       , revision = flags.revision
       , timestamp = flags.timestamp
-      , menuConfig = initMenuConfig
-      , menuState = initMenuState
+      , mainMenuConfig = initMainMenuConfig
+      , mainMenuState = initMainMenuState
       , activeLabel = Nothing
       , visibleDialog = Nothing
       , title = ""
@@ -156,18 +156,18 @@ init flags =
     )
 
 
-initMenuConfig : Menu.Config Msg
-initMenuConfig =
+initMainMenuConfig : Menu.Config Msg
+initMainMenuConfig =
     { label = Styling.navIcon
-    , items = initItems
-    , activate = ActivateMenu
-    , activateItem = ActivateItem
+    , items = initMainMenuItems
+    , activate = MainMenuActivate
+    , activateItem = MainMenuSetItem
     , selectCurrentItem = Select
     }
 
 
-initItems : List String
-initItems =
+initMainMenuItems : List String
+initMainMenuItems =
     [ "Open..."
     , "Save Structure..."
     , "Save Screenshot..."
@@ -190,8 +190,8 @@ initItems =
     ]
 
 
-initMenuState : Menu.State
-initMenuState =
+initMainMenuState : Menu.State
+initMainMenuState =
     { visible = False, active = Nothing }
 
 
@@ -264,10 +264,10 @@ update msg model =
             , Cmd.none
             )
 
-        ActivateMenu onOff ->
+        MainMenuActivate onOff ->
             ( updateMenuActive model onOff, Cmd.none )
 
-        ActivateItem item ->
+        MainMenuSetItem item ->
             ( updateItemActive model item, Cmd.none )
 
         Select ->
@@ -356,7 +356,7 @@ handleView3dOutcome outcome model =
 updateMenuActive : Model -> Bool -> Model
 updateMenuActive model onOff =
     { model
-        | menuState = { visible = onOff, active = Nothing }
+        | mainMenuState = { visible = onOff, active = Nothing }
         , activeLabel = Nothing
     }
 
@@ -365,18 +365,18 @@ updateItemActive : Model -> Maybe ( Int, String ) -> Model
 updateItemActive model item =
     let
         state =
-            model.menuState
+            model.mainMenuState
     in
     case item of
         Nothing ->
             { model
-                | menuState = { state | active = Nothing }
+                | mainMenuState = { state | active = Nothing }
                 , activeLabel = Nothing
             }
 
         Just ( i, s ) ->
             { model
-                | menuState = { state | active = Just i }
+                | mainMenuState = { state | active = Just i }
                 , activeLabel = Just s
             }
 
@@ -385,7 +385,7 @@ handleSelection : Model -> ( Model, Cmd Msg )
 handleSelection model =
     let
         newModel =
-            { model | menuState = initMenuState }
+            { model | mainMenuState = initMainMenuState }
     in
     if model.activeLabel == Just "About Gavrog..." then
         ( { newModel | visibleDialog = Just About }, Cmd.none )
@@ -560,7 +560,7 @@ viewMain model =
             [ Element.width Element.fill
             , Element.spacing 16
             ]
-            [ Menu.view model.menuConfig model.menuState
+            [ Menu.view model.mainMenuConfig model.mainMenuState
             , Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"

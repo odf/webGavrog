@@ -7,7 +7,7 @@ import parseDSymbols from '../io/ds';
 import { structures } from './builtinStructures';
 import { preprocess, makeScene } from './makeScene';
 
-import { Elm } from '../elm/MainMenu';
+import { Elm } from '../elm/GuiMain';
 
 
 const worker = webworkers.create('js/sceneWorker.js');
@@ -190,7 +190,7 @@ const saveScreenshot = (config, model) => {
 const render = domNode => {
   const model = { options: {}, structures };
 
-  const app = Elm.MainMenu.init({
+  const app = Elm.GuiMain.init({
     node: domNode,
     flags: {
       revision: version.gitRev,
