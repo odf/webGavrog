@@ -176,7 +176,8 @@ const ballAndStick = (
       transform: {
         basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
         shift: [ p[0], p[1], p[2] || 0 ]
-      }
+      },
+      neighbor: []
     })
   });
 
@@ -198,7 +199,8 @@ const ballAndStick = (
       transform: {
         basis: [ u, v, w ],
         shift: [ p[0], p[1], p[2] || 0 ]
-      }
+      },
+      neighbor: []
     })
   });
 
@@ -341,13 +343,12 @@ const splitModel = (
   }
 
   for (const inst of instancesOut) {
+    const nbrs = [];
     if (inst.neighbor) {
-      const shift = inst.neighbor.shift;
-      const nbrs = [];
       for (const k of instanceMap[inst.neighbor.tileIndex])
-        nbrs.push({ instanceIndex: k, shift });
-      inst.neighbor = nbrs;
+        nbrs.push({ instanceIndex: k, shift: inst.neighbor.shift });
     }
+    inst.neighbor = nbrs;
   }
 
   return {
