@@ -210,7 +210,7 @@ type alias Position =
 type Msg
     = FrameMsg Float
     | MouseUpMsg Position Touch.Keys
-    | MouseDownMsg Position
+    | MouseDownMsg Position Touch.Keys
     | MouseMoveMsg Position Touch.Keys
     | TouchStartMsg (List Position)
     | TouchMoveMsg (List Position) Touch.Keys
@@ -275,7 +275,7 @@ update msg model =
         FrameMsg time ->
             ( updateCamera (Camera.nextFrame time) model, None )
 
-        MouseDownMsg pos ->
+        MouseDownMsg pos modifiers ->
             ( updateCamera (Camera.startDragging pos) model, None )
 
         MouseUpMsg pos modifiers ->
@@ -440,7 +440,7 @@ view toMsg model =
         , Html.Attributes.id "main-3d-canvas"
         , Html.Attributes.width (floor model.size.width)
         , Html.Attributes.height (floor model.size.height)
-        , onMouseDown (toMsg << MouseDownMsg)
+        , onMouseDown (\pos mods -> toMsg (MouseDownMsg pos mods))
         , onMouseWheel (\dy mods -> toMsg (WheelMsg dy mods))
         , onTouchStart (toMsg << TouchStartMsg)
         , onTouchMove (\pos mods -> toMsg (TouchMoveMsg pos mods))
@@ -456,18 +456,18 @@ view toMsg model =
         )
 
 
-onMouseDown : (Position -> msg) -> Html.Attribute msg
+onMouseDown : (Position -> Touch.Keys -> msg) -> Html.Attribute msg
 onMouseDown toMsg =
     let
-        toResult value =
-            { message = toMsg value
+        toResult pos mods =
+            { message = toMsg pos mods
             , stopPropagation = False
             , preventDefault = False
             }
     in
     Html.Events.custom
         "mousedown"
-        (Decode.map toResult decodePos)
+        (Decode.map2 toResult decodePos decodeModifiers)
 
 
 onMouseWheel : (Float -> Touch.Keys -> msg) -> Html.Attribute msg
