@@ -203,7 +203,7 @@ initMainMenuState =
 
 initContextMenuConfig : Menu.Config Msg
 initContextMenuConfig =
-    { label = Element.text ""
+    { label = Element.none
     , items = initContextMenuItems
     , activate = ContextMenuActivate
     , activateItem = ContextMenuSetItem
@@ -621,6 +621,12 @@ view model =
                     ]
                     (viewMain model)
                 )
+            , Element.inFront <|
+                Element.el
+                    [ Element.moveDown 100
+                    , Element.moveRight 100
+                    ]
+                    (Menu.view model.contextMenuConfig model.contextMenuState)
             ]
             (Element.html <| View3d.view ViewMsg model.viewState)
         ]
@@ -641,7 +647,6 @@ viewMain model =
             , Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"
-            , Menu.view model.contextMenuConfig model.contextMenuState
             , Element.column
                 [ Element.width Element.fill
                 , Element.spacing 8
