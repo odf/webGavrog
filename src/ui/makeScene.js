@@ -321,16 +321,32 @@ const splitModel = (
   const materialsOut = materials.concat(edgeMaterial);
 
   const instancesOut = [];
-  for (const { meshIndex, materialIndex, transform } of instances) {
+  const instanceMap = [];
+  for (let i = 0; i < instances.length; ++i) {
+    const { meshIndex, materialIndex, transform, neighbors } = instances[i];
+    instanceMap[i] = [];
+
     for (const label of Object.keys(meshMap[meshIndex])) {
       const matIdx = (label == 'undefined' && options.highlightEdges) ?
             materials.length : materialIndex;
 
+      instanceMap[i].push(instancesOut.length);
       instancesOut.push({
         meshIndex: meshMap[meshIndex][label],
         materialIndex: matIdx,
-        transform
+        transform,
+        neighbor: neighbors && neighbors[label]
       });
+    }
+  }
+
+  for (const inst of instancesOut) {
+    if (inst.neighbor) {
+      const shift = inst.neighbor.shift;
+      const nbrs = [];
+      for (const k of instanceMap[inst.neighbor.tileIndex])
+        nbrs.push({ instanceIndex: k, shift });
+      inst.neighbor = nbrs;
     }
   }
 
@@ -370,25 +386,12 @@ const tilingModel = (
   };
 
   for (let i = 0; i < instances.length; ++i) {
-    const { templateIndex: kind, symmetry, center } = instances[i];
+    const { templateIndex: kind, symmetry, center, neighbors } = instances[i];
+    const sym = symmetry.map(v => v.slice(0, 3));
 
-    const transform = {};
-    if (symmetry.length == 3) {
-      transform.basis = [
-        symmetry[0],
-        symmetry[1],
-        [0, 0, 1]
-      ];
-      transform.shift = symmetry[2];
-    }
-    else {
-      transform.basis = [
-        symmetry[0].slice(0, 3),
-        symmetry[1].slice(0, 3),
-        symmetry[2].slice(0, 3)
-      ];
-      transform.shift = symmetry[3].slice(0, 3);
-    }
+    const transform = (sym.length == 3) ?
+          { basis: [ sym[0], sym[1], [0, 0, 1] ], shift: sym[2] } :
+          { basis: sym.slice(0, 3), shift: sym[3] };
 
     for (const s0 of shifts) {
       const c = ops.plus(center, s0);
@@ -400,7 +403,8 @@ const tilingModel = (
         transform: {
           basis: transform.basis,
           shift: ops.plus(transform.shift, [s[0], s[1], s[2] || 0])
-        }
+        },
+        neighbors
       });
 
       if (options.showSurfaceMesh) {
