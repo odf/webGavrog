@@ -63,6 +63,7 @@ type Msg
     | JSData InData
     | HideAbout
     | KeyUp Int
+    | ContextMenu Position Buttons
     | MouseDown Position Buttons
     | Ignore
 
@@ -315,14 +316,18 @@ update msg model =
             )
 
         ViewMsg viewMsg ->
-            let
-                ( viewStateTmp, outcome ) =
-                    View3d.update viewMsg model.viewState
-            in
-            ( { model | viewState = viewStateTmp }
-                |> handleView3dOutcome outcome
-            , Cmd.none
-            )
+            if model.contextMenuState.visible then
+                ( model, Cmd.none )
+
+            else
+                let
+                    ( viewStateTmp, outcome ) =
+                        View3d.update viewMsg model.viewState
+                in
+                ( { model | viewState = viewStateTmp }
+                    |> handleView3dOutcome outcome
+                , Cmd.none
+                )
 
         MainMenuActivate onOff ->
             ( mainMenuOnOff model onOff, Cmd.none )
@@ -372,12 +377,23 @@ update msg model =
         KeyUp code ->
             handleKeyPress code model
 
+        ContextMenu pos buttons ->
+            let
+                maybePos =
+                    if model.contextMenuState.visible then
+                        Nothing
+
+                    else
+                        Just pos
+            in
+            ( contextMenuOnOff model maybePos, Cmd.none )
+
         MouseDown pos buttons ->
-            if buttons.middle then
-                ( contextMenuOnOff model (Just pos), Cmd.none )
+            if model.contextMenuState.visible then
+                ( contextMenuOnOff model Nothing, Cmd.none )
 
             else
-                ( contextMenuOnOff model Nothing, Cmd.none )
+                ( model, Cmd.none )
 
         Ignore ->
             ( model, Cmd.none )
@@ -419,9 +435,6 @@ handleView3dOutcome outcome model =
 
                     else
                         Set.singleton item
-
-        showContextMenu =
-            Set.size newSelection > 0
     in
     { model | viewState = View3d.setSelection newSelection model.viewState }
 
@@ -657,7 +670,9 @@ view model =
             , Element.inFront (viewContextMenu model)
             ]
             (Element.el
-                [ onMouseDown MouseDown ]
+                [ onContextMenu ContextMenu
+                , onMouseDown MouseDown
+                ]
                 (Element.html <| View3d.view ViewMsg model.viewState)
             )
         ]
@@ -712,8 +727,8 @@ viewContextMenu : Model -> Element.Element Msg
 viewContextMenu model =
     if model.contextMenuState.visible then
         Element.el
-            [ Element.moveDown 100
-            , Element.moveRight 100
+            [ Element.moveDown model.contextMenuPosition.y
+            , Element.moveRight model.contextMenuPosition.x
             ]
             (Menu.view model.contextMenuConfig model.contextMenuState.active)
 
@@ -839,4 +854,19 @@ onMouseDown toMsg =
     Element.htmlAttribute <|
         Html.Events.custom
             "mousedown"
+            (Decode.map2 toResult decodePos decodeButtons)
+
+
+onContextMenu : (Position -> Buttons -> msg) -> Element.Attribute msg
+onContextMenu toMsg =
+    let
+        toResult pos buttons =
+            { message = toMsg pos buttons
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Element.htmlAttribute <|
+        Html.Events.custom
+            "contextmenu"
             (Decode.map2 toResult decodePos decodeButtons)
