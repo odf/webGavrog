@@ -1,4 +1,4 @@
-module Menu exposing (Config, State, view)
+module Menu exposing (Config, view)
 
 import Element
 import Element.Background as Background
@@ -11,17 +11,9 @@ import Element.Events as Events
 
 
 type alias Config msg =
-    { label : Element.Element msg
-    , items : List String
-    , activate : Bool -> msg
+    { items : List String
     , activateItem : Maybe ( Int, String ) -> msg
     , selectCurrentItem : msg
-    }
-
-
-type alias State =
-    { visible : Bool
-    , active : Maybe Int
     }
 
 
@@ -29,40 +21,26 @@ type alias State =
 -- VIEW
 
 
-view : Config msg -> State -> Element.Element msg
-view config state =
-    let
-        maybeMenu =
-            if state.visible then
-                Element.column
-                    [ Element.alignLeft
-                    , Element.paddingXY 0 4
-                    , Background.color <| Element.rgb255 255 255 255
-                    , Border.color <| Element.rgb255 170 170 170
-                    , Border.width 1
-                    , Border.shadow
-                        { offset = ( 0.0, 8.0 )
-                        , size = 0.0
-                        , blur = 16.0
-                        , color = Element.rgba 0.0 0.0 0.0 0.2
-                        }
-                    ]
-                    (List.indexedMap (viewItem config state) config.items)
-
-            else
-                Element.none
-    in
-    Element.el
-        [ Element.below maybeMenu
-        , Events.onMouseEnter <| config.activate True
-        , Events.onMouseLeave <| config.activate False
-        , Element.pointer
+view : Config msg -> Maybe Int -> Element.Element msg
+view config active =
+    Element.column
+        [ Element.alignLeft
+        , Element.paddingXY 0 4
+        , Background.color <| Element.rgb255 255 255 255
+        , Border.color <| Element.rgb255 170 170 170
+        , Border.width 1
+        , Border.shadow
+            { offset = ( 0.0, 8.0 )
+            , size = 0.0
+            , blur = 16.0
+            , color = Element.rgba 0.0 0.0 0.0 0.2
+            }
         ]
-        config.label
+        (List.indexedMap (viewItem config active) config.items)
 
 
-viewItem : Config msg -> State -> Int -> String -> Element.Element msg
-viewItem config state index label =
+viewItem : Config msg -> Maybe Int -> Int -> String -> Element.Element msg
+viewItem config active index label =
     if label == "--" then
         Element.el
             [ Element.width Element.fill
@@ -84,7 +62,7 @@ viewItem config state index label =
             , Events.onClick config.selectCurrentItem
             , Element.paddingXY 16 4
             , Background.color
-                (if state.active == Just index then
+                (if active == Just index then
                     Element.rgb255 170 170 170
 
                  else

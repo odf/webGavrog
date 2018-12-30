@@ -108,6 +108,12 @@ type alias TextBoxConfig =
     }
 
 
+type alias MenuState =
+    { visible : Bool
+    , active : Maybe Int
+    }
+
+
 type DialogType
     = About
     | Jump
@@ -120,9 +126,9 @@ type alias Model =
     , revision : String
     , timestamp : String
     , mainMenuConfig : Menu.Config Msg
-    , mainMenuState : Menu.State
+    , mainMenuState : MenuState
     , contextMenuConfig : Menu.Config Msg
-    , contextMenuState : Menu.State
+    , contextMenuState : MenuState
     , activeMenuLabel : Maybe String
     , visibleDialog : Maybe DialogType
     , jumpDialogConfig : TextBoxConfig
@@ -142,9 +148,9 @@ init flags =
       , revision = flags.revision
       , timestamp = flags.timestamp
       , mainMenuConfig = initMainMenuConfig
-      , mainMenuState = initMainMenuState
+      , mainMenuState = { visible = False, active = Nothing }
       , contextMenuConfig = initContextMenuConfig
-      , contextMenuState = initContextMenuState
+      , contextMenuState = { visible = False, active = Nothing }
       , activeMenuLabel = Nothing
       , visibleDialog = Nothing
       , title = ""
@@ -164,9 +170,7 @@ init flags =
 
 initMainMenuConfig : Menu.Config Msg
 initMainMenuConfig =
-    { label = Styling.navIcon
-    , items = initMainMenuItems
-    , activate = MainMenuActivate
+    { items = initMainMenuItems
     , activateItem = MainMenuSetItem
     , selectCurrentItem = Select
     }
@@ -196,16 +200,9 @@ initMainMenuItems =
     ]
 
 
-initMainMenuState : Menu.State
-initMainMenuState =
-    { visible = False, active = Nothing }
-
-
 initContextMenuConfig : Menu.Config Msg
 initContextMenuConfig =
-    { label = Element.none
-    , items = initContextMenuItems
-    , activate = ContextMenuActivate
+    { items = initContextMenuItems
     , activateItem = ContextMenuSetItem
     , selectCurrentItem = Select
     }
@@ -225,11 +222,6 @@ initContextMenuItems =
     , "Along Y"
     , "Along Z"
     ]
-
-
-initContextMenuState : Menu.State
-initContextMenuState =
-    { visible = False, active = Nothing }
 
 
 jumpDialogConfig : TextBoxConfig
@@ -434,7 +426,7 @@ handleMenuSelection : Model -> ( Model, Cmd Msg )
 handleMenuSelection model =
     let
         newModel =
-            { model | mainMenuState = initMainMenuState }
+            { model | mainMenuState = { visible = False, active = Nothing } }
     in
     if model.activeMenuLabel == Just "About Gavrog..." then
         ( { newModel | visibleDialog = Just About }, Cmd.none )
@@ -621,12 +613,7 @@ view model =
                     ]
                     (viewMain model)
                 )
-            , Element.inFront <|
-                Element.el
-                    [ Element.moveDown 100
-                    , Element.moveRight 100
-                    ]
-                    (Menu.view model.contextMenuConfig model.contextMenuState)
+            , Element.inFront (viewContextMenu model)
             ]
             (Element.html <| View3d.view ViewMsg model.viewState)
         ]
@@ -643,7 +630,7 @@ viewMain model =
             [ Element.width Element.fill
             , Element.spacing 16
             ]
-            [ Menu.view model.mainMenuConfig model.mainMenuState
+            [ viewMainMenu model
             , Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"
@@ -656,6 +643,38 @@ viewMain model =
                 ]
             ]
         )
+
+
+viewMainMenu : Model -> Element.Element Msg
+viewMainMenu model =
+    let
+        maybeMenu =
+            if model.mainMenuState.visible then
+                Menu.view model.mainMenuConfig model.mainMenuState.active
+
+            else
+                Element.none
+    in
+    Element.el
+        [ Element.below maybeMenu
+        , Element.Events.onMouseEnter <| MainMenuActivate True
+        , Element.Events.onMouseLeave <| MainMenuActivate False
+        , Element.pointer
+        ]
+        Styling.navIcon
+
+
+viewContextMenu : Model -> Element.Element Msg
+viewContextMenu model =
+    if model.contextMenuState.visible then
+        Element.el
+            [ Element.moveDown 100
+            , Element.moveRight 100
+            ]
+            (Menu.view model.contextMenuConfig model.contextMenuState.active)
+
+    else
+        Element.none
 
 
 viewCurrentDialog : Model -> Element.Element Msg
