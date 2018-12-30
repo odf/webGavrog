@@ -443,7 +443,10 @@ handleMenuSelection : Model -> ( Model, Cmd Msg )
 handleMenuSelection model =
     let
         newModel =
-            { model | mainMenuState = { visible = False, active = Nothing } }
+            { model
+                | mainMenuState = { visible = False, active = Nothing }
+                , contextMenuState = { visible = False, active = Nothing }
+            }
     in
     if model.activeMenuLabel == Just "About Gavrog..." then
         ( { newModel | visibleDialog = Just About }, Cmd.none )
