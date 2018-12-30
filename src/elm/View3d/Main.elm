@@ -14,6 +14,7 @@ module View3d.Main exposing
     , view
     )
 
+import Bitwise
 import Browser.Events as Events
 import Html exposing (Html)
 import Html.Attributes
@@ -207,10 +208,14 @@ type alias Position =
     { x : Float, y : Float }
 
 
+type alias Buttons =
+    { left : Bool, right : Bool, middle : Bool }
+
+
 type Msg
     = FrameMsg Float
     | MouseUpMsg Position Touch.Keys
-    | MouseDownMsg Position Touch.Keys
+    | MouseDownMsg Position Touch.Keys Buttons
     | MouseMoveMsg Position Touch.Keys
     | TouchStartMsg (List Position)
     | TouchMoveMsg (List Position) Touch.Keys
@@ -231,6 +236,18 @@ decodeModifiers =
         (Decode.at [ "altKey" ] Decode.bool)
         (Decode.at [ "ctrlKey" ] Decode.bool)
         (Decode.at [ "shiftKey" ] Decode.bool)
+
+
+decodeButtons : Decode.Decoder Buttons
+decodeButtons =
+    Decode.map
+        (\val ->
+            { left = Bitwise.and val 1 > 0
+            , right = Bitwise.and val 2 > 0
+            , middle = Bitwise.and val 4 > 0
+            }
+        )
+        (Decode.at [ "buttons" ] Decode.int)
 
 
 subscriptions : (Msg -> msg) -> Model -> Sub msg
@@ -275,8 +292,12 @@ update msg model =
         FrameMsg time ->
             ( updateCamera (Camera.nextFrame time) model, None )
 
-        MouseDownMsg pos modifiers ->
-            ( updateCamera (Camera.startDragging pos) model, None )
+        MouseDownMsg pos modifiers buttons ->
+            if buttons.right then
+                ( model, None )
+
+            else
+                ( updateCamera (Camera.startDragging pos) model, None )
 
         MouseUpMsg pos modifiers ->
             let
@@ -440,12 +461,18 @@ view toMsg model =
         , Html.Attributes.id "main-3d-canvas"
         , Html.Attributes.width (floor model.size.width)
         , Html.Attributes.height (floor model.size.height)
-        , onMouseDown (\pos mods -> toMsg (MouseDownMsg pos mods))
-        , onMouseWheel (\dy mods -> toMsg (WheelMsg dy mods))
-        , onTouchStart (toMsg << TouchStartMsg)
-        , onTouchMove (\pos mods -> toMsg (TouchMoveMsg pos mods))
-        , onTouchEnd (toMsg TouchEndMsg)
-        , onTouchCancel (toMsg TouchEndMsg)
+        , onMouseDown
+            (\pos mods buttons -> toMsg (MouseDownMsg pos mods buttons))
+        , onMouseWheel
+            (\dy mods -> toMsg (WheelMsg dy mods))
+        , onTouchStart
+            (toMsg << TouchStartMsg)
+        , onTouchMove
+            (\pos mods -> toMsg (TouchMoveMsg pos mods))
+        , onTouchEnd
+            (toMsg TouchEndMsg)
+        , onTouchCancel
+            (toMsg TouchEndMsg)
         ]
         (Renderer.entities
             model.scene
@@ -456,18 +483,18 @@ view toMsg model =
         )
 
 
-onMouseDown : (Position -> Touch.Keys -> msg) -> Html.Attribute msg
+onMouseDown : (Position -> Touch.Keys -> Buttons -> msg) -> Html.Attribute msg
 onMouseDown toMsg =
     let
-        toResult pos mods =
-            { message = toMsg pos mods
+        toResult pos mods buttons =
+            { message = toMsg pos mods buttons
             , stopPropagation = False
             , preventDefault = False
             }
     in
     Html.Events.custom
         "mousedown"
-        (Decode.map2 toResult decodePos decodeModifiers)
+        (Decode.map3 toResult decodePos decodeModifiers decodeButtons)
 
 
 onMouseWheel : (Float -> Touch.Keys -> msg) -> Html.Attribute msg

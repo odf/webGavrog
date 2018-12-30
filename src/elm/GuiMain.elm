@@ -316,18 +316,14 @@ update msg model =
             )
 
         ViewMsg viewMsg ->
-            if model.contextMenuState.visible then
-                ( model, Cmd.none )
-
-            else
-                let
-                    ( viewStateTmp, outcome ) =
-                        View3d.update viewMsg model.viewState
-                in
-                ( { model | viewState = viewStateTmp }
-                    |> handleView3dOutcome outcome
-                , Cmd.none
-                )
+            let
+                ( viewStateTmp, outcome ) =
+                    View3d.update viewMsg model.viewState
+            in
+            ( { model | viewState = viewStateTmp }
+                |> handleView3dOutcome outcome
+            , Cmd.none
+            )
 
         MainMenuActivate onOff ->
             ( mainMenuOnOff model onOff, Cmd.none )
