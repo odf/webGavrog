@@ -1,5 +1,6 @@
 port module GuiMain exposing (main)
 
+import Bitwise
 import Browser
 import Browser.Dom as Dom
 import Browser.Events
@@ -52,7 +53,6 @@ type Msg
     | ViewMsg View3d.Msg
     | MainMenuActivate Bool
     | MainMenuSetItem (Maybe ( Int, String ))
-    | ContextMenuActivate Bool
     | ContextMenuSetItem (Maybe ( Int, String ))
     | Select
     | JumpDialogInput String
@@ -63,6 +63,7 @@ type Msg
     | JSData InData
     | HideAbout
     | KeyUp Int
+    | MouseDown Position Buttons
     | Ignore
 
 
@@ -72,16 +73,36 @@ port toJS : OutData -> Cmd msg
 port fromJS : (InData -> msg) -> Sub msg
 
 
+decodeKey : Decode.Decoder Int
+decodeKey =
+    Decode.at [ "keyCode" ] Decode.int
+
+
+decodePos : Decode.Decoder Position
+decodePos =
+    Decode.map2 (\x y -> { x = toFloat x, y = toFloat y })
+        (Decode.at [ "clientX" ] Decode.int)
+        (Decode.at [ "clientY" ] Decode.int)
+
+
+decodeButtons : Decode.Decoder Buttons
+decodeButtons =
+    Decode.map
+        (\val ->
+            { left = Bitwise.and val 1 > 0
+            , right = Bitwise.and val 2 > 0
+            , middle = Bitwise.and val 4 > 0
+            }
+        )
+        (Decode.at [ "buttons" ] Decode.int)
+
+
 
 -- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    let
-        decodeKey =
-            Decode.at [ "keyCode" ] Decode.int
-    in
     [ fromJS JSData
     , Browser.Events.onKeyUp (Decode.map KeyUp decodeKey)
     , View3d.subscriptions ViewMsg model.viewState
@@ -92,6 +113,14 @@ subscriptions model =
 
 
 -- MODEL
+
+
+type alias Position =
+    { x : Float, y : Float }
+
+
+type alias Buttons =
+    { left : Bool, right : Bool, middle : Bool }
 
 
 type alias Flags =
@@ -129,6 +158,7 @@ type alias Model =
     , mainMenuState : MenuState
     , contextMenuConfig : Menu.Config Msg
     , contextMenuState : MenuState
+    , contextMenuPosition : Position
     , activeMenuLabel : Maybe String
     , visibleDialog : Maybe DialogType
     , jumpDialogConfig : TextBoxConfig
@@ -151,6 +181,7 @@ init flags =
       , mainMenuState = { visible = False, active = Nothing }
       , contextMenuConfig = initContextMenuConfig
       , contextMenuState = { visible = False, active = Nothing }
+      , contextMenuPosition = { x = 0, y = 0 }
       , activeMenuLabel = Nothing
       , visibleDialog = Nothing
       , title = ""
@@ -299,9 +330,6 @@ update msg model =
         MainMenuSetItem item ->
             ( mainMenuSetItem model item, Cmd.none )
 
-        ContextMenuActivate onOff ->
-            ( contextMenuOnOff model onOff, Cmd.none )
-
         ContextMenuSetItem item ->
             ( contextMenuSetItem model item, Cmd.none )
 
@@ -343,6 +371,13 @@ update msg model =
 
         KeyUp code ->
             handleKeyPress code model
+
+        MouseDown pos buttons ->
+            if buttons.middle then
+                ( contextMenuOnOff model (Just pos), Cmd.none )
+
+            else
+                ( contextMenuOnOff model Nothing, Cmd.none )
 
         Ignore ->
             ( model, Cmd.none )
@@ -387,39 +422,8 @@ handleView3dOutcome outcome model =
 
         showContextMenu =
             Set.size newSelection > 0
-
-        tmp =
-            contextMenuOnOff model showContextMenu
     in
-    { tmp | viewState = View3d.setSelection newSelection model.viewState }
-
-
-mainMenuOnOff : Model -> Bool -> Model
-mainMenuOnOff model onOff =
-    { model
-        | mainMenuState = { visible = onOff, active = Nothing }
-        , activeMenuLabel = Nothing
-    }
-
-
-mainMenuSetItem : Model -> Maybe ( Int, String ) -> Model
-mainMenuSetItem model item =
-    let
-        state =
-            model.mainMenuState
-    in
-    case item of
-        Nothing ->
-            { model
-                | mainMenuState = { state | active = Nothing }
-                , activeMenuLabel = Nothing
-            }
-
-        Just ( i, s ) ->
-            { model
-                | mainMenuState = { state | active = Just i }
-                , activeMenuLabel = Just s
-            }
+    { model | viewState = View3d.setSelection newSelection model.viewState }
 
 
 handleMenuSelection : Model -> ( Model, Cmd Msg )
@@ -466,12 +470,49 @@ handleMenuSelection model =
         ( newModel, toJS <| OutData "selected" model.activeMenuLabel [] )
 
 
-contextMenuOnOff : Model -> Bool -> Model
-contextMenuOnOff model onOff =
+mainMenuOnOff : Model -> Bool -> Model
+mainMenuOnOff model onOff =
     { model
-        | contextMenuState = { visible = onOff, active = Nothing }
+        | mainMenuState = { visible = onOff, active = Nothing }
         , activeMenuLabel = Nothing
     }
+
+
+mainMenuSetItem : Model -> Maybe ( Int, String ) -> Model
+mainMenuSetItem model item =
+    let
+        state =
+            model.mainMenuState
+    in
+    case item of
+        Nothing ->
+            { model
+                | mainMenuState = { state | active = Nothing }
+                , activeMenuLabel = Nothing
+            }
+
+        Just ( i, s ) ->
+            { model
+                | mainMenuState = { state | active = Just i }
+                , activeMenuLabel = Just s
+            }
+
+
+contextMenuOnOff : Model -> Maybe Position -> Model
+contextMenuOnOff model maybePos =
+    case maybePos of
+        Nothing ->
+            { model
+                | contextMenuState = { visible = False, active = Nothing }
+                , activeMenuLabel = Nothing
+            }
+
+        Just pos ->
+            { model
+                | contextMenuState = { visible = True, active = Nothing }
+                , activeMenuLabel = Nothing
+                , contextMenuPosition = pos
+            }
 
 
 contextMenuSetItem : Model -> Maybe ( Int, String ) -> Model
@@ -615,7 +656,10 @@ view model =
                 )
             , Element.inFront (viewContextMenu model)
             ]
-            (Element.html <| View3d.view ViewMsg model.viewState)
+            (Element.el
+                [ onMouseDown MouseDown ]
+                (Element.html <| View3d.view ViewMsg model.viewState)
+            )
         ]
     }
 
@@ -781,3 +825,18 @@ onKeyUp toMsg =
         Html.Events.custom
             "keyup"
             (Decode.map toResult <| Decode.at [ "keyCode" ] Decode.int)
+
+
+onMouseDown : (Position -> Buttons -> msg) -> Element.Attribute msg
+onMouseDown toMsg =
+    let
+        toResult pos buttons =
+            { message = toMsg pos buttons
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Element.htmlAttribute <|
+        Html.Events.custom
+            "mousedown"
+            (Decode.map2 toResult decodePos decodeButtons)
