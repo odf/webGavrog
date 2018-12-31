@@ -478,8 +478,11 @@ handleMenuSelection model =
         , toJS <| OutData "selected" model.activeMenuLabel []
         )
 
-    else
+    else if model.activeMenuLabel /= Nothing then
         ( newModel, toJS <| OutData "selected" model.activeMenuLabel [] )
+
+    else
+        ( newModel, Cmd.none )
 
 
 mainMenuOnOff : Model -> Bool -> Model
