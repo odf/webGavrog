@@ -60,7 +60,6 @@ viewItem config active index label =
             [ Element.width Element.fill
             , Events.onMouseEnter <| config.activateItem (Just ( index, label ))
             , Events.onMouseLeave <| config.activateItem Nothing
-            , Events.onClick config.selectCurrentItem
             , Element.paddingXY 16 4
             , Background.color
                 (if active == Just index then
