@@ -202,58 +202,56 @@ init flags =
 
 initMainMenuConfig : Menu.Config Msg
 initMainMenuConfig =
-    { items = initMainMenuItems
+    let
+        items =
+            [ "Open..."
+            , "Save Structure..."
+            , "Save Screenshot..."
+            , "--"
+            , "First"
+            , "Prev"
+            , "Next"
+            , "Last"
+            , "Jump..."
+            , "Search..."
+            , "--"
+            , "Center"
+            , "Along X"
+            , "Along Y"
+            , "Along Z"
+            , "--"
+            , "Options..."
+            , "--"
+            , "About Gavrog..."
+            ]
+    in
+    { items = items
     , activateItem = MainMenuSetItem
     , selectCurrentItem = Select
     }
 
 
-initMainMenuItems : List String
-initMainMenuItems =
-    [ "Open..."
-    , "Save Structure..."
-    , "Save Screenshot..."
-    , "--"
-    , "First"
-    , "Prev"
-    , "Next"
-    , "Last"
-    , "Jump..."
-    , "Search..."
-    , "--"
-    , "Center"
-    , "Along X"
-    , "Along Y"
-    , "Along Z"
-    , "--"
-    , "Options..."
-    , "--"
-    , "About Gavrog..."
-    ]
-
-
 initContextMenuConfig : Menu.Config Msg
 initContextMenuConfig =
-    { items = initContextMenuItems
+    let
+        items =
+            [ "First"
+            , "Prev"
+            , "Next"
+            , "Last"
+            , "Jump..."
+            , "Search..."
+            , "--"
+            , "Center"
+            , "Along X"
+            , "Along Y"
+            , "Along Z"
+            ]
+    in
+    { items = items
     , activateItem = ContextMenuSetItem
     , selectCurrentItem = Select
     }
-
-
-initContextMenuItems : List String
-initContextMenuItems =
-    [ "First"
-    , "Prev"
-    , "Next"
-    , "Last"
-    , "Jump..."
-    , "Search..."
-    , "--"
-    , "Center"
-    , "Along X"
-    , "Along Y"
-    , "Along Z"
-    ]
 
 
 jumpDialogConfig : TextBoxConfig
