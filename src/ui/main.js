@@ -123,16 +123,38 @@ const updateStructure = (config, model) => csp.go(function*() {
 });
 
 
+const convertSelection = (scene, selected) => {
+  const inSelection = scene.meshes.map(_ => ({}));
+  for (const { meshIndex, instanceIndex } of selected)
+    inSelection[meshIndex][instanceIndex] = true;
+
+  const indexedInstances = scene.instances.map((inst, i) => [inst, i]);
+  const globalIndices = [];
+
+  for (let i = 0; i < scene.meshes.length; ++i) {
+    const instancesForMesh = indexedInstances.filter(
+      ([{ meshIndex }, k]) => meshIndex == i);
+
+    for (let j = 0; j < instancesForMesh.length; ++j) {
+      if (inSelection[i][j])
+        globalIndices.push(instancesForMesh[j][1]);
+    }
+  }
+
+  return globalIndices;
+};
+
+
 const addTiles = (config, model, selected) => csp.go(function*() {
   try {
     const instances = model.scene.instances.slice();
 
-    for (const { meshIndex, instanceIndex } of selected) {
-      const { neighbor, extraShift } = instances[instanceIndex];
+    for (const k of convertSelection(model.scene, selected)) {
+      const { neighbor, extraShift } = instances[k];
       for (const { instanceIndex, shift } of neighbor) {
         const inst = instances[instanceIndex];
         instances.push(Object.assign({}, inst, {
-          extraShift: ops.add(extraShift, shift)
+          extraShift: ops.plus(extraShift, shift)
         }));
       }
     }
@@ -149,10 +171,24 @@ const addTiles = (config, model, selected) => csp.go(function*() {
 });
 
 
-const removeTiles = (config, model, selected) => csp.go(function*() {
-  console.log(`removeTiles ${JSON.stringify(selected)}`);
-  const instances = model.instances.slice();
-  return Object.assign({}, model, instances);
+const removeElements = (config, model, selected) => csp.go(function*() {
+  try {
+    const toBeRemoved = {};
+    for (const k of convertSelection(model.scene, selected))
+      toBeRemoved[k] = true;
+
+    const instances = model.scene.instances.filter(
+      (inst, k) => !toBeRemoved[k]);
+
+    const scene = Object.assign({}, model.scene, { instances });
+    yield config.sendScene(scene, false);
+
+    return Object.assign({}, model, { scene });
+  } catch (ex) {
+    console.error(ex);
+    yield config.log(`ERROR removing tile(s)!!!`);
+    return model;
+  }
 });
 
 
@@ -266,8 +302,8 @@ const render = domNode => {
     ['Last']: () => setStructure(-1),
     ['Add Tile(s)']: (selected) =>
       updateModel(addTiles(config, model, selected)),
-    ['Remove Tile(s)']: (selected) =>
-      updateModel(removeTiles(config, model, selected))
+    ['Remove Element(s)']: (selected) =>
+      updateModel(removeElements(config, model, selected))
   };
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
