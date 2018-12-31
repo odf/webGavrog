@@ -376,16 +376,16 @@ update msg model =
         ContextMenu pos buttons ->
             let
                 maybePos =
-                    if model.contextMenuState.visible then
-                        Nothing
+                    if buttons.right && not model.contextMenuState.visible then
+                        Just pos
 
                     else
-                        Just pos
+                        Nothing
             in
             ( contextMenuOnOff model maybePos, Cmd.none )
 
         MouseDown pos buttons ->
-            if model.contextMenuState.visible then
+            if not buttons.right && model.contextMenuState.visible then
                 ( contextMenuOnOff model Nothing, Cmd.none )
 
             else
