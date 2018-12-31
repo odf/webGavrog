@@ -728,6 +728,7 @@ viewContextMenu model =
         Element.el
             [ Element.moveDown model.contextMenuPosition.y
             , Element.moveRight model.contextMenuPosition.x
+            , onContextMenu ContextMenu
             ]
             (Menu.view model.contextMenuConfig model.contextMenuState.active)
 
