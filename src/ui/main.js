@@ -232,7 +232,7 @@ const render = domNode => {
     ['Last']: () => setStructure(-1)
   };
 
-  app.ports.toJS.subscribe(({ mode, text, options }) => {
+  app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
     if (mode == "jump") {
       const number = parseInt(text);
       if (!Number.isNaN(number))
@@ -247,8 +247,11 @@ const render = domNode => {
       else
         config.log(`Name "${text}" not found.`);
     }
-    else if (mode == "selected" && action[text])
-      action[text]();
+    else if (mode == "menuChoice") {
+      console.log(`selected = ${JSON.stringify(selected)}`);
+      if (action[text])
+        action[text]();
+    }
     else if (mode == "options") {
       for (const { key, value } of options)
         model.options[key] = value;

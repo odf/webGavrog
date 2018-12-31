@@ -37,6 +37,7 @@ type alias OutData =
     { mode : String
     , text : Maybe String
     , options : List Options.Spec
+    , selected : List { modelIndex : Int, instanceIndex : Int }
     }
 
 
@@ -347,7 +348,7 @@ update msg model =
         JumpDialogSubmit ok ->
             ( { model | visibleDialog = Nothing }
             , if ok then
-                toJS <| OutData "jump" (Just model.jumpDialogContent) []
+                toJS <| OutData "jump" (Just model.jumpDialogContent) [] []
 
               else
                 Cmd.none
@@ -359,7 +360,7 @@ update msg model =
         SearchDialogSubmit ok ->
             ( { model | visibleDialog = Nothing }
             , if ok then
-                toJS <| OutData "search" (Just model.searchDialogContent) []
+                toJS <| OutData "search" (Just model.searchDialogContent) [] []
 
               else
                 Cmd.none
@@ -473,11 +474,17 @@ handleMenuSelection model =
 
     else if model.activeMenuLabel == Just "Save Screenshot..." then
         ( updateView3d (View3d.setRedraws True) newModel
-        , toJS <| OutData "selected" model.activeMenuLabel []
+        , toJS <| OutData "menuChoice" model.activeMenuLabel [] []
         )
 
     else if model.activeMenuLabel /= Nothing then
-        ( newModel, toJS <| OutData "selected" model.activeMenuLabel [] )
+        ( newModel
+        , model.viewState.selected
+            |> Set.toList
+            |> List.map (\( m, i ) -> { modelIndex = m, instanceIndex = i })
+            |> OutData "menuChoice" model.activeMenuLabel []
+            |> toJS
+        )
 
     else
         ( newModel, Cmd.none )
@@ -593,7 +600,7 @@ updateOptions model msg =
         Options.Submit ok ->
             if ok then
                 ( { model | visibleDialog = Nothing, optionSpecs = specsTmp }
-                , toJS <| OutData "options" Nothing specsTmp
+                , toJS <| OutData "options" Nothing specsTmp []
                 )
 
             else
@@ -608,8 +615,12 @@ updateOptions model msg =
 hotKeyActions : Dict Char ( Model -> Model, Cmd Msg )
 hotKeyActions =
     Dict.fromList
-        [ ( 'n', ( identity, toJS <| OutData "selected" (Just "Next") [] ) )
-        , ( 'p', ( identity, toJS <| OutData "selected" (Just "Prev") [] ) )
+        [ ( 'n'
+          , ( identity, toJS <| OutData "menuChoice" (Just "Next") [] [] )
+          )
+        , ( 'p'
+          , ( identity, toJS <| OutData "menuChoice" (Just "Prev") [] [] )
+          )
         , ( '0', ( updateView3d View3d.encompass, Cmd.none ) )
         , ( 'x', ( lookAlong (vec3 -1 0 0) (vec3 0 1 0), Cmd.none ) )
         , ( 'y', ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1), Cmd.none ) )
