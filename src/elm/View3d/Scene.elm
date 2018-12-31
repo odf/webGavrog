@@ -52,6 +52,7 @@ type alias RawInstanceSpec =
     { meshIndex : Int
     , materialIndex : Int
     , transform : RawTransform
+    , extraShift : RawVec3
     }
 
 
@@ -138,14 +139,16 @@ makeMaterial mat =
     }
 
 
-makeTransform : RawTransform -> Mat4
-makeTransform { basis, shift } =
+makeTransform : RawTransform -> RawVec3 -> Mat4
+makeTransform { basis, shift } extraShift =
     let
         ( u, v, w ) =
             basis
     in
     Mat4.mul
-        (Mat4.makeTranslate <| makeVec3 shift)
+        (Mat4.makeTranslate <|
+            Vec3.add (makeVec3 shift) (makeVec3 extraShift)
+        )
         (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
 
 
@@ -155,7 +158,7 @@ makeInstance materials spec =
         List.drop spec.materialIndex materials
             |> List.head
             |> Maybe.withDefault defaultMaterial
-    , transform = makeTransform spec.transform
+    , transform = makeTransform spec.transform spec.extraShift
     }
 
 
@@ -223,9 +226,12 @@ boundingBox { meshes, instances } =
 
         withTransforms index posList =
             instances
-                |> List.filter (\inst -> inst.meshIndex == index)
-                |> List.map (.transform >> makeTransform)
-                |> List.map (\t -> ( posList, t ))
+                |> List.filter
+                    (\inst -> inst.meshIndex == index)
+                |> List.map
+                    (\spec -> makeTransform spec.transform spec.extraShift)
+                |> List.map
+                    (\t -> ( posList, t ))
 
         allWithTransforms =
             meshes

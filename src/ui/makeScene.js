@@ -177,6 +177,7 @@ const ballAndStick = (
         basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
         shift: [ p[0], p[1], p[2] || 0 ]
       },
+      extraShift: [ 0, 0, 0 ],
       neighbor: []
     })
   });
@@ -200,6 +201,7 @@ const ballAndStick = (
         basis: [ u, v, w ],
         shift: [ p[0], p[1], p[2] || 0 ]
       },
+      extraShift: [ 0, 0, 0 ],
       neighbor: []
     })
   });
@@ -325,7 +327,9 @@ const splitModel = (
   const instancesOut = [];
   const instanceMap = [];
   for (let i = 0; i < instances.length; ++i) {
-    const { meshIndex, materialIndex, transform, neighbors } = instances[i];
+    const { meshIndex, materialIndex, transform, extraShift, neighbors }
+          = instances[i];
+
     instanceMap[i] = [];
 
     for (const label of Object.keys(meshMap[meshIndex])) {
@@ -337,6 +341,7 @@ const splitModel = (
         meshIndex: meshMap[meshIndex][label],
         materialIndex: matIdx,
         transform,
+        extraShift,
         neighbor: neighbors && neighbors[label]
       });
     }
@@ -401,10 +406,8 @@ const tilingModel = (
       model.instances.push({
         meshIndex: kind,
         materialIndex: options.colorByTranslationClass ? i : kind,
-        transform: {
-          basis: transform.basis,
-          shift: ops.plus(transform.shift, [s[0], s[1], s[2] || 0])
-        },
+        transform,
+        extraShift: [s[0], s[1], s[2] || 0],
         neighbors
       });
 
@@ -412,10 +415,8 @@ const tilingModel = (
         model.instances.push({
           meshIndex: kind + surfaces.length,
           materialIndex: materials.length - 1,
-          transform: {
-            basis: transform.basis,
-            shift: ops.plus(transform.shift, [s[0], s[1], s[2] || 0])
-          }
+          transform,
+          extraShift: [s[0], s[1], s[2] || 0]
         });
       }
     }
