@@ -61,7 +61,7 @@ type alias Model =
 type Outcome
     = None
     | PickEmpty Touch.Keys
-    | Pick Touch.Keys { modelIndex : Int, instanceIndex : Int }
+    | Pick Touch.Keys { meshIndex : Int, instanceIndex : Int }
 
 
 init : Model
@@ -336,7 +336,7 @@ pickingOutcome pos mods model =
         |> Maybe.andThen
             (\r -> pick r model.scene)
         |> Maybe.map
-            (\( m, i ) -> Pick mods { modelIndex = m, instanceIndex = i })
+            (\( m, i ) -> Pick mods { meshIndex = m, instanceIndex = i })
         |> Maybe.withDefault
             (PickEmpty mods)
 

@@ -9,6 +9,8 @@ import { preprocess, makeScene } from './makeScene';
 
 import { Elm } from '../elm/GuiMain';
 
+import { floatMatrices } from '../arithmetic/types';
+const ops = floatMatrices;
 
 const worker = webworkers.create('js/sceneWorker.js');
 const callWorker = csp.nbind(worker, null);
@@ -115,9 +117,42 @@ const updateStructure = (config, model) => csp.go(function*() {
     return Object.assign({}, model, { scene } );
   } catch (ex) {
     console.error(ex);
-    yield config.log(`ERROR updating structure ${i}!!!`);
+    yield config.log(`ERROR updating structure!!!`);
     return model;
   }
+});
+
+
+const addTiles = (config, model, selected) => csp.go(function*() {
+  try {
+    const instances = model.scene.instances.slice();
+
+    for (const { meshIndex, instanceIndex } of selected) {
+      const { neighbor, extraShift } = instances[instanceIndex];
+      for (const { instanceIndex, shift } of neighbor) {
+        const inst = instances[instanceIndex];
+        instances.push(Object.assign({}, inst, {
+          extraShift: ops.add(extraShift, shift)
+        }));
+      }
+    }
+
+    const scene = Object.assign({}, model.scene, { instances });
+    yield config.sendScene(scene, false);
+
+    return Object.assign({}, model, { scene });
+  } catch (ex) {
+    console.error(ex);
+    yield config.log(`ERROR adding tile(s)!!!`);
+    return model;
+  }
+});
+
+
+const removeTiles = (config, model, selected) => csp.go(function*() {
+  console.log(`removeTiles ${JSON.stringify(selected)}`);
+  const instances = model.instances.slice();
+  return Object.assign({}, model, instances);
 });
 
 
@@ -212,15 +247,14 @@ const render = domNode => {
     sendScene
   };
 
-  const openFile = () => config.loadFile(
-    ({ file, data }) => csp.go(function*() {
-      Object.assign(model, yield newFile(config, model, { file, data }));
-    })
-  );
-
-  const setStructure = i => csp.go(function*() {
-    Object.assign(model, yield toStructure(config, model, i));
+  const updateModel = deferred => csp.go(function*() {
+    Object.assign(model, yield deferred);
   });
+
+  const openFile = () => config.loadFile(
+    ({ file, data }) => updateModel(newFile(config, model, { file, data })));
+
+  const setStructure = i => updateModel(toStructure(config, model, i));
 
   const action = {
     ['Open...']: openFile,
@@ -229,7 +263,11 @@ const render = domNode => {
     ['First']: () => setStructure(0),
     ['Prev']: () => setStructure(model.index - 1),
     ['Next']: () => setStructure(model.index + 1),
-    ['Last']: () => setStructure(-1)
+    ['Last']: () => setStructure(-1),
+    ['Add Tile(s)']: (selected) =>
+      updateModel(addTiles(config, model, selected)),
+    ['Remove Tile(s)']: (selected) =>
+      updateModel(removeTiles(config, model, selected))
   };
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
@@ -248,17 +286,14 @@ const render = domNode => {
         config.log(`Name "${text}" not found.`);
     }
     else if (mode == "menuChoice") {
-      console.log(`selected = ${JSON.stringify(selected)}`);
       if (action[text])
-        action[text]();
+        action[text](selected);
     }
     else if (mode == "options") {
       for (const { key, value } of options)
         model.options[key] = value;
 
-      csp.go(function*() {
-        Object.assign(model, yield updateStructure(config, model));
-      });
+      updateModel(updateStructure(config, model));
     }
   });
 

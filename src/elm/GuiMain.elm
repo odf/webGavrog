@@ -37,7 +37,7 @@ type alias OutData =
     { mode : String
     , text : Maybe String
     , options : List Options.Spec
-    , selected : List { modelIndex : Int, instanceIndex : Int }
+    , selected : List { meshIndex : Int, instanceIndex : Int }
     }
 
 
@@ -236,17 +236,8 @@ initContextMenuConfig : Menu.Config Msg
 initContextMenuConfig =
     let
         items =
-            [ "First"
-            , "Prev"
-            , "Next"
-            , "Last"
-            , "Jump..."
-            , "Search..."
-            , "--"
-            , "Center"
-            , "Along X"
-            , "Along Y"
-            , "Along Z"
+            [ "Add Tile(s)"
+            , "Remove Tile(s)"
             ]
     in
     { items = items
@@ -417,10 +408,10 @@ handleView3dOutcome outcome model =
                     else
                         Set.empty
 
-                View3d.Pick { ctrl, shift } { modelIndex, instanceIndex } ->
+                View3d.Pick { ctrl, shift } { meshIndex, instanceIndex } ->
                     let
                         item =
-                            ( modelIndex, instanceIndex )
+                            ( meshIndex, instanceIndex )
                     in
                     if Set.member item oldSelection then
                         Set.remove item oldSelection
@@ -481,7 +472,7 @@ handleMenuSelection model =
         ( newModel
         , model.viewState.selected
             |> Set.toList
-            |> List.map (\( m, i ) -> { modelIndex = m, instanceIndex = i })
+            |> List.map (\( m, i ) -> { meshIndex = m, instanceIndex = i })
             |> OutData "menuChoice" model.activeMenuLabel []
             |> toJS
         )
