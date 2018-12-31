@@ -35,6 +35,7 @@ view config active =
             , blur = 16.0
             , color = Element.rgba 0.0 0.0 0.0 0.2
             }
+        , Events.onClick config.selectCurrentItem
         ]
         (List.indexedMap (viewItem config active) config.items)
 
