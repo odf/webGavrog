@@ -83,8 +83,9 @@ entities :
     -> Float
     -> Mat4
     -> Mat4
+    -> Bool
     -> List WebGL.Entity
-entities scene selected camDist viewingMatrix perspectiveMatrix =
+entities scene selected camDist viewingMatrix perspectiveMatrix withWires =
     let
         baseUniforms =
             { transform = Mat4.identity
@@ -130,17 +131,27 @@ entities scene selected camDist viewingMatrix perspectiveMatrix =
                     , ks = material.ks
                     , shininess = material.shininess
                 }
+
+        wireUniforms transform material highlight =
+            { baseUniforms | transform = transform }
     in
-    List.map
-        (\{ mesh, material, transform, idxMesh, idxInstance } ->
+    List.concatMap
+        (\{ mesh, wireframe, material, transform, idxMesh, idxInstance } ->
             let
                 highlight =
                     Set.member ( idxMesh, idxInstance ) selected
-
-                uniforms =
-                    meshUniforms transform material highlight
             in
-            WebGL.entity vertexShader fragmentShader mesh uniforms
+            if withWires then
+                [ meshUniforms transform material highlight
+                    |> WebGL.entity vertexShader fragmentShader mesh
+                , wireUniforms transform material highlight
+                    |> WebGL.entity vertexShader fragmentShader wireframe
+                ]
+
+            else
+                [ meshUniforms transform material highlight
+                    |> WebGL.entity vertexShader fragmentShader mesh
+                ]
         )
         scene
 

@@ -476,8 +476,8 @@ setRedraws onOff model =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> Html msg
-view toMsg model =
+view : (Msg -> msg) -> Model -> Bool -> Html msg
+view toMsg model withWires =
     WebGL.toHtml
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" "white"
@@ -503,6 +503,7 @@ view toMsg model =
             (Camera.cameraDistance model.cameraState)
             (Camera.viewingMatrix model.cameraState)
             (Camera.perspectiveMatrix model.cameraState)
+            withWires
         )
 
 

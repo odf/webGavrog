@@ -657,6 +657,15 @@ lookAlong axis up model =
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        withWires =
+            model.optionSpecs
+                |> List.map
+                    (\{ key, value } ->
+                        key == "showSurfaceMesh" && value == True
+                    )
+                |> List.foldl (||) False
+    in
     { title = "Gavrog For Web"
     , body =
         [ Element.layout
@@ -675,7 +684,7 @@ view model =
                 [ onContextMenu ContextMenu
                 , onMouseDown MouseDown
                 ]
-                (Element.html <| View3d.view ViewMsg model.viewState)
+                (Element.html <| View3d.view ViewMsg model.viewState withWires)
             )
         ]
     }
