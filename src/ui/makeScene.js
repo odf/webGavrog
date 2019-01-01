@@ -365,20 +365,20 @@ const splitModel = (
 
 
 const tilingModel = (
-  surfaces, instances, options, basis, palette, extensionFactor, shifts
+  templates, tiles, options, basis, palette, extensionFactor, shifts
 ) => {
   const extend = v => ops.times(v, extensionFactor);
   const dVecs = lattices.dirichletVectors(basis).map(extend);
 
-  const meshes = surfaces.map(({ pos, faces }) => geometry(pos, faces));
+  const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
   const extraMeshes = (
     options.showSurfaceMesh ?
-      surfaces.map(({ pos, faces }) => geometry(pos, faces, true))
+      templates.map(({ pos, faces }) => geometry(pos, faces, true))
     : []);
 
   const faceLabelLists = [].concat(
-    surfaces.map(({ faceLabels }) => faceLabels),
-    surfaces.map(({ faceLabels }) => faceLabels)
+    templates.map(({ faceLabels }) => faceLabels),
+    templates.map(({ faceLabels }) => faceLabels)
   );
 
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
@@ -388,24 +388,31 @@ const tilingModel = (
   const model = {
     meshes: meshes.concat(extraMeshes),
     materials,
+    tiles: [],
     instances: []
   };
 
-  for (let i = 0; i < instances.length; ++i) {
-    const { templateIndex: kind, symmetry, center, neighbors } = instances[i];
+  for (let i = 0; i < tiles.length; ++i) {
+    const { templateIndex: meshIndex, symmetry, center, neighbors } = tiles[i];
     const sym = symmetry.map(v => v.slice(0, 3));
 
     const transform = (sym.length == 3) ?
           { basis: [ sym[0], sym[1], [0, 0, 1] ], shift: sym[2] } :
           { basis: sym.slice(0, 3), shift: sym[3] };
 
+    model.tiles.push({ meshIndex, transform, center, neighbors });
+  };
+
+  for (let i = 0; i < tiles.length; ++i) {
+    const { meshIndex, transform, center, neighbors } = model.tiles[i];
+
     for (const s0 of shifts) {
       const c = ops.plus(center, s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
       model.instances.push({
-        meshIndex: kind,
-        materialIndex: options.colorByTranslationClass ? i : kind,
+        meshIndex,
+        materialIndex: options.colorByTranslationClass ? i : meshIndex,
         transform,
         extraShift: [s[0], s[1], s[2] || 0],
         neighbors
@@ -413,7 +420,7 @@ const tilingModel = (
 
       if (options.showSurfaceMesh) {
         model.instances.push({
-          meshIndex: kind + surfaces.length,
+          meshIndex: meshIndex + templates.length,
           materialIndex: materials.length - 1,
           transform,
           extraShift: [s[0], s[1], s[2] || 0]
