@@ -27,7 +27,6 @@ type alias RawVertexSpec =
 type alias RawMeshSpec =
     { vertices : List RawVertexSpec
     , faces : List (List Int)
-    , isWireframe : Bool
     }
 
 
@@ -120,11 +119,7 @@ makeVertex v =
 
 makeMesh : RawMeshSpec -> Mesh Renderer.Vertex
 makeMesh spec =
-    if spec.isWireframe then
-        Mesh.wireframe (List.map makeVertex spec.vertices) spec.faces
-
-    else
-        Mesh.surface (List.map makeVertex spec.vertices) spec.faces
+    Mesh.surface (List.map makeVertex spec.vertices) spec.faces
 
 
 makeMaterial : RawMaterial -> Renderer.Material

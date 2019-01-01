@@ -29,7 +29,7 @@ const baseMaterial = {
 };
 
 
-const geometry = (vertsIn, faces, isWireframe=false) => {
+const geometry = (vertsIn, faces) => {
   const normals = vertsIn.map(v => ops.times(v, 0));
 
   for (const f of faces) {
@@ -46,20 +46,16 @@ const geometry = (vertsIn, faces, isWireframe=false) => {
     }
   }
 
-  const vertices = vertsIn.map((v, i) => {
-    const normal = unitVec(normals[i]);
-    const pos = isWireframe ? ops.plus(v, ops.times(0.001, normal)) : v;
-    return { pos, normal };
-  });
+  const vertices = vertsIn.map((v, i) => ({
+    pos: v,
+    normal: unitVec(normals[i])
+  }));
 
-  return { vertices, faces, isWireframe }
+  return { vertices, faces }
 };
 
 
-const splitGeometry = ({ vertices, faces, isWireframe }, faceLabels) => {
-  if (isWireframe)
-    return { 0: { vertices, faces, isWireframe } };
-
+const splitGeometry = ({ vertices, faces }, faceLabels) => {
   const facesByLabel = {};
 
   for (let f = 0; f < faces.length; ++f) {
@@ -83,7 +79,7 @@ const splitGeometry = ({ vertices, faces, isWireframe }, faceLabels) => {
     };
 
     const subFaces = facesByLabel[label].map(vs => vs.map(v => vertexMap[v]));
-    subMeshes[label] = { vertices: subVerts, faces: subFaces, isWireframe };
+    subMeshes[label] = { vertices: subVerts, faces: subFaces };
   }
 
   return subMeshes;
@@ -367,27 +363,9 @@ const splitModel = (
 const tilingModel = (
   templates, tiles, options, basis, palette, extensionFactor, shifts
 ) => {
-  const extend = v => ops.times(v, extensionFactor);
-  const dVecs = lattices.dirichletVectors(basis).map(extend);
-
-  const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
-  const extraMeshes = (
-    options.showSurfaceMesh ?
-      templates.map(({ pos, faces }) => geometry(pos, faces, true))
-    : []);
-
-  const faceLabelLists = [].concat(
-    templates.map(({ faceLabels }) => faceLabels),
-    templates.map(({ faceLabels }) => faceLabels)
-  );
-
-  const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
-  if (options.showSurfaceMesh)
-    materials.push(baseMaterial);
-
   const model = {
-    meshes: meshes.concat(extraMeshes),
-    materials,
+    meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),
+    materials: palette[options.colorByTranslationClass ? 1 : 0].slice(),
     tiles: [],
     instances: []
   };
@@ -403,6 +381,9 @@ const tilingModel = (
     model.tiles.push({ meshIndex, transform, center, neighbors });
   };
 
+  const extend = v => ops.times(v, extensionFactor);
+  const dVecs = lattices.dirichletVectors(basis).map(extend);
+
   for (let i = 0; i < tiles.length; ++i) {
     const { meshIndex, transform, center, neighbors } = model.tiles[i];
 
@@ -417,18 +398,10 @@ const tilingModel = (
         extraShift: [s[0], s[1], s[2] || 0],
         neighbors
       });
-
-      if (options.showSurfaceMesh) {
-        model.instances.push({
-          meshIndex: meshIndex + templates.length,
-          materialIndex: materials.length - 1,
-          transform,
-          extraShift: [s[0], s[1], s[2] || 0]
-        });
-      }
     }
   }
 
+  const faceLabelLists = templates.map(({ faceLabels }) => faceLabels);
   return splitModel(model, faceLabelLists, options);
 };
 
