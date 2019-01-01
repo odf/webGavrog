@@ -90,12 +90,20 @@ meshForRenderer mesh =
 
 wireframeForRenderer : Mesh Renderer.Vertex -> WebGL.Mesh Renderer.Vertex
 wireframeForRenderer mesh =
+    let
+        out { pos, normal } =
+            { pos = Vec3.add pos (Vec3.scale 0.001 normal)
+            , normal = normal
+            }
+    in
     case mesh of
         Mesh.Lines lines ->
             WebGL.lines lines
 
         Mesh.Triangles triangles ->
             triangles
+                |> List.map
+                    (\( u, v, w ) -> ( out u, out v, out w ))
                 |> List.concatMap
                     (\( u, v, w ) -> [ ( u, v ), ( v, w ), ( w, u ) ])
                 |> WebGL.lines
