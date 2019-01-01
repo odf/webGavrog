@@ -179,11 +179,13 @@ fragmentShader =
         vec3 normVec = normalize(vnormal);
         vec3 lightVec = normalize(lightPos - vpos);
 
-        float diffuse = max(dot(normVec, lightVec), 0.0);
+        float diffuse = dot(normVec, lightVec);
+        if (diffuse < 0.0)
+            diffuse *= -0.5;
 
         float specular = 0.0;
 
-        if(diffuse > 0.0) {
+        if (diffuse > 0.0) {
           vec3 reflectVec = reflect(-lightVec, normVec);
           vec3 camVec = normalize(cameraPos - vpos);
           float t = max(dot(reflectVec, camVec), 0.0);
