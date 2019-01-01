@@ -27,6 +27,7 @@ type alias Scene a =
     List
         { a
             | mesh : WebGL.Mesh Vertex
+            , wireframe : WebGL.Mesh Vertex
             , material : Material
             , transform : Mat4
             , idxMesh : Int
@@ -61,6 +62,21 @@ type alias Varyings =
     }
 
 
+black : Vec3
+black =
+    vec3 0 0 0
+
+
+white : Vec3
+white =
+    vec3 1 1 1
+
+
+red : Vec3
+red =
+    vec3 1 0 0
+
+
 entities :
     Scene a
     -> Set ( Int, Int )
@@ -70,15 +86,6 @@ entities :
     -> List WebGL.Entity
 entities scene selected camDist viewingMatrix perspectiveMatrix =
     let
-        black =
-            vec3 0 0 0
-
-        white =
-            vec3 1 1 1
-
-        red =
-            vec3 1 0 0
-
         baseUniforms =
             { transform = Mat4.identity
             , viewing = viewingMatrix
@@ -98,34 +105,40 @@ entities scene selected camDist viewingMatrix perspectiveMatrix =
             , ks = 0
             , shininess = 0
             }
+
+        meshUniforms transform material highlight =
+            if highlight then
+                { baseUniforms
+                    | transform = transform
+                    , ambientColor = red
+                    , diffuseColor = red
+                    , specularColor = white
+                    , ka = 0.1
+                    , kd = 0.9
+                    , ks = 0.7
+                    , shininess = material.shininess
+                }
+
+            else
+                { baseUniforms
+                    | transform = transform
+                    , ambientColor = material.ambientColor
+                    , diffuseColor = material.diffuseColor
+                    , specularColor = material.specularColor
+                    , ka = material.ka
+                    , kd = material.kd
+                    , ks = material.ks
+                    , shininess = material.shininess
+                }
     in
     List.map
         (\{ mesh, material, transform, idxMesh, idxInstance } ->
             let
-                uniforms =
-                    if Set.member ( idxMesh, idxInstance ) selected then
-                        { baseUniforms
-                            | transform = transform
-                            , ambientColor = red
-                            , diffuseColor = red
-                            , specularColor = white
-                            , ka = 0.1
-                            , kd = 0.9
-                            , ks = 0.7
-                            , shininess = material.shininess
-                        }
+                highlight =
+                    Set.member ( idxMesh, idxInstance ) selected
 
-                    else
-                        { baseUniforms
-                            | transform = transform
-                            , ambientColor = material.ambientColor
-                            , diffuseColor = material.diffuseColor
-                            , specularColor = material.specularColor
-                            , ka = material.ka
-                            , kd = material.kd
-                            , ks = material.ks
-                            , shininess = material.shininess
-                        }
+                uniforms =
+                    meshUniforms transform material highlight
             in
             WebGL.entity vertexShader fragmentShader mesh uniforms
         )

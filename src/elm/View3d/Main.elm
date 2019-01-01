@@ -88,6 +88,25 @@ meshForRenderer mesh =
             WebGL.indexedTriangles vertices triangles
 
 
+wireframeForRenderer : Mesh Renderer.Vertex -> WebGL.Mesh Renderer.Vertex
+wireframeForRenderer mesh =
+    case mesh of
+        Mesh.Lines lines ->
+            WebGL.lines lines
+
+        Mesh.Triangles triangles ->
+            triangles
+                |> List.concatMap
+                    (\( u, v, w ) -> [ ( u, v ), ( v, w ), ( w, u ) ])
+                |> WebGL.lines
+
+        Mesh.IndexedTriangles vertices triangles ->
+            Mesh.resolvedSurface
+                vertices
+                (List.map (\( i, j, k ) -> [ i, j, k ]) triangles)
+                |> wireframeForRenderer
+
+
 meshForPicking : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
@@ -118,6 +137,9 @@ processedScene scene =
                     mesh =
                         meshForRenderer rawMesh
 
+                    wireframe =
+                        wireframeForRenderer rawMesh
+
                     pickingMesh =
                         meshForPicking rawMesh
 
@@ -141,6 +163,7 @@ processedScene scene =
                 List.indexedMap
                     (\idxInstance { material, transform } ->
                         { mesh = mesh
+                        , wireframe = wireframe
                         , pickingMesh = pickingMesh
                         , centroid = centroid
                         , radius = radius
