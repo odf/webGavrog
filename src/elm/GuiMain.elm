@@ -237,6 +237,7 @@ initContextMenuConfig =
     let
         items =
             [ "Add Tile(s)"
+            , "Remove Tile(s)"
             , "Remove Element(s)"
             ]
     in

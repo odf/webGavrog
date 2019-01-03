@@ -171,6 +171,27 @@ const addTiles = (config, model, selected) => csp.go(function*() {
 });
 
 
+const removeTiles = (config, model, selected) => csp.go(function*() {
+  try {
+    const toBeRemoved = {};
+    for (const k of convertSelection(model.scene, selected))
+      toBeRemoved[model.scene.instances[k].tileIndex] = true;
+
+    const instances = model.scene.instances.filter(
+      (inst, k) => !toBeRemoved[model.scene.instances[k].tileIndex]);
+
+    const scene = Object.assign({}, model.scene, { instances });
+    yield config.sendScene(scene, false);
+
+    return Object.assign({}, model, { scene });
+  } catch (ex) {
+    console.error(ex);
+    yield config.log(`ERROR removing tile(s)!!!`);
+    return model;
+  }
+});
+
+
 const removeElements = (config, model, selected) => csp.go(function*() {
   try {
     const toBeRemoved = {};
@@ -186,7 +207,7 @@ const removeElements = (config, model, selected) => csp.go(function*() {
     return Object.assign({}, model, { scene });
   } catch (ex) {
     console.error(ex);
-    yield config.log(`ERROR removing tile(s)!!!`);
+    yield config.log(`ERROR removing element(s)!!!`);
     return model;
   }
 });
@@ -302,6 +323,8 @@ const render = domNode => {
     ['Last']: () => setStructure(-1),
     ['Add Tile(s)']: (selected) =>
       updateModel(addTiles(config, model, selected)),
+    ['Remove Tile(s)']: (selected) =>
+      updateModel(removeTiles(config, model, selected)),
     ['Remove Element(s)']: (selected) =>
       updateModel(removeElements(config, model, selected))
   };

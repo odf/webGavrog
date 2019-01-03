@@ -321,21 +321,22 @@ const splitModel = (
   const materialsOut = materials.concat(edgeMaterial);
 
   const instancesOut = [];
-  const instanceMap = [];
+  const tiles = [];
   for (let i = 0; i < instances.length; ++i) {
     const { meshIndex, materialIndex, transform, extraShift, neighbors }
           = instances[i];
 
-    instanceMap[i] = [];
+    tiles[i] = [];
 
     for (const label of Object.keys(meshMap[meshIndex])) {
       const matIdx = (label == 'undefined' && options.highlightEdges) ?
             materials.length : materialIndex;
 
-      instanceMap[i].push(instancesOut.length);
+      tiles[i].push(instancesOut.length);
       instancesOut.push({
         meshIndex: meshMap[meshIndex][label],
         materialIndex: matIdx,
+        tileIndex: i,
         transform,
         extraShift,
         neighbor: neighbors && neighbors[label]
@@ -346,7 +347,7 @@ const splitModel = (
   for (const inst of instancesOut) {
     const nbrs = [];
     if (inst.neighbor) {
-      for (const k of instanceMap[inst.neighbor.tileIndex])
+      for (const k of tiles[inst.neighbor.tileIndex])
         nbrs.push({ instanceIndex: k, shift: inst.neighbor.shift });
     }
     inst.neighbor = nbrs;
@@ -355,6 +356,7 @@ const splitModel = (
   return {
     meshes: meshesOut,
     materials: materialsOut,
+    tiles,
     instances: instancesOut
   };
 };
