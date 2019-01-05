@@ -91,7 +91,7 @@ export const skeleton = cov => {
 const _sum = v => v.reduce((x, y) => x == null ? y : opsF.plus(x, y));
 
 
-const chamberPositions = (cov, skel, pos, basis) => {
+const chamberPositions = (cov, skel, pos) => {
   const result = {};
 
   for (const D of cov.elements()) {
@@ -112,9 +112,6 @@ const chamberPositions = (cov, skel, pos, basis) => {
         result[E].push(opsF.plus(s, skel.cornerShifts[E][i]));
     }
   }
-
-  for (const D of cov.elements())
-    result[D] = result[D].map(p => opsF.times(p, basis));
 
   return result;
 };
@@ -240,9 +237,9 @@ const affineSymmetry = (D0, D1, pos) => {
 };
 
 
-export const tileSurfaces = (ds, cov, skel, vertexPos, basis) => {
+export const tileSurfaces = (ds, cov, skel, vertexPos) => {
   const dim = delaney.dim(cov);
-  const pos = chamberPositions(cov, skel, vertexPos, basis);
+  const pos = chamberPositions(cov, skel, vertexPos);
   const dso = derived.orientedCover(ds);
   const phi = properties.morphism(cov, 1, dso, 1);
   const ori = adjustedOrientation(cov, pos);
@@ -327,7 +324,7 @@ if (require.main == module) {
     const basis = unitCells.invariantBasis(embedding.gram);
     console.log(`invariant basis: ${basis}`);
 
-    const surf = tileSurfaces(ds, cov, skel, pos, basis);
+    const surf = tileSurfaces(ds, cov, skel, pos);
     console.log(`tile surfaces: ${JSON.stringify(surf)}`);
 
     console.log();

@@ -10,8 +10,8 @@ import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
 import {subD}           from '../graphics/surface';
 
-import { floatMatrices } from '../arithmetic/types';
-const ops = floatMatrices;
+import { numericalLinearAlgebra } from '../arithmetic/types';
+const ops = numericalLinearAlgebra;
 
 
 const unitVec = v => ops.div(v, ops.norm(v));
@@ -378,18 +378,21 @@ const tilingModel = (
     const { templateIndex: meshIndex, symmetry, center, neighbors } = tiles[i];
     const sym = ops.times(shrinkFactor, symmetry.map(v => v.slice(0, -1)));
 
-    const basis = sym.slice(0, -1);
-    const shift = ops.plus(sym.slice(-1)[0],
-                           ops.times(1.0 - shrinkFactor, center));
+    const transform = {
+      basis: sym.slice(0, -1),
+      shift: ops.plus(sym.slice(-1)[0], ops.times(1.0 - shrinkFactor, center))
+    };
 
-    if (basis.length == 2) {
-      for (const v of basis)
+    transform.basis = ops.times(ops.inverse(basis),
+                                ops.times(transform.basis, basis));
+    transform.shift = ops.times(transform.shift, basis);
+
+    if (transform.basis.length == 2) {
+      for (const v of transform.basis)
         v.push(0);
-      basis.push([0, 0, 1]);
-      shift.push(0);
+      transform.basis.push([0, 0, 1]);
+      transform.shift.push(0);
     }
-
-    const transform = { basis, shift };
 
     model.tiles.push({ meshIndex, transform, center, neighbors });
   };
@@ -400,8 +403,9 @@ const tilingModel = (
   for (let i = 0; i < tiles.length; ++i) {
     const { meshIndex, transform, center, neighbors } = model.tiles[i];
 
-    for (const s0 of shifts) {
-      const c = ops.plus(center, s0);
+    for (const scryst of shifts) {
+      const s0 = ops.times(scryst, basis);
+      const c = ops.plus(ops.times(center, basis), s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
       model.instances.push({
@@ -474,11 +478,14 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     });
     console.log(`${Math.round(t())} msec to make the base surfaces`);
 
+    const b = basis.length == 3 ? basis :
+          basis.map(v => v.concat(0)).concat([[0, 0, 1]]);
+
     yield log('Refining the tile surfaces...');
     const refinedTemplates = yield runJob({
       cmd: 'processSolids',
       val: templates.map(({ pos, faces }) => ({
-        pos,
+        pos: pos.map(v => ops.times(v, b)),
         faces,
         isFixed: pos.map(_ => true),
         subDLevel: options.extraSmooth ? 3 : 2
@@ -487,7 +494,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to refine the surfaces`);
 
     yield log('Making the tiling geometry...');
-    const shifts = baseShifts(dim).map(s => ops.times(s, basis));
+    const shifts = baseShifts(dim);
     const model = tilingModel(
       refinedTemplates, tiles, options, basis, materials, extFactor, shifts);
     console.log(`${Math.round(t())} msec to make the tiling geometry`);
