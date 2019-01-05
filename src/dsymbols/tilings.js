@@ -171,7 +171,7 @@ const interpolate = (f, v, w) => opsF.plus(w, opsF.times(f, opsF.minus(v, w)));
 
 
 const tileSurface3D = (corners, faces) => {
-  const pos = corners.map(p => interpolate(0.8, p[0], p[3]));
+  const pos = corners.map(p => p[0]);
 
   return { pos, faces };
 };

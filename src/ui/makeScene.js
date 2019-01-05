@@ -365,6 +365,8 @@ const splitModel = (
 const tilingModel = (
   templates, tiles, options, basis, palette, extensionFactor, shifts
 ) => {
+  const shrinkFactor = basis.length == 3 ? 0.8 : 1.0;
+
   const model = {
     meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),
     materials: palette[options.colorByTranslationClass ? 1 : 0].slice(),
@@ -374,11 +376,20 @@ const tilingModel = (
 
   for (let i = 0; i < tiles.length; ++i) {
     const { templateIndex: meshIndex, symmetry, center, neighbors } = tiles[i];
-    const sym = symmetry.map(v => v.slice(0, 3));
+    const sym = ops.times(shrinkFactor, symmetry.map(v => v.slice(0, -1)));
 
-    const transform = (sym.length == 3) ?
-          { basis: [ sym[0], sym[1], [0, 0, 1] ], shift: sym[2] } :
-          { basis: sym.slice(0, 3), shift: sym[3] };
+    const basis = sym.slice(0, -1);
+    const shift = ops.plus(sym.slice(-1)[0],
+                           ops.times(1.0 - shrinkFactor, center));
+
+    if (basis.length == 2) {
+      for (const v of basis)
+        v.push(0);
+      basis.push([0, 0, 1]);
+      shift.push(0);
+    }
+
+    const transform = { basis, shift };
 
     model.tiles.push({ meshIndex, transform, center, neighbors });
   };
