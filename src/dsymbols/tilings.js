@@ -167,16 +167,12 @@ export const makeCover = ds =>
 const interpolate = (f, v, w) => opsF.plus(w, opsF.times(f, opsF.minus(v, w)));
 
 
-const tileSurface3D = (corners, faces) => {
-  const pos = corners.map(p => p[0]);
-
-  return { pos, faces };
-};
+const tileSurface3D = (pos, faces) => ({ pos, faces });
 
 
 const tileSurface2D = (corners, faces) => {
   const pos = [];
-  for (const [p] of corners) {
+  for (const p of corners) {
     pos.push(p.concat(0));
     pos.push(p.concat(0.1));
   }
@@ -193,23 +189,11 @@ const tileSurface2D = (corners, faces) => {
 };
 
 
-const adjustedOrientation = (cov, pos) => {
-  const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const sgn = opsF.sgn(chamberDeterminant(pos, D0));
-
-  const ori = properties.partialOrientation(cov);
-  if (sgn * ori[D0] < 0) {
-    for (const D of cov.elements())
-      ori[D] = -ori[D];
-  }
-
-  return ori;
-};
-
-
-const tileSurface = (cov, pos, ori, elms, idcs) => {
+const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
   const cOrbs = properties.orbits(cov, idcs.slice(1), elms);
-  const cPos = cOrbs.map(orb => pos[orb[0]]);
+  const cPos = cOrbs.map(
+    ([D]) => opsF.plus(pos[skel.chamber2node[D]], skel.cornerShifts[D][0])
+  );
 
   const cIdcs = [];
   cOrbs.forEach((orb, i) => {
@@ -225,6 +209,20 @@ const tileSurface = (cov, pos, ori, elms, idcs) => {
     return tileSurface3D(cPos, faces);
   else
     return tileSurface2D(cPos, faces);
+};
+
+
+const adjustedOrientation = (cov, pos) => {
+  const D0 = nonDegenerateChamber(cov.elements(), pos);
+  const sgn = opsF.sgn(chamberDeterminant(pos, D0));
+
+  const ori = properties.partialOrientation(cov);
+  if (sgn * ori[D0] < 0) {
+    for (const D of cov.elements())
+      ori[D] = -ori[D];
+  }
+
+  return ori;
 };
 
 
@@ -265,7 +263,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos) => {
       for (const E of properties.orbit(dso, idcs, E0))
         dsChamberToTemplateIndex[E] = templateIndex;
 
-      templates.push(tileSurface(cov, pos, ori, elms, idcs));
+      templates.push(tileSurface(cov, skel, vertexPos, ori, elms, idcs));
       tileOrbitReps.push(D0);
     }
     else {
@@ -281,14 +279,15 @@ export const tileSurfaces = (ds, cov, skel, vertexPos) => {
   }
 
   const e2t = _edgeTranslations(cov);
+  const zero = Array(dim).fill(0);
 
   for (const tile of tiles) {
     const neighbors = [];
     for (const D of properties.orbitReps(cov, [0, 1], tile.chambers)) {
       const E = cov.s(dim, D);
-      const iE = covChamberToTileIndex[E];
-      const t = opsF.minus(pos[D][0], pos[E][0]);
-      neighbors.push({ tileIndex: iE, shift: t });
+      const tileIndex = covChamberToTileIndex[E];
+      const shift = e2t[D][dim] || zero;
+      neighbors.push({ tileIndex, shift });
     }
 
     tile.neighbors = neighbors;
