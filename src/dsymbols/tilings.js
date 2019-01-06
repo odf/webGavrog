@@ -277,8 +277,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos) => {
     for (const E of elms)
       covChamberToTileIndex[E] = tiles.length;
 
-    const center = pos[elms[0]][dim];
-    tiles.push({ templateIndex, symmetry, center, chambers: elms });
+    tiles.push({ templateIndex, symmetry, chambers: elms });
   }
 
   const e2t = _edgeTranslations(cov);

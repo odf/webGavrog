@@ -362,10 +362,15 @@ const splitModel = (
 };
 
 
+const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
+const _centroid = vs => ops.div(_sum(vs), vs.length);
+
+
 const tilingModel = (
   templates, tiles, options, basis, palette, extensionFactor, shifts
 ) => {
-  const shrinkFactor = basis.length == 3 ? 0.8 : 1.0;
+  const dim = basis.length;
+  const shrinkFactor = dim == 3 ? 0.8 : 1.0;
 
   const model = {
     meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),
@@ -374,25 +379,34 @@ const tilingModel = (
     instances: []
   };
 
+  const centers = templates.map(({ pos }) => _centroid(pos));
+
   for (let i = 0; i < tiles.length; ++i) {
-    const { templateIndex: meshIndex, symmetry, center, neighbors } = tiles[i];
+    const { templateIndex: meshIndex, symmetry, neighbors } = tiles[i];
     const sym = ops.times(shrinkFactor, symmetry.map(v => v.slice(0, -1)));
 
     const transform = {
       basis: sym.slice(0, -1),
-      shift: ops.plus(sym.slice(-1)[0], ops.times(1.0 - shrinkFactor, center))
+      shift: sym.slice(-1)[0]
     };
 
     transform.basis = ops.times(ops.inverse(basis),
                                 ops.times(transform.basis, basis));
     transform.shift = ops.times(transform.shift, basis);
 
-    if (transform.basis.length == 2) {
+    if (dim == 2) {
       for (const v of transform.basis)
         v.push(0);
       transform.basis.push([0, 0, 1]);
       transform.shift.push(0);
     }
+
+    const center = ops.div(
+      ops.plus(ops.times(centers[meshIndex], transform.basis), transform.shift),
+      shrinkFactor);
+
+    transform.shift = ops.plus(transform.shift,
+                               ops.times(1.0 - shrinkFactor, center));
 
     model.tiles.push({ meshIndex, transform, center, neighbors });
   };
@@ -405,7 +419,7 @@ const tilingModel = (
 
     for (const scryst of shifts) {
       const s0 = ops.times(scryst, basis);
-      const c = ops.plus(ops.times(center, basis), s0);
+      const c = ops.plus(center.slice(0, dim), s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
       model.instances.push({
