@@ -10,7 +10,12 @@ import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
 import {subD}           from '../graphics/surface';
 
-import { numericalLinearAlgebra } from '../arithmetic/types';
+import {
+  rationalLinearAlgebraModular,
+  numericalLinearAlgebra
+} from '../arithmetic/types';
+
+const opsR = rationalLinearAlgebraModular;
 const ops = numericalLinearAlgebra;
 
 
@@ -383,7 +388,8 @@ const tilingModel = (
 
   for (let i = 0; i < tiles.length; ++i) {
     const { templateIndex: meshIndex, symmetry, neighbors } = tiles[i];
-    const sym = ops.times(shrinkFactor, symmetry.map(v => v.slice(0, -1)));
+    const sym = ops.times(shrinkFactor,
+                          opsR.toJS(symmetry.map(v => v.slice(0, -1))));
 
     const transform = {
       basis: sym.slice(0, -1),

@@ -88,28 +88,29 @@ export const skeleton = cov => {
 };
 
 
-const _sum = v => v.reduce((x, y) => x == null ? y : opsF.plus(x, y));
 
+const chamberPositions = (cov, skel) => {
+  const sum = v => v.reduce((x, y) => x == null ? y : opsR.plus(x, y));
 
-const chamberPositions = (cov, skel, pos) => {
+  const pos = periodic.barycentricPlacement(skel.graph);
   const result = {};
 
   for (const D of cov.elements()) {
     const p = pos[skel.chamber2node[D]];
     const t = skel.cornerShifts[D][0];
-    result[D] = [opsF.plus(p, t)];
+    result[D] = [opsR.plus(p, t)];
   }
 
   for (let i = 1; i <= delaney.dim(cov); ++i) {
     const idcs = seq.range(0, i).toArray();
 
     for (const orb of properties.orbits(cov, idcs, cov.elements())) {
-      const s = opsF.div(
-        _sum(orb.map(E => opsF.minus(result[E][0], skel.cornerShifts[E][i]))),
+      const s = opsR.div(
+        sum(orb.map(E => opsR.minus(result[E][0], skel.cornerShifts[E][i]))),
         orb.length);
 
       for (const E of orb)
-        result[E].push(opsF.plus(s, skel.cornerShifts[E][i]));
+        result[E].push(opsR.plus(s, skel.cornerShifts[E][i]));
     }
   }
 
@@ -119,22 +120,18 @@ const chamberPositions = (cov, skel, pos) => {
 
 const chamberBasis = (pos, D) => {
   const t = pos[D];
-  return t.slice(1).map(v => opsF.minus(v, t[0]));
+  return t.slice(1).map(v => opsR.minus(v, t[0]));
 };
 
 
 const determinant = M => {
   if (M.length == 2)
-    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
+    return opsR.minus(opsR.times(M[0][0], M[1][1]),
+                      opsR.times(M[0][1], M[1][0]));
   else if (M.length == 3)
-    return (+ M[0][0] * M[1][1] * M[2][2]
-            + M[0][1] * M[1][2] * M[2][0]
-            + M[0][2] * M[1][0] * M[2][1]
-            - M[0][2] * M[1][1] * M[2][0]
-            - M[0][1] * M[1][0] * M[2][2]
-            - M[0][0] * M[1][2] * M[2][1]);
+    return opsR.times(M[0], opsR.crossProduct(M[1], M[2]));
   else
-    return opsF.determinant(M);
+    return opsR.determinant(M);
 };
 
 
@@ -142,19 +139,19 @@ const chamberDeterminant = (pos, D) => determinant(chamberBasis(pos, D));
 
 
 const nonDegenerateChamber = (elms, pos) =>
-  elms.find(D => opsF.ne(chamberDeterminant(pos, D), 0));
+  elms.find(D => opsR.ne(chamberDeterminant(pos, D), 0));
 
 
 export const symmetries = (ds, cov, pos) => {
   const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const A = opsF.inverse(chamberBasis(pos, D0));
+  const A = opsR.inverse(chamberBasis(pos, D0));
 
   const phi = properties.morphism(cov, 1, ds, 1);
   const E0 = phi[D0];
 
   return cov.elements()
     .filter(D => phi[D] == E0)
-    .map(D => opsF.times(A, chamberBasis(pos, D)));
+    .map(D => opsR.times(A, chamberBasis(pos, D)));
 };
 
 
@@ -162,9 +159,6 @@ export const makeCover = ds =>
   delaney.dim(ds) == 3 ?
   delaney3d.pseudoToroidalCover(ds) :
   delaney2d.toroidalCover(ds);
-
-
-const interpolate = (f, v, w) => opsF.plus(w, opsF.times(f, opsF.minus(v, w)));
 
 
 const tileSurface3D = (pos, faces) => ({ pos, faces });
@@ -214,7 +208,7 @@ const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
 
 const adjustedOrientation = (cov, pos) => {
   const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const sgn = opsF.sgn(chamberDeterminant(pos, D0));
+  const sgn = opsR.sgn(chamberDeterminant(pos, D0));
 
   const ori = properties.partialOrientation(cov);
   if (sgn * ori[D0] < 0) {
@@ -228,8 +222,8 @@ const adjustedOrientation = (cov, pos) => {
 
 const affineSymmetry = (D0, D1, pos) => {
   const bas = D => chamberBasis(pos, D);
-  const linear = opsF.solve(bas(D0), bas(D1));
-  const shift = opsF.minus(pos[D1][0], opsF.times(pos[D0][0], linear));
+  const linear = opsR.solve(bas(D0), bas(D1));
+  const shift = opsR.minus(pos[D1][0], opsR.times(pos[D0][0], linear));
 
   return linear.map(r => r.concat(0)).concat([shift.concat([1])]);
 };
@@ -237,7 +231,7 @@ const affineSymmetry = (D0, D1, pos) => {
 
 export const tileSurfaces = (ds, cov, skel, vertexPos) => {
   const dim = delaney.dim(cov);
-  const pos = chamberPositions(cov, skel, vertexPos);
+  const pos = chamberPositions(cov, skel);
   const dso = derived.orientedCover(ds);
   const phi = properties.morphism(cov, 1, dso, 1);
   const ori = adjustedOrientation(cov, pos);
@@ -255,7 +249,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos) => {
     const E0 = phi[D0];
 
     let templateIndex = dsChamberToTemplateIndex[E0];
-    let symmetry = opsF.identityMatrix(dim + 1);
+    let symmetry = opsR.identityMatrix(dim + 1);
 
     if (templateIndex == null) {
       templateIndex = templates.length;
