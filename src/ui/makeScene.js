@@ -310,7 +310,7 @@ const materialPalette = (initialHue, nrHues) => (
 
 
 const splitModel = (
-  { meshes, materials, instances }, faceLabelLists, options
+  { meshes, materials, instances, basis }, faceLabelLists, options
 ) => {
   const meshesOut = [];
   const meshMap = [];
@@ -362,7 +362,8 @@ const splitModel = (
     meshes: meshesOut,
     materials: materialsOut,
     tiles,
-    instances: instancesOut
+    instances: instancesOut,
+    basis
   };
 };
 
@@ -381,7 +382,8 @@ const tilingModel = (
     meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),
     materials: palette[options.colorByTranslationClass ? 1 : 0].slice(),
     tiles: [],
-    instances: []
+    instances: [],
+    basis
   };
 
   const centers = templates.map(({ pos }) => _centroid(pos));
@@ -420,11 +422,12 @@ const tilingModel = (
   const extend = v => ops.times(v, extensionFactor);
   const dVecs = lattices.dirichletVectors(basis).map(extend);
 
-  for (let i = 0; i < tiles.length; ++i) {
-    const { meshIndex, transform, center, neighbors } = model.tiles[i];
+  for (const scryst of shifts) {
+    const s0 = ops.times(scryst, basis);
 
-    for (const scryst of shifts) {
-      const s0 = ops.times(scryst, basis);
+    for (let i = 0; i < tiles.length; ++i) {
+      const { meshIndex, transform, center, neighbors } = model.tiles[i];
+
       const c = ops.plus(center.slice(0, dim), s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
