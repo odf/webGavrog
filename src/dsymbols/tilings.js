@@ -232,8 +232,7 @@ const affineSymmetry = (D0, D1, pos) => {
 export const tileSurfaces = (ds, cov, skel, vertexPos) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
-  const dso = derived.orientedCover(ds);
-  const phi = properties.morphism(cov, 1, dso, 1);
+  const phi = properties.morphism(cov, 1, ds, 1);
   const ori = adjustedOrientation(cov, pos);
   const idcs = seq.range(0, dim).toArray();
   const tileOrbits = properties.orbits(cov, idcs);
@@ -254,7 +253,7 @@ export const tileSurfaces = (ds, cov, skel, vertexPos) => {
     if (templateIndex == null) {
       templateIndex = templates.length;
 
-      for (const E of properties.orbit(dso, idcs, E0))
+      for (const E of properties.orbit(ds, idcs, E0))
         dsChamberToTemplateIndex[E] = templateIndex;
 
       templates.push(tileSurface(cov, skel, vertexPos, ori, elms, idcs));
