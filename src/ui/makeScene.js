@@ -310,7 +310,9 @@ const materialPalette = (initialHue, nrHues) => (
 
 
 const splitModel = (
-  { meshes, materials, instances, basis }, faceLabelLists, options
+  { meshes, materials, numberOfTiles, instances, basis },
+  faceLabelLists,
+  options
 ) => {
   const meshesOut = [];
   const meshMap = [];
@@ -349,6 +351,12 @@ const splitModel = (
     }
   }
 
+  const protoInstances = [];
+  for (let i = 0; i < numberOfTiles; ++i) {
+    for (const k of tiles[i])
+      protoInstances.push(instancesOut[k]);
+  }
+
   for (const inst of instancesOut) {
     const nbrs = [];
     if (inst.neighbor) {
@@ -363,6 +371,7 @@ const splitModel = (
     materials: materialsOut,
     tiles,
     instances: instancesOut,
+    protoInstances,
     basis
   };
 };
@@ -381,6 +390,7 @@ const tilingModel = (
   const model = {
     meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),
     materials: palette[options.colorByTranslationClass ? 1 : 0].slice(),
+    numberOfTiles: tiles.length,
     tiles: [],
     instances: [],
     basis
