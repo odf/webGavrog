@@ -385,7 +385,7 @@ const tilingModel = (
   templates, tiles, options, basis, palette, extensionFactor, shifts
 ) => {
   const dim = basis.length;
-  const shrinkFactor = dim == 3 ? 0.8 : 1.0;
+  const shrinkFactor = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
 
   const model = {
     meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),

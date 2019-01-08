@@ -275,6 +275,10 @@ initOptionSpecs =
       , label = "Highlight Edges"
       , value = False
       }
+    , { key = "closeTileGaps"
+      , label = "Close Tile Gaps"
+      , value = False
+      }
     , { key = "skipRelaxation"
       , label = "Skip Relaxation"
       , value = False
