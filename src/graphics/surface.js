@@ -405,6 +405,26 @@ export const beveledAt = (surfaceIn, wd, isCorner) => {
 };
 
 
+export const averageRadius = solids => {
+  let sum = 0;
+  let count = 0;
+
+  for (const { pos, faces } of solids) {
+    for (const vs of faces) {
+      const corners = vs.map(v => pos[v]);
+      const center = centroid(corners);
+
+      for (const p of corners) {
+        sum += ops.norm(ops.minus(center, p));
+        count += 1;
+      }
+    }
+  }
+
+  return sum / count;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return 'List [ ' + this.map(x => x.toString()).join(', ') + ' ]';

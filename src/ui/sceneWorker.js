@@ -10,6 +10,8 @@ import embed         from '../pgraphs/embedding';
 
 const handlers = {
   processSolids(solidsIn) {
+    const scale = 2.0 * surface.averageRadius(solidsIn);
+
     return solidsIn.map(({ pos, faces, isFixed, subDLevel }) => {
       let t = { pos, faces, isFixed };
 
@@ -18,8 +20,8 @@ const handlers = {
         t = surface.subD(t);
 
       const t1 = t;
-      t = surface.insetAt(t, 0.03, t1.isFixed);
-      t = surface.beveledAt(t, 0.01, t1.isFixed);
+      t = surface.insetAt(t, 0.03 * scale, t1.isFixed);
+      t = surface.beveledAt(t, 0.01 * scale, t1.isFixed);
 
       if (subDLevel > 0)
         t = surface.subD(t);
