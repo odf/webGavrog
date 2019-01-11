@@ -377,6 +377,32 @@ const splitModel = (
 };
 
 
+const convertTile = (tile, centers, scale, cell) => {
+  const { templateIndex: meshIndex, symmetry, neighbors } = tile;
+  const sym = ops.times(scale, opsR.toJS(symmetry.map(v => v.slice(0, -1))));
+
+  const basis = ops.times(ops.inverse(cell), ops.times(sym.slice(0, -1), cell));
+  const shift = ops.times(sym.slice(-1)[0], cell);
+
+  if (cell.length == 2) {
+    for (const v of basis)
+      v.push(0);
+    basis.push([0, 0, 1]);
+    shift.push(0);
+  }
+
+  const c = centers[meshIndex];
+  const center = ops.div(ops.plus(ops.times(c, basis), shift), scale);
+
+  const transform = {
+    basis,
+    shift: ops.plus(shift, ops.times(1.0 - scale, center))
+  };
+
+  return { meshIndex, transform, center, neighbors };
+};
+
+
 const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
 const _centroid = vs => ops.div(_sum(vs), vs.length);
 
@@ -385,7 +411,7 @@ const tilingModel = (
   templates, tiles, options, basis, palette, extensionFactor, shifts
 ) => {
   const dim = basis.length;
-  const shrinkFactor = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
+  const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
 
   const model = {
     meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),
@@ -398,36 +424,7 @@ const tilingModel = (
 
   const centers = templates.map(({ pos }) => _centroid(pos));
 
-  for (let i = 0; i < tiles.length; ++i) {
-    const { templateIndex: meshIndex, symmetry, neighbors } = tiles[i];
-    const sym = ops.times(shrinkFactor,
-                          opsR.toJS(symmetry.map(v => v.slice(0, -1))));
-
-    const transform = {
-      basis: sym.slice(0, -1),
-      shift: sym.slice(-1)[0]
-    };
-
-    transform.basis = ops.times(ops.inverse(basis),
-                                ops.times(transform.basis, basis));
-    transform.shift = ops.times(transform.shift, basis);
-
-    if (dim == 2) {
-      for (const v of transform.basis)
-        v.push(0);
-      transform.basis.push([0, 0, 1]);
-      transform.shift.push(0);
-    }
-
-    const center = ops.div(
-      ops.plus(ops.times(centers[meshIndex], transform.basis), transform.shift),
-      shrinkFactor);
-
-    transform.shift = ops.plus(transform.shift,
-                               ops.times(1.0 - shrinkFactor, center));
-
-    model.tiles.push({ meshIndex, transform, center, neighbors });
-  };
+  model.tiles = tiles.map(tile => convertTile(tile, centers, scale, basis));
 
   const extend = v => ops.times(v, extensionFactor);
   const dVecs = lattices.dirichletVectors(basis).map(extend);
