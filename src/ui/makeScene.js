@@ -403,42 +403,21 @@ const convertTile = (tile, centers, scale, cell) => {
 };
 
 
-const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
-const _centroid = vs => ops.div(_sum(vs), vs.length);
-
-
-const tilingModel = (
-  templates, tiles, options, basis, palette, extensionFactor, shifts
-) => {
-  const dim = basis.length;
-  const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
-
-  const model = {
-    meshes: templates.map(({ pos, faces }) => geometry(pos, faces)),
-    materials: palette[options.colorByTranslationClass ? 1 : 0].slice(),
-    numberOfTiles: tiles.length,
-    tiles: [],
-    instances: [],
-    basis
-  };
-
-  const centers = templates.map(({ pos }) => _centroid(pos));
-
-  model.tiles = tiles.map(tile => convertTile(tile, centers, scale, basis));
-
+const makeInstances = (tiles, options, cell, extensionFactor, shifts) => {
   const extend = v => ops.times(v, extensionFactor);
-  const dVecs = lattices.dirichletVectors(basis).map(extend);
+  const dVecs = lattices.dirichletVectors(cell).map(extend);
+  const instances = [];
 
   for (const scryst of shifts) {
-    const s0 = ops.times(scryst, basis);
+    const s0 = ops.times(scryst, cell);
 
     for (let i = 0; i < tiles.length; ++i) {
-      const { meshIndex, transform, center, neighbors } = model.tiles[i];
+      const { meshIndex, transform, center, neighbors } = tiles[i];
 
-      const c = ops.plus(center.slice(0, dim), s0);
+      const c = ops.plus(center.slice(0, cell.length), s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
-      model.instances.push({
+      instances.push({
         meshIndex,
         materialIndex: options.colorByTranslationClass ? i : meshIndex,
         transform,
@@ -448,7 +427,29 @@ const tilingModel = (
     }
   }
 
+  return instances;
+};
+
+
+const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
+const _centroid = vs => ops.div(_sum(vs), vs.length);
+
+
+const tilingModel = (
+  templates, tilesIn, options, cell, palette, extension, shifts
+) => {
+  const scale = (cell.length < 3 || options.closeTileGaps) ? 0.999 : 0.8;
+  const centers = templates.map(({ pos }) => _centroid(pos));
+
+  const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
+  const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
+  const tiles = tilesIn.map(tile => convertTile(tile, centers, scale, cell));
+  const numberOfTiles = tiles.length;
+  const instances = makeInstances(tiles, options, cell, extension, shifts);
+
+  const model = { meshes, materials, numberOfTiles, tiles, instances, cell };
   const faceLabelLists = templates.map(({ faceLabels }) => faceLabels);
+
   return splitModel(model, faceLabelLists, options);
 };
 
