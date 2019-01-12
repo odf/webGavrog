@@ -310,7 +310,7 @@ const materialPalette = (initialHue, nrHues) => (
 
 
 const splitModel = (
-  { meshes, materials, numberOfTiles, instances, basis },
+  { meshes, materials, numberOfTiles, instances, cell },
   faceLabelLists,
   options
 ) => {
@@ -372,14 +372,14 @@ const splitModel = (
     tiles,
     instances: instancesOut,
     protoInstances,
-    basis
+    cell
   };
 };
 
 
 const convertTile = (tile, centers, scale, cell) => {
   const { templateIndex: meshIndex, symmetry, neighbors } = tile;
-  const sym = ops.times(scale, opsR.toJS(symmetry.map(v => v.slice(0, -1))));
+  const sym = opsR.toJS(symmetry.map(v => v.slice(0, -1)));
 
   const basis = ops.times(ops.inverse(cell), ops.times(sym.slice(0, -1), cell));
   const shift = ops.times(sym.slice(-1)[0], cell);
@@ -391,12 +391,11 @@ const convertTile = (tile, centers, scale, cell) => {
     shift.push(0);
   }
 
-  const c = centers[meshIndex];
-  const center = ops.div(ops.plus(ops.times(c, basis), shift), scale);
+  const center = ops.plus(ops.times(centers[meshIndex], basis), shift);
 
   const transform = {
-    basis,
-    shift: ops.plus(shift, ops.times(1.0 - scale, center))
+    basis: ops.times(scale, basis),
+    shift: ops.plus(ops.times(scale, shift), ops.times(1.0 - scale, center))
   };
 
   return { meshIndex, transform, center, neighbors };

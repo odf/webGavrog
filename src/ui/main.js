@@ -150,7 +150,7 @@ const addTiles = (config, model, selected) => csp.go(function*() {
     const instances = model.scene.instances.slice();
     const protoInstances = model.scene.protoInstances;
     const tiles = model.scene.tiles.slice();
-    const basis = model.scene.basis;
+    const basis = model.scene.cell;
 
     for (const k of convertSelection(model.scene, selected)) {
       const { neighbor, extraShift } = instances[k];
