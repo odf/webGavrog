@@ -402,10 +402,10 @@ const convertTile = (tile, centers, scale, cell) => {
 };
 
 
-const makeInstances = (tiles, options, cell, extensionFactor, shifts) => {
+const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
   const extend = v => ops.times(v, extensionFactor);
   const dVecs = lattices.dirichletVectors(cell).map(extend);
-  const instances = [];
+  const result = [];
 
   for (const scryst of shifts) {
     const s0 = ops.times(scryst, cell);
@@ -416,9 +416,9 @@ const makeInstances = (tiles, options, cell, extensionFactor, shifts) => {
       const c = ops.plus(center.slice(0, cell.length), s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
 
-      instances.push({
+      result.push({
         meshIndex,
-        materialIndex: options.colorByTranslationClass ? i : meshIndex,
+        tileIndex: i,
         transform,
         extraShift: [s[0], s[1], s[2] || 0],
         neighbors
@@ -426,8 +426,16 @@ const makeInstances = (tiles, options, cell, extensionFactor, shifts) => {
     }
   }
 
-  return instances;
+  return result;
 };
+
+
+const convertDisplayList = (displayList, options) => displayList.map(item => (
+  Object.assign({}, item, {
+    materialIndex: options.colorByTranslationClass ?
+      item.tileIndex : item.meshIndex
+  })
+));
 
 
 const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
@@ -444,9 +452,12 @@ const tilingModel = (
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
   const tiles = tilesIn.map(tile => convertTile(tile, centers, scale, cell));
   const numberOfTiles = tiles.length;
-  const instances = makeInstances(tiles, options, cell, extension, shifts);
+  const displayList = makeDisplayList(tiles, cell, extension, shifts);
+  const instances = convertDisplayList(displayList, options);
 
-  const model = { meshes, materials, numberOfTiles, tiles, instances, cell };
+  const model = {
+    meshes, materials, numberOfTiles, tiles, displayList, instances, cell
+  };
   const faceLabelLists = templates.map(({ faceLabels }) => faceLabels);
 
   return splitModel(model, faceLabelLists, options);
