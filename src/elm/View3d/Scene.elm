@@ -134,9 +134,12 @@ makeMaterial mat =
     }
 
 
-makeTransform : RawTransform -> RawVec3 -> Mat4
-makeTransform { basis, shift } extraShift =
+makeTransform : RawInstanceSpec -> Mat4
+makeTransform { transform, extraShift } =
     let
+        { basis, shift } =
+            transform
+
         ( u, v, w ) =
             basis
     in
@@ -153,7 +156,7 @@ makeInstance materials spec =
         List.drop spec.materialIndex materials
             |> List.head
             |> Maybe.withDefault defaultMaterial
-    , transform = makeTransform spec.transform spec.extraShift
+    , transform = makeTransform spec
     }
 
 
@@ -216,26 +219,16 @@ boxWithMappedVertices verts mat box =
 boundingBox : RawSceneSpec -> Box
 boundingBox { meshes, instances } =
     let
-        positions m =
-            List.map (\v -> makeVec3 v.pos) m.vertices
-
         withTransforms index posList =
             instances
-                |> List.filter
-                    (\inst -> inst.meshIndex == index)
-                |> List.map
-                    (\spec -> makeTransform spec.transform spec.extraShift)
-                |> List.map
-                    (\t -> ( posList, t ))
-
-        allWithTransforms =
-            meshes
-                |> List.map positions
-                |> List.indexedMap withTransforms
-                |> List.concat
+                |> List.filter (\inst -> inst.meshIndex == index)
+                |> List.map (\spec -> ( posList, makeTransform spec ))
     in
-    List.foldl
-        (\( verts, mat ) -> boxWithMappedVertices verts mat)
-        Nothing
-        allWithTransforms
+    meshes
+        |> List.map (\m -> List.map (\v -> makeVec3 v.pos) m.vertices)
+        |> List.indexedMap withTransforms
+        |> List.concat
+        |> List.foldl
+            (\( verts, mat ) -> boxWithMappedVertices verts mat)
+            Nothing
         |> Maybe.withDefault (Box (vec3 0 0 0) (vec3 0 0 0))
