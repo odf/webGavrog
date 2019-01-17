@@ -377,7 +377,7 @@ const splitModel = (
 };
 
 
-const convertTile = (tile, centers, scale, cell) => {
+const convertTile = (tile, centers, cell) => {
   const { templateIndex: meshIndex, symmetry, neighbors } = tile;
   const sym = opsR.toJS(symmetry.map(v => v.slice(0, -1)));
 
@@ -392,11 +392,7 @@ const convertTile = (tile, centers, scale, cell) => {
   }
 
   const center = ops.plus(ops.times(centers[meshIndex], basis), shift);
-
-  const transform = {
-    basis: ops.times(scale, basis),
-    shift: ops.plus(ops.times(scale, shift), ops.times(1.0 - scale, center))
-  };
+  const transform = { basis, shift };
 
   return { meshIndex, transform, center, neighbors };
 };
@@ -430,12 +426,22 @@ const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
 };
 
 
-const convertDisplayList = (displayList, options) => displayList.map(item => (
-  Object.assign({}, item, {
-    materialIndex: options.colorByTranslationClass ?
-      item.tileIndex : item.meshIndex
-  })
-));
+const convertDisplayList = (displayList, tiles, scale, options) => (
+  displayList.map(item => {
+    const { meshIndex, tileIndex, transform: t } = item;
+    const { center } = tiles[tileIndex];
+
+    const transform = {
+      basis: ops.times(scale, t.basis),
+      shift: ops.plus(ops.times(scale, t.shift),
+                      ops.times(1.0 - scale, center))
+    };
+
+    const materialIndex =
+          options.colorByTranslationClass ? tileIndex : meshIndex;
+
+    return Object.assign({}, item, { transform, materialIndex });
+  }));
 
 
 const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
@@ -450,10 +456,10 @@ const tilingModel = (
 
   const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
-  const tiles = tilesIn.map(tile => convertTile(tile, centers, scale, cell));
+  const tiles = tilesIn.map(tile => convertTile(tile, centers, cell));
   const numberOfTiles = tiles.length;
   const displayList = makeDisplayList(tiles, cell, extension, shifts);
-  const instances = convertDisplayList(displayList, options);
+  const instances = convertDisplayList(displayList, tiles, scale, options);
 
   const model = {
     meshes, materials, numberOfTiles, tiles, displayList, instances, cell
