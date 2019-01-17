@@ -406,19 +406,12 @@ const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
   for (const scryst of shifts) {
     const s0 = ops.times(scryst, cell);
 
-    for (let i = 0; i < tiles.length; ++i) {
-      const { meshIndex, transform, center, neighbors } = tiles[i];
-
-      const c = ops.plus(center.slice(0, cell.length), s0);
+    for (let tileIndex = 0; tileIndex < tiles.length; ++tileIndex) {
+      const c = ops.plus(tiles[tileIndex].center.slice(0, cell.length), s0);
       const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
+      const extraShift = [s[0], s[1], s[2] || 0];
 
-      result.push({
-        meshIndex,
-        tileIndex: i,
-        transform,
-        extraShift: [s[0], s[1], s[2] || 0],
-        neighbors
-      });
+      result.push({ tileIndex, extraShift });
     }
   }
 
@@ -428,8 +421,8 @@ const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
 
 const convertDisplayList = (displayList, tiles, scale, options) => (
   displayList.map(item => {
-    const { meshIndex, tileIndex, transform: t } = item;
-    const { center } = tiles[tileIndex];
+    const { tileIndex, extraShift } = item;
+    const { meshIndex, transform: t, center, neighbors } = tiles[tileIndex];
 
     const transform = {
       basis: ops.times(scale, t.basis),
@@ -440,7 +433,14 @@ const convertDisplayList = (displayList, tiles, scale, options) => (
     const materialIndex =
           options.colorByTranslationClass ? tileIndex : meshIndex;
 
-    return Object.assign({}, item, { transform, materialIndex });
+    return {
+      tileIndex,
+      meshIndex,
+      transform,
+      materialIndex,
+      neighbors,
+      extraShift
+    };
   }));
 
 
