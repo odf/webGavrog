@@ -377,6 +377,26 @@ const splitModel = (
 };
 
 
+const splitMeshes = (meshes, faceLabelLists) => {
+  const subMeshes = [];
+  const partLists = [];
+
+  for (let i = 0; i < meshes.length; ++i) {
+    const parts = splitGeometry(meshes[i], faceLabelLists[i]);
+    const keys = Object.keys(parts);
+    partLists[i] = [];
+
+    for (const key of keys) {
+      const index = key == 'undefined' ? (keys.length - 1) : parseInt(key);
+      partLists[i][index] = subMeshes.length;
+      subMeshes.push(parts[key]);
+    }
+  }
+
+  return { subMeshes, partLists };
+};
+
+
 const convertTile = (tile, centers, cell) => {
   const { templateIndex: meshIndex, symmetry, neighbors } = tile;
   const sym = opsR.toJS(symmetry.map(v => v.slice(0, -1)));
@@ -455,6 +475,9 @@ const tilingModel = (
   const centers = templates.map(({ pos }) => _centroid(pos));
 
   const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
+  const faceLabelLists = templates.map(({ faceLabels }) => faceLabels);
+  const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
+
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
   const tiles = tilesIn.map(tile => convertTile(tile, centers, cell));
   const numberOfTiles = tiles.length;
@@ -464,7 +487,6 @@ const tilingModel = (
   const model = {
     meshes, materials, numberOfTiles, tiles, displayList, instances, cell
   };
-  const faceLabelLists = templates.map(({ faceLabels }) => faceLabels);
 
   return splitModel(model, faceLabelLists, options);
 };
