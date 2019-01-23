@@ -309,12 +309,8 @@ const materialPalette = (initialHue, nrHues) => (
 );
 
 
-const splitModel = (
-  { meshes, materials, numberOfTiles, instances, cell },
-  faceLabelLists,
-  options
-) => {
-  const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
+const splitModel = (model, subMeshes, partLists, options) => {
+  const { meshes, materials, numberOfTiles, instances, cell } = model;
   const materialsOut = materials.concat(edgeMaterial);
 
   const instancesOut = [];
@@ -479,7 +475,7 @@ const tilingModel = (
     meshes, materials, numberOfTiles, tiles, displayList, instances, cell
   };
 
-  return splitModel(model, faceLabelLists, options);
+  return splitModel(model, subMeshes, partLists, options);
 };
 
 
