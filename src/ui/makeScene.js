@@ -309,61 +309,6 @@ const materialPalette = (initialHue, nrHues) => (
 );
 
 
-const splitModel = (model, subMeshes, partLists, options) => {
-  const { meshes, materials, numberOfTiles, instances, cell } = model;
-  const materialsOut = materials.concat(edgeMaterial);
-
-  const instancesOut = [];
-  const tiles = [];
-  for (let i = 0; i < instances.length; ++i) {
-    const { meshIndex, materialIndex, transform, extraShift, neighbors }
-          = instances[i];
-    const parts = partLists[meshIndex];
-
-    tiles[i] = [];
-
-    for (let j = 0; j < parts.length; ++j) {
-      const matIdx = (j == parts.length - 1 && options.highlightEdges) ?
-            materials.length : materialIndex;
-
-      tiles[i].push(instancesOut.length);
-      instancesOut.push({
-        meshIndex: parts[j],
-        materialIndex: matIdx,
-        tileIndex: i,
-        transform,
-        extraShift,
-        neighbor: neighbors && neighbors[j]
-      });
-    }
-  }
-
-  const protoInstances = [];
-  for (let i = 0; i < numberOfTiles; ++i) {
-    for (const k of tiles[i])
-      protoInstances.push(instancesOut[k]);
-  }
-
-  for (const inst of instancesOut) {
-    const nbrs = [];
-    if (inst.neighbor) {
-      for (const k of tiles[inst.neighbor.tileIndex])
-        nbrs.push({ instanceIndex: k, shift: inst.neighbor.shift });
-    }
-    inst.neighbor = nbrs;
-  }
-
-  return {
-    meshes: subMeshes,
-    materials: materialsOut,
-    tiles,
-    instances: instancesOut,
-    protoInstances,
-    cell
-  };
-};
-
-
 const splitMeshes = (meshes, faceLabelLists) => {
   const subMeshes = [];
   const partLists = [];
@@ -426,10 +371,19 @@ const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
 };
 
 
-const convertDisplayList = (displayList, tiles, scale, options) => (
-  displayList.map(item => {
-    const { tileIndex, extraShift } = item;
+const displayListToModel = (
+  displayList, tiles, subMeshes, partLists, materials, cell, scale, options
+) => {
+  const materialsOut = materials.concat(edgeMaterial);
+
+  const instancesOut = [];
+  const tilesOut = [];
+
+  for (const { tileIndex, extraShift } of displayList) {
     const { meshIndex, transform: t, center, neighbors } = tiles[tileIndex];
+    const parts = partLists[meshIndex];
+
+    const newTile = [];
 
     const transform = {
       basis: ops.times(scale, t.basis),
@@ -437,18 +391,51 @@ const convertDisplayList = (displayList, tiles, scale, options) => (
                       ops.times(1.0 - scale, center))
     };
 
-    const materialIndex =
+    const baseMatIndex =
           options.colorByTranslationClass ? tileIndex : meshIndex;
 
-    return {
-      tileIndex,
-      meshIndex,
-      transform,
-      materialIndex,
-      neighbors,
-      extraShift
-    };
-  }));
+    for (let j = 0; j < parts.length; ++j) {
+      const materialIndex = (j == parts.length - 1 && options.highlightEdges) ?
+            materials.length : baseMatIndex;
+
+      newTile.push(instancesOut.length);
+      instancesOut.push({
+        meshIndex: parts[j],
+        materialIndex,
+        tileIndex: tilesOut.length,
+        transform,
+        extraShift,
+        neighbor: neighbors && neighbors[j]
+      });
+    }
+
+    tilesOut.push(newTile);
+  }
+
+  const protoInstances = [];
+  for (let i = 0; i < tiles.length; ++i) {
+    for (const k of tilesOut[i])
+      protoInstances.push(instancesOut[k]);
+  }
+
+  for (const inst of instancesOut) {
+    const nbrs = [];
+    if (inst.neighbor) {
+      for (const k of tilesOut[inst.neighbor.tileIndex])
+        nbrs.push({ instanceIndex: k, shift: inst.neighbor.shift });
+    }
+    inst.neighbor = nbrs;
+  }
+
+  return {
+    meshes: subMeshes,
+    materials: materialsOut,
+    tiles: tilesOut,
+    instances: instancesOut,
+    protoInstances,
+    cell
+  };
+};
 
 
 const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
@@ -467,15 +454,11 @@ const tilingModel = (
 
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
   const tiles = tilesIn.map(tile => convertTile(tile, centers, cell));
-  const numberOfTiles = tiles.length;
   const displayList = makeDisplayList(tiles, cell, extension, shifts);
-  const instances = convertDisplayList(displayList, tiles, scale, options);
 
-  const model = {
-    meshes, materials, numberOfTiles, tiles, displayList, instances, cell
-  };
-
-  return splitModel(model, subMeshes, partLists, options);
+  return displayListToModel(
+    displayList, tiles, subMeshes, partLists, materials, cell, scale, options
+  );
 };
 
 
