@@ -444,7 +444,7 @@ const _centroid = vs => ops.div(_sum(vs), vs.length);
 
 
 const tilingModel = (
-  templates, centers, tilesIn, options, cell, palette, extension, shifts
+  templates, tiles, options, cell, palette, extension, shifts
 ) => {
   const scale = (cell.length < 3 || options.closeTileGaps) ? 0.999 : 0.8;
 
@@ -453,7 +453,6 @@ const tilingModel = (
   const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
 
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
-  const tiles = tilesIn.map(tile => convertTile(tile, centers));
   const displayList = makeDisplayList(tiles, cell, extension, shifts);
 
   return displayListToModel(
@@ -535,9 +534,10 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     yield log('Making the tiling geometry...');
     const shifts = baseShifts(dim);
     const centers = templates.map(({ pos }) => _centroid(pos));
+
+    const sTiles = tiles.map(tile => convertTile(tile, centers));
     const model = tilingModel(
-      refinedTemplates, centers, tiles,
-      options, basis, materials, extFactor, shifts
+      refinedTemplates, sTiles, options, basis, materials, extFactor, shifts
     );
     console.log(`${Math.round(t())} msec to make the tiling geometry`);
 
