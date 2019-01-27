@@ -437,26 +437,6 @@ const displayListToModel = (
 };
 
 
-const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
-const _centroid = vs => ops.div(_sum(vs), vs.length);
-
-
-const tilingModel = (templates, tiles, options, cell, palette, shifts) => {
-  const scale = (cell.length < 3 || options.closeTileGaps) ? 0.999 : 0.8;
-
-  const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
-  const faceLabelLists = templates.map(({ faceLabels }) => faceLabels);
-  const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
-
-  const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
-  const displayList = makeDisplayList(tiles, shifts);
-
-  return displayListToModel(
-    displayList, tiles, subMeshes, partLists, materials, cell, scale, options
-  );
-};
-
-
 const preprocessTiling = (structure, runJob, log) => csp.go(
   function*() {
     const t = util.timer();
@@ -491,11 +471,17 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
 );
 
 
+const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
+const _centroid = vs => ops.div(_sum(vs), vs.length);
+
+
 const makeTilingModel = (data, options, runJob, log) => csp.go(
   function*() {
     const { ds, cov, skel, embeddings, materials } = data;
 
     const dim = delaney.dim(ds);
+    const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
+    const palette = materials[options.colorByTranslationClass ? 1 : 0].slice();
 
     const embedding =
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
@@ -509,13 +495,16 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
       cmd: 'tileSurfaces',
       val: { ds, cov, skel, pos, basis }
     });
+    const centers = templates.map(({ pos }) => _centroid(pos));
+    const sTiles = tiles.map(tile => convertTile(tile, centers));
+    const displayList = makeDisplayList(sTiles, baseShifts(dim));
     console.log(`${Math.round(t())} msec to make the base surfaces`);
 
     const b = basis.length == 3 ? basis :
           basis.map(v => v.concat(0)).concat([[0, 0, 1]]);
 
     yield log('Refining the tile surfaces...');
-    const refinedTemplates = yield runJob({
+    const rawMeshes = yield runJob({
       cmd: 'processSolids',
       val: templates.map(({ pos, faces }) => ({
         pos: pos.map(v => ops.times(v, b)),
@@ -527,12 +516,12 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to refine the surfaces`);
 
     yield log('Making the tiling geometry...');
-    const shifts = baseShifts(dim);
-    const centers = templates.map(({ pos }) => _centroid(pos));
+    const meshes = rawMeshes.map(({ pos, faces }) => geometry(pos, faces));
+    const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
+    const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
 
-    const sTiles = tiles.map(tile => convertTile(tile, centers));
-    const model = tilingModel(
-      refinedTemplates, sTiles, options, basis, materials, shifts
+    const model = displayListToModel(
+      displayList, sTiles, subMeshes, partLists, palette, basis, scale, options
     );
     console.log(`${Math.round(t())} msec to make the tiling geometry`);
 
