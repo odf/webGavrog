@@ -350,17 +350,13 @@ const convertTile = (tile, centers) => {
 };
 
 
-const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
-  const extend = v => ops.times(v, extensionFactor);
-  const dVecs = lattices.dirichletVectors(cell).map(extend);
+const makeDisplayList = (tiles, shifts) => {
   const result = [];
 
-  for (const scryst of shifts) {
-    const s0 = ops.times(scryst, cell);
-
+  for (const s0 of shifts) {
     for (let tileIndex = 0; tileIndex < tiles.length; ++tileIndex) {
-      const c = ops.plus(tiles[tileIndex].center.slice(0, cell.length), s0);
-      const s = ops.plus(s0, lattices.shiftIntoDirichletDomain(c, dVecs));
+      const c = tiles[tileIndex].center.slice(0, s0.length);
+      const s = ops.minus(s0, c.map(x => ops.floor(x)));
       const extraShift = [s[0], s[1], s[2] || 0];
 
       result.push({ tileIndex, extraShift });
@@ -374,7 +370,9 @@ const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
 const displayListToModel = (
   displayList, tiles, subMeshes, partLists, materials, cell, scale, options
 ) => {
-  const invCell = ops.inverse(cell);
+  const extCell = ops.dimension(cell) == 2 ?
+        cell.map(v => v.concat(0)).concat([[0, 0, 1]]) : cell;
+  const invCell = ops.inverse(extCell);
   const materialsOut = materials.concat(edgeMaterial);
 
   const instancesOut = [];
@@ -387,9 +385,9 @@ const displayListToModel = (
     const newTile = [];
 
     const transform = {
-      basis: ops.times(scale, ops.times(invCell, ops.times(t.basis, cell))),
-      shift: ops.plus(ops.times(scale, ops.times(t.shift, cell)),
-                      ops.times(1.0 - scale, ops.times(center, cell)))
+      basis: ops.times(scale, ops.times(invCell, ops.times(t.basis, extCell))),
+      shift: ops.plus(ops.times(scale, ops.times(t.shift, extCell)),
+                      ops.times(1.0 - scale, ops.times(center, extCell)))
     };
 
     const baseMatIndex =
@@ -405,7 +403,7 @@ const displayListToModel = (
         materialIndex,
         tileIndex: tilesOut.length,
         transform,
-        extraShift,
+        extraShift: ops.times(extraShift, extCell),
         neighbor: neighbors && neighbors[j]
       });
     }
@@ -443,9 +441,7 @@ const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
 const _centroid = vs => ops.div(_sum(vs), vs.length);
 
 
-const tilingModel = (
-  templates, tiles, options, cell, palette, extension, shifts
-) => {
+const tilingModel = (templates, tiles, options, cell, palette, shifts) => {
   const scale = (cell.length < 3 || options.closeTileGaps) ? 0.999 : 0.8;
 
   const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
@@ -453,7 +449,7 @@ const tilingModel = (
   const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
 
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
-  const displayList = makeDisplayList(tiles, cell, extension, shifts);
+  const displayList = makeDisplayList(tiles, shifts);
 
   return displayListToModel(
     displayList, tiles, subMeshes, partLists, materials, cell, scale, options
@@ -500,7 +496,6 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     const { ds, cov, skel, embeddings, materials } = data;
 
     const dim = delaney.dim(ds);
-    const extFactor = dim == 3 ? 2 : 6;
 
     const embedding =
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
@@ -537,7 +532,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
 
     const sTiles = tiles.map(tile => convertTile(tile, centers));
     const model = tilingModel(
-      refinedTemplates, sTiles, options, basis, materials, extFactor, shifts
+      refinedTemplates, sTiles, options, basis, materials, shifts
     );
     console.log(`${Math.round(t())} msec to make the tiling geometry`);
 
