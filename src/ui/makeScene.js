@@ -329,14 +329,14 @@ const splitMeshes = (meshes, faceLabelLists) => {
 };
 
 
-const convertTile = (tile, centers, cell) => {
+const convertTile = (tile, centers) => {
   const { templateIndex: meshIndex, symmetry, neighbors } = tile;
   const sym = opsR.toJS(symmetry.map(v => v.slice(0, -1)));
 
-  const basis = ops.times(ops.inverse(cell), ops.times(sym.slice(0, -1), cell));
-  const shift = ops.times(sym.slice(-1)[0], cell);
+  const basis = sym.slice(0, -1);
+  const shift = sym.slice(-1)[0];
 
-  if (cell.length == 2) {
+  if (shift.length == 2) {
     for (const v of basis)
       v.push(0);
     basis.push([0, 0, 1]);
@@ -374,6 +374,7 @@ const makeDisplayList = (tiles, cell, extensionFactor, shifts) => {
 const displayListToModel = (
   displayList, tiles, subMeshes, partLists, materials, cell, scale, options
 ) => {
+  const invCell = ops.inverse(cell);
   const materialsOut = materials.concat(edgeMaterial);
 
   const instancesOut = [];
@@ -386,9 +387,9 @@ const displayListToModel = (
     const newTile = [];
 
     const transform = {
-      basis: ops.times(scale, t.basis),
-      shift: ops.plus(ops.times(scale, t.shift),
-                      ops.times(1.0 - scale, center))
+      basis: ops.times(scale, ops.times(invCell, ops.times(t.basis, cell))),
+      shift: ops.plus(ops.times(scale, ops.times(t.shift, cell)),
+                      ops.times(1.0 - scale, ops.times(center, cell)))
     };
 
     const baseMatIndex =
@@ -446,14 +447,16 @@ const tilingModel = (
   templates, tilesIn, options, cell, palette, extension, shifts
 ) => {
   const scale = (cell.length < 3 || options.closeTileGaps) ? 0.999 : 0.8;
-  const centers = templates.map(({ pos }) => _centroid(pos));
+  const invCell = ops.inverse(cell);
+  const centers = templates.map(
+    ({ pos }) => ops.times(_centroid(pos), invCell));
 
   const meshes = templates.map(({ pos, faces }) => geometry(pos, faces));
   const faceLabelLists = templates.map(({ faceLabels }) => faceLabels);
   const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
 
   const materials = palette[options.colorByTranslationClass ? 1 : 0].slice();
-  const tiles = tilesIn.map(tile => convertTile(tile, centers, cell));
+  const tiles = tilesIn.map(tile => convertTile(tile, centers));
   const displayList = makeDisplayList(tiles, cell, extension, shifts);
 
   return displayListToModel(
