@@ -199,10 +199,7 @@ const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
     .map(orb => ori[orb[0]] > 0 ? orb.reverse() : orb)
     .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs[D]));
 
-  if (delaney.dim(cov) == 3)
-    return tileSurface3D(cPos, faces);
-  else
-    return tileSurface2D(cPos, faces);
+  return (delaney.dim(cov) == 3 ? tileSurface3D : tileSurface2D)(cPos, faces);
 };
 
 
@@ -220,6 +217,17 @@ const adjustedOrientation = (cov, pos) => {
 };
 
 
+export const tileSurfaces = (cov, skel, vertexPos, tileOrbitReps) => {
+  const dim = delaney.dim(cov);
+  const idcs = seq.range(0, dim).toArray();
+  const pos = chamberPositions(cov, skel);
+  const ori = adjustedOrientation(cov, pos);
+
+  return tileOrbitReps.map(D => tileSurface(
+    cov, skel, vertexPos, ori, properties.orbit(cov, idcs, D), idcs));
+};
+
+
 const affineSymmetry = (D0, D1, pos) => {
   const bas = D => chamberBasis(pos, D);
   const linear = opsR.solve(bas(D0), bas(D1));
@@ -229,15 +237,13 @@ const affineSymmetry = (D0, D1, pos) => {
 };
 
 
-export const tileSurfaces = (ds, cov, skel, vertexPos) => {
+export const tileListByTranslations = (ds, cov, skel, vertexPos) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
   const phi = properties.morphism(cov, 1, ds, 1);
-  const ori = adjustedOrientation(cov, pos);
   const idcs = seq.range(0, dim).toArray();
   const tileOrbits = properties.orbits(cov, idcs);
 
-  const templates = [];
   const tileOrbitReps = [];
   const dsChamberToTemplateIndex = {};
   const covChamberToTileIndex = {};
@@ -251,12 +257,11 @@ export const tileSurfaces = (ds, cov, skel, vertexPos) => {
     let symmetry = opsR.identityMatrix(dim + 1);
 
     if (templateIndex == null) {
-      templateIndex = templates.length;
+      templateIndex = tileOrbitReps.length;
 
       for (const E of properties.orbit(ds, idcs, E0))
         dsChamberToTemplateIndex[E] = templateIndex;
 
-      templates.push(tileSurface(cov, skel, vertexPos, ori, elms, idcs));
       tileOrbitReps.push(D0);
     }
     else {
@@ -285,6 +290,8 @@ export const tileSurfaces = (ds, cov, skel, vertexPos) => {
 
     tile.neighbors = neighbors;
   }
+
+  const templates = tileSurfaces(cov, skel, vertexPos, tileOrbitReps);
 
   return { templates, tiles };
 };

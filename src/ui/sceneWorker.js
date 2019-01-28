@@ -43,7 +43,7 @@ const handlers = {
   },
 
   tileSurfaces({ ds, cov, skel, pos, basis }) {
-    return tilings.tileSurfaces(ds, cov, skel, pos, basis);
+    return tilings.tileListByTranslations(ds, cov, skel, pos, basis);
   },
 
   parseCGD(data) {
