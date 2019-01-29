@@ -490,10 +490,17 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
 
     const t = util.timer();
 
+    yield log('Listing translation orbits of tiles...');
+    const { orbitReps, tiles } = yield runJob({
+      cmd: 'tilesByTranslations',
+      val: { ds, cov, skel }
+    });
+    console.log(`${Math.round(t())} msec to list the tile orbits`);
+
     yield log('Making the base tile surfaces...');
-    const { templates, tiles } = yield runJob({
+    const templates = yield runJob({
       cmd: 'tileSurfaces',
-      val: { ds, cov, skel, pos, basis }
+      val: { cov, skel, pos, seeds: orbitReps }
     });
     const centers = templates.map(({ pos }) => _centroid(pos));
     const sTiles = tiles.map(tile => convertTile(tile, centers));
