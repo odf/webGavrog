@@ -440,6 +440,8 @@ const displayListToModel = (
 const preprocessTiling = (structure, runJob, log) => csp.go(
   function*() {
     const t = util.timer();
+
+    const type = structure.type;
     const ds = structure.symbol;
 
     yield log('Finding the pseudo-toroidal cover...');
@@ -450,6 +452,13 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     yield log('Extracting the skeleton...');
     const skel = yield runJob({ cmd: 'skeleton', val: cov });
     console.log(`${Math.round(t())} msec to extract the skeleton`);
+    yield log('Listing translation orbits of tiles...');
+
+    const { orbitReps, tiles } = yield runJob({
+      cmd: 'tilesByTranslations',
+      val: { ds, cov, skel }
+    });
+    console.log(`${Math.round(t())} msec to list the tile orbits`);
 
     yield log('Computing an embedding...');
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
@@ -466,7 +475,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
       materialPalette(hue0, nrTiles)
     ];
 
-    return { type: structure.type, ds, cov, skel, embeddings, materials };
+    return { type, ds, cov, skel, tiles, orbitReps, embeddings, materials };
   }
 );
 
@@ -477,7 +486,7 @@ const _centroid = vs => ops.div(_sum(vs), vs.length);
 
 const makeTilingModel = (data, options, runJob, log) => csp.go(
   function*() {
-    const { ds, cov, skel, embeddings, materials } = data;
+    const { ds, cov, skel, tiles, orbitReps, embeddings, materials } = data;
 
     const dim = delaney.dim(ds);
     const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
@@ -489,13 +498,6 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     const basis = unitCells.invariantBasis(embedding.gram);
 
     const t = util.timer();
-
-    yield log('Listing translation orbits of tiles...');
-    const { orbitReps, tiles } = yield runJob({
-      cmd: 'tilesByTranslations',
-      val: { ds, cov, skel }
-    });
-    console.log(`${Math.round(t())} msec to list the tile orbits`);
 
     yield log('Making the base tile surfaces...');
     const templates = yield runJob({
