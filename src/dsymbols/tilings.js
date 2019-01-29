@@ -217,13 +217,13 @@ const adjustedOrientation = (cov, pos) => {
 };
 
 
-export const tileSurfaces = (cov, skel, vertexPos, tileOrbitReps) => {
+export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
   const dim = delaney.dim(cov);
   const idcs = seq.range(0, dim).toArray();
   const pos = chamberPositions(cov, skel);
   const ori = adjustedOrientation(cov, pos);
 
-  return tileOrbitReps.map(D => tileSurface(
+  return orbitReps.map(D => tileSurface(
     cov, skel, vertexPos, ori, properties.orbit(cov, idcs, D), idcs));
 };
 
@@ -237,14 +237,14 @@ const affineSymmetry = (D0, D1, pos) => {
 };
 
 
-export const tileListByTranslations = (ds, cov, skel, vertexPos) => {
+export const tilesByTranslations = (ds, cov, skel) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
   const phi = properties.morphism(cov, 1, ds, 1);
   const idcs = seq.range(0, dim).toArray();
   const tileOrbits = properties.orbits(cov, idcs);
 
-  const tileOrbitReps = [];
+  const orbitReps = [];
   const dsChamberToTemplateIndex = {};
   const covChamberToTileIndex = {};
   const tiles = [];
@@ -257,15 +257,15 @@ export const tileListByTranslations = (ds, cov, skel, vertexPos) => {
     let symmetry = opsR.identityMatrix(dim + 1);
 
     if (templateIndex == null) {
-      templateIndex = tileOrbitReps.length;
+      templateIndex = orbitReps.length;
 
       for (const E of properties.orbit(ds, idcs, E0))
         dsChamberToTemplateIndex[E] = templateIndex;
 
-      tileOrbitReps.push(D0);
+      orbitReps.push(D0);
     }
     else {
-      const D0 = tileOrbitReps[templateIndex];
+      const D0 = orbitReps[templateIndex];
       const D1 = elms.find(D => phi[D] == phi[D0]);
       symmetry = affineSymmetry(D0, D1, pos);
     }
@@ -291,9 +291,7 @@ export const tileListByTranslations = (ds, cov, skel, vertexPos) => {
     tile.neighbors = neighbors;
   }
 
-  const templates = tileSurfaces(cov, skel, vertexPos, tileOrbitReps);
-
-  return { templates, tiles };
+  return { orbitReps, tiles };
 };
 
 

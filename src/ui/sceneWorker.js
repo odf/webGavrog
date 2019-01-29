@@ -42,8 +42,10 @@ const handlers = {
     return tilings.skeleton(cov);
   },
 
-  tileSurfaces({ ds, cov, skel, pos, basis }) {
-    return tilings.tileListByTranslations(ds, cov, skel, pos, basis);
+  tileSurfaces({ ds, cov, skel, pos }) {
+    const { orbitReps, tiles } = tilings.tilesByTranslations(ds, cov, skel);
+    const templates = tilings.tileSurfaces(cov, skel, pos, orbitReps);
+    return { templates, tiles };
   },
 
   parseCGD(data) {
