@@ -145,17 +145,14 @@ const convertSelection = (scene, selected) => {
 };
 
 
-const addTiles = (config, model, selected) => csp.go(function*() {
+const updateDisplayList = (
+  config, model, selected, update
+) => csp.go(function*() {
   try {
-    const displayList = model.data.displayList.slice();
-
-    for (const k of convertSelection(model.scene, selected)) {
-      const { neighbor, extraShiftCryst } = model.scene.instances[k];
-      displayList.push({
-        tileIndex: neighbor.tileIndex,
-        extraShift: ops.plus(extraShiftCryst, neighbor.shift)
-      });
-    }
+    const currentDisplayList = model.data.displayList.slice();
+    const selection = convertSelection(model.scene, selected)
+          .map(k => model.scene.instances[k])
+    const displayList = update(currentDisplayList, selection);
 
     const data = Object.assign({}, model.data, { displayList });
     const scene = yield makeScene(data, model.options, callWorker, config.log);
@@ -169,6 +166,18 @@ const addTiles = (config, model, selected) => csp.go(function*() {
     return model;
   }
 });
+
+
+const addTiles = (displayList, selection) => {
+  for (const { neighbor, extraShiftCryst } of selection) {
+    displayList.push({
+      tileIndex: neighbor.tileIndex,
+      extraShift: ops.plus(extraShiftCryst, neighbor.shift)
+    });
+  }
+
+  return displayList;
+};
 
 
 const removeTiles = (config, model, selected) => csp.go(function*() {
@@ -322,7 +331,7 @@ const render = domNode => {
     ['Next']: () => setStructure(model.index + 1),
     ['Last']: () => setStructure(-1),
     ['Add Tile(s)']: (selected) =>
-      updateModel(addTiles(config, model, selected)),
+      updateModel(updateDisplayList(config, model, selected, addTiles)),
     ['Remove Tile(s)']: (selected) =>
       updateModel(removeTiles(config, model, selected)),
     ['Remove Element(s)']: (selected) =>
