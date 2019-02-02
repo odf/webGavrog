@@ -150,10 +150,10 @@ const addTiles = (config, model, selected) => csp.go(function*() {
     const displayList = model.data.displayList.slice();
 
     for (const k of convertSelection(model.scene, selected)) {
-      const { neighbor, extraShift } = model.scene.instances[k];
+      const { neighbor, extraShiftCryst } = model.scene.instances[k];
       displayList.push({
         tileIndex: neighbor.tileIndex,
-        extraShift: ops.plus(extraShift, neighbor.shift)
+        extraShift: ops.plus(extraShiftCryst, neighbor.shift)
       });
     }
 

@@ -405,6 +405,7 @@ const displayListToModel = (
         materialIndex,
         tileIndex: tilesOut.length,
         transform,
+        extraShiftCryst: extraShift,
         extraShift: ops.times(extraShift, extCell),
         neighbor: neighbors && neighbors[j]
       });
