@@ -488,59 +488,70 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
 );
 
 
-const makeTilingModel = (data, options, runJob, log) => csp.go(
-  function*() {
-    const {
-      ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
-    } = data;
+const makeMeshes = (
+  cov, skel, pos, seeds, basis, options, runJob, log
+) => csp.go(function*() {
+  const t = util.timer();
 
-    const dim = delaney.dim(ds);
-    const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
-    const palette = materials[options.colorByTranslationClass ? 1 : 0].slice();
+  yield log('Making the base tile surfaces...');
+  const templates = yield runJob({
+    cmd: 'tileSurfaces',
+    val: { cov, skel, pos, seeds }
+  });
+  console.log(`${Math.round(t())} msec to make the base surfaces`);
 
-    const embedding =
-          options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
-    const pos = embedding.positions;
-    const basis = unitCells.invariantBasis(embedding.gram);
+  const b = basis.length == 3 ? basis :
+        basis.map(v => v.concat(0)).concat([[0, 0, 1]]);
 
-    const t = util.timer();
+  yield log('Refining the tile surfaces...');
+  const rawMeshes = yield runJob({
+    cmd: 'processSolids',
+    val: templates.map(({ pos, faces }) => ({
+      pos: pos.map(v => ops.times(v, b)),
+      faces,
+      isFixed: pos.map(_ => true),
+      subDLevel: options.extraSmooth ? 3 : 2
+    }))
+  });
+  console.log(`${Math.round(t())} msec to refine the surfaces`);
 
-    yield log('Making the base tile surfaces...');
-    const templates = yield runJob({
-      cmd: 'tileSurfaces',
-      val: { cov, skel, pos, seeds: orbitReps }
-    });
-    console.log(`${Math.round(t())} msec to make the base surfaces`);
+  const meshes = rawMeshes.map(({ pos, faces }) => geometry(pos, faces));
+  const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
 
-    const b = basis.length == 3 ? basis :
-          basis.map(v => v.concat(0)).concat([[0, 0, 1]]);
+  return splitMeshes(meshes, faceLabelLists);
+});
 
-    yield log('Refining the tile surfaces...');
-    const rawMeshes = yield runJob({
-      cmd: 'processSolids',
-      val: templates.map(({ pos, faces }) => ({
-        pos: pos.map(v => ops.times(v, b)),
-        faces,
-        isFixed: pos.map(_ => true),
-        subDLevel: options.extraSmooth ? 3 : 2
-      }))
-    });
-    console.log(`${Math.round(t())} msec to refine the surfaces`);
 
-    yield log('Making the tiling geometry...');
-    const meshes = rawMeshes.map(({ pos, faces }) => geometry(pos, faces));
-    const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
-    const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
+const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
+  const {
+    ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
+  } = data;
 
-    const model = displayListToModel(
-      displayList, tiles, subMeshes, partLists, palette, basis, scale, options
+  const dim = delaney.dim(ds);
+  const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
+  const palette = materials[options.colorByTranslationClass ? 1 : 0].slice();
+
+  const embedding =
+        options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
+  const pos = embedding.positions;
+  const basis = unitCells.invariantBasis(embedding.gram);
+
+  if (embedding.subMeshes == null) {
+    const { subMeshes, partLists } = yield makeMeshes(
+      cov, skel, pos, orbitReps, basis, options, runJob, log
     );
-    console.log(`${Math.round(t())} msec to make the tiling geometry`);
-
-    yield log('Done making the tiling model.');
-    return model;
+    embedding.subMeshes = subMeshes;
+    embedding.partLists = partLists;
   }
-);
+
+  const { subMeshes, partLists } = embedding;
+
+  const model = displayListToModel(
+    displayList, tiles, subMeshes, partLists, palette, basis, scale, options
+  );
+
+  return model;
+});
 
 
 const preprocessors = {
