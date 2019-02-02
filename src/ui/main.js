@@ -147,28 +147,22 @@ const convertSelection = (scene, selected) => {
 
 const addTiles = (config, model, selected) => csp.go(function*() {
   try {
-    const instances = model.scene.instances.slice();
-    const protoInstances = model.scene.protoInstances;
-    const tiles = model.scene.tiles.slice();
-    const basis = model.scene.cell;
+    const displayList = model.data.displayList.slice();
 
     for (const k of convertSelection(model.scene, selected)) {
-      const { neighbor, extraShift } = instances[k];
-      const tileIndex = tiles.length;
-      tiles.push([]);
-      for (const { instanceIndex, shift } of neighbor) {
-        tiles[tileIndex].push(instances.length);
-        instances.push(Object.assign({}, protoInstances[instanceIndex], {
-          tileIndex,
-          extraShift: ops.plus(extraShift, ops.times(shift, basis))
-        }));
-      }
+      const { neighbor, extraShift } = model.scene.instances[k];
+      displayList.push({
+        tileIndex: neighbor.tileIndex,
+        extraShift: ops.plus(extraShift, neighbor.shift)
+      });
     }
 
-    const scene = Object.assign({}, model.scene, { instances, tiles });
+    const data = Object.assign({}, model.data, { displayList });
+    const scene = yield makeScene(data, model.options, callWorker, config.log);
+
     yield config.sendScene(scene, false);
 
-    return Object.assign({}, model, { scene });
+    return Object.assign({}, model, { data, scene });
   } catch (ex) {
     console.error(ex);
     yield config.log(`ERROR adding tile(s)!!!`);

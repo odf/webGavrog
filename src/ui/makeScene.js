@@ -413,27 +413,11 @@ const displayListToModel = (
     tilesOut.push(newTile);
   }
 
-  const protoInstances = [];
-  for (let i = 0; i < tiles.length; ++i) {
-    for (const k of tilesOut[i])
-      protoInstances.push(instancesOut[k]);
-  }
-
-  for (const inst of instancesOut) {
-    const nbrs = [];
-    if (inst.neighbor) {
-      for (const k of tilesOut[inst.neighbor.tileIndex])
-        nbrs.push({ instanceIndex: k, shift: inst.neighbor.shift });
-    }
-    inst.neighbor = nbrs;
-  }
-
   return {
     meshes: subMeshes,
     materials: materialsOut,
     tiles: tilesOut,
     instances: instancesOut,
-    protoInstances,
     cell
   };
 };
