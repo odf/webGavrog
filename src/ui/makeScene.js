@@ -336,14 +336,16 @@ const convertTile = (tile, centers) => {
   const basis = sym.slice(0, -1);
   const shift = sym.slice(-1)[0];
 
+  const center = ops.plus(ops.times(centers[meshIndex], basis), shift);
+
   if (shift.length == 2) {
     for (const v of basis)
       v.push(0);
     basis.push([0, 0, 1]);
     shift.push(0);
+    center.push(0);
   }
 
-  const center = ops.plus(ops.times(centers[meshIndex], basis), shift);
   const transform = { basis, shift };
 
   return { meshIndex, transform, center, neighbors };
@@ -443,6 +445,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
 
     const type = structure.type;
     const ds = structure.symbol;
+    const dim = delaney.dim(ds);
 
     yield log('Finding the pseudo-toroidal cover...');
     const cov = yield structure.cover ||
@@ -454,17 +457,20 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to extract the skeleton`);
     yield log('Listing translation orbits of tiles...');
 
-    const { orbitReps, tiles } = yield runJob({
+    const { orbitReps, centers: rawCenters, tiles: rawTiles } = yield runJob({
       cmd: 'tilesByTranslations',
       val: { ds, cov, skel }
     });
     console.log(`${Math.round(t())} msec to list the tile orbits`);
 
+    const centers = rawCenters.map(v => opsR.toJS(v));
+    const tiles = rawTiles.map(tile => convertTile(tile, centers));
+    const displayList = makeDisplayList(tiles, baseShifts(dim));
+
     yield log('Computing an embedding...');
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    const dim = delaney.dim(ds);
     const idcs = [...Array(dim).keys()];
     const nrTemplates = properties.orbitReps(ds, idcs).length;
     const nrTiles = properties.orbitReps(cov, idcs).length;
@@ -475,18 +481,18 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
       materialPalette(hue0, nrTiles)
     ];
 
-    return { type, ds, cov, skel, tiles, orbitReps, embeddings, materials };
+    return {
+      type, ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
+    };
   }
 );
 
 
-const _sum = vs => vs.reduce((v, w) => ops.plus(v, w));
-const _centroid = vs => ops.div(_sum(vs), vs.length);
-
-
 const makeTilingModel = (data, options, runJob, log) => csp.go(
   function*() {
-    const { ds, cov, skel, tiles, orbitReps, embeddings, materials } = data;
+    const {
+      ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
+    } = data;
 
     const dim = delaney.dim(ds);
     const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
@@ -504,9 +510,6 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
       cmd: 'tileSurfaces',
       val: { cov, skel, pos, seeds: orbitReps }
     });
-    const centers = templates.map(({ pos }) => _centroid(pos));
-    const sTiles = tiles.map(tile => convertTile(tile, centers));
-    const displayList = makeDisplayList(sTiles, baseShifts(dim));
     console.log(`${Math.round(t())} msec to make the base surfaces`);
 
     const b = basis.length == 3 ? basis :
@@ -530,7 +533,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(
     const { subMeshes, partLists } = splitMeshes(meshes, faceLabelLists);
 
     const model = displayListToModel(
-      displayList, sTiles, subMeshes, partLists, palette, basis, scale, options
+      displayList, tiles, subMeshes, partLists, palette, basis, scale, options
     );
     console.log(`${Math.round(t())} msec to make the tiling geometry`);
 

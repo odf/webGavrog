@@ -291,7 +291,9 @@ export const tilesByTranslations = (ds, cov, skel) => {
     tile.neighbors = neighbors;
   }
 
-  return { orbitReps, tiles };
+  const centers = orbitReps.map(D => pos[D][dim]);
+
+  return { orbitReps, tiles, centers };
 };
 
 
