@@ -201,6 +201,39 @@ const addTiles = (displayList, selection) => {
 };
 
 
+const addCoronas = (displayList, selection) => {
+  const result = [];
+  const seen = {};
+
+  for (const { partIndex, neighbors, extraShiftCryst } of selection) {
+    for (const { tileIndex, shift } of neighbors) {
+      const extraShift = ops.plus(extraShiftCryst, shift);
+      const item = { tileIndex, extraShift };
+      const key = pickler.serialize(item);
+
+      if (!seen[key]) {
+        result.push(item);
+        seen[key] = true;
+      }
+    }
+  }
+
+  for (const item of displayList) {
+    const key = pickler.serialize({
+      tileIndex: item.tileIndex,
+      extraShift: item.extraShift
+    });
+
+    if (!seen[key]) {
+      result.push(item);
+      seen[key] = true;
+    }
+  }
+
+  return result;
+};
+
+
 const removeTiles = (displayList, selection) => {
   const toBeRemoved = {};
   for (const inst of selection)
@@ -341,6 +374,8 @@ const render = domNode => {
     ['Last']: () => setStructure(-1),
     ['Add Tile(s)']: (selected) =>
       updateModel(updateDisplayList(config, model, selected, addTiles)),
+    ['Add Corona(s)']: (selected) =>
+      updateModel(updateDisplayList(config, model, selected, addCoronas)),
     ['Remove Tile(s)']: (selected) =>
       updateModel(updateDisplayList(config, model, selected, removeTiles)),
     ['Remove Element(s)']: (selected) =>
