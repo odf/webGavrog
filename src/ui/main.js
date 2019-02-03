@@ -170,22 +170,34 @@ const updateDisplayList = (
 
 
 const addTiles = (displayList, selection) => {
+  const result = [];
   const seen = {};
-  for (const item of displayList)
-    seen[pickler.serialize(item)] = true;
 
   for (const { partIndex, neighbors, extraShiftCryst } of selection) {
     const { tileIndex, shift } = neighbors[partIndex];
     const extraShift = ops.plus(extraShiftCryst, shift);
     const item = { tileIndex, extraShift };
+    const key = pickler.serialize(item);
 
-    if (!seen[pickler.serialize(item)]) {
-      displayList.push(item);
-      seen[pickler.serialize(item)] = true;
+    if (!seen[key]) {
+      result.push(item);
+      seen[key] = true;
     }
   }
 
-  return displayList;
+  for (const item of displayList) {
+    const key = pickler.serialize({
+      tileIndex: item.tileIndex,
+      extraShift: item.extraShift
+    });
+
+    if (!seen[key]) {
+      result.push(item);
+      seen[key] = true;
+    }
+  }
+
+  return result;
 };
 
 
