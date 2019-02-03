@@ -178,8 +178,7 @@ const ballAndStick = (
         basis: [ [ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ] ],
         shift: [ p[0], p[1], p[2] || 0 ]
       },
-      extraShift: [ 0, 0, 0 ],
-      neighbor: []
+      extraShift: [ 0, 0, 0 ]
     })
   });
 
@@ -202,8 +201,7 @@ const ballAndStick = (
         basis: [ u, v, w ],
         shift: [ p[0], p[1], p[2] || 0 ]
       },
-      extraShift: [ 0, 0, 0 ],
-      neighbor: []
+      extraShift: [ 0, 0, 0 ]
     })
   });
 
@@ -404,7 +402,7 @@ const displayListToModel = (
         transform,
         extraShiftCryst: extraShift,
         extraShift: ops.times(extraShift, extCell),
-        neighbor: neighbors && neighbors[j]
+        neighbors
       });
     }
   }

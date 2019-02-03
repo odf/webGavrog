@@ -174,11 +174,10 @@ const addTiles = (displayList, selection) => {
   for (const item of displayList)
     seen[pickler.serialize(item)] = true;
 
-  for (const { neighbor, extraShiftCryst } of selection) {
-    const item = {
-      tileIndex: neighbor.tileIndex,
-      extraShift: ops.plus(extraShiftCryst, neighbor.shift)
-    };
+  for (const { partIndex, neighbors, extraShiftCryst } of selection) {
+    const { tileIndex, shift } = neighbors[partIndex];
+    const extraShift = ops.plus(extraShiftCryst, shift);
+    const item = { tileIndex, extraShift };
 
     if (!seen[pickler.serialize(item)]) {
       displayList.push(item);
