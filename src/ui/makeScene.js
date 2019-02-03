@@ -370,21 +370,18 @@ const makeDisplayList = (tiles, shifts) => {
 
 
 const displayListToModel = (
-  displayList, tiles, subMeshes, partLists, materials, cell, scale, options
+  displayList, tiles, meshes, partLists, materials, cell, scale, options
 ) => {
   const extCell = ops.dimension(cell) == 2 ?
         cell.map(v => v.concat(0)).concat([[0, 0, 1]]) : cell;
   const invCell = ops.inverse(extCell);
-  const materialsOut = materials.concat(edgeMaterial);
 
-  const instancesOut = [];
-  const tilesOut = [];
+  const instances = [];
 
-  for (const { tileIndex, extraShift } of displayList) {
+  for (let i = 0; i < displayList.length; ++i) {
+    const { tileIndex, extraShift } = displayList[i];
     const { meshIndex, transform: t, center, neighbors } = tiles[tileIndex];
     const parts = partLists[meshIndex];
-
-    const newTile = [];
 
     const transform = {
       basis: ops.times(scale, ops.times(invCell, ops.times(t.basis, extCell))),
@@ -397,30 +394,22 @@ const displayListToModel = (
 
     for (let j = 0; j < parts.length; ++j) {
       const materialIndex = (j == parts.length - 1 && options.highlightEdges) ?
-            materials.length : baseMatIndex;
+            materials.length - 1 : baseMatIndex;
 
-      newTile.push(instancesOut.length);
-      instancesOut.push({
+      instances.push({
         meshIndex: parts[j],
         materialIndex,
-        tileIndex: tilesOut.length,
+        tileIndex: i,
+        partIndex: j,
         transform,
         extraShiftCryst: extraShift,
         extraShift: ops.times(extraShift, extCell),
         neighbor: neighbors && neighbors[j]
       });
     }
-
-    tilesOut.push(newTile);
   }
 
-  return {
-    meshes: subMeshes,
-    materials: materialsOut,
-    tiles: tilesOut,
-    instances: instancesOut,
-    cell
-  };
+  return { meshes, materials, instances };
 };
 
 
@@ -514,7 +503,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const dim = delaney.dim(ds);
   const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
-  const palette = materials[options.colorByTranslationClass ? 1 : 0].slice();
+  const palette = materials[options.colorByTranslationClass ? 1 : 0]
+        .concat(edgeMaterial);
 
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
