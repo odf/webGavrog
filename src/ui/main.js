@@ -1,6 +1,7 @@
 import * as csp from 'plexus-csp';
 
 import * as webworkers from '../common/webworkers';
+import * as pickler  from '../common/pickler';
 import * as version from '../version';
 import parseDSymbols from '../io/ds';
 
@@ -169,11 +170,20 @@ const updateDisplayList = (
 
 
 const addTiles = (displayList, selection) => {
+  const seen = {};
+  for (const item of displayList)
+    seen[pickler.serialize(item)] = true;
+
   for (const { neighbor, extraShiftCryst } of selection) {
-    displayList.push({
+    const item = {
       tileIndex: neighbor.tileIndex,
       extraShift: ops.plus(extraShiftCryst, neighbor.shift)
-    });
+    };
+
+    if (!seen[pickler.serialize(item)]) {
+      displayList.push(item);
+      seen[pickler.serialize(item)] = true;
+    }
   }
 
   return displayList;
