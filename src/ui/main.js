@@ -147,25 +147,29 @@ const convertSelection = (scene, selected) => {
 
 
 const updateDisplayList = (
-  config, model, selected, update
+  config, model, selected, update, updateNoDL
 ) => csp.go(function*() {
-  try {
-    const currentDisplayList = model.data.displayList.slice();
-    const selection = convertSelection(model.scene, selected)
-          .map(k => model.scene.instances[k])
-    const displayList = update(currentDisplayList, selection);
+  if (model.data.displayList) {
+    try {
+      const currentDisplayList = model.data.displayList.slice();
+      const selection = convertSelection(model.scene, selected)
+            .map(k => model.scene.instances[k])
+      const displayList = update(currentDisplayList, selection);
 
-    const data = Object.assign({}, model.data, { displayList });
-    const scene = yield makeScene(data, model.options, callWorker, config.log);
+      const data = Object.assign({}, model.data, { displayList });
+      const scene = yield makeScene(data, model.options, callWorker, config.log);
 
-    yield config.sendScene(scene, false);
+      yield config.sendScene(scene, false);
 
-    return Object.assign({}, model, { data, scene });
-  } catch (ex) {
-    console.error(ex);
-    yield config.log(`ERROR adding tile(s)!!!`);
-    return model;
+      return Object.assign({}, model, { data, scene });
+    } catch (ex) {
+      console.error(ex);
+      yield config.log(`ERROR updating scene!!!`);
+      return model;
+    }
   }
+  else
+    return yield updateNoDL(config, model, selected);
 });
 
 
@@ -243,7 +247,29 @@ const removeTiles = (displayList, selection) => {
 };
 
 
-const removeElements = (config, model, selected) => csp.go(function*() {
+const removeElements = (displayList, selection) => {
+  const toBeRemoved = {};
+  for (const inst of selection) {
+    if (toBeRemoved[inst.tileIndex] == null)
+      toBeRemoved[inst.tileIndex] = {};
+
+    toBeRemoved[inst.tileIndex][inst.partIndex] = true;
+  }
+
+  return displayList.map((item, i) => {
+    if (toBeRemoved[i]) {
+      const skippedParts = Object.assign({}, item.skippedParts || {});
+      for (const j of Object.keys(toBeRemoved[i]))
+        skippedParts[j] = true;
+      return Object.assign({}, item, { skippedParts });
+    }
+    else
+      return item;
+  });
+};
+
+
+const removeElementsNoDL = (config, model, selected) => csp.go(function*() {
   try {
     const toBeRemoved = {};
     for (const k of convertSelection(model.scene, selected))
@@ -379,7 +405,8 @@ const render = domNode => {
     ['Remove Tile(s)']: (selected) =>
       updateModel(updateDisplayList(config, model, selected, removeTiles)),
     ['Remove Element(s)']: (selected) =>
-      updateModel(removeElements(config, model, selected))
+      updateModel(updateDisplayList(
+        config, model, selected, removeElements, removeElementsNoDL))
   };
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {

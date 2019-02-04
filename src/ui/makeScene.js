@@ -377,7 +377,7 @@ const displayListToModel = (
   const instances = [];
 
   for (let i = 0; i < displayList.length; ++i) {
-    const { tileIndex, extraShift } = displayList[i];
+    const { tileIndex, extraShift, skippedParts } = displayList[i];
     const { meshIndex, transform: t, center, neighbors } = tiles[tileIndex];
     const parts = partLists[meshIndex];
 
@@ -391,6 +391,9 @@ const displayListToModel = (
           options.colorByTranslationClass ? tileIndex : meshIndex;
 
     for (let j = 0; j < parts.length; ++j) {
+      if (skippedParts && skippedParts[j])
+        continue;
+
       const materialIndex = (j == parts.length - 1 && options.highlightEdges) ?
             materials.length - 1 : baseMatIndex;
 
