@@ -464,7 +464,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
 
 
 const makeMeshes = (
-  cov, skel, pos, seeds, basis, options, runJob, log
+  cov, skel, pos, seeds, basis, subDLevel, runJob, log
 ) => csp.go(function*() {
   const t = util.timer();
 
@@ -485,7 +485,7 @@ const makeMeshes = (
       pos: pos.map(v => ops.times(v, b)),
       faces,
       isFixed: pos.map(_ => true),
-      subDLevel: options.extraSmooth ? 3 : 2
+      subDLevel
     }))
   });
   console.log(`${Math.round(t())} msec to refine the surfaces`);
@@ -512,15 +512,15 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const pos = embedding.positions;
   const basis = unitCells.invariantBasis(embedding.gram);
 
-  if (embedding.subMeshes == null) {
-    const { subMeshes, partLists } = yield makeMeshes(
-      cov, skel, pos, orbitReps, basis, options, runJob, log
-    );
-    embedding.subMeshes = subMeshes;
-    embedding.partLists = partLists;
-  }
+  const subDLevel = options.extraSmooth ? 3 : 2;
+  const key = `subd${subDLevel}`;
 
-  const { subMeshes, partLists } = embedding;
+  if (embedding[key] == null)
+    embedding[key] = yield makeMeshes(
+      cov, skel, pos, orbitReps, basis, subDLevel, runJob, log
+    );
+
+  const { subMeshes, partLists } = embedding[key];
 
   const model = displayListToModel(
     displayList, tiles, subMeshes, partLists, palette, basis, scale, options
