@@ -386,14 +386,14 @@ const reportError = (text, ex) => {
 
 export function *blocks(text) {
   for (const s of parseBlocks(text.split('\n'), translation))
-    yield { ...s, isRaw: true };
+    yield Object.assign({}, s, { isRaw: true });
 };
 
 
 export const processed = block => {
   const output = (makeStructure[block.type] || unknown)(block);
 
-  return { ...output, type: block.type };
+  return Object.assign({}, output, { type: block.type });
 };
 
 

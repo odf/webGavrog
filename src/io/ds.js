@@ -18,11 +18,12 @@ export default function* symbols(text) {
       const content = line.replace(/[#>].*/, '').trim()
       buffer.push(content);
       if (line.match(/>/)) {
-        yield {
-          ...attributes,
-          type: 'tiling',
-          symbol: delaney.parse(buffer.join(' ') + '>')
-        }
+        yield Object.assign(
+          attributes,
+          { type: 'tiling',
+            symbol: delaney.parse(buffer.join(' ') + '>')
+          }
+        );
         attributes = {};
         buffer = [];
       }

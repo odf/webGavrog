@@ -8,7 +8,7 @@ const findName = data => (
 
 const parseCgdBlock = text => {
   const block = Array.from(cgd.blocks(text))[0];
-  return { ...block, name: findName(block.entries) };
+  return Object.assign({}, block, { name: findName(block.entries) });
 };
 
 
