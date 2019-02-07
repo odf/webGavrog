@@ -1,7 +1,6 @@
 import * as csp from 'plexus-csp';
 
-import * as webworkers from '../common/webworkers';
-import * as pickler  from '../common/pickler';
+import * as pickler from '../common/pickler';
 import * as version from '../version';
 import parseDSymbols from '../io/ds';
 
@@ -13,8 +12,35 @@ import { Elm } from '../elm/GuiMain';
 import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
-const worker = webworkers.create('js/sceneWorker.js');
-const callWorker = csp.nbind(worker, null);
+import Worker from './sceneWorker';
+
+const create = () => {
+  let   lastId    = 0;
+  const callbacks = {};
+  const worker    = new Worker();
+
+  worker.onmessage = event => {
+    const { id, output, ok } = pickler.unpickle(event.data);
+    const cb = callbacks[id];
+
+    if (cb) {
+      if (ok)
+        cb(null, output);
+      else
+        cb(output);
+    }
+
+    delete callbacks[id];
+  };
+
+  return (input, cb) => {
+    const id = ++lastId;
+    callbacks[id] = cb || null;
+    worker.postMessage(pickler.pickle({ id, input }));
+  };
+};
+
+const callWorker = csp.nbind(create(), null);
 
 
 const fileLoader = (accept, multiple=false, binary=false) => {
@@ -440,4 +466,4 @@ const render = domNode => {
 };
 
 
-render(document.getElementById('main'));
+render(Document.body);

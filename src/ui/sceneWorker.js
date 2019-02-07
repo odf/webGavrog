@@ -1,3 +1,5 @@
+import 'babel-polyfill';
+
 import * as pickler  from '../common/pickler';
 import * as surface  from '../graphics/surface';
 import * as delaney  from '../dsymbols/delaney';

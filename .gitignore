@@ -1,6 +1,5 @@
-node_modules/
-public/js/
+/node_modules/
+/dist/
 /data/
-log
 /src/version.js
-/elm-stuff
+/elm-stuff/
