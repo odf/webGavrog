@@ -149,8 +149,8 @@ const ballAndStick = (
   edges,
   ballRadius=0.1,
   stickRadius=0.04,
-  ballColor={ hue: 0.14, saturation: 0.7, lightness: 0.7 },
-  stickColor={ hue: 0.67, saturation: 0.3, lightness: 0.4 }
+  ballColor={ hue: 0.13, saturation: 0.7, lightness: 0.7 },
+  stickColor={ hue: 0.63, saturation: 0.6, lightness: 0.6 }
 ) => {
   const normalized = v => ops.div(v, ops.norm(v));
   const ball = makeBall(ballRadius);
