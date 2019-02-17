@@ -16,6 +16,7 @@ module View3d.Main exposing
 
 import Bitwise
 import Browser.Events as Events
+import Color exposing (Color)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -50,6 +51,7 @@ type alias PickingInfo =
 
 type alias Model =
     { size : FrameSize
+    , backgroundColor : Color
     , cameraState : Camera.State
     , scene : Renderer.Scene PickingInfo
     , selected : Set ( Int, Int )
@@ -67,6 +69,7 @@ type Outcome
 init : Model
 init =
     { size = { width = 0, height = 0 }
+    , backgroundColor = Color.white
     , cameraState = Camera.initialState
     , scene = []
     , selected = Set.empty
@@ -486,11 +489,15 @@ setRedraws onOff model =
 
 view : (Msg -> msg) -> Model -> Bool -> Html msg
 view toMsg model withWires =
+    let
+        { red, green, blue, alpha } =
+            Color.toRgba model.backgroundColor
+    in
     WebGL.toHtmlWith
         [ WebGL.alpha True
         , WebGL.antialias
         , WebGL.depth 1
-        , WebGL.clearColor 1 1 1 1
+        , WebGL.clearColor red green blue alpha
         ]
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" "white"
