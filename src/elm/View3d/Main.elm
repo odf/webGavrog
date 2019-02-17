@@ -486,7 +486,12 @@ setRedraws onOff model =
 
 view : (Msg -> msg) -> Model -> Bool -> Html msg
 view toMsg model withWires =
-    WebGL.toHtml
+    WebGL.toHtmlWith
+        [ WebGL.alpha True
+        , WebGL.antialias
+        , WebGL.depth 1
+        , WebGL.clearColor 1 1 1 1
+        ]
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" "white"
         , Html.Attributes.id "main-3d-canvas"
