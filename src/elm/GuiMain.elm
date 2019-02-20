@@ -767,7 +767,34 @@ viewCurrentDialog model =
                     , color = Element.rgba 0.0 0.0 0.0 0.2
                     }
                 ]
+    in
+    case model.visibleDialog of
+        Nothing ->
+            Element.none
 
+        Just About ->
+            wrap <|
+                viewAbout model
+
+        Just Jump ->
+            wrap <|
+                viewTextBox model.jumpDialogConfig model.jumpDialogContent
+
+        Just Search ->
+            wrap <|
+                viewTextBox model.searchDialogConfig model.searchDialogContent
+
+        Just Options ->
+            wrap <|
+                Element.column [ Element.spacing 16 ]
+                    [ Options.view OptionsMsg model.optionSpecsTmp
+                    , Styling.box [] <| viewColorDialog model
+                    ]
+
+
+viewColorDialog : Model -> Element.Element Msg
+viewColorDialog model =
+    let
         slider =
             \pos ->
                 Element.row
@@ -796,72 +823,56 @@ viewCurrentDialog model =
                         Element.none
                     ]
     in
-    case model.visibleDialog of
-        Nothing ->
-            Element.none
-
-        Just About ->
-            wrap <|
-                viewAbout model
-
-        Just Jump ->
-            wrap <|
-                viewTextBox model.jumpDialogConfig model.jumpDialogContent
-
-        Just Search ->
-            wrap <|
-                viewTextBox model.searchDialogConfig model.searchDialogContent
-
-        Just Options ->
-            wrap <|
-                Element.column [ Element.spacing 16 ]
-                    [ Options.view OptionsMsg model.optionSpecsTmp
-                    , Element.el
-                        [ Element.width Element.fill
-                        , Element.height <| Element.px 24
-                        , Element.inFront <| slider 64
-                        , Background.gradient
-                            { angle = pi / 2
-                            , steps =
-                                [ Element.rgb 1.0 0.0 0.0
-                                , Element.rgb 1.0 1.0 0.0
-                                , Element.rgb 0.0 1.0 0.0
-                                , Element.rgb 0.0 1.0 1.0
-                                , Element.rgb 0.0 0.0 1.0
-                                , Element.rgb 1.0 0.0 1.0
-                                , Element.rgb 1.0 0.0 0.0
-                                ]
-                            }
-                        ]
-                        Element.none
-                    , Element.el
-                        [ Element.width Element.fill
-                        , Element.height <| Element.px 24
-                        , Element.inFront <| slider 192
-                        , Background.gradient
-                            { angle = pi / 2
-                            , steps =
-                                [ Element.rgb 0.5 0.5 0.5
-                                , Element.rgb 0.0 1.0 1.0
-                                ]
-                            }
-                        ]
-                        Element.none
-                    , Element.el
-                        [ Element.width Element.fill
-                        , Element.height <| Element.px 24
-                        , Element.inFront <| slider 0
-                        , Background.gradient
-                            { angle = pi / 2
-                            , steps =
-                                [ Element.rgb 0.0 0.0 0.0
-                                , Element.rgb 0.0 1.0 1.0
-                                , Element.rgb 1.0 1.0 1.0
-                                ]
-                            }
-                        ]
-                        Element.none
+    Element.column
+        [ Element.spacing 16
+        , Element.width <| Element.px 200
+        ]
+        [ Element.el
+            [ Element.width Element.fill
+            , Element.height <| Element.px 24
+            , Element.inFront <| slider 64
+            , Background.gradient
+                { angle = pi / 2
+                , steps =
+                    [ Element.rgb 1.0 0.0 0.0
+                    , Element.rgb 1.0 1.0 0.0
+                    , Element.rgb 0.0 1.0 0.0
+                    , Element.rgb 0.0 1.0 1.0
+                    , Element.rgb 0.0 0.0 1.0
+                    , Element.rgb 1.0 0.0 1.0
+                    , Element.rgb 1.0 0.0 0.0
                     ]
+                }
+            ]
+            Element.none
+        , Element.el
+            [ Element.width Element.fill
+            , Element.height <| Element.px 24
+            , Element.inFront <| slider 192
+            , Background.gradient
+                { angle = pi / 2
+                , steps =
+                    [ Element.rgb 0.5 0.5 0.5
+                    , Element.rgb 0.0 1.0 1.0
+                    ]
+                }
+            ]
+            Element.none
+        , Element.el
+            [ Element.width Element.fill
+            , Element.height <| Element.px 24
+            , Element.inFront <| slider 0
+            , Background.gradient
+                { angle = pi / 2
+                , steps =
+                    [ Element.rgb 0.0 0.0 0.0
+                    , Element.rgb 0.0 1.0 1.0
+                    , Element.rgb 1.0 1.0 1.0
+                    ]
+                }
+            ]
+            Element.none
+        ]
 
 
 viewAbout : Model -> Element.Element Msg
