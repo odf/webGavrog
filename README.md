@@ -11,10 +11,10 @@ To play with the source code:
     npm install
     npm run build-dev
 
-Then open the file `public/index.html` in the browser.
+Then open the file `dist/index.html` in the browser.
 
-If that does not work, try starting a local web server on the `public` directory, e.g.
+If that does not work, try starting a local web server on the `dist` directory, e.g.
 
-    (cd public && python -m SimpleHTTPServer 8000)
+    (cd dist && python -m SimpleHTTPServer 8000)
 
 Then use the URL `localhost:8000` in the browser.
