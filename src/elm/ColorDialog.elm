@@ -1,12 +1,26 @@
 module ColorDialog exposing (view)
 
+import Color exposing (Color)
 import Element
 import Element.Background as Background
 import Element.Border as Border
 
 
-slider : Int -> Element.Element msg
-slider pos =
+convertColor : Color -> Element.Color
+convertColor color =
+    let
+        { red, green, blue, alpha } =
+            Color.toRgba color
+    in
+    Element.rgba red green blue alpha
+
+
+slider : Float -> Element.Element msg
+slider value =
+    let
+        pos =
+            round (value * 255) - 3
+    in
     Element.row
         [ Element.width Element.fill
         , Element.height Element.fill
@@ -34,8 +48,12 @@ slider pos =
         ]
 
 
-view : Element.Element msg
-view =
+view : Color -> Element.Element msg
+view color =
+    let
+        { hue, saturation, lightness, alpha } =
+            Color.toHsla color
+    in
     Element.column
         [ Element.spacing 16
         , Element.width <| Element.px 200
@@ -43,17 +61,17 @@ view =
         [ Element.el
             [ Element.width Element.fill
             , Element.height <| Element.px 24
-            , Element.inFront <| slider 64
+            , Element.inFront <| slider hue
             , Background.gradient
                 { angle = pi / 2
                 , steps =
-                    [ Element.rgb 1.0 0.0 0.0
-                    , Element.rgb 1.0 1.0 0.0
-                    , Element.rgb 0.0 1.0 0.0
-                    , Element.rgb 0.0 1.0 1.0
-                    , Element.rgb 0.0 0.0 1.0
-                    , Element.rgb 1.0 0.0 1.0
-                    , Element.rgb 1.0 0.0 0.0
+                    [ convertColor <| Color.hsl (0 / 6) 1.0 0.5
+                    , convertColor <| Color.hsl (1 / 6) 1.0 0.5
+                    , convertColor <| Color.hsl (2 / 6) 1.0 0.5
+                    , convertColor <| Color.hsl (3 / 6) 1.0 0.5
+                    , convertColor <| Color.hsl (4 / 6) 1.0 0.5
+                    , convertColor <| Color.hsl (5 / 6) 1.0 0.5
+                    , convertColor <| Color.hsl (6 / 6) 1.0 0.5
                     ]
                 }
             ]
@@ -61,12 +79,12 @@ view =
         , Element.el
             [ Element.width Element.fill
             , Element.height <| Element.px 24
-            , Element.inFront <| slider 192
+            , Element.inFront <| slider saturation
             , Background.gradient
                 { angle = pi / 2
                 , steps =
-                    [ Element.rgb 0.5 0.5 0.5
-                    , Element.rgb 0.0 1.0 1.0
+                    [ convertColor <| Color.hsl hue 0.0 0.5
+                    , convertColor <| Color.hsl hue 1.0 0.5
                     ]
                 }
             ]
@@ -74,15 +92,34 @@ view =
         , Element.el
             [ Element.width Element.fill
             , Element.height <| Element.px 24
-            , Element.inFront <| slider 0
+            , Element.inFront <| slider lightness
             , Background.gradient
                 { angle = pi / 2
                 , steps =
-                    [ Element.rgb 0.0 0.0 0.0
-                    , Element.rgb 0.0 1.0 1.0
-                    , Element.rgb 1.0 1.0 1.0
+                    [ convertColor <| Color.hsl hue saturation 0.0
+                    , convertColor <| Color.hsl hue saturation 0.5
+                    , convertColor <| Color.hsl hue saturation 1.0
                     ]
                 }
+            ]
+            Element.none
+        , Element.el
+            [ Element.width Element.fill
+            , Element.height <| Element.px 24
+            , Element.inFront <| slider alpha
+            , Background.gradient
+                { angle = pi / 2
+                , steps =
+                    [ convertColor <| Color.hsla hue saturation lightness 0.0
+                    , convertColor <| Color.hsla hue saturation lightness 1.0
+                    ]
+                }
+            ]
+            Element.none
+        , Element.el
+            [ Element.width <| Element.px 96
+            , Element.height <| Element.px 48
+            , Background.color <| convertColor color
             ]
             Element.none
         ]

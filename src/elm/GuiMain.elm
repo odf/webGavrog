@@ -5,6 +5,7 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events
 import Char
+import Color exposing (Color)
 import ColorDialog
 import Dict exposing (Dict)
 import Element
@@ -789,7 +790,7 @@ viewCurrentDialog model =
             wrap <|
                 Element.column [ Element.spacing 16 ]
                     [ Options.view OptionsMsg model.optionSpecsTmp
-                    , Styling.box [] <| ColorDialog.view
+                    , Styling.box [] <| ColorDialog.view Color.brown
                     ]
 
 
