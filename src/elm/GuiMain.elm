@@ -790,7 +790,7 @@ viewCurrentDialog model =
             wrap <|
                 Element.column [ Element.spacing 16 ]
                     [ Options.view OptionsMsg model.optionSpecsTmp
-                    , Styling.box [] <| ColorDialog.view Color.brown
+                    , Styling.box [] <| ColorDialog.view Color.red Color.brown
                     ]
 
 

@@ -48,15 +48,15 @@ slider value =
         ]
 
 
-view : Color -> Element.Element msg
-view color =
+view : Color -> Color -> Element.Element msg
+view oldColor color =
     let
         { hue, saturation, lightness, alpha } =
             Color.toHsla color
     in
     Element.column
-        [ Element.spacing 16
-        , Element.width <| Element.px 200
+        [ Element.spacing 12
+        , Element.width <| Element.px 192
         ]
         [ Element.el
             [ Element.width Element.fill
@@ -116,10 +116,18 @@ view color =
                 }
             ]
             Element.none
-        , Element.el
-            [ Element.width <| Element.px 96
-            , Element.height <| Element.px 48
-            , Background.color <| convertColor color
+        , Element.row []
+            [ Element.el
+                [ Element.width <| Element.px 96
+                , Element.height <| Element.px 48
+                , Background.color <| convertColor oldColor
+                ]
+                Element.none
+            , Element.el
+                [ Element.width <| Element.px 96
+                , Element.height <| Element.px 48
+                , Background.color <| convertColor color
+                ]
+                Element.none
             ]
-            Element.none
         ]
