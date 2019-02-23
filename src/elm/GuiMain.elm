@@ -63,6 +63,7 @@ type Msg
     | SearchDialogInput String
     | SearchDialogSubmit Bool
     | OptionsMsg Options.Msg
+    | ColorMsg Color
     | JSData InData
     | HideAbout
     | KeyUp Int
@@ -156,6 +157,7 @@ type DialogType
 
 type alias Model =
     { viewState : View3d.Model
+    , color : Color
     , revision : String
     , timestamp : String
     , mainMenuConfig : Menu.Config Msg
@@ -179,6 +181,7 @@ type alias Model =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { viewState = View3d.init
+      , color = Color.brown
       , revision = flags.revision
       , timestamp = flags.timestamp
       , mainMenuConfig = initMainMenuConfig
@@ -367,6 +370,9 @@ update msg model =
 
         OptionsMsg optionMsg ->
             updateOptions model optionMsg
+
+        ColorMsg color ->
+            ( { model | color = color }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -790,7 +796,8 @@ viewCurrentDialog model =
             wrap <|
                 Element.column [ Element.spacing 16 ]
                     [ Options.view OptionsMsg model.optionSpecsTmp
-                    , Styling.box [] <| ColorDialog.view Color.red Color.brown
+                    , Styling.box [] <|
+                        ColorDialog.view ColorMsg model.color model.color
                     ]
 
 
