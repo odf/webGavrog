@@ -7,6 +7,12 @@ import Element.Border as Border
 import Element.Events as Events
 
 
+type alias Size =
+    { widthPx : Int
+    , heightPx : Int
+    }
+
+
 convertColor : Color -> Element.Color
 convertColor color =
     let
@@ -52,15 +58,15 @@ updateAlpha color value =
     Color.hsla hue saturation lightness value
 
 
-slider : (Float -> msg) -> Float -> Element.Element msg
-slider toMsg value =
+slider : (Float -> msg) -> Size -> Float -> Element.Element msg
+slider toMsg { widthPx, heightPx } value =
     let
         pos =
             round (value * 255) - 3
     in
     Element.row
-        [ Element.width Element.fill
-        , Element.height Element.fill
+        [ Element.width <| Element.px widthPx
+        , Element.height <| Element.px heightPx
         , Events.onMouseDown (toMsg 0.5)
         ]
         [ Element.el
@@ -91,73 +97,57 @@ view toMsg oldColor color =
     let
         { hue, saturation, lightness, alpha } =
             Color.toHsla color
+
+        sliderSize =
+            { widthPx = 192, heightPx = 24 }
+
+        makeSlider updateColor value colors =
+            Element.el
+                [ Element.behindContent <|
+                    Element.el
+                        [ Element.width Element.fill
+                        , Element.height Element.fill
+                        , Background.gradient
+                            { angle = pi / 2
+                            , steps = List.map convertColor colors
+                            }
+                        ]
+                        Element.none
+                ]
+                (slider (updateColor color >> toMsg) sliderSize value)
     in
     Element.column
-        [ Element.spacing 12
-        , Element.width <| Element.px 192
-        ]
-        [ Element.el
-            [ Element.width Element.fill
-            , Element.height <| Element.px 24
-            , Element.inFront <|
-                slider (updateHue color >> toMsg) hue
-            , Background.gradient
-                { angle = pi / 2
-                , steps =
-                    [ convertColor <| Color.hsl (0 / 6) 1.0 0.5
-                    , convertColor <| Color.hsl (1 / 6) 1.0 0.5
-                    , convertColor <| Color.hsl (2 / 6) 1.0 0.5
-                    , convertColor <| Color.hsl (3 / 6) 1.0 0.5
-                    , convertColor <| Color.hsl (4 / 6) 1.0 0.5
-                    , convertColor <| Color.hsl (5 / 6) 1.0 0.5
-                    , convertColor <| Color.hsl (6 / 6) 1.0 0.5
-                    ]
-                }
+        [ Element.spacing 12 ]
+        [ makeSlider
+            updateHue
+            hue
+            [ Color.hsl (0 / 6) 1.0 0.5
+            , Color.hsl (1 / 6) 1.0 0.5
+            , Color.hsl (2 / 6) 1.0 0.5
+            , Color.hsl (3 / 6) 1.0 0.5
+            , Color.hsl (4 / 6) 1.0 0.5
+            , Color.hsl (5 / 6) 1.0 0.5
+            , Color.hsl (6 / 6) 1.0 0.5
             ]
-            Element.none
-        , Element.el
-            [ Element.width Element.fill
-            , Element.height <| Element.px 24
-            , Element.inFront <|
-                slider (updateSaturation color >> toMsg) saturation
-            , Background.gradient
-                { angle = pi / 2
-                , steps =
-                    [ convertColor <| Color.hsl hue 0.0 0.5
-                    , convertColor <| Color.hsl hue 1.0 0.5
-                    ]
-                }
+        , makeSlider
+            updateSaturation
+            saturation
+            [ Color.hsl hue 0.0 0.5
+            , Color.hsl hue 1.0 0.5
             ]
-            Element.none
-        , Element.el
-            [ Element.width Element.fill
-            , Element.height <| Element.px 24
-            , Element.inFront <|
-                slider (updateLightness color >> toMsg) lightness
-            , Background.gradient
-                { angle = pi / 2
-                , steps =
-                    [ convertColor <| Color.hsl hue saturation 0.0
-                    , convertColor <| Color.hsl hue saturation 0.5
-                    , convertColor <| Color.hsl hue saturation 1.0
-                    ]
-                }
+        , makeSlider
+            updateLightness
+            lightness
+            [ Color.hsl hue saturation 0.0
+            , Color.hsl hue saturation 0.5
+            , Color.hsl hue saturation 1.0
             ]
-            Element.none
-        , Element.el
-            [ Element.width Element.fill
-            , Element.height <| Element.px 24
-            , Element.inFront <|
-                slider (updateAlpha color >> toMsg) alpha
-            , Background.gradient
-                { angle = pi / 2
-                , steps =
-                    [ convertColor <| Color.hsla hue saturation lightness 0.0
-                    , convertColor <| Color.hsla hue saturation lightness 1.0
-                    ]
-                }
+        , makeSlider
+            updateAlpha
+            alpha
+            [ Color.hsla hue saturation lightness 0.0
+            , Color.hsla hue saturation lightness 1.0
             ]
-            Element.none
         , Element.row []
             [ Element.el
                 [ Element.width <| Element.px 96
