@@ -121,33 +121,27 @@ view toMsg oldColor color =
         [ makeSlider
             updateHue
             hue
-            [ Color.hsl (0 / 6) 1.0 0.5
-            , Color.hsl (1 / 6) 1.0 0.5
-            , Color.hsl (2 / 6) 1.0 0.5
-            , Color.hsl (3 / 6) 1.0 0.5
-            , Color.hsl (4 / 6) 1.0 0.5
-            , Color.hsl (5 / 6) 1.0 0.5
-            , Color.hsl (6 / 6) 1.0 0.5
-            ]
+            (List.range 0 6
+                |> List.map (\i -> Color.hsl (toFloat i / 6) 1.0 0.5)
+            )
         , makeSlider
             updateSaturation
             saturation
-            [ Color.hsl hue 0.0 0.5
-            , Color.hsl hue 1.0 0.5
-            ]
+            ([ 0.0, 1.0 ]
+                |> List.map (\val -> Color.hsl hue val 0.5)
+            )
         , makeSlider
             updateLightness
             lightness
-            [ Color.hsl hue saturation 0.0
-            , Color.hsl hue saturation 0.5
-            , Color.hsl hue saturation 1.0
-            ]
+            ([ 0.0, 0.5, 1.0 ]
+                |> List.map (\val -> Color.hsl hue saturation val)
+            )
         , makeSlider
             updateAlpha
             alpha
-            [ Color.hsla hue saturation lightness 0.0
-            , Color.hsla hue saturation lightness 1.0
-            ]
+            ([ 0.0, 1.0 ]
+                |> List.map (\val -> Color.hsla hue saturation lightness val)
+            )
         , Element.row []
             [ Element.el
                 [ Element.width <| Element.px 96
