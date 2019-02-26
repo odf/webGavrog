@@ -88,10 +88,15 @@ updateAlpha color value =
 
 slider : (Float -> msg) -> Size -> Float -> Element.Element msg
 slider toMsg { widthPx, heightPx } value =
+    let
+        mkMsg val =
+            toMsg <| clamp 0.0 1.0 val
+    in
     Element.el
         [ Element.width <| Element.px widthPx
         , Element.height <| Element.px heightPx
-        , onMouseDown (\{ x, y } -> toMsg (toFloat x / toFloat widthPx))
+        , onMouseDown
+            (\{ x, y } -> mkMsg (toFloat x / toFloat widthPx))
         ]
         (Element.el
             [ Border.shadow
@@ -103,9 +108,11 @@ slider toMsg { widthPx, heightPx } value =
             , Border.color <| Element.rgb 1.0 1.0 1.0
             , Border.solid
             , Border.widthXY 1 0
-            , Element.width <| Element.px 7
+            , Element.width <| Element.px 6
             , Element.height Element.fill
-            , Element.moveRight (value * toFloat widthPx - toFloat 3)
+            , Element.moveRight (value * toFloat widthPx - 3.0)
+            , onMouseDown
+                (\{ x, y } -> mkMsg (value + toFloat (x - 3) / toFloat widthPx))
             ]
             Element.none
         )
