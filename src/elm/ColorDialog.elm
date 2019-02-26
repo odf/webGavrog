@@ -5,12 +5,40 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Html.Events
+import Json.Decode as Decode
 
 
 type alias Size =
     { widthPx : Int
     , heightPx : Int
     }
+
+
+type alias Position =
+    { x : Int
+    , y : Int
+    }
+
+
+decodePos : Decode.Decoder Position
+decodePos =
+    Decode.map2 (\x y -> { x = x, y = y })
+        (Decode.at [ "offsetX" ] Decode.int)
+        (Decode.at [ "offsetY" ] Decode.int)
+
+
+onMouseDown : (Position -> msg) -> Element.Attribute msg
+onMouseDown toMsg =
+    let
+        toResult pos =
+            { message = toMsg pos
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Element.htmlAttribute <|
+        Html.Events.custom "mousedown" (Decode.map toResult decodePos)
 
 
 convertColor : Color -> Element.Color
@@ -67,7 +95,7 @@ slider toMsg { widthPx, heightPx } value =
     Element.row
         [ Element.width <| Element.px widthPx
         , Element.height <| Element.px heightPx
-        , Events.onMouseDown (toMsg 0.5)
+        , onMouseDown (\{ x, y } -> toMsg (toFloat x / toFloat widthPx))
         ]
         [ Element.el
             [ Element.width <| Element.fillPortion (pos - 3) ]
