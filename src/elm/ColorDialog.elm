@@ -32,13 +32,10 @@ type alias Buttons =
 checkerboard : String
 checkerboard =
     "data:image/png;base64,"
-        ++ "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAA"
-        ++ "CQkWg2AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA"
-        ++ "B3RJTUUH4wIbBzEcds8NCgAAAB1pVFh0Q29tbW"
-        ++ "VudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUH"
-        ++ "AAAAKklEQVQoz2Ps6OhgwAbKy8uxijMxkAhGNR"
-        ++ "ADGP///49VorOzczSU6KcBAAveB7RweqHLAAAA"
-        ++ "AElFTkSuQmCC"
+        ++ "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAsT"
+        ++ "AAALEwEAmpwYAAAAB3RJTUUH4wIbBzEcds8NCgAAAB1pVFh0Q29tbWVudAAA"
+        ++ "AAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAKklEQVQoz2Ps6OhgwAbKy8ux"
+        ++ "ijMxkAhGNRADGP///49VorOzczSU6KcBAAveB7RweqHLAAAAAElFTkSuQmCC"
 
 
 decodePos : Decode.Decoder Position
