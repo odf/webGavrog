@@ -123,8 +123,8 @@ updateAlpha color value =
     Color.hsla hue saturation lightness value
 
 
-slider : (Float -> msg) -> Size -> Float -> Element.Element msg
-slider toMsg { widthPx, heightPx } value =
+slider : (Float -> msg) -> Size -> Color -> Float -> Element.Element msg
+slider toMsg { widthPx, heightPx } color value =
     let
         mouseOnMain { x, y } { left, right, middle } =
             (if left then
@@ -162,6 +162,7 @@ slider toMsg { widthPx, heightPx } value =
             , Border.color <| Element.rgb 1.0 1.0 1.0
             , Border.solid
             , Border.widthXY 1 0
+            , Background.color <| convertColor color
             , Element.width <| Element.px 6
             , Element.height Element.fill
             , Element.moveRight (value * toFloat widthPx - 3.0)
@@ -181,7 +182,7 @@ view toMsg oldColor color =
         sliderSize =
             { widthPx = 192, heightPx = 24 }
 
-        makeSlider updateColor value colors =
+        makeSlider updateColor value icolor colors =
             Element.el
                 [ Element.behindContent <|
                     Element.el
@@ -194,31 +195,35 @@ view toMsg oldColor color =
                         ]
                         Element.none
                 ]
-                (slider (updateColor color >> toMsg) sliderSize value)
+                (slider (updateColor color >> toMsg) sliderSize icolor value)
     in
     Element.column
         [ Element.spacing 12 ]
         [ makeSlider
             updateHue
             hue
+            (Color.hsl hue 1.0 0.5)
             (List.range 0 6
                 |> List.map (\i -> Color.hsl (toFloat i / 6) 1.0 0.5)
             )
         , makeSlider
             updateSaturation
             saturation
+            (Color.hsl hue saturation 0.5)
             ([ 0.0, 1.0 ]
                 |> List.map (\val -> Color.hsl hue val 0.5)
             )
         , makeSlider
             updateLightness
             lightness
+            (Color.hsl hue saturation lightness)
             ([ 0.0, 0.5, 1.0 ]
                 |> List.map (\val -> Color.hsl hue saturation val)
             )
         , makeSlider
             updateAlpha
             alpha
+            (Color.hsla hue saturation lightness alpha)
             ([ 0.0, 1.0 ]
                 |> List.map (\val -> Color.hsla hue saturation lightness val)
             )
