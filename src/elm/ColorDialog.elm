@@ -1,5 +1,6 @@
 module ColorDialog exposing (view)
 
+import Bitwise
 import Color exposing (Color)
 import Element
 import Element.Background as Background
@@ -21,6 +22,13 @@ type alias Position =
     }
 
 
+type alias Buttons =
+    { left : Bool
+    , right : Bool
+    , middle : Bool
+    }
+
+
 decodePos : Decode.Decoder Position
 decodePos =
     Decode.map2 (\x y -> { x = x, y = y })
@@ -28,17 +36,46 @@ decodePos =
         (Decode.at [ "offsetY" ] Decode.int)
 
 
-onMouseDown : (Position -> msg) -> Element.Attribute msg
+decodeButtons : Decode.Decoder Buttons
+decodeButtons =
+    Decode.map
+        (\val ->
+            { left = Bitwise.and val 1 > 0
+            , right = Bitwise.and val 2 > 0
+            , middle = Bitwise.and val 4 > 0
+            }
+        )
+        (Decode.at [ "buttons" ] Decode.int)
+
+
+onMouseDown : (Position -> Buttons -> msg) -> Element.Attribute msg
 onMouseDown toMsg =
     let
-        toResult pos =
-            { message = toMsg pos
+        toResult pos buttons =
+            { message = toMsg pos buttons
             , stopPropagation = True
             , preventDefault = True
             }
     in
     Element.htmlAttribute <|
-        Html.Events.custom "mousedown" (Decode.map toResult decodePos)
+        Html.Events.custom
+            "mousedown"
+            (Decode.map2 toResult decodePos decodeButtons)
+
+
+onMouseMove : (Position -> Buttons -> msg) -> Element.Attribute msg
+onMouseMove toMsg =
+    let
+        toResult pos buttons =
+            { message = toMsg pos buttons
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Element.htmlAttribute <|
+        Html.Events.custom
+            "mousemove"
+            (Decode.map2 toResult decodePos decodeButtons)
 
 
 convertColor : Color -> Element.Color
@@ -89,14 +126,31 @@ updateAlpha color value =
 slider : (Float -> msg) -> Size -> Float -> Element.Element msg
 slider toMsg { widthPx, heightPx } value =
     let
-        mkMsg val =
-            toMsg <| clamp 0.0 1.0 val
+        mouseOnMain { x, y } { left, right, middle } =
+            (if left then
+                toFloat x / toFloat widthPx
+
+             else
+                value
+            )
+                |> clamp 0.0 1.0
+                |> toMsg
+
+        mouseOnIndicator { x, y } { left, right, middle } =
+            (if left then
+                value + toFloat (x - 3) / toFloat widthPx
+
+             else
+                value
+            )
+                |> clamp 0.0 1.0
+                |> toMsg
     in
     Element.el
         [ Element.width <| Element.px widthPx
         , Element.height <| Element.px heightPx
-        , onMouseDown
-            (\{ x, y } -> mkMsg (toFloat x / toFloat widthPx))
+        , onMouseDown mouseOnMain
+        , onMouseMove mouseOnMain
         ]
         (Element.el
             [ Border.shadow
@@ -111,8 +165,8 @@ slider toMsg { widthPx, heightPx } value =
             , Element.width <| Element.px 6
             , Element.height Element.fill
             , Element.moveRight (value * toFloat widthPx - 3.0)
-            , onMouseDown
-                (\{ x, y } -> mkMsg (value + toFloat (x - 3) / toFloat widthPx))
+            , onMouseDown mouseOnIndicator
+            , onMouseMove mouseOnIndicator
             ]
             Element.none
         )
