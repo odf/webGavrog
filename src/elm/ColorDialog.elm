@@ -29,6 +29,18 @@ type alias Buttons =
     }
 
 
+checkerboard : String
+checkerboard =
+    "data:image/png;base64,"
+        ++ "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAA"
+        ++ "CQkWg2AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA"
+        ++ "B3RJTUUH4wIbBzEcds8NCgAAAB1pVFh0Q29tbW"
+        ++ "VudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUH"
+        ++ "AAAAKklEQVQoz2Ps6OhgwAbKy8uxijMxkAhGNR"
+        ++ "ADGP///49VorOzczSU6KcBAAveB7RweqHLAAAA"
+        ++ "AElFTkSuQmCC"
+
+
 decodePos : Decode.Decoder Position
 decodePos =
     Decode.map2 (\x y -> { x = x, y = y })
@@ -182,10 +194,13 @@ view toMsg oldColor color =
         sliderSize =
             { widthPx = 192, heightPx = 24 }
 
-        makeSlider updateColor value icolor colors =
+        sliderBackground colors =
             Element.el
-                [ Element.behindContent <|
-                    Element.el
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Background.tiled checkerboard
+                , Element.inFront
+                    (Element.el
                         [ Element.width Element.fill
                         , Element.height Element.fill
                         , Background.gradient
@@ -194,6 +209,13 @@ view toMsg oldColor color =
                             }
                         ]
                         Element.none
+                    )
+                ]
+                Element.none
+
+        makeSlider updateColor value icolor colors =
+            Element.el
+                [ Element.behindContent <| sliderBackground colors
                 ]
                 (slider (updateColor color >> toMsg) sliderSize icolor value)
     in
@@ -231,13 +253,29 @@ view toMsg oldColor color =
             [ Element.el
                 [ Element.width <| Element.px 96
                 , Element.height <| Element.px 48
-                , Background.color <| convertColor oldColor
+                , Background.tiled checkerboard
+                , Element.inFront
+                    (Element.el
+                        [ Element.width Element.fill
+                        , Element.height Element.fill
+                        , Background.color <| convertColor oldColor
+                        ]
+                        Element.none
+                    )
                 ]
                 Element.none
             , Element.el
                 [ Element.width <| Element.px 96
                 , Element.height <| Element.px 48
-                , Background.color <| convertColor color
+                , Background.tiled checkerboard
+                , Element.inFront
+                    (Element.el
+                        [ Element.width Element.fill
+                        , Element.height Element.fill
+                        , Background.color <| convertColor color
+                        ]
+                        Element.none
+                    )
                 ]
                 Element.none
             ]
