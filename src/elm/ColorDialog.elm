@@ -132,8 +132,14 @@ updateAlpha color value =
     Color.hsla hue saturation lightness value
 
 
-slider : (Float -> msg) -> Size -> Color -> Float -> Element.Element msg
-slider toMsg { widthPx, heightPx } color value =
+slider :
+    (Float -> msg)
+    -> Size
+    -> Color
+    -> Element.Element msg
+    -> Float
+    -> Element.Element msg
+slider toMsg { widthPx, heightPx } indicatorColor background value =
     let
         mouseOnMain { x, y } { left, right, middle } =
             (if left then
@@ -158,6 +164,7 @@ slider toMsg { widthPx, heightPx } color value =
     Element.el
         [ Element.width <| Element.px widthPx
         , Element.height <| Element.px heightPx
+        , Element.behindContent background
         , onMouseDown mouseOnMain
         , onMouseMove mouseOnMain
         ]
@@ -171,7 +178,7 @@ slider toMsg { widthPx, heightPx } color value =
             , Border.color <| Element.rgb 1.0 1.0 1.0
             , Border.solid
             , Border.widthXY 1 0
-            , Background.color <| convertColor color
+            , Background.color <| convertColor indicatorColor
             , Element.width <| Element.px 6
             , Element.height Element.fill
             , Element.moveRight (value * toFloat widthPx - 3.0)
@@ -211,10 +218,12 @@ view toMsg oldColor color =
                 Element.none
 
         makeSlider updateColor value icolor colors =
-            Element.el
-                [ Element.behindContent <| sliderBackground colors
-                ]
-                (slider (updateColor color >> toMsg) sliderSize icolor value)
+            slider
+                (updateColor color >> toMsg)
+                sliderSize
+                icolor
+                (sliderBackground colors)
+                value
     in
     Element.column
         [ Element.spacing 12 ]
