@@ -6,24 +6,6 @@ import Element.Background as Background
 import ValueSlider
 
 
-checkerboard : String
-checkerboard =
-    "data:image/png;base64,"
-        ++ "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAsT"
-        ++ "AAALEwEAmpwYAAAAB3RJTUUH4wIbBzEcds8NCgAAAB1pVFh0Q29tbWVudAAA"
-        ++ "AAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAKklEQVQoz2Ps6OhgwAbKy8ux"
-        ++ "ijMxkAhGNRADGP///49VorOzczSU6KcBAAveB7RweqHLAAAAAElFTkSuQmCC"
-
-
-convertColor : Color -> Element.Color
-convertColor color =
-    let
-        { red, green, blue, alpha } =
-            Color.toRgba color
-    in
-    Element.rgba red green blue alpha
-
-
 updateHue : Color -> Float -> Color
 updateHue color value =
     let
@@ -60,8 +42,26 @@ updateAlpha color value =
     Color.hsla hue saturation lightness value
 
 
-sliderBackground : List Color -> Element.Element msg
-sliderBackground colors =
+convertColor : Color -> Element.Color
+convertColor color =
+    let
+        { red, green, blue, alpha } =
+            Color.toRgba color
+    in
+    Element.rgba red green blue alpha
+
+
+checkerboard : String
+checkerboard =
+    "data:image/png;base64,"
+        ++ "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAsT"
+        ++ "AAALEwEAmpwYAAAAB3RJTUUH4wIbBzEcds8NCgAAAB1pVFh0Q29tbWVudAAA"
+        ++ "AAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAKklEQVQoz2Ps6OhgwAbKy8ux"
+        ++ "ijMxkAhGNRADGP///49VorOzczSU6KcBAAveB7RweqHLAAAAAElFTkSuQmCC"
+
+
+colorField : List Color -> Element.Element msg
+colorField colors =
     Element.el
         [ Element.width Element.fill
         , Element.height Element.fill
@@ -92,7 +92,7 @@ view toMsg oldColor color =
                 (updateColor color >> toMsg)
                 { widthPx = 192, heightPx = 24 }
                 (convertColor icolor)
-                (sliderBackground colors)
+                (colorField colors)
                 value
     in
     Element.column
@@ -129,30 +129,12 @@ view toMsg oldColor color =
             [ Element.el
                 [ Element.width <| Element.px 96
                 , Element.height <| Element.px 48
-                , Background.tiled checkerboard
-                , Element.inFront
-                    (Element.el
-                        [ Element.width Element.fill
-                        , Element.height Element.fill
-                        , Background.color <| convertColor oldColor
-                        ]
-                        Element.none
-                    )
                 ]
-                Element.none
+                (colorField [ oldColor ])
             , Element.el
                 [ Element.width <| Element.px 96
                 , Element.height <| Element.px 48
-                , Background.tiled checkerboard
-                , Element.inFront
-                    (Element.el
-                        [ Element.width Element.fill
-                        , Element.height Element.fill
-                        , Background.color <| convertColor color
-                        ]
-                        Element.none
-                    )
                 ]
-                Element.none
+                (colorField [ color ])
             ]
         ]
