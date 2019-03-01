@@ -46,8 +46,8 @@ decodeButtons =
         (Decode.at [ "buttons" ] Decode.int)
 
 
-onMouseDown : (Position -> Buttons -> msg) -> Element.Attribute msg
-onMouseDown toMsg =
+onMouseEvent : String -> (Position -> Buttons -> msg) -> Element.Attribute msg
+onMouseEvent eventString toMsg =
     let
         toResult pos buttons =
             { message = toMsg pos buttons
@@ -57,23 +57,18 @@ onMouseDown toMsg =
     in
     Element.htmlAttribute <|
         Html.Events.custom
-            "mousedown"
+            eventString
             (Decode.map2 toResult decodePos decodeButtons)
+
+
+onMouseDown : (Position -> Buttons -> msg) -> Element.Attribute msg
+onMouseDown =
+    onMouseEvent "mousedown"
 
 
 onMouseMove : (Position -> Buttons -> msg) -> Element.Attribute msg
-onMouseMove toMsg =
-    let
-        toResult pos buttons =
-            { message = toMsg pos buttons
-            , stopPropagation = True
-            , preventDefault = True
-            }
-    in
-    Element.htmlAttribute <|
-        Html.Events.custom
-            "mousemove"
-            (Decode.map2 toResult decodePos decodeButtons)
+onMouseMove =
+    onMouseEvent "mousemove"
 
 
 view :
@@ -85,9 +80,9 @@ view :
     -> Element.Element msg
 view toMsg { widthPx, heightPx } indicatorColor background value =
     let
-        mouseOnMain { x, y } { left, right, middle } =
+        handleMouse convertFn { x } { left } =
             (if left then
-                toFloat x / toFloat widthPx
+                convertFn x
 
              else
                 value
@@ -95,15 +90,11 @@ view toMsg { widthPx, heightPx } indicatorColor background value =
                 |> clamp 0.0 1.0
                 |> toMsg
 
-        mouseOnIndicator { x, y } { left, right, middle } =
-            (if left then
-                value + toFloat (x - 3) / toFloat widthPx
+        mouseOnMain =
+            handleMouse (\x -> toFloat x / toFloat widthPx)
 
-             else
-                value
-            )
-                |> clamp 0.0 1.0
-                |> toMsg
+        mouseOnIndicator =
+            handleMouse (\x -> value + toFloat (x - 3) / toFloat widthPx)
     in
     Element.el
         [ Element.width <| Element.px widthPx
