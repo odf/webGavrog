@@ -38,7 +38,7 @@ main =
 type alias OutData =
     { mode : String
     , text : Maybe String
-    , options : List Options.Spec
+    , options : List { key : String, label : String, value : Bool }
     , selected : List { meshIndex : Int, instanceIndex : Int }
     }
 
@@ -275,27 +275,27 @@ initOptionSpecs : List Options.Spec
 initOptionSpecs =
     [ { key = "colorByTranslationClass"
       , label = "Color By Translations"
-      , value = False
+      , value = Options.Toggle False
       }
     , { key = "highlightEdges"
       , label = "Highlight Edges"
-      , value = False
+      , value = Options.Toggle False
       }
     , { key = "closeTileGaps"
       , label = "Close Tile Gaps"
-      , value = False
+      , value = Options.Toggle False
       }
     , { key = "skipRelaxation"
       , label = "Skip Relaxation"
-      , value = False
+      , value = Options.Toggle False
       }
     , { key = "extraSmooth"
       , label = "Extra-Smooth Faces"
-      , value = False
+      , value = Options.Toggle False
       }
     , { key = "showSurfaceMesh"
       , label = "Show Surface Mesh"
-      , value = False
+      , value = Options.Toggle False
       }
     ]
 
@@ -597,6 +597,16 @@ handleJSData data model =
 
 updateOptions : Model -> List Options.Spec -> Maybe Bool -> ( Model, Cmd Msg )
 updateOptions model specs result =
+    let
+        asJS { key, label, value } =
+            let
+                jsVal =
+                    case value of
+                        Options.Toggle onOff ->
+                            onOff
+            in
+            { key = key, label = label, value = jsVal }
+    in
     case result of
         Nothing ->
             ( { model | optionSpecsTmp = specs }, Cmd.none )
@@ -604,7 +614,7 @@ updateOptions model specs result =
         Just ok ->
             if ok then
                 ( { model | visibleDialog = Nothing, optionSpecs = specs }
-                , toJS <| OutData "options" Nothing specs []
+                , toJS <| OutData "options" Nothing (List.map asJS specs) []
                 )
 
             else
@@ -670,7 +680,8 @@ view model =
             model.optionSpecs
                 |> List.map
                     (\{ key, value } ->
-                        key == "showSurfaceMesh" && value == True
+                        (key == "showSurfaceMesh")
+                            && (value == Options.Toggle True)
                     )
                 |> List.foldl (||) False
     in
