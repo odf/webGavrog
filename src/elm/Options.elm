@@ -1,4 +1,4 @@
-module Options exposing (Msg(..), Spec, toggle, view)
+module Options exposing (Spec, view)
 
 import Element
 import Element.Input as Input
@@ -10,11 +10,6 @@ type alias Spec =
     , label : String
     , value : Bool
     }
-
-
-type Msg
-    = Toggle Bool String
-    | Submit Bool
 
 
 toggle : Bool -> String -> List Spec -> List Spec
@@ -30,23 +25,30 @@ toggle onOff key specs =
         specs
 
 
-view : (Msg -> msg) -> List Spec -> Element.Element msg
+view : (List Spec -> Maybe Bool -> msg) -> List Spec -> Element.Element msg
 view toMsg specs =
+    let
+        makeCheckbox { key, label, value } =
+            checkbox
+                (\onOff -> toMsg (toggle onOff key specs) Nothing)
+                label
+                value
+    in
     Element.column [ Element.spacing 16, Element.padding 16 ]
         [ Element.column [ Element.spacing 8 ]
-            (List.map (checkbox toMsg) specs)
+            (List.map makeCheckbox specs)
         , Element.row [ Element.spacing 32, Element.centerX ]
-            [ Styling.button (toMsg <| Submit True) "OK"
-            , Styling.button (toMsg <| Submit False) "Cancel"
+            [ Styling.button (toMsg specs (Just True)) "OK"
+            , Styling.button (toMsg specs (Just False)) "Cancel"
             ]
         ]
 
 
-checkbox : (Msg -> msg) -> Spec -> Element.Element msg
-checkbox toMsg spec =
+checkbox : (Bool -> msg) -> String -> Bool -> Element.Element msg
+checkbox toMsg label value =
     Input.checkbox []
-        { onChange = \onOff -> toMsg <| Toggle onOff spec.key
+        { onChange = toMsg
         , icon = Input.defaultCheckbox
-        , checked = spec.value
-        , label = Input.labelRight [] <| Element.text spec.label
+        , checked = value
+        , label = Input.labelRight [] <| Element.text label
         }

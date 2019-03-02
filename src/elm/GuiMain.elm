@@ -62,7 +62,7 @@ type Msg
     | JumpDialogSubmit Bool
     | SearchDialogInput String
     | SearchDialogSubmit Bool
-    | OptionsMsg Options.Msg
+    | OptionsMsg (List Options.Spec) (Maybe Bool)
     | ColorMsg Color
     | JSData InData
     | HideAbout
@@ -368,8 +368,8 @@ update msg model =
                 Cmd.none
             )
 
-        OptionsMsg optionMsg ->
-            updateOptions model optionMsg
+        OptionsMsg specs result ->
+            updateOptions model specs result
 
         ColorMsg color ->
             ( { model | color = color }, Cmd.none )
@@ -595,26 +595,20 @@ handleJSData data model =
            )
 
 
-updateOptions : Model -> Options.Msg -> ( Model, Cmd Msg )
-updateOptions model msg =
-    let
-        specsTmp =
-            model.optionSpecsTmp
-    in
-    case msg of
-        Options.Submit ok ->
+updateOptions : Model -> List Options.Spec -> Maybe Bool -> ( Model, Cmd Msg )
+updateOptions model specs result =
+    case result of
+        Nothing ->
+            ( { model | optionSpecsTmp = specs }, Cmd.none )
+
+        Just ok ->
             if ok then
-                ( { model | visibleDialog = Nothing, optionSpecs = specsTmp }
-                , toJS <| OutData "options" Nothing specsTmp []
+                ( { model | visibleDialog = Nothing, optionSpecs = specs }
+                , toJS <| OutData "options" Nothing specs []
                 )
 
             else
                 ( { model | visibleDialog = Nothing }, Cmd.none )
-
-        Options.Toggle onOff key ->
-            ( { model | optionSpecsTmp = Options.toggle onOff key specsTmp }
-            , Cmd.none
-            )
 
 
 hotKeyActions : Dict Char ( Model -> Model, Cmd Msg )
