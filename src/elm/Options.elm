@@ -32,22 +32,26 @@ update value key specs =
 view : (List Spec -> Maybe Bool -> msg) -> List Spec -> Element.Element msg
 view toMsg specs =
     let
-        viewOption { key, label, value } =
-            case value of
-                Toggle onOff ->
-                    checkbox
-                        (\val -> toMsg (update (Toggle val) key specs) Nothing)
-                        label
-                        onOff
+        viewItem spec =
+            viewOption
+                (\val -> toMsg (update val spec.key specs) Nothing)
+                spec
     in
     Element.column [ Element.spacing 16, Element.padding 16 ]
         [ Element.column [ Element.spacing 8 ]
-            (List.map viewOption specs)
+            (List.map viewItem specs)
         , Element.row [ Element.spacing 32, Element.centerX ]
             [ Styling.button (toMsg specs (Just True)) "OK"
             , Styling.button (toMsg specs (Just False)) "Cancel"
             ]
         ]
+
+
+viewOption : (Value -> msg) -> Spec -> Element.Element msg
+viewOption toMsg { label, value } =
+    case value of
+        Toggle onOff ->
+            checkbox (Toggle >> toMsg) label onOff
 
 
 checkbox : (Bool -> msg) -> String -> Bool -> Element.Element msg
