@@ -365,7 +365,7 @@ const saveScreenshot = (config, model) => {
       canvas.height = srcCanvas.height;
 
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = "#FFFFFF";
+      ctx.fillStyle = model.options['backgroundColor'];
       ctx.fillRect(0, 0, srcCanvas.width, srcCanvas.height);
       ctx.drawImage(srcCanvas, 0, 0);
 
@@ -464,8 +464,8 @@ const render = domNode => {
         action[text](selected);
     }
     else if (mode == "options") {
-      for (const { key, value } of options)
-        model.options[key] = value;
+      for (const { key, onOff, value } of options)
+        model.options[key] = value || onOff;
 
       updateModel(updateStructure(config, model));
     }

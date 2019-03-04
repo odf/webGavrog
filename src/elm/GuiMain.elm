@@ -37,7 +37,7 @@ main =
 type alias OutData =
     { mode : String
     , text : Maybe String
-    , options : List { key : String, label : String, value : Bool }
+    , options : List { key : String, onOff : Bool, value : Maybe String }
     , selected : List { meshIndex : Int, instanceIndex : Int }
     }
 
@@ -602,16 +602,18 @@ updateOptions : Model -> List Options.Spec -> Maybe Bool -> ( Model, Cmd Msg )
 updateOptions model specs result =
     let
         asJS { key, label, value } =
-            let
-                jsVal =
-                    case value of
-                        Options.Toggle onOff ->
-                            onOff
+            case value of
+                Options.Toggle onOff ->
+                    { key = key
+                    , onOff = onOff
+                    , value = Nothing
+                    }
 
-                        Options.Color c ->
-                            False
-            in
-            { key = key, label = label, value = jsVal }
+                Options.Color c ->
+                    { key = key
+                    , onOff = True
+                    , value = Just <| Color.toCssString c
+                    }
     in
     case result of
         Nothing ->
