@@ -356,10 +356,19 @@ const saveStructure = (config, model) => {
 
 
 const saveScreenshot = (config, model) => {
-  const canvas = document.getElementById('main-3d-canvas');
+  const srcCanvas = document.getElementById('main-3d-canvas');
 
-  if (canvas) {
+  if (srcCanvas) {
     window.requestAnimationFrame(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = srcCanvas.width;
+      canvas.height = srcCanvas.height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, srcCanvas.width, srcCanvas.height);
+      ctx.drawImage(srcCanvas, 0, 0);
+
       if (canvas.toBlob)
         canvas.toBlob(blob => config.saveFile(blob, 'gavrog.png'));
       else {
