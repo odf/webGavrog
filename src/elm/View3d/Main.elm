@@ -487,16 +487,7 @@ setRedraws onOff model =
 
 view : (Msg -> msg) -> Model -> Bool -> Color -> Html msg
 view toMsg model withWires bgColor =
-    let
-        { red, green, blue, alpha } =
-            Color.toRgba bgColor
-    in
-    WebGL.toHtmlWith
-        [ WebGL.alpha True
-        , WebGL.antialias
-        , WebGL.depth 1
-        , WebGL.clearColor red green blue alpha
-        ]
+    WebGL.toHtml
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" (Color.toCssString bgColor)
         , Html.Attributes.id "main-3d-canvas"
