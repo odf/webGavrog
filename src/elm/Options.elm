@@ -1,5 +1,7 @@
 module Options exposing (Spec, Value(..), view)
 
+import Color exposing (Color)
+import ColorDialog
 import Element
 import Element.Input as Input
 import Styling
@@ -7,6 +9,7 @@ import Styling
 
 type Value
     = Toggle Bool
+    | Color Color
 
 
 type alias Spec =
@@ -52,6 +55,9 @@ viewOption toMsg { label, value } =
     case value of
         Toggle onOff ->
             checkbox (Toggle >> toMsg) label onOff
+
+        Color color ->
+            ColorDialog.view (Color >> toMsg) color color
 
 
 checkbox : (Bool -> msg) -> String -> Bool -> Element.Element msg

@@ -6,7 +6,6 @@ import Browser.Dom as Dom
 import Browser.Events
 import Char
 import Color exposing (Color)
-import ColorDialog
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -296,6 +295,10 @@ initOptionSpecs =
     , { key = "showSurfaceMesh"
       , label = "Show Surface Mesh"
       , value = Options.Toggle False
+      }
+    , { key = "backgroundColor"
+      , label = "Background Color"
+      , value = Options.Color Color.white
       }
     ]
 
@@ -604,6 +607,9 @@ updateOptions model specs result =
                     case value of
                         Options.Toggle onOff ->
                             onOff
+
+                        Options.Color c ->
+                            False
             in
             { key = key, label = label, value = jsVal }
     in
@@ -684,6 +690,21 @@ view model =
                             && (value == Options.Toggle True)
                     )
                 |> List.foldl (||) False
+
+        getColor val =
+            case val of
+                Options.Color color ->
+                    color
+
+                _ ->
+                    Color.white
+
+        backgroundColor =
+            model.optionSpecs
+                |> List.filter (\{ key, value } -> key == "backgroundColor")
+                |> List.map (.value >> getColor)
+                |> List.head
+                |> Maybe.withDefault Color.white
     in
     { title = "Gavrog For Web"
     , body =
@@ -703,7 +724,13 @@ view model =
                 [ onContextMenu ContextMenu
                 , onMouseDown MouseDown
                 ]
-                (Element.html <| View3d.view ViewMsg model.viewState withWires)
+                (View3d.view
+                    ViewMsg
+                    model.viewState
+                    withWires
+                    backgroundColor
+                    |> Element.html
+                )
             )
         ]
     }
@@ -799,11 +826,7 @@ viewCurrentDialog model =
 
         Just Options ->
             wrap <|
-                Element.column [ Element.spacing 16 ]
-                    [ Options.view OptionsMsg model.optionSpecsTmp
-                    , Styling.box [] <|
-                        ColorDialog.view ColorMsg model.color model.color
-                    ]
+                Options.view OptionsMsg model.optionSpecsTmp
 
 
 viewAbout : Model -> Element.Element Msg

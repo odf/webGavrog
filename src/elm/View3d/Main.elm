@@ -51,7 +51,6 @@ type alias PickingInfo =
 
 type alias Model =
     { size : FrameSize
-    , backgroundColor : Color
     , cameraState : Camera.State
     , scene : Renderer.Scene PickingInfo
     , selected : Set ( Int, Int )
@@ -69,7 +68,6 @@ type Outcome
 init : Model
 init =
     { size = { width = 0, height = 0 }
-    , backgroundColor = Color.white
     , cameraState = Camera.initialState
     , scene = []
     , selected = Set.empty
@@ -487,11 +485,11 @@ setRedraws onOff model =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> Bool -> Html msg
-view toMsg model withWires =
+view : (Msg -> msg) -> Model -> Bool -> Color -> Html msg
+view toMsg model withWires bgColor =
     let
         { red, green, blue, alpha } =
-            Color.toRgba model.backgroundColor
+            Color.toRgba bgColor
     in
     WebGL.toHtmlWith
         [ WebGL.alpha True
@@ -500,7 +498,7 @@ view toMsg model withWires =
         , WebGL.clearColor red green blue alpha
         ]
         [ Html.Attributes.style "display" "block"
-        , Html.Attributes.style "background" "white"
+        , Html.Attributes.style "background" (Color.toCssString bgColor)
         , Html.Attributes.id "main-3d-canvas"
         , Html.Attributes.width (floor model.size.width)
         , Html.Attributes.height (floor model.size.height)
