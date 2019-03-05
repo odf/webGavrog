@@ -1,7 +1,6 @@
 module Options exposing (Spec, Value(..), view)
 
-import Color exposing (Color)
-import ColorDialog
+import ColorDialog exposing (Color)
 import Element
 import Element.Input as Input
 import Styling

@@ -5,7 +5,8 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events
 import Char
-import Color exposing (Color)
+import Color as ElmColor
+import ColorDialog
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -62,7 +63,6 @@ type Msg
     | SearchDialogInput String
     | SearchDialogSubmit Bool
     | OptionsMsg (List Options.Spec) (Maybe Bool)
-    | ColorMsg Color
     | JSData InData
     | HideAbout
     | KeyUp Int
@@ -156,7 +156,6 @@ type DialogType
 
 type alias Model =
     { viewState : View3d.Model
-    , color : Color
     , revision : String
     , timestamp : String
     , mainMenuConfig : Menu.Config Msg
@@ -180,7 +179,6 @@ type alias Model =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { viewState = View3d.init
-      , color = Color.brown
       , revision = flags.revision
       , timestamp = flags.timestamp
       , mainMenuConfig = initMainMenuConfig
@@ -298,7 +296,7 @@ initOptionSpecs =
       }
     , { key = "backgroundColor"
       , label = "Background Color"
-      , value = Options.Color Color.white
+      , value = Options.Color <| ColorDialog.Color 0.0 1.0 1.0 1.0
       }
     ]
 
@@ -373,9 +371,6 @@ update msg model =
 
         OptionsMsg specs result ->
             updateOptions model specs result
-
-        ColorMsg color ->
-            ( { model | color = color }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -612,7 +607,10 @@ updateOptions model specs result =
                 Options.Color c ->
                     { key = key
                     , onOff = True
-                    , value = Just <| Color.toCssString c
+                    , value =
+                        ElmColor.hsla c.hue c.saturation c.lightness c.alpha
+                            |> ElmColor.toCssString
+                            |> Just
                     }
     in
     case result of
@@ -696,17 +694,21 @@ view model =
         getColor val =
             case val of
                 Options.Color color ->
-                    color
+                    ElmColor.hsla
+                        color.hue
+                        color.saturation
+                        color.lightness
+                        color.alpha
 
                 _ ->
-                    Color.white
+                    ElmColor.white
 
         backgroundColor =
             model.optionSpecs
                 |> List.filter (\{ key, value } -> key == "backgroundColor")
                 |> List.map (.value >> getColor)
                 |> List.head
-                |> Maybe.withDefault Color.white
+                |> Maybe.withDefault ElmColor.white
     in
     { title = "Gavrog For Web"
     , body =

@@ -1,52 +1,47 @@
-module ColorDialog exposing (view)
+module ColorDialog exposing (Color, view)
 
-import Color exposing (Color)
+import Color as ElmColor
 import Element
 import Element.Background as Background
 import ValueSlider
 
 
+type alias Color =
+    { hue : Float
+    , saturation : Float
+    , lightness : Float
+    , alpha : Float
+    }
+
+
 updateHue : Color -> Float -> Color
 updateHue color value =
-    let
-        { hue, saturation, lightness, alpha } =
-            Color.toHsla color
-    in
-    Color.hsla value saturation lightness alpha
+    { color | hue = clamp 0.0 1.0 value }
 
 
 updateSaturation : Color -> Float -> Color
 updateSaturation color value =
-    let
-        { hue, saturation, lightness, alpha } =
-            Color.toHsla color
-    in
-    Color.hsla hue value lightness alpha
+    { color | saturation = clamp 0.0 1.0 value }
 
 
 updateLightness : Color -> Float -> Color
 updateLightness color value =
-    let
-        { hue, saturation, lightness, alpha } =
-            Color.toHsla color
-    in
-    Color.hsla hue saturation value alpha
+    { color | lightness = clamp 0.0 1.0 value }
 
 
 updateAlpha : Color -> Float -> Color
 updateAlpha color value =
+    { color | alpha = clamp 0.0 1.0 value }
+
+
+toElementColor : Color -> Element.Color
+toElementColor color =
     let
         { hue, saturation, lightness, alpha } =
-            Color.toHsla color
-    in
-    Color.hsla hue saturation lightness value
+            color
 
-
-convertColor : Color -> Element.Color
-convertColor color =
-    let
-        { red, green, blue, alpha } =
-            Color.toRgba color
+        { red, green, blue } =
+            ElmColor.toRgba <| ElmColor.hsl hue saturation lightness
     in
     Element.rgba red green blue alpha
 
@@ -72,7 +67,7 @@ colorField colors =
                 , Element.height Element.fill
                 , Background.gradient
                     { angle = pi / 2
-                    , steps = List.map convertColor colors
+                    , steps = List.map toElementColor colors
                     }
                 ]
                 Element.none
@@ -85,13 +80,13 @@ view : (Color -> msg) -> Color -> Color -> Element.Element msg
 view toMsg oldColor color =
     let
         { hue, saturation, lightness, alpha } =
-            Color.toHsla color
+            color
 
         makeSlider updateColor value icolor colors =
             ValueSlider.view
                 (updateColor color >> toMsg)
                 { widthPx = 192, heightPx = 24 }
-                (convertColor icolor)
+                (toElementColor icolor)
                 (colorField colors)
                 value
     in
@@ -100,30 +95,30 @@ view toMsg oldColor color =
         [ makeSlider
             updateHue
             hue
-            (Color.hsl hue 1.0 0.5)
+            (Color hue 1.0 0.5 1.0)
             (List.range 0 6
-                |> List.map (\i -> Color.hsl (toFloat i / 6) 1.0 0.5)
+                |> List.map (\i -> Color (toFloat i / 6) 1.0 0.5 1.0)
             )
         , makeSlider
             updateSaturation
             saturation
-            (Color.hsl hue saturation 0.5)
+            (Color hue saturation 0.5 1.0)
             ([ 0.0, 1.0 ]
-                |> List.map (\val -> Color.hsl hue val 0.5)
+                |> List.map (\val -> Color hue val 0.5 1.0)
             )
         , makeSlider
             updateLightness
             lightness
-            (Color.hsl hue saturation lightness)
+            (Color hue saturation lightness 1.0)
             ([ 0.0, 0.5, 1.0 ]
-                |> List.map (\val -> Color.hsl hue saturation val)
+                |> List.map (\val -> Color hue saturation val 1.0)
             )
         , makeSlider
             updateAlpha
             alpha
-            (Color.hsla hue saturation lightness alpha)
+            (Color hue saturation lightness alpha)
             ([ 0.0, 1.0 ]
-                |> List.map (\val -> Color.hsla hue saturation lightness val)
+                |> List.map (\val -> Color hue saturation lightness val)
             )
         , Element.row []
             [ Element.el
