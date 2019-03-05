@@ -5,7 +5,7 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events
 import Char
-import Color as ElmColor
+import Color
 import ColorDialog
 import Dict exposing (Dict)
 import Element
@@ -608,8 +608,8 @@ updateOptions model specs result =
                     { key = key
                     , onOff = True
                     , value =
-                        ElmColor.hsla c.hue c.saturation c.lightness c.alpha
-                            |> ElmColor.toCssString
+                        Color.hsla c.hue c.saturation c.lightness c.alpha
+                            |> Color.toCssString
                             |> Just
                     }
     in
@@ -694,21 +694,21 @@ view model =
         getColor val =
             case val of
                 Options.Color color ->
-                    ElmColor.hsla
+                    Color.hsla
                         color.hue
                         color.saturation
                         color.lightness
                         color.alpha
 
                 _ ->
-                    ElmColor.white
+                    Color.white
 
         backgroundColor =
             model.optionSpecs
                 |> List.filter (\{ key, value } -> key == "backgroundColor")
                 |> List.map (.value >> getColor)
                 |> List.head
-                |> Maybe.withDefault ElmColor.white
+                |> Maybe.withDefault Color.white
     in
     { title = "Gavrog For Web"
     , body =
