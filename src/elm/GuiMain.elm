@@ -6,7 +6,6 @@ import Browser.Dom as Dom
 import Browser.Events
 import Char
 import Color
-import ColorDialog
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -296,7 +295,7 @@ initOptionSpecs =
       }
     , { key = "backgroundColor"
       , label = "Background Color"
-      , value = Options.Color <| ColorDialog.Color 0.0 1.0 1.0 1.0
+      , value = Options.white
       }
     ]
 

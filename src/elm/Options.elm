@@ -1,6 +1,6 @@
-module Options exposing (Spec, Value(..), view)
+module Options exposing (Spec, Value(..), view, white)
 
-import ColorDialog exposing (Color)
+import ColorDialog
 import Element
 import Element.Input as Input
 import Styling
@@ -8,7 +8,7 @@ import Styling
 
 type Value
     = Toggle Bool
-    | Color Color
+    | Color ColorDialog.Color
 
 
 type alias Spec =
@@ -16,6 +16,11 @@ type alias Spec =
     , label : String
     , value : Value
     }
+
+
+white : Value
+white =
+    Color (ColorDialog.Color 0.0 1.0 1.0 1.0)
 
 
 update : Value -> String -> List Spec -> List Spec
