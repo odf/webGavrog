@@ -76,4 +76,7 @@ viewToggle toMsg label onOff =
 
 viewColor : (CD.Color -> msg) -> String -> CD.Color -> El.Element msg
 viewColor toMsg label color =
-    CD.view toMsg color color
+    El.column [ El.spacing 16, El.padding 16 ]
+        [ El.text label
+        , CD.view toMsg color color
+        ]
