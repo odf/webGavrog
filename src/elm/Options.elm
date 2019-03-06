@@ -1,14 +1,14 @@
 module Options exposing (Spec, Value(..), view, white)
 
-import ColorDialog
-import Element
+import ColorDialog as CD
+import Element as El
 import Element.Input as Input
 import Styling
 
 
 type Value
     = Toggle Bool
-    | Color ColorDialog.Color
+    | Color CD.Color
 
 
 type alias Spec =
@@ -20,7 +20,7 @@ type alias Spec =
 
 white : Value
 white =
-    Color (ColorDialog.Color 0.0 1.0 1.0 1.0)
+    Color (CD.Color 0.0 1.0 1.0 1.0)
 
 
 update : Value -> String -> List Spec -> List Spec
@@ -36,7 +36,7 @@ update value key specs =
         specs
 
 
-view : (List Spec -> Maybe Bool -> msg) -> List Spec -> Element.Element msg
+view : (List Spec -> Maybe Bool -> msg) -> List Spec -> El.Element msg
 view toMsg specs =
     let
         viewItem spec =
@@ -44,31 +44,36 @@ view toMsg specs =
                 (\val -> toMsg (update val spec.key specs) Nothing)
                 spec
     in
-    Element.column [ Element.spacing 16, Element.padding 16 ]
-        [ Element.column [ Element.spacing 8 ]
+    El.column [ El.spacing 16, El.padding 16 ]
+        [ El.column [ El.spacing 8 ]
             (List.map viewItem specs)
-        , Element.row [ Element.spacing 32, Element.centerX ]
+        , El.row [ El.spacing 32, El.centerX ]
             [ Styling.button (toMsg specs (Just True)) "OK"
             , Styling.button (toMsg specs (Just False)) "Cancel"
             ]
         ]
 
 
-viewOption : (Value -> msg) -> Spec -> Element.Element msg
+viewOption : (Value -> msg) -> Spec -> El.Element msg
 viewOption toMsg { label, value } =
     case value of
         Toggle onOff ->
-            checkbox (Toggle >> toMsg) label onOff
+            viewToggle (Toggle >> toMsg) label onOff
 
         Color color ->
-            ColorDialog.view (Color >> toMsg) color color
+            viewColor (Color >> toMsg) label color
 
 
-checkbox : (Bool -> msg) -> String -> Bool -> Element.Element msg
-checkbox toMsg label value =
+viewToggle : (Bool -> msg) -> String -> Bool -> El.Element msg
+viewToggle toMsg label onOff =
     Input.checkbox []
         { onChange = toMsg
         , icon = Input.defaultCheckbox
-        , checked = value
-        , label = Input.labelRight [] <| Element.text label
+        , checked = onOff
+        , label = Input.labelRight [] <| El.text label
         }
+
+
+viewColor : (CD.Color -> msg) -> String -> CD.Color -> El.Element msg
+viewColor toMsg label color =
+    CD.view toMsg color color
