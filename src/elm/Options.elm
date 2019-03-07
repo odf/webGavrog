@@ -93,7 +93,7 @@ viewSlider toMsg label value =
         [ El.text label
         , ValueSlider.view
             toMsg
-            { widthPx = 192, heightPx = 24 }
+            { widthPx = 192, heightPx = 18 }
             (El.rgb 0.0 0.0 0.0)
             Nothing
             value
