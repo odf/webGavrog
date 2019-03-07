@@ -154,7 +154,7 @@ const ballAndStick = (
 ) => {
   const normalized = v => ops.div(v, ops.norm(v));
   const ball = makeBall(ballRadius);
-  const stick = makeStick([0, 0, 0], [0, 0, 1], stickRadius, 12);
+  const stick = makeStick([0, 0, 0], [0, 0, 1], stickRadius, 48);
 
   const ballMaterial = Object.assign({}, baseMaterial, {
     diffuseColor: ballColor,
