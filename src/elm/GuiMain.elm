@@ -301,6 +301,14 @@ initOptionSpecs =
       , label = "Show Surface Mesh"
       , value = Options.Toggle False
       }
+    , { key = "netVertexRadius"
+      , label = "Net Vertex Radius"
+      , value = Options.Number 0.1
+      }
+    , { key = "netEdgeRadius"
+      , label = "Net Edge Radius"
+      , value = Options.Number 0.04
+      }
     , { key = "backgroundColor"
       , label = "Background Color"
       , value = Options.white
@@ -620,6 +628,13 @@ updateOptions model specs result =
                             |> Color.toCssString
                             |> Just
                     , value = Nothing
+                    }
+
+                Options.Number val ->
+                    { key = key
+                    , onOff = True
+                    , text = Nothing
+                    , value = Just val
                     }
     in
     case result of

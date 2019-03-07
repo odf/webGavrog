@@ -87,7 +87,7 @@ view toMsg oldColor color =
                 (updateColor color >> toMsg)
                 { widthPx = 192, heightPx = 24 }
                 (toElementColor icolor)
-                (colorField colors)
+                (Just <| colorField colors)
                 value
     in
     Element.column

@@ -71,11 +71,28 @@ onMouseMove =
     onMouseEvent "mousemove"
 
 
+defaultBackground : Element.Element msg
+defaultBackground =
+    Element.el
+        [ Element.centerY
+        , Element.width Element.fill
+        , Element.height <| Element.px 6
+        , Background.color <| Element.rgb 0.9 0.9 0.9
+        , Border.innerShadow
+            { offset = ( 0.0, 1.0 )
+            , size = 1.0
+            , blur = 2.0
+            , color = Element.rgba 0.0 0.0 0.0 0.5
+            }
+        ]
+        Element.none
+
+
 view :
     (Float -> msg)
     -> Size
     -> Element.Color
-    -> Element.Element msg
+    -> Maybe (Element.Element msg)
     -> Float
     -> Element.Element msg
 view toMsg { widthPx, heightPx } indicatorColor background value =
@@ -99,7 +116,9 @@ view toMsg { widthPx, heightPx } indicatorColor background value =
     Element.el
         [ Element.width <| Element.px widthPx
         , Element.height <| Element.px heightPx
-        , Element.behindContent background
+        , background
+            |> Maybe.withDefault defaultBackground
+            |> Element.behindContent
         , onMouseDown mouseOnMain
         , onMouseMove mouseOnMain
         ]

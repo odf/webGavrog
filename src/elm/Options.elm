@@ -4,10 +4,12 @@ import ColorDialog as CD
 import Element as El
 import Element.Input as Input
 import Styling
+import ValueSlider
 
 
 type Value
     = Toggle Bool
+    | Number Float
     | Color CD.Color
 
 
@@ -60,6 +62,9 @@ viewOption toMsg { label, value } =
         Toggle onOff ->
             viewToggle (Toggle >> toMsg) label onOff
 
+        Number num ->
+            viewSlider (Number >> toMsg) label num
+
         Color color ->
             viewColor (Color >> toMsg) label color
 
@@ -79,4 +84,17 @@ viewColor toMsg label color =
     El.column [ El.spacing 16, El.padding 16 ]
         [ El.text label
         , CD.view toMsg color color
+        ]
+
+
+viewSlider : (Float -> msg) -> String -> Float -> El.Element msg
+viewSlider toMsg label value =
+    El.column [ El.spacing 16, El.padding 16 ]
+        [ El.text label
+        , ValueSlider.view
+            toMsg
+            { widthPx = 192, heightPx = 24 }
+            (El.rgb 0.0 0.0 0.0)
+            Nothing
+            value
         ]

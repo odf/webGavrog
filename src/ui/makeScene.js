@@ -277,7 +277,9 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     yield log('Making the net geometry...');
-    const model = ballAndStick(points, edges);
+    const model = ballAndStick(
+      points, edges, options.netVertexRadius, options.netEdgeRadius
+    );
     console.log(`${Math.round(t())} msec to make the net geometry`);
 
     yield log('Done making the net model.');
