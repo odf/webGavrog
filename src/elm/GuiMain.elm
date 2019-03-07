@@ -34,10 +34,18 @@ main =
         }
 
 
+type alias OutOption =
+    { key : String
+    , onOff : Bool
+    , text : Maybe String
+    , value : Maybe Float
+    }
+
+
 type alias OutData =
     { mode : String
     , text : Maybe String
-    , options : List { key : String, onOff : Bool, value : Maybe String }
+    , options : List OutOption
     , selected : List { meshIndex : Int, instanceIndex : Int }
     }
 
@@ -600,16 +608,18 @@ updateOptions model specs result =
                 Options.Toggle onOff ->
                     { key = key
                     , onOff = onOff
+                    , text = Nothing
                     , value = Nothing
                     }
 
                 Options.Color c ->
                     { key = key
                     , onOff = True
-                    , value =
+                    , text =
                         Color.hsla c.hue c.saturation c.lightness c.alpha
                             |> Color.toCssString
                             |> Just
+                    , value = Nothing
                     }
     in
     case result of
