@@ -808,8 +808,8 @@ viewMainMenu model =
     in
     Element.el
         [ Element.below maybeMenu
-        , Element.Events.onMouseEnter <| MainMenuActivate True
-        , Element.Events.onMouseLeave <| MainMenuActivate False
+        , Element.Events.onClick <|
+            MainMenuActivate (not model.mainMenuState.visible)
         , Element.pointer
         ]
         Styling.navIcon
