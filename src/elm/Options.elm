@@ -50,8 +50,8 @@ view toMsg specs =
         [ El.column [ El.spacing 8 ]
             (List.map viewItem specs)
         , El.row [ El.spacing 32, El.centerX ]
-            [ Styling.button (toMsg specs (Just True)) "OK"
-            , Styling.button (toMsg specs (Just False)) "Cancel"
+            [ Styling.button (toMsg specs (Just True)) "Accept"
+            , Styling.button (toMsg specs (Just False)) "Revert"
             ]
         ]
 

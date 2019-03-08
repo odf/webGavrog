@@ -177,7 +177,7 @@ type alias Model =
     , searchDialogConfig : TextBoxConfig
     , searchDialogContent : String
     , optionSpecs : List Options.Spec
-    , optionSpecsTmp : List Options.Spec
+    , optionSpecsPrevious : List Options.Spec
     , title : String
     , status : String
     }
@@ -202,7 +202,7 @@ init flags =
       , searchDialogConfig = searchDialogConfig
       , searchDialogContent = ""
       , optionSpecs = initOptionSpecs
-      , optionSpecsTmp = []
+      , optionSpecsPrevious = []
       }
     , Task.perform
         (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
@@ -473,7 +473,7 @@ handleMenuSelection model =
     else if model.activeMenuLabel == Just "Options..." then
         ( { newModel
             | visibleDialog = Just Options
-            , optionSpecsTmp = model.optionSpecs
+            , optionSpecsPrevious = model.optionSpecs
           }
         , Cmd.none
         )
@@ -636,19 +636,26 @@ updateOptions model specs result =
                     , text = Nothing
                     , value = Just val
                     }
+
+        newModel =
+            case result of
+                Nothing ->
+                    { model | optionSpecs = specs }
+
+                Just ok ->
+                    if ok then
+                        { model | visibleDialog = Nothing }
+
+                    else
+                        { model
+                            | visibleDialog = Nothing
+                            , optionSpecs = model.optionSpecsPrevious
+                        }
     in
-    case result of
-        Nothing ->
-            ( { model | optionSpecsTmp = specs }, Cmd.none )
-
-        Just ok ->
-            if ok then
-                ( { model | visibleDialog = Nothing, optionSpecs = specs }
-                , toJS <| OutData "options" Nothing (List.map asJS specs) []
-                )
-
-            else
-                ( { model | visibleDialog = Nothing }, Cmd.none )
+    ( newModel
+    , toJS <|
+        OutData "options" Nothing (List.map asJS newModel.optionSpecs) []
+    )
 
 
 hotKeyActions : Dict Char ( Model -> Model, Cmd Msg )
@@ -854,7 +861,7 @@ viewCurrentDialog model =
 
         Just Options ->
             wrap <|
-                Options.view OptionsMsg model.optionSpecsTmp
+                Options.view OptionsMsg model.optionSpecs
 
 
 viewAbout : Model -> Element.Element Msg
