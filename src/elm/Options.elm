@@ -46,10 +46,10 @@ view toMsg specs =
                 (\val -> toMsg (update val spec.key specs) Nothing)
                 spec
     in
-    El.column [ El.spacing 16, El.padding 16 ]
+    El.column [ El.spacing 16 ]
         [ El.column [ El.spacing 8 ]
             (List.map viewItem specs)
-        , El.row [ El.spacing 32, El.centerX ]
+        , El.row [ El.spacing 16, El.centerX ]
             [ Styling.button (toMsg specs (Just True)) "Accept"
             , Styling.button (toMsg specs (Just False)) "Revert"
             ]
@@ -81,7 +81,7 @@ viewToggle toMsg label onOff =
 
 viewColor : (CD.Color -> msg) -> String -> CD.Color -> El.Element msg
 viewColor toMsg label color =
-    El.column [ El.spacing 16, El.padding 16 ]
+    El.column [ El.spacing 8, El.paddingXY 0 8 ]
         [ El.text label
         , CD.view toMsg color color
         ]
@@ -89,7 +89,7 @@ viewColor toMsg label color =
 
 viewSlider : (Float -> msg) -> String -> Float -> El.Element msg
 viewSlider toMsg label value =
-    El.column [ El.spacing 16, El.padding 16 ]
+    El.column [ El.spacing 8, El.paddingXY 0 8 ]
         [ El.text label
         , ValueSlider.view
             toMsg

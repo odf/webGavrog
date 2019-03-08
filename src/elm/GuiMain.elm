@@ -834,7 +834,10 @@ viewCurrentDialog model =
     let
         wrap =
             Styling.box
-                [ Element.moveDown 128
+                [ Element.moveUp 1
+                , Element.moveLeft 1
+                , Element.alignLeft
+                , Element.paddingXY 16 16
                 , Border.shadow
                     { offset = ( 0.0, 8.0 )
                     , size = 0.0
