@@ -741,7 +741,7 @@ view model =
                 |> List.head
                 |> Maybe.withDefault Color.white
     in
-    { title = "Gavrog For Web"
+    { title = "Web-Gavrog"
     , body =
         [ Element.layout
             [ Element.width Element.fill
@@ -779,19 +779,14 @@ viewMain model =
         ]
         (Element.wrappedRow
             [ Element.width Element.fill
-            , Element.spacing 16
+            , Element.spacing 24
             ]
             [ viewMainMenu model
             , Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"
-            , Element.column
-                [ Element.width Element.fill
-                , Element.spacing 8
-                ]
-                [ Element.el [ Element.centerX ] <| Element.text model.title
-                , Element.el [ Element.centerX ] <| Element.text model.status
-                ]
+            , Element.text model.title
+            , Element.text model.status
             ]
         )
 
@@ -872,21 +867,11 @@ viewAbout model =
     Element.column
         [ Element.Events.onClick HideAbout
         , Element.spacing 4
-        , Element.paddingEach
-            { top = 4
-            , bottom = 16
-            , left = 16
-            , right = 16
-            }
         ]
-        [ Element.row [ Element.spacing 16 ]
-            [ Element.image []
-                { src = "3dt.ico", description = "Gavrog Logo" }
-            , Element.column [ Element.spacing 4, Element.padding 8 ]
-                [ Styling.logoText "Gavrog For Web"
-                , Element.text "by Olaf Delgado-Friedrichs 2019"
-                , Element.text "The Australian National University"
-                ]
+        [ Element.column [ Element.spacing 4, Element.paddingXY 0 8 ]
+            [ Styling.logoText "Web-Gavrog"
+            , Element.text "by Olaf Delgado-Friedrichs 2019"
+            , Element.text "The Australian National University"
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Version: ")
@@ -894,7 +879,7 @@ viewAbout model =
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Revision: ")
-            , Element.text model.revision
+            , Element.text <| String.slice 0 7 model.revision
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Timestamp: ")

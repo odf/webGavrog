@@ -46,7 +46,7 @@ button toMsg text =
 logoText : String -> El.Element msg
 logoText text =
     El.el
-        [ Font.size 32
+        [ Font.size 28
         , Font.color <| El.rgb255 0 0 139
         , Font.variant Font.smallCaps
         , Font.semiBold
@@ -57,7 +57,7 @@ logoText text =
 navIcon : El.Element msg
 navIcon =
     El.el
-        [ Font.size 28
+        [ Font.size 24
         , Font.bold
         , Font.color <| El.rgb255 140 140 140
         , El.padding 8
