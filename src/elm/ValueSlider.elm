@@ -91,24 +91,26 @@ defaultBackground =
 format : Int -> Float -> String
 format decimals value =
     let
-        digits n x s =
-            if n == 0 then
-                s
+        base =
+            10 ^ decimals
+
+        sign =
+            if value < 0 then
+                "-"
 
             else
-                let
-                    d =
-                        truncate (10.0 * x)
-                in
-                digits (n - 1) (10.0 * x - toFloat d) (s ++ String.fromInt d)
+                ""
+
+        n =
+            round (abs value * toFloat base)
 
         head =
-            truncate value
+            String.fromInt (n // base)
 
         tail =
-            digits decimals (abs (value - toFloat head)) ""
+            String.fromInt (remainderBy base n + base) |> String.dropLeft 1
     in
-    String.fromInt head ++ "." ++ tail
+    sign ++ head ++ "." ++ tail
 
 
 view :
