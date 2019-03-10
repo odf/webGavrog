@@ -76,8 +76,8 @@ colorField colors =
         Element.none
 
 
-view : (Color -> msg) -> Color -> Color -> Element.Element msg
-view toMsg oldColor color =
+view : (Color -> msg) -> Color -> Element.Element msg
+view toMsg color =
     let
         { hue, saturation, lightness, alpha } =
             color
@@ -120,16 +120,4 @@ view toMsg oldColor color =
             ([ 0.0, 1.0 ]
                 |> List.map (\val -> Color hue saturation lightness val)
             )
-        , Element.row []
-            [ Element.el
-                [ Element.width <| Element.px 96
-                , Element.height <| Element.px 48
-                ]
-                (colorField [ oldColor ])
-            , Element.el
-                [ Element.width <| Element.px 96
-                , Element.height <| Element.px 48
-                ]
-                (colorField [ color ])
-            ]
         ]

@@ -83,7 +83,7 @@ viewColor : (CD.Color -> msg) -> String -> CD.Color -> El.Element msg
 viewColor toMsg label color =
     El.column [ El.spacing 8, El.paddingXY 0 8 ]
         [ El.text label
-        , CD.view toMsg color color
+        , CD.view toMsg color
         ]
 
 
