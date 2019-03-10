@@ -85,7 +85,7 @@ view toMsg color =
         makeSlider updateColor value icolor colors =
             ValueSlider.view
                 (updateColor color >> toMsg)
-                { widthPx = 192, heightPx = 24 }
+                { widthPx = 200, heightPx = 24 }
                 (toElementColor icolor)
                 (Just <| colorField colors)
                 value

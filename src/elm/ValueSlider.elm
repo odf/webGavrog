@@ -88,6 +88,29 @@ defaultBackground =
         Element.none
 
 
+format : Int -> Float -> String
+format decimals value =
+    let
+        digits n x s =
+            if n == 0 then
+                s
+
+            else
+                let
+                    d =
+                        truncate (10.0 * x)
+                in
+                digits (n - 1) (10.0 * x - toFloat d) (s ++ String.fromInt d)
+
+        head =
+            truncate value
+
+        tail =
+            digits decimals (abs (value - toFloat head)) ""
+    in
+    String.fromInt head ++ "." ++ tail
+
+
 view :
     (Float -> msg)
     -> Size
@@ -113,31 +136,34 @@ view toMsg { widthPx, heightPx } indicatorColor background value =
         mouseOnIndicator =
             handleMouse (\x -> value + toFloat (x - 3) / toFloat widthPx)
     in
-    Element.el
-        [ Element.width <| Element.px widthPx
-        , Element.height <| Element.px heightPx
-        , background
-            |> Maybe.withDefault defaultBackground
-            |> Element.behindContent
-        , onMouseDown mouseOnMain
-        , onMouseMove mouseOnMain
-        ]
-        (Element.el
-            [ Border.shadow
-                { offset = ( 1.0, 3.0 )
-                , size = 2.0
-                , blur = 4.0
-                , color = Element.rgba 0.0 0.0 0.0 0.3
-                }
-            , Border.color <| Element.rgb 1.0 1.0 1.0
-            , Border.solid
-            , Border.widthXY 1 0
-            , Background.color indicatorColor
-            , Element.width <| Element.px 6
-            , Element.height Element.fill
-            , Element.moveRight (value * toFloat widthPx - 3.0)
-            , onMouseDown mouseOnIndicator
-            , onMouseMove mouseOnIndicator
+    Element.row [ Element.spacing 16 ]
+        [ Element.el
+            [ Element.width <| Element.px widthPx
+            , Element.height <| Element.px heightPx
+            , background
+                |> Maybe.withDefault defaultBackground
+                |> Element.behindContent
+            , onMouseDown mouseOnMain
+            , onMouseMove mouseOnMain
             ]
-            Element.none
-        )
+            (Element.el
+                [ Border.shadow
+                    { offset = ( 1.0, 3.0 )
+                    , size = 2.0
+                    , blur = 4.0
+                    , color = Element.rgba 0.0 0.0 0.0 0.3
+                    }
+                , Border.color <| Element.rgb 1.0 1.0 1.0
+                , Border.solid
+                , Border.widthXY 1 0
+                , Background.color indicatorColor
+                , Element.width <| Element.px 6
+                , Element.height Element.fill
+                , Element.moveRight (value * toFloat widthPx - 3.0)
+                , onMouseDown mouseOnIndicator
+                , onMouseMove mouseOnIndicator
+                ]
+                Element.none
+            )
+        , Element.text <| format 3 value
+        ]
