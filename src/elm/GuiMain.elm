@@ -651,11 +651,21 @@ updateOptions model specs result =
                             | visibleDialog = Nothing
                             , optionSpecs = model.optionSpecsPrevious
                         }
+
+        oldJsOut =
+            List.map asJS model.optionSpecs
+
+        newJsOut =
+            List.map asJS newModel.optionSpecs
+
+        cmd =
+            if oldJsOut /= newJsOut then
+                toJS <| OutData "options" Nothing newJsOut []
+
+            else
+                Cmd.none
     in
-    ( newModel
-    , toJS <|
-        OutData "options" Nothing (List.map asJS newModel.optionSpecs) []
-    )
+    ( newModel, cmd )
 
 
 hotKeyActions : Dict Char ( Model -> Model, Cmd Msg )
