@@ -781,12 +781,12 @@ viewMain model =
             [ Element.width Element.fill
             , Element.spacing 24
             ]
-            [ viewMainMenu model
-            , Element.image []
+            [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Styling.logoText "Gavrog"
             , Element.text model.title
             , Element.text model.status
+            , Element.el [ Element.alignRight ] (viewMainMenu model)
             ]
         )
 
@@ -802,7 +802,7 @@ viewMainMenu model =
                 Element.none
     in
     Element.el
-        [ Element.below maybeMenu
+        [ Element.below <| Element.el [ Element.alignRight ] maybeMenu
         , Element.Events.onClick <|
             MainMenuActivate (not model.mainMenuState.visible)
         , Element.pointer
