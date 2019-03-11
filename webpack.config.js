@@ -23,7 +23,10 @@ module.exports = {
     new HtmlWebpackPlugin({
       title: 'Gavrog for the Web',
       favicon: path.resolve(__dirname, '3dt.ico'),
-      meta: { viewport: "initial-scale=1.0,width=device-width" }
+      meta: {
+        viewport: "initial-scale=1.0,width=device-width",
+        ["apple-mobile-web-app-capable"]: "yes"
+      }
     }),
     new webpack.HashedModuleIdsPlugin()
   ],
