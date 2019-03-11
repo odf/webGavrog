@@ -155,7 +155,8 @@ type alias MenuState =
 
 
 type DialogType
-    = About
+    = Menu
+    | About
     | Jump
     | Search
     | Options
@@ -343,7 +344,11 @@ update msg model =
             )
 
         MainMenuActivate onOff ->
-            ( mainMenuOnOff model onOff, Cmd.none )
+            if onOff then
+                ( { model | visibleDialog = Just Menu }, Cmd.none )
+
+            else
+                ( { model | visibleDialog = Nothing }, Cmd.none )
 
         MainMenuSetItem item ->
             ( mainMenuSetItem model item, Cmd.none )
@@ -448,8 +453,18 @@ handleView3dOutcome outcome model =
 
                     else
                         Set.singleton item
+
+        newVisibleDialog =
+            if outcome == View3d.None then
+                model.visibleDialog
+
+            else
+                Nothing
     in
-    { model | viewState = View3d.setSelection newSelection model.viewState }
+    { model
+        | viewState = View3d.setSelection newSelection model.viewState
+        , visibleDialog = newVisibleDialog
+    }
 
 
 handleMenuSelection : Model -> ( Model, Cmd Msg )
@@ -459,6 +474,7 @@ handleMenuSelection model =
             { model
                 | mainMenuState = { visible = False, active = Nothing }
                 , contextMenuState = { visible = False, active = Nothing }
+                , visibleDialog = Nothing
             }
     in
     if model.activeMenuLabel == Just "About Gavrog..." then
@@ -508,14 +524,6 @@ handleMenuSelection model =
         ( newModel, Cmd.none )
 
 
-mainMenuOnOff : Model -> Bool -> Model
-mainMenuOnOff model onOff =
-    { model
-        | mainMenuState = { visible = onOff, active = Nothing }
-        , activeMenuLabel = Nothing
-    }
-
-
 mainMenuSetItem : Model -> Maybe ( Int, String ) -> Model
 mainMenuSetItem model item =
     let
@@ -543,12 +551,14 @@ contextMenuOnOff model maybePos =
             { model
                 | contextMenuState = { visible = False, active = Nothing }
                 , activeMenuLabel = Nothing
+                , visibleDialog = Nothing
             }
 
         Just pos ->
             { model
                 | contextMenuState = { visible = True, active = Nothing }
                 , activeMenuLabel = Nothing
+                , visibleDialog = Nothing
                 , contextMenuPosition = pos
             }
 
@@ -761,7 +771,7 @@ view model =
                     [ Element.width Element.fill
                     , Element.below <| viewCurrentDialog model
                     ]
-                    (viewMain model)
+                    (viewHeader model)
                 )
             , Element.inFront (viewContextMenu model)
             ]
@@ -781,11 +791,22 @@ view model =
     }
 
 
-viewMain : Model -> Element.Element Msg
-viewMain model =
-    Styling.box
-        [ Element.width Element.fill
+viewHeader : Model -> Element.Element Msg
+viewHeader model =
+    Element.el
+        [ Background.color Styling.backgroundColor
+        , Border.solid
         , Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 }
+        , Border.color Styling.borderColor
+        , Border.shadow
+            { offset = ( 0.0, 4.0 )
+            , size = 0.0
+            , blur = 4.0
+            , color = Element.rgba 0.0 0.0 0.0 0.1
+            }
+        , Element.width Element.fill
+        , Element.centerX
+        , Element.paddingXY 24 4
         ]
         (Element.wrappedRow
             [ Element.width Element.fill
@@ -800,28 +821,15 @@ viewMain model =
                 , Element.text "        "
                 , Element.text model.status
                 ]
-            , Element.el [ Element.alignRight ] (viewMainMenu model)
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick <|
+                    MainMenuActivate (model.visibleDialog == Nothing)
+                , Element.pointer
+                ]
+                Styling.navIcon
             ]
         )
-
-
-viewMainMenu : Model -> Element.Element Msg
-viewMainMenu model =
-    let
-        maybeMenu =
-            if model.mainMenuState.visible then
-                Menu.view model.mainMenuConfig model.mainMenuState.active
-
-            else
-                Element.none
-    in
-    Element.el
-        [ Element.below <| Element.el [ Element.alignRight ] maybeMenu
-        , Element.Events.onClick <|
-            MainMenuActivate (not model.mainMenuState.visible)
-        , Element.pointer
-        ]
-        Styling.navIcon
 
 
 viewContextMenu : Model -> Element.Element Msg
@@ -842,11 +850,15 @@ viewCurrentDialog : Model -> Element.Element Msg
 viewCurrentDialog model =
     let
         wrap =
-            Styling.box
-                [ Element.moveUp 1
-                , Element.moveLeft 1
-                , Element.alignLeft
-                , Element.paddingXY 16 16
+            Element.el
+                [ Element.moveUp 4
+                , Element.moveLeft 4
+                , Element.alignRight
+                , Element.padding 16
+                , Background.color Styling.backgroundColor
+                , Border.solid
+                , Border.width 1
+                , Border.color Styling.borderColor
                 , Border.shadow
                     { offset = ( 0.0, 8.0 )
                     , size = 0.0
@@ -858,6 +870,14 @@ viewCurrentDialog model =
     case model.visibleDialog of
         Nothing ->
             Element.none
+
+        Just Menu ->
+            Element.el
+                [ Element.moveUp 4
+                , Element.moveLeft 4
+                , Element.alignRight
+                ]
+                (Menu.view model.mainMenuConfig model.mainMenuState.active)
 
         Just About ->
             wrap <|
@@ -880,12 +900,16 @@ viewAbout : Model -> Element.Element Msg
 viewAbout model =
     Element.column
         [ Element.Events.onClick HideAbout
-        , Element.spacing 4
+        , Element.spacing 8
         ]
-        [ Element.column [ Element.spacing 4, Element.paddingXY 0 8 ]
-            [ Styling.logoText "Web-Gavrog"
-            , Element.text "by Olaf Delgado-Friedrichs 2019"
-            , Element.text "The Australian National University"
+        [ Element.row [ Element.spacing 16 ]
+            [ Element.image [ Element.alignTop ]
+                { src = "3dt.ico", description = "Gavrog Logo" }
+            , Element.column [ Element.spacing 4 ]
+                [ Styling.logoText "Web-Gavrog"
+                , Element.text "by Olaf Delgado-Friedrichs 2019"
+                , Element.text "The Australian National University"
+                ]
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Version: ")
@@ -904,7 +928,7 @@ viewAbout model =
 
 viewTextBox : TextBoxConfig -> String -> Element.Element Msg
 viewTextBox config text =
-    Element.column [ Element.spacing 8, Element.padding 16 ]
+    Element.column [ Element.spacing 8 ]
         [ Input.text
             [ onKeyUp (\n -> Ignore) ]
             { onChange = config.onInput
@@ -915,7 +939,7 @@ viewTextBox config text =
                         Element.text config.placeholder
             , label = Input.labelAbove [] <| Element.text config.label
             }
-        , Element.row [ Element.spacing 32, Element.centerX ]
+        , Element.row [ Element.spacing 16, Element.centerX ]
             [ Styling.button (config.onSubmit True) "OK"
             , Styling.button (config.onSubmit False) "Cancel"
             ]
