@@ -73,7 +73,7 @@ type Msg
     | JSData InData
     | HideAbout
     | KeyUp Int
-    | ContextMenu Position Buttons
+    | ContextMenuOnOff Position Buttons
     | MouseDown Position Buttons
     | Ignore
 
@@ -148,14 +148,10 @@ type alias TextBoxConfig =
     }
 
 
-type alias MenuState =
-    { visible : Bool
-    , active : Maybe Int
-    }
-
-
 type DialogType
-    = Menu
+    = None
+    | Menu
+    | ContextMenu Position
     | About
     | Jump
     | Search
@@ -167,12 +163,10 @@ type alias Model =
     , revision : String
     , timestamp : String
     , mainMenuConfig : Menu.Config Msg
-    , mainMenuState : MenuState
     , contextMenuConfig : Menu.Config Msg
-    , contextMenuState : MenuState
-    , contextMenuPosition : Position
     , activeMenuLabel : Maybe String
-    , visibleDialog : Maybe DialogType
+    , activeMenuIndex : Maybe Int
+    , visibleDialog : DialogType
     , jumpDialogConfig : TextBoxConfig
     , jumpDialogContent : String
     , searchDialogConfig : TextBoxConfig
@@ -190,12 +184,10 @@ init flags =
       , revision = flags.revision
       , timestamp = flags.timestamp
       , mainMenuConfig = initMainMenuConfig
-      , mainMenuState = { visible = False, active = Nothing }
       , contextMenuConfig = initContextMenuConfig
-      , contextMenuState = { visible = False, active = Nothing }
-      , contextMenuPosition = { x = 0, y = 0 }
       , activeMenuLabel = Nothing
-      , visibleDialog = Nothing
+      , activeMenuIndex = Nothing
+      , visibleDialog = None
       , title = ""
       , status = "Welcome!"
       , jumpDialogConfig = jumpDialogConfig
@@ -345,10 +337,16 @@ update msg model =
 
         MainMenuActivate onOff ->
             if onOff then
-                ( { model | visibleDialog = Just Menu }, Cmd.none )
+                ( { model
+                    | visibleDialog = Menu
+                    , activeMenuIndex = Nothing
+                    , activeMenuLabel = Nothing
+                  }
+                , Cmd.none
+                )
 
             else
-                ( { model | visibleDialog = Nothing }, Cmd.none )
+                ( { model | visibleDialog = None }, Cmd.none )
 
         MainMenuSetItem item ->
             ( mainMenuSetItem model item, Cmd.none )
@@ -363,13 +361,13 @@ update msg model =
             ( handleJSData data model, Cmd.none )
 
         HideAbout ->
-            ( { model | visibleDialog = Nothing }, Cmd.none )
+            ( { model | visibleDialog = None }, Cmd.none )
 
         JumpDialogInput text ->
             ( { model | jumpDialogContent = text }, Cmd.none )
 
         JumpDialogSubmit ok ->
-            ( { model | visibleDialog = Nothing }
+            ( { model | visibleDialog = None }
             , if ok then
                 toJS <| OutData "jump" (Just model.jumpDialogContent) [] []
 
@@ -381,7 +379,7 @@ update msg model =
             ( { model | searchDialogContent = text }, Cmd.none )
 
         SearchDialogSubmit ok ->
-            ( { model | visibleDialog = Nothing }
+            ( { model | visibleDialog = None }
             , if ok then
                 toJS <| OutData "search" (Just model.searchDialogContent) [] []
 
@@ -395,10 +393,10 @@ update msg model =
         KeyUp code ->
             handleKeyPress code model
 
-        ContextMenu pos buttons ->
+        ContextMenuOnOff pos buttons ->
             let
                 maybePos =
-                    if buttons.right && not model.contextMenuState.visible then
+                    if buttons.right && not (contextMenuOpen model) then
                         Just pos
 
                     else
@@ -407,7 +405,7 @@ update msg model =
             ( contextMenuOnOff model maybePos, Cmd.none )
 
         MouseDown pos buttons ->
-            if not buttons.right && model.contextMenuState.visible then
+            if not buttons.right && contextMenuOpen model then
                 ( contextMenuOnOff model Nothing, Cmd.none )
 
             else
@@ -415,6 +413,16 @@ update msg model =
 
         Ignore ->
             ( model, Cmd.none )
+
+
+contextMenuOpen : Model -> Bool
+contextMenuOpen model =
+    case model.visibleDialog of
+        ContextMenu _ ->
+            True
+
+        _ ->
+            False
 
 
 updateView3d : (View3d.Model -> View3d.Model) -> Model -> Model
@@ -459,7 +467,7 @@ handleView3dOutcome outcome model =
                 model.visibleDialog
 
             else
-                Nothing
+                None
     in
     { model
         | viewState = View3d.setSelection newSelection model.viewState
@@ -471,24 +479,20 @@ handleMenuSelection : Model -> ( Model, Cmd Msg )
 handleMenuSelection model =
     let
         newModel =
-            { model
-                | mainMenuState = { visible = False, active = Nothing }
-                , contextMenuState = { visible = False, active = Nothing }
-                , visibleDialog = Nothing
-            }
+            { model | visibleDialog = None }
     in
     if model.activeMenuLabel == Just "About Gavrog..." then
-        ( { newModel | visibleDialog = Just About }, Cmd.none )
+        ( { newModel | visibleDialog = About }, Cmd.none )
 
     else if model.activeMenuLabel == Just "Jump..." then
-        ( { newModel | visibleDialog = Just Jump }, Cmd.none )
+        ( { newModel | visibleDialog = Jump }, Cmd.none )
 
     else if model.activeMenuLabel == Just "Search..." then
-        ( { newModel | visibleDialog = Just Search }, Cmd.none )
+        ( { newModel | visibleDialog = Search }, Cmd.none )
 
     else if model.activeMenuLabel == Just "Options..." then
         ( { newModel
-            | visibleDialog = Just Options
+            | visibleDialog = Options
             , optionSpecsPrevious = model.optionSpecs
           }
         , Cmd.none
@@ -526,61 +530,36 @@ handleMenuSelection model =
 
 mainMenuSetItem : Model -> Maybe ( Int, String ) -> Model
 mainMenuSetItem model item =
-    let
-        state =
-            model.mainMenuState
-    in
     case item of
         Nothing ->
-            { model
-                | mainMenuState = { state | active = Nothing }
-                , activeMenuLabel = Nothing
-            }
+            { model | activeMenuIndex = Nothing, activeMenuLabel = Nothing }
 
         Just ( i, s ) ->
-            { model
-                | mainMenuState = { state | active = Just i }
-                , activeMenuLabel = Just s
-            }
+            { model | activeMenuIndex = Just i, activeMenuLabel = Just s }
 
 
 contextMenuOnOff : Model -> Maybe Position -> Model
 contextMenuOnOff model maybePos =
     case maybePos of
         Nothing ->
-            { model
-                | contextMenuState = { visible = False, active = Nothing }
-                , activeMenuLabel = Nothing
-                , visibleDialog = Nothing
-            }
+            { model | visibleDialog = None }
 
         Just pos ->
             { model
-                | contextMenuState = { visible = True, active = Nothing }
+                | activeMenuIndex = Nothing
                 , activeMenuLabel = Nothing
-                , visibleDialog = Nothing
-                , contextMenuPosition = pos
+                , visibleDialog = ContextMenu pos
             }
 
 
 contextMenuSetItem : Model -> Maybe ( Int, String ) -> Model
 contextMenuSetItem model item =
-    let
-        state =
-            model.contextMenuState
-    in
     case item of
         Nothing ->
-            { model
-                | contextMenuState = { state | active = Nothing }
-                , activeMenuLabel = Nothing
-            }
+            { model | activeMenuIndex = Nothing, activeMenuLabel = Nothing }
 
         Just ( i, s ) ->
-            { model
-                | contextMenuState = { state | active = Just i }
-                , activeMenuLabel = Just s
-            }
+            { model | activeMenuIndex = Just i, activeMenuLabel = Just s }
 
 
 handleJSData : InData -> Model -> Model
@@ -654,11 +633,11 @@ updateOptions model specs result =
 
                 Just ok ->
                     if ok then
-                        { model | visibleDialog = Nothing }
+                        { model | visibleDialog = None }
 
                     else
                         { model
-                            | visibleDialog = Nothing
+                            | visibleDialog = None
                             , optionSpecs = model.optionSpecsPrevious
                         }
 
@@ -776,7 +755,7 @@ view model =
             , Element.inFront (viewContextMenu model)
             ]
             (Element.el
-                [ onContextMenu ContextMenu
+                [ onContextMenu ContextMenuOnOff
                 , onMouseDown MouseDown
                 ]
                 (View3d.view
@@ -824,7 +803,7 @@ viewHeader model =
             , Element.el
                 [ Element.alignRight
                 , Element.Events.onClick <|
-                    MainMenuActivate (model.visibleDialog == Nothing)
+                    MainMenuActivate (model.visibleDialog == None)
                 , Element.pointer
                 ]
                 Styling.navIcon
@@ -834,16 +813,17 @@ viewHeader model =
 
 viewContextMenu : Model -> Element.Element Msg
 viewContextMenu model =
-    if model.contextMenuState.visible then
-        Element.el
-            [ Element.moveDown model.contextMenuPosition.y
-            , Element.moveRight model.contextMenuPosition.x
-            , onContextMenu ContextMenu
-            ]
-            (Menu.view model.contextMenuConfig model.contextMenuState.active)
+    case model.visibleDialog of
+        ContextMenu { x, y } ->
+            Element.el
+                [ Element.moveDown y
+                , Element.moveRight x
+                , onContextMenu ContextMenuOnOff
+                ]
+                (Menu.view model.contextMenuConfig model.activeMenuIndex)
 
-    else
-        Element.none
+        _ ->
+            Element.none
 
 
 viewCurrentDialog : Model -> Element.Element Msg
@@ -868,30 +848,33 @@ viewCurrentDialog model =
                 ]
     in
     case model.visibleDialog of
-        Nothing ->
+        None ->
             Element.none
 
-        Just Menu ->
+        Menu ->
             Element.el
                 [ Element.moveUp 4
                 , Element.moveLeft 4
                 , Element.alignRight
                 ]
-                (Menu.view model.mainMenuConfig model.mainMenuState.active)
+                (Menu.view model.mainMenuConfig model.activeMenuIndex)
 
-        Just About ->
+        ContextMenu _ ->
+            Element.none
+
+        About ->
             wrap <|
                 viewAbout model
 
-        Just Jump ->
+        Jump ->
             wrap <|
                 viewTextBox model.jumpDialogConfig model.jumpDialogContent
 
-        Just Search ->
+        Search ->
             wrap <|
                 viewTextBox model.searchDialogConfig model.searchDialogContent
 
-        Just Options ->
+        Options ->
             wrap <|
                 Options.view OptionsMsg model.optionSpecs
 
