@@ -783,9 +783,13 @@ viewMain model =
             ]
             [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
-            , Styling.logoText "Gavrog"
-            , Element.text model.title
-            , Element.text model.status
+            , Element.paragraph []
+                [ Styling.logoText "Gavrog"
+                , Element.text "        "
+                , Element.text model.title
+                , Element.text "        "
+                , Element.text model.status
+                ]
             , Element.el [ Element.alignRight ] (viewMainMenu model)
             ]
         )
