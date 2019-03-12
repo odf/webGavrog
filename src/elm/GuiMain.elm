@@ -61,15 +61,13 @@ type alias InData =
 type Msg
     = Resize Int Int
     | ViewMsg View3d.Msg
-    | MainMenuActivate Bool
-    | MainMenuSetItem (Maybe ( Int, String ))
-    | ContextMenuSetItem (Maybe ( Int, String ))
-    | Select
+    | MainMenuToggle
+    | MenuUpdate (Maybe String) Bool
     | JumpDialogInput String
     | JumpDialogSubmit Bool
     | SearchDialogInput String
     | SearchDialogSubmit Bool
-    | OptionsMsg (List Options.Spec) (Maybe Bool)
+    | OptionsUpdate (List Options.Spec) (Maybe Bool)
     | JSData InData
     | HideAbout
     | KeyUp Int
@@ -162,10 +160,9 @@ type alias Model =
     { viewState : View3d.Model
     , revision : String
     , timestamp : String
-    , mainMenuConfig : Menu.Config Msg
-    , contextMenuConfig : Menu.Config Msg
+    , mainMenuItems : List String
+    , contextMenuItems : List String
     , activeMenuLabel : Maybe String
-    , activeMenuIndex : Maybe Int
     , visibleDialog : DialogType
     , jumpDialogConfig : TextBoxConfig
     , jumpDialogContent : String
@@ -183,10 +180,9 @@ init flags =
     ( { viewState = View3d.init
       , revision = flags.revision
       , timestamp = flags.timestamp
-      , mainMenuConfig = initMainMenuConfig
-      , contextMenuConfig = initContextMenuConfig
+      , mainMenuItems = initMainMenu
+      , contextMenuItems = initContextMenu
       , activeMenuLabel = Nothing
-      , activeMenuIndex = Nothing
       , visibleDialog = None
       , title = ""
       , status = "Welcome!"
@@ -203,51 +199,37 @@ init flags =
     )
 
 
-initMainMenuConfig : Menu.Config Msg
-initMainMenuConfig =
-    let
-        items =
-            [ "Open..."
-            , "Save Structure..."
-            , "Save Screenshot..."
-            , "--"
-            , "First"
-            , "Prev"
-            , "Next"
-            , "Last"
-            , "Jump..."
-            , "Search..."
-            , "--"
-            , "Center"
-            , "Along X"
-            , "Along Y"
-            , "Along Z"
-            , "--"
-            , "Options..."
-            , "--"
-            , "About Gavrog..."
-            ]
-    in
-    { items = items
-    , activateItem = MainMenuSetItem
-    , selectCurrentItem = Select
-    }
+initMainMenu : List String
+initMainMenu =
+    [ "Open..."
+    , "Save Structure..."
+    , "Save Screenshot..."
+    , "--"
+    , "First"
+    , "Prev"
+    , "Next"
+    , "Last"
+    , "Jump..."
+    , "Search..."
+    , "--"
+    , "Center"
+    , "Along X"
+    , "Along Y"
+    , "Along Z"
+    , "--"
+    , "Options..."
+    , "--"
+    , "About Gavrog..."
+    ]
 
 
-initContextMenuConfig : Menu.Config Msg
-initContextMenuConfig =
-    let
-        items =
-            [ "Add Tile(s)"
-            , "Add Corona(s)"
-            , "Remove Tile(s)"
-            , "Remove Element(s)"
-            ]
-    in
-    { items = items
-    , activateItem = ContextMenuSetItem
-    , selectCurrentItem = Select
-    }
+initContextMenu : List String
+initContextMenu =
+    [ "Add Tile(s)"
+    , "Add Corona(s)"
+    , "Remove Tile(s)"
+    , "Remove Element(s)"
+    ]
 
 
 jumpDialogConfig : TextBoxConfig
@@ -335,27 +317,25 @@ update msg model =
             , Cmd.none
             )
 
-        MainMenuActivate onOff ->
-            if onOff then
-                ( { model
-                    | visibleDialog = Menu
-                    , activeMenuIndex = Nothing
-                    , activeMenuLabel = Nothing
-                  }
+        MainMenuToggle ->
+            if model.visibleDialog == Menu then
+                ( { model | visibleDialog = None }, Cmd.none )
+
+            else
+                ( { model | visibleDialog = Menu, activeMenuLabel = Nothing }
                 , Cmd.none
                 )
 
+        MenuUpdate item selected ->
+            let
+                newModel =
+                    { model | activeMenuLabel = item }
+            in
+            if selected then
+                handleMenuSelection newModel
+
             else
-                ( { model | visibleDialog = None }, Cmd.none )
-
-        MainMenuSetItem item ->
-            ( mainMenuSetItem model item, Cmd.none )
-
-        ContextMenuSetItem item ->
-            ( contextMenuSetItem model item, Cmd.none )
-
-        Select ->
-            handleMenuSelection model
+                ( newModel, Cmd.none )
 
         JSData data ->
             ( handleJSData data model, Cmd.none )
@@ -387,7 +367,7 @@ update msg model =
                 Cmd.none
             )
 
-        OptionsMsg specs result ->
+        OptionsUpdate specs result ->
             updateOptions model specs result
 
         KeyUp code ->
@@ -528,16 +508,6 @@ handleMenuSelection model =
         ( newModel, Cmd.none )
 
 
-mainMenuSetItem : Model -> Maybe ( Int, String ) -> Model
-mainMenuSetItem model item =
-    case item of
-        Nothing ->
-            { model | activeMenuIndex = Nothing, activeMenuLabel = Nothing }
-
-        Just ( i, s ) ->
-            { model | activeMenuIndex = Just i, activeMenuLabel = Just s }
-
-
 contextMenuOnOff : Model -> Maybe Position -> Model
 contextMenuOnOff model maybePos =
     case maybePos of
@@ -546,20 +516,9 @@ contextMenuOnOff model maybePos =
 
         Just pos ->
             { model
-                | activeMenuIndex = Nothing
-                , activeMenuLabel = Nothing
+                | activeMenuLabel = Nothing
                 , visibleDialog = ContextMenu pos
             }
-
-
-contextMenuSetItem : Model -> Maybe ( Int, String ) -> Model
-contextMenuSetItem model item =
-    case item of
-        Nothing ->
-            { model | activeMenuIndex = Nothing, activeMenuLabel = Nothing }
-
-        Just ( i, s ) ->
-            { model | activeMenuIndex = Just i, activeMenuLabel = Just s }
 
 
 handleJSData : InData -> Model -> Model
@@ -802,8 +761,7 @@ viewHeader model =
                 ]
             , Element.el
                 [ Element.alignRight
-                , Element.Events.onClick <|
-                    MainMenuActivate (model.visibleDialog == None)
+                , Element.Events.onClick MainMenuToggle
                 , Element.pointer
                 ]
                 Styling.navIcon
@@ -820,7 +778,11 @@ viewContextMenu model =
                 , Element.moveRight x
                 , onContextMenu ContextMenuOnOff
                 ]
-                (Menu.view model.contextMenuConfig model.activeMenuIndex)
+                (Menu.view
+                    MenuUpdate
+                    model.contextMenuItems
+                    model.activeMenuLabel
+                )
 
         _ ->
             Element.none
@@ -857,7 +819,11 @@ viewCurrentDialog model =
                 , Element.moveLeft 4
                 , Element.alignRight
                 ]
-                (Menu.view model.mainMenuConfig model.activeMenuIndex)
+                (Menu.view
+                    MenuUpdate
+                    model.mainMenuItems
+                    model.activeMenuLabel
+                )
 
         ContextMenu _ ->
             Element.none
@@ -876,7 +842,7 @@ viewCurrentDialog model =
 
         Options ->
             wrap <|
-                Options.view OptionsMsg model.optionSpecs
+                Options.view OptionsUpdate model.optionSpecs
 
 
 viewAbout : Model -> Element.Element Msg
