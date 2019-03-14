@@ -1,4 +1,4 @@
-module Menu exposing (view)
+module Menu exposing (Config, Result, State, init, view)
 
 import Element
 import Element.Background as Background
@@ -6,12 +6,25 @@ import Element.Border as Border
 import Element.Events as Events
 
 
-view :
-    (Maybe String -> Bool -> msg)
-    -> List String
-    -> Maybe String
-    -> Element.Element msg
-view toMsg items active =
+type State
+    = Internals (Maybe String)
+
+
+type alias Config =
+    List String
+
+
+type alias Result =
+    Maybe String
+
+
+init : State
+init =
+    Internals Nothing
+
+
+view : (State -> Result -> msg) -> Config -> State -> Element.Element msg
+view toMsg items (Internals active) =
     Element.column
         [ Element.alignLeft
         , Element.paddingXY 0 4
@@ -24,7 +37,7 @@ view toMsg items active =
             , blur = 16.0
             , color = Element.rgba 0.0 0.0 0.0 0.2
             }
-        , Events.onClick <| toMsg active True
+        , Events.onClick <| toMsg (Internals active) active
         ]
         (items
             |> List.map
@@ -34,8 +47,8 @@ view toMsg items active =
 
                     else
                         viewItem
-                            (toMsg (Just label) False)
-                            (toMsg Nothing False)
+                            (toMsg (Internals (Just label)) Nothing)
+                            (toMsg (Internals Nothing) Nothing)
                             (active == Just label)
                             label
                 )

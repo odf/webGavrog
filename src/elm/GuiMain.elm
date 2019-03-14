@@ -62,7 +62,7 @@ type Msg
     = Resize Int Int
     | ViewMsg View3d.Msg
     | MainMenuToggle
-    | MenuUpdate (Maybe String) Bool
+    | MenuUpdate Menu.State Menu.Result
     | JumpDialogInput String
     | JumpDialogSubmit Bool
     | SearchDialogInput String
@@ -162,7 +162,7 @@ type alias Model =
     , timestamp : String
     , mainMenuItems : List String
     , contextMenuItems : List String
-    , activeMenuLabel : Maybe String
+    , menuState : Menu.State
     , visibleDialog : DialogType
     , jumpDialogConfig : TextBoxConfig
     , jumpDialogContent : String
@@ -182,7 +182,7 @@ init flags =
       , timestamp = flags.timestamp
       , mainMenuItems = initMainMenu
       , contextMenuItems = initContextMenu
-      , activeMenuLabel = Nothing
+      , menuState = Menu.init
       , visibleDialog = None
       , title = ""
       , status = "Welcome!"
@@ -322,20 +322,17 @@ update msg model =
                 ( { model | visibleDialog = None }, Cmd.none )
 
             else
-                ( { model | visibleDialog = Menu, activeMenuLabel = Nothing }
+                ( { model | visibleDialog = Menu, menuState = Menu.init }
                 , Cmd.none
                 )
 
-        MenuUpdate item selected ->
-            let
-                newModel =
-                    { model | activeMenuLabel = item }
-            in
-            if selected then
-                handleMenuSelection newModel
+        MenuUpdate state result ->
+            case result of
+                Just label ->
+                    handleMenuSelection model label
 
-            else
-                ( newModel, Cmd.none )
+                Nothing ->
+                    ( { model | menuState = state }, Cmd.none )
 
         JSData data ->
             ( handleJSData data model, Cmd.none )
@@ -455,57 +452,55 @@ handleView3dOutcome outcome model =
     }
 
 
-handleMenuSelection : Model -> ( Model, Cmd Msg )
-handleMenuSelection model =
+handleMenuSelection : Model -> String -> ( Model, Cmd Msg )
+handleMenuSelection model label =
     let
         newModel =
             { model | visibleDialog = None }
     in
-    if model.activeMenuLabel == Just "About Gavrog..." then
-        ( { newModel | visibleDialog = About }, Cmd.none )
+    case label of
+        "About Gavrog..." ->
+            ( { newModel | visibleDialog = About }, Cmd.none )
 
-    else if model.activeMenuLabel == Just "Jump..." then
-        ( { newModel | visibleDialog = Jump }, Cmd.none )
+        "Jump..." ->
+            ( { newModel | visibleDialog = Jump }, Cmd.none )
 
-    else if model.activeMenuLabel == Just "Search..." then
-        ( { newModel | visibleDialog = Search }, Cmd.none )
+        "Search..." ->
+            ( { newModel | visibleDialog = Search }, Cmd.none )
 
-    else if model.activeMenuLabel == Just "Options..." then
-        ( { newModel
-            | visibleDialog = Options
-            , optionSpecsPrevious = model.optionSpecs
-          }
-        , Cmd.none
-        )
+        "Options..." ->
+            ( { newModel
+                | visibleDialog = Options
+                , optionSpecsPrevious = model.optionSpecs
+              }
+            , Cmd.none
+            )
 
-    else if model.activeMenuLabel == Just "Center" then
-        ( updateView3d View3d.encompass model, Cmd.none )
+        "Center" ->
+            ( updateView3d View3d.encompass model, Cmd.none )
 
-    else if model.activeMenuLabel == Just "Along X" then
-        ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel, Cmd.none )
+        "Along X" ->
+            ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel, Cmd.none )
 
-    else if model.activeMenuLabel == Just "Along Y" then
-        ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel, Cmd.none )
+        "Along Y" ->
+            ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel, Cmd.none )
 
-    else if model.activeMenuLabel == Just "Along Z" then
-        ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel, Cmd.none )
+        "Along Z" ->
+            ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel, Cmd.none )
 
-    else if model.activeMenuLabel == Just "Save Screenshot..." then
-        ( updateView3d (View3d.setRedraws True) newModel
-        , toJS <| OutData "menuChoice" model.activeMenuLabel [] []
-        )
+        "Save Screenshot..." ->
+            ( updateView3d (View3d.setRedraws True) newModel
+            , toJS <| OutData "menuChoice" (Just label) [] []
+            )
 
-    else if model.activeMenuLabel /= Nothing then
-        ( newModel
-        , model.viewState.selected
-            |> Set.toList
-            |> List.map (\( m, i ) -> { meshIndex = m, instanceIndex = i })
-            |> OutData "menuChoice" model.activeMenuLabel []
-            |> toJS
-        )
-
-    else
-        ( newModel, Cmd.none )
+        _ ->
+            ( newModel
+            , model.viewState.selected
+                |> Set.toList
+                |> List.map (\( m, i ) -> { meshIndex = m, instanceIndex = i })
+                |> OutData "menuChoice" (Just label) []
+                |> toJS
+            )
 
 
 contextMenuOnOff : Model -> Maybe Position -> Model
@@ -515,10 +510,7 @@ contextMenuOnOff model maybePos =
             { model | visibleDialog = None }
 
         Just pos ->
-            { model
-                | activeMenuLabel = Nothing
-                , visibleDialog = ContextMenu pos
-            }
+            { model | visibleDialog = ContextMenu pos, menuState = Menu.init }
 
 
 handleJSData : InData -> Model -> Model
@@ -778,11 +770,7 @@ viewContextMenu model =
                 , Element.moveRight x
                 , onContextMenu ContextMenuOnOff
                 ]
-                (Menu.view
-                    MenuUpdate
-                    model.contextMenuItems
-                    model.activeMenuLabel
-                )
+                (Menu.view MenuUpdate model.contextMenuItems model.menuState)
 
         _ ->
             Element.none
@@ -819,11 +807,7 @@ viewCurrentDialog model =
                 , Element.moveLeft 4
                 , Element.alignRight
                 ]
-                (Menu.view
-                    MenuUpdate
-                    model.mainMenuItems
-                    model.activeMenuLabel
-                )
+                (Menu.view MenuUpdate model.mainMenuItems model.menuState)
 
         ContextMenu _ ->
             Element.none
