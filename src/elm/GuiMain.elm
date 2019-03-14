@@ -160,8 +160,8 @@ type alias Model =
     { viewState : View3d.Model
     , revision : String
     , timestamp : String
-    , mainMenuItems : List String
-    , contextMenuItems : List String
+    , mainMenuConfig : Menu.Config
+    , contextMenuConfig : Menu.Config
     , menuState : Menu.State
     , visibleDialog : DialogType
     , jumpDialogConfig : TextBoxConfig
@@ -180,8 +180,8 @@ init flags =
     ( { viewState = View3d.init
       , revision = flags.revision
       , timestamp = flags.timestamp
-      , mainMenuItems = initMainMenu
-      , contextMenuItems = initContextMenu
+      , mainMenuConfig = initMainMenuConfig
+      , contextMenuConfig = initContextMenuConfig
       , menuState = Menu.init
       , visibleDialog = None
       , title = ""
@@ -199,36 +199,36 @@ init flags =
     )
 
 
-initMainMenu : List String
-initMainMenu =
-    [ "Open..."
-    , "Save Structure..."
-    , "Save Screenshot..."
-    , "--"
-    , "First"
-    , "Prev"
-    , "Next"
-    , "Last"
-    , "Jump..."
-    , "Search..."
-    , "--"
-    , "Center"
-    , "Along X"
-    , "Along Y"
-    , "Along Z"
-    , "--"
-    , "Options..."
-    , "--"
-    , "About Gavrog..."
+initMainMenuConfig : Menu.Config
+initMainMenuConfig =
+    [ Menu.Choice "Open..."
+    , Menu.Choice "Save Structure..."
+    , Menu.Choice "Save Screenshot..."
+    , Menu.Separator
+    , Menu.Choice "First"
+    , Menu.Choice "Prev"
+    , Menu.Choice "Next"
+    , Menu.Choice "Last"
+    , Menu.Choice "Jump..."
+    , Menu.Choice "Search..."
+    , Menu.Separator
+    , Menu.Choice "Center"
+    , Menu.Choice "Along X"
+    , Menu.Choice "Along Y"
+    , Menu.Choice "Along Z"
+    , Menu.Separator
+    , Menu.Choice "Options..."
+    , Menu.Separator
+    , Menu.Choice "About Gavrog..."
     ]
 
 
-initContextMenu : List String
-initContextMenu =
-    [ "Add Tile(s)"
-    , "Add Corona(s)"
-    , "Remove Tile(s)"
-    , "Remove Element(s)"
+initContextMenuConfig : Menu.Config
+initContextMenuConfig =
+    [ Menu.Choice "Add Tile(s)"
+    , Menu.Choice "Add Corona(s)"
+    , Menu.Choice "Remove Tile(s)"
+    , Menu.Choice "Remove Element(s)"
     ]
 
 
@@ -770,7 +770,7 @@ viewContextMenu model =
                 , Element.moveRight x
                 , onContextMenu ContextMenuOnOff
                 ]
-                (Menu.view MenuUpdate model.contextMenuItems model.menuState)
+                (Menu.view MenuUpdate model.contextMenuConfig model.menuState)
 
         _ ->
             Element.none
@@ -807,7 +807,7 @@ viewCurrentDialog model =
                 , Element.moveLeft 4
                 , Element.alignRight
                 ]
-                (Menu.view MenuUpdate model.mainMenuItems model.menuState)
+                (Menu.view MenuUpdate model.mainMenuConfig model.menuState)
 
         ContextMenu _ ->
             Element.none

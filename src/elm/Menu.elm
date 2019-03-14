@@ -1,4 +1,4 @@
-module Menu exposing (Config, Result, State, init, view)
+module Menu exposing (Config, Entry(..), Item, Result, State, init, view)
 
 import Element
 import Element.Background as Background
@@ -6,16 +6,25 @@ import Element.Border as Border
 import Element.Events as Events
 
 
+type alias Item =
+    String
+
+
 type State
-    = Internals (Maybe String)
+    = Internals (Maybe Item)
+
+
+type Entry
+    = Separator
+    | Choice Item
 
 
 type alias Config =
-    List String
+    List Entry
 
 
 type alias Result =
-    Maybe String
+    Maybe Item
 
 
 init : State
@@ -24,7 +33,7 @@ init =
 
 
 view : (State -> Result -> msg) -> Config -> State -> Element.Element msg
-view toMsg items (Internals active) =
+view toMsg entries (Internals active) =
     Element.column
         [ Element.alignLeft
         , Element.paddingXY 0 4
@@ -39,20 +48,21 @@ view toMsg items (Internals active) =
             }
         , Events.onClick <| toMsg (Internals active) active
         ]
-        (items
-            |> List.map
-                (\label ->
-                    if label == "--" then
-                        viewSeparator
+        (List.map (viewItem toMsg (Internals active)) entries)
 
-                    else
-                        viewItem
-                            (toMsg (Internals (Just label)) Nothing)
-                            (toMsg (Internals Nothing) Nothing)
-                            (active == Just label)
-                            label
-                )
-        )
+
+viewItem : (State -> Result -> msg) -> State -> Entry -> Element.Element msg
+viewItem toMsg (Internals active) entry =
+    case entry of
+        Separator ->
+            viewSeparator
+
+        Choice item ->
+            viewChoice
+                (toMsg (Internals (Just item)) Nothing)
+                (toMsg (Internals Nothing) Nothing)
+                (active == Just item)
+                item
 
 
 viewSeparator : Element.Element msg
@@ -70,8 +80,8 @@ viewSeparator =
         )
 
 
-viewItem : msg -> msg -> Bool -> String -> Element.Element msg
-viewItem msgEnter msgLeave isActive label =
+viewChoice : msg -> msg -> Bool -> Item -> Element.Element msg
+viewChoice msgEnter msgLeave isActive item =
     let
         color =
             if isActive then
@@ -87,4 +97,4 @@ viewItem msgEnter msgLeave isActive label =
         , Element.paddingXY 16 4
         , Background.color color
         ]
-        (Element.text label)
+        (Element.text item)
