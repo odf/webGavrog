@@ -72,6 +72,10 @@ type Action
     | ViewAlongX
     | ViewAlongY
     | ViewAlongZ
+    | ViewAlongA
+    | ViewAlongB
+    | ViewAlongC
+    | ViewAlongDiagonal
     | OptionsDialog
     | AboutDialog
     | AddTile
@@ -221,69 +225,139 @@ init flags =
     )
 
 
+actionLabel : Action -> String
+actionLabel action =
+    case action of
+        OpenFile ->
+            "Open..."
+
+        SaveStructure ->
+            "Save Structure..."
+
+        SaveScreenshot ->
+            "Save Screenshot..."
+
+        FirstInFile ->
+            "First"
+
+        PreviousInFile ->
+            "Prev"
+
+        NextInFile ->
+            "Next"
+
+        LastInFile ->
+            "Last"
+
+        JumpDialog ->
+            "Jump..."
+
+        SearchDialog ->
+            "Search..."
+
+        CenterScene ->
+            "Center Scene"
+
+        ViewAlongX ->
+            "View Along X"
+
+        ViewAlongY ->
+            "View Along Y"
+
+        ViewAlongZ ->
+            "View Along Z"
+
+        ViewAlongA ->
+            "View Along A"
+
+        ViewAlongB ->
+            "View Along B"
+
+        ViewAlongC ->
+            "View Along C"
+
+        ViewAlongDiagonal ->
+            "View Along Diagonal"
+
+        OptionsDialog ->
+            "Options..."
+
+        AboutDialog ->
+            "About Gavrog..."
+
+        AddTile ->
+            "Add Tile(s)"
+
+        AddCorona ->
+            "Add Corona(s)"
+
+        RemoveTile ->
+            "Remove Tile(s)"
+
+        RemoveElement ->
+            "Remove Element(s)"
+
+
+actionHotKey : Action -> Maybe String
+actionHotKey action =
+    case action of
+        PreviousInFile ->
+            Just "P"
+
+        NextInFile ->
+            Just "N"
+
+        CenterScene ->
+            Just "0"
+
+        ViewAlongX ->
+            Just "X"
+
+        ViewAlongY ->
+            Just "Y"
+
+        ViewAlongZ ->
+            Just "Z"
+
+        ViewAlongA ->
+            Just "A"
+
+        ViewAlongB ->
+            Just "B"
+
+        ViewAlongC ->
+            Just "C"
+
+        ViewAlongDiagonal ->
+            Just "D"
+
+        _ ->
+            Nothing
+
+
+hotKeyActions : Dict Char Action
+hotKeyActions =
+    Dict.fromList
+        [ ( 'n', NextInFile )
+        , ( 'p', PreviousInFile )
+        , ( '0', CenterScene )
+        , ( 'x', ViewAlongX )
+        , ( 'y', ViewAlongY )
+        , ( 'z', ViewAlongZ )
+        , ( 'a', ViewAlongA )
+        , ( 'b', ViewAlongB )
+        , ( 'c', ViewAlongC )
+        , ( 'd', ViewAlongDiagonal )
+        ]
+
+
 makeMenuEntry : Action -> Menu.Entry Action
 makeMenuEntry action =
-    let
-        ( label, hotKey ) =
-            case action of
-                OpenFile ->
-                    ( "Open...", Nothing )
-
-                SaveStructure ->
-                    ( "Save Structure...", Nothing )
-
-                SaveScreenshot ->
-                    ( "Save Screenshot...", Nothing )
-
-                FirstInFile ->
-                    ( "First", Nothing )
-
-                PreviousInFile ->
-                    ( "Prev", Just "P" )
-
-                NextInFile ->
-                    ( "Next", Just "N" )
-
-                LastInFile ->
-                    ( "Last", Nothing )
-
-                JumpDialog ->
-                    ( "Jump...", Nothing )
-
-                SearchDialog ->
-                    ( "Search...", Nothing )
-
-                CenterScene ->
-                    ( "Center Scene", Just "0" )
-
-                ViewAlongX ->
-                    ( "View Along X", Just "X" )
-
-                ViewAlongY ->
-                    ( "View Along Y", Just "Y" )
-
-                ViewAlongZ ->
-                    ( "View Along Z", Just "Z" )
-
-                OptionsDialog ->
-                    ( "Options...", Nothing )
-
-                AboutDialog ->
-                    ( "About Gavrog...", Nothing )
-
-                AddTile ->
-                    ( "Add Tile(s)", Nothing )
-
-                AddCorona ->
-                    ( "Add Corona(s)", Nothing )
-
-                RemoveTile ->
-                    ( "Remove Tile(s)", Nothing )
-
-                RemoveElement ->
-                    ( "Remove Element(s)", Nothing )
-    in
-    Menu.Choice { label = label, hotKey = hotKey, action = action }
+    Menu.Choice
+        { label = actionLabel action
+        , hotKey = actionHotKey action
+        , action = action
+        }
 
 
 initMainMenuConfig : Menu.Config Action
@@ -415,8 +489,8 @@ update msg model =
 
         MenuUpdate state result ->
             case result of
-                Just { label } ->
-                    handleMenuSelection model label
+                Just { action } ->
+                    handleMenuSelection action model
 
                 Nothing ->
                     ( { model | menuState = state }, Cmd.none )
@@ -539,55 +613,68 @@ handleView3dOutcome outcome model =
     }
 
 
-handleMenuSelection : Model -> String -> ( Model, Cmd Msg )
-handleMenuSelection model label =
-    let
-        newModel =
-            { model | visibleDialog = None }
-    in
-    case label of
-        "About Gavrog..." ->
-            ( { newModel | visibleDialog = About }, Cmd.none )
+executeAction : Action -> Model -> ( Model, Cmd Msg )
+executeAction action model =
+    case action of
+        AboutDialog ->
+            ( { model | visibleDialog = About }, Cmd.none )
 
-        "Jump..." ->
-            ( { newModel | visibleDialog = Jump }, Cmd.none )
+        JumpDialog ->
+            ( { model | visibleDialog = Jump }, Cmd.none )
 
-        "Search..." ->
-            ( { newModel | visibleDialog = Search }, Cmd.none )
+        SearchDialog ->
+            ( { model | visibleDialog = Search }, Cmd.none )
 
-        "Options..." ->
-            ( { newModel
+        OptionsDialog ->
+            ( { model
                 | visibleDialog = Options
                 , optionSpecsPrevious = model.optionSpecs
               }
             , Cmd.none
             )
 
-        "Center Scene" ->
+        CenterScene ->
             ( updateView3d View3d.encompass model, Cmd.none )
 
-        "View Along X" ->
-            ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel, Cmd.none )
+        ViewAlongX ->
+            ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) model, Cmd.none )
 
-        "View Along Y" ->
-            ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel, Cmd.none )
+        ViewAlongY ->
+            ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model, Cmd.none )
 
-        "View Along Z" ->
-            ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel, Cmd.none )
+        ViewAlongZ ->
+            ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) model, Cmd.none )
 
-        "Save Screenshot..." ->
-            ( updateView3d (View3d.setRedraws True) newModel
-            , toJS <| OutData "menuChoice" (Just label) [] []
+        ViewAlongA ->
+            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
+
+        ViewAlongB ->
+            ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model, Cmd.none )
+
+        ViewAlongC ->
+            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
+
+        ViewAlongDiagonal ->
+            ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model, Cmd.none )
+
+        SaveScreenshot ->
+            ( updateView3d (View3d.setRedraws True) model
+            , toJS <| OutData "menuChoice" (Just <| actionLabel action) [] []
             )
 
         _ ->
-            ( newModel
+            ( model
             , model.viewState.selected
                 |> Set.toList
                 |> List.map (\( m, i ) -> { meshIndex = m, instanceIndex = i })
-                |> OutData "menuChoice" (Just label) []
+                |> OutData "menuChoice" (Just <| actionLabel action) []
                 |> toJS
             )
+
+
+handleMenuSelection : Action -> Model -> ( Model, Cmd Msg )
+handleMenuSelection action model =
+    executeAction action { model | visibleDialog = None }
 
 
 contextMenuOnOff : Model -> Maybe Position -> Model
@@ -695,26 +782,6 @@ updateOptions model specs result =
     ( newModel, cmd )
 
 
-hotKeyActions : Dict Char ( Model -> Model, Cmd Msg )
-hotKeyActions =
-    Dict.fromList
-        [ ( 'n'
-          , ( identity, toJS <| OutData "menuChoice" (Just "Next") [] [] )
-          )
-        , ( 'p'
-          , ( identity, toJS <| OutData "menuChoice" (Just "Prev") [] [] )
-          )
-        , ( '0', ( updateView3d View3d.encompass, Cmd.none ) )
-        , ( 'x', ( lookAlong (vec3 -1 0 0) (vec3 0 1 0), Cmd.none ) )
-        , ( 'y', ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1), Cmd.none ) )
-        , ( 'z', ( lookAlong (vec3 0 0 -1) (vec3 0 1 0), Cmd.none ) )
-        , ( 'a', ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0), Cmd.none ) )
-        , ( 'b', ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0), Cmd.none ) )
-        , ( 'c', ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0), Cmd.none ) )
-        , ( 'd', ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0), Cmd.none ) )
-        ]
-
-
 isHotKey : Int -> Bool
 isHotKey code =
     let
@@ -731,8 +798,8 @@ handleKeyPress code model =
             Char.toLower <| Char.fromCode code
     in
     case Dict.get char hotKeyActions of
-        Just ( action, cmd ) ->
-            ( action model, cmd )
+        Just action ->
+            executeAction action model
 
         Nothing ->
             ( model, Cmd.none )
