@@ -58,11 +58,33 @@ type alias InData =
     }
 
 
+type Action
+    = OpenFile
+    | SaveStructure
+    | SaveScreenshot
+    | FirstInFile
+    | PreviousInFile
+    | NextInFile
+    | LastInFile
+    | JumpDialog
+    | SearchDialog
+    | CenterScene
+    | ViewAlongX
+    | ViewAlongY
+    | ViewAlongZ
+    | OptionsDialog
+    | AboutDialog
+    | AddTile
+    | AddCorona
+    | RemoveTile
+    | RemoveElement
+
+
 type Msg
     = Resize Int Int
     | ViewMsg View3d.Msg
     | MainMenuToggle
-    | MenuUpdate Menu.State Menu.Result
+    | MenuUpdate (Menu.State Action) (Menu.Result Action)
     | JumpDialogInput String
     | JumpDialogSubmit Bool
     | SearchDialogInput String
@@ -160,9 +182,9 @@ type alias Model =
     { viewState : View3d.Model
     , revision : String
     , timestamp : String
-    , mainMenuConfig : Menu.Config
-    , contextMenuConfig : Menu.Config
-    , menuState : Menu.State
+    , mainMenuConfig : Menu.Config Action
+    , contextMenuConfig : Menu.Config Action
+    , menuState : Menu.State Action
     , visibleDialog : DialogType
     , jumpDialogConfig : TextBoxConfig
     , jumpDialogContent : String
@@ -199,36 +221,101 @@ init flags =
     )
 
 
-initMainMenuConfig : Menu.Config
+makeMenuEntry : Action -> Menu.Entry Action
+makeMenuEntry action =
+    let
+        ( label, hotKey ) =
+            case action of
+                OpenFile ->
+                    ( "Open...", Nothing )
+
+                SaveStructure ->
+                    ( "Save Structure...", Nothing )
+
+                SaveScreenshot ->
+                    ( "Save Screenshot...", Nothing )
+
+                FirstInFile ->
+                    ( "First", Nothing )
+
+                PreviousInFile ->
+                    ( "Prev", Just "P" )
+
+                NextInFile ->
+                    ( "Next", Just "N" )
+
+                LastInFile ->
+                    ( "Last", Nothing )
+
+                JumpDialog ->
+                    ( "Jump...", Nothing )
+
+                SearchDialog ->
+                    ( "Search...", Nothing )
+
+                CenterScene ->
+                    ( "Center Scene", Just "0" )
+
+                ViewAlongX ->
+                    ( "View Along X", Just "X" )
+
+                ViewAlongY ->
+                    ( "View Along Y", Just "Y" )
+
+                ViewAlongZ ->
+                    ( "View Along Z", Just "Z" )
+
+                OptionsDialog ->
+                    ( "Options...", Nothing )
+
+                AboutDialog ->
+                    ( "About Gavrog...", Nothing )
+
+                AddTile ->
+                    ( "Add Tile(s)", Nothing )
+
+                AddCorona ->
+                    ( "Add Corona(s)", Nothing )
+
+                RemoveTile ->
+                    ( "Remove Tile(s)", Nothing )
+
+                RemoveElement ->
+                    ( "Remove Element(s)", Nothing )
+    in
+    Menu.Choice { label = label, hotKey = hotKey, action = action }
+
+
+initMainMenuConfig : Menu.Config Action
 initMainMenuConfig =
-    [ Menu.Choice { label = "Open...", hotKey = Nothing }
-    , Menu.Choice { label = "Save Structure...", hotKey = Nothing }
-    , Menu.Choice { label = "Save Screenshot...", hotKey = Nothing }
+    [ makeMenuEntry OpenFile
+    , makeMenuEntry SaveStructure
+    , makeMenuEntry SaveScreenshot
     , Menu.Separator
-    , Menu.Choice { label = "First", hotKey = Nothing }
-    , Menu.Choice { label = "Prev", hotKey = Just "P" }
-    , Menu.Choice { label = "Next", hotKey = Just "N" }
-    , Menu.Choice { label = "Last", hotKey = Nothing }
-    , Menu.Choice { label = "Jump...", hotKey = Nothing }
-    , Menu.Choice { label = "Search...", hotKey = Nothing }
+    , makeMenuEntry FirstInFile
+    , makeMenuEntry PreviousInFile
+    , makeMenuEntry NextInFile
+    , makeMenuEntry LastInFile
+    , makeMenuEntry JumpDialog
+    , makeMenuEntry SearchDialog
     , Menu.Separator
-    , Menu.Choice { label = "Center Scene", hotKey = Just "0" }
-    , Menu.Choice { label = "View Along X", hotKey = Just "X" }
-    , Menu.Choice { label = "View Along Y", hotKey = Just "Y" }
-    , Menu.Choice { label = "View Along Z", hotKey = Just "Z" }
+    , makeMenuEntry CenterScene
+    , makeMenuEntry ViewAlongX
+    , makeMenuEntry ViewAlongY
+    , makeMenuEntry ViewAlongZ
     , Menu.Separator
-    , Menu.Choice { label = "Options...", hotKey = Nothing }
+    , makeMenuEntry OptionsDialog
     , Menu.Separator
-    , Menu.Choice { label = "About Gavrog...", hotKey = Nothing }
+    , makeMenuEntry AboutDialog
     ]
 
 
-initContextMenuConfig : Menu.Config
+initContextMenuConfig : Menu.Config Action
 initContextMenuConfig =
-    [ Menu.Choice { label = "Add Tile(s)", hotKey = Nothing }
-    , Menu.Choice { label = "Add Corona(s)", hotKey = Nothing }
-    , Menu.Choice { label = "Remove Tile(s)", hotKey = Nothing }
-    , Menu.Choice { label = "Remove Element(s)", hotKey = Nothing }
+    [ makeMenuEntry AddTile
+    , makeMenuEntry AddCorona
+    , makeMenuEntry RemoveTile
+    , makeMenuEntry RemoveElement
     ]
 
 
@@ -476,16 +563,16 @@ handleMenuSelection model label =
             , Cmd.none
             )
 
-        "Center" ->
+        "Center Scene" ->
             ( updateView3d View3d.encompass model, Cmd.none )
 
-        "Along X" ->
+        "View Along X" ->
             ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) newModel, Cmd.none )
 
-        "Along Y" ->
+        "View Along Y" ->
             ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) newModel, Cmd.none )
 
-        "Along Z" ->
+        "View Along Z" ->
             ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) newModel, Cmd.none )
 
         "Save Screenshot..." ->

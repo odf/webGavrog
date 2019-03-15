@@ -7,30 +7,31 @@ import Element.Events as Events
 import Element.Font as Font
 
 
-type alias Item =
+type alias Item a =
     { label : String
     , hotKey : Maybe String
+    , action : a
     }
 
 
-type State
-    = Internals (Maybe Item)
+type State a
+    = Internals (Maybe (Item a))
 
 
-type Entry
+type Entry a
     = Separator
-    | Choice Item
+    | Choice (Item a)
 
 
-type alias Config =
-    List Entry
+type alias Config a =
+    List (Entry a)
 
 
-type alias Result =
-    Maybe Item
+type alias Result a =
+    Maybe (Item a)
 
 
-init : State
+init : State a
 init =
     Internals Nothing
 
@@ -45,7 +46,11 @@ white =
     Element.rgb255 255 255 255
 
 
-view : (State -> Result -> msg) -> Config -> State -> Element.Element msg
+view :
+    (State a -> Result a -> msg)
+    -> Config a
+    -> State a
+    -> Element.Element msg
 view toMsg entries state =
     let
         (Internals active) =
@@ -68,7 +73,11 @@ view toMsg entries state =
         (List.map (viewItem toMsg state) entries)
 
 
-viewItem : (State -> Result -> msg) -> State -> Entry -> Element.Element msg
+viewItem :
+    (State a -> Result a -> msg)
+    -> State a
+    -> Entry a
+    -> Element.Element msg
 viewItem toMsg (Internals active) entry =
     case entry of
         Separator ->
@@ -96,7 +105,7 @@ viewSeparator =
         )
 
 
-viewChoice : (Maybe Item -> msg) -> Bool -> Item -> Element.Element msg
+viewChoice : (Maybe (Item a) -> msg) -> Bool -> Item a -> Element.Element msg
 viewChoice toMsg isActive item =
     let
         color =
