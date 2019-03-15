@@ -33,7 +33,11 @@ init =
 
 
 view : (State -> Result -> msg) -> Config -> State -> Element.Element msg
-view toMsg entries (Internals active) =
+view toMsg entries state =
+    let
+        (Internals active) =
+            state
+    in
     Element.column
         [ Element.alignLeft
         , Element.paddingXY 0 4
@@ -46,9 +50,9 @@ view toMsg entries (Internals active) =
             , blur = 16.0
             , color = Element.rgba 0.0 0.0 0.0 0.2
             }
-        , Events.onClick <| toMsg (Internals active) active
+        , Events.onClick <| toMsg state active
         ]
-        (List.map (viewItem toMsg (Internals active)) entries)
+        (List.map (viewItem toMsg state) entries)
 
 
 viewItem : (State -> Result -> msg) -> State -> Entry -> Element.Element msg
@@ -59,8 +63,7 @@ viewItem toMsg (Internals active) entry =
 
         Choice item ->
             viewChoice
-                (toMsg (Internals (Just item)) Nothing)
-                (toMsg (Internals Nothing) Nothing)
+                (\a -> toMsg (Internals a) Nothing)
                 (active == Just item)
                 item
 
@@ -80,8 +83,8 @@ viewSeparator =
         )
 
 
-viewChoice : msg -> msg -> Bool -> Item -> Element.Element msg
-viewChoice msgEnter msgLeave isActive item =
+viewChoice : (Maybe Item -> msg) -> Bool -> Item -> Element.Element msg
+viewChoice toMsg isActive item =
     let
         color =
             if isActive then
@@ -92,8 +95,8 @@ viewChoice msgEnter msgLeave isActive item =
     in
     Element.el
         [ Element.width Element.fill
-        , Events.onMouseEnter msgEnter
-        , Events.onMouseLeave msgLeave
+        , Events.onMouseEnter <| toMsg (Just item)
+        , Events.onMouseLeave <| toMsg Nothing
         , Element.paddingXY 16 4
         , Background.color color
         ]
