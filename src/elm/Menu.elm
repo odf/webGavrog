@@ -4,10 +4,13 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
 
 
 type alias Item =
-    String
+    { label : String
+    , hotKey : Maybe String
+    }
 
 
 type State
@@ -32,6 +35,16 @@ init =
     Internals Nothing
 
 
+gray : Element.Color
+gray =
+    Element.rgb255 170 170 170
+
+
+white : Element.Color
+white =
+    Element.rgb255 255 255 255
+
+
 view : (State -> Result -> msg) -> Config -> State -> Element.Element msg
 view toMsg entries state =
     let
@@ -41,8 +54,8 @@ view toMsg entries state =
     Element.column
         [ Element.alignLeft
         , Element.paddingXY 0 4
-        , Background.color <| Element.rgb255 255 255 255
-        , Border.color <| Element.rgb255 170 170 170
+        , Background.color white
+        , Border.color gray
         , Border.width 1
         , Border.shadow
             { offset = ( 0.0, 8.0 )
@@ -77,7 +90,7 @@ viewSeparator =
         (Element.el
             [ Element.width Element.fill
             , Element.height <| Element.px 1
-            , Background.color <| Element.rgb255 170 170 170
+            , Background.color gray
             ]
             Element.none
         )
@@ -92,12 +105,18 @@ viewChoice toMsg isActive item =
 
             else
                 Element.rgb255 255 255 255
+
+        extra =
+            item.hotKey |> Maybe.withDefault ""
     in
-    Element.el
+    Element.row
         [ Element.width Element.fill
         , Events.onMouseEnter <| toMsg (Just item)
         , Events.onMouseLeave <| toMsg Nothing
         , Element.paddingXY 16 4
         , Background.color color
         ]
-        (Element.text item)
+        [ Element.text item.label
+        , Element.el [ Element.alignRight, Font.color gray ]
+            (Element.text extra)
+        ]

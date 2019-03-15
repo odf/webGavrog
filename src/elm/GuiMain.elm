@@ -201,34 +201,34 @@ init flags =
 
 initMainMenuConfig : Menu.Config
 initMainMenuConfig =
-    [ Menu.Choice "Open..."
-    , Menu.Choice "Save Structure..."
-    , Menu.Choice "Save Screenshot..."
+    [ Menu.Choice { label = "Open...", hotKey = Nothing }
+    , Menu.Choice { label = "Save Structure...", hotKey = Nothing }
+    , Menu.Choice { label = "Save Screenshot...", hotKey = Nothing }
     , Menu.Separator
-    , Menu.Choice "First"
-    , Menu.Choice "Prev"
-    , Menu.Choice "Next"
-    , Menu.Choice "Last"
-    , Menu.Choice "Jump..."
-    , Menu.Choice "Search..."
+    , Menu.Choice { label = "First", hotKey = Nothing }
+    , Menu.Choice { label = "Prev", hotKey = Just "P" }
+    , Menu.Choice { label = "Next", hotKey = Just "N" }
+    , Menu.Choice { label = "Last", hotKey = Nothing }
+    , Menu.Choice { label = "Jump...", hotKey = Nothing }
+    , Menu.Choice { label = "Search...", hotKey = Nothing }
     , Menu.Separator
-    , Menu.Choice "Center"
-    , Menu.Choice "Along X"
-    , Menu.Choice "Along Y"
-    , Menu.Choice "Along Z"
+    , Menu.Choice { label = "Center Scene", hotKey = Just "0" }
+    , Menu.Choice { label = "View Along X", hotKey = Just "X" }
+    , Menu.Choice { label = "View Along Y", hotKey = Just "Y" }
+    , Menu.Choice { label = "View Along Z", hotKey = Just "Z" }
     , Menu.Separator
-    , Menu.Choice "Options..."
+    , Menu.Choice { label = "Options...", hotKey = Nothing }
     , Menu.Separator
-    , Menu.Choice "About Gavrog..."
+    , Menu.Choice { label = "About Gavrog...", hotKey = Nothing }
     ]
 
 
 initContextMenuConfig : Menu.Config
 initContextMenuConfig =
-    [ Menu.Choice "Add Tile(s)"
-    , Menu.Choice "Add Corona(s)"
-    , Menu.Choice "Remove Tile(s)"
-    , Menu.Choice "Remove Element(s)"
+    [ Menu.Choice { label = "Add Tile(s)", hotKey = Nothing }
+    , Menu.Choice { label = "Add Corona(s)", hotKey = Nothing }
+    , Menu.Choice { label = "Remove Tile(s)", hotKey = Nothing }
+    , Menu.Choice { label = "Remove Element(s)", hotKey = Nothing }
     ]
 
 
@@ -328,7 +328,7 @@ update msg model =
 
         MenuUpdate state result ->
             case result of
-                Just label ->
+                Just { label } ->
                     handleMenuSelection model label
 
                 Nothing ->
