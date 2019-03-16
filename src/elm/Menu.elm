@@ -28,7 +28,7 @@ type alias Config a =
 
 
 type alias Result a =
-    Maybe (Item a)
+    Maybe a
 
 
 init : State a
@@ -53,8 +53,13 @@ view :
     -> Element.Element msg
 view toMsg entries state =
     let
-        (Internals active) =
-            state
+        act =
+            case state of
+                Internals (Just { action }) ->
+                    Just action
+
+                _ ->
+                    Nothing
     in
     Element.column
         [ Element.alignLeft
@@ -68,7 +73,7 @@ view toMsg entries state =
             , blur = 16.0
             , color = Element.rgba 0.0 0.0 0.0 0.2
             }
-        , Events.onClick <| toMsg state active
+        , Events.onClick <| toMsg state act
         ]
         (List.map (viewItem toMsg state) entries)
 

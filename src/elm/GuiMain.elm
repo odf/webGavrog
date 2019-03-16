@@ -485,7 +485,7 @@ update msg model =
 
         MenuUpdate state result ->
             case result of
-                Just { action } ->
+                Just action ->
                     executeAction action { model | dialogStack = [] }
 
                 Nothing ->
