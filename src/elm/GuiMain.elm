@@ -172,9 +172,9 @@ type alias TextBoxConfig =
     }
 
 
-type DialogType
-    = Menu (Menu.State Action)
-    | ContextMenu (Menu.State Action) Position
+type Dialog
+    = FixedMenu (Menu.Config Action) (Menu.State Action)
+    | ContextMenu (Menu.Config Action) (Menu.State Action) Position
     | About
     | Jump
     | Search
@@ -185,9 +185,7 @@ type alias Model =
     { viewState : View3d.Model
     , revision : String
     , timestamp : String
-    , mainMenuConfig : Menu.Config Action
-    , contextMenuConfig : Menu.Config Action
-    , dialogStack : List DialogType
+    , dialogStack : List Dialog
     , jumpDialogConfig : TextBoxConfig
     , jumpDialogContent : String
     , searchDialogConfig : TextBoxConfig
@@ -204,8 +202,6 @@ init flags =
     ( { viewState = View3d.init
       , revision = flags.revision
       , timestamp = flags.timestamp
-      , mainMenuConfig = initMainMenuConfig
-      , contextMenuConfig = initContextMenuConfig
       , dialogStack = []
       , title = ""
       , status = "Welcome!"
@@ -357,8 +353,8 @@ makeMenuEntry action =
         }
 
 
-initMainMenuConfig : Menu.Config Action
-initMainMenuConfig =
+mainMenuConfig : Menu.Config Action
+mainMenuConfig =
     [ makeMenuEntry OpenFile
     , makeMenuEntry SaveStructure
     , makeMenuEntry SaveScreenshot
@@ -381,8 +377,8 @@ initMainMenuConfig =
     ]
 
 
-initContextMenuConfig : Menu.Config Action
-initContextMenuConfig =
+contextMenuConfig : Menu.Config Action
+contextMenuConfig =
     [ makeMenuEntry AddTile
     , makeMenuEntry AddCorona
     , makeMenuEntry RemoveTile
@@ -477,11 +473,15 @@ update msg model =
 
         MainMenuToggle ->
             case model.dialogStack of
-                (Menu _) :: _ ->
+                (FixedMenu _ _) :: _ ->
                     ( { model | dialogStack = [] }, Cmd.none )
 
                 _ ->
-                    ( { model | dialogStack = [ Menu Menu.init ] }, Cmd.none )
+                    ( { model
+                        | dialogStack = [ FixedMenu mainMenuConfig Menu.init ]
+                      }
+                    , Cmd.none
+                    )
 
         MenuUpdate state result ->
             case result of
@@ -552,7 +552,7 @@ update msg model =
 contextMenuOpen : Model -> Bool
 contextMenuOpen model =
     case model.dialogStack of
-        (ContextMenu _ _) :: _ ->
+        (ContextMenu _ _ _) :: _ ->
             True
 
         _ ->
@@ -564,11 +564,11 @@ updateMenu state model =
     let
         newDialogStack =
             case model.dialogStack of
-                (Menu _) :: rest ->
-                    Menu state :: rest
+                (FixedMenu config _) :: rest ->
+                    FixedMenu config state :: rest
 
-                (ContextMenu _ pos) :: rest ->
-                    ContextMenu state pos :: rest
+                (ContextMenu config _ pos) :: rest ->
+                    ContextMenu config state pos :: rest
 
                 _ ->
                     model.dialogStack
@@ -697,7 +697,9 @@ contextMenuOnOff model maybePos =
             { model | dialogStack = [] }
 
         Just pos ->
-            { model | dialogStack = [ ContextMenu Menu.init pos ] }
+            { model
+                | dialogStack = [ ContextMenu contextMenuConfig Menu.init pos ]
+            }
 
 
 handleJSData : InData -> Model -> Model
@@ -931,13 +933,13 @@ viewHeader model =
 viewContextMenu : Model -> Element.Element Msg
 viewContextMenu model =
     case model.dialogStack of
-        (ContextMenu state { x, y }) :: _ ->
+        (ContextMenu config state { x, y }) :: _ ->
             Element.el
                 [ Element.moveDown y
                 , Element.moveRight x
                 , onContextMenu ContextMenuOnOff
                 ]
-                (Menu.view MenuUpdate model.contextMenuConfig state)
+                (Menu.view MenuUpdate config state)
 
         _ ->
             Element.none
@@ -968,16 +970,16 @@ viewCurrentDialog model =
         [] ->
             Element.none
 
-        (ContextMenu _ _) :: _ ->
+        (ContextMenu _ _ _) :: _ ->
             Element.none
 
-        (Menu state) :: _ ->
+        (FixedMenu config state) :: _ ->
             Element.el
                 [ Element.moveUp 4
                 , Element.moveLeft 4
                 , Element.alignRight
                 ]
-                (Menu.view MenuUpdate model.mainMenuConfig state)
+                (Menu.view MenuUpdate config state)
 
         About :: _ ->
             wrap <|
