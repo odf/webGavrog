@@ -131,6 +131,7 @@ viewChoice toMsg isActive item =
         , Background.color color
         ]
         [ Element.text item.label
+        , Element.text "        "
         , Element.el [ Element.alignRight, Font.color gray ]
             (Element.text extra)
         ]

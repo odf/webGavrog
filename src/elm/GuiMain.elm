@@ -59,7 +59,9 @@ type alias InData =
 
 
 type Action
-    = OpenFile
+    = EnterSubMenu String (Menu.Config Action)
+    | LeaveSubMenu
+    | OpenFile
     | SaveStructure
     | SaveScreenshot
     | FirstInFile
@@ -221,6 +223,12 @@ init flags =
 actionLabel : Action -> String
 actionLabel action =
     case action of
+        EnterSubMenu label config ->
+            label
+
+        LeaveSubMenu ->
+            "<"
+
         OpenFile ->
             "Open..."
 
@@ -252,25 +260,25 @@ actionLabel action =
             "Center Scene"
 
         ViewAlongX ->
-            "View Along X"
+            "X Axis"
 
         ViewAlongY ->
-            "View Along Y"
+            "Y Axis"
 
         ViewAlongZ ->
-            "View Along Z"
+            "Z Axis"
 
         ViewAlongA ->
-            "View Along A"
+            "YZ Diagonal"
 
         ViewAlongB ->
-            "View Along B"
+            "XZ Diagonal"
 
         ViewAlongC ->
-            "View Along C"
+            "XY Diagonal"
 
         ViewAlongDiagonal ->
-            "View Along Diagonal"
+            "Space Diagonal"
 
         OptionsDialog ->
             "Options..."
@@ -294,6 +302,9 @@ actionLabel action =
 actionHotKey : Action -> Maybe String
 actionHotKey action =
     case action of
+        EnterSubMenu _ _ ->
+            Just ">"
+
         PreviousInFile ->
             Just "P"
 
@@ -366,14 +377,25 @@ mainMenuConfig =
     , makeMenuEntry JumpDialog
     , makeMenuEntry SearchDialog
     , Menu.Separator
+    , makeMenuEntry <| EnterSubMenu "View" viewMenuConfig
+    , makeMenuEntry OptionsDialog
+    , Menu.Separator
+    , makeMenuEntry AboutDialog
+    ]
+
+
+viewMenuConfig : Menu.Config Action
+viewMenuConfig =
+    [ makeMenuEntry LeaveSubMenu
+    , Menu.Separator
     , makeMenuEntry CenterScene
     , makeMenuEntry ViewAlongX
     , makeMenuEntry ViewAlongY
     , makeMenuEntry ViewAlongZ
-    , Menu.Separator
-    , makeMenuEntry OptionsDialog
-    , Menu.Separator
-    , makeMenuEntry AboutDialog
+    , makeMenuEntry ViewAlongA
+    , makeMenuEntry ViewAlongB
+    , makeMenuEntry ViewAlongC
+    , makeMenuEntry ViewAlongDiagonal
     ]
 
 
@@ -485,6 +507,12 @@ update msg model =
 
         MenuUpdate state result ->
             case result of
+                Just (EnterSubMenu label config) ->
+                    executeAction (EnterSubMenu label config) model
+
+                Just LeaveSubMenu ->
+                    executeAction LeaveSubMenu model
+
                 Just action ->
                     executeAction action { model | dialogStack = [] }
 
@@ -629,6 +657,21 @@ handleView3dOutcome outcome model =
 executeAction : Action -> Model -> ( Model, Cmd Msg )
 executeAction action model =
     case action of
+        EnterSubMenu _ config ->
+            ( { model
+                | dialogStack = FixedMenu config Menu.init :: model.dialogStack
+              }
+            , Cmd.none
+            )
+
+        LeaveSubMenu ->
+            case model.dialogStack of
+                _ :: rest ->
+                    ( { model | dialogStack = rest }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
         AboutDialog ->
             ( { model | dialogStack = [ About ] }, Cmd.none )
 
