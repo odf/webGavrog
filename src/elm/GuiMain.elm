@@ -98,7 +98,7 @@ type Msg
     | OptionsUpdate (List Options.Spec) (Maybe Bool)
     | JSData InData
     | HideAbout
-    | KeyUp Int
+    | KeyUp String
     | ContextMenuOnOff Position Buttons
     | MouseDown Position Buttons
     | Ignore
@@ -110,9 +110,9 @@ port toJS : OutData -> Cmd msg
 port fromJS : (InData -> msg) -> Sub msg
 
 
-decodeKey : Decode.Decoder Int
+decodeKey : Decode.Decoder String
 decodeKey =
-    Decode.at [ "keyCode" ] Decode.int
+    Decode.at [ "key" ] Decode.string
 
 
 decodePos : Decode.Decoder Position
@@ -339,19 +339,28 @@ actionHotKey action =
             Nothing
 
 
-hotKeyActions : Dict Char Action
+hotKeyActions : Dict String Action
 hotKeyActions =
     Dict.fromList
-        [ ( 'n', NextInFile )
-        , ( 'p', PreviousInFile )
-        , ( '0', CenterScene )
-        , ( 'x', ViewAlongX )
-        , ( 'y', ViewAlongY )
-        , ( 'z', ViewAlongZ )
-        , ( 'a', ViewAlongA )
-        , ( 'b', ViewAlongB )
-        , ( 'c', ViewAlongC )
-        , ( 'd', ViewAlongDiagonal )
+        [ ( "0", CenterScene )
+        , ( "n", NextInFile )
+        , ( "N", NextInFile )
+        , ( "p", PreviousInFile )
+        , ( "P", PreviousInFile )
+        , ( "x", ViewAlongX )
+        , ( "X", ViewAlongX )
+        , ( "y", ViewAlongY )
+        , ( "Y", ViewAlongY )
+        , ( "z", ViewAlongZ )
+        , ( "Z", ViewAlongZ )
+        , ( "a", ViewAlongA )
+        , ( "A", ViewAlongA )
+        , ( "b", ViewAlongB )
+        , ( "B", ViewAlongB )
+        , ( "c", ViewAlongC )
+        , ( "C", ViewAlongC )
+        , ( "d", ViewAlongDiagonal )
+        , ( "D", ViewAlongDiagonal )
         ]
 
 
@@ -842,21 +851,13 @@ updateOptions model specs result =
     ( newModel, cmd )
 
 
-isHotKey : Int -> Bool
-isHotKey code =
-    let
-        char =
-            Char.toLower <| Char.fromCode code
-    in
+isHotKey : String -> Bool
+isHotKey char =
     List.member char (Dict.keys hotKeyActions)
 
 
-handleKeyPress : Int -> Model -> ( Model, Cmd Msg )
-handleKeyPress code model =
-    let
-        char =
-            Char.toLower <| Char.fromCode code
-    in
+handleKeyPress : String -> Model -> ( Model, Cmd Msg )
+handleKeyPress char model =
     case Dict.get char hotKeyActions of
         Just action ->
             executeAction action model
@@ -1093,7 +1094,7 @@ viewTextBox config text =
         ]
 
 
-onKeyUp : (Int -> msg) -> Element.Attribute msg
+onKeyUp : (String -> msg) -> Element.Attribute msg
 onKeyUp toMsg =
     let
         toResult value =
@@ -1105,7 +1106,7 @@ onKeyUp toMsg =
     Element.htmlAttribute <|
         Html.Events.custom
             "keyup"
-            (Decode.map toResult <| Decode.at [ "keyCode" ] Decode.int)
+            (Decode.map toResult decodeKey)
 
 
 onMouseDown : (Position -> Buttons -> msg) -> Element.Attribute msg
