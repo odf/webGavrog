@@ -389,6 +389,7 @@ viewMenuConfig =
     [ makeMenuEntry LeaveSubMenu
     , Menu.Separator
     , makeMenuEntry CenterScene
+    , Menu.Separator
     , makeMenuEntry ViewAlongX
     , makeMenuEntry ViewAlongY
     , makeMenuEntry ViewAlongZ
