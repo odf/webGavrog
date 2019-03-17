@@ -20,6 +20,7 @@ type State a
 
 type Entry a
     = Separator
+    | Header String
     | Choice (Item a)
 
 
@@ -88,6 +89,9 @@ viewItem toMsg (Internals active) entry =
         Separator ->
             viewSeparator
 
+        Header title ->
+            viewHeader title
+
         Choice item ->
             viewChoice
                 (\a -> toMsg (Internals a) Nothing)
@@ -107,6 +111,18 @@ viewSeparator =
             , Background.color gray
             ]
             Element.none
+        )
+
+
+viewHeader : String -> Element.Element msg
+viewHeader title =
+    Element.el
+        [ Element.width Element.fill
+        , Element.paddingXY 16 8
+        , Font.bold
+        ]
+        (Element.el [ Element.centerX ]
+            (Element.text title)
         )
 
 

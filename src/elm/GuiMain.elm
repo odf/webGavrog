@@ -390,6 +390,7 @@ viewMenuConfig =
     , Menu.Separator
     , makeMenuEntry CenterScene
     , Menu.Separator
+    , Menu.Header "View Along"
     , makeMenuEntry ViewAlongX
     , makeMenuEntry ViewAlongY
     , makeMenuEntry ViewAlongZ
