@@ -13,6 +13,7 @@ module View3d.Camera exposing
     , perspectiveMatrix
     , pickingRay
     , pinchTo
+    , rotateBy
     , setFrameSize
     , setRedraws
     , startDragging
@@ -285,6 +286,18 @@ rotateTo ndcPosNew (State state) =
 lookAlong : Vec3 -> Vec3 -> State -> State
 lookAlong axis up (State state) =
     State { state | rotation = Mat4.makeLookAt (vec3 0 0 0) axis up }
+
+
+rotateBy : Vec3 -> Float -> State -> State
+rotateBy axis angle (State state) =
+    let
+        deltaRot =
+            Mat4.makeRotate angle axis
+
+        rotation =
+            orthonormalized <| Mat4.mul deltaRot state.rotation
+    in
+    State { state | rotation = rotation }
 
 
 encompass : Vec3 -> Float -> State -> State

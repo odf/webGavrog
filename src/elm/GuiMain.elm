@@ -58,6 +58,15 @@ type alias InData =
     }
 
 
+type Direction
+    = Left
+    | Right
+    | Up
+    | Down
+    | Clockwise
+    | CounterClockwise
+
+
 type Action
     = EnterSubMenu String (Menu.Config Action)
     | LeaveSubMenu
@@ -84,6 +93,7 @@ type Action
     | AddCorona
     | RemoveTile
     | RemoveElement
+    | RotateView Direction Float
 
 
 type Msg
@@ -199,6 +209,11 @@ type alias Model =
     }
 
 
+rotationAngle : Float
+rotationAngle =
+    degrees 5
+
+
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { viewState = View3d.init
@@ -298,6 +313,26 @@ actionLabel action =
         RemoveElement ->
             "Remove Element(s)"
 
+        RotateView dir _ ->
+            case dir of
+                Left ->
+                    "Rotate Left"
+
+                Right ->
+                    "Rotate Right"
+
+                Up ->
+                    "Rotate Up"
+
+                Down ->
+                    "Rotate Down"
+
+                Clockwise ->
+                    "Rotate Clockwise"
+
+                CounterClockwise ->
+                    "Rotate Counter-Clockwise"
+
 
 actionHotKey : Action -> Maybe String
 actionHotKey action =
@@ -335,6 +370,26 @@ actionHotKey action =
         ViewAlongDiagonal ->
             Just "D"
 
+        RotateView dir _ ->
+            case dir of
+                Left ->
+                    Just "←"
+
+                Right ->
+                    Just "→"
+
+                Up ->
+                    Just "↑"
+
+                Down ->
+                    Just "↓"
+
+                CounterClockwise ->
+                    Just ","
+
+                Clockwise ->
+                    Just "."
+
         _ ->
             Nothing
 
@@ -361,6 +416,12 @@ hotKeyActions =
         , ( "C", ViewAlongC )
         , ( "d", ViewAlongDiagonal )
         , ( "D", ViewAlongDiagonal )
+        , ( "ArrowUp", RotateView Up rotationAngle )
+        , ( "ArrowDown", RotateView Down rotationAngle )
+        , ( "ArrowLeft", RotateView Left rotationAngle )
+        , ( "ArrowRight", RotateView Right rotationAngle )
+        , ( ",", RotateView CounterClockwise rotationAngle )
+        , ( ".", RotateView Clockwise rotationAngle )
         ]
 
 
@@ -407,6 +468,14 @@ viewMenuConfig =
     , makeMenuEntry ViewAlongB
     , makeMenuEntry ViewAlongC
     , makeMenuEntry ViewAlongDiagonal
+    , Menu.Separator
+    , Menu.Header "Rotate"
+    , makeMenuEntry (RotateView Left rotationAngle)
+    , makeMenuEntry (RotateView Right rotationAngle)
+    , makeMenuEntry (RotateView Up rotationAngle)
+    , makeMenuEntry (RotateView Down rotationAngle)
+    , makeMenuEntry (RotateView CounterClockwise rotationAngle)
+    , makeMenuEntry (RotateView Clockwise rotationAngle)
     ]
 
 
@@ -703,6 +772,26 @@ executeAction action model =
         CenterScene ->
             ( updateView3d View3d.encompass model, Cmd.none )
 
+        RotateView dir angle ->
+            case dir of
+                Left ->
+                    ( rotateBy (vec3 0 1 0) -angle model, Cmd.none )
+
+                Right ->
+                    ( rotateBy (vec3 0 1 0) angle model, Cmd.none )
+
+                Up ->
+                    ( rotateBy (vec3 1 0 0) -angle model, Cmd.none )
+
+                Down ->
+                    ( rotateBy (vec3 1 0 0) angle model, Cmd.none )
+
+                Clockwise ->
+                    ( rotateBy (vec3 0 0 1) -angle model, Cmd.none )
+
+                CounterClockwise ->
+                    ( rotateBy (vec3 0 0 1) angle model, Cmd.none )
+
         ViewAlongX ->
             ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) model, Cmd.none )
 
@@ -869,6 +958,11 @@ handleKeyPress char model =
 lookAlong : Vec3 -> Vec3 -> Model -> Model
 lookAlong axis up model =
     updateView3d (View3d.lookAlong axis up) model
+
+
+rotateBy : Vec3 -> Float -> Model -> Model
+rotateBy axis angle model =
+    updateView3d (View3d.rotateBy axis angle) model
 
 
 

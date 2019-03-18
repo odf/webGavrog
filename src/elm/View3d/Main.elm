@@ -5,6 +5,7 @@ module View3d.Main exposing
     , encompass
     , init
     , lookAlong
+    , rotateBy
     , setRedraws
     , setScene
     , setSelection
@@ -439,6 +440,11 @@ updateCamera fn model =
 lookAlong : Vec3 -> Vec3 -> Model -> Model
 lookAlong axis up model =
     updateCamera (Camera.lookAlong axis up) model
+
+
+rotateBy : Vec3 -> Float -> Model -> Model
+rotateBy axis angle model =
+    updateCamera (Camera.rotateBy axis angle) model
 
 
 encompass : Model -> Model
