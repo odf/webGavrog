@@ -58,6 +58,16 @@ type alias InData =
     }
 
 
+type ViewAxis
+    = AxisX
+    | AxisY
+    | AxisZ
+    | DiagXY
+    | DiagXZ
+    | DiagYZ
+    | DiagXYZ
+
+
 type Direction
     = Left
     | Right
@@ -80,13 +90,7 @@ type Action
     | JumpDialog
     | SearchDialog
     | CenterScene
-    | ViewAlongX
-    | ViewAlongY
-    | ViewAlongZ
-    | ViewAlongA
-    | ViewAlongB
-    | ViewAlongC
-    | ViewAlongDiagonal
+    | ViewAlong ViewAxis
     | OptionsDialog
     | AboutDialog
     | AddTile
@@ -274,26 +278,28 @@ actionLabel action =
         CenterScene ->
             "Center Scene"
 
-        ViewAlongX ->
-            "X Axis"
+        ViewAlong axis ->
+            case axis of
+                AxisX ->
+                    "X Axis"
 
-        ViewAlongY ->
-            "Y Axis"
+                AxisY ->
+                    "Y Axis"
 
-        ViewAlongZ ->
-            "Z Axis"
+                AxisZ ->
+                    "Z Axis"
 
-        ViewAlongA ->
-            "YZ Diagonal"
+                DiagYZ ->
+                    "YZ Diagonal"
 
-        ViewAlongB ->
-            "XZ Diagonal"
+                DiagXZ ->
+                    "XZ Diagonal"
 
-        ViewAlongC ->
-            "XY Diagonal"
+                DiagXY ->
+                    "XY Diagonal"
 
-        ViewAlongDiagonal ->
-            "Space Diagonal"
+                DiagXYZ ->
+                    "Space Diagonal"
 
         OptionsDialog ->
             "Options..."
@@ -349,26 +355,28 @@ actionHotKey action =
         CenterScene ->
             Just "0"
 
-        ViewAlongX ->
-            Just "X"
+        ViewAlong axis ->
+            case axis of
+                AxisX ->
+                    Just "X"
 
-        ViewAlongY ->
-            Just "Y"
+                AxisY ->
+                    Just "Y"
 
-        ViewAlongZ ->
-            Just "Z"
+                AxisZ ->
+                    Just "Z"
 
-        ViewAlongA ->
-            Just "A"
+                DiagYZ ->
+                    Just "A"
 
-        ViewAlongB ->
-            Just "B"
+                DiagXZ ->
+                    Just "B"
 
-        ViewAlongC ->
-            Just "C"
+                DiagXY ->
+                    Just "C"
 
-        ViewAlongDiagonal ->
-            Just "D"
+                DiagXYZ ->
+                    Just "D"
 
         RotateView dir _ ->
             case dir of
@@ -402,20 +410,20 @@ hotKeyActions =
         , ( "N", NextInFile )
         , ( "p", PreviousInFile )
         , ( "P", PreviousInFile )
-        , ( "x", ViewAlongX )
-        , ( "X", ViewAlongX )
-        , ( "y", ViewAlongY )
-        , ( "Y", ViewAlongY )
-        , ( "z", ViewAlongZ )
-        , ( "Z", ViewAlongZ )
-        , ( "a", ViewAlongA )
-        , ( "A", ViewAlongA )
-        , ( "b", ViewAlongB )
-        , ( "B", ViewAlongB )
-        , ( "c", ViewAlongC )
-        , ( "C", ViewAlongC )
-        , ( "d", ViewAlongDiagonal )
-        , ( "D", ViewAlongDiagonal )
+        , ( "x", ViewAlong AxisX )
+        , ( "X", ViewAlong AxisX )
+        , ( "y", ViewAlong AxisY )
+        , ( "Y", ViewAlong AxisY )
+        , ( "z", ViewAlong AxisZ )
+        , ( "Z", ViewAlong AxisZ )
+        , ( "a", ViewAlong DiagYZ )
+        , ( "A", ViewAlong DiagYZ )
+        , ( "b", ViewAlong DiagXZ )
+        , ( "B", ViewAlong DiagYZ )
+        , ( "c", ViewAlong DiagXY )
+        , ( "C", ViewAlong DiagXY )
+        , ( "d", ViewAlong DiagXYZ )
+        , ( "D", ViewAlong DiagXYZ )
         , ( "ArrowUp", RotateView Up rotationAngle )
         , ( "ArrowDown", RotateView Down rotationAngle )
         , ( "ArrowLeft", RotateView Left rotationAngle )
@@ -461,21 +469,21 @@ viewMenuConfig =
     , makeMenuEntry CenterScene
     , Menu.Separator
     , Menu.Header "View Along"
-    , makeMenuEntry ViewAlongX
-    , makeMenuEntry ViewAlongY
-    , makeMenuEntry ViewAlongZ
-    , makeMenuEntry ViewAlongA
-    , makeMenuEntry ViewAlongB
-    , makeMenuEntry ViewAlongC
-    , makeMenuEntry ViewAlongDiagonal
+    , makeMenuEntry <| ViewAlong AxisX
+    , makeMenuEntry <| ViewAlong AxisY
+    , makeMenuEntry <| ViewAlong AxisZ
+    , makeMenuEntry <| ViewAlong DiagYZ
+    , makeMenuEntry <| ViewAlong DiagXZ
+    , makeMenuEntry <| ViewAlong DiagXY
+    , makeMenuEntry <| ViewAlong DiagXYZ
     , Menu.Separator
     , Menu.Header "Rotate"
-    , makeMenuEntry (RotateView Left rotationAngle)
-    , makeMenuEntry (RotateView Right rotationAngle)
-    , makeMenuEntry (RotateView Up rotationAngle)
-    , makeMenuEntry (RotateView Down rotationAngle)
-    , makeMenuEntry (RotateView CounterClockwise rotationAngle)
-    , makeMenuEntry (RotateView Clockwise rotationAngle)
+    , makeMenuEntry <| RotateView Left rotationAngle
+    , makeMenuEntry <| RotateView Right rotationAngle
+    , makeMenuEntry <| RotateView Up rotationAngle
+    , makeMenuEntry <| RotateView Down rotationAngle
+    , makeMenuEntry <| RotateView CounterClockwise rotationAngle
+    , makeMenuEntry <| RotateView Clockwise rotationAngle
     ]
 
 
@@ -792,26 +800,28 @@ executeAction action model =
                 CounterClockwise ->
                     ( rotateBy (vec3 0 0 1) angle model, Cmd.none )
 
-        ViewAlongX ->
-            ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) model, Cmd.none )
+        ViewAlong axis ->
+            case axis of
+                AxisX ->
+                    ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) model, Cmd.none )
 
-        ViewAlongY ->
-            ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model, Cmd.none )
+                AxisY ->
+                    ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model, Cmd.none )
 
-        ViewAlongZ ->
-            ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) model, Cmd.none )
+                AxisZ ->
+                    ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) model, Cmd.none )
 
-        ViewAlongA ->
-            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
+                DiagYZ ->
+                    ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
 
-        ViewAlongB ->
-            ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model, Cmd.none )
+                DiagXZ ->
+                    ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model, Cmd.none )
 
-        ViewAlongC ->
-            ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
+                DiagXY ->
+                    ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
 
-        ViewAlongDiagonal ->
-            ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model, Cmd.none )
+                DiagXYZ ->
+                    ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model, Cmd.none )
 
         SaveScreenshot ->
             ( updateView3d (View3d.setRedraws True) model
