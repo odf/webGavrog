@@ -131,10 +131,10 @@ viewChoice toMsg isActive item =
     let
         color =
             if isActive then
-                Element.rgb255 170 170 170
+                Element.rgb255 238 238 238
 
             else
-                Element.rgb255 255 255 255
+                white
 
         extra =
             item.hotKey |> Maybe.withDefault ""
