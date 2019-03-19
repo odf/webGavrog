@@ -6,6 +6,7 @@ import Browser.Dom as Dom
 import Browser.Events
 import Char
 import Color
+import ColorDialog
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -92,6 +93,7 @@ type Action
     | CenterScene
     | ViewAlong ViewAxis
     | OptionsDialog
+    | BackgroundColorDialog
     | AboutDialog
     | AddTile
     | AddCorona
@@ -110,6 +112,7 @@ type Msg
     | SearchDialogInput String
     | SearchDialogSubmit Bool
     | OptionsUpdate (List Options.Spec) (Maybe Bool)
+    | SetBackgroundColor ColorDialog.Color
     | JSData InData
     | HideAbout
     | KeyUp String
@@ -195,6 +198,7 @@ type Dialog
     | Jump
     | Search
     | Options
+    | BackgroundColor
 
 
 type alias Model =
@@ -208,6 +212,7 @@ type alias Model =
     , searchDialogContent : String
     , optionSpecs : List Options.Spec
     , optionSpecsPrevious : List Options.Spec
+    , backgroundColor : ColorDialog.Color
     , title : String
     , status : String
     }
@@ -232,6 +237,7 @@ init flags =
       , searchDialogContent = ""
       , optionSpecs = initOptionSpecs
       , optionSpecsPrevious = []
+      , backgroundColor = Color.toHsla Color.white
       }
     , Task.perform
         (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
@@ -303,6 +309,9 @@ actionLabel action =
 
         OptionsDialog ->
             "Options..."
+
+        BackgroundColorDialog ->
+            "Background Color..."
 
         AboutDialog ->
             "About Gavrog..."
@@ -456,6 +465,7 @@ mainMenuConfig =
     , makeMenuEntry SearchDialog
     , Menu.Separator
     , makeMenuEntry <| EnterSubMenu "View" viewMenuConfig
+    , makeMenuEntry BackgroundColorDialog
     , makeMenuEntry OptionsDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
@@ -548,10 +558,6 @@ initOptionSpecs =
       , label = "Net Edge Radius"
       , value = Options.Number 0.04
       }
-    , { key = "backgroundColor"
-      , label = "Background Color"
-      , value = Options.white
-      }
     ]
 
 
@@ -639,6 +645,9 @@ update msg model =
 
         OptionsUpdate specs result ->
             updateOptions model specs result
+
+        SetBackgroundColor color ->
+            ( { model | backgroundColor = color }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -773,6 +782,13 @@ executeAction action model =
             ( { model
                 | dialogStack = [ Options ]
                 , optionSpecsPrevious = model.optionSpecs
+              }
+            , Cmd.none
+            )
+
+        BackgroundColorDialog ->
+            ( { model
+                | dialogStack = [ BackgroundColor ]
               }
             , Cmd.none
             )
@@ -991,24 +1007,15 @@ view model =
                     )
                 |> List.foldl (||) False
 
-        getColor val =
-            case val of
-                Options.Color color ->
-                    Color.hsla
-                        color.hue
-                        color.saturation
-                        color.lightness
-                        color.alpha
-
-                _ ->
-                    Color.white
+        color =
+            model.backgroundColor
 
         backgroundColor =
-            model.optionSpecs
-                |> List.filter (\{ key, value } -> key == "backgroundColor")
-                |> List.map (.value >> getColor)
-                |> List.head
-                |> Maybe.withDefault Color.white
+            Color.hsla
+                color.hue
+                color.saturation
+                color.lightness
+                color.alpha
     in
     { title = "Web-Gavrog"
     , body =
@@ -1146,6 +1153,14 @@ viewCurrentDialog model =
         Options :: _ ->
             wrap <|
                 Options.view OptionsUpdate model.optionSpecs
+
+        BackgroundColor :: _ ->
+            wrap <|
+                Element.column [ Element.spacing 16 ]
+                    [ Element.el [ Font.bold ]
+                        (Element.text "Background Color")
+                    , ColorDialog.view SetBackgroundColor model.backgroundColor
+                    ]
 
 
 viewAbout : Model -> Element.Element Msg
