@@ -646,8 +646,21 @@ update msg model =
         OptionsUpdate specs result ->
             updateOptions model specs result
 
-        SetBackgroundColor color ->
-            ( { model | backgroundColor = color }, Cmd.none )
+        SetBackgroundColor c ->
+            let
+                option =
+                    { key = "backgroundColor"
+                    , onOff = True
+                    , text =
+                        Color.hsla c.hue c.saturation c.lightness c.alpha
+                            |> Color.toCssString
+                            |> Just
+                    , value = Nothing
+                    }
+            in
+            ( { model | backgroundColor = c }
+            , toJS <| OutData "options" Nothing [ option ] []
+            )
 
         KeyUp code ->
             handleKeyPress code model
