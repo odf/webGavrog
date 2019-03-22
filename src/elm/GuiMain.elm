@@ -93,7 +93,7 @@ type Action
     | CenterScene
     | ViewAlong ViewAxis
     | OptionsDialog
-    | BackgroundColorDialog
+    | OpenDisplayDialog
     | AboutDialog
     | AddTile
     | AddCorona
@@ -112,7 +112,7 @@ type Msg
     | SearchDialogInput String
     | SearchDialogSubmit Bool
     | OptionsUpdate (List Options.Spec) (Maybe Bool)
-    | SetBackgroundColor ColorDialog.Color
+    | UpdateDisplaySettings DisplaySettings
     | JSData InData
     | HideAbout
     | KeyUp String
@@ -198,7 +198,13 @@ type Dialog
     | Jump
     | Search
     | Options
-    | BackgroundColor
+    | DisplaySettingsDialog
+
+
+type alias DisplaySettings =
+    { backgroundColor : ColorDialog.Color
+    , showSurfaceMesh : Bool
+    }
 
 
 type alias Model =
@@ -212,7 +218,7 @@ type alias Model =
     , searchDialogContent : String
     , optionSpecs : List Options.Spec
     , optionSpecsPrevious : List Options.Spec
-    , backgroundColor : ColorDialog.Color
+    , displaySettings : DisplaySettings
     , title : String
     , status : String
     }
@@ -237,7 +243,10 @@ init flags =
       , searchDialogContent = ""
       , optionSpecs = initOptionSpecs
       , optionSpecsPrevious = []
-      , backgroundColor = Color.toHsla Color.white
+      , displaySettings =
+            { backgroundColor = Color.toHsla Color.white
+            , showSurfaceMesh = False
+            }
       }
     , Task.perform
         (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
@@ -310,8 +319,8 @@ actionLabel action =
         OptionsDialog ->
             "Options..."
 
-        BackgroundColorDialog ->
-            "Background Color..."
+        OpenDisplayDialog ->
+            "Display Settings..."
 
         AboutDialog ->
             "About Gavrog..."
@@ -465,7 +474,7 @@ mainMenuConfig =
     , makeMenuEntry SearchDialog
     , Menu.Separator
     , makeMenuEntry <| EnterSubMenu "View" viewMenuConfig
-    , makeMenuEntry BackgroundColorDialog
+    , makeMenuEntry OpenDisplayDialog
     , makeMenuEntry OptionsDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
@@ -544,10 +553,6 @@ initOptionSpecs =
       }
     , { key = "extraSmooth"
       , label = "Extra-Smooth Faces"
-      , value = Options.Toggle False
-      }
-    , { key = "showSurfaceMesh"
-      , label = "Show Surface Mesh"
       , value = Options.Toggle False
       }
     , { key = "netVertexRadius"
@@ -646,21 +651,31 @@ update msg model =
         OptionsUpdate specs result ->
             updateOptions model specs result
 
-        SetBackgroundColor c ->
-            let
-                option =
-                    { key = "backgroundColor"
-                    , onOff = True
-                    , text =
-                        Color.hsla c.hue c.saturation c.lightness c.alpha
-                            |> Color.toCssString
-                            |> Just
-                    , value = Nothing
-                    }
-            in
-            ( { model | backgroundColor = c }
-            , toJS <| OutData "options" Nothing [ option ] []
-            )
+        UpdateDisplaySettings settings ->
+            if
+                settings.backgroundColor
+                    /= model.displaySettings.backgroundColor
+            then
+                let
+                    c =
+                        settings.backgroundColor
+
+                    option =
+                        { key = "backgroundColor"
+                        , onOff = True
+                        , text =
+                            Color.hsla c.hue c.saturation c.lightness c.alpha
+                                |> Color.toCssString
+                                |> Just
+                        , value = Nothing
+                        }
+                in
+                ( { model | displaySettings = settings }
+                , toJS <| OutData "options" Nothing [ option ] []
+                )
+
+            else
+                ( { model | displaySettings = settings }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -799,9 +814,9 @@ executeAction action model =
             , Cmd.none
             )
 
-        BackgroundColorDialog ->
+        OpenDisplayDialog ->
             ( { model
-                | dialogStack = [ BackgroundColor ]
+                | dialogStack = [ DisplaySettingsDialog ]
               }
             , Cmd.none
             )
@@ -1012,16 +1027,10 @@ view : Model -> Browser.Document Msg
 view model =
     let
         withWires =
-            model.optionSpecs
-                |> List.map
-                    (\{ key, value } ->
-                        (key == "showSurfaceMesh")
-                            && (value == Options.Toggle True)
-                    )
-                |> List.foldl (||) False
+            model.displaySettings.showSurfaceMesh
 
         color =
-            model.backgroundColor
+            model.displaySettings.backgroundColor
 
         backgroundColor =
             Color.hsla
@@ -1167,13 +1176,9 @@ viewCurrentDialog model =
             wrap <|
                 Options.view OptionsUpdate model.optionSpecs
 
-        BackgroundColor :: _ ->
+        DisplaySettingsDialog :: _ ->
             wrap <|
-                Element.column [ Element.spacing 16 ]
-                    [ Element.el [ Font.bold ]
-                        (Element.text "Background Color")
-                    , ColorDialog.view SetBackgroundColor model.backgroundColor
-                    ]
+                viewDisplaySettings UpdateDisplaySettings model.displaySettings
 
 
 viewAbout : Model -> Element.Element Msg
@@ -1223,6 +1228,37 @@ viewTextBox config text =
             [ Styling.button (config.onSubmit True) "OK"
             , Styling.button (config.onSubmit False) "Cancel"
             ]
+        ]
+
+
+viewDisplaySettings :
+    (DisplaySettings -> Msg)
+    -> DisplaySettings
+    -> Element.Element Msg
+viewDisplaySettings toMsg { backgroundColor, showSurfaceMesh } =
+    Element.column
+        [ Element.spacing 16 ]
+        [ Element.el [ Font.bold ]
+            (Element.text "Background Color")
+        , ColorDialog.view
+            (\color ->
+                toMsg
+                    { backgroundColor = color
+                    , showSurfaceMesh = showSurfaceMesh
+                    }
+            )
+            backgroundColor
+        , Input.checkbox []
+            { onChange =
+                \onOff ->
+                    toMsg
+                        { backgroundColor = backgroundColor
+                        , showSurfaceMesh = onOff
+                        }
+            , icon = Input.defaultCheckbox
+            , checked = showSurfaceMesh
+            , label = Input.labelRight [] <| Element.text "Show Surface Mesh"
+            }
         ]
 
 
