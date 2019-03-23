@@ -1215,7 +1215,15 @@ viewTextBox : TextBoxConfig -> String -> Element.Element Msg
 viewTextBox config text =
     Element.column [ Element.spacing 8 ]
         [ Input.text
-            [ onKeyUp (\n -> Ignore) ]
+            [ onKeyUp
+                (\k ->
+                    if k == "Enter" then
+                        config.onSubmit True
+
+                    else
+                        Ignore
+                )
+            ]
             { onChange = config.onInput
             , text = text
             , placeholder =
