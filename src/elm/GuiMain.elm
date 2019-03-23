@@ -18,7 +18,6 @@ import Html.Events
 import Json.Decode as Decode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
-import Options
 import Set exposing (Set)
 import Styling
 import Task
@@ -93,10 +92,10 @@ type Action
     | SearchDialog
     | CenterScene
     | ViewAlong ViewAxis
-    | OptionsDialog
     | OpenDisplayDialog
     | OpenNetDialog
     | OpenTilingDialog
+    | OpenEmbeddingDialog
     | AboutDialog
     | AddTile
     | AddCorona
@@ -112,10 +111,10 @@ type Msg
     | MenuUpdate (Menu.State Action) (Menu.Result Action)
     | TextDialogInput String
     | TextDialogSubmit String Bool
-    | OptionsUpdate (List Options.Spec) (Maybe Bool)
     | UpdateDisplaySettings DisplaySettings
     | UpdateNetSettings NetSettings
     | UpdateTilingSettings TilingSettings
+    | UpdateEmbeddingSettings EmbeddingSettings
     | JSData InData
     | HideAbout
     | KeyUp String
@@ -199,10 +198,10 @@ type Dialog
     | ContextMenu (Menu.Config Action) (Menu.State Action) Position
     | TextDialog TextBoxConfig String
     | About
-    | Options
     | DisplaySettingsDialog
     | NetSettingsDialog
     | TilingSettingsDialog
+    | EmbeddingSettingsDialog
 
 
 type alias DisplaySettings =
@@ -225,16 +224,20 @@ type alias TilingSettings =
     }
 
 
+type alias EmbeddingSettings =
+    { skipRelaxation : Bool
+    }
+
+
 type alias Model =
     { viewState : View3d.Model
     , revision : String
     , timestamp : String
     , dialogStack : List Dialog
-    , optionSpecs : List Options.Spec
-    , optionSpecsPrevious : List Options.Spec
     , displaySettings : DisplaySettings
     , netSettings : NetSettings
     , tilingSettings : TilingSettings
+    , embeddingSettings : EmbeddingSettings
     , title : String
     , status : String
     }
@@ -253,8 +256,6 @@ init flags =
       , dialogStack = []
       , title = ""
       , status = "Welcome!"
-      , optionSpecs = initOptionSpecs
-      , optionSpecsPrevious = []
       , displaySettings =
             { backgroundColor = Color.toHsla Color.white
             , showSurfaceMesh = False
@@ -268,6 +269,9 @@ init flags =
             , highlightEdges = False
             , closeTileGaps = False
             , extraSmooth = False
+            }
+      , embeddingSettings =
+            { skipRelaxation = False
             }
       }
     , Task.perform
@@ -338,9 +342,6 @@ actionLabel action =
                 DiagXYZ ->
                     "Space Diagonal"
 
-        OptionsDialog ->
-            "Options..."
-
         OpenDisplayDialog ->
             "Display Settings..."
 
@@ -349,6 +350,9 @@ actionLabel action =
 
         OpenTilingDialog ->
             "Tiling Settings..."
+
+        OpenEmbeddingDialog ->
+            "Embedding Settings..."
 
         AboutDialog ->
             "About Gavrog..."
@@ -505,7 +509,7 @@ mainMenuConfig =
     , makeMenuEntry OpenDisplayDialog
     , makeMenuEntry OpenNetDialog
     , makeMenuEntry OpenTilingDialog
-    , makeMenuEntry OptionsDialog
+    , makeMenuEntry OpenEmbeddingDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
     ]
@@ -561,15 +565,6 @@ searchDialogConfig =
     , onInput = TextDialogInput
     , onSubmit = TextDialogSubmit "search"
     }
-
-
-initOptionSpecs : List Options.Spec
-initOptionSpecs =
-    [ { key = "skipRelaxation"
-      , label = "Skip Relaxation"
-      , value = Options.Toggle False
-      }
-    ]
 
 
 
@@ -654,9 +649,6 @@ update msg model =
                 Cmd.none
             )
 
-        OptionsUpdate specs result ->
-            updateOptions model specs result
-
         UpdateDisplaySettings settings ->
             if
                 settings.backgroundColor
@@ -738,6 +730,24 @@ update msg model =
 
             else
                 ( { model | tilingSettings = settings }, Cmd.none )
+
+        UpdateEmbeddingSettings settings ->
+            if settings /= model.embeddingSettings then
+                let
+                    options =
+                        [ { key = "skipRelaxation"
+                          , onOff = settings.skipRelaxation
+                          , text = Nothing
+                          , value = Nothing
+                          }
+                        ]
+                in
+                ( { model | embeddingSettings = settings }
+                , toJS <| OutData "options" Nothing options []
+                )
+
+            else
+                ( { model | embeddingSettings = settings }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -872,14 +882,6 @@ executeAction action model =
             , Cmd.none
             )
 
-        OptionsDialog ->
-            ( { model
-                | dialogStack = [ Options ]
-                , optionSpecsPrevious = model.optionSpecs
-              }
-            , Cmd.none
-            )
-
         OpenDisplayDialog ->
             ( { model | dialogStack = [ DisplaySettingsDialog ] }
             , Cmd.none
@@ -892,6 +894,11 @@ executeAction action model =
 
         OpenTilingDialog ->
             ( { model | dialogStack = [ TilingSettingsDialog ] }
+            , Cmd.none
+            )
+
+        OpenEmbeddingDialog ->
+            ( { model | dialogStack = [ EmbeddingSettingsDialog ] }
             , Cmd.none
             )
 
@@ -1006,66 +1013,6 @@ handleJSData data model =
             else
                 identity
            )
-
-
-updateOptions : Model -> List Options.Spec -> Maybe Bool -> ( Model, Cmd Msg )
-updateOptions model specs result =
-    let
-        asJS { key, label, value } =
-            case value of
-                Options.Toggle onOff ->
-                    { key = key
-                    , onOff = onOff
-                    , text = Nothing
-                    , value = Nothing
-                    }
-
-                Options.Color c ->
-                    { key = key
-                    , onOff = True
-                    , text =
-                        Color.hsla c.hue c.saturation c.lightness c.alpha
-                            |> Color.toCssString
-                            |> Just
-                    , value = Nothing
-                    }
-
-                Options.Number val ->
-                    { key = key
-                    , onOff = True
-                    , text = Nothing
-                    , value = Just val
-                    }
-
-        newModel =
-            case result of
-                Nothing ->
-                    { model | optionSpecs = specs }
-
-                Just ok ->
-                    if ok then
-                        { model | dialogStack = [] }
-
-                    else
-                        { model
-                            | dialogStack = []
-                            , optionSpecs = model.optionSpecsPrevious
-                        }
-
-        oldJsOut =
-            List.map asJS model.optionSpecs
-
-        newJsOut =
-            List.map asJS newModel.optionSpecs
-
-        cmd =
-            if oldJsOut /= newJsOut then
-                toJS <| OutData "options" Nothing newJsOut []
-
-            else
-                Cmd.none
-    in
-    ( newModel, cmd )
 
 
 isHotKey : String -> Bool
@@ -1242,10 +1189,6 @@ viewCurrentDialog model =
             wrap <|
                 viewTextBox config text
 
-        Options :: _ ->
-            wrap <|
-                Options.view OptionsUpdate model.optionSpecs
-
         DisplaySettingsDialog :: _ ->
             wrap <|
                 viewDisplaySettings UpdateDisplaySettings model.displaySettings
@@ -1257,6 +1200,12 @@ viewCurrentDialog model =
         TilingSettingsDialog :: _ ->
             wrap <|
                 viewTilingSettings UpdateTilingSettings model.tilingSettings
+
+        EmbeddingSettingsDialog :: _ ->
+            wrap <|
+                viewEmbeddingSettings
+                    UpdateEmbeddingSettings
+                    model.embeddingSettings
 
 
 viewAbout : Model -> Element.Element Msg
@@ -1409,6 +1358,26 @@ viewTilingSettings toMsg settings =
             , label =
                 Input.labelRight [] <|
                     Element.text "Extra Smooth Faces"
+            }
+        ]
+
+
+viewEmbeddingSettings :
+    (EmbeddingSettings -> Msg)
+    -> EmbeddingSettings
+    -> Element.Element Msg
+viewEmbeddingSettings toMsg settings =
+    Element.column
+        [ Element.spacing 16 ]
+        [ Element.el [ Element.centerX, Font.bold ]
+            (Element.text "Embedding Settings")
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | skipRelaxation = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.skipRelaxation
+            , label =
+                Input.labelRight [] <| Element.text "SkipRelaxation"
             }
         ]
 
