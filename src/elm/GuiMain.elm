@@ -22,6 +22,7 @@ import Options
 import Set exposing (Set)
 import Styling
 import Task
+import ValueSlider
 import View3d.Main as View3d
 import View3d.Scene exposing (RawSceneSpec)
 
@@ -94,6 +95,7 @@ type Action
     | ViewAlong ViewAxis
     | OptionsDialog
     | OpenDisplayDialog
+    | OpenNetDialog
     | AboutDialog
     | AddTile
     | AddCorona
@@ -111,6 +113,7 @@ type Msg
     | TextDialogSubmit String Bool
     | OptionsUpdate (List Options.Spec) (Maybe Bool)
     | UpdateDisplaySettings DisplaySettings
+    | UpdateNetSettings NetSettings
     | JSData InData
     | HideAbout
     | KeyUp String
@@ -196,11 +199,18 @@ type Dialog
     | About
     | Options
     | DisplaySettingsDialog
+    | NetSettingsDialog
 
 
 type alias DisplaySettings =
     { backgroundColor : ColorDialog.Color
     , showSurfaceMesh : Bool
+    }
+
+
+type alias NetSettings =
+    { vertexRadius : Float
+    , edgeRadius : Float
     }
 
 
@@ -212,6 +222,7 @@ type alias Model =
     , optionSpecs : List Options.Spec
     , optionSpecsPrevious : List Options.Spec
     , displaySettings : DisplaySettings
+    , netSettings : NetSettings
     , title : String
     , status : String
     }
@@ -235,6 +246,10 @@ init flags =
       , displaySettings =
             { backgroundColor = Color.toHsla Color.white
             , showSurfaceMesh = False
+            }
+      , netSettings =
+            { vertexRadius = 0.1
+            , edgeRadius = 0.04
             }
       }
     , Task.perform
@@ -310,6 +325,9 @@ actionLabel action =
 
         OpenDisplayDialog ->
             "Display Settings..."
+
+        OpenNetDialog ->
+            "Net Settings..."
 
         AboutDialog ->
             "About Gavrog..."
@@ -464,6 +482,7 @@ mainMenuConfig =
     , Menu.Separator
     , makeMenuEntry <| EnterSubMenu "View" viewMenuConfig
     , makeMenuEntry OpenDisplayDialog
+    , makeMenuEntry OpenNetDialog
     , makeMenuEntry OptionsDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
@@ -543,14 +562,6 @@ initOptionSpecs =
     , { key = "extraSmooth"
       , label = "Extra-Smooth Faces"
       , value = Options.Toggle False
-      }
-    , { key = "netVertexRadius"
-      , label = "Net Vertex Radius"
-      , value = Options.Number 0.1
-      }
-    , { key = "netEdgeRadius"
-      , label = "Net Edge Radius"
-      , value = Options.Number 0.04
       }
     ]
 
@@ -665,6 +676,29 @@ update msg model =
 
             else
                 ( { model | displaySettings = settings }, Cmd.none )
+
+        UpdateNetSettings settings ->
+            if settings /= model.netSettings then
+                let
+                    options =
+                        [ { key = "netVertexRadius"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Just settings.vertexRadius
+                          }
+                        , { key = "netEdgeRadius"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Just settings.edgeRadius
+                          }
+                        ]
+                in
+                ( { model | netSettings = settings }
+                , toJS <| OutData "options" Nothing options []
+                )
+
+            else
+                ( { model | netSettings = settings }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -808,9 +842,12 @@ executeAction action model =
             )
 
         OpenDisplayDialog ->
-            ( { model
-                | dialogStack = [ DisplaySettingsDialog ]
-              }
+            ( { model | dialogStack = [ DisplaySettingsDialog ] }
+            , Cmd.none
+            )
+
+        OpenNetDialog ->
+            ( { model | dialogStack = [ NetSettingsDialog ] }
             , Cmd.none
             )
 
@@ -1169,6 +1206,10 @@ viewCurrentDialog model =
             wrap <|
                 viewDisplaySettings UpdateDisplaySettings model.displaySettings
 
+        NetSettingsDialog :: _ ->
+            wrap <|
+                viewNetSettings UpdateNetSettings model.netSettings
+
 
 viewAbout : Model -> Element.Element Msg
 viewAbout model =
@@ -1248,6 +1289,31 @@ viewDisplaySettings toMsg settings =
             , checked = settings.showSurfaceMesh
             , label = Input.labelRight [] <| Element.text "Show Surface Mesh"
             }
+        ]
+
+
+viewNetSettings : (NetSettings -> Msg) -> NetSettings -> Element.Element Msg
+viewNetSettings toMsg settings =
+    Element.column
+        [ Element.spacing 16 ]
+        [ Element.el [ Element.centerX, Font.bold ]
+            (Element.text "Net Settings")
+        , Element.el []
+            (Element.text "Vertex Radius")
+        , ValueSlider.view
+            (\value -> toMsg { settings | vertexRadius = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.vertexRadius
+        , Element.el []
+            (Element.text "Edge Radius")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeRadius = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.edgeRadius
         ]
 
 
