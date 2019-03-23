@@ -1235,28 +1235,20 @@ viewDisplaySettings :
     (DisplaySettings -> Msg)
     -> DisplaySettings
     -> Element.Element Msg
-viewDisplaySettings toMsg { backgroundColor, showSurfaceMesh } =
+viewDisplaySettings toMsg settings =
     Element.column
         [ Element.spacing 16 ]
-        [ Element.el [ Font.bold ]
+        [ Element.el [ Element.centerX, Font.bold ]
+            (Element.text "Display Settings")
+        , Element.el []
             (Element.text "Background Color")
         , ColorDialog.view
-            (\color ->
-                toMsg
-                    { backgroundColor = color
-                    , showSurfaceMesh = showSurfaceMesh
-                    }
-            )
-            backgroundColor
+            (\color -> toMsg { settings | backgroundColor = color })
+            settings.backgroundColor
         , Input.checkbox []
-            { onChange =
-                \onOff ->
-                    toMsg
-                        { backgroundColor = backgroundColor
-                        , showSurfaceMesh = onOff
-                        }
+            { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
             , icon = Input.defaultCheckbox
-            , checked = showSurfaceMesh
+            , checked = settings.showSurfaceMesh
             , label = Input.labelRight [] <| Element.text "Show Surface Mesh"
             }
         ]
