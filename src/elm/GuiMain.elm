@@ -96,6 +96,7 @@ type Action
     | OptionsDialog
     | OpenDisplayDialog
     | OpenNetDialog
+    | OpenTilingDialog
     | AboutDialog
     | AddTile
     | AddCorona
@@ -114,6 +115,7 @@ type Msg
     | OptionsUpdate (List Options.Spec) (Maybe Bool)
     | UpdateDisplaySettings DisplaySettings
     | UpdateNetSettings NetSettings
+    | UpdateTilingSettings TilingSettings
     | JSData InData
     | HideAbout
     | KeyUp String
@@ -200,6 +202,7 @@ type Dialog
     | Options
     | DisplaySettingsDialog
     | NetSettingsDialog
+    | TilingSettingsDialog
 
 
 type alias DisplaySettings =
@@ -214,6 +217,14 @@ type alias NetSettings =
     }
 
 
+type alias TilingSettings =
+    { colorByTranslationClass : Bool
+    , highlightEdges : Bool
+    , closeTileGaps : Bool
+    , extraSmooth : Bool
+    }
+
+
 type alias Model =
     { viewState : View3d.Model
     , revision : String
@@ -223,6 +234,7 @@ type alias Model =
     , optionSpecsPrevious : List Options.Spec
     , displaySettings : DisplaySettings
     , netSettings : NetSettings
+    , tilingSettings : TilingSettings
     , title : String
     , status : String
     }
@@ -250,6 +262,12 @@ init flags =
       , netSettings =
             { vertexRadius = 0.1
             , edgeRadius = 0.04
+            }
+      , tilingSettings =
+            { colorByTranslationClass = False
+            , highlightEdges = False
+            , closeTileGaps = False
+            , extraSmooth = False
             }
       }
     , Task.perform
@@ -328,6 +346,9 @@ actionLabel action =
 
         OpenNetDialog ->
             "Net Settings..."
+
+        OpenTilingDialog ->
+            "Tiling Settings..."
 
         AboutDialog ->
             "About Gavrog..."
@@ -483,6 +504,7 @@ mainMenuConfig =
     , makeMenuEntry <| EnterSubMenu "View" viewMenuConfig
     , makeMenuEntry OpenDisplayDialog
     , makeMenuEntry OpenNetDialog
+    , makeMenuEntry OpenTilingDialog
     , makeMenuEntry OptionsDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
@@ -543,24 +565,8 @@ searchDialogConfig =
 
 initOptionSpecs : List Options.Spec
 initOptionSpecs =
-    [ { key = "colorByTranslationClass"
-      , label = "Color By Translations"
-      , value = Options.Toggle False
-      }
-    , { key = "highlightEdges"
-      , label = "Highlight Edges"
-      , value = Options.Toggle False
-      }
-    , { key = "closeTileGaps"
-      , label = "Close Tile Gaps"
-      , value = Options.Toggle False
-      }
-    , { key = "skipRelaxation"
+    [ { key = "skipRelaxation"
       , label = "Skip Relaxation"
-      , value = Options.Toggle False
-      }
-    , { key = "extraSmooth"
-      , label = "Extra-Smooth Faces"
       , value = Options.Toggle False
       }
     ]
@@ -699,6 +705,39 @@ update msg model =
 
             else
                 ( { model | netSettings = settings }, Cmd.none )
+
+        UpdateTilingSettings settings ->
+            if settings /= model.tilingSettings then
+                let
+                    options =
+                        [ { key = "colorByTranslationClass"
+                          , onOff = settings.colorByTranslationClass
+                          , text = Nothing
+                          , value = Nothing
+                          }
+                        , { key = "highlightEdges"
+                          , onOff = settings.highlightEdges
+                          , text = Nothing
+                          , value = Nothing
+                          }
+                        , { key = "closeTileGaps"
+                          , onOff = settings.closeTileGaps
+                          , text = Nothing
+                          , value = Nothing
+                          }
+                        , { key = "extraSmooth"
+                          , onOff = settings.extraSmooth
+                          , text = Nothing
+                          , value = Nothing
+                          }
+                        ]
+                in
+                ( { model | tilingSettings = settings }
+                , toJS <| OutData "options" Nothing options []
+                )
+
+            else
+                ( { model | tilingSettings = settings }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -848,6 +887,11 @@ executeAction action model =
 
         OpenNetDialog ->
             ( { model | dialogStack = [ NetSettingsDialog ] }
+            , Cmd.none
+            )
+
+        OpenTilingDialog ->
+            ( { model | dialogStack = [ TilingSettingsDialog ] }
             , Cmd.none
             )
 
@@ -1210,6 +1254,10 @@ viewCurrentDialog model =
             wrap <|
                 viewNetSettings UpdateNetSettings model.netSettings
 
+        TilingSettingsDialog :: _ ->
+            wrap <|
+                viewTilingSettings UpdateTilingSettings model.tilingSettings
+
 
 viewAbout : Model -> Element.Element Msg
 viewAbout model =
@@ -1314,6 +1362,54 @@ viewNetSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.edgeRadius
+        ]
+
+
+viewTilingSettings :
+    (TilingSettings -> Msg)
+    -> TilingSettings
+    -> Element.Element Msg
+viewTilingSettings toMsg settings =
+    Element.column
+        [ Element.spacing 16 ]
+        [ Element.el [ Element.centerX, Font.bold ]
+            (Element.text "Tiling Settings")
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.colorByTranslationClass
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Color By Translation"
+            }
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | highlightEdges = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.highlightEdges
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Highlight Edges"
+            }
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | closeTileGaps = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.closeTileGaps
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Close Tile Gaps"
+            }
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | extraSmooth = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.extraSmooth
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Extra Smooth Faces"
+            }
         ]
 
 
