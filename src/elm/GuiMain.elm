@@ -107,10 +107,8 @@ type Msg
     | ViewMsg View3d.Msg
     | MainMenuToggle
     | MenuUpdate (Menu.State Action) (Menu.Result Action)
-    | JumpDialogInput String
-    | JumpDialogSubmit Bool
-    | SearchDialogInput String
-    | SearchDialogSubmit Bool
+    | TextDialogInput String
+    | TextDialogSubmit String Bool
     | OptionsUpdate (List Options.Spec) (Maybe Bool)
     | UpdateDisplaySettings DisplaySettings
     | JSData InData
@@ -194,9 +192,8 @@ type alias TextBoxConfig =
 type Dialog
     = FixedMenu (Menu.Config Action) (Menu.State Action)
     | ContextMenu (Menu.Config Action) (Menu.State Action) Position
+    | TextDialog TextBoxConfig String
     | About
-    | Jump
-    | Search
     | Options
     | DisplaySettingsDialog
 
@@ -212,10 +209,6 @@ type alias Model =
     , revision : String
     , timestamp : String
     , dialogStack : List Dialog
-    , jumpDialogConfig : TextBoxConfig
-    , jumpDialogContent : String
-    , searchDialogConfig : TextBoxConfig
-    , searchDialogContent : String
     , optionSpecs : List Options.Spec
     , optionSpecsPrevious : List Options.Spec
     , displaySettings : DisplaySettings
@@ -237,10 +230,6 @@ init flags =
       , dialogStack = []
       , title = ""
       , status = "Welcome!"
-      , jumpDialogConfig = jumpDialogConfig
-      , jumpDialogContent = ""
-      , searchDialogConfig = searchDialogConfig
-      , searchDialogContent = ""
       , optionSpecs = initOptionSpecs
       , optionSpecsPrevious = []
       , displaySettings =
@@ -519,8 +508,8 @@ jumpDialogConfig : TextBoxConfig
 jumpDialogConfig =
     { label = "Jump to"
     , placeholder = "Number"
-    , onInput = JumpDialogInput
-    , onSubmit = JumpDialogSubmit
+    , onInput = TextDialogInput
+    , onSubmit = TextDialogSubmit "jump"
     }
 
 
@@ -528,8 +517,8 @@ searchDialogConfig : TextBoxConfig
 searchDialogConfig =
     { label = "Search by name"
     , placeholder = "Regex"
-    , onInput = SearchDialogInput
-    , onSubmit = SearchDialogSubmit
+    , onInput = TextDialogInput
+    , onSubmit = TextDialogSubmit "search"
     }
 
 
@@ -624,25 +613,25 @@ update msg model =
         HideAbout ->
             ( { model | dialogStack = [] }, Cmd.none )
 
-        JumpDialogInput text ->
-            ( { model | jumpDialogContent = text }, Cmd.none )
+        TextDialogInput text ->
+            case model.dialogStack of
+                (TextDialog config _) :: rest ->
+                    ( { model | dialogStack = TextDialog config text :: rest }
+                    , Cmd.none
+                    )
 
-        JumpDialogSubmit ok ->
+                _ ->
+                    ( model, Cmd.none )
+
+        TextDialogSubmit label ok ->
             ( { model | dialogStack = [] }
             , if ok then
-                toJS <| OutData "jump" (Just model.jumpDialogContent) [] []
+                case model.dialogStack of
+                    (TextDialog _ text) :: rest ->
+                        toJS <| OutData label (Just text) [] []
 
-              else
-                Cmd.none
-            )
-
-        SearchDialogInput text ->
-            ( { model | searchDialogContent = text }, Cmd.none )
-
-        SearchDialogSubmit ok ->
-            ( { model | dialogStack = [] }
-            , if ok then
-                toJS <| OutData "search" (Just model.searchDialogContent) [] []
+                    _ ->
+                        Cmd.none
 
               else
                 Cmd.none
@@ -801,10 +790,14 @@ executeAction action model =
             ( { model | dialogStack = [ About ] }, Cmd.none )
 
         JumpDialog ->
-            ( { model | dialogStack = [ Jump ] }, Cmd.none )
+            ( { model | dialogStack = [ TextDialog jumpDialogConfig "" ] }
+            , Cmd.none
+            )
 
         SearchDialog ->
-            ( { model | dialogStack = [ Search ] }, Cmd.none )
+            ( { model | dialogStack = [ TextDialog searchDialogConfig "" ] }
+            , Cmd.none
+            )
 
         OptionsDialog ->
             ( { model
@@ -1164,13 +1157,9 @@ viewCurrentDialog model =
             wrap <|
                 viewAbout model
 
-        Jump :: _ ->
+        (TextDialog config text) :: _ ->
             wrap <|
-                viewTextBox model.jumpDialogConfig model.jumpDialogContent
-
-        Search :: _ ->
-            wrap <|
-                viewTextBox model.searchDialogConfig model.searchDialogContent
+                viewTextBox config text
 
         Options :: _ ->
             wrap <|
