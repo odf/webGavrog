@@ -464,9 +464,12 @@ const render = domNode => {
         action[text](selected);
     }
     else if (mode == "options") {
-      for (const { key, onOff, text, value } of options)
+      for (const { key, onOff, text, value, color } of options)
         model.options[key] = (
-          (text != null) ? text : (value != null) ? value : onOff
+          (text != null) ? text :
+            (value != null) ? value :
+            (color != null) ? color :
+            onOff
         );
 
       updateModel(updateStructure(config, model));

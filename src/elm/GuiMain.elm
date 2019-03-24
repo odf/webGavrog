@@ -40,6 +40,7 @@ type alias OutOption =
     , onOff : Bool
     , text : Maybe String
     , value : Maybe Float
+    , color : Maybe ColorDialog.Color
     }
 
 
@@ -212,7 +213,9 @@ type alias DisplaySettings =
 
 type alias NetSettings =
     { vertexRadius : Float
+    , vertexColor : ColorDialog.Color
     , edgeRadius : Float
+    , edgeColor : ColorDialog.Color
     }
 
 
@@ -262,7 +265,19 @@ init flags =
             }
       , netSettings =
             { vertexRadius = 0.1
+            , vertexColor =
+                { hue = 0.13
+                , saturation = 0.7
+                , lightness = 0.7
+                , alpha = 1.0
+                }
             , edgeRadius = 0.04
+            , edgeColor =
+                { hue = 0.63
+                , saturation = 0.6
+                , lightness = 0.6
+                , alpha = 1.0
+                }
             }
       , tilingSettings =
             { colorByTranslationClass = False
@@ -655,17 +670,16 @@ update msg model =
                     /= model.displaySettings.backgroundColor
             then
                 let
-                    c =
-                        settings.backgroundColor
+                    colorToText c =
+                        Color.hsla c.hue c.saturation c.lightness c.alpha
+                            |> Color.toCssString
 
                     option =
                         { key = "backgroundColor"
                         , onOff = True
-                        , text =
-                            Color.hsla c.hue c.saturation c.lightness c.alpha
-                                |> Color.toCssString
-                                |> Just
+                        , text = Just (colorToText settings.backgroundColor)
                         , value = Nothing
+                        , color = Nothing
                         }
                 in
                 ( { model | displaySettings = settings }
@@ -683,11 +697,25 @@ update msg model =
                           , onOff = True
                           , text = Nothing
                           , value = Just settings.vertexRadius
+                          , color = Nothing
+                          }
+                        , { key = "netVertexColor"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Nothing
+                          , color = Just settings.vertexColor
                           }
                         , { key = "netEdgeRadius"
                           , onOff = True
                           , text = Nothing
                           , value = Just settings.edgeRadius
+                          , color = Nothing
+                          }
+                        , { key = "netEdgeColor"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Nothing
+                          , color = Just settings.edgeColor
                           }
                         ]
                 in
@@ -706,21 +734,25 @@ update msg model =
                           , onOff = settings.colorByTranslationClass
                           , text = Nothing
                           , value = Nothing
+                          , color = Nothing
                           }
                         , { key = "highlightEdges"
                           , onOff = settings.highlightEdges
                           , text = Nothing
                           , value = Nothing
+                          , color = Nothing
                           }
                         , { key = "closeTileGaps"
                           , onOff = settings.closeTileGaps
                           , text = Nothing
                           , value = Nothing
+                          , color = Nothing
                           }
                         , { key = "extraSmooth"
                           , onOff = settings.extraSmooth
                           , text = Nothing
                           , value = Nothing
+                          , color = Nothing
                           }
                         ]
                 in
@@ -739,6 +771,7 @@ update msg model =
                           , onOff = settings.skipRelaxation
                           , text = Nothing
                           , value = Nothing
+                          , color = Nothing
                           }
                         ]
                 in
@@ -1304,6 +1337,11 @@ viewNetSettings toMsg settings =
             Nothing
             settings.vertexRadius
         , Element.el []
+            (Element.text "Vertex Color")
+        , ColorDialog.view
+            (\color -> toMsg { settings | vertexColor = color })
+            settings.vertexColor
+        , Element.el []
             (Element.text "Edge Radius")
         , ValueSlider.view
             (\value -> toMsg { settings | edgeRadius = value })
@@ -1311,6 +1349,11 @@ viewNetSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.edgeRadius
+        , Element.el []
+            (Element.text "Edge Color")
+        , ColorDialog.view
+            (\color -> toMsg { settings | edgeColor = color })
+            settings.edgeColor
         ]
 
 

@@ -278,7 +278,9 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
 
     yield log('Making the net geometry...');
     const model = ballAndStick(
-      points, edges, options.netVertexRadius, options.netEdgeRadius
+      points, edges,
+      options.netVertexRadius, options.netEdgeRadius,
+      options.netVertexColor, options.netEdgeColor
     );
     console.log(`${Math.round(t())} msec to make the net geometry`);
 
