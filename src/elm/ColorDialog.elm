@@ -76,8 +76,8 @@ colorField colors =
         Element.none
 
 
-view : (Color -> msg) -> Color -> Element.Element msg
-view toMsg color =
+view : (Color -> msg) -> Color -> Bool -> Element.Element msg
+view toMsg color includeAlpha =
     let
         { hue, saturation, lightness, alpha } =
             color
@@ -89,35 +89,48 @@ view toMsg color =
                 (toElementColor icolor)
                 (Just <| colorField colors)
                 value
+
+        hueSlider =
+            makeSlider
+                updateHue
+                hue
+                (Color hue 1.0 0.5 1.0)
+                (List.range 0 6
+                    |> List.map (\i -> Color (toFloat i / 6) 1.0 0.5 1.0)
+                )
+
+        saturationSlider =
+            makeSlider
+                updateSaturation
+                saturation
+                (Color hue saturation 0.5 1.0)
+                ([ 0.0, 1.0 ]
+                    |> List.map (\val -> Color hue val 0.5 1.0)
+                )
+
+        lightnessSlider =
+            makeSlider
+                updateLightness
+                lightness
+                (Color hue saturation lightness 1.0)
+                ([ 0.0, 0.5, 1.0 ]
+                    |> List.map (\val -> Color hue saturation val 1.0)
+                )
+
+        alphaSlider =
+            makeSlider
+                updateAlpha
+                alpha
+                (Color hue saturation lightness alpha)
+                ([ 0.0, 1.0 ]
+                    |> List.map (\val -> Color hue saturation lightness val)
+                )
     in
     Element.column
         [ Element.spacing 12 ]
-        [ makeSlider
-            updateHue
-            hue
-            (Color hue 1.0 0.5 1.0)
-            (List.range 0 6
-                |> List.map (\i -> Color (toFloat i / 6) 1.0 0.5 1.0)
-            )
-        , makeSlider
-            updateSaturation
-            saturation
-            (Color hue saturation 0.5 1.0)
-            ([ 0.0, 1.0 ]
-                |> List.map (\val -> Color hue val 0.5 1.0)
-            )
-        , makeSlider
-            updateLightness
-            lightness
-            (Color hue saturation lightness 1.0)
-            ([ 0.0, 0.5, 1.0 ]
-                |> List.map (\val -> Color hue saturation val 1.0)
-            )
-        , makeSlider
-            updateAlpha
-            alpha
-            (Color hue saturation lightness alpha)
-            ([ 0.0, 1.0 ]
-                |> List.map (\val -> Color hue saturation lightness val)
-            )
-        ]
+        (if includeAlpha then
+            [ hueSlider, saturationSlider, lightnessSlider, alphaSlider ]
+
+         else
+            [ hueSlider, saturationSlider, lightnessSlider ]
+        )

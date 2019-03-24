@@ -1313,6 +1313,7 @@ viewDisplaySettings toMsg settings =
         , ColorDialog.view
             (\color -> toMsg { settings | backgroundColor = color })
             settings.backgroundColor
+            True
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
             , icon = Input.defaultCheckbox
@@ -1341,6 +1342,7 @@ viewNetSettings toMsg settings =
         , ColorDialog.view
             (\color -> toMsg { settings | vertexColor = color })
             settings.vertexColor
+            False
         , Element.el []
             (Element.text "Edge Radius")
         , ValueSlider.view
@@ -1354,6 +1356,7 @@ viewNetSettings toMsg settings =
         , ColorDialog.view
             (\color -> toMsg { settings | edgeColor = color })
             settings.edgeColor
+            False
         ]
 
 
