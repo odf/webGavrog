@@ -1209,10 +1209,7 @@ viewFooter model =
                 (Element.el [ Element.centerY ]
                     (Element.text model.title)
                 )
-            , Element.row
-                [ Element.spacing 8
-                , Element.alignRight
-                ]
+            , Element.row [ Element.alignRight ]
                 [ Element.el
                     [ Element.Events.onClick (RunAction FirstInFile)
                     , Element.pointer
