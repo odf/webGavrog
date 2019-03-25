@@ -1105,6 +1105,13 @@ view model =
                     ]
                     (viewHeader model)
                 )
+            , Element.inFront
+                (Element.el
+                    [ Element.width Element.fill
+                    , Element.alignBottom
+                    ]
+                    (viewFooter model)
+                )
             , Element.inFront (viewContextMenu model)
             ]
             (Element.el
@@ -1131,7 +1138,7 @@ viewHeader model =
         , Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 }
         , Border.color Styling.borderColor
         , Border.shadow
-            { offset = ( 0.0, 4.0 )
+            { offset = ( 0.0, 2.0 )
             , size = 0.0
             , blur = 4.0
             , color = Element.rgba 0.0 0.0 0.0 0.1
@@ -1140,25 +1147,57 @@ viewHeader model =
         , Element.centerX
         , Element.paddingXY 24 4
         ]
-        (Element.wrappedRow
+        (Element.row
             [ Element.width Element.fill
             , Element.spacing 24
             ]
             [ Element.image []
                 { src = "3dt.ico", description = "Gavrog Logo" }
-            , Element.paragraph []
-                [ Styling.logoText "Gavrog"
-                , Element.text "        "
-                , Element.text model.title
-                , Element.text "        "
-                , Element.text model.status
+            , Styling.logoText "Gavrog"
+            , Element.el
+                [ Element.width Element.fill
+                , Element.clip
+                , Element.moveDown 4
                 ]
+                (Element.text model.status)
             , Element.el
                 [ Element.alignRight
                 , Element.Events.onClick MainMenuToggle
                 , Element.pointer
                 ]
                 Styling.navIcon
+            ]
+        )
+
+
+viewFooter : Model -> Element.Element Msg
+viewFooter model =
+    Element.el
+        [ Background.color Styling.backgroundColor
+        , Border.solid
+        , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
+        , Border.color Styling.borderColor
+        , Border.shadow
+            { offset = ( 0.0, 0.0 )
+            , size = 0.0
+            , blur = 4.0
+            , color = Element.rgba 0.0 0.0 0.0 0.1
+            }
+        , Element.width Element.fill
+        , Element.centerX
+        , Element.paddingXY 24 8
+        ]
+        (Element.row
+            [ Element.width Element.fill
+            , Element.spacing 24
+            ]
+            [ Element.el
+                [ Element.width Element.fill
+                , Element.clip
+                ]
+                (Element.el [ Element.centerX ]
+                    (Element.text model.title)
+                )
             ]
         )
 
