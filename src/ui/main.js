@@ -94,12 +94,11 @@ const title = model => {
     const index = model.index + 1;
     const len = model.structures.length;
     const name = model.structures[model.index].name;
-    const prefix = fname ? `File "${fname}" ` : 'Builtin structure ';
-    const postfix = name ? `: ${name}` : '';
-    return `${prefix}#${index} (of ${len})${postfix}`;
+    const collection = fname ? `"${fname}"` : 'builtin';
+    return `#${index}/${len} - ${name || ''} (${collection})`;
   }
-  else if (model.filename)
-    return `File "${model.filename}"...`;
+  else
+    return '';
 };
 
 

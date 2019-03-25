@@ -1157,6 +1157,7 @@ viewHeader model =
             ]
             [ Element.row
                 [ Element.width Element.fill
+                , Element.height Element.fill
                 , Element.spacing 24
                 , Element.clip
                 ]
@@ -1202,11 +1203,14 @@ viewFooter model =
             ]
             [ Element.el
                 [ Element.width Element.fill
+                , Element.height Element.fill
                 , Element.clip
                 ]
-                (Element.text model.title)
+                (Element.el [ Element.centerY ]
+                    (Element.text model.title)
+                )
             , Element.row
-                [ Element.spacing 16
+                [ Element.spacing 8
                 , Element.alignRight
                 ]
                 [ Element.el
