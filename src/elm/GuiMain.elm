@@ -1214,22 +1214,22 @@ viewFooter model =
                     [ Element.Events.onClick (RunAction FirstInFile)
                     , Element.pointer
                     ]
-                    (Styling.makeIcon "|<")
+                    (Styling.makeIcon "|◀")
                 , Element.el
                     [ Element.Events.onClick (RunAction PreviousInFile)
                     , Element.pointer
                     ]
-                    (Styling.makeIcon "<")
+                    (Styling.makeIcon "◀")
                 , Element.el
                     [ Element.Events.onClick (RunAction NextInFile)
                     , Element.pointer
                     ]
-                    (Styling.makeIcon ">")
+                    (Styling.makeIcon "▶")
                 , Element.el
                     [ Element.Events.onClick (RunAction LastInFile)
                     , Element.pointer
                     ]
-                    (Styling.makeIcon ">|")
+                    (Styling.makeIcon "▶|")
                 ]
             ]
         )
