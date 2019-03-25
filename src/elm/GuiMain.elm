@@ -1211,11 +1211,6 @@ viewFooter model =
                 )
             , Element.row [ Element.alignRight ]
                 [ Element.el
-                    [ Element.Events.onClick (RunAction FirstInFile)
-                    , Element.pointer
-                    ]
-                    (Styling.makeIcon "|◀")
-                , Element.el
                     [ Element.Events.onClick (RunAction PreviousInFile)
                     , Element.pointer
                     ]
@@ -1225,11 +1220,6 @@ viewFooter model =
                     , Element.pointer
                     ]
                     (Styling.makeIcon "▶")
-                , Element.el
-                    [ Element.Events.onClick (RunAction LastInFile)
-                    , Element.pointer
-                    ]
-                    (Styling.makeIcon "▶|")
                 ]
             ]
         )
