@@ -3,7 +3,7 @@ module Styling exposing
     , borderColor
     , button
     , logoText
-    , navIcon
+    , makeIcon
     )
 
 import Element as El
@@ -49,12 +49,12 @@ logoText text =
         (El.text text)
 
 
-navIcon : El.Element msg
-navIcon =
+makeIcon : String -> El.Element msg
+makeIcon text =
     El.el
         [ Font.size 24
         , Font.bold
         , Font.color <| El.rgb255 140 140 140
         , El.padding 8
         ]
-        (El.text "☰")
+        (El.text text)

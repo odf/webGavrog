@@ -119,6 +119,7 @@ type Msg
     | JSData InData
     | HideAbout
     | KeyUp String
+    | RunAction Action
     | ContextMenuOnOff Position Buttons
     | MouseDown Position Buttons
     | Ignore
@@ -785,6 +786,9 @@ update msg model =
         KeyUp code ->
             handleKeyPress code model
 
+        RunAction action ->
+            executeAction action model
+
         ContextMenuOnOff pos buttons ->
             let
                 maybePos =
@@ -1170,7 +1174,7 @@ viewHeader model =
                 , Element.Events.onClick MainMenuToggle
                 , Element.pointer
                 ]
-                Styling.navIcon
+                (Styling.makeIcon "☰")
             ]
         )
 
@@ -1201,6 +1205,31 @@ viewFooter model =
                 , Element.clip
                 ]
                 (Element.text model.title)
+            , Element.row
+                [ Element.spacing 16
+                , Element.alignRight
+                ]
+                [ Element.el
+                    [ Element.Events.onClick (RunAction FirstInFile)
+                    , Element.pointer
+                    ]
+                    (Styling.makeIcon "|<")
+                , Element.el
+                    [ Element.Events.onClick (RunAction PreviousInFile)
+                    , Element.pointer
+                    ]
+                    (Styling.makeIcon "<")
+                , Element.el
+                    [ Element.Events.onClick (RunAction NextInFile)
+                    , Element.pointer
+                    ]
+                    (Styling.makeIcon ">")
+                , Element.el
+                    [ Element.Events.onClick (RunAction LastInFile)
+                    , Element.pointer
+                    ]
+                    (Styling.makeIcon ">|")
+                ]
             ]
         )
 
