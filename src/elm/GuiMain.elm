@@ -1151,15 +1151,20 @@ viewHeader model =
             [ Element.width Element.fill
             , Element.spacing 24
             ]
-            [ Element.image []
-                { src = "3dt.ico", description = "Gavrog Logo" }
-            , Styling.logoText "Gavrog"
-            , Element.el
+            [ Element.row
                 [ Element.width Element.fill
+                , Element.spacing 24
                 , Element.clip
-                , Element.moveDown 4
                 ]
-                (Element.text model.status)
+                [ Element.image []
+                    { src = "3dt.ico", description = "Gavrog Logo" }
+                , Styling.logoText "Gavrog"
+                , Element.el
+                    [ Element.width Element.fill
+                    , Element.moveDown 4
+                    ]
+                    (Element.text model.status)
+                ]
             , Element.el
                 [ Element.alignRight
                 , Element.Events.onClick MainMenuToggle
@@ -1195,9 +1200,7 @@ viewFooter model =
                 [ Element.width Element.fill
                 , Element.clip
                 ]
-                (Element.el [ Element.centerX ]
-                    (Element.text model.title)
-                )
+                (Element.text model.title)
             ]
         )
 
