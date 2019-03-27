@@ -132,40 +132,50 @@ view toMsg { widthPx, heightPx } indicatorColor background value =
                 |> clamp 0.0 1.0
                 |> toMsg
 
+        mouseOnContainer =
+            handleMouse (\x -> toFloat (x - 16) / toFloat widthPx)
+
         mouseOnMain =
             handleMouse (\x -> toFloat x / toFloat widthPx)
 
         mouseOnIndicator =
             handleMouse (\x -> value + toFloat (x - 3) / toFloat widthPx)
     in
-    Element.row [ Element.spacing 16 ]
+    Element.row []
         [ Element.el
-            [ Element.width <| Element.px widthPx
-            , Element.height <| Element.px heightPx
-            , background
-                |> Maybe.withDefault defaultBackground
-                |> Element.behindContent
-            , onMouseDown mouseOnMain
-            , onMouseMove mouseOnMain
+            [ Element.width <| Element.px (widthPx + 32)
+            , onMouseDown mouseOnContainer
+            , onMouseMove mouseOnContainer
             ]
             (Element.el
-                [ Border.shadow
-                    { offset = ( 1.0, 3.0 )
-                    , size = 2.0
-                    , blur = 4.0
-                    , color = Element.rgba 0.0 0.0 0.0 0.3
-                    }
-                , Border.color <| Element.rgb 1.0 1.0 1.0
-                , Border.solid
-                , Border.widthXY 1 0
-                , Background.color indicatorColor
-                , Element.width <| Element.px 6
-                , Element.height Element.fill
-                , Element.moveRight (value * toFloat widthPx - 3.0)
-                , onMouseDown mouseOnIndicator
-                , onMouseMove mouseOnIndicator
+                [ Element.width <| Element.px widthPx
+                , Element.height <| Element.px heightPx
+                , Element.centerX
+                , background
+                    |> Maybe.withDefault defaultBackground
+                    |> Element.behindContent
+                , onMouseDown mouseOnMain
+                , onMouseMove mouseOnMain
                 ]
-                Element.none
+                (Element.el
+                    [ Border.shadow
+                        { offset = ( 1.0, 3.0 )
+                        , size = 2.0
+                        , blur = 4.0
+                        , color = Element.rgba 0.0 0.0 0.0 0.3
+                        }
+                    , Border.color <| Element.rgb 1.0 1.0 1.0
+                    , Border.solid
+                    , Border.widthXY 1 0
+                    , Background.color indicatorColor
+                    , Element.width <| Element.px 6
+                    , Element.height Element.fill
+                    , Element.moveRight (value * toFloat widthPx - 3.0)
+                    , onMouseDown mouseOnIndicator
+                    , onMouseMove mouseOnIndicator
+                    ]
+                    Element.none
+                )
             )
         , Element.text <| format 3 value
         ]
