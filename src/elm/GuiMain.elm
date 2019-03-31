@@ -522,6 +522,8 @@ mainMenuConfig =
     , makeMenuEntry SearchDialog
     , Menu.Separator
     , makeMenuEntry <| EnterSubMenu "View" viewMenuConfig
+    , makeMenuEntry <| EnterSubMenu "Selection" contextMenuConfig
+    , Menu.Separator
     , makeMenuEntry OpenDisplayDialog
     , makeMenuEntry OpenNetDialog
     , makeMenuEntry OpenTilingDialog
@@ -854,14 +856,14 @@ handleView3dOutcome outcome model =
                 View3d.None ->
                     oldSelection
 
-                View3d.PickEmpty { ctrl, shift } ->
-                    if ctrl || shift then
+                View3d.PickEmpty mods ->
+                    if mods.ctrl || mods.shift then
                         oldSelection
 
                     else
                         Set.empty
 
-                View3d.Pick { ctrl, shift } { meshIndex, instanceIndex } ->
+                View3d.Pick mods { meshIndex, instanceIndex } ->
                     let
                         item =
                             ( meshIndex, instanceIndex )
@@ -869,7 +871,7 @@ handleView3dOutcome outcome model =
                     if Set.member item oldSelection then
                         Set.remove item oldSelection
 
-                    else if ctrl || shift then
+                    else if mods.alt || mods.ctrl || mods.shift then
                         Set.insert item oldSelection
 
                     else

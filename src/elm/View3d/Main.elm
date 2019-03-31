@@ -42,6 +42,10 @@ type alias FrameSize =
     { width : Float, height : Float }
 
 
+type alias Position =
+    { x : Float, y : Float }
+
+
 type alias PickingInfo =
     { centroid : Vec3
     , radius : Float
@@ -55,6 +59,7 @@ type alias Model =
     , cameraState : Camera.State
     , scene : Renderer.Scene PickingInfo
     , selected : Set ( Int, Int )
+    , touchStart : Position
     , center : Vec3
     , radius : Float
     }
@@ -72,6 +77,7 @@ init =
     , cameraState = Camera.initialState
     , scene = []
     , selected = Set.empty
+    , touchStart = { x = 0, y = 0 }
     , center = vec3 0 0 0
     , radius = 0
     }
@@ -237,10 +243,6 @@ pick ray pscene =
 -- SUBSCRIPTIONS
 
 
-type alias Position =
-    { x : Float, y : Float }
-
-
 type alias Buttons =
     { left : Bool, right : Bool, middle : Bool }
 
@@ -353,7 +355,18 @@ update msg model =
             ( touchMoveUpdate posList modifiers model, None )
 
         TouchEndMsg ->
-            ( updateCamera Camera.finishDragging model, None )
+            let
+                outcome =
+                    if Camera.wasDragged model.cameraState then
+                        None
+
+                    else
+                        pickingOutcome
+                            model.touchStart
+                            { alt = True, ctrl = False, shift = False }
+                            model
+            in
+            ( updateCamera Camera.finishDragging model, outcome )
 
         WheelMsg val modifiers ->
             ( updateCamera
@@ -392,7 +405,8 @@ touchStartUpdate : List Position -> Model -> Model
 touchStartUpdate posList model =
     case posList of
         pos :: [] ->
-            updateCamera (Camera.startDragging pos) model
+            { model | touchStart = pos }
+                |> updateCamera (Camera.startDragging pos)
 
         posA :: posB :: [] ->
             updateCamera (Camera.startPinching posA posB) model
