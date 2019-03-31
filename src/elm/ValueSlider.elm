@@ -4,6 +4,8 @@ import Bitwise
 import Element
 import Element.Background as Background
 import Element.Border as Border
+import Html
+import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 
@@ -120,62 +122,77 @@ view :
     -> Maybe (Element.Element msg)
     -> Float
     -> Element.Element msg
-view toMsg { widthPx, heightPx } indicatorColor background value =
+view toMsg { widthPx, heightPx } thumbColor background value =
     let
-        handleMouse convertFn { x } { left } =
-            (if left then
-                convertFn x
+        handleMouse { x } { left } =
+            if left then
+                toMsg <| clamp 0.0 1.0 <| toFloat (x - 16) / toFloat widthPx
 
-             else
-                value
-            )
-                |> clamp 0.0 1.0
-                |> toMsg
-
-        mouseOnContainer =
-            handleMouse (\x -> toFloat (x - 16) / toFloat widthPx)
-
-        mouseOnMain =
-            handleMouse (\x -> toFloat x / toFloat widthPx)
-
-        mouseOnIndicator =
-            handleMouse (\x -> value + toFloat (x - 3) / toFloat widthPx)
+            else
+                toMsg value
     in
     Element.row []
         [ Element.el
             [ Element.width <| Element.px (widthPx + 32)
-            , onMouseDown mouseOnContainer
-            , onMouseMove mouseOnContainer
+            , Element.height <| Element.px heightPx
+            , onMouseDown handleMouse
+            , onMouseMove handleMouse
+            , Element.inFront <| viewCanvas (widthPx + 32) heightPx
             ]
             (Element.el
-                [ Element.width <| Element.px widthPx
-                , Element.height <| Element.px heightPx
-                , Element.centerX
-                , background
-                    |> Maybe.withDefault defaultBackground
-                    |> Element.behindContent
-                , onMouseDown mouseOnMain
-                , onMouseMove mouseOnMain
+                [ Element.width <| Element.fill
+                , Element.height <| Element.fill
+                , Element.paddingXY 16 0
                 ]
-                (Element.el
-                    [ Border.shadow
-                        { offset = ( 1.0, 3.0 )
-                        , size = 2.0
-                        , blur = 4.0
-                        , color = Element.rgba 0.0 0.0 0.0 0.3
-                        }
-                    , Border.color <| Element.rgb 1.0 1.0 1.0
-                    , Border.solid
-                    , Border.widthXY 1 0
-                    , Background.color indicatorColor
-                    , Element.width <| Element.px 6
-                    , Element.height Element.fill
-                    , Element.moveRight (value * toFloat widthPx - 3.0)
-                    , onMouseDown mouseOnIndicator
-                    , onMouseMove mouseOnIndicator
-                    ]
-                    Element.none
+                (viewContent
+                    (value * toFloat widthPx)
+                    thumbColor
+                    (Maybe.withDefault defaultBackground background)
                 )
             )
         , Element.text <| format 3 value
         ]
+
+
+viewCanvas : Int -> Int -> Element.Element msg
+viewCanvas widthPx heightPx =
+    Element.html <|
+        Html.canvas
+            [ Html.Attributes.style "width" (String.fromInt widthPx ++ "px")
+            , Html.Attributes.style "height" (String.fromInt heightPx ++ "px")
+            ]
+            []
+
+
+viewContent :
+    Float
+    -> Element.Color
+    -> Element.Element msg
+    -> Element.Element msg
+viewContent thumbPos thumbColor background =
+    Element.el
+        [ Element.width <| Element.fill
+        , Element.height <| Element.fill
+        , Element.behindContent background
+        ]
+        (viewThumb thumbPos thumbColor)
+
+
+viewThumb : Float -> Element.Color -> Element.Element msg
+viewThumb posX color =
+    Element.el
+        [ Border.shadow
+            { offset = ( 1.0, 3.0 )
+            , size = 2.0
+            , blur = 4.0
+            , color = Element.rgba 0.0 0.0 0.0 0.3
+            }
+        , Border.color <| Element.rgb 1.0 1.0 1.0
+        , Border.solid
+        , Border.widthXY 1 0
+        , Background.color color
+        , Element.width <| Element.px 6
+        , Element.height Element.fill
+        , Element.moveRight (posX - 3.0)
+        ]
+        Element.none
