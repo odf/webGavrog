@@ -48,7 +48,7 @@ decodeButtons =
         (Decode.at [ "buttons" ] Decode.int)
 
 
-onMouseEvent : String -> (Position -> Buttons -> msg) -> Element.Attribute msg
+onMouseEvent : String -> (Position -> Buttons -> msg) -> Html.Attribute msg
 onMouseEvent eventString toMsg =
     let
         toResult pos buttons =
@@ -57,20 +57,9 @@ onMouseEvent eventString toMsg =
             , preventDefault = True
             }
     in
-    Element.htmlAttribute <|
-        Html.Events.custom
-            eventString
-            (Decode.map2 toResult decodePos decodeButtons)
-
-
-onMouseDown : (Position -> Buttons -> msg) -> Element.Attribute msg
-onMouseDown =
-    onMouseEvent "mousedown"
-
-
-onMouseMove : (Position -> Buttons -> msg) -> Element.Attribute msg
-onMouseMove =
-    onMouseEvent "mousemove"
+    Html.Events.custom
+        eventString
+        (Decode.map2 toResult decodePos decodeButtons)
 
 
 defaultBackground : Element.Element msg
@@ -135,9 +124,7 @@ view toMsg { widthPx, heightPx } thumbColor background value =
         [ Element.el
             [ Element.width <| Element.px (widthPx + 32)
             , Element.height <| Element.px heightPx
-            , onMouseDown handleMouse
-            , onMouseMove handleMouse
-            , Element.inFront <| viewCanvas (widthPx + 32) heightPx
+            , Element.inFront <| viewCanvas handleMouse (widthPx + 32) heightPx
             ]
             (Element.el
                 [ Element.width <| Element.fill
@@ -154,12 +141,14 @@ view toMsg { widthPx, heightPx } thumbColor background value =
         ]
 
 
-viewCanvas : Int -> Int -> Element.Element msg
-viewCanvas widthPx heightPx =
+viewCanvas : (Position -> Buttons -> msg) -> Int -> Int -> Element.Element msg
+viewCanvas toMsg widthPx heightPx =
     Element.html <|
         Html.canvas
             [ Html.Attributes.style "width" (String.fromInt widthPx ++ "px")
             , Html.Attributes.style "height" (String.fromInt heightPx ++ "px")
+            , onMouseEvent "mousedown" toMsg
+            , onMouseEvent "mousemove" toMsg
             ]
             []
 
