@@ -1,12 +1,14 @@
 module ValueSlider exposing (view)
 
 import Bitwise
+import DOM
 import Element
 import Element.Background as Background
 import Element.Border as Border
 import Html
 import Html.Attributes
 import Html.Events
+import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 
 
@@ -48,6 +50,21 @@ decodeButtons =
         (Decode.at [ "buttons" ] Decode.int)
 
 
+decodePosList : Decode.Decoder (List Position)
+decodePosList =
+    Decode.map
+        (List.map (.clientPos >> (\( x, y ) -> { x = round x, y = round y })))
+        (Decode.field
+            "changedTouches"
+            (Touch.touchListDecoder Touch.touchDecoder)
+        )
+
+
+decodeOffset : Decode.Decoder DOM.Rectangle
+decodeOffset =
+    DOM.target DOM.boundingClientRect
+
+
 onMouseEvent : String -> (Position -> Buttons -> msg) -> Html.Attribute msg
 onMouseEvent eventString toMsg =
     let
@@ -60,6 +77,23 @@ onMouseEvent eventString toMsg =
     Html.Events.custom
         eventString
         (Decode.map2 toResult decodePos decodeButtons)
+
+
+onTouchEvent : String -> (List Position -> msg) -> Html.Attribute msg
+onTouchEvent eventString toMsg =
+    let
+        adjust { top, left } { x, y } =
+            { x = x - round left, y = y - round top }
+
+        toResult posList rect =
+            { message = posList |> List.map (adjust rect) |> toMsg
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Html.Events.custom
+        eventString
+        (Decode.map2 toResult decodePosList decodeOffset)
 
 
 defaultBackground : Element.Element msg
@@ -113,18 +147,30 @@ view :
     -> Element.Element msg
 view toMsg { widthPx, heightPx } thumbColor background value =
     let
+        newValue x =
+            clamp 0.0 1.0 <| toFloat (x - 16) / toFloat widthPx
+
         handleMouse { x } { left } =
             if left then
-                toMsg <| clamp 0.0 1.0 <| toFloat (x - 16) / toFloat widthPx
+                toMsg <| newValue x
 
             else
                 toMsg value
+
+        handleTouch posList =
+            case posList of
+                pos :: _ ->
+                    toMsg <| newValue pos.x
+
+                _ ->
+                    toMsg value
     in
     Element.row []
         [ Element.el
             [ Element.width <| Element.px (widthPx + 32)
             , Element.height <| Element.px heightPx
-            , Element.inFront <| viewCanvas handleMouse (widthPx + 32) heightPx
+            , Element.inFront <|
+                viewCanvas handleMouse handleTouch (widthPx + 32) heightPx
             ]
             (Element.el
                 [ Element.width <| Element.fill
@@ -141,14 +187,21 @@ view toMsg { widthPx, heightPx } thumbColor background value =
         ]
 
 
-viewCanvas : (Position -> Buttons -> msg) -> Int -> Int -> Element.Element msg
-viewCanvas toMsg widthPx heightPx =
+viewCanvas :
+    (Position -> Buttons -> msg)
+    -> (List Position -> msg)
+    -> Int
+    -> Int
+    -> Element.Element msg
+viewCanvas toMsgMouse toMsgTouch widthPx heightPx =
     Element.html <|
         Html.canvas
             [ Html.Attributes.style "width" (String.fromInt widthPx ++ "px")
             , Html.Attributes.style "height" (String.fromInt heightPx ++ "px")
-            , onMouseEvent "mousedown" toMsg
-            , onMouseEvent "mousemove" toMsg
+            , onMouseEvent "mousedown" toMsgMouse
+            , onMouseEvent "mousemove" toMsgMouse
+            , onTouchEvent "touchstart" toMsgTouch
+            , onTouchEvent "touchmove" toMsgTouch
             ]
             []
 
