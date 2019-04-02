@@ -221,10 +221,11 @@ type alias NetSettings =
 
 
 type alias TilingSettings =
-    { colorByTranslationClass : Bool
+    { tileScale : Float
+    , edgeColor : ColorDialog.Color
     , highlightEdges : Bool
+    , colorByTranslationClass : Bool
     , extraSmooth : Bool
-    , tileScale : Float
     }
 
 
@@ -281,10 +282,16 @@ init flags =
                 }
             }
       , tilingSettings =
-            { colorByTranslationClass = False
+            { tileScale = 0.85
+            , edgeColor =
+                { hue = 0.0
+                , saturation = 0.0
+                , lightness = 1.0
+                , alpha = 1.0
+                }
             , highlightEdges = False
+            , colorByTranslationClass = False
             , extraSmooth = False
-            , tileScale = 0.85
             }
       , embeddingSettings =
             { skipRelaxation = False
@@ -738,6 +745,12 @@ update msg model =
                           , text = Nothing
                           , value = Nothing
                           , color = Nothing
+                          }
+                        , { key = "tileEdgeColor"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Nothing
+                          , color = Just settings.edgeColor
                           }
                         , { key = "highlightEdges"
                           , onOff = settings.highlightEdges
@@ -1441,15 +1454,12 @@ viewTilingSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.tileScale
-        , Input.checkbox []
-            { onChange =
-                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.colorByTranslationClass
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Color By Translation"
-            }
+        , Element.el []
+            (Element.text "Edge Color")
+        , ColorDialog.view
+            (\color -> toMsg { settings | edgeColor = color })
+            settings.edgeColor
+            False
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | highlightEdges = onOff }
@@ -1458,6 +1468,15 @@ viewTilingSettings toMsg settings =
             , label =
                 Input.labelRight [] <|
                     Element.text "Highlight Edges"
+            }
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.colorByTranslationClass
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Color By Translation"
             }
         , Input.checkbox []
             { onChange =

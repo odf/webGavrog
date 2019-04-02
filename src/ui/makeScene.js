@@ -299,11 +299,6 @@ const tileMaterial = hue => Object.assign({}, baseMaterial, {
   shininess: 15.0
 });
 
-const edgeMaterial = Object.assign({}, baseMaterial, {
-  diffuseColor: white,
-  shininess: 15.0
-});
-
 
 const materialPalette = (initialHue, nrHues) => (
   Array(nrHues).fill()
@@ -506,6 +501,11 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const {
     ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
   } = data;
+
+  const edgeMaterial = Object.assign({}, baseMaterial, {
+    diffuseColor: options.tileEdgeColor || white,
+    shininess: 15.0
+  });
 
   const dim = delaney.dim(ds);
   const palette = materials[options.colorByTranslationClass ? 1 : 0]
