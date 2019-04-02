@@ -372,11 +372,12 @@ const makeDisplayList = (tiles, shifts) => {
 
 
 const displayListToModel = (
-  displayList, tiles, meshes, partLists, materials, cell, scale, options
+  displayList, tiles, meshes, partLists, materials, cell, options
 ) => {
   const extCell = ops.dimension(cell) == 2 ?
         cell.map(v => v.concat(0)).concat([[0, 0, 1]]) : cell;
   const invCell = ops.inverse(extCell);
+  const scale = Math.min(0.999, options.tileScale || 0.85);
 
   const instances = [];
 
@@ -507,7 +508,6 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   } = data;
 
   const dim = delaney.dim(ds);
-  const scale = (dim < 3 || options.closeTileGaps) ? 0.999 : 0.8;
   const palette = materials[options.colorByTranslationClass ? 1 : 0]
         .concat(edgeMaterial);
 
@@ -527,7 +527,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const { subMeshes, partLists } = embedding[key];
 
   const model = displayListToModel(
-    displayList, tiles, subMeshes, partLists, palette, basis, scale, options
+    displayList, tiles, subMeshes, partLists, palette, basis, options
   );
 
   return model;

@@ -223,8 +223,8 @@ type alias NetSettings =
 type alias TilingSettings =
     { colorByTranslationClass : Bool
     , highlightEdges : Bool
-    , closeTileGaps : Bool
     , extraSmooth : Bool
+    , tileScale : Float
     }
 
 
@@ -283,8 +283,8 @@ init flags =
       , tilingSettings =
             { colorByTranslationClass = False
             , highlightEdges = False
-            , closeTileGaps = False
             , extraSmooth = False
+            , tileScale = 0.85
             }
       , embeddingSettings =
             { skipRelaxation = False
@@ -745,16 +745,16 @@ update msg model =
                           , value = Nothing
                           , color = Nothing
                           }
-                        , { key = "closeTileGaps"
-                          , onOff = settings.closeTileGaps
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
                         , { key = "extraSmooth"
                           , onOff = settings.extraSmooth
                           , text = Nothing
                           , value = Nothing
+                          , color = Nothing
+                          }
+                        , { key = "tileScale"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Just settings.tileScale
                           , color = Nothing
                           }
                         ]
@@ -1433,6 +1433,14 @@ viewTilingSettings toMsg settings =
         [ Element.spacing 16 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Tiling Settings")
+        , Element.el []
+            (Element.text "Tile Scale")
+        , ValueSlider.view
+            (\value -> toMsg { settings | tileScale = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.tileScale
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | colorByTranslationClass = onOff }
@@ -1450,15 +1458,6 @@ viewTilingSettings toMsg settings =
             , label =
                 Input.labelRight [] <|
                     Element.text "Highlight Edges"
-            }
-        , Input.checkbox []
-            { onChange =
-                \onOff -> toMsg { settings | closeTileGaps = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.closeTileGaps
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Close Tile Gaps"
             }
         , Input.checkbox []
             { onChange =
