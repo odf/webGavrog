@@ -227,6 +227,7 @@ type alias TilingSettings =
     , colorByTranslationClass : Bool
     , extraSmooth : Bool
     , tighten : Bool
+    , edgeWidth : Float
     }
 
 
@@ -294,6 +295,7 @@ init flags =
             , colorByTranslationClass = False
             , extraSmooth = False
             , tighten = False
+            , edgeWidth = 0.5
             }
       , embeddingSettings =
             { skipRelaxation = False
@@ -776,6 +778,12 @@ update msg model =
                           , onOff = True
                           , text = Nothing
                           , value = Just settings.tileScale
+                          , color = Nothing
+                          }
+                        , { key = "edgeWidth"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Just settings.edgeWidth
                           , color = Nothing
                           }
                         ]
@@ -1463,6 +1471,14 @@ viewTilingSettings toMsg settings =
             Nothing
             settings.tileScale
         , Element.el []
+            (Element.text "Edge Width")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeWidth = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.edgeWidth
+        , Element.el []
             (Element.text "Edge Color")
         , ColorDialog.view
             (\color -> toMsg { settings | edgeColor = color })
@@ -1502,7 +1518,7 @@ viewTilingSettings toMsg settings =
             , checked = settings.tighten
             , label =
                 Input.labelRight [] <|
-                    Element.text "Tighten Faces"
+                    Element.text "Tighten Faces (experimental)"
             }
         ]
 
