@@ -14,7 +14,7 @@ const handlers = {
   processSolids(solidsIn) {
     const scale = 2.0 * surface.averageRadius(solidsIn);
 
-    return solidsIn.map(({ pos, faces, isFixed, subDLevel }) => {
+    return solidsIn.map(({ pos, faces, isFixed, subDLevel, tighten }) => {
       let t = { pos, faces, isFixed };
 
       t = surface.withFlattenedCenterFaces(t);
@@ -24,6 +24,9 @@ const handlers = {
       const t1 = t;
       t = surface.insetAt(t, 0.03 * scale, t1.isFixed);
       t = surface.beveledAt(t, 0.01 * scale, t1.isFixed);
+
+      if (tighten)
+        t = surface.tightened(t);
 
       if (subDLevel > 0)
         t = surface.subD(t);

@@ -226,6 +226,7 @@ type alias TilingSettings =
     , highlightEdges : Bool
     , colorByTranslationClass : Bool
     , extraSmooth : Bool
+    , tighten : Bool
     }
 
 
@@ -292,6 +293,7 @@ init flags =
             , highlightEdges = False
             , colorByTranslationClass = False
             , extraSmooth = False
+            , tighten = False
             }
       , embeddingSettings =
             { skipRelaxation = False
@@ -760,6 +762,12 @@ update msg model =
                           }
                         , { key = "extraSmooth"
                           , onOff = settings.extraSmooth
+                          , text = Nothing
+                          , value = Nothing
+                          , color = Nothing
+                          }
+                        , { key = "tightenSurfaces"
+                          , onOff = settings.tighten
                           , text = Nothing
                           , value = Nothing
                           , color = Nothing
@@ -1486,6 +1494,15 @@ viewTilingSettings toMsg settings =
             , label =
                 Input.labelRight [] <|
                     Element.text "Extra Smooth Faces"
+            }
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | tighten = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.tighten
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Tighten Faces"
             }
         ]
 

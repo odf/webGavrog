@@ -464,7 +464,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
 
 
 const makeMeshes = (
-  cov, skel, pos, seeds, basis, subDLevel, runJob, log
+  cov, skel, pos, seeds, basis, subDLevel, tighten, runJob, log
 ) => csp.go(function*() {
   const t = util.timer();
 
@@ -485,7 +485,8 @@ const makeMeshes = (
       pos: pos.map(v => ops.times(v, b)),
       faces,
       isFixed: pos.map(_ => true),
-      subDLevel
+      subDLevel,
+      tighten
     }))
   });
   console.log(`${Math.round(t())} msec to refine the surfaces`);
@@ -517,11 +518,12 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const basis = unitCells.invariantBasis(embedding.gram);
 
   const subDLevel = options.extraSmooth ? 3 : 2;
-  const key = `subd${subDLevel}`;
+  const tighten = !!options.tightenSurfaces;
+  const key = `subd-${subDLevel} tighten-${tighten}`;
 
   if (embedding[key] == null)
     embedding[key] = yield makeMeshes(
-      cov, skel, pos, orbitReps, basis, subDLevel, runJob, log
+      cov, skel, pos, orbitReps, basis, subDLevel, tighten, runJob, log
     );
 
   const { subMeshes, partLists } = embedding[key];
