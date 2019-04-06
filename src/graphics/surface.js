@@ -12,32 +12,69 @@ const normalized = v => ops.div(v, ops.norm(v));
 
 
 export const tightened = ({ faces, pos, isFixed, faceLabels }) => {
-  pos = pos.slice();
+  const n = pos.length;
 
-  for (let s = 0; s < 10; ++s) {
-    const gradients = pos.map(v => ops.times(v, 0));
+  const px = new Float32Array(n);
+  const py = new Float32Array(n);
+  const pz = new Float32Array(n);
+
+  const gx = new Float32Array(n);
+  const gy = new Float32Array(n);
+  const gz = new Float32Array(n);
+
+  for (let v = 0; v < n; ++v) {
+    px[v] = pos[v][0];
+    py[v] = pos[v][1];
+    pz[v] = pos[v][2];
+  }
+
+  for (let s = 0; s < 100; ++s) {
+    for (let v = 0; v < n; ++v)
+      gx[v] = gy[v] = gz[v] = 0;
 
     for (const f of faces) {
       const m = f.length;
-      for (let i = 0; i < m; ++i) {
-        const u = f[i];
-        const v = f[(i + 1) % m];
-        const w = f[(i + 2) % m];
+      for (let k = 0; k < m; ++k) {
+        const u = f[k];
+        const v = f[(k + 1) % m];
+        const w = f[(k + 2) % m];
 
-        const a = ops.minus(pos[u], pos[v]);
-        const b = ops.minus(pos[w], pos[v]);
-        const c = ops.minus(pos[w], pos[u]);
-        const n = ops.crossProduct(b, a);
-        const g = ops.div(ops.crossProduct(n, c), ops.norm(n));
+        const ax = px[u] - px[v];
+        const ay = py[u] - py[v];
+        const az = pz[u] - pz[v];
 
-        gradients[v] = ops.plus(gradients[v], g);
+        const bx = px[w] - px[v];
+        const by = py[w] - py[v];
+        const bz = pz[w] - pz[v];
+
+        const cx = px[w] - px[u];
+        const cy = py[w] - py[u];
+        const cz = pz[w] - pz[u];
+
+        const nx = by * az - bz * ay;
+        const ny = bz * ax - bx * az;
+        const nz = bx * ay - by * ax;
+
+        const nl = Math.sqrt(nx * nx + ny * ny + nz * nz);
+
+        gx[v] += (ny * cz - nz * cy) / nl;
+        gy[v] += (nz * cx - nx * cz) / nl;
+        gz[v] += (nx * cy - ny * cx) / nl;
       }
     }
 
-    pos = pos.map(
-      (v, i) => isFixed[i] ? v : ops.plus(v, ops.times(0.1, gradients[i]))
-    );
+    for (let v = 0; v < n; ++v) {
+      if (!isFixed[v]) {
+        px[v] += 0.05 * gx[v];
+        py[v] += 0.05 * gy[v];
+        pz[v] += 0.05 * gz[v];
+      }
+    }
   }
+
+  pos = [];
+  for (let v = 0; v < n; ++v)
+    pos.push([px[v], py[v], pz[v]]);
 
   return { faces, pos, isFixed, faceLabels };
 };
