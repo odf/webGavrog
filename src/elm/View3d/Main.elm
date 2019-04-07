@@ -474,20 +474,38 @@ setSize size model =
 setScene : Scene.RawSceneSpec -> Model -> Model
 setScene spec model =
     let
-        box =
-            Scene.boundingBox spec
+        scene =
+            processedScene <| Scene.makeScene spec
 
-        center =
-            Vec3.add box.minima box.maxima |> Vec3.scale (1 / 2)
+        n =
+            List.length scene
 
-        radius =
-            Vec3.length <| Vec3.sub box.minima center
+        sceneCenter =
+            scene
+                |> List.foldl
+                    (\{ centroid, transform } sum ->
+                        Vec3.add sum (Mat4.transform transform centroid)
+                    )
+                    (vec3 0 0 0)
+                |> Vec3.scale (1 / toFloat n)
+
+        sceneRadius =
+            scene
+                |> List.map
+                    (\{ centroid, radius, transform } ->
+                        radius
+                            + Vec3.distance
+                                sceneCenter
+                                (Mat4.transform transform centroid)
+                    )
+                |> List.maximum
+                |> Maybe.withDefault 0.0
     in
     { model
-        | scene = processedScene <| Scene.makeScene spec
+        | scene = scene
         , selected = Set.empty
-        , center = center
-        , radius = radius
+        , center = sceneCenter
+        , radius = sceneRadius
     }
 
 

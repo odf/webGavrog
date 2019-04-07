@@ -1,4 +1,4 @@
-module View3d.Scene exposing (RawSceneSpec, Scene, boundingBox, makeScene)
+module View3d.Scene exposing (RawSceneSpec, Scene, makeScene)
 
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -76,12 +76,6 @@ type alias MeshWithInstances =
 
 type alias Scene =
     List MeshWithInstances
-
-
-type alias Box =
-    { minima : Vec3
-    , maxima : Vec3
-    }
 
 
 defaultMaterial : Renderer.Material
@@ -183,52 +177,3 @@ makeScene spec =
     in
     List.map makeMesh spec.meshes
         |> List.indexedMap (makeMeshWithInstances spec.instances materials)
-
-
-minVec : Vec3 -> Vec3 -> Vec3
-minVec v w =
-    vec3
-        (min (Vec3.getX v) (Vec3.getX w))
-        (min (Vec3.getY v) (Vec3.getY w))
-        (min (Vec3.getZ v) (Vec3.getZ w))
-
-
-maxVec : Vec3 -> Vec3 -> Vec3
-maxVec v w =
-    vec3
-        (max (Vec3.getX v) (Vec3.getX w))
-        (max (Vec3.getY v) (Vec3.getY w))
-        (max (Vec3.getZ v) (Vec3.getZ w))
-
-
-boxWithVector : Vec3 -> Maybe Box -> Maybe Box
-boxWithVector v box =
-    case box of
-        Nothing ->
-            Just <| Box v v
-
-        Just b ->
-            Just <| Box (minVec v b.minima) (maxVec v b.maxima)
-
-
-boxWithMappedVertices : List Vec3 -> Mat4 -> Maybe Box -> Maybe Box
-boxWithMappedVertices verts mat box =
-    List.foldl (\v b -> boxWithVector (Mat4.transform mat v) b) box verts
-
-
-boundingBox : RawSceneSpec -> Box
-boundingBox { meshes, instances } =
-    let
-        withTransforms index posList =
-            instances
-                |> List.filter (\inst -> inst.meshIndex == index)
-                |> List.map (\spec -> ( posList, makeTransform spec ))
-    in
-    meshes
-        |> List.map (\m -> List.map (\v -> makeVec3 v.pos) m.vertices)
-        |> List.indexedMap withTransforms
-        |> List.concat
-        |> List.foldl
-            (\( verts, mat ) -> boxWithMappedVertices verts mat)
-            Nothing
-        |> Maybe.withDefault (Box (vec3 0 0 0) (vec3 0 0 0))
