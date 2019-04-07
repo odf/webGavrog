@@ -7,6 +7,7 @@ module View3d.Mesh exposing
     , wireframe
     )
 
+import Array exposing (Array)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
 
@@ -21,14 +22,9 @@ type alias FaceSpec =
     List Int
 
 
-pullVertex : List vertex -> Int -> Maybe vertex
-pullVertex vertices i =
-    vertices |> List.drop i |> List.head
-
-
-pullCorners : List vertex -> FaceSpec -> List vertex
+pullCorners : Array vertex -> FaceSpec -> List vertex
 pullCorners vertices face =
-    List.filterMap (pullVertex vertices) face
+    List.filterMap (\i -> Array.get i vertices) face
 
 
 makeTriangles : List vertex -> List ( vertex, vertex, vertex )
@@ -58,13 +54,21 @@ surface vertices faces =
 
 resolvedSurface : List vertex -> List FaceSpec -> Mesh vertex
 resolvedSurface vertices faces =
-    List.concatMap (makeTriangles << pullCorners vertices) faces
+    let
+        averts =
+            Array.fromList vertices
+    in
+    List.concatMap (makeTriangles << pullCorners averts) faces
         |> Triangles
 
 
 wireframe : List vertex -> List FaceSpec -> Mesh vertex
 wireframe vertices faces =
-    List.concatMap (makeEdges << pullCorners vertices) faces
+    let
+        averts =
+            Array.fromList vertices
+    in
+    List.concatMap (makeEdges << pullCorners averts) faces
         |> Lines
 
 
@@ -186,9 +190,13 @@ rayMeshIntersection orig dir mesh center radius =
                 intersect triangles
 
             IndexedTriangles vertices triplets ->
+                let
+                    averts =
+                        Array.fromList vertices
+                in
                 triplets
                     |> List.map (\( i, j, k ) -> [ i, j, k ])
-                    |> List.concatMap (makeTriangles << pullCorners vertices)
+                    |> List.concatMap (makeTriangles << pullCorners averts)
                     |> intersect
 
     else
