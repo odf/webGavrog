@@ -546,6 +546,8 @@ view toMsg model withWires bgColor =
         ]
         (Renderer.entities
             model.scene
+            model.center
+            model.radius
             model.selected
             (Camera.cameraDistance model.cameraState)
             (Camera.viewingMatrix model.cameraState)
