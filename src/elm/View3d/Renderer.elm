@@ -38,6 +38,7 @@ type alias Scene a =
 type alias Uniforms =
     { sceneCenter : Vec3
     , sceneRadius : Float
+    , backgroundColor : Vec3
     , transform : Mat4
     , viewing : Mat4
     , perspective : Mat4
@@ -83,17 +84,19 @@ entities :
     Scene a
     -> Vec3
     -> Float
+    -> Vec3
     -> Set ( Int, Int )
     -> Float
     -> Mat4
     -> Mat4
     -> Bool
     -> List WebGL.Entity
-entities scene center radius selected camDist viewing perspective withWires =
+entities scene center radius bg selected camDist viewing perspective wires =
     let
         baseUniforms =
             { sceneCenter = Mat4.transform viewing center
             , sceneRadius = radius
+            , backgroundColor = bg
             , transform = Mat4.identity
             , viewing = viewing
             , perspective = perspective
@@ -147,7 +150,7 @@ entities scene center radius selected camDist viewing perspective withWires =
                 highlight =
                     Set.member ( idxMesh, idxInstance ) selected
             in
-            if withWires then
+            if wires then
                 [ meshUniforms transform material highlight
                     |> WebGL.entity vertexShader fragmentShader mesh
                 , wireUniforms transform material highlight
@@ -190,6 +193,7 @@ fragmentShader =
     precision mediump float;
     uniform vec3 sceneCenter;
     uniform float sceneRadius;
+    uniform vec3 backgroundColor;
     uniform vec3 cameraPos;
     uniform vec3 light1Pos;
     uniform vec3 light1Color;
@@ -238,7 +242,7 @@ fragmentShader =
         color += colorFromLight(light3Pos, light3Color);
 
         float depth = (sceneCenter - vpos).z;
-        color = mix(color, vec3(1.0, 1.0, 1.0),
+        color = mix(color, backgroundColor,
                     smoothstep(-sceneRadius, sceneRadius, depth));
 
         gl_FragColor = vec4(color, 1.0);
