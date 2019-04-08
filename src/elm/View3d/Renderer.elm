@@ -242,8 +242,10 @@ fragmentShader =
         color += colorFromLight(light3Pos, light3Color);
 
         float depth = (sceneCenter - vpos).z;
-        color = mix(color, backgroundColor,
-                    smoothstep(-sceneRadius, sceneRadius, depth));
+        float coeff = smoothstep(-sceneRadius, sceneRadius, depth);
+
+        color = mix(color, vec3(0.0, 0.0, 1.0), coeff * coeff * coeff);
+        color = mix(color, backgroundColor, coeff);
 
         gl_FragColor = vec4(color, 1.0);
     }
