@@ -96,6 +96,7 @@ type Action
     | OpenDisplayDialog
     | OpenNetDialog
     | OpenTilingDialog
+    | OpenTiling2dDialog
     | OpenEmbeddingDialog
     | AboutDialog
     | AddTile
@@ -115,6 +116,7 @@ type Msg
     | UpdateDisplaySettings DisplaySettings
     | UpdateNetSettings NetSettings
     | UpdateTilingSettings TilingSettings
+    | UpdateTiling2dSettings Tiling2dSettings
     | UpdateEmbeddingSettings EmbeddingSettings
     | JSData InData
     | HideAbout
@@ -203,6 +205,7 @@ type Dialog
     | DisplaySettingsDialog
     | NetSettingsDialog
     | TilingSettingsDialog
+    | Tiling2dSettingsDialog
     | EmbeddingSettingsDialog
 
 
@@ -233,6 +236,15 @@ type alias TilingSettings =
     }
 
 
+type alias Tiling2dSettings =
+    { tileScale : Float
+    , edgeColor : ColorDialog.Color
+    , highlightEdges : Bool
+    , colorByTranslationClass : Bool
+    , edgeWidth : Float
+    }
+
+
 type alias EmbeddingSettings =
     { skipRelaxation : Bool
     }
@@ -246,6 +258,7 @@ type alias Model =
     , displaySettings : DisplaySettings
     , netSettings : NetSettings
     , tilingSettings : TilingSettings
+    , tiling2dSettings : Tiling2dSettings
     , embeddingSettings : EmbeddingSettings
     , title : String
     , status : String
@@ -299,6 +312,18 @@ init flags =
             , colorByTranslationClass = False
             , extraSmooth = False
             , tighten = False
+            , edgeWidth = 0.5
+            }
+      , tiling2dSettings =
+            { tileScale = 1.0
+            , edgeColor =
+                { hue = 0.0
+                , saturation = 0.0
+                , lightness = 0.0
+                , alpha = 1.0
+                }
+            , highlightEdges = False
+            , colorByTranslationClass = False
             , edgeWidth = 0.5
             }
       , embeddingSettings =
@@ -381,6 +406,9 @@ actionLabel action =
 
         OpenTilingDialog ->
             "Tiling Settings..."
+
+        OpenTiling2dDialog ->
+            "2D Tiling Settings..."
 
         OpenEmbeddingDialog ->
             "Embedding Settings..."
@@ -542,6 +570,7 @@ mainMenuConfig =
     , makeMenuEntry OpenDisplayDialog
     , makeMenuEntry OpenNetDialog
     , makeMenuEntry OpenTilingDialog
+    , makeMenuEntry OpenTiling2dDialog
     , makeMenuEntry OpenEmbeddingDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
@@ -799,6 +828,49 @@ update msg model =
             else
                 ( { model | tilingSettings = settings }, Cmd.none )
 
+        UpdateTiling2dSettings settings ->
+            if settings /= model.tiling2dSettings then
+                let
+                    options =
+                        [ { key = "colorByTranslationClass2d"
+                          , onOff = settings.colorByTranslationClass
+                          , text = Nothing
+                          , value = Nothing
+                          , color = Nothing
+                          }
+                        , { key = "tileEdgeColor2d"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Nothing
+                          , color = Just settings.edgeColor
+                          }
+                        , { key = "highlightEdges2d"
+                          , onOff = settings.highlightEdges
+                          , text = Nothing
+                          , value = Nothing
+                          , color = Nothing
+                          }
+                        , { key = "tileScale2d"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Just settings.tileScale
+                          , color = Nothing
+                          }
+                        , { key = "edgeWidth2d"
+                          , onOff = True
+                          , text = Nothing
+                          , value = Just settings.edgeWidth
+                          , color = Nothing
+                          }
+                        ]
+                in
+                ( { model | tiling2dSettings = settings }
+                , toJS <| OutData "options" Nothing options []
+                )
+
+            else
+                ( { model | tiling2dSettings = settings }, Cmd.none )
+
         UpdateEmbeddingSettings settings ->
             if settings /= model.embeddingSettings then
                 let
@@ -966,6 +1038,11 @@ executeAction action model =
 
         OpenTilingDialog ->
             ( { model | dialogStack = [ TilingSettingsDialog ] }
+            , Cmd.none
+            )
+
+        OpenTiling2dDialog ->
+            ( { model | dialogStack = [ Tiling2dSettingsDialog ] }
             , Cmd.none
             )
 
@@ -1330,6 +1407,12 @@ viewCurrentDialog model =
             wrap <|
                 viewTilingSettings UpdateTilingSettings model.tilingSettings
 
+        Tiling2dSettingsDialog :: _ ->
+            wrap <|
+                viewTiling2dSettings
+                    UpdateTiling2dSettings
+                    model.tiling2dSettings
+
         EmbeddingSettingsDialog :: _ ->
             wrap <|
                 viewEmbeddingSettings
@@ -1538,6 +1621,58 @@ viewTilingSettings toMsg settings =
             , label =
                 Input.labelRight [] <|
                     Element.text "Tighten Faces (experimental)"
+            }
+        ]
+
+
+viewTiling2dSettings :
+    (Tiling2dSettings -> Msg)
+    -> Tiling2dSettings
+    -> Element.Element Msg
+viewTiling2dSettings toMsg settings =
+    Element.column
+        [ Element.spacing 16 ]
+        [ Element.el [ Element.centerX, Font.bold ]
+            (Element.text "2D Tiling Settings")
+        , Element.el []
+            (Element.text "Tile Scale")
+        , ValueSlider.view
+            (\value -> toMsg { settings | tileScale = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.tileScale
+        , Element.el []
+            (Element.text "Edge Width")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeWidth = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.edgeWidth
+        , Element.el []
+            (Element.text "Edge Color")
+        , ColorDialog.view
+            (\color -> toMsg { settings | edgeColor = color })
+            settings.edgeColor
+            False
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | highlightEdges = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.highlightEdges
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Highlight Edges"
+            }
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.colorByTranslationClass
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Color By Translation"
             }
         ]
 

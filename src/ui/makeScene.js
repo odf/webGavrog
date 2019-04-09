@@ -369,10 +369,13 @@ const makeDisplayList = (tiles, shifts) => {
 const displayListToModel = (
   displayList, tiles, meshes, partLists, materials, cell, options
 ) => {
-  const extCell = ops.dimension(cell) == 2 ?
+  const dim = ops.dimension(cell);
+  const extCell = dim == 2 ?
         cell.map(v => v.concat(0)).concat([[0, 0, 1]]) : cell;
   const invCell = ops.inverse(extCell);
-  const scale = Math.min(0.999, options.tileScale || 0.85);
+  const scale2d = options.tileScale2d || 1.00;
+  const scale3d = options.tileScale || 0.85;
+  const scale = Math.min(0.999, dim == 2 ? scale2d : scale3d);
 
   const instances = [];
 
@@ -387,14 +390,17 @@ const displayListToModel = (
                       ops.times(1.0 - scale, ops.times(center, extCell)))
     };
 
-    const baseMatIndex =
-          options.colorByTranslationClass ? tileIndex : meshIndex;
+    const colorByTrans = dim == 2 ?
+          options.colorByTranslationClass2d : options.colorByTranslationClass;
+    const baseMatIndex = colorByTrans ? tileIndex : meshIndex;
 
     for (let j = 0; j < parts.length; ++j) {
       if (skippedParts && skippedParts[j])
         continue;
 
-      const materialIndex = (j == parts.length - 1 && options.highlightEdges) ?
+      const highlight = dim == 2 ?
+            options.highlightEdges2d : options.highlightEdges;
+      const materialIndex = (j == parts.length - 1 && highlight) ?
             materials.length - 1 : baseMatIndex;
 
       instances.push({
@@ -504,23 +510,27 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
   } = data;
 
+  const dim = delaney.dim(ds);
   const edgeMaterial = Object.assign({}, baseMaterial, {
-    diffuseColor: options.tileEdgeColor || white,
+    diffuseColor: (dim == 2 ? options.tileEdgeColor2d : options.tileEdgeColor)
+      || white,
     shininess: 15.0
   });
 
-  const dim = delaney.dim(ds);
-  const palette = materials[options.colorByTranslationClass ? 1 : 0]
-        .concat(edgeMaterial);
+  const colorByTrans = dim == 2 ?
+        options.colorByTranslationClass2d : options.colorByTranslationClass;
+  const palette = materials[colorByTrans ? 1 : 0].concat(edgeMaterial);
 
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
   const pos = embedding.positions;
   const basis = unitCells.invariantBasis(embedding.gram);
 
-  const subDLevel = options.extraSmooth ? 3 : 2;
-  const tighten = !!options.tightenSurfaces;
-  const edgeWidth = options.edgeWidth || 0.5;
+  const subDLevel = (dim == 3 && options.extraSmooth) ? 3 : 2;
+  const tighten = dim == 3 && !!options.tightenSurfaces;
+  const edgeWidth2d = options.edgeWidth2d || 0.5;
+  const edgeWidth3d = options.edgeWidth || 0.5;
+  const edgeWidth = dim == 2 ? edgeWidth2d : edgeWidth3d;
   const key = `subd-${subDLevel} tighten-${tighten} edgeWidth-${edgeWidth}`;
 
   if (embedding[key] == null)
