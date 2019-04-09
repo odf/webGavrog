@@ -523,12 +523,8 @@ setRedraws onOff model =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> Bool -> Color -> Html msg
-view toMsg model withWires bgColor =
-    let
-        { red, green, blue } =
-            Color.toRgba bgColor
-    in
+view : (Msg -> msg) -> Model -> Renderer.Options -> Color -> Html msg
+view toMsg model options bgColor =
     WebGL.toHtml
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" (Color.toCssString bgColor)
@@ -552,12 +548,11 @@ view toMsg model withWires bgColor =
             model.scene
             model.center
             model.radius
-            (vec3 red green blue)
+            options
             model.selected
             (Camera.cameraDistance model.cameraState)
             (Camera.viewingMatrix model.cameraState)
             (Camera.perspectiveMatrix model.cameraState)
-            withWires
         )
 
 

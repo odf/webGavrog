@@ -209,6 +209,8 @@ type Dialog
 type alias DisplaySettings =
     { backgroundColor : ColorDialog.Color
     , showSurfaceMesh : Bool
+    , fadeToBackground : Bool
+    , fadeToBlue : Bool
     }
 
 
@@ -266,6 +268,8 @@ init flags =
       , displaySettings =
             { backgroundColor = Color.toHsla Color.white
             , showSurfaceMesh = False
+            , fadeToBlue = False
+            , fadeToBackground = False
             }
       , netSettings =
             { vertexRadius = 0.1
@@ -1115,18 +1119,21 @@ rotateBy axis angle model =
 view : Model -> Browser.Document Msg
 view model =
     let
-        withWires =
-            model.displaySettings.showSurfaceMesh
-
-        color =
+        { hue, saturation, lightness, alpha } =
             model.displaySettings.backgroundColor
 
-        backgroundColor =
-            Color.hsla
-                color.hue
-                color.saturation
-                color.lightness
-                color.alpha
+        bgColor =
+            Color.hsla hue saturation lightness alpha
+
+        { red, green, blue } =
+            Color.toRgba bgColor
+
+        options =
+            { drawWires = model.displaySettings.showSurfaceMesh
+            , fadeToBackground = model.displaySettings.fadeToBackground
+            , fadeToBlue = model.displaySettings.fadeToBlue
+            , backgroundColor = vec3 red green blue
+            }
     in
     { title = "Web-Gavrog"
     , body =
@@ -1153,12 +1160,8 @@ view model =
                 [ onContextMenu ContextMenuOnOff
                 , onMouseDown MouseDown
                 ]
-                (View3d.view
-                    ViewMsg
-                    model.viewState
-                    withWires
-                    backgroundColor
-                    |> Element.html
+                (Element.html <|
+                    View3d.view ViewMsg model.viewState options bgColor
                 )
             )
         ]
@@ -1407,6 +1410,22 @@ viewDisplaySettings toMsg settings =
             (\color -> toMsg { settings | backgroundColor = color })
             settings.backgroundColor
             True
+        , Input.checkbox []
+            { onChange = \onOff -> toMsg { settings | fadeToBackground = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.fadeToBackground
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Fade To Background (Haze)"
+            }
+        , Input.checkbox []
+            { onChange = \onOff -> toMsg { settings | fadeToBlue = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.fadeToBlue
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Fade To Blue (Color Perspective)"
+            }
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
             , icon = Input.defaultCheckbox

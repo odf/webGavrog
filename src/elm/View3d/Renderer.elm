@@ -1,4 +1,4 @@
-module View3d.Renderer exposing (Material, Scene, Vertex, entities)
+module View3d.Renderer exposing (Material, Options, Scene, Vertex, entities)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -35,10 +35,20 @@ type alias Scene a =
         }
 
 
+type alias Options =
+    { drawWires : Bool
+    , fadeToBackground : Bool
+    , fadeToBlue : Bool
+    , backgroundColor : Vec3
+    }
+
+
 type alias Uniforms =
     { sceneCenter : Vec3
     , sceneRadius : Float
     , backgroundColor : Vec3
+    , fadeToBackground : Bool
+    , fadeToBlue : Bool
     , transform : Mat4
     , viewing : Mat4
     , perspective : Mat4
@@ -84,19 +94,20 @@ entities :
     Scene a
     -> Vec3
     -> Float
-    -> Vec3
+    -> Options
     -> Set ( Int, Int )
     -> Float
     -> Mat4
     -> Mat4
-    -> Bool
     -> List WebGL.Entity
-entities scene center radius bg selected camDist viewing perspective wires =
+entities scene center radius options selected camDist viewing perspective =
     let
         baseUniforms =
             { sceneCenter = Mat4.transform viewing center
             , sceneRadius = radius
-            , backgroundColor = bg
+            , backgroundColor = options.backgroundColor
+            , fadeToBackground = options.fadeToBackground
+            , fadeToBlue = options.fadeToBlue
             , transform = Mat4.identity
             , viewing = viewing
             , perspective = perspective
@@ -150,7 +161,7 @@ entities scene center radius bg selected camDist viewing perspective wires =
                 highlight =
                     Set.member ( idxMesh, idxInstance ) selected
             in
-            if wires then
+            if options.drawWires then
                 [ meshUniforms transform material highlight
                     |> WebGL.entity vertexShader fragmentShader mesh
                 , wireUniforms transform material highlight
@@ -194,6 +205,8 @@ fragmentShader =
     uniform vec3 sceneCenter;
     uniform float sceneRadius;
     uniform vec3 backgroundColor;
+    uniform bool fadeToBackground;
+    uniform bool fadeToBlue;
     uniform vec3 cameraPos;
     uniform vec3 light1Pos;
     uniform vec3 light1Color;
@@ -216,16 +229,17 @@ fragmentShader =
         vec3 lightVec = normalize(lightPos - vpos);
 
         float diffuse = dot(normVec, lightVec);
-        if (diffuse < 0.0)
+        if (diffuse < 0.0) {
             diffuse *= -0.5;
+        }
 
         float specular = 0.0;
 
         if (diffuse > 0.0) {
-          vec3 reflectVec = reflect(-lightVec, normVec);
-          vec3 camVec = normalize(cameraPos - vpos);
-          float t = max(dot(reflectVec, camVec), 0.0);
-          specular = pow(t, shininess);
+            vec3 reflectVec = reflect(-lightVec, normVec);
+            vec3 camVec = normalize(cameraPos - vpos);
+            float t = max(dot(reflectVec, camVec), 0.0);
+            specular = pow(t, shininess);
         }
 
         vec3 cd = kd * diffuse * diffuseColor;
@@ -244,8 +258,13 @@ fragmentShader =
         float depth = (sceneCenter - vpos).z;
         float coeff = smoothstep(-sceneRadius, sceneRadius, depth);
 
-        color = mix(color, vec3(0.0, 0.0, 1.0), coeff * coeff * coeff);
-        color = mix(color, backgroundColor, coeff);
+        if (fadeToBlue) {
+            color = mix(color, vec3(0.0, 0.0, 1.0), coeff * coeff * coeff);
+        }
+
+        if (fadeToBackground) {
+            color = mix(color, backgroundColor, coeff);
+        }
 
         gl_FragColor = vec4(color, 1.0);
     }
