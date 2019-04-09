@@ -16,6 +16,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Html.Events
 import Json.Decode as Decode
+import Json.Encode as Encode
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Set exposing (Set)
@@ -33,23 +34,6 @@ main =
         , view = view
         , subscriptions = subscriptions
         }
-
-
-type alias OutOption =
-    { key : String
-    , onOff : Bool
-    , text : Maybe String
-    , value : Maybe Float
-    , color : Maybe ColorDialog.Color
-    }
-
-
-type alias OutData =
-    { mode : String
-    , text : Maybe String
-    , options : List OutOption
-    , selected : List { meshIndex : Int, instanceIndex : Int }
-    }
 
 
 type alias InData =
@@ -127,7 +111,7 @@ type Msg
     | Ignore
 
 
-port toJS : OutData -> Cmd msg
+port toJS : Encode.Value -> Cmd msg
 
 
 port fromJS : (InData -> msg) -> Sub msg
@@ -633,6 +617,16 @@ searchDialogConfig =
 -- UPDATE
 
 
+encodeColor : ColorDialog.Color -> Encode.Value
+encodeColor { hue, saturation, lightness, alpha } =
+    Encode.object
+        [ ( "hue", Encode.float hue )
+        , ( "saturation", Encode.float saturation )
+        , ( "lightness", Encode.float lightness )
+        , ( "alpha", Encode.float alpha )
+        ]
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -702,7 +696,11 @@ update msg model =
             , if ok then
                 case model.dialogStack of
                     (TextDialog _ text) :: rest ->
-                        toJS <| OutData label (Just text) [] []
+                        toJS <|
+                            Encode.object
+                                [ ( "mode", Encode.string label )
+                                , ( "text", Encode.string text )
+                                ]
 
                     _ ->
                         Cmd.none
@@ -717,20 +715,25 @@ update msg model =
                     /= model.displaySettings.backgroundColor
             then
                 let
-                    colorToText c =
-                        Color.hsla c.hue c.saturation c.lightness c.alpha
+                    { hue, saturation, lightness, alpha } =
+                        settings.backgroundColor
+
+                    colorAsText =
+                        Color.hsla hue saturation lightness alpha
                             |> Color.toCssString
 
-                    option =
-                        { key = "backgroundColor"
-                        , onOff = True
-                        , text = Just (colorToText settings.backgroundColor)
-                        , value = Nothing
-                        , color = Nothing
-                        }
+                    options =
+                        [ [ ( "key", Encode.string "backgroundColor" )
+                          , ( "text", Encode.string colorAsText )
+                          ]
+                        ]
                 in
                 ( { model | displaySettings = settings }
-                , toJS <| OutData "options" Nothing [ option ] []
+                , toJS <|
+                    Encode.object
+                        [ ( "mode", Encode.string "options" )
+                        , ( "options", Encode.list Encode.object options )
+                        ]
                 )
 
             else
@@ -740,34 +743,26 @@ update msg model =
             if settings /= model.netSettings then
                 let
                     options =
-                        [ { key = "netVertexRadius"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Just settings.vertexRadius
-                          , color = Nothing
-                          }
-                        , { key = "netVertexColor"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Just settings.vertexColor
-                          }
-                        , { key = "netEdgeRadius"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Just settings.edgeRadius
-                          , color = Nothing
-                          }
-                        , { key = "netEdgeColor"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Just settings.edgeColor
-                          }
+                        [ [ ( "key", Encode.string "netVertexRadius" )
+                          , ( "value", Encode.float settings.vertexRadius )
+                          ]
+                        , [ ( "key", Encode.string "netVertexColor" )
+                          , ( "color", encodeColor settings.vertexColor )
+                          ]
+                        , [ ( "key", Encode.string "netEdgeRadius" )
+                          , ( "value", Encode.float settings.edgeRadius )
+                          ]
+                        , [ ( "key", Encode.string "netEdgeColor" )
+                          , ( "color", encodeColor settings.edgeColor )
+                          ]
                         ]
                 in
                 ( { model | netSettings = settings }
-                , toJS <| OutData "options" Nothing options []
+                , toJS <|
+                    Encode.object
+                        [ ( "mode", Encode.string "options" )
+                        , ( "options", Encode.list Encode.object options )
+                        ]
                 )
 
             else
@@ -777,52 +772,37 @@ update msg model =
             if settings /= model.tilingSettings then
                 let
                     options =
-                        [ { key = "colorByTranslationClass"
-                          , onOff = settings.colorByTranslationClass
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
-                        , { key = "tileEdgeColor"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Just settings.edgeColor
-                          }
-                        , { key = "highlightEdges"
-                          , onOff = settings.highlightEdges
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
-                        , { key = "extraSmooth"
-                          , onOff = settings.extraSmooth
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
-                        , { key = "tightenSurfaces"
-                          , onOff = settings.tighten
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
-                        , { key = "tileScale"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Just settings.tileScale
-                          , color = Nothing
-                          }
-                        , { key = "edgeWidth"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Just settings.edgeWidth
-                          , color = Nothing
-                          }
+                        [ [ ( "key", Encode.string "colorByTranslationClass" )
+                          , ( "onOff"
+                            , Encode.bool settings.colorByTranslationClass
+                            )
+                          ]
+                        , [ ( "key", Encode.string "tileEdgeColor" )
+                          , ( "color", encodeColor settings.edgeColor )
+                          ]
+                        , [ ( "key", Encode.string "highlightEdges" )
+                          , ( "onOff", Encode.bool settings.highlightEdges )
+                          ]
+                        , [ ( "key", Encode.string "extraSmooth" )
+                          , ( "onOff", Encode.bool settings.extraSmooth )
+                          ]
+                        , [ ( "key", Encode.string "tightenSurfaces" )
+                          , ( "onOff", Encode.bool settings.tighten )
+                          ]
+                        , [ ( "key", Encode.string "tileScale" )
+                          , ( "value", Encode.float settings.tileScale )
+                          ]
+                        , [ ( "key", Encode.string "edgeWidth" )
+                          , ( "value", Encode.float settings.edgeWidth )
+                          ]
                         ]
                 in
                 ( { model | tilingSettings = settings }
-                , toJS <| OutData "options" Nothing options []
+                , toJS <|
+                    Encode.object
+                        [ ( "mode", Encode.string "options" )
+                        , ( "options", Encode.list Encode.object options )
+                        ]
                 )
 
             else
@@ -832,40 +812,31 @@ update msg model =
             if settings /= model.tiling2dSettings then
                 let
                     options =
-                        [ { key = "colorByTranslationClass2d"
-                          , onOff = settings.colorByTranslationClass
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
-                        , { key = "tileEdgeColor2d"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Just settings.edgeColor
-                          }
-                        , { key = "highlightEdges2d"
-                          , onOff = settings.highlightEdges
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
-                        , { key = "tileScale2d"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Just settings.tileScale
-                          , color = Nothing
-                          }
-                        , { key = "edgeWidth2d"
-                          , onOff = True
-                          , text = Nothing
-                          , value = Just settings.edgeWidth
-                          , color = Nothing
-                          }
+                        [ [ ( "key", Encode.string "colorByTranslationClass2d" )
+                          , ( "onOff"
+                            , Encode.bool settings.colorByTranslationClass
+                            )
+                          ]
+                        , [ ( "key", Encode.string "tileEdgeColor2d" )
+                          , ( "color", encodeColor settings.edgeColor )
+                          ]
+                        , [ ( "key", Encode.string "highlightEdges2d" )
+                          , ( "onOff", Encode.bool settings.highlightEdges )
+                          ]
+                        , [ ( "key", Encode.string "tileScale2d" )
+                          , ( "value", Encode.float settings.tileScale )
+                          ]
+                        , [ ( "key", Encode.string "edgeWidth2d" )
+                          , ( "value", Encode.float settings.edgeWidth )
+                          ]
                         ]
                 in
                 ( { model | tiling2dSettings = settings }
-                , toJS <| OutData "options" Nothing options []
+                , toJS <|
+                    Encode.object
+                        [ ( "mode", Encode.string "options" )
+                        , ( "options", Encode.list Encode.object options )
+                        ]
                 )
 
             else
@@ -875,16 +846,17 @@ update msg model =
             if settings /= model.embeddingSettings then
                 let
                     options =
-                        [ { key = "skipRelaxation"
-                          , onOff = settings.skipRelaxation
-                          , text = Nothing
-                          , value = Nothing
-                          , color = Nothing
-                          }
+                        [ [ ( "key", Encode.string "skipRelaxation" )
+                          , ( "onOff", Encode.bool settings.skipRelaxation )
+                          ]
                         ]
                 in
                 ( { model | embeddingSettings = settings }
-                , toJS <| OutData "options" Nothing options []
+                , toJS <|
+                    Encode.object
+                        [ ( "mode", Encode.string "options" )
+                        , ( "options", Encode.list Encode.object options )
+                        ]
                 )
 
             else
@@ -1099,16 +1071,32 @@ executeAction action model =
 
         SaveScreenshot ->
             ( updateView3d (View3d.setRedraws True) model
-            , toJS <| OutData "menuChoice" (Just <| actionLabel action) [] []
+            , toJS <|
+                Encode.object
+                    [ ( "mode", Encode.string "menuChoice" )
+                    , ( "text", Encode.string <| actionLabel action )
+                    ]
             )
 
         _ ->
+            let
+                selected =
+                    model.viewState.selected
+                        |> Set.toList
+                        |> List.map
+                            (\( m, i ) ->
+                                [ ( "meshIndex", Encode.int m )
+                                , ( "instanceIndex", Encode.int i )
+                                ]
+                            )
+            in
             ( model
-            , model.viewState.selected
-                |> Set.toList
-                |> List.map (\( m, i ) -> { meshIndex = m, instanceIndex = i })
-                |> OutData "menuChoice" (Just <| actionLabel action) []
-                |> toJS
+            , toJS <|
+                Encode.object
+                    [ ( "mode", Encode.string "menuChoice" )
+                    , ( "text", Encode.string <| actionLabel action )
+                    , ( "selected", Encode.list Encode.object selected )
+                    ]
             )
 
 
