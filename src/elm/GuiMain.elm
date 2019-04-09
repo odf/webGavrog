@@ -723,16 +723,14 @@ update msg model =
                             |> Color.toCssString
 
                     options =
-                        [ [ ( "key", Encode.string "backgroundColor" )
-                          , ( "text", Encode.string colorAsText )
-                          ]
+                        [ ( "backgroundColor", Encode.string colorAsText )
                         ]
                 in
                 ( { model | displaySettings = settings }
                 , toJS <|
                     Encode.object
                         [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.list Encode.object options )
+                        , ( "options", Encode.object options )
                         ]
                 )
 
@@ -743,25 +741,19 @@ update msg model =
             if settings /= model.netSettings then
                 let
                     options =
-                        [ [ ( "key", Encode.string "netVertexRadius" )
-                          , ( "value", Encode.float settings.vertexRadius )
-                          ]
-                        , [ ( "key", Encode.string "netVertexColor" )
-                          , ( "color", encodeColor settings.vertexColor )
-                          ]
-                        , [ ( "key", Encode.string "netEdgeRadius" )
-                          , ( "value", Encode.float settings.edgeRadius )
-                          ]
-                        , [ ( "key", Encode.string "netEdgeColor" )
-                          , ( "color", encodeColor settings.edgeColor )
-                          ]
+                        [ ( "netVertexRadius"
+                          , Encode.float settings.vertexRadius
+                          )
+                        , ( "netVertexColor", encodeColor settings.vertexColor )
+                        , ( "netEdgeRadius", Encode.float settings.edgeRadius )
+                        , ( "netEdgeColor", encodeColor settings.edgeColor )
                         ]
                 in
                 ( { model | netSettings = settings }
                 , toJS <|
                     Encode.object
                         [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.list Encode.object options )
+                        , ( "options", Encode.object options )
                         ]
                 )
 
@@ -772,36 +764,24 @@ update msg model =
             if settings /= model.tilingSettings then
                 let
                     options =
-                        [ [ ( "key", Encode.string "colorByTranslationClass" )
-                          , ( "onOff"
-                            , Encode.bool settings.colorByTranslationClass
-                            )
-                          ]
-                        , [ ( "key", Encode.string "tileEdgeColor" )
-                          , ( "color", encodeColor settings.edgeColor )
-                          ]
-                        , [ ( "key", Encode.string "highlightEdges" )
-                          , ( "onOff", Encode.bool settings.highlightEdges )
-                          ]
-                        , [ ( "key", Encode.string "extraSmooth" )
-                          , ( "onOff", Encode.bool settings.extraSmooth )
-                          ]
-                        , [ ( "key", Encode.string "tightenSurfaces" )
-                          , ( "onOff", Encode.bool settings.tighten )
-                          ]
-                        , [ ( "key", Encode.string "tileScale" )
-                          , ( "value", Encode.float settings.tileScale )
-                          ]
-                        , [ ( "key", Encode.string "edgeWidth" )
-                          , ( "value", Encode.float settings.edgeWidth )
-                          ]
+                        [ ( "colorByTranslationClass"
+                          , Encode.bool settings.colorByTranslationClass
+                          )
+                        , ( "highlightEdges"
+                          , Encode.bool settings.highlightEdges
+                          )
+                        , ( "tileEdgeColor", encodeColor settings.edgeColor )
+                        , ( "extraSmooth", Encode.bool settings.extraSmooth )
+                        , ( "tightenSurfaces", Encode.bool settings.tighten )
+                        , ( "tileScale", Encode.float settings.tileScale )
+                        , ( "edgeWidth", Encode.float settings.edgeWidth )
                         ]
                 in
                 ( { model | tilingSettings = settings }
                 , toJS <|
                     Encode.object
                         [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.list Encode.object options )
+                        , ( "options", Encode.object options )
                         ]
                 )
 
@@ -812,30 +792,22 @@ update msg model =
             if settings /= model.tiling2dSettings then
                 let
                     options =
-                        [ [ ( "key", Encode.string "colorByTranslationClass2d" )
-                          , ( "onOff"
-                            , Encode.bool settings.colorByTranslationClass
-                            )
-                          ]
-                        , [ ( "key", Encode.string "tileEdgeColor2d" )
-                          , ( "color", encodeColor settings.edgeColor )
-                          ]
-                        , [ ( "key", Encode.string "highlightEdges2d" )
-                          , ( "onOff", Encode.bool settings.highlightEdges )
-                          ]
-                        , [ ( "key", Encode.string "tileScale2d" )
-                          , ( "value", Encode.float settings.tileScale )
-                          ]
-                        , [ ( "key", Encode.string "edgeWidth2d" )
-                          , ( "value", Encode.float settings.edgeWidth )
-                          ]
+                        [ ( "colorByTranslationClass2d"
+                          , Encode.bool settings.colorByTranslationClass
+                          )
+                        , ( "highlightEdges2d"
+                          , Encode.bool settings.highlightEdges
+                          )
+                        , ( "tileEdgeColor2d", encodeColor settings.edgeColor )
+                        , ( "tileScale2d", Encode.float settings.tileScale )
+                        , ( "edgeWidth2d", Encode.float settings.edgeWidth )
                         ]
                 in
                 ( { model | tiling2dSettings = settings }
                 , toJS <|
                     Encode.object
                         [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.list Encode.object options )
+                        , ( "options", Encode.object options )
                         ]
                 )
 
@@ -846,16 +818,16 @@ update msg model =
             if settings /= model.embeddingSettings then
                 let
                     options =
-                        [ [ ( "key", Encode.string "skipRelaxation" )
-                          , ( "onOff", Encode.bool settings.skipRelaxation )
-                          ]
+                        [ ( "skipRelaxation"
+                          , Encode.bool settings.skipRelaxation
+                          )
                         ]
                 in
                 ( { model | embeddingSettings = settings }
                 , toJS <|
                     Encode.object
                         [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.list Encode.object options )
+                        , ( "options", Encode.object options )
                         ]
                 )
 
