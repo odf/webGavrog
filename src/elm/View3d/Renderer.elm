@@ -4,6 +4,8 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import WebGL
+import WebGL.Settings as Settings
+import WebGL.Settings.DepthTest as DepthTest
 
 
 type alias Vertex =
@@ -40,6 +42,7 @@ type alias Options =
     , fadeToBackground : Bool
     , fadeToBlue : Bool
     , backgroundColor : Vec3
+    , silhouetteToBackground : Bool
     }
 
 
@@ -161,17 +164,31 @@ entities scene center radius options selected camDist viewing perspective =
                 highlight =
                     Set.member ( idxMesh, idxInstance ) selected
             in
-            if options.drawWires then
-                [ meshUniforms transform material highlight
-                    |> WebGL.entity vertexShader fragmentShader mesh
-                , wireUniforms transform material highlight
+            [ meshUniforms transform material highlight
+                |> WebGL.entity vertexShader fragmentShader mesh
+                |> Just
+            , if options.drawWires then
+                wireUniforms transform material highlight
                     |> WebGL.entity vertexShader fragmentShader wireframe
-                ]
+                    |> Just
 
-            else
-                [ meshUniforms transform material highlight
-                    |> WebGL.entity vertexShader fragmentShader mesh
-                ]
+              else
+                Nothing
+            , if options.silhouetteToBackground then
+                meshUniforms transform material highlight
+                    |> WebGL.entityWith
+                        [ DepthTest.default
+                        , Settings.cullFace Settings.front
+                        ]
+                        vertexShaderSilhouette
+                        fragmentShaderSilhouette
+                        mesh
+                    |> Just
+
+              else
+                Nothing
+            ]
+                |> List.filterMap identity
         )
         scene
 
@@ -192,6 +209,29 @@ vertexShader =
         vpos = (viewing * transform * vec4(pos, 1.0)).xyz;
         vnormal = (viewing * transform * vec4(normal, 0.0)).xyz;
         gl_Position = perspective * viewing * transform * vec4(pos, 1.0);
+    }
+
+    |]
+
+
+vertexShaderSilhouette : WebGL.Shader Vertex Uniforms Varyings
+vertexShaderSilhouette =
+    [glsl|
+
+    attribute vec3 pos;
+    attribute vec3 normal;
+    uniform mat4 transform;
+    uniform mat4 viewing;
+    uniform mat4 perspective;
+    varying vec3 vpos;
+    varying vec3 vnormal;
+
+    void main () {
+        vec3 posx = pos + 0.02 * normal;
+
+        vnormal = (viewing * transform * vec4(normal, 0.0)).xyz;
+        vpos = (viewing * transform * vec4(posx, 1.0)).xyz;
+        gl_Position = perspective * viewing * transform * vec4(posx, 1.0);
     }
 
     |]
@@ -267,6 +307,22 @@ fragmentShader =
         }
 
         gl_FragColor = vec4(color, 1.0);
+    }
+
+    |]
+
+
+fragmentShaderSilhouette : WebGL.Shader {} Uniforms Varyings
+fragmentShaderSilhouette =
+    [glsl|
+
+    precision mediump float;
+    uniform vec3 backgroundColor;
+    varying vec3 vpos;
+    varying vec3 vnormal;
+
+    void main () {
+        gl_FragColor = vec4(backgroundColor, 1.0);
     }
 
     |]

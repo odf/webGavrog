@@ -195,9 +195,10 @@ type Dialog
 
 type alias DisplaySettings =
     { backgroundColor : ColorDialog.Color
-    , showSurfaceMesh : Bool
     , fadeToBackground : Bool
     , fadeToBlue : Bool
+    , silhouetteToBackground : Bool
+    , showSurfaceMesh : Bool
     }
 
 
@@ -267,6 +268,7 @@ init flags =
             , showSurfaceMesh = False
             , fadeToBlue = False
             , fadeToBackground = False
+            , silhouetteToBackground = False
             }
       , netSettings =
             { vertexRadius = 0.1
@@ -1153,10 +1155,14 @@ view model =
         { red, green, blue } =
             Color.toRgba bgColor
 
+        settings =
+            model.displaySettings
+
         options =
-            { drawWires = model.displaySettings.showSurfaceMesh
-            , fadeToBackground = model.displaySettings.fadeToBackground
-            , fadeToBlue = model.displaySettings.fadeToBlue
+            { drawWires = settings.showSurfaceMesh
+            , fadeToBackground = settings.fadeToBackground
+            , fadeToBlue = settings.fadeToBlue
+            , silhouetteToBackground = settings.silhouetteToBackground
             , backgroundColor = vec3 red green blue
             }
     in
@@ -1456,6 +1462,16 @@ viewDisplaySettings toMsg settings =
             , label =
                 Input.labelRight [] <|
                     Element.text "Fade To Blue (Color Perspective)"
+            }
+        , Input.checkbox []
+            { onChange =
+                \onOff ->
+                    toMsg { settings | silhouetteToBackground = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.silhouetteToBackground
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Silhouette To Background"
             }
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
