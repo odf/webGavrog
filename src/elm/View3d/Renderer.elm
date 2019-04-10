@@ -42,7 +42,7 @@ type alias Options =
     , fadeToBackground : Bool
     , fadeToBlue : Bool
     , backgroundColor : Vec3
-    , silhouetteToBackground : Bool
+    , addOutlines : Bool
     }
 
 
@@ -174,14 +174,14 @@ entities scene center radius options selected camDist viewing perspective =
 
               else
                 Nothing
-            , if options.silhouetteToBackground then
+            , if options.addOutlines then
                 meshUniforms transform material highlight
                     |> WebGL.entityWith
                         [ DepthTest.default
                         , Settings.cullFace Settings.front
                         ]
-                        vertexShaderSilhouette
-                        fragmentShaderSilhouette
+                        vertexShaderOutline
+                        fragmentShaderOutline
                         mesh
                     |> Just
 
@@ -214,8 +214,8 @@ vertexShader =
     |]
 
 
-vertexShaderSilhouette : WebGL.Shader Vertex Uniforms Varyings
-vertexShaderSilhouette =
+vertexShaderOutline : WebGL.Shader Vertex Uniforms Varyings
+vertexShaderOutline =
     [glsl|
 
     attribute vec3 pos;
@@ -312,8 +312,8 @@ fragmentShader =
     |]
 
 
-fragmentShaderSilhouette : WebGL.Shader {} Uniforms Varyings
-fragmentShaderSilhouette =
+fragmentShaderOutline : WebGL.Shader {} Uniforms Varyings
+fragmentShaderOutline =
     [glsl|
 
     precision mediump float;

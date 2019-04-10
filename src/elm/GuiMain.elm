@@ -197,7 +197,7 @@ type alias DisplaySettings =
     { backgroundColor : ColorDialog.Color
     , fadeToBackground : Bool
     , fadeToBlue : Bool
-    , silhouetteToBackground : Bool
+    , addOutlines : Bool
     , showSurfaceMesh : Bool
     }
 
@@ -268,7 +268,7 @@ init flags =
             , showSurfaceMesh = False
             , fadeToBlue = False
             , fadeToBackground = False
-            , silhouetteToBackground = False
+            , addOutlines = False
             }
       , netSettings =
             { vertexRadius = 0.1
@@ -1162,7 +1162,7 @@ view model =
             { drawWires = settings.showSurfaceMesh
             , fadeToBackground = settings.fadeToBackground
             , fadeToBlue = settings.fadeToBlue
-            , silhouetteToBackground = settings.silhouetteToBackground
+            , addOutlines = settings.addOutlines
             , backgroundColor = vec3 red green blue
             }
     in
@@ -1464,14 +1464,10 @@ viewDisplaySettings toMsg settings =
                     Element.text "Fade To Blue (Color Perspective)"
             }
         , Input.checkbox []
-            { onChange =
-                \onOff ->
-                    toMsg { settings | silhouetteToBackground = onOff }
+            { onChange = \onOff -> toMsg { settings | addOutlines = onOff }
             , icon = Input.defaultCheckbox
-            , checked = settings.silhouetteToBackground
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Silhouette To Background"
+            , checked = settings.addOutlines
+            , label = Input.labelRight [] <| Element.text "Add Outlines"
             }
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
