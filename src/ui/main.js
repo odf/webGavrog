@@ -354,7 +354,7 @@ const saveStructure = (config, model) => {
 };
 
 
-const saveScreenshot = (config, model) => {
+const saveScreenshot = (config, options) => {
   const srcCanvas = document.getElementById('main-3d-canvas');
 
   if (srcCanvas) {
@@ -364,7 +364,7 @@ const saveScreenshot = (config, model) => {
       canvas.height = srcCanvas.height;
 
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = model.options['backgroundColor'];
+      ctx.fillStyle = options.backgroundColor;
       ctx.fillRect(0, 0, srcCanvas.width, srcCanvas.height);
       ctx.drawImage(srcCanvas, 0, 0);
 
@@ -427,7 +427,8 @@ const render = domNode => {
   const action = {
     ['Open...']: openFile,
     ['Save Structure...']: () => saveStructure(config, model),
-    ['Save Screenshot...']: () => saveScreenshot(config, model),
+    ['Save Screenshot...']: (selected, options) =>
+      saveScreenshot(config, options),
     ['First']: () => setStructure(0),
     ['Prev']: () => setStructure(model.index - 1),
     ['Next']: () => setStructure(model.index + 1),
@@ -460,7 +461,7 @@ const render = domNode => {
     }
     else if (mode == "menuChoice") {
       if (action[text])
-        action[text](selected);
+        action[text](selected, options);
     }
     else if (mode == "options") {
       for (const key in options)

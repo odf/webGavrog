@@ -710,32 +710,7 @@ update msg model =
             )
 
         UpdateDisplaySettings settings ->
-            if
-                settings.backgroundColor
-                    /= model.displaySettings.backgroundColor
-            then
-                let
-                    { hue, saturation, lightness, alpha } =
-                        settings.backgroundColor
-
-                    colorAsText =
-                        Color.hsla hue saturation lightness alpha
-                            |> Color.toCssString
-
-                    options =
-                        [ ( "backgroundColor", Encode.string colorAsText )
-                        ]
-                in
-                ( { model | displaySettings = settings }
-                , toJS <|
-                    Encode.object
-                        [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.object options )
-                        ]
-                )
-
-            else
-                ( { model | displaySettings = settings }, Cmd.none )
+            ( { model | displaySettings = settings }, Cmd.none )
 
         UpdateNetSettings settings ->
             if settings /= model.netSettings then
@@ -1042,11 +1017,24 @@ executeAction action model =
                     ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model, Cmd.none )
 
         SaveScreenshot ->
+            let
+                { hue, saturation, lightness, alpha } =
+                    model.displaySettings.backgroundColor
+
+                colorAsText =
+                    Color.hsla hue saturation lightness alpha
+                        |> Color.toCssString
+
+                options =
+                    [ ( "backgroundColor", Encode.string colorAsText )
+                    ]
+            in
             ( updateView3d (View3d.setRedraws True) model
             , toJS <|
                 Encode.object
                     [ ( "mode", Encode.string "menuChoice" )
                     , ( "text", Encode.string <| actionLabel action )
+                    , ( "options", Encode.object options )
                     ]
             )
 
