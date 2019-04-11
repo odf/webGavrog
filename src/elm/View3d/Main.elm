@@ -471,11 +471,11 @@ setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
 
-setScene : Scene.RawSceneSpec -> Model -> Model
-setScene spec model =
+setScene : Scene -> Model -> Model
+setScene rawScene model =
     let
         scene =
-            processedScene <| Scene.makeScene spec
+            processedScene rawScene
 
         n =
             List.length scene

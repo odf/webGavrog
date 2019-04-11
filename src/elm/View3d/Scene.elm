@@ -1,64 +1,17 @@
-module View3d.Scene exposing (RawSceneSpec, Scene, makeScene)
+module View3d.Scene exposing (Scene, decodeScene)
 
 import Color exposing (Color)
+import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.Renderer as Renderer
 
 
-type alias RawVec3 =
-    ( Float, Float, Float )
-
-
-type alias RawColor =
-    { hue : Float
-    , saturation : Float
-    , lightness : Float
-    }
-
-
-type alias RawVertexSpec =
-    { pos : RawVec3
-    , normal : RawVec3
-    }
-
-
-type alias RawMeshSpec =
-    { vertices : List RawVertexSpec
-    , faces : List (List Int)
-    }
-
-
-type alias RawMaterial =
-    { ambientColor : RawColor
-    , diffuseColor : RawColor
-    , specularColor : RawColor
-    , ka : Float
-    , kd : Float
-    , ks : Float
-    , shininess : Float
-    }
-
-
-type alias RawTransform =
-    { basis : ( RawVec3, RawVec3, RawVec3 )
-    , shift : RawVec3
-    }
-
-
-type alias RawInstanceSpec =
-    { meshIndex : Int
-    , materialIndex : Int
-    , transform : RawTransform
-    , extraShift : RawVec3
-    }
-
-
-type alias RawSceneSpec =
-    { meshes : List RawMeshSpec
-    , materials : List RawMaterial
-    , instances : List RawInstanceSpec
+type alias RawInstance =
+    { iMesh : Int
+    , iMat : Int
+    , transform : Mat4
     }
 
 
@@ -90,13 +43,16 @@ defaultMaterial =
     }
 
 
-makeVec3 : RawVec3 -> Vec3
-makeVec3 ( a, b, c ) =
-    vec3 a b c
+decodeVec3 : Decode.Decoder Vec3
+decodeVec3 =
+    Decode.map3 vec3
+        (Decode.index 0 Decode.float)
+        (Decode.index 1 Decode.float)
+        (Decode.index 2 Decode.float)
 
 
-makeVec3Color : RawColor -> Vec3
-makeVec3Color { hue, saturation, lightness } =
+hslToVec : Float -> Float -> Float -> Vec3
+hslToVec hue saturation lightness =
     let
         { red, green, blue, alpha } =
             Color.toRgba <| Color.hsl hue saturation lightness
@@ -104,76 +60,114 @@ makeVec3Color { hue, saturation, lightness } =
     vec3 red green blue
 
 
-makeVertex : RawVertexSpec -> Renderer.Vertex
-makeVertex v =
-    { pos = makeVec3 v.pos
-    , normal = makeVec3 v.normal
-    }
+decodeColor : Decode.Decoder Vec3
+decodeColor =
+    Decode.map3 hslToVec
+        (Decode.field "hue" Decode.float)
+        (Decode.field "saturation" Decode.float)
+        (Decode.field "lightness" Decode.float)
 
 
-makeMesh : RawMeshSpec -> Mesh Renderer.Vertex
-makeMesh spec =
-    Mesh.surface (List.map makeVertex spec.vertices) spec.faces
+decodeVertex : Decode.Decoder Renderer.Vertex
+decodeVertex =
+    Decode.map2 (\pos normal -> { pos = pos, normal = normal })
+        (Decode.field "pos" decodeVec3)
+        (Decode.field "normal" decodeVec3)
 
 
-makeMaterial : RawMaterial -> Renderer.Material
-makeMaterial mat =
-    { ambientColor = makeVec3Color mat.ambientColor
-    , diffuseColor = makeVec3Color mat.diffuseColor
-    , specularColor = makeVec3Color mat.specularColor
-    , ka = mat.ka
-    , kd = mat.kd
-    , ks = mat.ks
-    , shininess = mat.shininess
-    }
+decodeMesh : Decode.Decoder (Mesh Renderer.Vertex)
+decodeMesh =
+    Decode.map2 Mesh.surface
+        (Decode.field "vertices" (Decode.list decodeVertex))
+        (Decode.field "faces" (Decode.list (Decode.list Decode.int)))
 
 
-makeTransform : RawInstanceSpec -> Mat4
-makeTransform { transform, extraShift } =
-    let
-        { basis, shift } =
-            transform
-
-        ( u, v, w ) =
-            basis
-    in
-    Mat4.mul
-        (Mat4.makeTranslate <|
-            Vec3.add (makeVec3 shift) (makeVec3 extraShift)
+decodeMaterial : Decode.Decoder Renderer.Material
+decodeMaterial =
+    Decode.map7
+        (\ambientColor diffuseColor specularColor ka kd ks shininess ->
+            { ambientColor = ambientColor
+            , diffuseColor = diffuseColor
+            , specularColor = specularColor
+            , ka = ka
+            , kd = kd
+            , ks = ks
+            , shininess = shininess
+            }
         )
-        (Mat4.makeBasis (makeVec3 u) (makeVec3 v) (makeVec3 w))
+        (Decode.field "ambientColor" decodeColor)
+        (Decode.field "diffuseColor" decodeColor)
+        (Decode.field "specularColor" decodeColor)
+        (Decode.field "ka" Decode.float)
+        (Decode.field "kd" Decode.float)
+        (Decode.field "ks" Decode.float)
+        (Decode.field "shininess" Decode.float)
 
 
-makeInstance : List Renderer.Material -> RawInstanceSpec -> Instance
-makeInstance materials spec =
+decodeBasis : Decode.Decoder ( Vec3, Vec3, Vec3 )
+decodeBasis =
+    Decode.map3 (\u v w -> ( u, v, w ))
+        (Decode.index 0 decodeVec3)
+        (Decode.index 1 decodeVec3)
+        (Decode.index 2 decodeVec3)
+
+
+decodeTransform : Decode.Decoder Mat4
+decodeTransform =
+    Decode.map2
+        (\( u, v, w ) shift ->
+            Mat4.mul (Mat4.makeTranslate shift) (Mat4.makeBasis u v w)
+        )
+        (Decode.field "basis" decodeBasis)
+        (Decode.field "shift" decodeVec3)
+
+
+decodeInstance : Decode.Decoder RawInstance
+decodeInstance =
+    Decode.map4
+        (\iMesh iMat transform shift ->
+            { iMesh = iMesh
+            , iMat = iMat
+            , transform = Mat4.mul (Mat4.makeTranslate shift) transform
+            }
+        )
+        (Decode.field "meshIndex" Decode.int)
+        (Decode.field "materialIndex" Decode.int)
+        (Decode.field "transform" decodeTransform)
+        (Decode.field "extraShift" decodeVec3)
+
+
+resolveInstance : List Renderer.Material -> RawInstance -> Instance
+resolveInstance materials { iMat, transform } =
     { material =
-        List.drop spec.materialIndex materials
+        List.drop iMat materials
             |> List.head
             |> Maybe.withDefault defaultMaterial
-    , transform = makeTransform spec
+    , transform = transform
     }
 
 
-makeMeshWithInstances :
-    List RawInstanceSpec
+meshWithInstances :
+    List RawInstance
     -> List Renderer.Material
     -> Int
     -> Mesh Renderer.Vertex
     -> MeshWithInstances
-makeMeshWithInstances instances materials index mesh =
+meshWithInstances instances materials index mesh =
     { mesh = mesh
     , instances =
         instances
-            |> List.filter (\instance -> instance.meshIndex == index)
-            |> List.map (makeInstance materials)
+            |> List.filter (\instance -> instance.iMesh == index)
+            |> List.map (resolveInstance materials)
     }
 
 
-makeScene : RawSceneSpec -> Scene
-makeScene spec =
-    let
-        materials =
-            List.map makeMaterial spec.materials
-    in
-    List.map makeMesh spec.meshes
-        |> List.indexedMap (makeMeshWithInstances spec.instances materials)
+decodeScene : Decode.Decoder Scene
+decodeScene =
+    Decode.map3
+        (\meshes materials instances ->
+            List.indexedMap (meshWithInstances instances materials) meshes
+        )
+        (Decode.field "meshes" (Decode.list decodeMesh))
+        (Decode.field "materials" (Decode.list decodeMaterial))
+        (Decode.field "instances" (Decode.list decodeInstance))

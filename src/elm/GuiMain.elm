@@ -24,7 +24,7 @@ import Styling
 import Task
 import ValueSlider
 import View3d.Main as View3d
-import View3d.Scene exposing (RawSceneSpec)
+import View3d.Scene exposing (Scene, decodeScene)
 
 
 main =
@@ -39,7 +39,7 @@ main =
 type alias InData =
     { title : Maybe String
     , log : Maybe String
-    , scene : Maybe RawSceneSpec
+    , scene : Maybe Scene
     , reset : Bool
     }
 
@@ -102,7 +102,7 @@ type Msg
     | UpdateTilingSettings TilingSettings
     | UpdateTiling2dSettings Tiling2dSettings
     | UpdateEmbeddingSettings EmbeddingSettings
-    | JSData InData
+    | JSData Decode.Value
     | HideAbout
     | KeyUp String
     | RunAction Action
@@ -114,7 +114,7 @@ type Msg
 port toJS : Encode.Value -> Cmd msg
 
 
-port fromJS : (InData -> msg) -> Sub msg
+port fromJS : (Decode.Value -> msg) -> Sub msg
 
 
 decodeKey : Decode.Decoder String
@@ -139,6 +139,18 @@ decodeButtons =
             }
         )
         (Decode.at [ "buttons" ] Decode.int)
+
+
+decodeInData : Decode.Decoder InData
+decodeInData =
+    Decode.map4
+        (\title log scene reset ->
+            { title = title, log = log, scene = scene, reset = reset }
+        )
+        (Decode.maybe (Decode.field "title" Decode.string))
+        (Decode.maybe (Decode.field "log" Decode.string))
+        (Decode.maybe (Decode.field "scene" decodeScene))
+        (Decode.field "reset" Decode.bool)
 
 
 
@@ -1079,39 +1091,48 @@ contextMenuOnOff model maybePos =
             }
 
 
-handleJSData : InData -> Model -> Model
-handleJSData data model =
-    model
-        |> (case data.title of
-                Nothing ->
-                    identity
+handleJSData : Decode.Value -> Model -> Model
+handleJSData value model =
+    case Decode.decodeValue decodeInData value of
+        Err e ->
+            let
+                dummy =
+                    Debug.log "Error" (Decode.errorToString e)
+            in
+            model
 
-                Just s ->
-                    \m -> { m | title = s }
-           )
-        |> (case data.log of
-                Nothing ->
-                    identity
+        Ok data ->
+            model
+                |> (case data.title of
+                        Nothing ->
+                            identity
 
-                Just s ->
-                    \m -> { m | status = s }
-           )
-        |> (case data.scene of
-                Nothing ->
-                    identity
+                        Just s ->
+                            \m -> { m | title = s }
+                   )
+                |> (case data.log of
+                        Nothing ->
+                            identity
 
-                Just s ->
-                    updateView3d (View3d.setScene s)
-           )
-        |> (if data.reset then
-                updateView3d
-                    (View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
-                        >> View3d.encompass
-                    )
+                        Just s ->
+                            \m -> { m | status = s }
+                   )
+                |> (case data.scene of
+                        Nothing ->
+                            identity
 
-            else
-                identity
-           )
+                        Just s ->
+                            updateView3d (View3d.setScene s)
+                   )
+                |> (if data.reset then
+                        updateView3d
+                            (View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+                                >> View3d.encompass
+                            )
+
+                    else
+                        identity
+                   )
 
 
 isHotKey : String -> Bool
