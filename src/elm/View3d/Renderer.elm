@@ -156,7 +156,7 @@ entities scene center radius options selected camDist viewing perspective =
                 }
 
         wireUniforms transform material highlight =
-            { baseUniforms | transform = transform }
+            { baseUniforms | transform = transform, fadeToBackground = False }
     in
     List.concatMap
         (\{ mesh, wireframe, material, transform, idxMesh, idxInstance } ->
@@ -284,9 +284,8 @@ fragmentShader =
 
         vec3 cd = kd * diffuse * diffuseColor;
         vec3 cs = ks * specular * specularColor;
-        vec3 ca = ka * ambientColor;
 
-        return ca + lightColor * (cd + cs);
+        return lightColor * (cd + cs);
     }
 
     void main () {
