@@ -1,5 +1,6 @@
 module View3d.Scene exposing (Scene, decodeScene)
 
+import Array exposing (Array)
 import Color exposing (Color)
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -137,12 +138,9 @@ decodeInstance =
         (Decode.field "extraShift" decodeVec3)
 
 
-resolveInstance : List Renderer.Material -> RawInstance -> Instance
+resolveInstance : Array Renderer.Material -> RawInstance -> Instance
 resolveInstance materials { iMat, transform } =
-    { material =
-        List.drop iMat materials
-            |> List.head
-            |> Maybe.withDefault defaultMaterial
+    { material = Array.get iMat materials |> Maybe.withDefault defaultMaterial
     , transform = transform
     }
 
@@ -154,11 +152,15 @@ meshWithInstances :
     -> Mesh Renderer.Vertex
     -> MeshWithInstances
 meshWithInstances instances materials index mesh =
+    let
+        matArray =
+            Array.fromList materials
+    in
     { mesh = mesh
     , instances =
         instances
             |> List.filter (\instance -> instance.iMesh == index)
-            |> List.map (resolveInstance materials)
+            |> List.map (resolveInstance matArray)
     }
 
 
