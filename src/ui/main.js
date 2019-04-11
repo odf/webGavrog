@@ -400,19 +400,12 @@ const render = domNode => {
       timestamp: version.gitDate
     }});
 
-  const send = key => val => app.ports.fromJS.send(
-    Object.assign({ title: null, log: null, scene: null, reset: false },
-                  { [key]: val }));
-
-  const sendScene = (scene, reset) => app.ports.fromJS.send(
-    { title: null, log: null, scene, reset });
-
   const config = {
     loadFile: fileLoader(),
     saveFile: fileSaver(),
-    log: send('log'),
-    sendTitle: send('title'),
-    sendScene
+    log: text => app.ports.fromJS.send({ log: text }),
+    sendTitle: text => app.ports.fromJS.send({ title: text }),
+    sendScene: (scene, reset) => app.ports.fromJS.send({ scene, reset })
   };
 
   const updateModel = deferred => csp.go(function*() {

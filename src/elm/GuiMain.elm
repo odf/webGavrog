@@ -36,12 +36,10 @@ main =
         }
 
 
-type alias InData =
-    { title : Maybe String
-    , log : Maybe String
-    , scene : Maybe Scene
-    , reset : Bool
-    }
+type InData
+    = Title String
+    | Log String
+    | Scene Scene Bool
 
 
 type ViewAxis
@@ -143,14 +141,15 @@ decodeButtons =
 
 decodeInData : Decode.Decoder InData
 decodeInData =
-    Decode.map4
-        (\title log scene reset ->
-            { title = title, log = log, scene = scene, reset = reset }
-        )
-        (Decode.maybe (Decode.field "title" Decode.string))
-        (Decode.maybe (Decode.field "log" Decode.string))
-        (Decode.maybe (Decode.field "scene" decodeScene))
-        (Decode.field "reset" Decode.bool)
+    Decode.oneOf
+        [ Decode.map (\s -> Title s)
+            (Decode.field "title" Decode.string)
+        , Decode.map (\s -> Log s)
+            (Decode.field "log" Decode.string)
+        , Decode.map2 (\s r -> Scene s r)
+            (Decode.field "scene" decodeScene)
+            (Decode.field "reset" Decode.bool)
+        ]
 
 
 
@@ -1102,37 +1101,23 @@ handleJSData value model =
             model
 
         Ok data ->
-            model
-                |> (case data.title of
-                        Nothing ->
-                            identity
+            case data of
+                Title text ->
+                    { model | title = text }
 
-                        Just s ->
-                            \m -> { m | title = s }
-                   )
-                |> (case data.log of
-                        Nothing ->
-                            identity
+                Log text ->
+                    { model | status = text }
 
-                        Just s ->
-                            \m -> { m | status = s }
-                   )
-                |> (case data.scene of
-                        Nothing ->
-                            identity
+                Scene scene False ->
+                    updateView3d (View3d.setScene scene) model
 
-                        Just s ->
-                            updateView3d (View3d.setScene s)
-                   )
-                |> (if data.reset then
-                        updateView3d
-                            (View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
-                                >> View3d.encompass
-                            )
-
-                    else
-                        identity
-                   )
+                Scene scene True ->
+                    updateView3d
+                        (View3d.setScene scene
+                            >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+                            >> View3d.encompass
+                        )
+                        model
 
 
 isHotKey : String -> Bool
