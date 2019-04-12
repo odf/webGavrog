@@ -1478,7 +1478,7 @@ viewColorInput colorToMsg activeToMsg color active label withAlpha =
                 []
     in
     Element.column
-        [ Element.spacing 16 ]
+        [ Element.spacing 12 ]
         (Input.checkbox [ Element.height <| Element.px 24 ]
             { onChange = activeToMsg
             , icon = \_ -> colorField
@@ -1510,7 +1510,7 @@ viewDisplaySettings :
     -> Element.Element Msg
 viewDisplaySettings toMsg settings =
     Element.column
-        [ Element.spacing 16 ]
+        [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Display Settings")
         , viewSeparator
@@ -1556,7 +1556,7 @@ viewDisplaySettings toMsg settings =
 viewNetSettings : (NetSettings -> Msg) -> NetSettings -> Element.Element Msg
 viewNetSettings toMsg settings =
     Element.column
-        [ Element.spacing 16 ]
+        [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Net Settings")
         , viewSeparator
@@ -1600,7 +1600,7 @@ viewTilingSettings :
     -> Element.Element Msg
 viewTilingSettings toMsg settings =
     Element.column
-        [ Element.spacing 16 ]
+        [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Tiling Settings")
         , viewSeparator
@@ -1674,7 +1674,7 @@ viewTiling2dSettings :
     -> Element.Element Msg
 viewTiling2dSettings toMsg settings =
     Element.column
-        [ Element.spacing 16 ]
+        [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "2D Tiling Settings")
         , viewSeparator
@@ -1730,7 +1730,7 @@ viewEmbeddingSettings :
     -> Element.Element Msg
 viewEmbeddingSettings toMsg settings =
     Element.column
-        [ Element.spacing 16 ]
+        [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Embedding Settings")
         , viewSeparator
