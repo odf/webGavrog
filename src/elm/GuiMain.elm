@@ -1514,6 +1514,14 @@ viewDisplaySettings toMsg settings =
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Display Settings")
         , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | backgroundColor = color })
+            (\onOff -> toMsg { settings | editBackgroundColor = onOff })
+            settings.backgroundColor
+            settings.editBackgroundColor
+            "Background Color"
+            True
+        , viewSeparator
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | fadeToBackground = onOff }
             , icon = Input.defaultCheckbox
@@ -1542,14 +1550,6 @@ viewDisplaySettings toMsg settings =
             , checked = settings.showSurfaceMesh
             , label = Input.labelRight [] <| Element.text "Show Surface Mesh"
             }
-        , viewSeparator
-        , viewColorInput
-            (\color -> toMsg { settings | backgroundColor = color })
-            (\onOff -> toMsg { settings | editBackgroundColor = onOff })
-            settings.backgroundColor
-            settings.editBackgroundColor
-            "Background Color"
-            True
         ]
 
 
@@ -1559,6 +1559,21 @@ viewNetSettings toMsg settings =
         [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Net Settings")
+        , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | vertexColor = color })
+            (\onOff -> toMsg { settings | editVertexColor = onOff })
+            settings.vertexColor
+            settings.editVertexColor
+            "Vertex Color"
+            False
+        , viewColorInput
+            (\color -> toMsg { settings | edgeColor = color })
+            (\onOff -> toMsg { settings | editEdgeColor = onOff })
+            settings.edgeColor
+            settings.editEdgeColor
+            "Edge Color"
+            False
         , viewSeparator
         , Element.el []
             (Element.text "Vertex Radius")
@@ -1576,21 +1591,6 @@ viewNetSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.edgeRadius
-        , viewSeparator
-        , viewColorInput
-            (\color -> toMsg { settings | vertexColor = color })
-            (\onOff -> toMsg { settings | editVertexColor = onOff })
-            settings.vertexColor
-            settings.editVertexColor
-            "Vertex Color"
-            False
-        , viewColorInput
-            (\color -> toMsg { settings | edgeColor = color })
-            (\onOff -> toMsg { settings | editEdgeColor = onOff })
-            settings.edgeColor
-            settings.editEdgeColor
-            "Edge Color"
-            False
         ]
 
 
@@ -1603,6 +1603,31 @@ viewTilingSettings toMsg settings =
         [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Tiling Settings")
+        , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | edgeColor = color })
+            (\onOff -> toMsg { settings | editEdgeColor = onOff })
+            settings.edgeColor
+            settings.editEdgeColor
+            "Edge Color"
+            False
+        , viewSeparator
+        , Element.el []
+            (Element.text "Tile Scale")
+        , ValueSlider.view
+            (\value -> toMsg { settings | tileScale = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.tileScale
+        , Element.el []
+            (Element.text "Edge Width")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeWidth = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.edgeWidth
         , viewSeparator
         , Input.checkbox []
             { onChange =
@@ -1640,6 +1665,26 @@ viewTilingSettings toMsg settings =
                 Input.labelRight [] <|
                     Element.text "Tighten Faces (experimental)"
             }
+        ]
+
+
+viewTiling2dSettings :
+    (Tiling2dSettings -> Msg)
+    -> Tiling2dSettings
+    -> Element.Element Msg
+viewTiling2dSettings toMsg settings =
+    Element.column
+        [ Element.spacing 12 ]
+        [ Element.el [ Element.centerX, Font.bold ]
+            (Element.text "2D Tiling Settings")
+        , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | edgeColor = color })
+            (\onOff -> toMsg { settings | editEdgeColor = onOff })
+            settings.edgeColor
+            settings.editEdgeColor
+            "Edge Color"
+            False
         , viewSeparator
         , Element.el []
             (Element.text "Tile Scale")
@@ -1657,26 +1702,6 @@ viewTilingSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.edgeWidth
-        , viewSeparator
-        , viewColorInput
-            (\color -> toMsg { settings | edgeColor = color })
-            (\onOff -> toMsg { settings | editEdgeColor = onOff })
-            settings.edgeColor
-            settings.editEdgeColor
-            "Edge Color"
-            False
-        ]
-
-
-viewTiling2dSettings :
-    (Tiling2dSettings -> Msg)
-    -> Tiling2dSettings
-    -> Element.Element Msg
-viewTiling2dSettings toMsg settings =
-    Element.column
-        [ Element.spacing 12 ]
-        [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "2D Tiling Settings")
         , viewSeparator
         , Input.checkbox []
             { onChange =
@@ -1696,31 +1721,6 @@ viewTiling2dSettings toMsg settings =
                 Input.labelRight [] <|
                     Element.text "Color By Translation"
             }
-        , viewSeparator
-        , Element.el []
-            (Element.text "Tile Scale")
-        , ValueSlider.view
-            (\value -> toMsg { settings | tileScale = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
-            settings.tileScale
-        , Element.el []
-            (Element.text "Edge Width")
-        , ValueSlider.view
-            (\value -> toMsg { settings | edgeWidth = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
-            settings.edgeWidth
-        , viewSeparator
-        , viewColorInput
-            (\color -> toMsg { settings | edgeColor = color })
-            (\onOff -> toMsg { settings | editEdgeColor = onOff })
-            settings.edgeColor
-            settings.editEdgeColor
-            "Edge Color"
-            False
         ]
 
 
