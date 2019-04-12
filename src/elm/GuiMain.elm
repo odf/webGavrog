@@ -205,7 +205,8 @@ type Dialog
 
 
 type alias DisplaySettings =
-    { backgroundColor : ColorDialog.Color
+    { editBackgroundColor : Bool
+    , backgroundColor : ColorDialog.Color
     , fadeToBackground : Bool
     , fadeToBlue : Bool
     , addOutlines : Bool
@@ -215,16 +216,19 @@ type alias DisplaySettings =
 
 type alias NetSettings =
     { vertexRadius : Float
+    , editVertexColor : Bool
     , vertexColor : ColorDialog.Color
     , edgeRadius : Float
     , edgeColor : ColorDialog.Color
+    , editEdgeColor : Bool
     }
 
 
 type alias TilingSettings =
     { tileScale : Float
+    , editEdgeColor : Bool
     , edgeColor : ColorDialog.Color
-    , highlightEdges : Bool
+    , drawEdges : Bool
     , colorByTranslationClass : Bool
     , extraSmooth : Bool
     , tighten : Bool
@@ -234,8 +238,9 @@ type alias TilingSettings =
 
 type alias Tiling2dSettings =
     { tileScale : Float
+    , editEdgeColor : Bool
     , edgeColor : ColorDialog.Color
-    , highlightEdges : Bool
+    , drawEdges : Bool
     , colorByTranslationClass : Bool
     , edgeWidth : Float
     }
@@ -275,7 +280,8 @@ init flags =
       , title = ""
       , status = "Welcome!"
       , displaySettings =
-            { backgroundColor = Color.toHsla Color.white
+            { editBackgroundColor = False
+            , backgroundColor = Color.toHsla Color.white
             , showSurfaceMesh = False
             , fadeToBlue = False
             , fadeToBackground = False
@@ -283,6 +289,7 @@ init flags =
             }
       , netSettings =
             { vertexRadius = 0.1
+            , editVertexColor = False
             , vertexColor =
                 { hue = 0.13
                 , saturation = 0.7
@@ -290,6 +297,7 @@ init flags =
                 , alpha = 1.0
                 }
             , edgeRadius = 0.04
+            , editEdgeColor = False
             , edgeColor =
                 { hue = 0.63
                 , saturation = 0.6
@@ -299,13 +307,14 @@ init flags =
             }
       , tilingSettings =
             { tileScale = 0.85
+            , editEdgeColor = False
             , edgeColor =
                 { hue = 0.0
                 , saturation = 0.0
                 , lightness = 1.0
                 , alpha = 1.0
                 }
-            , highlightEdges = False
+            , drawEdges = False
             , colorByTranslationClass = False
             , extraSmooth = False
             , tighten = False
@@ -313,13 +322,14 @@ init flags =
             }
       , tiling2dSettings =
             { tileScale = 1.0
+            , editEdgeColor = False
             , edgeColor =
                 { hue = 0.0
                 , saturation = 0.0
                 , lightness = 0.0
                 , alpha = 1.0
                 }
-            , highlightEdges = False
+            , drawEdges = False
             , colorByTranslationClass = False
             , edgeWidth = 0.5
             }
@@ -755,9 +765,7 @@ update msg model =
                         [ ( "colorByTranslationClass"
                           , Encode.bool settings.colorByTranslationClass
                           )
-                        , ( "highlightEdges"
-                          , Encode.bool settings.highlightEdges
-                          )
+                        , ( "drawEdges", Encode.bool settings.drawEdges )
                         , ( "tileEdgeColor", encodeColor settings.edgeColor )
                         , ( "extraSmooth", Encode.bool settings.extraSmooth )
                         , ( "tightenSurfaces", Encode.bool settings.tighten )
@@ -783,9 +791,7 @@ update msg model =
                         [ ( "colorByTranslationClass2d"
                           , Encode.bool settings.colorByTranslationClass
                           )
-                        , ( "highlightEdges2d"
-                          , Encode.bool settings.highlightEdges
-                          )
+                        , ( "drawEdges2d", Encode.bool settings.drawEdges )
                         , ( "tileEdgeColor2d", encodeColor settings.edgeColor )
                         , ( "tileScale2d", Encode.float settings.tileScale )
                         , ( "edgeWidth2d", Encode.float settings.edgeWidth )
@@ -1438,6 +1444,66 @@ viewTextBox config text =
         ]
 
 
+viewColorInput :
+    (ColorDialog.Color -> Msg)
+    -> (Bool -> Msg)
+    -> ColorDialog.Color
+    -> Bool
+    -> String
+    -> Bool
+    -> Element.Element Msg
+viewColorInput colorToMsg activeToMsg color active label withAlpha =
+    let
+        colorField =
+            Element.el
+                [ Element.width <| Element.px 48
+                , Element.height Element.fill
+                , Border.solid
+                , Border.width 1
+                , Border.color <| Element.rgba 1.0 1.0 1.0 0.0
+                , Border.shadow
+                    { offset = ( 1.0, 2.0 )
+                    , size = 1.0
+                    , blur = 2.0
+                    , color = Element.rgba 0.0 0.0 0.0 0.3
+                    }
+                ]
+                (ColorDialog.colorField [ color ])
+
+        colorDialog =
+            if active then
+                [ ColorDialog.view colorToMsg color withAlpha ]
+
+            else
+                []
+    in
+    Element.column
+        [ Element.spacing 16 ]
+        (Input.checkbox [ Element.height <| Element.px 24 ]
+            { onChange = activeToMsg
+            , icon = \_ -> colorField
+            , checked = active
+            , label =
+                Input.labelRight
+                    [ Element.centerY
+                    , Element.moveRight 8
+                    ]
+                    (Element.text label)
+            }
+            :: colorDialog
+        )
+
+
+viewSeparator : Element.Element msg
+viewSeparator =
+    Element.el
+        [ Element.width Element.fill
+        , Element.height <| Element.px 1
+        , Background.color Styling.borderColor
+        ]
+        Element.none
+
+
 viewDisplaySettings :
     (DisplaySettings -> Msg)
     -> DisplaySettings
@@ -1447,12 +1513,7 @@ viewDisplaySettings toMsg settings =
         [ Element.spacing 16 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Display Settings")
-        , Element.el []
-            (Element.text "Background Color")
-        , ColorDialog.view
-            (\color -> toMsg { settings | backgroundColor = color })
-            settings.backgroundColor
-            True
+        , viewSeparator
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | fadeToBackground = onOff }
             , icon = Input.defaultCheckbox
@@ -1481,6 +1542,14 @@ viewDisplaySettings toMsg settings =
             , checked = settings.showSurfaceMesh
             , label = Input.labelRight [] <| Element.text "Show Surface Mesh"
             }
+        , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | backgroundColor = color })
+            (\onOff -> toMsg { settings | editBackgroundColor = onOff })
+            settings.backgroundColor
+            settings.editBackgroundColor
+            "Background Color"
+            True
         ]
 
 
@@ -1490,6 +1559,7 @@ viewNetSettings toMsg settings =
         [ Element.spacing 16 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Net Settings")
+        , viewSeparator
         , Element.el []
             (Element.text "Vertex Radius")
         , ValueSlider.view
@@ -1499,12 +1569,6 @@ viewNetSettings toMsg settings =
             Nothing
             settings.vertexRadius
         , Element.el []
-            (Element.text "Vertex Color")
-        , ColorDialog.view
-            (\color -> toMsg { settings | vertexColor = color })
-            settings.vertexColor
-            False
-        , Element.el []
             (Element.text "Edge Radius")
         , ValueSlider.view
             (\value -> toMsg { settings | edgeRadius = value })
@@ -1512,11 +1576,20 @@ viewNetSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.edgeRadius
-        , Element.el []
-            (Element.text "Edge Color")
-        , ColorDialog.view
+        , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | vertexColor = color })
+            (\onOff -> toMsg { settings | editVertexColor = onOff })
+            settings.vertexColor
+            settings.editVertexColor
+            "Vertex Color"
+            False
+        , viewColorInput
             (\color -> toMsg { settings | edgeColor = color })
+            (\onOff -> toMsg { settings | editEdgeColor = onOff })
             settings.edgeColor
+            settings.editEdgeColor
+            "Edge Color"
             False
         ]
 
@@ -1530,36 +1603,15 @@ viewTilingSettings toMsg settings =
         [ Element.spacing 16 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Tiling Settings")
-        , Element.el []
-            (Element.text "Tile Scale")
-        , ValueSlider.view
-            (\value -> toMsg { settings | tileScale = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
-            settings.tileScale
-        , Element.el []
-            (Element.text "Edge Width")
-        , ValueSlider.view
-            (\value -> toMsg { settings | edgeWidth = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
-            settings.edgeWidth
-        , Element.el []
-            (Element.text "Edge Color")
-        , ColorDialog.view
-            (\color -> toMsg { settings | edgeColor = color })
-            settings.edgeColor
-            False
+        , viewSeparator
         , Input.checkbox []
             { onChange =
-                \onOff -> toMsg { settings | highlightEdges = onOff }
+                \onOff -> toMsg { settings | drawEdges = onOff }
             , icon = Input.defaultCheckbox
-            , checked = settings.highlightEdges
+            , checked = settings.drawEdges
             , label =
                 Input.labelRight [] <|
-                    Element.text "Highlight Edges"
+                    Element.text "Draw Edges"
             }
         , Input.checkbox []
             { onChange =
@@ -1588,18 +1640,7 @@ viewTilingSettings toMsg settings =
                 Input.labelRight [] <|
                     Element.text "Tighten Faces (experimental)"
             }
-        ]
-
-
-viewTiling2dSettings :
-    (Tiling2dSettings -> Msg)
-    -> Tiling2dSettings
-    -> Element.Element Msg
-viewTiling2dSettings toMsg settings =
-    Element.column
-        [ Element.spacing 16 ]
-        [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "2D Tiling Settings")
+        , viewSeparator
         , Element.el []
             (Element.text "Tile Scale")
         , ValueSlider.view
@@ -1616,20 +1657,35 @@ viewTiling2dSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.edgeWidth
-        , Element.el []
-            (Element.text "Edge Color")
-        , ColorDialog.view
+        , viewSeparator
+        , viewColorInput
             (\color -> toMsg { settings | edgeColor = color })
+            (\onOff -> toMsg { settings | editEdgeColor = onOff })
             settings.edgeColor
+            settings.editEdgeColor
+            "Edge Color"
             False
+        ]
+
+
+viewTiling2dSettings :
+    (Tiling2dSettings -> Msg)
+    -> Tiling2dSettings
+    -> Element.Element Msg
+viewTiling2dSettings toMsg settings =
+    Element.column
+        [ Element.spacing 16 ]
+        [ Element.el [ Element.centerX, Font.bold ]
+            (Element.text "2D Tiling Settings")
+        , viewSeparator
         , Input.checkbox []
             { onChange =
-                \onOff -> toMsg { settings | highlightEdges = onOff }
+                \onOff -> toMsg { settings | drawEdges = onOff }
             , icon = Input.defaultCheckbox
-            , checked = settings.highlightEdges
+            , checked = settings.drawEdges
             , label =
                 Input.labelRight [] <|
-                    Element.text "Highlight Edges"
+                    Element.text "Draw Edges"
             }
         , Input.checkbox []
             { onChange =
@@ -1640,6 +1696,31 @@ viewTiling2dSettings toMsg settings =
                 Input.labelRight [] <|
                     Element.text "Color By Translation"
             }
+        , viewSeparator
+        , Element.el []
+            (Element.text "Tile Scale")
+        , ValueSlider.view
+            (\value -> toMsg { settings | tileScale = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.tileScale
+        , Element.el []
+            (Element.text "Edge Width")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeWidth = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.edgeWidth
+        , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | edgeColor = color })
+            (\onOff -> toMsg { settings | editEdgeColor = onOff })
+            settings.edgeColor
+            settings.editEdgeColor
+            "Edge Color"
+            False
         ]
 
 
@@ -1652,6 +1733,7 @@ viewEmbeddingSettings toMsg settings =
         [ Element.spacing 16 ]
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Embedding Settings")
+        , viewSeparator
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | skipRelaxation = onOff }

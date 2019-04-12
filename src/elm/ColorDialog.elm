@@ -1,4 +1,4 @@
-module ColorDialog exposing (Color, view)
+module ColorDialog exposing (Color, colorField, view)
 
 import Color as ElmColor
 import Element

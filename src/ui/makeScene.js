@@ -398,9 +398,8 @@ const displayListToModel = (
       if (skippedParts && skippedParts[j])
         continue;
 
-      const highlight = dim == 2 ?
-            options.highlightEdges2d : options.highlightEdges;
-      const materialIndex = (j == parts.length - 1 && highlight) ?
+      const drawEdges = dim == 2 ? options.drawEdges2d : options.drawEdges;
+      const materialIndex = (j == parts.length - 1 && drawEdges) ?
             materials.length - 1 : baseMatIndex;
 
       instances.push({
