@@ -210,6 +210,9 @@ type alias DisplaySettings =
     , fadeToBackground : Bool
     , fadeToBlue : Bool
     , addOutlines : Bool
+    , useSeparateOutlineColor : Bool
+    , editOutlineColor : Bool
+    , outlineColor : ColorDialog.Color
     , showSurfaceMesh : Bool
     }
 
@@ -286,6 +289,9 @@ init flags =
             , fadeToBlue = False
             , fadeToBackground = False
             , addOutlines = False
+            , useSeparateOutlineColor = False
+            , editOutlineColor = False
+            , outlineColor = Color.toHsla Color.white
             }
       , netSettings =
             { vertexRadius = 0.1
@@ -1155,27 +1161,41 @@ rotateBy axis angle model =
 -- VIEW
 
 
+convertColor : ColorDialog.Color -> Vec3
+convertColor { hue, saturation, lightness, alpha } =
+    let
+        { red, green, blue } =
+            Color.toRgba <| Color.hsla hue saturation lightness alpha
+    in
+    vec3 red green blue
+
+
 view : Model -> Browser.Document Msg
 view model =
     let
+        settings =
+            model.displaySettings
+
         { hue, saturation, lightness, alpha } =
-            model.displaySettings.backgroundColor
+            settings.backgroundColor
 
         bgColor =
             Color.hsla hue saturation lightness alpha
 
-        { red, green, blue } =
-            Color.toRgba bgColor
+        outlineColor =
+            if settings.useSeparateOutlineColor then
+                settings.outlineColor
 
-        settings =
-            model.displaySettings
+            else
+                settings.backgroundColor
 
         options =
             { drawWires = settings.showSurfaceMesh
             , fadeToBackground = settings.fadeToBackground
             , fadeToBlue = settings.fadeToBlue
             , addOutlines = settings.addOutlines
-            , backgroundColor = vec3 red green blue
+            , outlineColor = convertColor outlineColor
+            , backgroundColor = convertColor settings.backgroundColor
             }
     in
     { title = "Web-Gavrog"
@@ -1509,6 +1529,36 @@ viewDisplaySettings :
     -> DisplaySettings
     -> Element.Element Msg
 viewDisplaySettings toMsg settings =
+    let
+        outlineCheckbox =
+            Input.checkbox []
+                { onChange = \onOff -> toMsg { settings | addOutlines = onOff }
+                , icon = Input.defaultCheckbox
+                , checked = settings.addOutlines
+                , label = Input.labelRight [] <| Element.text "Add Outlines"
+                }
+
+        outlineColorCheckbox =
+            Input.checkbox []
+                { onChange =
+                    \onOff ->
+                        toMsg { settings | useSeparateOutlineColor = onOff }
+                , icon = Input.defaultCheckbox
+                , checked = settings.useSeparateOutlineColor
+                , label =
+                    Input.labelRight [] <|
+                        Element.text "Separate Outline Color"
+                }
+
+        outlineColorPicker =
+            viewColorInput
+                (\color -> toMsg { settings | outlineColor = color })
+                (\onOff -> toMsg { settings | editOutlineColor = onOff })
+                settings.outlineColor
+                settings.editOutlineColor
+                "Outline Color"
+                True
+    in
     Element.column
         [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
@@ -1521,6 +1571,24 @@ viewDisplaySettings toMsg settings =
             settings.editBackgroundColor
             "Background Color"
             True
+        , viewSeparator
+        , Element.column
+            [ Element.spacing 12 ]
+            (if settings.addOutlines then
+                if settings.useSeparateOutlineColor then
+                    [ outlineCheckbox
+                    , outlineColorCheckbox
+                    , outlineColorPicker
+                    ]
+
+                else
+                    [ outlineCheckbox
+                    , outlineColorCheckbox
+                    ]
+
+             else
+                [ outlineCheckbox ]
+            )
         , viewSeparator
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | fadeToBackground = onOff }
@@ -1538,12 +1606,7 @@ viewDisplaySettings toMsg settings =
                 Input.labelRight [] <|
                     Element.text "Fade To Blue (Color Perspective)"
             }
-        , Input.checkbox []
-            { onChange = \onOff -> toMsg { settings | addOutlines = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.addOutlines
-            , label = Input.labelRight [] <| Element.text "Add Outlines"
-            }
+        , viewSeparator
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
             , icon = Input.defaultCheckbox

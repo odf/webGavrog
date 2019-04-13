@@ -43,6 +43,7 @@ type alias Options =
     , fadeToBlue : Bool
     , backgroundColor : Vec3
     , addOutlines : Bool
+    , outlineColor : Vec3
     }
 
 
@@ -50,6 +51,7 @@ type alias Uniforms =
     { sceneCenter : Vec3
     , sceneRadius : Float
     , backgroundColor : Vec3
+    , outlineColor : Vec3
     , fadeToBackground : Bool
     , fadeToBlue : Bool
     , transform : Mat4
@@ -109,6 +111,7 @@ entities scene center radius options selected camDist viewing perspective =
             { sceneCenter = Mat4.transform viewing center
             , sceneRadius = radius
             , backgroundColor = options.backgroundColor
+            , outlineColor = options.outlineColor
             , fadeToBackground = options.fadeToBackground
             , fadeToBlue = options.fadeToBlue
             , transform = Mat4.identity
@@ -316,12 +319,12 @@ fragmentShaderOutline =
     [glsl|
 
     precision mediump float;
-    uniform vec3 backgroundColor;
+    uniform vec3 outlineColor;
     varying vec3 vpos;
     varying vec3 vnormal;
 
     void main () {
-        gl_FragColor = vec4(backgroundColor, 1.0);
+        gl_FragColor = vec4(outlineColor, 1.0);
     }
 
     |]
