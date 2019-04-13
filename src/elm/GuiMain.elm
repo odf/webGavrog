@@ -1604,13 +1604,37 @@ viewTilingSettings toMsg settings =
         [ Element.el [ Element.centerX, Font.bold ]
             (Element.text "Tiling Settings")
         , viewSeparator
-        , viewColorInput
-            (\color -> toMsg { settings | edgeColor = color })
-            (\onOff -> toMsg { settings | editEdgeColor = onOff })
-            settings.edgeColor
-            settings.editEdgeColor
-            "Edge Color"
-            False
+        , Element.column [ Element.spacing 12 ]
+            (Input.checkbox []
+                { onChange = \onOff -> toMsg { settings | drawEdges = onOff }
+                , icon = Input.defaultCheckbox
+                , checked = settings.drawEdges
+                , label = Input.labelRight [] <| Element.text "Draw Edges"
+                }
+                :: (if settings.drawEdges then
+                        [ viewColorInput
+                            (\color -> toMsg { settings | edgeColor = color })
+                            (\onOff ->
+                                toMsg { settings | editEdgeColor = onOff }
+                            )
+                            settings.edgeColor
+                            settings.editEdgeColor
+                            "Edge Color"
+                            False
+                        ]
+
+                    else
+                        []
+                   )
+            )
+        , Element.el []
+            (Element.text "Edge/Bevel Width")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeWidth = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.edgeWidth
         , viewSeparator
         , Element.el []
             (Element.text "Tile Scale")
@@ -1620,24 +1644,7 @@ viewTilingSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.tileScale
-        , Element.el []
-            (Element.text "Edge Width")
-        , ValueSlider.view
-            (\value -> toMsg { settings | edgeWidth = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
-            settings.edgeWidth
         , viewSeparator
-        , Input.checkbox []
-            { onChange =
-                \onOff -> toMsg { settings | drawEdges = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.drawEdges
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Draw Edges"
-            }
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | colorByTranslationClass = onOff }
@@ -1676,15 +1683,39 @@ viewTiling2dSettings toMsg settings =
     Element.column
         [ Element.spacing 12 ]
         [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "2D Tiling Settings")
+            (Element.text "Tiling Settings")
         , viewSeparator
-        , viewColorInput
-            (\color -> toMsg { settings | edgeColor = color })
-            (\onOff -> toMsg { settings | editEdgeColor = onOff })
-            settings.edgeColor
-            settings.editEdgeColor
-            "Edge Color"
-            False
+        , Element.column [ Element.spacing 12 ]
+            (Input.checkbox []
+                { onChange = \onOff -> toMsg { settings | drawEdges = onOff }
+                , icon = Input.defaultCheckbox
+                , checked = settings.drawEdges
+                , label = Input.labelRight [] <| Element.text "Draw Edges"
+                }
+                :: (if settings.drawEdges then
+                        [ viewColorInput
+                            (\color -> toMsg { settings | edgeColor = color })
+                            (\onOff ->
+                                toMsg { settings | editEdgeColor = onOff }
+                            )
+                            settings.edgeColor
+                            settings.editEdgeColor
+                            "Edge Color"
+                            False
+                        ]
+
+                    else
+                        []
+                   )
+            )
+        , Element.el []
+            (Element.text "Edge/Bevel Width")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeWidth = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.edgeWidth
         , viewSeparator
         , Element.el []
             (Element.text "Tile Scale")
@@ -1694,24 +1725,7 @@ viewTiling2dSettings toMsg settings =
             (Element.rgb 0.0 0.0 0.0)
             Nothing
             settings.tileScale
-        , Element.el []
-            (Element.text "Edge Width")
-        , ValueSlider.view
-            (\value -> toMsg { settings | edgeWidth = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
-            settings.edgeWidth
         , viewSeparator
-        , Input.checkbox []
-            { onChange =
-                \onOff -> toMsg { settings | drawEdges = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.drawEdges
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Draw Edges"
-            }
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | colorByTranslationClass = onOff }
