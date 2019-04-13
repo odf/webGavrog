@@ -39,8 +39,8 @@ type alias Scene a =
 
 type alias Options =
     { drawWires : Bool
-    , fadeToBackground : Bool
-    , fadeToBlue : Bool
+    , fadeToBackground : Float
+    , fadeToBlue : Float
     , backgroundColor : Vec3
     , addOutlines : Bool
     , outlineColor : Vec3
@@ -52,8 +52,8 @@ type alias Uniforms =
     , sceneRadius : Float
     , backgroundColor : Vec3
     , outlineColor : Vec3
-    , fadeToBackground : Bool
-    , fadeToBlue : Bool
+    , fadeToBackground : Float
+    , fadeToBlue : Float
     , transform : Mat4
     , viewing : Mat4
     , perspective : Mat4
@@ -159,7 +159,7 @@ entities scene center radius options selected camDist viewing perspective =
                 }
 
         wireUniforms transform material highlight =
-            { baseUniforms | transform = transform, fadeToBackground = False }
+            { baseUniforms | transform = transform, fadeToBackground = 0 }
     in
     List.concatMap
         (\{ mesh, wireframe, material, transform, idxMesh, idxInstance } ->
@@ -248,8 +248,8 @@ fragmentShader =
     uniform vec3 sceneCenter;
     uniform float sceneRadius;
     uniform vec3 backgroundColor;
-    uniform bool fadeToBackground;
-    uniform bool fadeToBlue;
+    uniform float fadeToBackground;
+    uniform float fadeToBlue;
     uniform vec3 cameraPos;
     uniform vec3 light1Pos;
     uniform vec3 light1Color;
@@ -300,12 +300,14 @@ fragmentShader =
         float depth = (sceneCenter - vpos).z;
         float coeff = smoothstep(-sceneRadius, sceneRadius, depth);
 
-        if (fadeToBlue) {
-            color = mix(color, vec3(0.0, 0.0, 1.0), coeff * coeff * coeff);
+        if (fadeToBlue > 0.0) {
+            float k = 1.5 / fadeToBlue;
+            color = mix(color, vec3(0.0, 0.0, 1.0), pow(coeff, k));
         }
 
-        if (fadeToBackground) {
-            color = mix(color, backgroundColor, coeff);
+        if (fadeToBackground > 0.0) {
+            float k = 0.5 / fadeToBackground;
+            color = mix(color, backgroundColor, pow(coeff, k));
         }
 
         gl_FragColor = vec4(color, 1.0);

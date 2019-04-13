@@ -207,8 +207,8 @@ type Dialog
 type alias DisplaySettings =
     { editBackgroundColor : Bool
     , backgroundColor : ColorDialog.Color
-    , fadeToBackground : Bool
-    , fadeToBlue : Bool
+    , fadeToBackground : Float
+    , fadeToBlue : Float
     , addOutlines : Bool
     , useSeparateOutlineColor : Bool
     , editOutlineColor : Bool
@@ -286,8 +286,8 @@ init flags =
             { editBackgroundColor = False
             , backgroundColor = Color.toHsla Color.white
             , showSurfaceMesh = False
-            , fadeToBlue = False
-            , fadeToBackground = False
+            , fadeToBlue = 0.0
+            , fadeToBackground = 0.0
             , addOutlines = False
             , useSeparateOutlineColor = False
             , editOutlineColor = False
@@ -1557,7 +1557,7 @@ viewDisplaySettings toMsg settings =
                 settings.outlineColor
                 settings.editOutlineColor
                 "Outline Color"
-                True
+                False
     in
     Element.column
         [ Element.spacing 12 ]
@@ -1590,22 +1590,22 @@ viewDisplaySettings toMsg settings =
                 [ outlineCheckbox ]
             )
         , viewSeparator
-        , Input.checkbox []
-            { onChange = \onOff -> toMsg { settings | fadeToBackground = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.fadeToBackground
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Fade To Background (Haze)"
-            }
-        , Input.checkbox []
-            { onChange = \onOff -> toMsg { settings | fadeToBlue = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.fadeToBlue
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Fade To Blue (Color Perspective)"
-            }
+        , Element.el []
+            (Element.text "Fade To Background (Haze)")
+        , ValueSlider.view
+            (\value -> toMsg { settings | fadeToBackground = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.fadeToBackground
+        , Element.el []
+            (Element.text "Fade To Blue (Color Perspective)")
+        , ValueSlider.view
+            (\value -> toMsg { settings | fadeToBlue = value })
+            { widthPx = 200, heightPx = 18 }
+            (Element.rgb 0.0 0.0 0.0)
+            Nothing
+            settings.fadeToBlue
         , viewSeparator
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
