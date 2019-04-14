@@ -1206,16 +1206,16 @@ view model =
             , Element.inFront
                 (Element.el
                     [ Element.width Element.fill
-                    , Element.below <| viewCurrentDialog model
+                    , Element.alignBottom
                     ]
-                    (viewHeader model)
+                    (viewFooter model)
                 )
             , Element.inFront
                 (Element.el
                     [ Element.width Element.fill
-                    , Element.alignBottom
+                    , Element.below <| viewCurrentDialog model
                     ]
-                    (viewFooter model)
+                    (viewHeader model)
                 )
             , Element.inFront (viewContextMenu model)
             ]
