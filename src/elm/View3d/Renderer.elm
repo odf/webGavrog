@@ -298,7 +298,7 @@ fragmentShader =
         color += colorFromLight(light3Pos, light3Color);
 
         float depth = (sceneCenter - vpos).z;
-        float coeff = smoothstep(-sceneRadius, sceneRadius, depth);
+        float coeff = smoothstep(-0.9 * sceneRadius, 1.1 * sceneRadius, depth);
 
         if (fadeToBlue > 0.0) {
             float k = 1.5 / fadeToBlue;
