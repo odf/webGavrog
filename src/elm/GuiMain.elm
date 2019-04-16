@@ -1566,8 +1566,22 @@ viewDisplaySettings toMsg settings =
     in
     Element.column
         [ Element.spacing 12 ]
-        [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "Display Settings")
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.alignLeft
+                , Element.Events.onClick (RunAction OpenEmbeddingDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "◄")
+            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
+                (Element.text "Display Settings")
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick (RunAction OpenNetDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "►")
+            ]
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | backgroundColor = color })
@@ -1625,8 +1639,22 @@ viewNetSettings : (NetSettings -> Msg) -> NetSettings -> Element.Element Msg
 viewNetSettings toMsg settings =
     Element.column
         [ Element.spacing 12 ]
-        [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "Net Settings")
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.alignLeft
+                , Element.Events.onClick (RunAction OpenDisplayDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "◄")
+            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
+                (Element.text "Net Settings")
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick (RunAction OpenTilingDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "►")
+            ]
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | vertexColor = color })
@@ -1669,8 +1697,22 @@ viewTilingSettings :
 viewTilingSettings toMsg settings =
     Element.column
         [ Element.spacing 12 ]
-        [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "Tiling Settings")
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.alignLeft
+                , Element.Events.onClick (RunAction OpenNetDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "◄")
+            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
+                (Element.text "Tiling Settings")
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick (RunAction OpenTiling2dDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "►")
+            ]
         , viewSeparator
         , Element.column [ Element.spacing 12 ]
             (Input.checkbox []
@@ -1750,8 +1792,22 @@ viewTiling2dSettings :
 viewTiling2dSettings toMsg settings =
     Element.column
         [ Element.spacing 12 ]
-        [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "Tiling Settings")
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.alignLeft
+                , Element.Events.onClick (RunAction OpenTilingDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "◄")
+            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
+                (Element.text "2D Tiling Settings")
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick (RunAction OpenEmbeddingDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "►")
+            ]
         , viewSeparator
         , Element.column [ Element.spacing 12 ]
             (Input.checkbox []
@@ -1813,8 +1869,22 @@ viewEmbeddingSettings :
 viewEmbeddingSettings toMsg settings =
     Element.column
         [ Element.spacing 12 ]
-        [ Element.el [ Element.centerX, Font.bold ]
-            (Element.text "Embedding Settings")
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.alignLeft
+                , Element.Events.onClick (RunAction OpenTiling2dDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "◄")
+            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
+                (Element.text "Embedding Settings")
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick (RunAction OpenDisplayDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "►")
+            ]
         , viewSeparator
         , Input.checkbox []
             { onChange =
