@@ -83,6 +83,7 @@ type Action
     | AboutDialog
     | AddTile
     | AddCorona
+    | RestoreTile
     | RemoveTile
     | RemoveElement
     | RotateView Direction Float
@@ -435,6 +436,9 @@ actionLabel action =
         AddCorona ->
             "Add Corona(s)"
 
+        RestoreTile ->
+            "Restore Tile(s)"
+
         RemoveTile ->
             "Remove Tile(s)"
 
@@ -619,6 +623,7 @@ contextMenuConfig : Menu.Config Action
 contextMenuConfig =
     [ makeMenuEntry AddTile
     , makeMenuEntry AddCorona
+    , makeMenuEntry RestoreTile
     , makeMenuEntry RemoveTile
     , makeMenuEntry RemoveElement
     ]

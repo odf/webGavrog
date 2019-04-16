@@ -263,6 +263,18 @@ const addCoronas = (displayList, selection) => {
 };
 
 
+const restoreTiles = (displayList, selection) => {
+  const toBeRestored = {};
+  for (const inst of selection)
+    toBeRestored[inst.tileIndex] = true;
+
+  return displayList.map(
+    (item, i) =>
+      toBeRestored[i] ? Object.assign({}, item, { skippedParts: {} }) : item
+  );
+};
+
+
 const removeTiles = (displayList, selection) => {
   const toBeRemoved = {};
   for (const inst of selection)
@@ -430,6 +442,8 @@ const render = domNode => {
       updateModel(updateDisplayList(config, model, selected, addTiles)),
     ['Add Corona(s)']: (selected) =>
       updateModel(updateDisplayList(config, model, selected, addCoronas)),
+    ['Restore Tile(s)']: (selected) =>
+      updateModel(updateDisplayList(config, model, selected, restoreTiles)),
     ['Remove Tile(s)']: (selected) =>
       updateModel(updateDisplayList(config, model, selected, removeTiles)),
     ['Remove Element(s)']: (selected) =>
