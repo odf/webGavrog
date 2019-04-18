@@ -91,35 +91,20 @@ const splitGeometry = ({ vertices, faces }, faceLabels) => {
 };
 
 
-const makeStick = (p, q, radius, segments) => {
-  const normalized = v => ops.div(v, ops.norm(v));
-
-  if (p.length == 2) {
-    p = p.concat(0);
-    q = q.concat(0);
-  }
-
+const makeStick = (radius, segments) => {
   const n = segments;
-  const d = normalized(ops.minus(q, p));
-  const ex = [1,0,0];
-  const ey = [0,1,0];
-  const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
-  const u = normalized(ops.crossProduct(d, t));
-  const v = normalized(ops.crossProduct(d, u));
   const a = Math.PI * 2 / n;
 
-  const section = [];
-  for (let i = 0; i < n; ++i) {
-    const x = a * i;
-    const c = Math.cos(x) * radius;
-    const s = Math.sin(x) * radius;
-    section.push(ops.plus(ops.times(c, u), ops.times(s, v)));
-  }
+  const section = range(n).map(i => [
+    Math.cos(a * i) * radius,
+    Math.sin(a * i) * radius,
+    0
+  ]);
 
-  const vertices = [].concat(section.map(c => ops.plus(c, p)),
-                             section.map(c => ops.plus(c, q)));
+  const vertices =
+        [].concat(section, section.map(c => ops.plus(c, [0, 0, 1])));
 
-  const faces = new Array(n).fill(0).map((_, i) => {
+  const faces = range(n).map(i => {
     const j = (i + 1) % n;
     return [i, j, j+n, i+n];
   });
@@ -154,7 +139,7 @@ const ballAndStick = (
 ) => {
   const normalized = v => ops.div(v, ops.norm(v));
   const ball = makeBall(ballRadius);
-  const stick = makeStick([0, 0, 0], [0, 0, 1], stickRadius, 48);
+  const stick = makeStick(stickRadius, 48);
 
   const ballMaterial = Object.assign({}, baseMaterial, {
     diffuseColor: ballColor,
@@ -194,12 +179,17 @@ const ballAndStick = (
     const u = normalized(ops.crossProduct(d, t));
     const v = normalized(ops.crossProduct(d, u));
 
+    const r = Math.min(ballRadius, stickRadius);
+    const s = Math.sqrt(ballRadius * ballRadius - r * r);
+    const p1 = ops.plus(p, ops.times(s, d));
+    const w1 = ops.minus(w, ops.times(2 * s, d));
+
     instances.push({
       meshIndex: 1,
       materialIndex: 1,
       transform: {
-        basis: [ u, v, w ],
-        shift: [ p[0], p[1], p[2] || 0 ]
+        basis: [ u, v, w1 ],
+        shift: [ p1[0], p1[1], p1[2] || 0 ]
       },
       extraShift: [ 0, 0, 0 ]
     })
