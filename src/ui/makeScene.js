@@ -49,16 +49,6 @@ const tilingMaterial = color => Object.assign({}, baseMaterial, {
 });
 
 
-const tileMaterial = hue =>
-      tilingMaterial({ hue, saturation: 1.0, lightness: 0.7 });
-
-
-const tau = (Math.sqrt(5) - 1) / 2;
-
-const materialPalette = (initialHue, nrHues) =>
-      range(nrHues).map(i => tileMaterial((initialHue + i * tau) % 1));
-
-
 const geometry = (vertsIn, faces) => {
   const normals = vertsIn.map(v => ops.times(v, 0));
 
@@ -437,8 +427,12 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     const nrTemplates = properties.orbitReps(ds, idcs).length;
     const nrTiles = properties.orbitReps(cov, idcs).length;
 
-    const hue0 = Math.random();
-    const materials = materialPalette(hue0, nrTiles);
+    const tau = (Math.sqrt(5) - 1) / 2;
+    const baseHue = Math.random();
+    const materials = range(nrTiles)
+          .map(i => (baseHue + i * tau) % 1)
+          .map(hue => ({ hue, saturation: 1.0, lightness: 0.7 }))
+          .map(tilingMaterial);
 
     return {
       type, ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
