@@ -230,11 +230,9 @@ vertexShaderOutline =
     varying vec3 vnormal;
 
     void main () {
-        vec3 posx = pos + 0.02 * normal;
-
-        vnormal = (viewing * transform * vec4(normal, 0.0)).xyz;
-        vpos = (viewing * transform * vec4(posx, 1.0)).xyz;
-        gl_Position = perspective * viewing * transform * vec4(posx, 1.0);
+        vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
+        vpos = (viewing * transform * vec4(pos, 1.0)).xyz + 0.02 * vnormal;
+        gl_Position = perspective * vec4(vpos, 1.0);
     }
 
     |]
