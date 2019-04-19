@@ -37,6 +37,26 @@ const baseMaterial = {
 };
 
 
+const netMaterial = color => Object.assign({}, baseMaterial, {
+  diffuseColor: color,
+  shininess: 50.0
+});
+
+
+const tilingMaterial = color => Object.assign({}, baseMaterial, {
+  diffuseColor: color,
+  shininess: 15.0
+});
+
+
+const tileMaterial = hue =>
+      tilingMaterial({ hue, saturation: 1.0, lightness: 0.7 });
+
+
+const materialPalette = (initialHue, nrHues) =>
+      range(nrHues).map(i => tileMaterial((initialHue + i / nrHues) % 1));
+
+
 const geometry = (vertsIn, faces) => {
   const normals = vertsIn.map(v => ops.times(v, 0));
 
@@ -140,21 +160,8 @@ const ballAndStick = (
   ballColor={ hue: 0.13, saturation: 0.7, lightness: 0.7 },
   stickColor={ hue: 0.63, saturation: 0.6, lightness: 0.6 }
 ) => {
-  const ball = makeBall(ballRadius);
-  const stick = makeStick(stickRadius, 48);
-
-  const ballMaterial = Object.assign({}, baseMaterial, {
-    diffuseColor: ballColor,
-    shininess: 50.0
-  });
-
-  const stickMaterial = Object.assign({}, baseMaterial, {
-    diffuseColor: stickColor,
-    shininess: 50.0
-  });
-
-  const meshes = [ ball, stick ];
-  const materials = [ ballMaterial, stickMaterial ];
+  const meshes = [ makeBall(ballRadius), makeStick(stickRadius, 48) ];
+  const materials = [ netMaterial(ballColor), netMaterial(stickColor) ];
   const instances = [];
 
   positions.forEach(p => {
@@ -276,22 +283,6 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     yield log('Done making the net model.');
     return model;
   }
-);
-
-
-const tileMaterial = hue => Object.assign({}, baseMaterial, {
-  diffuseColor: {
-    hue,
-    saturation: 1.0,
-    lightness: 0.7
-  },
-  shininess: 15.0
-});
-
-
-const materialPalette = (initialHue, nrHues) => (
-  Array(nrHues).fill()
-    .map((_, i) => tileMaterial((initialHue + i / nrHues) % 1))
 );
 
 
@@ -499,11 +490,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   } = data;
 
   const dim = delaney.dim(ds);
-  const edgeMaterial = Object.assign({}, baseMaterial, {
-    diffuseColor: (dim == 2 ? options.tileEdgeColor2d : options.tileEdgeColor)
-      || white,
-    shininess: 15.0
-  });
+  const edgeColor = dim == 2 ? options.tileEdgeColor2d : options.tileEdgeColor;
+  const edgeMaterial = tilingMaterial(edgeColor || white);
 
   const colorByTrans = dim == 2 ?
         options.colorByTranslationClass2d : options.colorByTranslationClass;
