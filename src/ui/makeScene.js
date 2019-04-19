@@ -8,7 +8,7 @@ import * as lattices    from '../geometry/lattices';
 import * as unitCells   from '../geometry/unitCells';
 import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
-import {subD}           from '../graphics/surface';
+import {subD}           from './surface';
 
 import {
   rationalLinearAlgebraModular,
@@ -19,9 +19,12 @@ const opsR = rationalLinearAlgebraModular;
 const ops = numericalLinearAlgebra;
 
 
-const unitVec = v => ops.div(v, ops.norm(v));
+const range = n => [...Array(n).keys()];
+const normalized = v => ops.div(v, ops.norm(v));
+
 const white = { hue: 0, saturation: 0, lightness: 1 };
 const black = { hue: 0, saturation: 0, lightness: 0 };
+
 
 const baseMaterial = {
   ambientColor: black,
@@ -53,7 +56,7 @@ const geometry = (vertsIn, faces) => {
 
   const vertices = vertsIn.map((v, i) => ({
     pos: v,
-    normal: unitVec(normals[i])
+    normal: normalized(normals[i])
   }));
 
   return { vertices, faces }
@@ -123,7 +126,7 @@ const makeBall = radius => {
   const t = subD(subD(subD(t0)));
 
   return geometry(
-    t.pos.map(v => ops.times(unitVec(v), radius)),
+    t.pos.map(v => ops.times(normalized(v), radius)),
     t.faces
   );
 };
@@ -137,7 +140,6 @@ const ballAndStick = (
   ballColor={ hue: 0.13, saturation: 0.7, lightness: 0.7 },
   stickColor={ hue: 0.63, saturation: 0.6, lightness: 0.6 }
 ) => {
-  const normalized = v => ops.div(v, ops.norm(v));
   const ball = makeBall(ballRadius);
   const stick = makeStick(stickRadius, 48);
 
@@ -207,9 +209,6 @@ const cartesian = (...vs) => (
     flatMap(xs => vs[vs.length - 1].map(y => xs.concat(y)),
             cartesian(...vs.slice(0, -1)))
 );
-
-
-const range = n => new Array(n).fill(0).map((_, i) => i);
 
 
 const baseShifts = dim => dim == 3 ?

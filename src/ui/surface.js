@@ -1,13 +1,12 @@
-import * as S from '../common/lazyseq';
-
 import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
 
-const pairs = as => S.seq(as).consecCirc(2).map(s => s.toArray()).toArray();
+const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
+const pairs = as => as.map((a, i) => [a, as[(i + 1) % as.length]]);
 const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
 const corners = pos => idcs => idcs.map(i => pos[i]);
-const centroid = pos => ops.div(sum(pos), S.seq(pos).length);
+const centroid = pos => ops.div(sum(pos), pos.length);
 const normalized = v => ops.div(v, ops.norm(v));
 
 
@@ -199,7 +198,7 @@ const withCenterFaces = ({ faces, pos, isFixed, faceLabels }, fn) => {
         newIsFixed.push(false);
       }
 
-      newFaces.push(S.range(k, k + m).toArray());
+      newFaces.push(range(k, k + m));
       newFaceLabels.push(faceLabels[f]);
       for (let i = 0; i < m; ++i) {
         const j = (i + 1) % m;

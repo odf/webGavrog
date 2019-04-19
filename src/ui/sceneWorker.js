@@ -1,11 +1,11 @@
 import 'babel-polyfill';
 
 import * as pickler  from '../common/pickler';
-import * as surface  from '../graphics/surface';
 import * as delaney  from '../dsymbols/delaney';
 import * as tilings  from '../dsymbols/tilings';
 import * as periodic from '../pgraphs/periodic';
 import * as cgd      from '../io/cgd';
+import * as surface  from './surface';
 
 import embed         from '../pgraphs/embedding';
 
