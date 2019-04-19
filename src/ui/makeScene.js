@@ -53,8 +53,10 @@ const tileMaterial = hue =>
       tilingMaterial({ hue, saturation: 1.0, lightness: 0.7 });
 
 
+const tau = (Math.sqrt(5) - 1) / 2;
+
 const materialPalette = (initialHue, nrHues) =>
-      range(nrHues).map(i => tileMaterial((initialHue + i / nrHues) % 1));
+      range(nrHues).map(i => tileMaterial((initialHue + i * tau) % 1));
 
 
 const geometry = (vertsIn, faces) => {
@@ -436,10 +438,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     const nrTiles = properties.orbitReps(cov, idcs).length;
 
     const hue0 = Math.random();
-    const materials = [
-      materialPalette(hue0, nrTemplates),
-      materialPalette(hue0, nrTiles)
-    ];
+    const materials = materialPalette(hue0, nrTiles);
 
     return {
       type, ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
@@ -493,10 +492,6 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const edgeColor = dim == 2 ? options.tileEdgeColor2d : options.tileEdgeColor;
   const edgeMaterial = tilingMaterial(edgeColor || white);
 
-  const colorByTrans = dim == 2 ?
-        options.colorByTranslationClass2d : options.colorByTranslationClass;
-  const palette = materials[colorByTrans ? 1 : 0].concat(edgeMaterial);
-
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
   const pos = embedding.positions;
@@ -518,7 +513,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const { subMeshes, partLists } = embedding[key];
 
   const model = displayListToModel(
-    displayList, tiles, subMeshes, partLists, palette, basis, options
+    displayList, tiles, subMeshes, partLists, materials, basis, options
   );
 
   return model;
