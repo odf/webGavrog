@@ -484,7 +484,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const dim = delaney.dim(ds);
   const edgeColor = dim == 2 ? options.tileEdgeColor2d : options.tileEdgeColor;
-  const edgeMaterial = tilingMaterial(edgeColor || white);
+  const palette = materials;
+  palette.push(tilingMaterial(edgeColor || white));
 
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
@@ -507,7 +508,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const { subMeshes, partLists } = embedding[key];
 
   const model = displayListToModel(
-    displayList, tiles, subMeshes, partLists, materials, basis, options
+    displayList, tiles, subMeshes, partLists, palette, basis, options
   );
 
   return model;
