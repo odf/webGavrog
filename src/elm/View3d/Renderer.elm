@@ -209,9 +209,9 @@ vertexShader =
     varying vec3 vnormal;
 
     void main () {
+        vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
         vpos = (viewing * transform * vec4(pos, 1.0)).xyz;
-        vnormal = (viewing * transform * vec4(normal, 0.0)).xyz;
-        gl_Position = perspective * viewing * transform * vec4(pos, 1.0);
+        gl_Position = perspective * vec4(vpos, 1.0);
     }
 
     |]
