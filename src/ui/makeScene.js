@@ -160,6 +160,8 @@ const ballAndStick = (
     })
   });
 
+  stickRadius += 0.001;
+
   edges.forEach(e => {
     const p = positions[e[0]];
     const q = positions[e[1]];
