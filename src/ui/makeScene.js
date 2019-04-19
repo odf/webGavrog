@@ -106,7 +106,7 @@ const splitGeometry = ({ vertices, faces }, faceLabels) => {
 };
 
 
-const makeBall = () => {
+const makeBall = radius => {
   const t0 = {
     pos: [[1,0,0], [0,1,0], [0,0,1], [-1,0,0], [0,-1,0], [0,0,-1]],
     faces : [[0,1,2], [1,0,5], [2,1,3], [0,2,4],
@@ -115,16 +115,20 @@ const makeBall = () => {
   };
   const t = subD(subD(subD(t0)));
 
-  return geometry(t.pos.map(normalized), t.faces);
+  return geometry(t.pos.map(v => ops.times(normalized(v), radius)), t.faces);
 };
 
 
-const makeStick = segments => {
+const makeStick = (radius, segments) => {
   const n = segments;
   const a = Math.PI * 2 / n;
 
-  const bottom = range(n).map(i => [ Math.cos(a * i), Math.sin(a * i), 0 ]);
-  const top = range(n).map(i => [ Math.cos(a * i), Math.sin(a * i), 1 ]);
+  const bottom = range(n).map(i => [
+    Math.cos(a * i) * radius, Math.sin(a * i) * radius, 0
+  ]);
+  const top = range(n).map(i => [
+    Math.cos(a * i) * radius, Math.sin(a * i) * radius, 1
+  ]);
   const vertices = [].concat(bottom, top);
 
   const faces = range(n).map(i => {
@@ -144,7 +148,9 @@ const ballAndStick = (
   ballColor={ hue: 0.13, saturation: 0.7, lightness: 0.7 },
   stickColor={ hue: 0.63, saturation: 0.6, lightness: 0.6 }
 ) => {
-  const meshes = [ makeBall(), makeStick(48) ];
+  stickRadius += 0.001;
+
+  const meshes = [ makeBall(ballRadius), makeStick(stickRadius, 48) ];
   const materials = [ netMaterial(ballColor), netMaterial(stickColor) ];
   const instances = [];
 
@@ -153,14 +159,12 @@ const ballAndStick = (
       meshIndex: 0,
       materialIndex: 0,
       transform: {
-        basis: ops.times(ballRadius, ops.identityMatrix(3)),
+        basis: ops.identityMatrix(3),
         shift: [ p[0], p[1], p[2] || 0 ]
       },
       extraShift: [ 0, 0, 0 ]
     })
   });
-
-  stickRadius += 0.001;
 
   edges.forEach(e => {
     const p = positions[e[0]];
@@ -171,8 +175,8 @@ const ballAndStick = (
     const ex = [1,0,0];
     const ey = [0,1,0];
     const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
-    const u = ops.times(stickRadius, normalized(ops.crossProduct(d, t)));
-    const v = ops.times(stickRadius, normalized(ops.crossProduct(d, u)));
+    const u = normalized(ops.crossProduct(d, t));
+    const v = normalized(ops.crossProduct(d, u));
 
     const r = Math.min(ballRadius, stickRadius);
     const s = Math.sqrt(ballRadius * ballRadius - r * r);
