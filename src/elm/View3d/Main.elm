@@ -253,19 +253,12 @@ type alias Buttons =
 type Msg
     = FrameMsg Float
     | MouseUpMsg Position Touch.Keys
-    | MouseDownMsg Position Touch.Keys Buttons
+    | MouseDownMsg Position Position Touch.Keys Buttons
     | MouseMoveMsg Position Touch.Keys
     | TouchStartMsg (List Position) Position
     | TouchMoveMsg (List Position)
     | TouchEndMsg
     | WheelMsg Float Touch.Keys
-
-
-decodePos : Decode.Decoder Position
-decodePos =
-    Decode.map2 (\x y -> { x = toFloat x, y = toFloat y })
-        (Decode.at [ "offsetX" ] Decode.int)
-        (Decode.at [ "offsetY" ] Decode.int)
 
 
 decodeModifiers : Decode.Decoder Touch.Keys
@@ -286,6 +279,13 @@ decodeButtons =
             }
         )
         (Decode.at [ "buttons" ] Decode.int)
+
+
+decodePos : Decode.Decoder Position
+decodePos =
+    Decode.map2 (\x y -> { x = toFloat x, y = toFloat y })
+        (Decode.at [ "clientX" ] Decode.int)
+        (Decode.at [ "clientY" ] Decode.int)
 
 
 decodePosList : Decode.Decoder (List Position)
@@ -346,13 +346,17 @@ update msg model =
             , None
             )
 
-        MouseDownMsg pos modifiers buttons ->
+        MouseDownMsg pos offset modifiers buttons ->
             if buttons.right then
                 ( model, None )
 
             else
-                ( updateCamera (Camera.startDragging pos)
-                    { model | touchStart = pos }
+                let
+                    touchStart =
+                        { x = pos.x - offset.x, y = pos.y - offset.y }
+                in
+                ( { model | touchStart = touchStart }
+                    |> updateCamera (Camera.startDragging pos)
                 , None
                 )
 
@@ -556,7 +560,9 @@ view toMsg model options bgColor =
         , Html.Attributes.width (floor model.size.width)
         , Html.Attributes.height (floor model.size.height)
         , onMouseDown
-            (\pos mods buttons -> toMsg (MouseDownMsg pos mods buttons))
+            (\pos offset mods buttons ->
+                toMsg (MouseDownMsg pos offset mods buttons)
+            )
         , onMouseWheel
             (\dy mods -> toMsg (WheelMsg dy mods))
         , onTouchStart
@@ -580,18 +586,26 @@ view toMsg model options bgColor =
         )
 
 
-onMouseDown : (Position -> Touch.Keys -> Buttons -> msg) -> Html.Attribute msg
+onMouseDown :
+    (Position -> Position -> Touch.Keys -> Buttons -> msg)
+    -> Html.Attribute msg
 onMouseDown toMsg =
     let
-        toResult pos mods buttons =
-            { message = toMsg pos mods buttons
+        toResult pos { top, left } mods buttons =
+            { message = toMsg pos { x = left, y = top } mods buttons
             , stopPropagation = False
             , preventDefault = False
             }
     in
     Html.Events.custom
         "mousedown"
-        (Decode.map3 toResult decodePos decodeModifiers decodeButtons)
+        (Decode.map4
+            toResult
+            decodePos
+            decodeOffset
+            decodeModifiers
+            decodeButtons
+        )
 
 
 onMouseWheel : (Float -> Touch.Keys -> msg) -> Html.Attribute msg
