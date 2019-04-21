@@ -288,6 +288,13 @@ decodePos =
         (Decode.at [ "clientY" ] Decode.int)
 
 
+decodeRelativePos : Decode.Decoder Position
+decodeRelativePos =
+    Decode.map2 (\x y -> { x = toFloat x, y = toFloat y })
+        (Decode.at [ "offsetX" ] Decode.int)
+        (Decode.at [ "offsetY" ] Decode.int)
+
+
 decodePosList : Decode.Decoder (List Position)
 decodePosList =
     Decode.map
@@ -346,16 +353,12 @@ update msg model =
             , None
             )
 
-        MouseDownMsg pos offset modifiers buttons ->
+        MouseDownMsg pos posRel modifiers buttons ->
             if buttons.right then
                 ( model, None )
 
             else
-                let
-                    touchStart =
-                        { x = pos.x - offset.x, y = pos.y - offset.y }
-                in
-                ( { model | touchStart = touchStart }
+                ( { model | touchStart = posRel }
                     |> updateCamera (Camera.startDragging pos)
                 , None
                 )
@@ -591,8 +594,8 @@ onMouseDown :
     -> Html.Attribute msg
 onMouseDown toMsg =
     let
-        toResult pos { top, left } mods buttons =
-            { message = toMsg pos { x = left, y = top } mods buttons
+        toResult pos posRel mods buttons =
+            { message = toMsg pos posRel mods buttons
             , stopPropagation = False
             , preventDefault = False
             }
@@ -602,7 +605,7 @@ onMouseDown toMsg =
         (Decode.map4
             toResult
             decodePos
-            decodeOffset
+            decodeRelativePos
             decodeModifiers
             decodeButtons
         )
