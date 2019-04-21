@@ -255,7 +255,7 @@ type Msg
     | MouseUpMsg Position Touch.Keys
     | MouseDownMsg Position Touch.Keys Buttons
     | MouseMoveMsg Position Touch.Keys
-    | TouchStartMsg (List Position)
+    | TouchStartMsg (List Position) Position
     | TouchMoveMsg (List Position)
     | TouchEndMsg
     | WheelMsg Float Touch.Keys
@@ -301,23 +301,6 @@ decodePosList =
 decodeOffset : Decode.Decoder DOM.Rectangle
 decodeOffset =
     DOM.target DOM.boundingClientRect
-
-
-onTouchEvent : String -> (List Position -> msg) -> Html.Attribute msg
-onTouchEvent eventString toMsg =
-    let
-        adjust { top, left } { x, y } =
-            { x = x - left, y = y - top }
-
-        toResult posList rect =
-            { message = posList |> List.map (adjust rect) |> toMsg
-            , stopPropagation = True
-            , preventDefault = True
-            }
-    in
-    Html.Events.custom
-        eventString
-        (Decode.map2 toResult decodePosList decodeOffset)
 
 
 subscriptions : (Msg -> msg) -> Model -> Sub msg
@@ -387,8 +370,8 @@ update msg model =
         MouseMoveMsg pos modifiers ->
             ( updateCamera (Camera.dragTo pos modifiers.shift) model, None )
 
-        TouchStartMsg posList ->
-            ( touchStartUpdate posList model, None )
+        TouchStartMsg posList offset ->
+            ( touchStartUpdate posList offset model, None )
 
         TouchMoveMsg posList ->
             ( touchMoveUpdate posList model, None )
@@ -440,11 +423,13 @@ centerPosition posList =
     { x = sum.x / n, y = sum.y / n }
 
 
-touchStartUpdate : List Position -> Model -> Model
-touchStartUpdate posList model =
+touchStartUpdate : List Position -> Position -> Model -> Model
+touchStartUpdate posList offset model =
     case posList of
         pos :: [] ->
-            { model | touchStart = pos }
+            { model
+                | touchStart = { x = pos.x - offset.x, y = pos.y - offset.y }
+            }
                 |> updateCamera (Camera.startDragging pos)
 
         posA :: posB :: [] ->
@@ -575,7 +560,7 @@ view toMsg model options bgColor =
         , onMouseWheel
             (\dy mods -> toMsg (WheelMsg dy mods))
         , onTouchStart
-            (toMsg << TouchStartMsg)
+            (\posList offset -> toMsg (TouchStartMsg posList offset))
         , onTouchMove
             (toMsg << TouchMoveMsg)
         , onTouchEnd
@@ -627,9 +612,18 @@ onMouseWheel toMsg =
         )
 
 
-onTouchStart : (List Position -> msg) -> Html.Attribute msg
+onTouchStart : (List Position -> Position -> msg) -> Html.Attribute msg
 onTouchStart toMsg =
-    onTouchEvent "touchstart" toMsg
+    let
+        toResult posList { top, left } =
+            { message = toMsg posList { x = left, y = top }
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Html.Events.custom
+        "touchstart"
+        (Decode.map2 toResult decodePosList decodeOffset)
 
 
 onTouchMove : (List Position -> msg) -> Html.Attribute msg
