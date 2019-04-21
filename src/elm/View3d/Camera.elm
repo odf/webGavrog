@@ -39,7 +39,6 @@ type alias Position =
 type State
     = State
         { size : FrameSize
-        , origin : Position
         , cameraDistance : Float
         , fieldOfView : Float
         , dragging : Bool
@@ -64,7 +63,6 @@ initialState : State
 initialState =
     State
         { size = { width = 0, height = 0 }
-        , origin = { x = 0, y = 0 }
         , cameraDistance = 12
         , fieldOfView = 25
         , dragging = False
@@ -113,15 +111,10 @@ nextFrame timeInMilliSecs (State state) =
 
 
 positionToNdc : Position -> State -> Position
-positionToNdc pos (State state) =
-    let
-        xRelative =
-            (pos.x - state.origin.x) / state.size.width
-
-        yRelative =
-            (pos.y - state.origin.y) / state.size.height
-    in
-    { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
+positionToNdc { x, y } (State { size }) =
+    { x = 2 * x / size.width - 1
+    , y = 1 - 2 * y / size.height
+    }
 
 
 pickingRay : Position -> State -> Maybe Ray
