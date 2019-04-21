@@ -1213,6 +1213,7 @@ view model =
                 [ Element.width Element.fill
                 , Element.height Element.fill
                 , Element.spacing 0
+                , Element.inFront (viewContextMenu model)
                 ]
                 [ Element.el
                     [ Element.width Element.fill
