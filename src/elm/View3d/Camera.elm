@@ -6,16 +6,15 @@ module View3d.Camera exposing
     , encompass
     , finishDragging
     , initialState
-    , isDragging
-    , isMoving
     , lookAlong
+    , needsFrameEvents
+    , needsMouseEvents
     , nextFrame
     , perspectiveMatrix
     , pickingRay
     , pinchTo
     , rotateBy
     , setFrameSize
-    , setRedraws
     , startDragging
     , startPinching
     , updateZoom
@@ -423,21 +422,16 @@ cameraDistance (State state) =
     state.cameraDistance
 
 
-isDragging : State -> Bool
-isDragging (State state) =
+needsMouseEvents : State -> Bool
+needsMouseEvents (State state) =
     state.dragging
 
 
-isMoving : State -> Bool
-isMoving (State state) =
+needsFrameEvents : State -> Bool
+needsFrameEvents (State state) =
     state.moving
 
 
 wasDragged : State -> Bool
 wasDragged (State state) =
     state.wasDragged
-
-
-setRedraws : Bool -> State -> State
-setRedraws onOff (State state) =
-    State { state | moving = onOff }

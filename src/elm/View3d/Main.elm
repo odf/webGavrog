@@ -5,8 +5,8 @@ module View3d.Main exposing
     , encompass
     , init
     , lookAlong
+    , requestRedraw
     , rotateBy
-    , setRedraws
     , setScene
     , setSelection
     , setSize
@@ -56,6 +56,7 @@ type alias PickingInfo =
 
 type alias Model =
     { size : FrameSize
+    , requestRedraw : Bool
     , cameraState : Camera.State
     , scene : Renderer.Scene PickingInfo
     , selected : Set ( Int, Int )
@@ -74,6 +75,7 @@ type Outcome
 init : Model
 init =
     { size = { width = 0, height = 0 }
+    , requestRedraw = False
     , cameraState = Camera.initialState
     , scene = []
     , selected = Set.empty
@@ -289,7 +291,10 @@ subscriptions : (Msg -> msg) -> Model -> Sub msg
 subscriptions toMsg model =
     let
         frameEvent =
-            if Camera.isMoving model.cameraState then
+            if
+                model.requestRedraw
+                    || Camera.needsFrameEvents model.cameraState
+            then
                 Events.onAnimationFrameDelta FrameMsg
 
             else
@@ -298,21 +303,16 @@ subscriptions toMsg model =
         decoder msg =
             Decode.map2 msg decodePos decodeModifiers
 
-        moveEvent =
-            if Camera.isDragging model.cameraState then
-                Events.onMouseMove (decoder MouseMoveMsg)
+        mouseEvents =
+            if Camera.needsMouseEvents model.cameraState then
+                [ Events.onMouseMove (decoder MouseMoveMsg)
+                , Events.onMouseUp (decoder MouseUpMsg)
+                ]
 
             else
-                Sub.none
-
-        upEvent =
-            if Camera.isDragging model.cameraState then
-                Events.onMouseUp (decoder MouseUpMsg)
-
-            else
-                Sub.none
+                []
     in
-    [ frameEvent, moveEvent, upEvent ]
+    (frameEvent :: mouseEvents)
         |> Sub.batch
         |> Sub.map toMsg
 
@@ -325,7 +325,10 @@ update : Msg -> Model -> ( Model, Outcome )
 update msg model =
     case msg of
         FrameMsg time ->
-            ( updateCamera (Camera.nextFrame time) model, None )
+            ( updateCamera (Camera.nextFrame time)
+                { model | requestRedraw = False }
+            , None
+            )
 
         MouseDownMsg pos modifiers buttons ->
             if buttons.right then
@@ -514,9 +517,9 @@ setSelection selected model =
     { model | selected = selected }
 
 
-setRedraws : Bool -> Model -> Model
-setRedraws onOff model =
-    updateCamera (Camera.setRedraws onOff) model
+requestRedraw : Model -> Model
+requestRedraw model =
+    { model | requestRedraw = True }
 
 
 

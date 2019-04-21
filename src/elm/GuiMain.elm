@@ -1059,7 +1059,7 @@ executeAction action model =
                     [ ( "backgroundColor", Encode.string colorAsText )
                     ]
             in
-            ( updateView3d (View3d.setRedraws True) model
+            ( updateView3d View3d.requestRedraw model
             , toJS <|
                 Encode.object
                     [ ( "mode", Encode.string "menuChoice" )
