@@ -124,8 +124,8 @@ decodeKey =
 decodePos : Decode.Decoder Position
 decodePos =
     Decode.map2 (\x y -> { x = toFloat x, y = toFloat y })
-        (Decode.at [ "clientX" ] Decode.int)
-        (Decode.at [ "clientY" ] Decode.int)
+        (Decode.at [ "offsetX" ] Decode.int)
+        (Decode.at [ "offsetY" ] Decode.int)
 
 
 decodeButtons : Decode.Decoder Buttons

@@ -18,6 +18,7 @@ module View3d.Main exposing
 import Bitwise
 import Browser.Events as Events
 import Color exposing (Color)
+import DOM
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -255,7 +256,7 @@ type Msg
     | MouseDownMsg Position Touch.Keys Buttons
     | MouseMoveMsg Position Touch.Keys
     | TouchStartMsg (List Position)
-    | TouchMoveMsg (List Position) Touch.Keys
+    | TouchMoveMsg (List Position)
     | TouchEndMsg
     | WheelMsg Float Touch.Keys
 
@@ -263,8 +264,8 @@ type Msg
 decodePos : Decode.Decoder Position
 decodePos =
     Decode.map2 (\x y -> { x = toFloat x, y = toFloat y })
-        (Decode.at [ "clientX" ] Decode.int)
-        (Decode.at [ "clientY" ] Decode.int)
+        (Decode.at [ "offsetX" ] Decode.int)
+        (Decode.at [ "offsetY" ] Decode.int)
 
 
 decodeModifiers : Decode.Decoder Touch.Keys
@@ -285,6 +286,38 @@ decodeButtons =
             }
         )
         (Decode.at [ "buttons" ] Decode.int)
+
+
+decodePosList : Decode.Decoder (List Position)
+decodePosList =
+    Decode.map
+        (List.map (.clientPos >> (\( x, y ) -> { x = x, y = y })))
+        (Decode.field
+            "changedTouches"
+            (Touch.touchListDecoder Touch.touchDecoder)
+        )
+
+
+decodeOffset : Decode.Decoder DOM.Rectangle
+decodeOffset =
+    DOM.target DOM.boundingClientRect
+
+
+onTouchEvent : String -> (List Position -> msg) -> Html.Attribute msg
+onTouchEvent eventString toMsg =
+    let
+        adjust { top, left } { x, y } =
+            { x = x - left, y = y - top }
+
+        toResult posList rect =
+            { message = posList |> List.map (adjust rect) |> toMsg
+            , stopPropagation = True
+            , preventDefault = True
+            }
+    in
+    Html.Events.custom
+        eventString
+        (Decode.map2 toResult decodePosList decodeOffset)
 
 
 subscriptions : (Msg -> msg) -> Model -> Sub msg
@@ -335,7 +368,10 @@ update msg model =
                 ( model, None )
 
             else
-                ( updateCamera (Camera.startDragging pos) model, None )
+                ( updateCamera (Camera.startDragging pos)
+                    { model | touchStart = pos }
+                , None
+                )
 
         MouseUpMsg pos modifiers ->
             let
@@ -344,7 +380,7 @@ update msg model =
                         None
 
                     else
-                        pickingOutcome pos modifiers model
+                        pickingOutcome model.touchStart modifiers model
             in
             ( updateCamera Camera.finishDragging model, outcome )
 
@@ -354,8 +390,8 @@ update msg model =
         TouchStartMsg posList ->
             ( touchStartUpdate posList model, None )
 
-        TouchMoveMsg posList modifiers ->
-            ( touchMoveUpdate posList modifiers model, None )
+        TouchMoveMsg posList ->
+            ( touchMoveUpdate posList model, None )
 
         TouchEndMsg ->
             let
@@ -421,14 +457,14 @@ touchStartUpdate posList model =
             model
 
 
-touchMoveUpdate : List Position -> Touch.Keys -> Model -> Model
-touchMoveUpdate posList modifiers model =
+touchMoveUpdate : List Position -> Model -> Model
+touchMoveUpdate posList model =
     case posList of
         pos :: [] ->
             updateCamera (Camera.dragTo pos False) model
 
         posA :: posB :: [] ->
-            updateCamera (Camera.pinchTo posA posB modifiers.shift) model
+            updateCamera (Camera.pinchTo posA posB False) model
 
         posA :: posB :: posC :: [] ->
             updateCamera (Camera.dragTo (centerPosition posList) True) model
@@ -541,7 +577,7 @@ view toMsg model options bgColor =
         , onTouchStart
             (toMsg << TouchStartMsg)
         , onTouchMove
-            (\pos mods -> toMsg (TouchMoveMsg pos mods))
+            (toMsg << TouchMoveMsg)
         , onTouchEnd
             (toMsg TouchEndMsg)
         , onTouchCancel
@@ -591,25 +627,14 @@ onMouseWheel toMsg =
         )
 
 
-touchCoordinates : Touch.Event -> List Position
-touchCoordinates touchEvent =
-    touchEvent.targetTouches
-        |> List.map .clientPos
-        |> List.map (\( x, y ) -> { x = x, y = y })
-
-
 onTouchStart : (List Position -> msg) -> Html.Attribute msg
 onTouchStart toMsg =
-    Touch.onStart (toMsg << touchCoordinates)
+    onTouchEvent "touchstart" toMsg
 
 
-onTouchMove : (List Position -> Touch.Keys -> msg) -> Html.Attribute msg
+onTouchMove : (List Position -> msg) -> Html.Attribute msg
 onTouchMove toMsg =
-    let
-        makeMsg event =
-            toMsg (touchCoordinates event) event.keys
-    in
-    Touch.onMove makeMsg
+    onTouchEvent "touchmove" toMsg
 
 
 onTouchEnd : msg -> Html.Attribute msg
