@@ -667,7 +667,7 @@ update msg model =
         Resize width height ->
             ( updateView3d
                 (View3d.setSize
-                    { width = toFloat width, height = toFloat height }
+                    { width = toFloat width, height = toFloat height - 100 }
                 )
                 model
             , Cmd.none
@@ -1208,29 +1208,27 @@ view model =
         [ Element.layout
             [ Element.width Element.fill
             , Font.size 16
-            , Element.inFront
-                (Element.el
-                    [ Element.width Element.fill
-                    , Element.alignBottom
-                    ]
-                    (viewFooter model)
-                )
-            , Element.inFront
-                (Element.el
+            ]
+            (Element.column
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.spacing 0
+                ]
+                [ Element.el
                     [ Element.width Element.fill
                     , Element.below <| viewCurrentDialog model
                     ]
                     (viewHeader model)
-                )
-            , Element.inFront (viewContextMenu model)
-            ]
-            (Element.el
-                [ onContextMenu ContextMenuOnOff
-                , onMouseDown MouseDown
+                , Element.el
+                    [ onContextMenu ContextMenuOnOff
+                    , onMouseDown MouseDown
+                    , Element.height Element.fill
+                    ]
+                    (Element.html <|
+                        View3d.view ViewMsg model.viewState options bgColor
+                    )
+                , viewFooter model
                 ]
-                (Element.html <|
-                    View3d.view ViewMsg model.viewState options bgColor
-                )
             )
         ]
     }
@@ -1243,19 +1241,15 @@ viewHeader model =
         , Border.solid
         , Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 }
         , Border.color Styling.borderColor
-        , Border.shadow
-            { offset = ( 0.0, 2.0 )
-            , size = 0.0
-            , blur = 4.0
-            , color = Element.rgba 0.0 0.0 0.0 0.1
-            }
         , Element.width Element.fill
+        , Element.height <| Element.px 50
         , Element.centerX
-        , Element.paddingXY 24 4
+        , Element.paddingXY 24 0
         ]
         (Element.row
             [ Element.width Element.fill
             , Element.spacing 24
+            , Element.centerY
             ]
             [ Element.row
                 [ Element.width Element.fill
@@ -1289,19 +1283,15 @@ viewFooter model =
         , Border.solid
         , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
         , Border.color Styling.borderColor
-        , Border.shadow
-            { offset = ( 0.0, 0.0 )
-            , size = 0.0
-            , blur = 4.0
-            , color = Element.rgba 0.0 0.0 0.0 0.1
-            }
         , Element.width Element.fill
+        , Element.height <| Element.px 50
         , Element.centerX
-        , Element.paddingXY 24 8
+        , Element.paddingXY 24 0
         ]
         (Element.row
             [ Element.width Element.fill
             , Element.spacing 24
+            , Element.centerY
             ]
             [ Element.el
                 [ Element.width Element.fill
