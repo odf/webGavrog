@@ -173,7 +173,7 @@ pinchTo posA posB alter (State state) =
             distance posA posB
 
         f =
-            clamp 0.2 5.0 (state.pinchDist / d)
+            clamp 0.9 1.11 (state.pinchDist / d)
 
         (State s) =
             updateZoom f alter (State state)

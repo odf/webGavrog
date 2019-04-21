@@ -634,7 +634,12 @@ onTouchStart toMsg =
 
 onTouchMove : (List Position -> msg) -> Html.Attribute msg
 onTouchMove toMsg =
-    onTouchEvent "touchmove" toMsg
+    Touch.onMove
+        (.targetTouches
+            >> List.map .clientPos
+            >> List.map (\( x, y ) -> { x = x, y = y })
+            >> toMsg
+        )
 
 
 onTouchEnd : msg -> Html.Attribute msg
