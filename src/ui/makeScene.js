@@ -156,6 +156,7 @@ const ballAndStick = (
 
   positions.forEach(p => {
     instances.push({
+      type: 'netVertex',
       meshIndex: 0,
       materialIndex: 0,
       transform: {
@@ -184,6 +185,7 @@ const ballAndStick = (
     const w1 = ops.minus(w, ops.times(2 * s, d));
 
     instances.push({
+      type: 'netEdge',
       meshIndex: 1,
       materialIndex: 1,
       transform: {
@@ -297,13 +299,13 @@ const splitMeshes = (meshes, faceLabelLists) => {
 
 
 const convertTile = (tile, centers) => {
-  const { templateIndex: meshIndex, symmetry, neighbors } = tile;
+  const { templateIndex, symmetry, neighbors } = tile;
   const sym = opsR.toJS(symmetry.map(v => v.slice(0, -1)));
 
   const basis = sym.slice(0, -1);
   const shift = sym.slice(-1)[0];
 
-  const center = ops.plus(ops.times(centers[meshIndex], basis), shift);
+  const center = ops.plus(ops.times(centers[templateIndex], basis), shift);
 
   if (shift.length == 2) {
     for (const v of basis)
@@ -315,7 +317,7 @@ const convertTile = (tile, centers) => {
 
   const transform = { basis, shift };
 
-  return { meshIndex, transform, center, neighbors };
+  return { templateIndex, transform, center, neighbors };
 };
 
 
@@ -351,8 +353,8 @@ const displayListToModel = (
 
   for (let i = 0; i < displayList.length; ++i) {
     const { tileIndex, extraShift, skippedParts } = displayList[i];
-    const { meshIndex, transform: t, center, neighbors } = tiles[tileIndex];
-    const parts = partLists[meshIndex];
+    const { templateIndex, transform: t, center, neighbors } = tiles[tileIndex];
+    const parts = partLists[templateIndex];
 
     const transform = {
       basis: ops.times(scale, ops.times(invCell, ops.times(t.basis, extCell))),
@@ -362,19 +364,22 @@ const displayListToModel = (
 
     const colorByTrans = dim == 2 ?
           options.colorByTranslationClass2d : options.colorByTranslationClass;
-    const baseMatIndex = colorByTrans ? tileIndex : meshIndex;
+    const baseMatIndex = colorByTrans ? tileIndex : templateIndex;
 
     for (let j = 0; j < parts.length; ++j) {
       if (skippedParts && skippedParts[j])
         continue;
 
+      const isFace = j < parts.length - 1;
       const drawEdges = dim == 2 ? options.drawEdges2d : options.drawEdges;
-      const materialIndex = (j == parts.length - 1 && drawEdges) ?
-            materials.length - 1 : baseMatIndex;
+      const materialIndex =
+            (!isFace && drawEdges) ? materials.length - 1 : baseMatIndex;
 
       instances.push({
+        type: isFace ? 'tileFace' : 'tileEdges',
         meshIndex: parts[j],
         materialIndex,
+        tileClassIndex: templateIndex,
         tileIndex: i,
         partIndex: j,
         transform,
