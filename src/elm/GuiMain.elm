@@ -7,6 +7,7 @@ import Browser.Events
 import Char
 import Color
 import ColorDialog
+import DecodeScene exposing (decodeScene)
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -23,8 +24,7 @@ import Set exposing (Set)
 import Styling
 import Task
 import ValueSlider
-import View3d.Main as View3d
-import View3d.Scene exposing (Scene, decodeScene)
+import View3d.Main as View3d exposing (Scene)
 
 
 main =

@@ -1,12 +1,13 @@
-module View3d.Scene exposing (Scene, decodeScene)
+module DecodeScene exposing (decodeScene)
 
 import Array exposing (Array)
 import Color exposing (Color)
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import View3d.Main exposing (Scene)
 import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.Renderer as Renderer
+import View3d.Renderer exposing (Material, Vertex)
 
 
 type alias RawInstance =
@@ -17,22 +18,18 @@ type alias RawInstance =
 
 
 type alias Instance =
-    { material : Renderer.Material
+    { material : Material
     , transform : Mat4
     }
 
 
 type alias MeshWithInstances =
-    { mesh : Mesh Renderer.Vertex
+    { mesh : Mesh Vertex
     , instances : List Instance
     }
 
 
-type alias Scene =
-    List MeshWithInstances
-
-
-defaultMaterial : Renderer.Material
+defaultMaterial : Material
 defaultMaterial =
     { ambientColor = vec3 0 0 0
     , diffuseColor = vec3 0 0 0
@@ -69,21 +66,21 @@ decodeColor =
         (Decode.field "lightness" Decode.float)
 
 
-decodeVertex : Decode.Decoder Renderer.Vertex
+decodeVertex : Decode.Decoder Vertex
 decodeVertex =
     Decode.map2 (\pos normal -> { pos = pos, normal = normal })
         (Decode.field "pos" decodeVec3)
         (Decode.field "normal" decodeVec3)
 
 
-decodeMesh : Decode.Decoder (Mesh Renderer.Vertex)
+decodeMesh : Decode.Decoder (Mesh Vertex)
 decodeMesh =
     Decode.map2 Mesh.surface
         (Decode.field "vertices" (Decode.list decodeVertex))
         (Decode.field "faces" (Decode.list (Decode.list Decode.int)))
 
 
-decodeMaterial : Decode.Decoder Renderer.Material
+decodeMaterial : Decode.Decoder Material
 decodeMaterial =
     Decode.map7
         (\ambientColor diffuseColor specularColor ka kd ks shininess ->
@@ -138,7 +135,7 @@ decodeInstance =
         (Decode.field "extraShift" decodeVec3)
 
 
-resolveInstance : Array Renderer.Material -> RawInstance -> Instance
+resolveInstance : Array Material -> RawInstance -> Instance
 resolveInstance materials { iMat, transform } =
     { material = Array.get iMat materials |> Maybe.withDefault defaultMaterial
     , transform = transform
@@ -147,9 +144,9 @@ resolveInstance materials { iMat, transform } =
 
 meshWithInstances :
     List RawInstance
-    -> List Renderer.Material
+    -> List Material
     -> Int
-    -> Mesh Renderer.Vertex
+    -> Mesh Vertex
     -> MeshWithInstances
 meshWithInstances instances materials index mesh =
     let

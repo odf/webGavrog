@@ -2,6 +2,7 @@ module View3d.Main exposing
     ( Model
     , Msg
     , Outcome(..)
+    , Scene
     , encompass
     , init
     , lookAlong
@@ -31,7 +32,6 @@ import Time exposing (Posix)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.Renderer as Renderer
-import View3d.Scene as Scene exposing (Scene)
 import WebGL
 
 
@@ -53,6 +53,17 @@ type alias PickingInfo =
     , pickingMesh : Maybe (Mesh Vec3)
     , inverseTransform : Maybe Mat4
     }
+
+
+type alias Scene =
+    List
+        { mesh : Mesh Renderer.Vertex
+        , instances :
+            List
+                { material : Renderer.Material
+                , transform : Mat4
+                }
+        }
 
 
 type alias Model =
