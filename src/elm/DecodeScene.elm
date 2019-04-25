@@ -11,7 +11,7 @@ type alias Instance =
     { elementType : ElementType
     , tileClassIndex : Maybe Int
     , tileBearingIndex : Maybe Int
-    , iMesh : Int
+    , meshIndex : Int
     , transform : Mat4
     }
 
@@ -96,11 +96,11 @@ decodeElementType s =
 decodeInstance : Decode.Decoder Instance
 decodeInstance =
     Decode.map6
-        (\elementType classIndex bearingIndex iMesh transform shift ->
+        (\elementType classIndex bearingIndex meshIndex transform shift ->
             { elementType = decodeElementType elementType
             , tileClassIndex = classIndex
             , tileBearingIndex = bearingIndex
-            , iMesh = iMesh
+            , meshIndex = meshIndex
             , transform = Mat4.mul (Mat4.makeTranslate shift) transform
             }
         )
@@ -117,7 +117,7 @@ meshWithInstances instances index mesh =
     { mesh = mesh
     , instances =
         instances
-            |> List.filter (\instance -> instance.iMesh == index)
+            |> List.filter (\instance -> instance.meshIndex == index)
     }
 
 
