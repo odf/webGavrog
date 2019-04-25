@@ -1111,6 +1111,7 @@ contextMenuOnOff model maybePos =
 
 makeMaterial : DecodeScene.Instance -> Model -> Material
 makeMaterial { elementType, tileClassIndex, tileBearingIndex } model =
+    -- TODO take tiling dimension into account
     let
         index =
             (if model.tilingSettings.colorByTranslationClass then

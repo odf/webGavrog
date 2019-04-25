@@ -22,32 +22,6 @@ const ops = numericalLinearAlgebra;
 const range = n => [...Array(n).keys()];
 const normalized = v => ops.div(v, ops.norm(v));
 
-const white = { hue: 0, saturation: 0, lightness: 1 };
-const black = { hue: 0, saturation: 0, lightness: 0 };
-
-
-const baseMaterial = {
-  ambientColor: black,
-  diffuseColor: black,
-  specularColor: white,
-  ka: 0.0,
-  kd: 1.0,
-  ks: 0.2,
-  shininess: 15.0
-};
-
-
-const netMaterial = color => Object.assign({}, baseMaterial, {
-  diffuseColor: color,
-  shininess: 50.0
-});
-
-
-const tilingMaterial = color => Object.assign({}, baseMaterial, {
-  diffuseColor: color,
-  shininess: 15.0
-});
-
 
 const geometry = (vertsIn, faces) => {
   const normals = vertsIn.map(v => ops.times(v, 0));
@@ -140,25 +114,16 @@ const makeStick = (radius, segments) => {
 };
 
 
-const ballAndStick = (
-  positions,
-  edges,
-  ballRadius=0.1,
-  stickRadius=0.04,
-  ballColor={ hue: 0.13, saturation: 0.7, lightness: 0.7 },
-  stickColor={ hue: 0.63, saturation: 0.6, lightness: 0.6 }
-) => {
+const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
   stickRadius += 0.001;
 
   const meshes = [ makeBall(ballRadius), makeStick(stickRadius, 48) ];
-  const materials = [ netMaterial(ballColor), netMaterial(stickColor) ];
   const instances = [];
 
   positions.forEach(p => {
     instances.push({
       type: 'netVertex',
       meshIndex: 0,
-      materialIndex: 0,
       transform: {
         basis: ops.identityMatrix(3),
         shift: [ p[0], p[1], p[2] || 0 ]
@@ -187,7 +152,6 @@ const ballAndStick = (
     instances.push({
       type: 'netEdge',
       meshIndex: 1,
-      materialIndex: 1,
       transform: {
         basis: [ u, v, w1 ],
         shift: [ p1[0], p1[1], p1[2] || 0 ]
@@ -196,7 +160,7 @@ const ballAndStick = (
     })
   });
 
-  return { meshes, materials, instances };
+  return { meshes, instances };
 };
 
 
@@ -265,11 +229,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     yield log('Making the net geometry...');
-    const model = ballAndStick(
-      points, edges,
-      options.netVertexRadius, options.netEdgeRadius,
-      options.netVertexColor, options.netEdgeColor
-    );
+    const model = ballAndStick(points, edges);
     console.log(`${Math.round(t())} msec to make the net geometry`);
 
     yield log('Done making the net model.');
@@ -339,7 +299,7 @@ const makeDisplayList = (tiles, shifts) => {
 
 
 const displayListToModel = (
-  displayList, tiles, meshes, partLists, materials, cell, options
+  displayList, tiles, meshes, partLists, cell, options
 ) => {
   const dim = ops.dimension(cell);
   const extCell = dim == 2 ?
@@ -362,23 +322,13 @@ const displayListToModel = (
                       ops.times(1.0 - scale, ops.times(center, extCell)))
     };
 
-    const colorByTrans = dim == 2 ?
-          options.colorByTranslationClass2d : options.colorByTranslationClass;
-    const baseMatIndex = colorByTrans ? tileIndex : templateIndex;
-
     for (let j = 0; j < parts.length; ++j) {
       if (skippedParts && skippedParts[j])
         continue;
 
-      const isFace = j < parts.length - 1;
-      const drawEdges = dim == 2 ? options.drawEdges2d : options.drawEdges;
-      const materialIndex =
-            (!isFace && drawEdges) ? materials.length - 1 : baseMatIndex;
-
       instances.push({
-        type: isFace ? 'tileFace' : 'tileEdges',
+        type: (j < parts.length - 1) ? 'tileFace' : 'tileEdges',
         meshIndex: parts[j],
-        materialIndex,
         tileClassIndex: templateIndex,
         tileBearingIndex: tileIndex,
         tileIndex: i,
@@ -391,7 +341,7 @@ const displayListToModel = (
     }
   }
 
-  return { meshes, materials, instances };
+  return { meshes, instances };
 };
 
 
@@ -427,19 +377,8 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    const idcs = [...Array(dim).keys()];
-    const nrTemplates = properties.orbitReps(ds, idcs).length;
-    const nrTiles = properties.orbitReps(cov, idcs).length;
-
-    const tau = (Math.sqrt(5) - 1) / 2;
-    const baseHue = Math.random();
-    const materials = range(nrTiles)
-          .map(i => (baseHue + i * tau) % 1)
-          .map(hue => ({ hue, saturation: 1.0, lightness: 0.7 }))
-          .map(tilingMaterial);
-
     return {
-      type, ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
+      type, ds, cov, skel, tiles, orbitReps, embeddings, displayList
     };
   }
 );
@@ -482,14 +421,9 @@ const makeMeshes = (
 
 
 const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
-  const {
-    ds, cov, skel, tiles, orbitReps, embeddings, materials, displayList
-  } = data;
+  const { ds, cov, skel, tiles, orbitReps, embeddings, displayList } = data;
 
   const dim = delaney.dim(ds);
-  const edgeColor = dim == 2 ? options.tileEdgeColor2d : options.tileEdgeColor;
-  const palette = materials;
-  palette.push(tilingMaterial(edgeColor || white));
 
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
@@ -512,7 +446,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const { subMeshes, partLists } = embedding[key];
 
   const model = displayListToModel(
-    displayList, tiles, subMeshes, partLists, palette, basis, options
+    displayList, tiles, subMeshes, partLists, basis, options
   );
 
   return model;
