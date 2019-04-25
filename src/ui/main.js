@@ -122,7 +122,7 @@ const toStructure = (config, model, i) => csp.go(function*() {
     const newModel =
           Object.assign({}, model, { structures, index, data, scene });
 
-    yield config.sendScene(scene, true);
+    yield config.sendScene(scene, data.dim, true);
     yield config.sendTitle(title(newModel));
 
     return newModel;
@@ -139,7 +139,7 @@ const updateStructure = (config, model) => csp.go(function*() {
     const scene = yield makeScene(
       model.data, model.options, callWorker, config.log);
 
-    yield config.sendScene(scene, false);
+    yield config.sendScene(scene, model.data.dim, false);
     return Object.assign({}, model, { scene } );
   } catch (ex) {
     console.error(ex);
@@ -184,7 +184,7 @@ const updateDisplayList = (
       const data = Object.assign({}, model.data, { displayList });
       const scene = yield makeScene(data, model.options, callWorker, config.log);
 
-      yield config.sendScene(scene, false);
+      yield config.sendScene(scene, model.data.dim, false);
 
       return Object.assign({}, model, { data, scene });
     } catch (ex) {
@@ -316,7 +316,7 @@ const removeElementsNoDL = (config, model, selected) => csp.go(function*() {
       (inst, k) => !toBeRemoved[k]);
 
     const scene = Object.assign({}, model.scene, { instances });
-    yield config.sendScene(scene, false);
+    yield config.sendScene(scene, model.data.dim, false);
 
     return Object.assign({}, model, { scene });
   } catch (ex) {
@@ -417,7 +417,8 @@ const render = domNode => {
     saveFile: fileSaver(),
     log: text => app.ports.fromJS.send({ log: text }),
     sendTitle: text => app.ports.fromJS.send({ title: text }),
-    sendScene: (scene, reset) => app.ports.fromJS.send({ scene, reset })
+    sendScene: (scene, dim, reset) =>
+      app.ports.fromJS.send({ scene, dim, reset })
   };
 
   const updateModel = deferred => csp.go(function*() {

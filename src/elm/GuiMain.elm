@@ -41,7 +41,7 @@ main =
 type InData
     = Title String
     | Log String
-    | Scene DecodeScene.Scene Bool
+    | Scene DecodeScene.Scene Int Bool
 
 
 type ViewAxis
@@ -149,8 +149,9 @@ decodeInData =
             (Decode.field "title" Decode.string)
         , Decode.map (\s -> Log s)
             (Decode.field "log" Decode.string)
-        , Decode.map2 (\s r -> Scene s r)
+        , Decode.map3 (\s d r -> Scene s d r)
             (Decode.field "scene" decodeScene)
+            (Decode.field "dim" Decode.int)
             (Decode.field "reset" Decode.bool)
         ]
 
@@ -1099,31 +1100,41 @@ contextMenuOnOff model maybePos =
             }
 
 
-makeMaterial : DecodeScene.Instance -> Model -> Material
-makeMaterial { elementType, tileClassIndex, tileBearingIndex } model =
-    -- TODO take tiling dimension into account
+makeMaterial : DecodeScene.Instance -> Int -> Model -> Material
+makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
     let
-        index =
-            (if model.tilingSettings.colorByTranslationClass then
-                tileBearingIndex
+        tilingSettings =
+            if dim == 2 then
+                { colorByTranslationClass =
+                    model.tiling2dSettings.colorByTranslationClass
+                , drawEdges = model.tiling2dSettings.drawEdges
+                , edgeColor = model.tiling2dSettings.edgeColor
+                }
 
-             else
-                tileClassIndex
-            )
-                |> Maybe.withDefault 0
+            else
+                { colorByTranslationClass =
+                    model.tilingSettings.colorByTranslationClass
+                , drawEdges = model.tilingSettings.drawEdges
+                , edgeColor = model.tilingSettings.edgeColor
+                }
+
+        index =
+            if tilingSettings.colorByTranslationClass then
+                Maybe.withDefault 0 tileBearingIndex
+
+            else
+                Maybe.withDefault 0 tileClassIndex
     in
     case elementType of
         TileFace ->
             tilingMaterial (tileColor 0.5 index)
 
         TileEdges ->
-            tilingMaterial
-                (if model.tilingSettings.drawEdges then
-                    model.tilingSettings.edgeColor
+            if tilingSettings.drawEdges then
+                tilingMaterial tilingSettings.edgeColor
 
-                 else
-                    tileColor 0.5 index
-                )
+            else
+                tilingMaterial (tileColor 0.5 index)
 
         NetEdge ->
             netMaterial model.netSettings.edgeColor
@@ -1135,11 +1146,11 @@ makeMaterial { elementType, tileClassIndex, tileBearingIndex } model =
             tilingMaterial (tileColor 0.5 0)
 
 
-convertScene : DecodeScene.Scene -> Model -> Scene
-convertScene scene model =
+convertScene : DecodeScene.Scene -> Int -> Model -> Scene
+convertScene scene dim model =
     let
         convertInstance instance =
-            { material = makeMaterial instance model
+            { material = makeMaterial instance dim model
             , transform = instance.transform
             }
     in
@@ -1170,14 +1181,14 @@ handleJSData value model =
                 Log text ->
                     { model | status = text }
 
-                Scene scene False ->
+                Scene scene dim False ->
                     updateView3d
-                        (View3d.setScene (convertScene scene model))
+                        (View3d.setScene (convertScene scene dim model))
                         model
 
-                Scene scene True ->
+                Scene scene dim True ->
                     updateView3d
-                        (View3d.setScene (convertScene scene model)
+                        (View3d.setScene (convertScene scene dim model)
                             >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
                             >> View3d.encompass
                         )

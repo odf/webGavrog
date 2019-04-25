@@ -191,7 +191,7 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     const embeddings = yield runJob({ cmd: 'embedding', val: graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    return { type: structure.type, graph, embeddings };
+    return { type: structure.type, dim: graph.dim, graph, embeddings };
   }
 );
 
@@ -378,7 +378,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
     return {
-      type, ds, cov, skel, tiles, orbitReps, embeddings, displayList
+      type, dim, ds, cov, skel, tiles, orbitReps, embeddings, displayList
     };
   }
 );
