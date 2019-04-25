@@ -755,9 +755,9 @@ update msg model =
                         [ ( "netVertexRadius"
                           , Encode.float settings.vertexRadius
                           )
-                        , ( "netVertexColor", encodeColor settings.vertexColor )
-                        , ( "netEdgeRadius", Encode.float settings.edgeRadius )
-                        , ( "netEdgeColor", encodeColor settings.edgeColor )
+                        , ( "netEdgeRadius"
+                          , Encode.float settings.edgeRadius
+                          )
                         ]
                 in
                 ( { model | netSettings = settings }
@@ -775,12 +775,7 @@ update msg model =
             if settings /= model.tilingSettings then
                 let
                     options =
-                        [ ( "colorByTranslationClass"
-                          , Encode.bool settings.colorByTranslationClass
-                          )
-                        , ( "drawEdges", Encode.bool settings.drawEdges )
-                        , ( "tileEdgeColor", encodeColor settings.edgeColor )
-                        , ( "extraSmooth", Encode.bool settings.extraSmooth )
+                        [ ( "extraSmooth", Encode.bool settings.extraSmooth )
                         , ( "tightenSurfaces", Encode.bool settings.tighten )
                         , ( "tileScale", Encode.float settings.tileScale )
                         , ( "edgeWidth", Encode.float settings.edgeWidth )
@@ -801,12 +796,7 @@ update msg model =
             if settings /= model.tiling2dSettings then
                 let
                     options =
-                        [ ( "colorByTranslationClass2d"
-                          , Encode.bool settings.colorByTranslationClass
-                          )
-                        , ( "drawEdges2d", Encode.bool settings.drawEdges )
-                        , ( "tileEdgeColor2d", encodeColor settings.edgeColor )
-                        , ( "tileScale2d", Encode.float settings.tileScale )
+                        [ ( "tileScale2d", Encode.float settings.tileScale )
                         , ( "edgeWidth2d", Encode.float settings.edgeWidth )
                         ]
                 in
