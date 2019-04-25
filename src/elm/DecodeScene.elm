@@ -1,4 +1,4 @@
-module DecodeScene exposing (Scene, decodeScene)
+module DecodeScene exposing (ElementType(..), Instance, Scene, decodeScene)
 
 import Array exposing (Array)
 import Color exposing (Color)
@@ -12,7 +12,7 @@ import View3d.Renderer exposing (Material, Vertex)
 type alias RawInstance =
     { elementType : ElementType
     , tileClassIndex : Maybe Int
-    , tileIndex : Maybe Int
+    , tileBearingIndex : Maybe Int
     , iMesh : Int
     , iMat : Int
     , transform : Mat4
@@ -22,7 +22,7 @@ type alias RawInstance =
 type alias Instance =
     { elementType : ElementType
     , tileClassIndex : Maybe Int
-    , tileIndex : Maybe Int
+    , tileBearingIndex : Maybe Int
     , material : Material
     , transform : Mat4
     }
@@ -159,10 +159,10 @@ decodeElementType s =
 decodeInstance : Decode.Decoder RawInstance
 decodeInstance =
     Decode.map7
-        (\elementType tileClassIndex tileIndex iMesh iMat transform shift ->
+        (\elementType classIndex bearingIndex iMesh iMat transform shift ->
             { elementType = decodeElementType elementType
-            , tileClassIndex = tileClassIndex
-            , tileIndex = tileIndex
+            , tileClassIndex = classIndex
+            , tileBearingIndex = bearingIndex
             , iMesh = iMesh
             , iMat = iMat
             , transform = Mat4.mul (Mat4.makeTranslate shift) transform
@@ -170,7 +170,7 @@ decodeInstance =
         )
         (Decode.field "type" Decode.string)
         (Decode.maybe <| Decode.field "tileClassIndex" Decode.int)
-        (Decode.maybe <| Decode.field "tileIndex" Decode.int)
+        (Decode.maybe <| Decode.field "tileBearingIndex" Decode.int)
         (Decode.field "meshIndex" Decode.int)
         (Decode.field "materialIndex" Decode.int)
         (Decode.field "transform" decodeTransform)
@@ -181,7 +181,7 @@ resolveInstance : Array Material -> RawInstance -> Instance
 resolveInstance materials inInstance =
     { elementType = inInstance.elementType
     , tileClassIndex = inInstance.tileClassIndex
-    , tileIndex = inInstance.tileIndex
+    , tileBearingIndex = inInstance.tileBearingIndex
     , material =
         Array.get inInstance.iMat materials
             |> Maybe.withDefault defaultMaterial

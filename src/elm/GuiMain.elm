@@ -7,7 +7,7 @@ import Browser.Events
 import Char
 import Color
 import ColorDialog
-import DecodeScene exposing (decodeScene)
+import DecodeScene exposing (ElementType(..), decodeScene)
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -18,6 +18,7 @@ import Element.Input as Input
 import Html.Events
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Materials exposing (netMaterial, tileColor, tilingMaterial)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Set exposing (Set)
@@ -25,6 +26,7 @@ import Styling
 import Task
 import ValueSlider
 import View3d.Main as View3d exposing (Scene)
+import View3d.Renderer exposing (Material)
 
 
 main =
@@ -1107,11 +1109,48 @@ contextMenuOnOff model maybePos =
             }
 
 
-convertScene : DecodeScene.Scene -> Scene
-convertScene scene =
+makeMaterial : DecodeScene.Instance -> Model -> Material
+makeMaterial { elementType, tileClassIndex, tileBearingIndex } model =
     let
-        convertInstance { material, transform } =
-            { material = material, transform = transform }
+        index =
+            (if model.tilingSettings.colorByTranslationClass then
+                tileBearingIndex
+
+             else
+                tileClassIndex
+            )
+                |> Maybe.withDefault 0
+    in
+    case elementType of
+        TileFace ->
+            tilingMaterial (tileColor 0.5 index)
+
+        TileEdges ->
+            tilingMaterial
+                (if model.tilingSettings.drawEdges then
+                    model.tilingSettings.edgeColor
+
+                 else
+                    tileColor 0.5 index
+                )
+
+        NetEdge ->
+            netMaterial model.netSettings.edgeColor
+
+        NetVertex ->
+            netMaterial model.netSettings.vertexColor
+
+        Unknown ->
+            tilingMaterial (tileColor 0.5 0)
+
+
+convertScene : DecodeScene.Scene -> Model -> Scene
+convertScene scene model =
+    let
+        convertInstance instance =
+            { material = makeMaterial instance model
+            , transform = instance.transform
+            }
     in
     List.map
         (\{ mesh, instances } ->
@@ -1141,11 +1180,13 @@ handleJSData value model =
                     { model | status = text }
 
                 Scene scene False ->
-                    updateView3d (View3d.setScene (convertScene scene)) model
+                    updateView3d
+                        (View3d.setScene (convertScene scene model))
+                        model
 
                 Scene scene True ->
                     updateView3d
-                        (View3d.setScene (convertScene scene)
+                        (View3d.setScene (convertScene scene model)
                             >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
                             >> View3d.encompass
                         )

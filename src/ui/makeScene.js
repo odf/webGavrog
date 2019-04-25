@@ -380,6 +380,7 @@ const displayListToModel = (
         meshIndex: parts[j],
         materialIndex,
         tileClassIndex: templateIndex,
+        tileBearingIndex: tileIndex,
         tileIndex: i,
         partIndex: j,
         transform,
