@@ -1,32 +1,49 @@
-module DecodeScene exposing (decodeScene)
+module DecodeScene exposing (Scene, decodeScene)
 
 import Array exposing (Array)
 import Color exposing (Color)
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import View3d.Main exposing (Scene)
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.Renderer exposing (Material, Vertex)
 
 
 type alias RawInstance =
-    { iMesh : Int
+    { elementType : ElementType
+    , tileClassIndex : Maybe Int
+    , tileIndex : Maybe Int
+    , iMesh : Int
     , iMat : Int
     , transform : Mat4
     }
 
 
 type alias Instance =
-    { material : Material
+    { elementType : ElementType
+    , tileClassIndex : Maybe Int
+    , tileIndex : Maybe Int
+    , material : Material
     , transform : Mat4
     }
+
+
+type ElementType
+    = TileFace
+    | TileEdges
+    | NetVertex
+    | NetEdge
+    | Unknown
 
 
 type alias MeshWithInstances =
     { mesh : Mesh Vertex
     , instances : List Instance
     }
+
+
+type alias Scene =
+    List MeshWithInstances
 
 
 defaultMaterial : Material
@@ -120,15 +137,40 @@ decodeTransform =
         (Decode.field "shift" decodeVec3)
 
 
+decodeElementType : String -> ElementType
+decodeElementType s =
+    case s of
+        "tileFace" ->
+            TileFace
+
+        "tileEdges" ->
+            TileEdges
+
+        "netVertex" ->
+            NetVertex
+
+        "netEdge" ->
+            NetEdge
+
+        _ ->
+            Unknown
+
+
 decodeInstance : Decode.Decoder RawInstance
 decodeInstance =
-    Decode.map4
-        (\iMesh iMat transform shift ->
-            { iMesh = iMesh
+    Decode.map7
+        (\elementType tileClassIndex tileIndex iMesh iMat transform shift ->
+            { elementType = decodeElementType elementType
+            , tileClassIndex = tileClassIndex
+            , tileIndex = tileIndex
+            , iMesh = iMesh
             , iMat = iMat
             , transform = Mat4.mul (Mat4.makeTranslate shift) transform
             }
         )
+        (Decode.field "type" Decode.string)
+        (Decode.maybe <| Decode.field "tileClassIndex" Decode.int)
+        (Decode.maybe <| Decode.field "tileIndex" Decode.int)
         (Decode.field "meshIndex" Decode.int)
         (Decode.field "materialIndex" Decode.int)
         (Decode.field "transform" decodeTransform)
@@ -136,9 +178,14 @@ decodeInstance =
 
 
 resolveInstance : Array Material -> RawInstance -> Instance
-resolveInstance materials { iMat, transform } =
-    { material = Array.get iMat materials |> Maybe.withDefault defaultMaterial
-    , transform = transform
+resolveInstance materials inInstance =
+    { elementType = inInstance.elementType
+    , tileClassIndex = inInstance.tileClassIndex
+    , tileIndex = inInstance.tileIndex
+    , material =
+        Array.get inInstance.iMat materials
+            |> Maybe.withDefault defaultMaterial
+    , transform = inInstance.transform
     }
 
 

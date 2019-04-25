@@ -39,7 +39,7 @@ main =
 type InData
     = Title String
     | Log String
-    | Scene Scene Bool
+    | Scene DecodeScene.Scene Bool
 
 
 type ViewAxis
@@ -1107,6 +1107,21 @@ contextMenuOnOff model maybePos =
             }
 
 
+convertScene : DecodeScene.Scene -> Scene
+convertScene scene =
+    let
+        convertInstance { material, transform } =
+            { material = material, transform = transform }
+    in
+    List.map
+        (\{ mesh, instances } ->
+            { mesh = mesh
+            , instances = List.map convertInstance instances
+            }
+        )
+        scene
+
+
 handleJSData : Decode.Value -> Model -> Model
 handleJSData value model =
     case Decode.decodeValue decodeInData value of
@@ -1126,11 +1141,11 @@ handleJSData value model =
                     { model | status = text }
 
                 Scene scene False ->
-                    updateView3d (View3d.setScene scene) model
+                    updateView3d (View3d.setScene (convertScene scene)) model
 
                 Scene scene True ->
                     updateView3d
-                        (View3d.setScene scene
+                        (View3d.setScene (convertScene scene)
                             >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
                             >> View3d.encompass
                         )
