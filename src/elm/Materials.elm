@@ -1,4 +1,4 @@
-module Materials exposing (netMaterial, tileColor, tilingMaterial)
+module Materials exposing (netMaterial, paletteColor, tilingMaterial)
 
 import Color
 import ColorDialog
@@ -57,10 +57,6 @@ frac x =
     x - toFloat (floor x)
 
 
-tileColor : Float -> Int -> ColorDialog.Color
-tileColor baseHue index =
-    { hue = frac <| baseHue + toFloat index * tau
-    , saturation = 1.0
-    , lightness = 0.7
-    , alpha = 1.0
-    }
+paletteColor : ColorDialog.Color -> Int -> ColorDialog.Color
+paletteColor baseColor index =
+    { baseColor | hue = frac <| baseColor.hue + toFloat index * tau }

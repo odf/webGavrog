@@ -18,7 +18,7 @@ import Element.Input as Input
 import Html.Events
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Materials exposing (netMaterial, tileColor, tilingMaterial)
+import Materials exposing (netMaterial, paletteColor, tilingMaterial)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Menu
 import Set exposing (Set)
@@ -235,6 +235,8 @@ type alias TilingSettings =
     { tileScale : Float
     , editEdgeColor : Bool
     , edgeColor : ColorDialog.Color
+    , editTileBaseColor : Bool
+    , tileBaseColor : ColorDialog.Color
     , drawEdges : Bool
     , colorByTranslationClass : Bool
     , extraSmooth : Bool
@@ -322,6 +324,13 @@ init flags =
                 { hue = 0.0
                 , saturation = 0.0
                 , lightness = 1.0
+                , alpha = 1.0
+                }
+            , editTileBaseColor = False
+            , tileBaseColor =
+                { hue = 0.5
+                , saturation = 1.0
+                , lightness = 0.7
                 , alpha = 1.0
                 }
             , drawEdges = False
@@ -1109,6 +1118,7 @@ makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
                     model.tiling2dSettings.colorByTranslationClass
                 , drawEdges = model.tiling2dSettings.drawEdges
                 , edgeColor = model.tiling2dSettings.edgeColor
+                , tileBaseColor = model.tilingSettings.tileBaseColor
                 }
 
             else
@@ -1116,6 +1126,7 @@ makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
                     model.tilingSettings.colorByTranslationClass
                 , drawEdges = model.tilingSettings.drawEdges
                 , edgeColor = model.tilingSettings.edgeColor
+                , tileBaseColor = model.tilingSettings.tileBaseColor
                 }
 
         index =
@@ -1124,17 +1135,20 @@ makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
 
             else
                 Maybe.withDefault 0 tileClassIndex
+
+        tileColor =
+            paletteColor tilingSettings.tileBaseColor index
     in
     case elementType of
         TileFace ->
-            tilingMaterial (tileColor 0.5 index)
+            tilingMaterial tileColor
 
         TileEdges ->
             if tilingSettings.drawEdges then
                 tilingMaterial tilingSettings.edgeColor
 
             else
-                tilingMaterial (tileColor 0.5 index)
+                tilingMaterial tileColor
 
         NetEdge ->
             netMaterial model.netSettings.edgeColor
@@ -1143,7 +1157,7 @@ makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
             netMaterial model.netSettings.vertexColor
 
         Unknown ->
-            tilingMaterial (tileColor 0.5 0)
+            tilingMaterial tilingSettings.tileBaseColor
 
 
 convertScene : DecodeScene.Scene -> Int -> Model -> Scene
@@ -1804,6 +1818,13 @@ viewTilingSettings toMsg settings =
             Nothing
             settings.tileScale
         , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | tileBaseColor = color })
+            (\onOff -> toMsg { settings | editTileBaseColor = onOff })
+            settings.tileBaseColor
+            settings.editTileBaseColor
+            "Tile base Color"
+            False
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | colorByTranslationClass = onOff }
@@ -1813,6 +1834,7 @@ viewTilingSettings toMsg settings =
                 Input.labelRight [] <|
                     Element.text "Color By Translation"
             }
+        , viewSeparator
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | extraSmooth = onOff }
