@@ -249,6 +249,8 @@ type alias Tiling2dSettings =
     { tileScale : Float
     , editEdgeColor : Bool
     , edgeColor : ColorDialog.Color
+    , editTileBaseColor : Bool
+    , tileBaseColor : ColorDialog.Color
     , drawEdges : Bool
     , colorByTranslationClass : Bool
     , edgeWidth : Float
@@ -346,6 +348,13 @@ init flags =
                 { hue = 0.0
                 , saturation = 0.0
                 , lightness = 0.0
+                , alpha = 1.0
+                }
+            , editTileBaseColor = False
+            , tileBaseColor =
+                { hue = 0.5
+                , saturation = 1.0
+                , lightness = 0.7
                 , alpha = 1.0
                 }
             , drawEdges = False
@@ -1118,7 +1127,7 @@ makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
                     model.tiling2dSettings.colorByTranslationClass
                 , drawEdges = model.tiling2dSettings.drawEdges
                 , edgeColor = model.tiling2dSettings.edgeColor
-                , tileBaseColor = model.tilingSettings.tileBaseColor
+                , tileBaseColor = model.tiling2dSettings.tileBaseColor
                 }
 
             else
@@ -1921,6 +1930,13 @@ viewTiling2dSettings toMsg settings =
             Nothing
             settings.tileScale
         , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | tileBaseColor = color })
+            (\onOff -> toMsg { settings | editTileBaseColor = onOff })
+            settings.tileBaseColor
+            settings.editTileBaseColor
+            "Tile base Color"
+            False
         , Input.checkbox []
             { onChange =
                 \onOff -> toMsg { settings | colorByTranslationClass = onOff }
