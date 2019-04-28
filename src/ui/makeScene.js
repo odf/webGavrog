@@ -301,16 +301,10 @@ const makeDisplayList = (tiles, shifts) => {
 };
 
 
-const displayListToModel = (
-  displayList, tiles, meshes, partLists, cell, options
-) => {
-  const dim = ops.dimension(cell);
-  const extCell = dim == 2 ?
-        cell.map(v => v.concat(0)).concat([[0, 0, 1]]) : cell;
-  const invCell = ops.inverse(extCell);
-  const scale2d = options.tileScale2d || 1.00;
-  const scale3d = options.tileScale || 0.85;
-  const scale = Math.min(0.999, dim == 2 ? scale2d : scale3d);
+const makeInstances = (displayList, tiles, partLists, basis, scale) => {
+  const invBasis = ops.inverse(basis);
+  const b1 = ops.times(scale, basis);
+  const b2 = ops.times(1.0 - scale, basis);
 
   const instances = [];
 
@@ -320,9 +314,8 @@ const displayListToModel = (
     const parts = partLists[templateIndex];
 
     const transform = {
-      basis: ops.times(scale, ops.times(invCell, ops.times(t.basis, extCell))),
-      shift: ops.plus(ops.times(scale, ops.times(t.shift, extCell)),
-                      ops.times(1.0 - scale, ops.times(center, extCell)))
+      basis: ops.times(invBasis, ops.times(t.basis, b1)),
+      shift: ops.plus(ops.times(t.shift, b1), ops.times(center, b2))
     };
 
     for (let j = 0; j < parts.length; ++j) {
@@ -338,13 +331,13 @@ const displayListToModel = (
         partIndex: j,
         transform,
         extraShiftCryst: extraShift,
-        extraShift: ops.times(extraShift, extCell),
+        extraShift: ops.times(extraShift, basis),
         neighbors
       });
     }
   }
 
-  return { meshes, instances };
+  return instances;
 };
 
 
@@ -399,14 +392,11 @@ const makeMeshes = (
   });
   console.log(`${Math.round(t())} msec to make the base surfaces`);
 
-  const b = basis.length == 3 ? basis :
-        basis.map(v => v.concat(0)).concat([[0, 0, 1]]);
-
   yield log('Refining the tile surfaces...');
   const rawMeshes = yield runJob({
     cmd: 'processSolids',
     val: templates.map(({ pos, faces }) => ({
-      pos: pos.map(v => ops.times(v, b)),
+      pos: pos.map(v => ops.times(v, basis)),
       faces,
       isFixed: pos.map(_ => true),
       subDLevel,
@@ -431,7 +421,13 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
   const pos = embedding.positions;
+
   const basis = unitCells.invariantBasis(embedding.gram);
+  if (dim == 2) {
+    basis[0].push(0);
+    basis[1].push(0);
+    basis.push([0, 0, 1]);
+  }
 
   const subDLevel = (dim == 3 && options.extraSmooth) ? 3 : 2;
   const tighten = dim == 3 && !!options.tightenSurfaces;
@@ -448,11 +444,12 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const { subMeshes, partLists } = embedding[key];
 
-  const model = displayListToModel(
-    displayList, tiles, subMeshes, partLists, basis, options
-  );
+  const scale = dim == 2 ? options.tileScale2d || 1.00 :
+        Math.min(0.999, options.tileScale || 0.85);
 
-  return model;
+  const instances = makeInstances(displayList, tiles, partLists, basis, scale);
+
+  return { meshes: subMeshes, instances };
 });
 
 
