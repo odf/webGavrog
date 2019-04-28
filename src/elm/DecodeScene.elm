@@ -1,4 +1,4 @@
-module DecodeScene exposing (ElementType(..), Instance, Scene, decodeScene)
+module DecodeScene exposing (Instance, MeshType(..), Scene, decodeScene)
 
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -8,15 +8,15 @@ import View3d.Renderer exposing (Vertex)
 
 
 type alias Instance =
-    { elementType : ElementType
-    , tileClassIndex : Maybe Int
-    , tileBearingIndex : Maybe Int
+    { meshType : MeshType
+    , classIndex : Maybe Int
+    , latticeIndex : Maybe Int
     , meshIndex : Int
     , transform : Mat4
     }
 
 
-type ElementType
+type MeshType
     = TileFace
     | TileEdges
     | NetVertex
@@ -74,8 +74,8 @@ decodeTransform =
         (Decode.field "shift" decodeVec3)
 
 
-decodeElementType : String -> ElementType
-decodeElementType s =
+decodeMeshType : String -> MeshType
+decodeMeshType s =
     case s of
         "tileFace" ->
             TileFace
@@ -96,17 +96,17 @@ decodeElementType s =
 decodeInstance : Decode.Decoder Instance
 decodeInstance =
     Decode.map6
-        (\elementType classIndex bearingIndex meshIndex transform shift ->
-            { elementType = decodeElementType elementType
-            , tileClassIndex = classIndex
-            , tileBearingIndex = bearingIndex
+        (\meshType classIndex latticeIndex meshIndex transform shift ->
+            { meshType = decodeMeshType meshType
+            , classIndex = classIndex
+            , latticeIndex = latticeIndex
             , meshIndex = meshIndex
             , transform = Mat4.mul (Mat4.makeTranslate shift) transform
             }
         )
-        (Decode.field "type" Decode.string)
-        (Decode.maybe <| Decode.field "tileClassIndex" Decode.int)
-        (Decode.maybe <| Decode.field "tileBearingIndex" Decode.int)
+        (Decode.field "meshType" Decode.string)
+        (Decode.maybe <| Decode.field "classIndex" Decode.int)
+        (Decode.maybe <| Decode.field "latticeIndex" Decode.int)
         (Decode.field "meshIndex" Decode.int)
         (Decode.field "transform" decodeTransform)
         (Decode.field "extraShift" decodeVec3)

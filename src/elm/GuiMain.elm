@@ -7,7 +7,7 @@ import Browser.Events
 import Char
 import Color
 import ColorDialog
-import DecodeScene exposing (ElementType(..), decodeScene)
+import DecodeScene exposing (MeshType(..), decodeScene)
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -1119,7 +1119,7 @@ contextMenuOnOff model maybePos =
 
 
 makeMaterial : DecodeScene.Instance -> Int -> Model -> Material
-makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
+makeMaterial { meshType, classIndex, latticeIndex } dim model =
     let
         tilingSettings =
             if dim == 2 then
@@ -1140,15 +1140,15 @@ makeMaterial { elementType, tileClassIndex, tileBearingIndex } dim model =
 
         index =
             if tilingSettings.colorByTranslationClass then
-                Maybe.withDefault 0 tileBearingIndex
+                Maybe.withDefault 0 latticeIndex
 
             else
-                Maybe.withDefault 0 tileClassIndex
+                Maybe.withDefault 0 classIndex
 
         tileColor =
             paletteColor tilingSettings.tileBaseColor index
     in
-    case elementType of
+    case meshType of
         TileFace ->
             tilingMaterial tileColor
 

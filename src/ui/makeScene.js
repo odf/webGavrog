@@ -122,7 +122,7 @@ const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
 
   positions.forEach(p => {
     instances.push({
-      type: 'netVertex',
+      meshType: 'netVertex',
       meshIndex: 0,
       transform: {
         basis: ops.identityMatrix(3),
@@ -150,7 +150,7 @@ const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
     const w1 = ops.minus(w, ops.times(2 * s, d));
 
     instances.push({
-      type: 'netEdge',
+      meshType: 'netEdge',
       meshIndex: 1,
       transform: {
         basis: [ u, v, w1 ],
@@ -330,10 +330,10 @@ const displayListToModel = (
         continue;
 
       instances.push({
-        type: (j < parts.length - 1) ? 'tileFace' : 'tileEdges',
+        meshType: (j < parts.length - 1) ? 'tileFace' : 'tileEdges',
         meshIndex: parts[j],
-        tileClassIndex: templateIndex,
-        tileBearingIndex: tileIndex,
+        classIndex: templateIndex,
+        latticeIndex: tileIndex,
         tileIndex: i,
         partIndex: j,
         transform,
