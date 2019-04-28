@@ -301,22 +301,30 @@ const makeDisplayList = (tiles, shifts) => {
 };
 
 
-const makeInstances = (displayList, tiles, partLists, basis, scale) => {
+const mapTiles = (tiles, basis, scale) => {
   const invBasis = ops.inverse(basis);
   const b1 = ops.times(scale, basis);
   const b2 = ops.times(1.0 - scale, basis);
 
+  return tiles.map(tile => {
+    const transform = {
+      basis: ops.times(invBasis, ops.times(tile.transform.basis, b1)),
+      shift: ops.plus(ops.times(tile.transform.shift, b1),
+                      ops.times(tile.center, b2))
+    };
+
+    return Object.assign({}, tile, { transform });
+  });
+};
+
+
+const makeInstances = (displayList, tiles, partLists, basis) => {
   const instances = [];
 
   for (let i = 0; i < displayList.length; ++i) {
     const { tileIndex, extraShift, skippedParts } = displayList[i];
-    const { templateIndex, transform: t, center, neighbors } = tiles[tileIndex];
+    const { templateIndex, transform, neighbors } = tiles[tileIndex];
     const parts = partLists[templateIndex];
-
-    const transform = {
-      basis: ops.times(invBasis, ops.times(t.basis, b1)),
-      shift: ops.plus(ops.times(t.shift, b1), ops.times(center, b2))
-    };
 
     for (let j = 0; j < parts.length; ++j) {
       if (skippedParts && skippedParts[j])
@@ -420,7 +428,6 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
-  const pos = embedding.positions;
 
   const basis = unitCells.invariantBasis(embedding.gram);
   if (dim == 2) {
@@ -431,15 +438,13 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const subDLevel = (dim == 3 && options.extraSmooth) ? 3 : 2;
   const tighten = dim == 3 && !!options.tightenSurfaces;
-  const edgeWidth2d = options.edgeWidth2d || 0.5;
-  const edgeWidth3d = options.edgeWidth || 0.5;
-  const edgeWidth = dim == 2 ? edgeWidth2d : edgeWidth3d;
+  const edgeWidth = options[dim == 2 ? 'edgeWidth2d' : 'edgeWidth'] || 0.5;
   const key = `subd-${subDLevel} tighten-${tighten} edgeWidth-${edgeWidth}`;
 
   if (embedding[key] == null)
     embedding[key] = yield makeMeshes(
-      cov, skel, pos, orbitReps, basis, subDLevel, tighten, edgeWidth,
-      runJob, log
+      cov, skel, embedding.positions, orbitReps, basis,
+      subDLevel, tighten, edgeWidth, runJob, log
     );
 
   const { subMeshes, partLists } = embedding[key];
@@ -447,7 +452,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const scale = dim == 2 ? options.tileScale2d || 1.00 :
         Math.min(0.999, options.tileScale || 0.85);
 
-  const instances = makeInstances(displayList, tiles, partLists, basis, scale);
+  const mappedTiles = mapTiles(tiles, basis, scale);
+  const instances = makeInstances(displayList, mappedTiles, partLists, basis);
 
   return { meshes: subMeshes, instances };
 });
