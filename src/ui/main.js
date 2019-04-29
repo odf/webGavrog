@@ -266,7 +266,7 @@ const addCoronas = (displayList, selection) => {
 const restoreTiles = (displayList, selection) => {
   const toBeRestored = {};
   for (const inst of selection)
-    toBeRestored[inst.tileIndex] = true;
+    toBeRestored[inst.instanceIndex] = true;
 
   return displayList.map(
     (item, i) =>
@@ -278,7 +278,7 @@ const restoreTiles = (displayList, selection) => {
 const removeTiles = (displayList, selection) => {
   const toBeRemoved = {};
   for (const inst of selection)
-    toBeRemoved[inst.tileIndex] = true;
+    toBeRemoved[inst.instanceIndex] = true;
 
   return displayList.filter((_, i) => !toBeRemoved[i]);
 };
@@ -287,10 +287,10 @@ const removeTiles = (displayList, selection) => {
 const removeElements = (displayList, selection) => {
   const toBeRemoved = {};
   for (const inst of selection) {
-    if (toBeRemoved[inst.tileIndex] == null)
-      toBeRemoved[inst.tileIndex] = {};
+    if (toBeRemoved[inst.instanceIndex] == null)
+      toBeRemoved[inst.instanceIndex] = {};
 
-    toBeRemoved[inst.tileIndex][inst.partIndex] = true;
+    toBeRemoved[inst.instanceIndex][inst.partIndex] = true;
   }
 
   return displayList.map((item, i) => {

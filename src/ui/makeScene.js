@@ -335,7 +335,7 @@ const makeInstances = (displayList, tiles, partLists, basis) => {
         meshIndex: parts[j],
         classIndex: templateIndex,
         latticeIndex: tileIndex,
-        tileIndex: i,
+        instanceIndex: i,
         partIndex: j,
         transform,
         extraShiftCryst: extraShift,
