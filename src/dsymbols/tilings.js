@@ -245,35 +245,35 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const tileOrbits = properties.orbits(cov, idcs);
 
   const orbitReps = [];
-  const dsChamberToTemplateIndex = {};
-  const covChamberToTileIndex = {};
+  const dsChamberToClassIndex = {};
+  const covChamberToLatticeIndex = {};
   const tiles = [];
 
   for (const elms of tileOrbits) {
     const D0 = nonDegenerateChamber(elms, pos);
     const E0 = phi[D0];
 
-    let templateIndex = dsChamberToTemplateIndex[E0];
+    let classIndex = dsChamberToClassIndex[E0];
     let symmetry = opsR.identityMatrix(dim + 1);
 
-    if (templateIndex == null) {
-      templateIndex = orbitReps.length;
+    if (classIndex == null) {
+      classIndex = orbitReps.length;
 
       for (const E of properties.orbit(ds, idcs, E0))
-        dsChamberToTemplateIndex[E] = templateIndex;
+        dsChamberToClassIndex[E] = classIndex;
 
       orbitReps.push(D0);
     }
     else {
-      const D0 = orbitReps[templateIndex];
+      const D0 = orbitReps[classIndex];
       const D1 = elms.find(D => phi[D] == phi[D0]);
       symmetry = affineSymmetry(D0, D1, pos);
     }
 
     for (const E of elms)
-      covChamberToTileIndex[E] = tiles.length;
+      covChamberToLatticeIndex[E] = tiles.length;
 
-    tiles.push({ templateIndex, symmetry, chambers: elms });
+    tiles.push({ classIndex, symmetry, chambers: elms });
   }
 
   const e2t = _edgeTranslations(cov);
@@ -283,9 +283,9 @@ export const tilesByTranslations = (ds, cov, skel) => {
     const neighbors = [];
     for (const D of properties.orbitReps(cov, [0, 1], tile.chambers)) {
       const E = cov.s(dim, D);
-      const tileIndex = covChamberToTileIndex[E];
+      const latticeIndex = covChamberToLatticeIndex[E];
       const shift = e2t[D][dim] || zero;
-      neighbors.push({ tileIndex, shift });
+      neighbors.push({ latticeIndex, shift });
     }
 
     tile.neighbors = neighbors;

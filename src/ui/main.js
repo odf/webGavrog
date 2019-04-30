@@ -203,9 +203,9 @@ const addTiles = (displayList, selection) => {
   const seen = {};
 
   for (const { partIndex, neighbors, extraShiftCryst } of selection) {
-    const { tileIndex, shift } = neighbors[partIndex];
+    const { latticeIndex, shift } = neighbors[partIndex];
     const extraShift = ops.plus(extraShiftCryst, shift);
-    const item = { tileIndex, extraShift };
+    const item = { latticeIndex, extraShift };
     const key = pickler.serialize(item);
 
     if (!seen[key]) {
@@ -216,7 +216,7 @@ const addTiles = (displayList, selection) => {
 
   for (const item of displayList) {
     const key = pickler.serialize({
-      tileIndex: item.tileIndex,
+      latticeIndex: item.latticeIndex,
       extraShift: item.extraShift
     });
 
@@ -235,9 +235,9 @@ const addCoronas = (displayList, selection) => {
   const seen = {};
 
   for (const { partIndex, neighbors, extraShiftCryst } of selection) {
-    for (const { tileIndex, shift } of neighbors) {
+    for (const { latticeIndex, shift } of neighbors) {
       const extraShift = ops.plus(extraShiftCryst, shift);
-      const item = { tileIndex, extraShift };
+      const item = { latticeIndex, extraShift };
       const key = pickler.serialize(item);
 
       if (!seen[key]) {
@@ -249,7 +249,7 @@ const addCoronas = (displayList, selection) => {
 
   for (const item of displayList) {
     const key = pickler.serialize({
-      tileIndex: item.tileIndex,
+      latticeIndex: item.latticeIndex,
       extraShift: item.extraShift
     });
 

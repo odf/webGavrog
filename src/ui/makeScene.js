@@ -262,13 +262,13 @@ const splitMeshes = (meshes, faceLabelLists) => {
 
 
 const convertTile = (tile, centers) => {
-  const { templateIndex, symmetry, neighbors } = tile;
+  const { classIndex, symmetry, neighbors } = tile;
   const sym = opsR.toJS(symmetry.map(v => v.slice(0, -1)));
 
   const basis = sym.slice(0, -1);
   const shift = sym.slice(-1)[0];
 
-  const center = ops.plus(ops.times(centers[templateIndex], basis), shift);
+  const center = ops.plus(ops.times(centers[classIndex], basis), shift);
 
   if (shift.length == 2) {
     for (const v of basis)
@@ -280,7 +280,7 @@ const convertTile = (tile, centers) => {
 
   const transform = { basis, shift };
 
-  return { templateIndex, transform, center, neighbors };
+  return { classIndex, transform, center, neighbors };
 };
 
 
@@ -288,12 +288,12 @@ const makeDisplayList = (tiles, shifts) => {
   const result = [];
 
   for (const s0 of shifts) {
-    for (let tileIndex = 0; tileIndex < tiles.length; ++tileIndex) {
-      const c = tiles[tileIndex].center.slice(0, s0.length);
+    for (let latticeIndex = 0; latticeIndex < tiles.length; ++latticeIndex) {
+      const c = tiles[latticeIndex].center.slice(0, s0.length);
       const s = ops.minus(s0, c.map(x => ops.floor(x)));
       const extraShift = [s[0], s[1], s[2] || 0];
 
-      result.push({ tileIndex, extraShift });
+      result.push({ latticeIndex, extraShift });
     }
   }
 
@@ -322,9 +322,9 @@ const makeInstances = (displayList, tiles, partLists, basis) => {
   const instances = [];
 
   for (let i = 0; i < displayList.length; ++i) {
-    const { tileIndex, extraShift, skippedParts } = displayList[i];
-    const { templateIndex, transform, neighbors } = tiles[tileIndex];
-    const parts = partLists[templateIndex];
+    const { latticeIndex, extraShift, skippedParts } = displayList[i];
+    const { classIndex, transform, neighbors } = tiles[latticeIndex];
+    const parts = partLists[classIndex];
 
     for (let j = 0; j < parts.length; ++j) {
       if (skippedParts && skippedParts[j])
@@ -333,8 +333,8 @@ const makeInstances = (displayList, tiles, partLists, basis) => {
       instances.push({
         meshType: (j < parts.length - 1) ? 'tileFace' : 'tileEdges',
         meshIndex: parts[j],
-        classIndex: templateIndex,
-        latticeIndex: tileIndex,
+        classIndex,
+        latticeIndex,
         instanceIndex: i,
         partIndex: j,
         transform,
