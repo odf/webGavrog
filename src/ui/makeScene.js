@@ -1,5 +1,6 @@
 import * as csp   from 'plexus-csp';
 
+import * as pickler from '../common/pickler';
 import * as util        from '../common/util';
 import * as delaney     from '../dsymbols/delaney';
 import * as properties  from '../dsymbols/properties';
@@ -17,6 +18,9 @@ import {
 
 const opsR = rationalLinearAlgebraModular;
 const ops = numericalLinearAlgebra;
+
+const encode = pickler.serialize;
+const decode = pickler.deserialize;
 
 
 const range = n => [...Array(n).keys()];
@@ -216,7 +220,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
       for (const e of graph.edges) {
         edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
           ([node, shift]) => {
-            const key = JSON.stringify([node, shift]);
+            const key = encode([node, shift]);
             const idx = nodeIndex[key] || points.length;
             if (idx == points.length) {
               points.push(ops.times(ops.plus(pos[node], shift), basis));
@@ -226,6 +230,18 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
           }));
       }
     }
+
+    const adj = periodic.adjacencies(graph);
+    for (const key of Object.keys(nodeIndex)) {
+      const [node, shift] = decode(key);
+      for (const edge of periodic.allIncidences(graph, node, adj)) {
+        const k = encode([edge.tail, ops.plus(shift, edge.shift)]);
+        const idx = nodeIndex[k];
+        if (idx != null)
+          edges.push([nodeIndex[key], idx]);
+      }
+    }
+
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     yield log('Making the net geometry...');
