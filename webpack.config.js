@@ -19,7 +19,7 @@ fs.writeFileSync(path.resolve(__dirname, 'src', 'version.js'),
 module.exports = {
   entry: ['babel-polyfill', './src/ui/main.js'],
   plugins: [
-    new CleanWebpackPlugin(['dist']),
+    new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       title: 'Gavrog for the Web',
       favicon: path.resolve(__dirname, '3dt.ico'),
