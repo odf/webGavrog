@@ -153,7 +153,7 @@ const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
     instances.push({
       meshType: 'netEdge',
       meshIndex: 1,
-      transform: { basis: [ u, v, w1 ], shift: p },
+      transform: { basis: [ u, v, w1 ], shift: p1 },
       extraShift: [ 0, 0, 0 ]
     })
   });
