@@ -207,12 +207,22 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
 
     yield log('Constructing an abstract finite subnet...');
     const nodeIndex = {};
+    const edgeSeen = {};
     const points = [];
     const edges = [];
 
+    const addEdge = ([v, w]) => {
+      const e = [v, w].sort();
+      const k = encode(e);
+      if (!edgeSeen[k]) {
+        edgeSeen[k] = true;
+        edges.push(e);
+      }
+    };
+
     for (const s of baseShifts(graph.dim)) {
       for (const e of graph.edges) {
-        edges.push([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
+        addEdge([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
           ([node, shift]) => {
             const key = encode([node, shift]);
             const idx = nodeIndex[key] || points.length;
@@ -232,7 +242,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
         const k = encode([edge.tail, ops.plus(shift, edge.shift)]);
         const idx = nodeIndex[k];
         if (idx != null)
-          edges.push([nodeIndex[key], idx]);
+          addEdge([nodeIndex[key], idx]);
       }
     }
 
