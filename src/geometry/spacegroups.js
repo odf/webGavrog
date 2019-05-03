@@ -196,7 +196,10 @@ export const gramMatrixConfigurationSpace = ops => {
   }
 
   // -- return the solution space
-  return V.transposed(rationalLinearAlgebraModular.nullSpace(eqns));
+  if (eqns == null)
+    return V.identityMatrix(m);
+  else
+    return V.transposed(rationalLinearAlgebraModular.nullSpace(eqns));
 };
 
 

@@ -128,10 +128,7 @@ const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
     instances.push({
       meshType: 'netVertex',
       meshIndex: 0,
-      transform: {
-        basis: ops.identityMatrix(3),
-        shift: [ p[0], p[1], p[2] || 0 ]
-      },
+      transform: { basis: ops.identityMatrix(3), shift: p },
       extraShift: [ 0, 0, 0 ]
     })
   });
@@ -156,10 +153,7 @@ const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
     instances.push({
       meshType: 'netEdge',
       meshIndex: 1,
-      transform: {
-        basis: [ u, v, w1 ],
-        shift: [ p1[0], p1[1], p1[2] || 0 ]
-      },
+      transform: { basis: [ u, v, w1 ], shift: p },
       extraShift: [ 0, 0, 0 ]
     })
   });
@@ -241,6 +235,9 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
           edges.push([nodeIndex[key], idx]);
       }
     }
+
+    for (const p of points)
+      p[2] = p[2] || 0;
 
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 

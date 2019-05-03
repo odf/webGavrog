@@ -122,7 +122,7 @@ const _parametersForConfiguration = (
         positions[v], psv.configSpace, psv.configProj, psv.symmetrizer));
   }
 
-  return Array.concat.apply(null, pieces);
+  return [].concat(...pieces);
 };
 
 
