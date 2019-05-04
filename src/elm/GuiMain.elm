@@ -247,11 +247,8 @@ type alias TilingSettings =
 
 type alias Tiling2dSettings =
     { tileScale : Float
-    , editEdgeColor : Bool
-    , edgeColor : ColorDialog.Color
     , editTileBaseColor : Bool
     , tileBaseColor : ColorDialog.Color
-    , drawEdges : Bool
     , colorByTranslationClass : Bool
     , edgeWidth : Float
     }
@@ -343,13 +340,6 @@ init flags =
             }
       , tiling2dSettings =
             { tileScale = 1.0
-            , editEdgeColor = False
-            , edgeColor =
-                { hue = 0.0
-                , saturation = 0.0
-                , lightness = 0.0
-                , alpha = 1.0
-                }
             , editTileBaseColor = False
             , tileBaseColor =
                 { hue = 0.5
@@ -357,7 +347,6 @@ init flags =
                 , lightness = 0.7
                 , alpha = 1.0
                 }
-            , drawEdges = False
             , colorByTranslationClass = False
             , edgeWidth = 0.5
             }
@@ -1125,8 +1114,8 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             if dim == 2 then
                 { colorByTranslationClass =
                     model.tiling2dSettings.colorByTranslationClass
-                , drawEdges = model.tiling2dSettings.drawEdges
-                , edgeColor = model.tiling2dSettings.edgeColor
+                , drawEdges = False
+                , edgeColor = model.tiling2dSettings.tileBaseColor
                 , tileBaseColor = model.tiling2dSettings.tileBaseColor
                 }
 
@@ -1889,29 +1878,6 @@ viewTiling2dSettings toMsg settings =
                 (Styling.makeIcon "►")
             ]
         , viewSeparator
-        , Element.column [ Element.spacing 12 ]
-            (Input.checkbox []
-                { onChange = \onOff -> toMsg { settings | drawEdges = onOff }
-                , icon = Input.defaultCheckbox
-                , checked = settings.drawEdges
-                , label = Input.labelRight [] <| Element.text "Draw Edges"
-                }
-                :: (if settings.drawEdges then
-                        [ viewColorInput
-                            (\color -> toMsg { settings | edgeColor = color })
-                            (\onOff ->
-                                toMsg { settings | editEdgeColor = onOff }
-                            )
-                            settings.edgeColor
-                            settings.editEdgeColor
-                            "Edge Color"
-                            False
-                        ]
-
-                    else
-                        []
-                   )
-            )
         , Element.el []
             (Element.text "Edge/Bevel Width")
         , ValueSlider.view
