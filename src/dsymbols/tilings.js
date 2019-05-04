@@ -167,7 +167,7 @@ const tileSurface3D = (pos, faces) => ({ pos, faces });
 const tileSurface2D = (corners, faces) => {
   const pos = [];
   for (const p of corners) {
-    pos.push(p.concat(0));
+    pos.push(p.concat(-0.1));
     pos.push(p.concat(0.1));
   }
 
