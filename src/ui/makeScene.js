@@ -437,10 +437,7 @@ const makeMeshes = (
   });
   console.log(`${Math.round(t())} msec to refine the surfaces`);
 
-  const meshes = rawMeshes.map(({ pos, faces }) => geometry(pos, faces));
-  const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
-
-  return splitMeshes(meshes, faceLabelLists);
+  return rawMeshes;
 });
 
 
@@ -464,11 +461,18 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const edgeWidth = options[dim == 2 ? 'edgeWidth2d' : 'edgeWidth'] || 0.5;
   const key = `subd-${subDLevel} tighten-${tighten} edgeWidth-${edgeWidth}`;
 
-  if (embedding[key] == null)
-    embedding[key] = yield makeMeshes(
+  if (embedding[key] == null) {
+    const rawMeshes = yield makeMeshes(
       cov, skel, embedding.positions, orbitReps, basis,
       subDLevel, tighten, edgeWidth, runJob, log
     );
+    const meshes = rawMeshes.map(({ pos, faces }) => geometry(pos, faces));
+    const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
+
+    embedding[key] = dim == 2 ?
+      { subMeshes: meshes, partLists: range(meshes.length).map(i => [i]) } :
+      splitMeshes(meshes, faceLabelLists);
+  }
 
   const { subMeshes, partLists } = embedding[key];
 
