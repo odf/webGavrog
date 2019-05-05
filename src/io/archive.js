@@ -3,7 +3,7 @@ import md5 from 'md5';
 import { systreKey, keyVersion } from '../pgraphs/invariant';
 
 
-const makeEntry = (source, attributes, warnings, errors) => {
+const makeEntry = (source, attributes, errors) => {
   const entry = {
     source,
     key: attributes.key,
@@ -11,7 +11,6 @@ const makeEntry = (source, attributes, warnings, errors) => {
     id: attributes.id,
     checksum: attributes.checksum,
     attributes: Object.assign({}, attributes),
-    warnings: warnings.slice(),
     errors: errors.slice()
   };
 
@@ -44,7 +43,6 @@ function* parseEntries(lines, source) {
   let lineNr = 0;
   let startLineNr = null;
   let attributes = {};
-  let warnings = [];
   let errors = [];
 
   for (const lineRaw of lines) {
@@ -62,17 +60,16 @@ function* parseEntries(lines, source) {
 
     if (tag == 'end') {
       const src = { source, lineNr: startLineNr };
-      const entry = makeEntry(src, attributes, warnings, errors);
+      const entry = makeEntry(src, attributes, errors);
 
       attributes = {};
-      warnings = [];
       errors = [];
       startLineNr = null;
 
       yield entry;
     }
     else if (attributes[tag])
-      warnings.push(`extra value for '${tag}' on line ${lineNr}, kept first`);
+      errors.push(`extra value for '${tag}' on line ${lineNr}, kept first`);
     else
       attributes[tag] = val;
   }
@@ -90,6 +87,9 @@ const entryAsString = e => {
 
   for (const key in e.attributes)
     out.push(`${key}${filler.slice(key.length)} ${e.attributes[key]}`);
+
+  if (e.errors.length)
+    out.push(`errors   ${e.errors}`);
 
   out.push('end');
   out.push('');
@@ -123,9 +123,13 @@ export class Archive {
 
   addEntry(e) {
     if (e.id && this.getById(e.id)) {
-      e.errors.push(`multiple entries with id '${e.id}'`);
+      const old = this.getById(e.id);
+      if (old.key == e.key)
+        e.errors.push(`duplicate entries for id '${e.id}'`);
+      else
+        e.errors.push(`conflicting entries for id '${e.id}'`);
     }
-    if (e.key && this.getByKey(e.key)) {
+    else if (e.key && this.getByKey(e.key)) {
       const old = this.getByKey(e.key);
       e.errors.push(`identical keys for entries '${old.id}' and '${e.id}'`);
     }
@@ -136,7 +140,7 @@ export class Archive {
       const i = this._entries.length;
       this._entries.push(e);
       this._keyToIndex[e.key] = i;
-      this._idToIndex[e.key] = i;
+      this._idToIndex[e.id] = i;
     }
   }
 
@@ -146,7 +150,7 @@ export class Archive {
       version: keyVersion,
       id: name
     };
-    this.addEntry(makeEntry(source, attributes, [], []));
+    this.addEntry(makeEntry(source, attributes, []));
   }
 
   addAll(text) {
@@ -163,4 +167,7 @@ if (require.main == module) {
   archive.addAll(fs.readFileSync(process.argv[2], { encoding: 'utf8' }));
 
   console.log(archive.toString());
+
+  console.log('### Bad entries');
+  console.log(archive._badEntries.map(e => e.errors.join('\n')).join('\n'));
 }
