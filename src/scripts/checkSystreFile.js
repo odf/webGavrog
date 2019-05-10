@@ -42,6 +42,25 @@ const checkGraph = (graph, writeInfo) => {
   return true;
 };
 
+const makeCsLookup = data => {
+  const result = {};
+
+  for (const { symbol, vertices } of data) {
+    const cs = vertices.map(v => v.coordinationSequence);
+    cs.sort(cmpLex);
+
+    if (result[cs] == null)
+      result[cs] = { rcsr: [], cgd: [] };
+    result[cs].rcsr.push(symbol);
+  }
+
+  return result;
+};
+
+
+const cmp = (x, y) => (x > y) - (x < y);
+const cmpLex = (xs, ys) => xs.map((x, i) => cmp(x, ys[i])).find(x => x) || 0;
+
 
 const [inputPath, data2dPath, data3dPath] = process.argv.slice(2, 5);
 
@@ -50,20 +69,39 @@ const data3d = JSON.parse(fs.readFileSync(data3dPath, { encoding: 'utf8' }));
 
 const input = fs.readFileSync(inputPath, { encoding: 'utf8' });
 
-const writeInfo = msg => console.log("    #", msg);
+const lookup2d = makeCsLookup(data2d);
+const lookup3d = makeCsLookup(data3d);
 
 
 for (const { graph, name } of cgd.structures(input)) {
-  console.log(name);
-  checkGraph(graph, writeInfo);
+  const ok = checkGraph(graph, msg => console.log(`${name}: ${msg}`));
+  if (!ok)
+    continue;
 
   const G = symmetries.minimalImageWithOrbits(graph).graph;
   const syms = symmetries.symmetries(G).symmetries;
   const nodeOrbits = symmetries.nodeOrbits(G, syms);
 
-  const coordinationSequences = nodeOrbits.map(
-    ([v]) => periodic.coordinationSeq(G, v, 10)
+  const cs = nodeOrbits.map(
+    ([v]) => periodic.coordinationSeq(G, v, 10).slice(1)
   );
-  for (const cs of coordinationSequences)
-    writeInfo(cs);
+  cs.sort(cmpLex);
+
+  const lookup = G.dim == 2 ? lookup2d : lookup3d;
+  const entry = lookup[cs];
+
+  if (entry == null) {
+    console.log(`${name}: not found`);
+    lookup[cs] = { rcsr: [], cgd: [] };
+  }
+  else {
+    if (entry.rcsr.length > 1)
+      console.log(`${name}: ambiguous (candidates ${entry.rcsr})`);
+    else if (entry.rcsr[0] != name)
+      console.log(`${name}: mismatch (found ${entry.rcsr[0]})`);
+    else
+      console.log(`${name}: ok!`);
+  }
+
+  entry.cgd.push(name);
 }
