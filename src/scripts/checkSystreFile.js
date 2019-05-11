@@ -46,6 +46,9 @@ const makeCsLookup = data => {
   const result = {};
 
   for (const { symbol, vertices } of data) {
+    if (symbol.match(/-[bcz][*0-9]*$/))
+      continue;
+
     const cs = vertices.map(v => v.coordinationSequence);
     cs.sort(cmpLex);
 
@@ -92,7 +95,7 @@ for (const { graph, name } of cgd.structures(input)) {
 
   if (entry == null) {
     console.log(`${name}: not found`);
-    lookup[cs] = { rcsr: [], cgd: [] };
+    lookup[cs] = { rcsr: [], cgd: [ name ] };
   }
   else {
     if (entry.rcsr.length > 1)
@@ -103,9 +106,9 @@ for (const { graph, name } of cgd.structures(input)) {
       console.log(`${name}: duplicate`);
     else
       console.log(`${name}: ok!`);
-  }
 
-  entry.cgd.push(name);
+    entry.cgd.push(name);
+  }
 }
 
 const missing2d = Object.keys(lookup2d)
