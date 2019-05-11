@@ -99,9 +99,27 @@ for (const { graph, name } of cgd.structures(input)) {
       console.log(`${name}: ambiguous (candidates ${entry.rcsr})`);
     else if (entry.rcsr[0] != name)
       console.log(`${name}: mismatch (found ${entry.rcsr[0]})`);
+    else if (entry.cgd.length > 0)
+      console.log(`${name}: duplicate`);
     else
       console.log(`${name}: ok!`);
   }
 
   entry.cgd.push(name);
 }
+
+const missing2d = Object.keys(lookup2d)
+      .map(k => lookup2d[k])
+      .filter(e => e.cgd.length == 0)
+      .map(e => e.rcsr);
+
+if (missing2d.length)
+  console.log(`RCSR layers not in file: ${missing2d}`);
+
+const missing3d = Object.keys(lookup3d)
+      .map(k => lookup3d[k])
+      .filter(e => e.cgd.length == 0)
+      .map(e => e.rcsr);
+
+if (missing3d.length)
+  console.log(`RCSR nets not in file: ${missing3d}`);
