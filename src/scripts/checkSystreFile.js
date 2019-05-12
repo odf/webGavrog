@@ -5,38 +5,20 @@ import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 
 
-const reportSystreError = (errorType, message, writeInfo) => {
-  writeInfo("==================================================");
-  writeInfo(`!!! ERROR (${errorType}) - ${message}`);
-  writeInfo("==================================================");
-  writeInfo();
-};
-
-
 const checkGraph = (graph, writeInfo) => {
   if (!periodic.isLocallyStable(graph)) {
-    const msg = ("Structure has collisions between next-nearest neighbors."
-                 + " Systre does not currently support such structures.");
-    reportSystreError("STRUCTURE", msg, writeInfo);
+    writeInfo('Error - next-nearest neighbor collisions');
     return false;
   }
 
   if (symmetries.isLadder(graph)) {
-    const msg = "Structure is non-crystallographic (a 'ladder')";
-    reportSystreError("STRUCTURE", msg, writeInfo);
+    writeInfo('Error - non-crystallographic (ladder)');
     return false;
   }
 
   if (periodic.hasSecondOrderCollisions(graph)) {
-    const msg = ("Structure has second-order collisions."
-                 + " Systre does not currently support such structures.");
-    reportSystreError("STRUCTURE", msg, writeInfo);
+    writeInfo('Error - second-order collisions');
     return false;
-  }
-
-  if (!periodic.isStable(graph)) {
-    writeInfo("Structure has collisions.");
-    writeInfo();
   }
 
   return true;
