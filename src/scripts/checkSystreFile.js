@@ -73,24 +73,26 @@ for (const { graph, name } of cgd.structures(input)) {
   cs.sort(cmpLex);
 
   const lookup = G.dim == 2 ? lookup2d : lookup3d;
+  if (lookup[cs] == null)
+    lookup[cs] = { rcsr: [], cgd: [] };
+
   const entry = lookup[cs];
 
-  if (entry == null) {
-    console.log(`${name}: not found`);
-    lookup[cs] = { rcsr: [], cgd: [ name ] };
-  }
+  if (entry.cgd.indexOf(name) >= 0)
+    console.log(`${name}: duplicate`);
+  else if (entry.rcsr.indexOf(name) >= 0)
+    console.log(`${name}: ok!`);
   else {
-    if (entry.rcsr.length > 1)
-      console.log(`${name}: ambiguous (candidates ${entry.rcsr})`);
-    else if (entry.rcsr[0] != name)
-      console.log(`${name}: mismatch (found ${entry.rcsr[0]})`);
-    else if (entry.cgd.length > 0)
-      console.log(`${name}: duplicate`);
+    if (entry.rcsr.length == 0)
+      console.log(`${name}: does not match anything`);
     else
-      console.log(`${name}: ok!`);
+      console.log(`${name}: mismatch (found ${entry.rcsr})`);
 
-    entry.cgd.push(name);
+    for (const seq of cs)
+      console.log('    ' + seq);
   }
+
+  entry.cgd.push(name);
 }
 
 const missing2d = Object.keys(lookup2d)
@@ -99,7 +101,7 @@ const missing2d = Object.keys(lookup2d)
       .map(e => e.rcsr);
 
 if (missing2d.length)
-  console.log(`RCSR layers not in file: ${missing2d}`);
+  console.log(`RCSR layers not matched in file: ${missing2d}`);
 
 const missing3d = Object.keys(lookup3d)
       .map(k => lookup3d[k])
@@ -107,4 +109,4 @@ const missing3d = Object.keys(lookup3d)
       .map(e => e.rcsr);
 
 if (missing3d.length)
-  console.log(`RCSR nets not in file: ${missing3d}`);
+  console.log(`RCSR nets not matched in file: ${missing3d}`);
