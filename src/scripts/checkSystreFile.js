@@ -37,6 +37,7 @@ const makeCsLookup = data => {
     if (result[cs] == null)
       result[cs] = { rcsr: [], cgd: [] };
     result[cs].rcsr.push(symbol);
+    result[symbol] = cs;
   }
 
   return result;
@@ -90,6 +91,12 @@ for (const { graph, name } of cgd.structures(input)) {
 
     for (const seq of cs)
       console.log('    ' + seq);
+
+    if (lookup[name]) {
+      console.log(`  RCSR entry for '${name}' has:`);
+      for (const seq of lookup[name])
+        console.log('    ' + seq);
+    }
   }
 
   entry.cgd.push(name);
