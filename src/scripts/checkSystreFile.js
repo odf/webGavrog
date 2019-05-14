@@ -101,19 +101,3 @@ for (const { graph, name } of cgd.structures(input)) {
 
   entry.cgd.push(name);
 }
-
-const missing2d = Object.keys(lookup2d)
-      .map(k => lookup2d[k])
-      .filter(e => e.cgd.length == 0)
-      .map(e => e.rcsr);
-
-if (missing2d.length)
-  console.log(`RCSR layers not matched in file: ${missing2d}`);
-
-const missing3d = Object.keys(lookup3d)
-      .map(k => lookup3d[k])
-      .filter(e => e.cgd.length == 0)
-      .map(e => e.rcsr);
-
-if (missing3d.length)
-  console.log(`RCSR nets not matched in file: ${missing3d}`);
