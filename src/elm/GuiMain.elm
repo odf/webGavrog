@@ -1154,6 +1154,10 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
         NetVertex ->
             netMaterial model.netSettings.vertexColor
 
+        CellEdge ->
+            netMaterial
+                { hue = 0.0, saturation = 0.0, lightness = 0.5, alpha = 1.0 }
+
         Unknown ->
             tilingMaterial tilingSettings.tileBaseColor
 

@@ -118,6 +118,24 @@ const makeStick = (radius, segments) => {
 };
 
 
+const stickTransform = (p, q, ballRadius, stickRadius) => {
+  const w = ops.minus(q, p);
+  const d = normalized(w);
+  const ex = [1,0,0];
+  const ey = [0,1,0];
+  const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
+  const u = normalized(ops.crossProduct(d, t));
+  const v = normalized(ops.crossProduct(d, u));
+
+  const r = Math.min(ballRadius, stickRadius);
+  const s = Math.sqrt(ballRadius * ballRadius - r * r);
+  const p1 = ops.plus(p, ops.times(s, d));
+  const w1 = ops.minus(w, ops.times(2 * s, d));
+
+  return { basis: [ u, v, w1 ], shift: p1 };
+};
+
+
 const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
   stickRadius += 0.001;
 
@@ -137,23 +155,10 @@ const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
     const p = positions[e[0]];
     const q = positions[e[1]];
 
-    const w = ops.minus(q, p);
-    const d = normalized(w);
-    const ex = [1,0,0];
-    const ey = [0,1,0];
-    const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
-    const u = normalized(ops.crossProduct(d, t));
-    const v = normalized(ops.crossProduct(d, u));
-
-    const r = Math.min(ballRadius, stickRadius);
-    const s = Math.sqrt(ballRadius * ballRadius - r * r);
-    const p1 = ops.plus(p, ops.times(s, d));
-    const w1 = ops.minus(w, ops.times(2 * s, d));
-
     instances.push({
       meshType: 'netEdge',
       meshIndex: 1,
-      transform: { basis: [ u, v, w1 ], shift: p1 },
+      transform: stickTransform(p, q, ballRadius, stickRadius),
       extraShift: [ 0, 0, 0 ]
     })
   });
@@ -192,6 +197,43 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     return { type: structure.type, dim: graph.dim, graph, embeddings };
   }
 );
+
+
+const addUnitCell = (model, basis, ballRadius, stickRadius) => {
+  stickRadius += 0.001;
+
+  const meshes = model.meshes.slice();
+  const instances = model.instances.slice();
+
+  const n = meshes.length;
+  meshes.push(makeBall(ballRadius));
+  meshes.push(makeStick(stickRadius, 48));
+
+  for (const coeffs of cartesian([0, 1], [0, 1], [0, 1])) {
+    const p = ops.times(coeffs, basis);
+    instances.push({
+      meshType: 'cellEdge',
+      meshIndex: n,
+      transform: { basis: ops.identityMatrix(3), shift: p },
+      extraShift: [ 0, 0, 0 ]
+    });
+  }
+
+  for (let i = 0; i < 3; ++i) {
+    const [u, v, w] = [basis[i % 3], basis[(i + 1) % 3], basis[(i + 2) % 3]];
+
+    for (const p of [[0, 0, 0], v, w, ops.plus(v, w)]) {
+      instances.push({
+        meshType: 'cellEdge',
+        meshIndex: n + 1,
+        transform: stickTransform(p, ops.plus(p, u), ballRadius, stickRadius),
+        extraShift: [ 0, 0, 0 ]
+      });
+    }
+  }
+
+  return { meshes, instances };
+};
 
 
 const makeNetModel = (data, options, runJob, log) => csp.go(
@@ -259,7 +301,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to make the net geometry`);
 
     yield log('Done making the net model.');
-    return model;
+    return addUnitCell(model, basis, 0.01, 0.01);
   }
 );
 
@@ -482,7 +524,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const mappedTiles = mapTiles(tiles, basis, scale);
   const instances = makeInstances(displayList, mappedTiles, partLists, basis);
 
-  return { meshes: subMeshes, instances };
+  return addUnitCell({ meshes: subMeshes, instances }, basis, 0.01, 0.01);
 });
 
 

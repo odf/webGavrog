@@ -21,6 +21,7 @@ type MeshType
     | TileEdges
     | NetVertex
     | NetEdge
+    | CellEdge
     | Unknown
 
 
@@ -88,6 +89,9 @@ decodeMeshType s =
 
         "netEdge" ->
             NetEdge
+
+        "cellEdge" ->
+            CellEdge
 
         _ ->
             Unknown
