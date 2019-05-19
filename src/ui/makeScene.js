@@ -301,7 +301,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to make the net geometry`);
 
     yield log('Done making the net model.');
-    return addUnitCell(model, basis, 0.01, 0.01);
+    return addUnitCell(model, lattices.reducedLatticeBasis(basis), 0.01, 0.01);
   }
 );
 
@@ -524,7 +524,12 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const mappedTiles = mapTiles(tiles, basis, scale);
   const instances = makeInstances(displayList, mappedTiles, partLists, basis);
 
-  return addUnitCell({ meshes: subMeshes, instances }, basis, 0.01, 0.01);
+  return addUnitCell(
+    { meshes: subMeshes, instances },
+    lattices.reducedLatticeBasis(basis),
+    0.01,
+    0.01
+  );
 });
 
 
