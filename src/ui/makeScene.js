@@ -136,37 +136,6 @@ const stickTransform = (p, q, ballRadius, stickRadius) => {
 };
 
 
-const ballAndStick = (positions, edges, ballRadius=0.1, stickRadius=0.04) => {
-  stickRadius += 0.001;
-
-  const meshes = [ makeBall(ballRadius), makeStick(stickRadius, 48) ];
-  const instances = [];
-
-  positions.forEach(p => {
-    instances.push({
-      meshType: 'netVertex',
-      meshIndex: 0,
-      transform: { basis: ops.identityMatrix(3), shift: p },
-      extraShift: [ 0, 0, 0 ]
-    })
-  });
-
-  edges.forEach(e => {
-    const p = positions[e[0]];
-    const q = positions[e[1]];
-
-    instances.push({
-      meshType: 'netEdge',
-      meshIndex: 1,
-      transform: stickTransform(p, q, ballRadius, stickRadius),
-      extraShift: [ 0, 0, 0 ]
-    })
-  });
-
-  return { meshes, instances };
-};
-
-
 const flatMap   = (fn, xs) => [].concat.apply([], xs.map(fn));
 
 const cartesian = (...vs) => (
@@ -180,23 +149,6 @@ const cartesian = (...vs) => (
 const baseShifts = dim => dim == 3 ?
   cartesian([0, 1], [0, 1], [0, 1]) :
   cartesian(range(6), range(6));
-
-
-const preprocessNet = (structure, runJob, log) => csp.go(
-  function*() {
-    const t = util.timer();
-
-    yield log('Normalizing shifts...');
-    const graph = periodic.graphWithNormalizedShifts(structure.graph);
-    console.log(`${Math.round(t())} msec to normalize shifts`);
-
-    yield log('Computing an embedding...');
-    const embeddings = yield runJob({ cmd: 'embedding', val: graph });
-    console.log(`${Math.round(t())} msec to compute the embeddings`);
-
-    return { type: structure.type, dim: graph.dim, graph, embeddings };
-  }
-);
 
 
 const addUnitCell = (model, basis, ballRadius, stickRadius) => {
@@ -236,71 +188,124 @@ const addUnitCell = (model, basis, ballRadius, stickRadius) => {
 };
 
 
+const makeNetDisplayList = (graph, shifts) => {
+  const itemsSeen = {};
+  const result = [];
+
+  const addItem = (itemType, item, shift) => {
+    const key = encode([itemType, item, shift]);
+    if (!itemsSeen[key]) {
+      result.push({ itemType, item, shift });
+      itemsSeen[key] = true;
+    }
+  };
+
+  const addNode = (v, shift) => addItem('node', v, shift);
+
+  const addEdge = (e, shift) => {
+    if (e.tail < e.head || (e.tail == e.head && ops.sgn(e.shift) < 0))
+      addItem('edge', e.reverse(), ops.plus(shift, e.shift));
+    else
+      addItem('edge', e, shift);
+  };
+
+  for (const shift of baseShifts(graph.dim)) {
+    for (const edge of graph.edges) {
+      addEdge(edge, shift);
+      addNode(edge.head, shift);
+      addNode(edge.tail, ops.plus(shift, edge.shift));
+    }
+  }
+
+  const adj = periodic.adjacencies(graph);
+  for (const { itemType, item, shift } of result) {
+    if (itemType == 'node') {
+      for (const edge of periodic.allIncidences(graph, item, adj)) {
+        const key = encode(['node', edge.tail, ops.plus(shift, edge.shift)]);
+        if (itemsSeen[key])
+          addEdge(edge, shift);
+      }
+    }
+  }
+
+  return result;
+};
+
+
+const preprocessNet = (structure, runJob, log) => csp.go(
+  function*() {
+    const t = util.timer();
+
+    yield log('Normalizing shifts...');
+    const graph = periodic.graphWithNormalizedShifts(structure.graph);
+    console.log(`${Math.round(t())} msec to normalize shifts`);
+
+    yield log('Constructing an abstract finite subnet...');
+    const displayList = makeNetDisplayList(graph, baseShifts(graph.dim));
+    console.log(`${Math.round(t())} msec to construct a finite subnet`);
+
+    yield log('Computing an embedding...');
+    const embeddings = yield runJob({ cmd: 'embedding', val: graph });
+    console.log(`${Math.round(t())} msec to compute the embeddings`);
+
+    return {
+      type: structure.type, dim: graph.dim, graph, embeddings, displayList
+    };
+  }
+);
+
+
 const makeNetModel = (data, options, runJob, log) => csp.go(
   function*() {
-    const { graph, embeddings } = data;
+    const { graph, embeddings, displayList } = data;
 
     const embedding =
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
     const pos = embedding.positions;
     const basis = unitCells.invariantBasis(embedding.gram);
+    const ballRadius = options.netVertexRadius || 0.1;
+    const stickRadius = (options.netEdgeRadius || 0.04) + 0.001;
 
     const t = util.timer();
 
-    yield log('Constructing an abstract finite subnet...');
-    const nodeIndex = {};
-    const edgeSeen = {};
-    const points = [];
-    const edges = [];
-
-    const addEdge = ([v, w]) => {
-      const e = [v, w].sort();
-      const k = encode(e);
-      if (!edgeSeen[k]) {
-        edgeSeen[k] = true;
-        edges.push(e);
-      }
-    };
-
-    for (const s of baseShifts(graph.dim)) {
-      for (const e of graph.edges) {
-        addEdge([[e.head, s], [e.tail, ops.plus(s, e.shift)]].map(
-          ([node, shift]) => {
-            const key = encode([node, shift]);
-            const idx = nodeIndex[key] || points.length;
-            if (idx == points.length) {
-              points.push(ops.times(ops.plus(pos[node], shift), basis));
-              nodeIndex[key] = idx;
-            }
-            return idx;
-          }));
-      }
-    }
-
-    const adj = periodic.adjacencies(graph);
-    for (const key of Object.keys(nodeIndex)) {
-      const [node, shift] = decode(key);
-      for (const edge of periodic.allIncidences(graph, node, adj)) {
-        const k = encode([edge.tail, ops.plus(shift, edge.shift)]);
-        const idx = nodeIndex[k];
-        if (idx != null)
-          addEdge([nodeIndex[key], idx]);
-      }
-    }
-
-    for (const p of points)
-      p[2] = p[2] || 0;
-
-    console.log(`${Math.round(t())} msec to construct a finite subnet`);
-
     yield log('Making the net geometry...');
-    const model = ballAndStick(
-      points, edges,
-      options.netVertexRadius, options.netEdgeRadius
-    );
+    const meshes = [ makeBall(ballRadius), makeStick(stickRadius, 48) ];
+    const instances = [];
+
+    for (let i = 0; i < displayList.length; ++i) {
+      const { itemType, item, shift } = displayList[i];
+
+      if (itemType == 'node') {
+        const p = ops.times(ops.plus(pos[item], shift), basis);
+
+        instances.push({
+          meshType: 'netVertex',
+          meshIndex: 0,
+          instanceIndex: i,
+          transform: { basis: ops.identityMatrix(3), shift: p },
+          extraShift: [ 0, 0, 0 ]
+        })
+      }
+      else {
+        const p = ops.times(ops.plus(pos[item.head], shift), basis);
+        const q = ops.times(
+          ops.plus(pos[item.tail], ops.plus(shift, item.shift)), basis
+        );
+
+        instances.push({
+          meshType: 'netEdge',
+          meshIndex: 1,
+          instanceIndex: i,
+          transform: stickTransform(p, q, ballRadius, stickRadius),
+          extraShift: [ 0, 0, 0 ]
+        })
+      }
+    }
     console.log(`${Math.round(t())} msec to make the net geometry`);
 
     yield log('Done making the net model.');
+
+    const model = { meshes, instances };
     return addUnitCell(model, lattices.reducedLatticeBasis(basis), 0.01, 0.01);
   }
 );
@@ -349,7 +354,7 @@ const convertTile = (tile, centers) => {
 };
 
 
-const makeDisplayList = (tiles, shifts) => {
+const makeTileDisplayList = (tiles, shifts) => {
   const result = [];
 
   for (const s0 of shifts) {
@@ -363,54 +368,6 @@ const makeDisplayList = (tiles, shifts) => {
   }
 
   return result;
-};
-
-
-const mapTiles = (tiles, basis, scale) => {
-  const invBasis = ops.inverse(basis);
-  const b1 = ops.times(scale, basis);
-  const b2 = ops.times(1.0 - scale, basis);
-
-  return tiles.map(tile => {
-    const transform = {
-      basis: ops.times(invBasis, ops.times(tile.transform.basis, b1)),
-      shift: ops.plus(ops.times(tile.transform.shift, b1),
-                      ops.times(tile.center, b2))
-    };
-
-    return Object.assign({}, tile, { transform });
-  });
-};
-
-
-const makeInstances = (displayList, tiles, partLists, basis) => {
-  const instances = [];
-
-  for (let i = 0; i < displayList.length; ++i) {
-    const { latticeIndex, extraShift, skippedParts } = displayList[i];
-    const { classIndex, transform, neighbors } = tiles[latticeIndex];
-    const parts = partLists[classIndex];
-
-    for (let j = 0; j < parts.length; ++j) {
-      if (skippedParts && skippedParts[j])
-        continue;
-
-      instances.push({
-        meshType: (j < parts.length - 1) ? 'tileFace' : 'tileEdges',
-        meshIndex: parts[j],
-        classIndex,
-        latticeIndex,
-        instanceIndex: i,
-        partIndex: j,
-        transform,
-        extraShiftCryst: extraShift,
-        extraShift: ops.times(extraShift, basis),
-        neighbors
-      });
-    }
-  }
-
-  return instances;
 };
 
 
@@ -440,7 +397,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
 
     const centers = rawCenters.map(v => opsR.toJS(v));
     const tiles = rawTiles.map(tile => convertTile(tile, centers));
-    const displayList = makeDisplayList(tiles, baseShifts(dim));
+    const displayList = makeTileDisplayList(tiles, baseShifts(dim));
 
     yield log('Computing an embedding...');
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
@@ -483,6 +440,54 @@ const makeMeshes = (
 });
 
 
+const mapTiles = (tiles, basis, scale) => {
+  const invBasis = ops.inverse(basis);
+  const b1 = ops.times(scale, basis);
+  const b2 = ops.times(1.0 - scale, basis);
+
+  return tiles.map(tile => {
+    const transform = {
+      basis: ops.times(invBasis, ops.times(tile.transform.basis, b1)),
+      shift: ops.plus(ops.times(tile.transform.shift, b1),
+                      ops.times(tile.center, b2))
+    };
+
+    return Object.assign({}, tile, { transform });
+  });
+};
+
+
+const makeTileInstances = (displayList, tiles, partLists, basis) => {
+  const instances = [];
+
+  for (let i = 0; i < displayList.length; ++i) {
+    const { latticeIndex, extraShift, skippedParts } = displayList[i];
+    const { classIndex, transform, neighbors } = tiles[latticeIndex];
+    const parts = partLists[classIndex];
+
+    for (let j = 0; j < parts.length; ++j) {
+      if (skippedParts && skippedParts[j])
+        continue;
+
+      instances.push({
+        meshType: (j < parts.length - 1) ? 'tileFace' : 'tileEdges',
+        meshIndex: parts[j],
+        classIndex,
+        latticeIndex,
+        instanceIndex: i,
+        partIndex: j,
+        transform,
+        extraShiftCryst: extraShift,
+        extraShift: ops.times(extraShift, basis),
+        neighbors
+      });
+    }
+  }
+
+  return instances;
+};
+
+
 const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const { ds, cov, skel, tiles, orbitReps, embeddings, displayList } = data;
 
@@ -522,7 +527,9 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
         Math.min(0.999, options.tileScale || 0.85);
 
   const mappedTiles = mapTiles(tiles, basis, scale);
-  const instances = makeInstances(displayList, mappedTiles, partLists, basis);
+  const instances = makeTileInstances(
+    displayList, mappedTiles, partLists, basis
+  );
 
   return addUnitCell(
     { meshes: subMeshes, instances },

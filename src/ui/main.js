@@ -171,10 +171,8 @@ const convertSelection = (scene, selected) => {
 };
 
 
-const updateDisplayList = (
-  config, model, selected, update, updateNoDL
-) => csp.go(function*() {
-  if (model.data.displayList) {
+const updateDisplayList = (config, model, selected, update) => csp.go(
+  function*() {
     try {
       const currentDisplayList = model.data.displayList.slice();
       const selection = convertSelection(model.scene, selected)
@@ -182,7 +180,9 @@ const updateDisplayList = (
       const displayList = update(currentDisplayList, selection);
 
       const data = Object.assign({}, model.data, { displayList });
-      const scene = yield makeScene(data, model.options, callWorker, config.log);
+      const scene = yield makeScene(
+        data, model.options, callWorker, config.log
+      );
 
       yield config.sendScene(scene, model.data.dim, false);
 
@@ -193,9 +193,7 @@ const updateDisplayList = (
       return model;
     }
   }
-  else
-    return yield updateNoDL(config, model, selected);
-});
+);
 
 
 const addTiles = (displayList, selection) => {
@@ -287,44 +285,28 @@ const removeTiles = (displayList, selection) => {
 const removeElements = (displayList, selection) => {
   const toBeRemoved = {};
   for (const inst of selection) {
-    if (toBeRemoved[inst.instanceIndex] == null)
-      toBeRemoved[inst.instanceIndex] = {};
-
-    toBeRemoved[inst.instanceIndex][inst.partIndex] = true;
-  }
-
-  return displayList.map((item, i) => {
-    if (toBeRemoved[i]) {
-      const skippedParts = Object.assign({}, item.skippedParts || {});
-      for (const j of Object.keys(toBeRemoved[i]))
-        skippedParts[j] = true;
-      return Object.assign({}, item, { skippedParts });
+    if (inst.partIndex != null) {
+      if (toBeRemoved[inst.instanceIndex] == null)
+        toBeRemoved[inst.instanceIndex] = {};
+      toBeRemoved[inst.instanceIndex][inst.partIndex] = true;
     }
     else
-      return item;
-  });
-};
-
-
-const removeElementsNoDL = (config, model, selected) => csp.go(function*() {
-  try {
-    const toBeRemoved = {};
-    for (const k of convertSelection(model.scene, selected))
-      toBeRemoved[k] = true;
-
-    const instances = model.scene.instances.filter(
-      (inst, k) => !toBeRemoved[k]);
-
-    const scene = Object.assign({}, model.scene, { instances });
-    yield config.sendScene(scene, model.data.dim, false);
-
-    return Object.assign({}, model, { scene });
-  } catch (ex) {
-    console.error(ex);
-    yield config.log(`ERROR removing element(s)!!!`);
-    return model;
+      toBeRemoved[inst.instanceIndex] = true;
   }
-});
+
+  return displayList
+    .filter((_, i) => toBeRemoved[i] != true)
+    .map((item, i) => {
+      if (toBeRemoved[i]) {
+        const skippedParts = Object.assign({}, item.skippedParts || {});
+        for (const j of Object.keys(toBeRemoved[i]))
+          skippedParts[j] = true;
+        return Object.assign({}, item, { skippedParts });
+      }
+      else
+        return item;
+    });
+};
 
 
 const newFile = (config, model, { file, data }) => csp.go(function*() {
@@ -448,8 +430,7 @@ const render = domNode => {
     ['Remove Tile(s)']: (selected) =>
       updateModel(updateDisplayList(config, model, selected, removeTiles)),
     ['Remove Element(s)']: (selected) =>
-      updateModel(updateDisplayList(
-        config, model, selected, removeElements, removeElementsNoDL))
+      updateModel(updateDisplayList(config, model, selected, removeElements))
   };
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
