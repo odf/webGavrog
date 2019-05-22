@@ -276,28 +276,28 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
       const { itemType, item, shift } = displayList[i];
 
       if (itemType == 'node') {
-        const p = ops.times(ops.plus(pos[item], shift), basis);
+        const p = ops.times(pos[item], basis);
 
         instances.push({
           meshType: 'netVertex',
           meshIndex: 0,
           instanceIndex: i,
           transform: { basis: ops.identityMatrix(3), shift: p },
-          extraShift: [ 0, 0, 0 ]
+          extraShiftCryst: shift,
+          extraShift: ops.times(shift, basis)
         })
       }
       else {
-        const p = ops.times(ops.plus(pos[item.head], shift), basis);
-        const q = ops.times(
-          ops.plus(pos[item.tail], ops.plus(shift, item.shift)), basis
-        );
+        const p = ops.times(pos[item.head], basis);
+        const q = ops.times(ops.plus(pos[item.tail], item.shift), basis);
 
         instances.push({
           meshType: 'netEdge',
           meshIndex: 1,
           instanceIndex: i,
           transform: stickTransform(p, q, ballRadius, stickRadius),
-          extraShift: [ 0, 0, 0 ]
+          extraShiftCryst: shift,
+          extraShift: ops.times(shift, basis)
         })
       }
     }
