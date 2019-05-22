@@ -361,9 +361,9 @@ const makeTileDisplayList = (tiles, shifts) => {
     for (let latticeIndex = 0; latticeIndex < tiles.length; ++latticeIndex) {
       const c = tiles[latticeIndex].center.slice(0, s0.length);
       const s = ops.minus(s0, c.map(x => ops.floor(x)));
-      const extraShift = [s[0], s[1], s[2] || 0];
+      const shift = [s[0], s[1], s[2] || 0];
 
-      result.push({ latticeIndex, extraShift });
+      result.push({ itemType: 'tile', latticeIndex, shift });
     }
   }
 
@@ -461,7 +461,7 @@ const makeTileInstances = (displayList, tiles, partLists, basis) => {
   const instances = [];
 
   for (let i = 0; i < displayList.length; ++i) {
-    const { latticeIndex, extraShift, skippedParts } = displayList[i];
+    const { latticeIndex, shift, skippedParts } = displayList[i];
     const { classIndex, transform, neighbors } = tiles[latticeIndex];
     const parts = partLists[classIndex];
 
@@ -477,8 +477,8 @@ const makeTileInstances = (displayList, tiles, partLists, basis) => {
         instanceIndex: i,
         partIndex: j,
         transform,
-        extraShiftCryst: extraShift,
-        extraShift: ops.times(extraShift, basis),
+        extraShiftCryst: shift,
+        extraShift: ops.times(shift, basis),
         neighbors
       });
     }
