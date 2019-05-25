@@ -217,6 +217,7 @@ const addTiles = (displayList, selection) => {
 
   for (const item of displayList) {
     const key = pickler.serialize({
+      itemType: item.itemType,
       latticeIndex: item.latticeIndex,
       shift: item.shift
     });
@@ -253,6 +254,7 @@ const addCoronas = (displayList, selection) => {
 
   for (const item of displayList) {
     const key = pickler.serialize({
+      itemType: item.itemType,
       latticeIndex: item.latticeIndex,
       shift: item.shift
     });
