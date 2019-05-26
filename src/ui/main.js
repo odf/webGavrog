@@ -5,7 +5,7 @@ import * as version from '../version';
 import parseDSymbols from '../io/ds';
 
 import { structures } from './builtinStructures';
-import { preprocess, makeScene } from './makeScene';
+import * as makeScene from './makeScene';
 
 import { Elm } from '../elm/GuiMain';
 
@@ -116,8 +116,12 @@ const toStructure = (config, model, i) => csp.go(function*() {
       });
     }
 
-    const data = yield preprocess(structures[index], callWorker, config.log);
-    const scene = yield makeScene(data, model.options, callWorker, config.log);
+    const data = yield makeScene.preprocess(
+      structures[index], callWorker, config.log
+    );
+    const scene = yield makeScene.makeScene(
+      data, model.options, callWorker, config.log
+    );
 
     const newModel =
           Object.assign({}, model, { structures, index, data, scene });
@@ -136,8 +140,9 @@ const toStructure = (config, model, i) => csp.go(function*() {
 
 const updateStructure = (config, model) => csp.go(function*() {
   try {
-    const scene = yield makeScene(
-      model.data, model.options, callWorker, config.log);
+    const scene = yield makeScene.makeScene(
+      model.data, model.options, callWorker, config.log
+    );
 
     yield config.sendScene(scene, model.data.dim, false);
     return Object.assign({}, model, { scene } );
@@ -180,7 +185,7 @@ const updateDisplayList = (config, model, selected, update) => csp.go(
       const displayList = update(currentDisplayList, selection);
 
       const data = Object.assign({}, model.data, { displayList });
-      const scene = yield makeScene(
+      const scene = yield makeScene.makeScene(
         data, model.options, callWorker, config.log
       );
 
@@ -194,127 +199,6 @@ const updateDisplayList = (config, model, selected, update) => csp.go(
     }
   }
 );
-
-
-const addTiles = (displayList, selection) => {
-  const result = [];
-  const seen = {};
-
-  for (const { partIndex, neighbors, extraShiftCryst } of selection) {
-    const { latticeIndex, shift } = neighbors[partIndex];
-    const item = {
-      itemType: 'tile',
-      latticeIndex,
-      shift: ops.plus(extraShiftCryst, shift)
-    };
-    const key = pickler.serialize(item);
-
-    if (!seen[key]) {
-      result.push(item);
-      seen[key] = true;
-    }
-  }
-
-  for (const item of displayList) {
-    const key = pickler.serialize({
-      itemType: item.itemType,
-      latticeIndex: item.latticeIndex,
-      shift: item.shift
-    });
-
-    if (!seen[key]) {
-      result.push(item);
-      seen[key] = true;
-    }
-  }
-
-  return result;
-};
-
-
-const addCoronas = (displayList, selection) => {
-  const result = [];
-  const seen = {};
-
-  for (const { partIndex, neighbors, extraShiftCryst } of selection) {
-    for (const { latticeIndex, shift } of neighbors) {
-      const item = {
-        itemType: 'tile',
-        latticeIndex,
-        shift: ops.plus(extraShiftCryst, shift)
-      };
-      const key = pickler.serialize(item);
-
-      if (!seen[key]) {
-        result.push(item);
-        seen[key] = true;
-      }
-    }
-  }
-
-  for (const item of displayList) {
-    const key = pickler.serialize({
-      itemType: item.itemType,
-      latticeIndex: item.latticeIndex,
-      shift: item.shift
-    });
-
-    if (!seen[key]) {
-      result.push(item);
-      seen[key] = true;
-    }
-  }
-
-  return result;
-};
-
-
-const restoreTiles = (displayList, selection) => {
-  const toBeRestored = {};
-  for (const inst of selection)
-    toBeRestored[inst.instanceIndex] = true;
-
-  return displayList.map(
-    (item, i) =>
-      toBeRestored[i] ? Object.assign({}, item, { skippedParts: {} }) : item
-  );
-};
-
-
-const removeTiles = (displayList, selection) => {
-  const toBeRemoved = {};
-  for (const inst of selection)
-    toBeRemoved[inst.instanceIndex] = true;
-
-  return displayList.filter((_, i) => !toBeRemoved[i]);
-};
-
-
-const removeElements = (displayList, selection) => {
-  const toBeRemoved = {};
-  for (const inst of selection) {
-    if (inst.partIndex != null) {
-      if (toBeRemoved[inst.instanceIndex] == null)
-        toBeRemoved[inst.instanceIndex] = {};
-      toBeRemoved[inst.instanceIndex][inst.partIndex] = true;
-    }
-    else
-      toBeRemoved[inst.instanceIndex] = true;
-  }
-
-  return displayList
-    .filter((_, i) => toBeRemoved[i] != true)
-    .map((item, i) => {
-      if (toBeRemoved[i]) {
-        const skippedParts = Object.assign({}, item.skippedParts || {});
-        for (const j of Object.keys(toBeRemoved[i]))
-          skippedParts[j] = true;
-        return Object.assign({}, item, { skippedParts });
-      }
-      else
-        return item;
-    });
-};
 
 
 const newFile = (config, model, { file, data }) => csp.go(function*() {
@@ -429,16 +313,21 @@ const render = domNode => {
     ['Prev']: () => setStructure(model.index - 1),
     ['Next']: () => setStructure(model.index + 1),
     ['Last']: () => setStructure(-1),
-    ['Add Tile(s)']: (selected) =>
-      updateModel(updateDisplayList(config, model, selected, addTiles)),
-    ['Add Corona(s)']: (selected) =>
-      updateModel(updateDisplayList(config, model, selected, addCoronas)),
-    ['Restore Tile(s)']: (selected) =>
-      updateModel(updateDisplayList(config, model, selected, restoreTiles)),
-    ['Remove Tile(s)']: (selected) =>
-      updateModel(updateDisplayList(config, model, selected, removeTiles)),
-    ['Remove Element(s)']: (selected) =>
-      updateModel(updateDisplayList(config, model, selected, removeElements))
+    ['Add Tile(s)']: (selected) => updateModel(updateDisplayList(
+      config, model, selected, makeScene.addTiles
+    )),
+    ['Add Corona(s)']: (selected) => updateModel(updateDisplayList(
+      config, model, selected, makeScene.addCoronas
+    )),
+    ['Restore Tile(s)']: (selected) => updateModel(updateDisplayList(
+      config, model, selected, makeScene.restoreTiles
+    )),
+    ['Remove Tile(s)']: (selected) => updateModel(updateDisplayList(
+      config, model, selected, makeScene.removeTiles
+    )),
+    ['Remove Element(s)']: (selected) => updateModel(updateDisplayList(
+      config, model, selected, makeScene.removeElements
+    ))
   };
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
