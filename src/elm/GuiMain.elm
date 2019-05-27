@@ -303,7 +303,7 @@ init flags =
             , editVertexColor = False
             , vertexColor =
                 { hue = 0.13
-                , saturation = 0.7
+                , saturation = 0.9
                 , lightness = 0.7
                 , alpha = 1.0
                 }
@@ -311,7 +311,7 @@ init flags =
             , editEdgeColor = False
             , edgeColor =
                 { hue = 0.63
-                , saturation = 0.6
+                , saturation = 0.7
                 , lightness = 0.6
                 , alpha = 1.0
                 }
@@ -327,7 +327,7 @@ init flags =
                 }
             , editTileBaseColor = False
             , tileBaseColor =
-                { hue = 0.5
+                { hue = 0.13
                 , saturation = 1.0
                 , lightness = 0.7
                 , alpha = 1.0
@@ -342,7 +342,7 @@ init flags =
             { tileScale = 1.0
             , editTileBaseColor = False
             , tileBaseColor =
-                { hue = 0.5
+                { hue = 0.13
                 , saturation = 1.0
                 , lightness = 0.7
                 , alpha = 1.0
