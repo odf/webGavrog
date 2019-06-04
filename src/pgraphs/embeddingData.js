@@ -4,8 +4,6 @@ import * as stats from '../pgraphs/statistics';
 import * as unitCells from '../geometry/unitCells';
 import * as spacegroups from '../geometry/spacegroups';
 
-import embed from '../pgraphs/embedding';
-
 import {
   coordinateChangesQ,
   coordinateChangesF
@@ -136,11 +134,8 @@ const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
 );
 
 
-export const embeddingData = (graph, sgInfo, syms, options) => {
-  const toStd = coordinateChangeAsFloat(sgInfo.toStd);
-  const embedResult = embed(graph);
-  const embedding =
-        options.relaxPositions ? embedResult.relaxed : embedResult.barycentric;
+export const embeddingData = (graph, toStdRaw, syms, embedding) => {
+  const toStd = coordinateChangeAsFloat(toStdRaw);
 
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
   const stdGram = mapGramMatrix(toStd, embedding.gram);
@@ -149,8 +144,7 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
 
   // TODO if translational freedom, shift one of the nodes to a nice place
   const pos = embedding.positions;
-  const posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
-  const centering = centeringLatticePoints(sgInfo.toStd).map(v => opsQ.toJS(v));
+  const centering = centeringLatticePoints(toStdRaw).map(v => opsQ.toJS(v));
 
   const nodeReps = nodeRepresentatives(graph, syms, pos, toStd, centering);
   const edgeReps = edgeRepresentatives(graph, syms, pos, toStd, centering);
@@ -170,7 +164,6 @@ export const embeddingData = (graph, sgInfo, syms, options) => {
     edgeReps,
     edgeStats,
     angleStats,
-    posType,
     shortestSeparation,
     degreesOfFreedom
   };

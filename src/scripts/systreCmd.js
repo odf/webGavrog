@@ -5,6 +5,7 @@ import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 import { systreKey } from '../pgraphs/invariant';
+import embed from '../pgraphs/embedding';
 import { embeddingData } from '../pgraphs/embeddingData';
 import * as tilings from '../dsymbols/tilings';
 import parseDSymbols from '../io/ds';
@@ -464,7 +465,11 @@ const processGraph = (
     archives.find(arc => arc.name == '__internal__').addNet(G, name, key);
   }
 
-  const data = embeddingData(G, sgInfo, syms, options);
+  const eOut = embed(G);
+  const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
+
+  const data = embeddingData(G, sgInfo.toStd, syms, embedding);
+  data.posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
 
   if (options.outputEmbedding)
     showEmbedding(data, nodeToName, writeInfo);
