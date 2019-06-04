@@ -1,13 +1,13 @@
 import * as pickler from '../common/pickler';
 
 import * as pg from './periodic';
-import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from '../arithmetic/types';
+import { rationalLinearAlgebraModular } from '../arithmetic/types';
+import { coordinateChangesQ } from '../geometry/types';
 import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
 
 
-const ops = rationalLinearAlgebra;
+const ops = coordinateChangesQ;
 
 const encode = pickler.serialize;
 const decode = pickler.deserialize;
@@ -391,6 +391,19 @@ export const symmetries = graph => {
       gens, phi => encode(mapped(edgeLists[0], phi)))
   };
 };
+
+
+export const affineSymmetries = (graph, syms) => {
+  const I = ops.identityMatrix(graph.dim);
+  const pos = pg.barycentricPlacement(graph);
+  const v = pg.vertices(graph)[0];
+
+  return syms.map(({ src2img, transform }) => {
+    const s = ops.minus(pos[src2img[v]], ops.times(pos[v], transform));
+    return ops.times(ops.affineTransformation(I, s),
+                     ops.transposed(transform));
+  });
+}
 
 
 export const nodeOrbits = (graph, syms) => {
