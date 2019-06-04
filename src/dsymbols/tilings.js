@@ -8,8 +8,6 @@ import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import * as periodic    from '../pgraphs/periodic';
 
-import * as seq from '../common/lazyseq';
-
 import {
   rationalLinearAlgebraModular,
   numericalLinearAlgebra
@@ -19,6 +17,7 @@ const opsR = rationalLinearAlgebraModular;
 const opsF = numericalLinearAlgebra;
 
 
+const range = n => [...Array(n).keys()];
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
@@ -102,7 +101,7 @@ const chamberPositions = (cov, skel) => {
   }
 
   for (let i = 1; i <= delaney.dim(cov); ++i) {
-    const idcs = seq.range(0, i).toArray();
+    const idcs = range(i);
 
     for (const orb of properties.orbits(cov, idcs, cov.elements())) {
       const s = opsR.div(
@@ -219,7 +218,7 @@ const adjustedOrientation = (cov, pos) => {
 
 export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
   const dim = delaney.dim(cov);
-  const idcs = seq.range(0, dim).toArray();
+  const idcs = range(dim);
   const pos = chamberPositions(cov, skel);
   const ori = adjustedOrientation(cov, pos);
 
@@ -241,7 +240,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
   const phi = properties.morphism(cov, 1, ds, 1);
-  const idcs = seq.range(0, dim).toArray();
+  const idcs = range(dim);
   const tileOrbits = properties.orbits(cov, idcs);
 
   const orbitReps = [];
