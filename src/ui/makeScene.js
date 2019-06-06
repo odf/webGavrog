@@ -7,8 +7,10 @@ import * as properties  from '../dsymbols/properties';
 import * as tilings     from '../dsymbols/tilings';
 import * as lattices    from '../geometry/lattices';
 import * as unitCells   from '../geometry/unitCells';
+import { identifySpacegroup } from '../geometry/spacegroupFinder';
 import * as periodic    from '../pgraphs/periodic';
 import * as netSyms     from '../pgraphs/symmetries';
+import { embeddingData } from '../pgraphs/embeddingData';
 import {subD}           from './surface';
 
 import {
@@ -369,8 +371,23 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     const embeddings = yield runJob({ cmd: 'embedding', val: graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
+    yield log('Computing embedding details...');
+    const syms = netSyms.symmetries(graph).symmetries;
+    const symOps = netSyms.affineSymmetries(graph, syms);
+    const sgInfo = identifySpacegroup(symOps);
+
+    for (const key in embeddings) {
+      embeddings[key].details =
+        embeddingData(graph, sgInfo.toStd, syms, embeddings[key]);
+    }
+    console.log(`${Math.round(t())} msec to compute embedding details`);
+
     return {
-      type: structure.type, dim: graph.dim, graph, embeddings, displayList
+      type: structure.type,
+      dim: graph.dim, graph,
+      sgInfo,
+      embeddings,
+      displayList
     };
   }
 );

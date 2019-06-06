@@ -138,9 +138,10 @@ export const embeddingData = (graph, toStdRaw, syms, embedding) => {
   const toStd = coordinateChangeAsFloat(toStdRaw);
 
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
-  const stdGram = mapGramMatrix(toStd, embedding.gram);
-  const cellParameters = unitCells.unitCellParameters(stdGram);
-  const cellVolume = unitCells.unitCellVolume(stdGram);
+  const cellGram = mapGramMatrix(toStd, embedding.gram);
+  const cellBasis = unitCells.invariantBasis(cellGram);
+  const cellParameters = unitCells.unitCellParameters(cellGram);
+  const cellVolume = unitCells.unitCellVolume(cellGram);
 
   // TODO if translational freedom, shift one of the nodes to a nice place
   const pos = embedding.positions;
@@ -158,6 +159,8 @@ export const embeddingData = (graph, toStdRaw, syms, embedding) => {
   const degreesOfFreedom = embedding.params.length - shiftSpace.length;
 
   return {
+    cellGram,
+    cellBasis,
     cellParameters,
     cellVolume,
     nodeReps,
