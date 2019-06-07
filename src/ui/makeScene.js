@@ -371,11 +371,16 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     const embeddings = yield runJob({ cmd: 'embedding', val: graph });
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    yield log('Computing embedding details...');
+    yield log('Computing symmetries...');
     const syms = netSyms.symmetries(graph).symmetries;
     const symOps = netSyms.affineSymmetries(graph, syms);
-    const sgInfo = identifySpacegroup(symOps);
+    console.log(`${Math.round(t())} msec to compute symmetries`);
 
+    yield log('Identifying the spacegroup...');
+    const sgInfo = identifySpacegroup(symOps);
+    console.log(`${Math.round(t())} msec to identify the spacegroup`);
+
+    yield log('Computing embedding details...');
     for (const key in embeddings) {
       embeddings[key].details =
         embeddingData(graph, sgInfo.toStd, syms, embeddings[key]);
