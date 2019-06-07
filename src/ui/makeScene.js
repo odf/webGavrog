@@ -13,12 +13,10 @@ import * as netSyms     from '../pgraphs/symmetries';
 import { embeddingData } from '../pgraphs/embeddingData';
 import {subD}           from './surface';
 
-import {
-  rationalLinearAlgebraModular,
-  numericalLinearAlgebra
-} from '../arithmetic/types';
+import { numericalLinearAlgebra } from '../arithmetic/types';
+import { coordinateChangesQ } from '../geometry/types';
 
-const opsR = rationalLinearAlgebraModular;
+const opsQ = coordinateChangesQ;
 const ops = numericalLinearAlgebra;
 
 const encode = pickler.serialize;
@@ -355,6 +353,10 @@ const makeNetDisplayList = (graph, shifts) => {
 };
 
 
+const makeNetDisplayListNew = (graph, toStd, details, shifts) => {
+};
+
+
 const preprocessNet = (structure, runJob, log) => csp.go(
   function*() {
     const t = util.timer();
@@ -362,10 +364,6 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     yield log('Normalizing shifts...');
     const graph = periodic.graphWithNormalizedShifts(structure.graph);
     console.log(`${Math.round(t())} msec to normalize shifts`);
-
-    yield log('Constructing an abstract finite subnet...');
-    const displayList = makeNetDisplayList(graph, baseShifts(graph.dim));
-    console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     yield log('Computing an embedding...');
     const embeddings = yield runJob({ cmd: 'embedding', val: graph });
@@ -386,6 +384,13 @@ const preprocessNet = (structure, runJob, log) => csp.go(
         embeddingData(graph, sgInfo.toStd, syms, embeddings[key]);
     }
     console.log(`${Math.round(t())} msec to compute embedding details`);
+
+    yield log('Constructing an abstract finite subnet...');
+    const displayList = makeNetDisplayList(graph, baseShifts(graph.dim));
+    //const displayList = makeNetDisplayListNew(
+    //  graph, sgInfo.toStd, embedding.barycentric.details, baseShifts(graph.dim)
+    //);
+    console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     return {
       type: structure.type,
@@ -476,7 +481,7 @@ const splitMeshes = (meshes, faceLabelLists) => {
 
 const convertTile = (tile, centers) => {
   const { classIndex, symmetry, neighbors } = tile;
-  const sym = opsR.toJS(symmetry.map(v => v.slice(0, -1)));
+  const sym = opsQ.toJS(symmetry.map(v => v.slice(0, -1)));
 
   const basis = sym.slice(0, -1);
   const shift = sym.slice(-1)[0];
@@ -538,7 +543,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
     });
     console.log(`${Math.round(t())} msec to list the tile orbits`);
 
-    const centers = rawCenters.map(v => opsR.toJS(v));
+    const centers = rawCenters.map(v => opsQ.toJS(v));
     const tiles = rawTiles.map(tile => convertTile(tile, centers));
     const displayList = makeTileDisplayList(tiles, baseShifts(dim));
 
