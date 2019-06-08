@@ -34,12 +34,6 @@ const coordinateChangeAsFloat = cc => {
 };
 
 
-const mapGramMatrix = (t, gram) => {
-  const M = opsF.inverse(opsF.linearPart(t.oldToNew));
-  return opsF.times(opsF.transposed(M), opsF.times(gram, M));
-};
-
-
 const countZeros = s => s.filter(x => opsF.lt(opsF.abs(x), 1e-6)).length;
 
 
@@ -76,28 +70,6 @@ const comparePoints = (p, q) => {
 
 const compareEdges = ([p, v], [q, w]) =>
       comparePoints(p, q) || comparePoints(opsF.plus(p, v), opsF.plus(q, w));
-
-
-const centeringLatticePoints = toStd => {
-  const lattice = opsQ.transposed(opsQ.linearPart(toStd.oldToNew));
-
-  const origin = opsQ.vector(opsQ.dimension(lattice));
-  const latticePoints = [origin];
-  const seen = { [encode(origin)]: true };
-
-  for (let i = 0; i < latticePoints.length; ++i) {
-    const v = latticePoints[i];
-    for (const w of lattice) {
-      const s = opsQ.mod(opsQ.plus(v, w), 1);
-      if (!seen[encode(s)]) {
-        latticePoints.push(s);
-        seen[encode(s)] = true;
-      }
-    }
-  }
-
-  return latticePoints;
-};
 
 
 const nodeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
@@ -138,14 +110,15 @@ export const embeddingData = (graph, toStdRaw, syms, embedding) => {
   const toStd = coordinateChangeAsFloat(toStdRaw);
 
   // TODO correct to reduced unit cell for monoclinic and triclinic setting
-  const cellGram = mapGramMatrix(toStd, embedding.gram);
+  const cellGram = unitCells.mapGramMatrix(toStd, embedding.gram);
   const cellBasis = unitCells.invariantBasis(cellGram);
   const cellParameters = unitCells.unitCellParameters(cellGram);
   const cellVolume = unitCells.unitCellVolume(cellGram);
 
   // TODO if translational freedom, shift one of the nodes to a nice place
   const pos = embedding.positions;
-  const centering = centeringLatticePoints(toStdRaw).map(v => opsQ.toJS(v));
+  const centering = spacegroups.centeringLatticePoints(toStdRaw)
+        .map(v => opsQ.toJS(v));
 
   const nodeReps = nodeRepresentatives(graph, syms, pos, toStd, centering);
   const edgeReps = edgeRepresentatives(graph, syms, pos, toStd, centering);

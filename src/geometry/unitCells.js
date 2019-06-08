@@ -7,6 +7,12 @@ const opsQ = coordinateChangesQ;
 const opsF = coordinateChangesF;
 
 
+export const mapGramMatrix = (transform, gram) => {
+  const M = opsF.inverse(opsF.linearPart(transform.oldToNew));
+  return opsF.times(opsF.transposed(M), opsF.times(gram, M));
+};
+
+
 export const invariantBasis = gram => {
   const dot = (v, w) => opsF.times(opsF.times(v, gram), w);
 

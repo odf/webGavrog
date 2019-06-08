@@ -1,3 +1,4 @@
+import * as pickler from '../common/pickler';
 import { rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
@@ -11,6 +12,8 @@ import { coordinateChangesQ } from './types';
 import * as parms from './parameterVectors';
 
 const V = coordinateChangesQ;
+
+const encode = pickler.serialize;
 
 const P = mats.extend(
   parms.extend(rationals, ['Integer', 'LongInt', 'Fraction']),
@@ -212,6 +215,28 @@ export const shiftSpace = ops => {
 
   const M = [].concat(...pops.map(op => V.minus(V.linearPart(op), I)));
   return V.transposed(rationalLinearAlgebraModular.nullSpace(M));
+};
+
+
+export const centeringLatticePoints = toStd => {
+  const lattice = V.transposed(V.linearPart(toStd.oldToNew));
+
+  const origin = V.vector(V.dimension(lattice));
+  const latticePoints = [origin];
+  const seen = { [encode(origin)]: true };
+
+  for (let i = 0; i < latticePoints.length; ++i) {
+    const v = latticePoints[i];
+    for (const w of lattice) {
+      const s = V.mod(V.plus(v, w), 1);
+      if (!seen[encode(s)]) {
+        latticePoints.push(s);
+        seen[encode(s)] = true;
+      }
+    }
+  }
+
+  return latticePoints;
 };
 
 
