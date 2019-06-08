@@ -1,33 +1,36 @@
-import * as csp   from 'plexus-csp';
+import * as csp from 'plexus-csp';
 
-import * as pickler    from '../common/pickler';
-import * as util       from '../common/util';
-import * as delaney    from '../dsymbols/delaney';
+import * as pickler from '../common/pickler';
+import * as util from '../common/util';
+import * as delaney from '../dsymbols/delaney';
 import * as properties from '../dsymbols/properties';
-import * as tilings    from '../dsymbols/tilings';
-import * as lattices   from '../geometry/lattices';
-import * as unitCells  from '../geometry/unitCells';
-import * as sgFinder   from '../geometry/spacegroupFinder';
-import * as periodic   from '../pgraphs/periodic';
-import * as netSyms    from '../pgraphs/symmetries';
-import {subD}          from './surface';
+import * as tilings from '../dsymbols/tilings';
+import * as lattices from '../geometry/lattices';
+import * as unitCells from '../geometry/unitCells';
+import * as spacegroups from '../geometry/spacegroups';
+import * as sgFinder from '../geometry/spacegroupFinder';
+import * as periodic from '../pgraphs/periodic';
+import * as netSyms from '../pgraphs/symmetries';
+import {subD} from './surface';
 
-import { numericalLinearAlgebra } from '../arithmetic/types';
-import { coordinateChangesQ } from '../geometry/types';
+import {
+  coordinateChangesQ,
+  coordinateChangesF
+} from '../geometry/types';
 
 const opsQ = coordinateChangesQ;
-const ops = numericalLinearAlgebra;
+const opsF = coordinateChangesF;
 
 const encode = pickler.serialize;
 const decode = pickler.deserialize;
 
 
 const range = n => [...Array(n).keys()];
-const normalized = v => ops.div(v, ops.norm(v));
+const normalized = v => opsF.div(v, opsF.norm(v));
 
 
 const geometry = (vertsIn, faces) => {
-  const normals = vertsIn.map(v => ops.times(v, 0));
+  const normals = vertsIn.map(v => opsF.times(v, 0));
 
   for (const f of faces) {
     const n = f.length;
@@ -36,10 +39,10 @@ const geometry = (vertsIn, faces) => {
       const v = f[(i + 1) % n];
       const w = f[(i + 2) % n];
 
-      const a = ops.minus(vertsIn[u], vertsIn[v]);
-      const b = ops.minus(vertsIn[w], vertsIn[v]);
+      const a = opsF.minus(vertsIn[u], vertsIn[v]);
+      const b = opsF.minus(vertsIn[w], vertsIn[v]);
 
-      normals[v] = ops.plus(normals[v], ops.crossProduct(b, a));
+      normals[v] = opsF.plus(normals[v], opsF.crossProduct(b, a));
     }
   }
 
@@ -92,7 +95,7 @@ const makeBall = radius => {
   };
   const t = subD(subD(subD(t0)));
 
-  return geometry(t.pos.map(v => ops.times(normalized(v), radius)), t.faces);
+  return geometry(t.pos.map(v => opsF.times(normalized(v), radius)), t.faces);
 };
 
 
@@ -118,18 +121,18 @@ const makeStick = (radius, segments) => {
 
 
 const stickTransform = (p, q, ballRadius, stickRadius) => {
-  const w = ops.minus(q, p);
+  const w = opsF.minus(q, p);
   const d = normalized(w);
   const ex = [1,0,0];
   const ey = [0,1,0];
-  const t = Math.abs(ops.times(d, ex)) > 0.9 ? ey : ex;
-  const u = normalized(ops.crossProduct(d, t));
-  const v = normalized(ops.crossProduct(d, u));
+  const t = Math.abs(opsF.times(d, ex)) > 0.9 ? ey : ex;
+  const u = normalized(opsF.crossProduct(d, t));
+  const v = normalized(opsF.crossProduct(d, u));
 
   const r = Math.min(ballRadius, stickRadius);
   const s = Math.sqrt(ballRadius * ballRadius - r * r);
-  const p1 = ops.plus(p, ops.times(s, d));
-  const w1 = ops.minus(w, ops.times(2 * s, d));
+  const p1 = opsF.plus(p, opsF.times(s, d));
+  const w1 = opsF.minus(w, opsF.times(2 * s, d));
 
   return { basis: [ u, v, w1 ], shift: p1 };
 };
@@ -161,11 +164,11 @@ const addUnitCell = (model, basis, ballRadius, stickRadius) => {
   meshes.push(makeStick(stickRadius, 48));
 
   for (const coeffs of cartesian([0, 1], [0, 1], [0, 1])) {
-    const p = ops.times(coeffs, basis);
+    const p = opsF.times(coeffs, basis);
     instances.push({
       meshType: 'cellEdge',
       meshIndex: n,
-      transform: { basis: ops.identityMatrix(3), shift: p },
+      transform: { basis: opsF.identityMatrix(3), shift: p },
       extraShift: [ 0, 0, 0 ]
     });
   }
@@ -173,11 +176,11 @@ const addUnitCell = (model, basis, ballRadius, stickRadius) => {
   for (let i = 0; i < 3; ++i) {
     const [u, v, w] = [basis[i % 3], basis[(i + 1) % 3], basis[(i + 2) % 3]];
 
-    for (const p of [[0, 0, 0], v, w, ops.plus(v, w)]) {
+    for (const p of [[0, 0, 0], v, w, opsF.plus(v, w)]) {
       instances.push({
         meshType: 'cellEdge',
         meshIndex: n + 1,
-        transform: stickTransform(p, ops.plus(p, u), ballRadius, stickRadius),
+        transform: stickTransform(p, opsF.plus(p, u), ballRadius, stickRadius),
         extraShift: [ 0, 0, 0 ]
       });
     }
@@ -196,7 +199,7 @@ export const addTiles = (displayList, selection) => {
     const item = {
       itemType: 'tile',
       latticeIndex,
-      shift: ops.plus(extraShiftCryst, shift)
+      shift: opsF.plus(extraShiftCryst, shift)
     };
     const key = pickler.serialize(item);
 
@@ -232,7 +235,7 @@ export const addCoronas = (displayList, selection) => {
       const item = {
         itemType: 'tile',
         latticeIndex,
-        shift: ops.plus(extraShiftCryst, shift)
+        shift: opsF.plus(extraShiftCryst, shift)
       };
       const key = pickler.serialize(item);
 
@@ -308,7 +311,16 @@ export const removeElements = (displayList, selection) => {
 };
 
 
-const makeNetDisplayList = (graph, shifts) => {
+const coordinateChangeAsFloat = cc => {
+  const tQ = cc.oldToNew;
+  const tF = opsF.affineTransformation(
+    opsQ.toJS(opsQ.linearPart(tQ)), opsQ.toJS(opsQ.shiftPart(tQ)));
+
+  return opsF.coordinateChange(tF);
+};
+
+
+const makeNetDisplayList = (graph, toStdRaw, syms, embedding, shifts) => {
   const itemsSeen = {};
   const result = [];
 
@@ -323,8 +335,8 @@ const makeNetDisplayList = (graph, shifts) => {
   const addNode = (v, shift) => addItem('node', v, shift);
 
   const addEdge = (e, shift) => {
-    if (e.tail < e.head || (e.tail == e.head && ops.sgn(e.shift) < 0))
-      addItem('edge', e.reverse(), ops.plus(shift, e.shift));
+    if (e.tail < e.head || (e.tail == e.head && opsF.sgn(e.shift) < 0))
+      addItem('edge', e.reverse(), opsF.plus(shift, e.shift));
     else
       addItem('edge', e, shift);
   };
@@ -333,15 +345,20 @@ const makeNetDisplayList = (graph, shifts) => {
     for (const edge of graph.edges) {
       addEdge(edge, shift);
       addNode(edge.head, shift);
-      addNode(edge.tail, ops.plus(shift, edge.shift));
+      addNode(edge.tail, opsF.plus(shift, edge.shift));
     }
   }
+
+  const toStd = coordinateChangeAsFloat(toStdRaw);
+  const pos = embedding.positions;
+  const centering = spacegroups.centeringLatticePoints(toStdRaw)
+        .map(v => opsQ.toJS(v));
 
   const adj = periodic.adjacencies(graph);
   for (const { itemType, item, shift } of result) {
     if (itemType == 'node') {
       for (const edge of periodic.allIncidences(graph, item, adj)) {
-        const key = encode(['node', edge.tail, ops.plus(shift, edge.shift)]);
+        const key = encode(['node', edge.tail, opsF.plus(shift, edge.shift)]);
         if (itemsSeen[key])
           addEdge(edge, shift);
       }
@@ -374,7 +391,13 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
     yield log('Constructing an abstract finite subnet...');
-    const displayList = makeNetDisplayList(graph, baseShifts(graph.dim));
+    const displayList = makeNetDisplayList(
+      graph,
+      sgInfo.toStd,
+      syms,
+      embeddings.barycentric,
+      baseShifts(graph.dim)
+    );
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     return {
@@ -409,20 +432,20 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
       const { itemType, item, shift } = displayList[i];
 
       if (itemType == 'node') {
-        const p = ops.times(pos[item], basis);
+        const p = opsF.times(pos[item], basis);
 
         instances.push({
           meshType: 'netVertex',
           meshIndex: 0,
           instanceIndex: i,
-          transform: { basis: ops.identityMatrix(3), shift: p },
+          transform: { basis: opsF.identityMatrix(3), shift: p },
           extraShiftCryst: shift,
-          extraShift: ops.times(shift, basis)
+          extraShift: opsF.times(shift, basis)
         })
       }
       else {
-        const p = ops.times(pos[item.head], basis);
-        const q = ops.times(ops.plus(pos[item.tail], item.shift), basis);
+        const p = opsF.times(pos[item.head], basis);
+        const q = opsF.times(opsF.plus(pos[item.tail], item.shift), basis);
 
         instances.push({
           meshType: 'netEdge',
@@ -430,7 +453,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
           instanceIndex: i,
           transform: stickTransform(p, q, ballRadius, stickRadius),
           extraShiftCryst: shift,
-          extraShift: ops.times(shift, basis)
+          extraShift: opsF.times(shift, basis)
         })
       }
     }
@@ -471,7 +494,7 @@ const convertTile = (tile, centers) => {
   const basis = sym.slice(0, -1);
   const shift = sym.slice(-1)[0];
 
-  const center = ops.plus(ops.times(centers[classIndex], basis), shift);
+  const center = opsF.plus(opsF.times(centers[classIndex], basis), shift);
 
   if (shift.length == 2) {
     for (const v of basis)
@@ -493,7 +516,7 @@ const makeTileDisplayList = (tiles, shifts) => {
   for (const s0 of shifts) {
     for (let latticeIndex = 0; latticeIndex < tiles.length; ++latticeIndex) {
       const c = tiles[latticeIndex].center.slice(0, s0.length);
-      const s = ops.minus(s0, c.map(x => ops.floor(x)));
+      const s = opsF.minus(s0, c.map(x => opsF.floor(x)));
       const shift = [s[0], s[1], s[2] || 0];
 
       result.push({ itemType: 'tile', latticeIndex, shift });
@@ -559,7 +582,7 @@ const makeMeshes = (
   const rawMeshes = yield runJob({
     cmd: 'processSolids',
     val: templates.map(({ pos, faces }) => ({
-      pos: pos.map(v => ops.times(v, basis)),
+      pos: pos.map(v => opsF.times(v, basis)),
       faces,
       isFixed: pos.map(_ => true),
       subDLevel,
@@ -574,15 +597,15 @@ const makeMeshes = (
 
 
 const mapTiles = (tiles, basis, scale) => {
-  const invBasis = ops.inverse(basis);
-  const b1 = ops.times(scale, basis);
-  const b2 = ops.times(1.0 - scale, basis);
+  const invBasis = opsF.inverse(basis);
+  const b1 = opsF.times(scale, basis);
+  const b2 = opsF.times(1.0 - scale, basis);
 
   return tiles.map(tile => {
     const transform = {
-      basis: ops.times(invBasis, ops.times(tile.transform.basis, b1)),
-      shift: ops.plus(ops.times(tile.transform.shift, b1),
-                      ops.times(tile.center, b2))
+      basis: opsF.times(invBasis, opsF.times(tile.transform.basis, b1)),
+      shift: opsF.plus(opsF.times(tile.transform.shift, b1),
+                      opsF.times(tile.center, b2))
     };
 
     return Object.assign({}, tile, { transform });
@@ -611,7 +634,7 @@ const makeTileInstances = (displayList, tiles, partLists, basis) => {
         partIndex: j,
         transform,
         extraShiftCryst: shift,
-        extraShift: ops.times(shift, basis),
+        extraShift: opsF.times(shift, basis),
         neighbors
       });
     }
