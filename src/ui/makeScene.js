@@ -1,17 +1,16 @@
 import * as csp   from 'plexus-csp';
 
-import * as pickler from '../common/pickler';
-import * as util        from '../common/util';
-import * as delaney     from '../dsymbols/delaney';
-import * as properties  from '../dsymbols/properties';
-import * as tilings     from '../dsymbols/tilings';
-import * as lattices    from '../geometry/lattices';
-import * as unitCells   from '../geometry/unitCells';
-import { identifySpacegroup } from '../geometry/spacegroupFinder';
-import * as periodic    from '../pgraphs/periodic';
-import * as netSyms     from '../pgraphs/symmetries';
-import { embeddingData } from '../pgraphs/embeddingData';
-import {subD}           from './surface';
+import * as pickler    from '../common/pickler';
+import * as util       from '../common/util';
+import * as delaney    from '../dsymbols/delaney';
+import * as properties from '../dsymbols/properties';
+import * as tilings    from '../dsymbols/tilings';
+import * as lattices   from '../geometry/lattices';
+import * as unitCells  from '../geometry/unitCells';
+import * as sgFinder   from '../geometry/spacegroupFinder';
+import * as periodic   from '../pgraphs/periodic';
+import * as netSyms    from '../pgraphs/symmetries';
+import {subD}          from './surface';
 
 import { numericalLinearAlgebra } from '../arithmetic/types';
 import { coordinateChangesQ } from '../geometry/types';
@@ -353,10 +352,6 @@ const makeNetDisplayList = (graph, shifts) => {
 };
 
 
-const makeNetDisplayListNew = (graph, toStd, details, shifts) => {
-};
-
-
 const preprocessNet = (structure, runJob, log) => csp.go(
   function*() {
     const t = util.timer();
@@ -375,21 +370,11 @@ const preprocessNet = (structure, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to compute symmetries`);
 
     yield log('Identifying the spacegroup...');
-    const sgInfo = identifySpacegroup(symOps);
+    const sgInfo = sgFinder.identifySpacegroup(symOps);
     console.log(`${Math.round(t())} msec to identify the spacegroup`);
-
-    yield log('Computing embedding details...');
-    for (const key in embeddings) {
-      embeddings[key].details =
-        embeddingData(graph, sgInfo.toStd, syms, embeddings[key]);
-    }
-    console.log(`${Math.round(t())} msec to compute embedding details`);
 
     yield log('Constructing an abstract finite subnet...');
     const displayList = makeNetDisplayList(graph, baseShifts(graph.dim));
-    //const displayList = makeNetDisplayListNew(
-    //  graph, sgInfo.toStd, embedding.barycentric.details, baseShifts(graph.dim)
-    //);
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     return {
