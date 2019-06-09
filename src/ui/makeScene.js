@@ -359,16 +359,6 @@ const makeNetDisplayList = (graph, toStd, syms, shifts) => {
     }
   }
 
-  if (0) {
-    for (const shift of shifts) {
-      for (const edge of graph.edges) {
-        addEdge(edge, shift);
-        addNode(edge.head, shift);
-        addNode(edge.tail, opsF.plus(shift, edge.shift));
-      }
-    }
-  }
-
   const adj = periodic.adjacencies(graph);
   for (const { itemType, item, shift } of result) {
     if (itemType == 'node') {
