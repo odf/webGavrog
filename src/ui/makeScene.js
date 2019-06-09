@@ -316,7 +316,7 @@ const nodesInUnitCell = (graph, pos, syms, toStd, centeringShifts) => {
 
   for (const orbit of netSyms.nodeOrbits(graph, syms)) {
     for (const v of orbit) {
-      const p0 = opsQ.vector(opsQ.modZ(opsQ.times(toStd, opsQ.point(pos[v]))));
+      const p0 = opsQ.times(toStd, pos[v]);
       for (const s of centeringShifts) {
         const p = opsQ.mod(opsQ.plus(p0, s), 1);
         result.push([v, opsQ.minus(p, p0)]);
