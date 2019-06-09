@@ -354,7 +354,7 @@ const makeNetDisplayList = (graph, toStd, syms, shifts) => {
   const fromStd = opsQ.inverse(toStd);
 
   for (const [p, v] of nodesInUnitCell(graph, pos, syms, toStd, centering)) {
-    for (const s of [[0,0,0]] /*shifts*/) {
+    for (const s of shifts) {
       addNode(p, opsQ.toJS(opsQ.times(fromStd, opsQ.plus(s, v))));
     }
   }
