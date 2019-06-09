@@ -311,16 +311,24 @@ export const removeElements = (displayList, selection) => {
 };
 
 
-const coordinateChangeAsFloat = cc => {
-  const tQ = cc.oldToNew;
-  const tF = opsF.affineTransformation(
-    opsQ.toJS(opsQ.linearPart(tQ)), opsQ.toJS(opsQ.shiftPart(tQ)));
+const nodesInUnitCell = (graph, pos, syms, toStd, centeringShifts) => {
+  const result = [];
 
-  return opsF.coordinateChange(tF);
+  for (const orbit of netSyms.nodeOrbits(graph, syms)) {
+    for (const v of orbit) {
+      const p0 = opsQ.vector(opsQ.modZ(opsQ.times(toStd, opsQ.point(pos[v]))));
+      for (const s of centeringShifts) {
+        const p = opsQ.mod(opsQ.plus(p0, s), 1);
+        result.push([v, opsQ.minus(p, p0)]);
+      }
+    }
+  }
+
+  return result;
 };
 
 
-const makeNetDisplayList = (graph, toStdRaw, syms, embedding, shifts) => {
+const makeNetDisplayList = (graph, toStd, syms, shifts) => {
   const itemsSeen = {};
   const result = [];
 
@@ -341,18 +349,25 @@ const makeNetDisplayList = (graph, toStdRaw, syms, embedding, shifts) => {
       addItem('edge', e, shift);
   };
 
-  for (const shift of baseShifts(graph.dim)) {
-    for (const edge of graph.edges) {
-      addEdge(edge, shift);
-      addNode(edge.head, shift);
-      addNode(edge.tail, opsF.plus(shift, edge.shift));
+  const pos= periodic.barycentricPlacement(graph);
+  const centering = spacegroups.centeringLatticePoints(toStd);
+  const fromStd = opsQ.inverse(toStd);
+
+  for (const [p, v] of nodesInUnitCell(graph, pos, syms, toStd, centering)) {
+    for (const s of [[0,0,0]] /*shifts*/) {
+      addNode(p, opsQ.toJS(opsQ.times(fromStd, opsQ.plus(s, v))));
     }
   }
 
-  const toStd = coordinateChangeAsFloat(toStdRaw);
-  const pos = embedding.positions;
-  const centering = spacegroups.centeringLatticePoints(toStdRaw)
-        .map(v => opsQ.toJS(v));
+  if (0) {
+    for (const shift of shifts) {
+      for (const edge of graph.edges) {
+        addEdge(edge, shift);
+        addNode(edge.head, shift);
+        addNode(edge.tail, opsF.plus(shift, edge.shift));
+      }
+    }
+  }
 
   const adj = periodic.adjacencies(graph);
   for (const { itemType, item, shift } of result) {
@@ -395,7 +410,6 @@ const preprocessNet = (structure, runJob, log) => csp.go(
       graph,
       sgInfo.toStd,
       syms,
-      embeddings.barycentric,
       baseShifts(graph.dim)
     );
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
@@ -413,7 +427,7 @@ const preprocessNet = (structure, runJob, log) => csp.go(
 
 const makeNetModel = (data, options, runJob, log) => csp.go(
   function*() {
-    const { graph, embeddings, displayList } = data;
+    const { graph, sgInfo, embeddings, displayList } = data;
 
     const embedding =
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
@@ -461,8 +475,12 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
 
     yield log('Done making the net model.');
 
-    const model = { meshes, instances };
-    return addUnitCell(model, lattices.reducedLatticeBasis(basis), 0.01, 0.01);
+    const fromStd = opsQ.inverse(sgInfo.toStd);
+    const cellBasis = [[1,0,0], [0,1,0], [0,0,1]].map(
+      v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), basis)
+    );
+
+    return addUnitCell({ meshes, instances }, cellBasis, 0.01, 0.01);
   }
 );
 
