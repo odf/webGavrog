@@ -695,12 +695,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     displayList, mappedTiles, partLists, basis
   );
 
-  return addUnitCell(
-    { meshes: subMeshes, instances },
-    lattices.reducedLatticeBasis(basis),
-    0.01,
-    0.01
-  );
+  return { meshes: subMeshes, instances };
 });
 
 
