@@ -25,7 +25,7 @@ const encode = pickler.serialize;
 const decode = pickler.deserialize;
 
 
-const range = n => [...Array(n).keys()];
+const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
 const normalized = v => opsF.div(v, opsF.norm(v));
 const asVec3 = v => [v[0], v[1], v[2] || 0];
 
@@ -104,15 +104,15 @@ const makeStick = (radius, segments) => {
   const n = segments;
   const a = Math.PI * 2 / n;
 
-  const bottom = range(n).map(i => [
+  const bottom = range(0, n).map(i => [
     Math.cos(a * i) * radius, Math.sin(a * i) * radius, 0
   ]);
-  const top = range(n).map(i => [
+  const top = range(0, n).map(i => [
     Math.cos(a * i) * radius, Math.sin(a * i) * radius, 1
   ]);
   const vertices = [].concat(bottom, top);
 
-  const faces = range(n).map(i => {
+  const faces = range(0, n).map(i => {
     const j = (i + 1) % n;
     return [i, j, j+n, i+n];
   });
@@ -150,8 +150,8 @@ const cartesian = (...vs) => (
 
 
 const baseShifts = dim => dim == 3 ?
-  cartesian([0, 1], [0, 1], [0, 1]) :
-  cartesian(range(6), range(6));
+      cartesian([0, 1], [0, 1], [0, 1]) :
+      cartesian(range(-2, 3), range(-2, 3));
 
 
 const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
@@ -701,7 +701,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
 
     embedding[key] = dim == 2 ?
-      { subMeshes: meshes, partLists: range(meshes.length).map(i => [i]) } :
+      { subMeshes: meshes, partLists: range(0, meshes.length).map(i => [i]) } :
       splitMeshes(meshes, faceLabelLists);
   }
 
