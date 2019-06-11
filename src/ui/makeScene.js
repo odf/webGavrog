@@ -27,6 +27,7 @@ const decode = pickler.deserialize;
 
 const range = n => [...Array(n).keys()];
 const normalized = v => opsF.div(v, opsF.norm(v));
+const asVec3 = v => [v[0], v[1], v[2] || 0];
 
 
 const geometry = (vertsIn, faces) => {
@@ -153,7 +154,7 @@ const baseShifts = dim => dim == 3 ?
   cartesian(range(6), range(6));
 
 
-const addUnitCell = (model, basis, ballRadius, stickRadius) => {
+const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
   stickRadius += 0.001;
 
   const meshes = model.meshes.slice();
@@ -163,24 +164,39 @@ const addUnitCell = (model, basis, ballRadius, stickRadius) => {
   meshes.push(makeBall(ballRadius));
   meshes.push(makeStick(stickRadius, 48));
 
-  for (const coeffs of cartesian([0, 1], [0, 1], [0, 1])) {
-    const p = opsF.times(coeffs, basis);
+  const dim = basis.length;
+  const corners = dim == 3 ?
+        cartesian([0, 1], [0, 1], [0, 1]) :
+        cartesian([0, 1], [0, 1]);
+
+  for (const coeffs of corners) {
+    const p = opsF.plus(origin, opsF.times(coeffs, basis));
     instances.push({
       meshType: 'cellEdge',
       meshIndex: n,
-      transform: { basis: opsF.identityMatrix(3), shift: p },
+      transform: { basis: opsF.identityMatrix(3), shift: asVec3(p) },
       extraShift: [ 0, 0, 0 ]
     });
   }
 
-  for (let i = 0; i < 3; ++i) {
-    const [u, v, w] = [basis[i % 3], basis[(i + 1) % 3], basis[(i + 2) % 3]];
+  for (let i = 0; i < dim; ++i) {
+    const [u, v, w] = [
+      basis[i % dim], basis[(i + 1) % dim], basis[(i + 2) % dim]
+    ];
+    const startPoints = dim == 3 ?
+          [[0, 0, 0], v, w, opsF.plus(v, w)] :
+          [[0, 0], v];
 
-    for (const p of [[0, 0, 0], v, w, opsF.plus(v, w)]) {
+    for (const p0 of startPoints) {
+      const p = opsF.plus(origin, p0);
+      const transform = stickTransform(
+        asVec3(p), asVec3(opsF.plus(p, u)), ballRadius, stickRadius
+      );
+
       instances.push({
         meshType: 'cellEdge',
         meshIndex: n + 1,
-        transform: stickTransform(p, opsF.plus(p, u), ballRadius, stickRadius),
+        transform,
         extraShift: [ 0, 0, 0 ]
       });
     }
@@ -442,22 +458,25 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
           meshType: 'netVertex',
           meshIndex: 0,
           instanceIndex: i,
-          transform: { basis: opsF.identityMatrix(3), shift: p },
-          extraShiftCryst: shift,
-          extraShift: opsF.times(shift, basis)
+          transform: { basis: opsF.identityMatrix(3), shift: asVec3(p) },
+          extraShiftCryst: asVec3(shift),
+          extraShift: asVec3(opsF.times(shift, basis))
         })
       }
       else {
         const p = opsF.times(pos[item.head], basis);
         const q = opsF.times(opsF.plus(pos[item.tail], item.shift), basis);
+        const transform = stickTransform(
+          asVec3(p), asVec3(q), ballRadius, stickRadius
+        );
 
         instances.push({
           meshType: 'netEdge',
           meshIndex: 1,
           instanceIndex: i,
-          transform: stickTransform(p, q, ballRadius, stickRadius),
-          extraShiftCryst: shift,
-          extraShift: opsF.times(shift, basis)
+          transform,
+          extraShiftCryst: asVec3(shift),
+          extraShift: asVec3(opsF.times(shift, basis))
         })
       }
     }
@@ -466,11 +485,12 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     yield log('Done making the net model.');
 
     const fromStd = opsQ.inverse(sgInfo.toStd);
-    const cellBasis = [[1,0,0], [0,1,0], [0,0,1]].map(
+    const cellBasis = opsQ.identityMatrix(graph.dim).map(
       v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), basis)
     );
+    const origin = opsQ.vector(graph.dim);
 
-    return addUnitCell({ meshes, instances }, cellBasis, 0.01, 0.01);
+    return addUnitCell({ meshes, instances }, cellBasis, origin, 0.01, 0.01);
   }
 );
 
