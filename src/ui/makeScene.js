@@ -359,8 +359,8 @@ const makeNetDisplayList = (graph, toStd, syms, shifts) => {
   const addNode = (v, shift) => addItem('node', v, shift);
 
   const addEdge = (e, shift) => {
-    if (e.tail < e.head || (e.tail == e.head && opsF.sgn(e.shift) < 0))
-      addItem('edge', e.reverse(), opsF.plus(shift, e.shift));
+    if (e.tail < e.head || (e.tail == e.head && opsQ.sgn(e.shift) < 0))
+      addItem('edge', e.reverse(), opsQ.plus(shift, e.shift));
     else
       addItem('edge', e, shift);
   };
@@ -371,7 +371,7 @@ const makeNetDisplayList = (graph, toStd, syms, shifts) => {
 
   for (const [p, v] of nodesInUnitCell(graph, pos, syms, toStd, centering)) {
     for (const s of shifts) {
-      addNode(p, opsQ.toJS(opsQ.times(fromStd, opsQ.plus(s, v))));
+      addNode(p, opsQ.times(fromStd, opsQ.plus(s, v)));
     }
   }
 
@@ -379,7 +379,7 @@ const makeNetDisplayList = (graph, toStd, syms, shifts) => {
   for (const { itemType, item, shift } of result) {
     if (itemType == 'node') {
       for (const edge of periodic.allIncidences(graph, item, adj)) {
-        const key = encode(['node', edge.tail, opsF.plus(shift, edge.shift)]);
+        const key = encode(['node', edge.tail, opsQ.plus(shift, edge.shift)]);
         if (itemsSeen[key])
           addEdge(edge, shift);
       }
@@ -449,7 +449,8 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     const instances = [];
 
     for (let i = 0; i < displayList.length; ++i) {
-      const { itemType, item, shift } = displayList[i];
+      const { itemType, item, shift: shiftRaw } = displayList[i];
+      const shift = opsQ.toJS(shiftRaw);
 
       if (itemType == 'node') {
         const p = opsF.times(pos[item], basis);
