@@ -489,7 +489,10 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     const cellBasis = opsQ.identityMatrix(graph.dim).map(
       v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), basis)
     );
-    const origin = opsQ.vector(graph.dim);
+    const o = opsQ.origin(graph.dim);
+    const origin = graph.dim == 3 ?
+          opsQ.vector(o) :
+          opsF.times(opsQ.toJS(opsQ.vector(opsQ.times(fromStd, o))), basis);
 
     return addUnitCell({ meshes, instances }, cellBasis, origin, 0.01, 0.01);
   }
