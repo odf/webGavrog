@@ -15,6 +15,7 @@ import Json.Decode as Decode
 type alias Config a =
     { minimum : Float
     , maximum : Float
+    , step : Maybe Float
     , widthPx : Int
     , heightPx : Int
     , thumbColor : Element.Color
@@ -142,10 +143,20 @@ format decimals value =
     sign ++ head ++ "." ++ tail
 
 
+roundTo : Maybe Float -> Float -> Float
+roundTo step val =
+    case step of
+        Just s ->
+            s * toFloat (round (val / s))
+
+        Nothing ->
+            val
+
+
 view : (Float -> msg) -> Config msg -> Float -> Element.Element msg
 view toMsg config value =
     let
-        { widthPx, heightPx, minimum, maximum } =
+        { widthPx, heightPx, minimum, maximum, step } =
             config
 
         positionToValue pos =
@@ -153,6 +164,7 @@ view toMsg config value =
                 |> clamp 0.0 1.0
                 |> (*) (maximum - minimum)
                 |> (+) minimum
+                |> roundTo step
 
         valueToPosition val =
             ((val - minimum) / (maximum - minimum))

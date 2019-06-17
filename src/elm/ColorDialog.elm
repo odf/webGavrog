@@ -87,6 +87,7 @@ view toMsg color includeAlpha =
                 (updateColor color >> toMsg)
                 { minimum = 0.0
                 , maximum = 1.0
+                , step = Nothing
                 , widthPx = 200
                 , heightPx = 24
                 , thumbColor = toElementColor icolor

@@ -1244,6 +1244,7 @@ defaultValueSliderConfig : ValueSlider.Config msg
 defaultValueSliderConfig =
     { minimum = 0.0
     , maximum = 1.0
+    , step = Nothing
     , widthPx = 200
     , heightPx = 18
     , thumbColor = Element.rgb 0.0 0.0 0.0
