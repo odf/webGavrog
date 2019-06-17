@@ -13,7 +13,9 @@ import Json.Decode as Decode
 
 
 type alias Config a =
-    { widthPx : Int
+    { minimum : Float
+    , maximum : Float
+    , widthPx : Int
     , heightPx : Int
     , thumbColor : Element.Color
     , background : Maybe (Element.Element a)
@@ -141,14 +143,25 @@ format decimals value =
 
 
 view : (Float -> msg) -> Config msg -> Float -> Element.Element msg
-view toMsg { widthPx, heightPx, thumbColor, background } value =
+view toMsg config value =
     let
-        newValue x =
-            clamp 0.0 1.0 <| toFloat (x - 16) / toFloat widthPx
+        { widthPx, heightPx, minimum, maximum } =
+            config
+
+        positionToValue pos =
+            (toFloat pos / toFloat widthPx)
+                |> clamp 0.0 1.0
+                |> (*) (maximum - minimum)
+                |> (+) minimum
+
+        valueToPosition val =
+            ((val - minimum) / (maximum - minimum))
+                |> clamp 0.0 1.0
+                |> (*) (toFloat widthPx)
 
         handleMouse { x } { left } =
             if left then
-                toMsg <| newValue x
+                toMsg <| positionToValue (x - 16)
 
             else
                 toMsg value
@@ -156,7 +169,7 @@ view toMsg { widthPx, heightPx, thumbColor, background } value =
         handleTouch posList =
             case posList of
                 pos :: _ ->
-                    toMsg <| newValue pos.x
+                    toMsg <| positionToValue (pos.x - 16)
 
                 _ ->
                     toMsg value
@@ -174,9 +187,9 @@ view toMsg { widthPx, heightPx, thumbColor, background } value =
                 , Element.paddingXY 16 0
                 ]
                 (viewContent
-                    (value * toFloat widthPx)
-                    thumbColor
-                    (Maybe.withDefault defaultBackground background)
+                    (valueToPosition value)
+                    config.thumbColor
+                    (Maybe.withDefault defaultBackground config.background)
                 )
             )
         , Element.text <| format 3 value

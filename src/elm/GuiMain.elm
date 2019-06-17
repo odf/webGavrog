@@ -1242,7 +1242,9 @@ rotateBy axis angle model =
 
 defaultValueSliderConfig : ValueSlider.Config msg
 defaultValueSliderConfig =
-    { widthPx = 200
+    { minimum = 0.0
+    , maximum = 1.0
+    , widthPx = 200
     , heightPx = 18
     , thumbColor = Element.rgb 0.0 0.0 0.0
     , background = Nothing
