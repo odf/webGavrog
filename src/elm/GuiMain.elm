@@ -1240,6 +1240,15 @@ rotateBy axis angle model =
 -- VIEW
 
 
+defaultValueSliderConfig : ValueSlider.Config msg
+defaultValueSliderConfig =
+    { widthPx = 200
+    , heightPx = 18
+    , thumbColor = Element.rgb 0.0 0.0 0.0
+    , background = Nothing
+    }
+
+
 convertColor : ColorDialog.Color -> Vec3
 convertColor { hue, saturation, lightness, alpha } =
     let
@@ -1678,17 +1687,13 @@ viewDisplaySettings toMsg settings =
             (Element.text "Fade To Background (Haze)")
         , ValueSlider.view
             (\value -> toMsg { settings | fadeToBackground = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.fadeToBackground
         , Element.el []
             (Element.text "Fade To Blue (Color Perspective)")
         , ValueSlider.view
             (\value -> toMsg { settings | fadeToBlue = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.fadeToBlue
         , viewSeparator
         , Input.checkbox []
@@ -1740,17 +1745,13 @@ viewNetSettings toMsg settings =
             (Element.text "Vertex Radius")
         , ValueSlider.view
             (\value -> toMsg { settings | vertexRadius = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.vertexRadius
         , Element.el []
             (Element.text "Edge Radius")
         , ValueSlider.view
             (\value -> toMsg { settings | edgeRadius = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.edgeRadius
         ]
 
@@ -1806,18 +1807,14 @@ viewTilingSettings toMsg settings =
             (Element.text "Edge/Bevel Width")
         , ValueSlider.view
             (\value -> toMsg { settings | edgeWidth = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.edgeWidth
         , viewSeparator
         , Element.el []
             (Element.text "Tile Scale")
         , ValueSlider.view
             (\value -> toMsg { settings | tileScale = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.tileScale
         , viewSeparator
         , viewColorInput
@@ -1886,18 +1883,14 @@ viewTiling2dSettings toMsg settings =
             (Element.text "Edge/Bevel Width")
         , ValueSlider.view
             (\value -> toMsg { settings | edgeWidth = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.edgeWidth
         , viewSeparator
         , Element.el []
             (Element.text "Tile Scale")
         , ValueSlider.view
             (\value -> toMsg { settings | tileScale = value })
-            { widthPx = 200, heightPx = 18 }
-            (Element.rgb 0.0 0.0 0.0)
-            Nothing
+            defaultValueSliderConfig
             settings.tileScale
         , viewSeparator
         , viewColorInput

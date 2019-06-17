@@ -85,9 +85,11 @@ view toMsg color includeAlpha =
         makeSlider updateColor value icolor colors =
             ValueSlider.view
                 (updateColor color >> toMsg)
-                { widthPx = 200, heightPx = 24 }
-                (toElementColor icolor)
-                (Just <| colorField colors)
+                { widthPx = 200
+                , heightPx = 24
+                , thumbColor = toElementColor icolor
+                , background = Just <| colorField colors
+                }
                 value
 
         hueSlider =

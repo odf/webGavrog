@@ -1,4 +1,4 @@
-module ValueSlider exposing (view)
+module ValueSlider exposing (Config, view)
 
 import Bitwise
 import DOM
@@ -12,9 +12,11 @@ import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 
 
-type alias Size =
+type alias Config a =
     { widthPx : Int
     , heightPx : Int
+    , thumbColor : Element.Color
+    , background : Maybe (Element.Element a)
     }
 
 
@@ -138,14 +140,8 @@ format decimals value =
     sign ++ head ++ "." ++ tail
 
 
-view :
-    (Float -> msg)
-    -> Size
-    -> Element.Color
-    -> Maybe (Element.Element msg)
-    -> Float
-    -> Element.Element msg
-view toMsg { widthPx, heightPx } thumbColor background value =
+view : (Float -> msg) -> Config msg -> Float -> Element.Element msg
+view toMsg { widthPx, heightPx, thumbColor, background } value =
     let
         newValue x =
             clamp 0.0 1.0 <| toFloat (x - 16) / toFloat widthPx
