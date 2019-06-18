@@ -16,6 +16,7 @@ type alias Config a =
     { minimum : Float
     , maximum : Float
     , step : Maybe Float
+    , precision : Int
     , widthPx : Int
     , heightPx : Int
     , thumbColor : Element.Color
@@ -119,10 +120,10 @@ defaultBackground =
 
 
 format : Int -> Float -> String
-format decimals value =
+format precision value =
     let
         base =
-            10 ^ decimals
+            10 ^ precision
 
         sign =
             if value < 0 then
@@ -140,7 +141,11 @@ format decimals value =
         tail =
             String.fromInt (remainderBy base n + base) |> String.dropLeft 1
     in
-    sign ++ head ++ "." ++ tail
+    if precision > 0 then
+        sign ++ head ++ "." ++ tail
+
+    else
+        sign ++ head
 
 
 roundTo : Maybe Float -> Float -> Float
@@ -204,7 +209,7 @@ view toMsg config value =
                     (Maybe.withDefault defaultBackground config.background)
                 )
             )
-        , Element.text <| format 3 value
+        , Element.text <| format config.precision value
         ]
 
 

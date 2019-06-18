@@ -149,9 +149,21 @@ const cartesian = (...vs) => (
 );
 
 
-const baseShifts = dim => dim == 3 ?
-      cartesian([0, 1], [0, 1], [0, 1]) :
-      cartesian(range(-2, 3), range(-2, 3));
+const centeredRange = n =>
+      range(Math.floor(n/2) - n + 1, Math.floor(n/2) + 1);
+
+
+const baseShifts = (dim, options) => dim == 3 ?
+      cartesian(
+        centeredRange(options.xExtent3d || 2),
+        centeredRange(options.yExtent3d || 2),
+        centeredRange(options.zExtent3d || 2)
+      )
+      :
+      cartesian(
+        centeredRange(options.xExtent2d || 5),
+        centeredRange(options.yExtent2d || 5)
+      );
 
 
 const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
@@ -390,7 +402,7 @@ const makeNetDisplayList = (graph, toStd, syms, shifts) => {
 };
 
 
-const preprocessNet = (structure, runJob, log) => csp.go(
+const preprocessNet = (structure, options, runJob, log) => csp.go(
   function*() {
     const t = util.timer();
 
@@ -416,7 +428,7 @@ const preprocessNet = (structure, runJob, log) => csp.go(
       graph,
       sgInfo.toStd,
       syms,
-      baseShifts(graph.dim)
+      baseShifts(graph.dim, options)
     );
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
@@ -494,7 +506,12 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
           opsQ.vector(o) :
           opsF.times(opsQ.toJS(opsQ.vector(opsQ.times(fromStd, o))), basis);
 
-    return addUnitCell({ meshes, instances }, cellBasis, origin, 0.01, 0.01);
+    const model = { meshes, instances };
+
+    if (options.showUnitCell)
+      return addUnitCell(model, cellBasis, origin, 0.01, 0.01);
+    else
+      return model;
   }
 );
 
@@ -559,7 +576,7 @@ const makeTileDisplayList = (tiles, shifts) => {
 };
 
 
-const preprocessTiling = (structure, runJob, log) => csp.go(
+const preprocessTiling = (structure, options, runJob, log) => csp.go(
   function*() {
     const t = util.timer();
 
@@ -585,7 +602,7 @@ const preprocessTiling = (structure, runJob, log) => csp.go(
 
     const centers = rawCenters.map(v => opsQ.toJS(v));
     const tiles = rawTiles.map(tile => convertTile(tile, centers));
-    const displayList = makeTileDisplayList(tiles, baseShifts(dim));
+    const displayList = makeTileDisplayList(tiles, baseShifts(dim, options));
 
     yield log('Computing an embedding...');
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
@@ -739,7 +756,7 @@ const builders = {
 };
 
 
-export const preprocess = (structure, runJob, log) => csp.go(
+export const preprocess = (structure, options, runJob, log) => csp.go(
   function*() {
     const type = structure.type;
     const preprocessor = preprocessors[type];
@@ -747,7 +764,7 @@ export const preprocess = (structure, runJob, log) => csp.go(
     if (preprocessor == null)
       throw new Error(`preprocessing not implemented for type ${type}`);
 
-    const result = yield preprocessor(structure, runJob, log);
+    const result = yield preprocessor(structure, options, runJob, log);
 
     yield log('');
     return result;

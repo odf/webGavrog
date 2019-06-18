@@ -88,6 +88,7 @@ view toMsg color includeAlpha =
                 { minimum = 0.0
                 , maximum = 1.0
                 , step = Nothing
+                , precision = 3
                 , widthPx = 200
                 , heightPx = 24
                 , thumbColor = toElementColor icolor

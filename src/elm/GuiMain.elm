@@ -78,6 +78,7 @@ type Action
     | CenterScene
     | ViewAlong ViewAxis
     | OpenDisplayDialog
+    | OpenSceneDialog
     | OpenNetDialog
     | OpenTilingDialog
     | OpenTiling2dDialog
@@ -99,6 +100,7 @@ type Msg
     | TextDialogInput String
     | TextDialogSubmit String Bool
     | UpdateDisplaySettings DisplaySettings
+    | UpdateSceneSettings SceneSettings
     | UpdateNetSettings NetSettings
     | UpdateTilingSettings TilingSettings
     | UpdateTiling2dSettings Tiling2dSettings
@@ -202,6 +204,7 @@ type Dialog
     | TextDialog TextBoxConfig String
     | About
     | DisplaySettingsDialog
+    | SceneSettingsDialog
     | NetSettingsDialog
     | TilingSettingsDialog
     | Tiling2dSettingsDialog
@@ -218,6 +221,16 @@ type alias DisplaySettings =
     , editOutlineColor : Bool
     , outlineColor : ColorDialog.Color
     , showSurfaceMesh : Bool
+    }
+
+
+type alias SceneSettings =
+    { showUnitCell : Bool
+    , xExtent2d : Int
+    , yExtent2d : Int
+    , xExtent3d : Int
+    , yExtent3d : Int
+    , zExtent3d : Int
     }
 
 
@@ -265,6 +278,7 @@ type alias Model =
     , timestamp : String
     , dialogStack : List Dialog
     , displaySettings : DisplaySettings
+    , sceneSettings : SceneSettings
     , netSettings : NetSettings
     , tilingSettings : TilingSettings
     , tiling2dSettings : Tiling2dSettings
@@ -297,6 +311,14 @@ init flags =
             , useSeparateOutlineColor = False
             , editOutlineColor = False
             , outlineColor = Color.toHsla Color.white
+            }
+      , sceneSettings =
+            { showUnitCell = False
+            , xExtent2d = 5
+            , yExtent2d = 5
+            , xExtent3d = 2
+            , yExtent3d = 2
+            , zExtent3d = 2
             }
       , netSettings =
             { vertexRadius = 0.1
@@ -424,6 +446,9 @@ actionLabel action =
 
         OpenDisplayDialog ->
             "Display Settings..."
+
+        OpenSceneDialog ->
+            "Scene Settings...."
 
         OpenNetDialog ->
             "Net Settings..."
@@ -595,6 +620,7 @@ mainMenuConfig =
     , makeMenuEntry <| EnterSubMenu "Selection" contextMenuConfig
     , Menu.Separator
     , makeMenuEntry OpenDisplayDialog
+    , makeMenuEntry OpenSceneDialog
     , makeMenuEntry OpenNetDialog
     , makeMenuEntry OpenTilingDialog
     , makeMenuEntry OpenTiling2dDialog
@@ -755,6 +781,29 @@ update msg model =
 
         UpdateDisplaySettings settings ->
             ( { model | displaySettings = settings }, Cmd.none )
+
+        UpdateSceneSettings settings ->
+            if settings /= model.sceneSettings then
+                let
+                    options =
+                        [ ( "showUnitCell", Encode.bool settings.showUnitCell )
+                        , ( "xExtent2d", Encode.int settings.xExtent2d )
+                        , ( "yExtent2d", Encode.int settings.yExtent2d )
+                        , ( "xExtent3d", Encode.int settings.xExtent3d )
+                        , ( "yExtent3d", Encode.int settings.yExtent3d )
+                        , ( "zExtent3d", Encode.int settings.zExtent3d )
+                        ]
+                in
+                ( { model | sceneSettings = settings }
+                , toJS <|
+                    Encode.object
+                        [ ( "mode", Encode.string "options" )
+                        , ( "options", Encode.object options )
+                        ]
+                )
+
+            else
+                ( { model | sceneSettings = settings }, Cmd.none )
 
         UpdateNetSettings settings ->
             if settings /= model.netSettings then
@@ -977,6 +1026,11 @@ executeAction action model =
 
         OpenDisplayDialog ->
             ( { model | dialogStack = [ DisplaySettingsDialog ] }
+            , Cmd.none
+            )
+
+        OpenSceneDialog ->
+            ( { model | dialogStack = [ SceneSettingsDialog ] }
             , Cmd.none
             )
 
@@ -1245,6 +1299,7 @@ defaultValueSliderConfig =
     { minimum = 0.0
     , maximum = 1.0
     , step = Nothing
+    , precision = 3
     , widthPx = 200
     , heightPx = 18
     , thumbColor = Element.rgb 0.0 0.0 0.0
@@ -1467,6 +1522,10 @@ viewCurrentDialog model =
             wrap <|
                 viewDisplaySettings UpdateDisplaySettings model.displaySettings
 
+        SceneSettingsDialog :: _ ->
+            wrap <|
+                viewSceneSettings UpdateSceneSettings model.sceneSettings
+
         NetSettingsDialog :: _ ->
             wrap <|
                 viewNetSettings UpdateNetSettings model.netSettings
@@ -1654,7 +1713,7 @@ viewDisplaySettings toMsg settings =
                 (Element.text "Display Settings")
             , Element.el
                 [ Element.alignRight
-                , Element.Events.onClick (RunAction OpenNetDialog)
+                , Element.Events.onClick (RunAction OpenSceneDialog)
                 , Element.pointer
                 ]
                 (Styling.makeIcon "►")
@@ -1708,6 +1767,74 @@ viewDisplaySettings toMsg settings =
         ]
 
 
+viewSceneSettings :
+    (SceneSettings -> Msg)
+    -> SceneSettings
+    -> Element.Element Msg
+viewSceneSettings toMsg settings =
+    let
+        extentSliderConfig n =
+            { defaultValueSliderConfig
+                | minimum = 1.0
+                , maximum = toFloat n
+                , step = Just 1.0
+                , precision = 0
+            }
+    in
+    Element.column
+        [ Element.spacing 12 ]
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.alignLeft
+                , Element.Events.onClick (RunAction OpenDisplayDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "◄")
+            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
+                (Element.text "Scene Settings")
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick (RunAction OpenNetDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "►")
+            ]
+        , viewSeparator
+        , Input.checkbox []
+            { onChange = \onOff -> toMsg { settings | showUnitCell = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.showUnitCell
+            , label = Input.labelRight [] <| Element.text "Show Unit Cell"
+            }
+        , viewSeparator
+        , Element.el [ Element.paddingXY 0 8 ]
+            (Element.text "2D Structure Extent (X, Y)")
+        , ValueSlider.view
+            (\value -> toMsg { settings | xExtent2d = round value })
+            (extentSliderConfig 9)
+            (toFloat settings.xExtent2d)
+        , ValueSlider.view
+            (\value -> toMsg { settings | yExtent2d = round value })
+            (extentSliderConfig 9)
+            (toFloat settings.yExtent2d)
+        , viewSeparator
+        , Element.el [ Element.paddingXY 0 8 ]
+            (Element.text "3D Structure Extent (X, Y, Z)")
+        , ValueSlider.view
+            (\value -> toMsg { settings | xExtent3d = round value })
+            (extentSliderConfig 5)
+            (toFloat settings.xExtent3d)
+        , ValueSlider.view
+            (\value -> toMsg { settings | yExtent3d = round value })
+            (extentSliderConfig 5)
+            (toFloat settings.yExtent3d)
+        , ValueSlider.view
+            (\value -> toMsg { settings | zExtent3d = round value })
+            (extentSliderConfig 5)
+            (toFloat settings.zExtent3d)
+        ]
+
+
 viewNetSettings : (NetSettings -> Msg) -> NetSettings -> Element.Element Msg
 viewNetSettings toMsg settings =
     Element.column
@@ -1715,7 +1842,7 @@ viewNetSettings toMsg settings =
         [ Element.row [ Element.width Element.fill ]
             [ Element.el
                 [ Element.alignLeft
-                , Element.Events.onClick (RunAction OpenDisplayDialog)
+                , Element.Events.onClick (RunAction OpenSceneDialog)
                 , Element.pointer
                 ]
                 (Styling.makeIcon "◄")
