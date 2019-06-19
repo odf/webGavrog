@@ -201,6 +201,33 @@ const updateDisplayList = (config, model, selected, update) => csp.go(
 );
 
 
+const freshDisplayList = (config, model, options) => csp.go(
+  function*() {
+    try {
+      const makeDL = model.data.type == 'tiling' ?
+            makeScene.makeTileDisplayList :
+            makeScene.makeNetDisplayList;
+
+      const displayList = makeDL(model.data, options);
+
+      const data = Object.assign({}, model.data, { displayList });
+      const scene = yield makeScene.makeScene(
+        data, model.options, callWorker, config.log
+      );
+
+      yield config.sendScene(scene, model.data.dim, false);
+
+      const newOptions = Object.assign({}, model.options, options);
+      return Object.assign({}, model, { data, scene, options: newOptions });
+    } catch (ex) {
+      console.error(ex);
+      yield config.log(`ERROR updating scene!!!`);
+      return model;
+    }
+  }
+);
+
+
 const newFile = (config, model, { file, data }) => csp.go(function*() {
   try {
     const filename = file.name;
@@ -327,6 +354,9 @@ const render = domNode => {
     )),
     ['Remove Element(s)']: (selected) => updateModel(updateDisplayList(
       config, model, selected, makeScene.removeElements
+    )),
+    ['Fresh Display List']: (_, options) => updateModel(freshDisplayList(
+      config, model, options
     ))
   };
 
