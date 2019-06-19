@@ -783,24 +783,45 @@ update msg model =
             ( { model | displaySettings = settings }, Cmd.none )
 
         UpdateSceneSettings settings ->
-            if settings /= model.sceneSettings then
-                let
-                    options =
-                        [ ( "showUnitCell", Encode.bool settings.showUnitCell )
-                        , ( "xExtent2d", Encode.int settings.xExtent2d )
-                        , ( "yExtent2d", Encode.int settings.yExtent2d )
-                        , ( "xExtent3d", Encode.int settings.xExtent3d )
-                        , ( "yExtent3d", Encode.int settings.yExtent3d )
-                        , ( "zExtent3d", Encode.int settings.zExtent3d )
-                        ]
-                in
-                ( { model | sceneSettings = settings }
-                , toJS <|
-                    Encode.object
-                        [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.object options )
-                        ]
-                )
+            let
+                oldSettings =
+                    model.sceneSettings
+            in
+            if settings /= oldSettings then
+                if settings.showUnitCell /= oldSettings.showUnitCell then
+                    let
+                        options =
+                            [ ( "showUnitCell"
+                              , Encode.bool settings.showUnitCell
+                              )
+                            ]
+                    in
+                    ( { model | sceneSettings = settings }
+                    , toJS <|
+                        Encode.object
+                            [ ( "mode", Encode.string "options" )
+                            , ( "options", Encode.object options )
+                            ]
+                    )
+
+                else
+                    let
+                        options =
+                            [ ( "xExtent2d", Encode.int settings.xExtent2d )
+                            , ( "yExtent2d", Encode.int settings.yExtent2d )
+                            , ( "xExtent3d", Encode.int settings.xExtent3d )
+                            , ( "yExtent3d", Encode.int settings.yExtent3d )
+                            , ( "zExtent3d", Encode.int settings.zExtent3d )
+                            ]
+                    in
+                    ( { model | sceneSettings = settings }
+                    , toJS <|
+                        Encode.object
+                            [ ( "mode", Encode.string "action" )
+                            , ( "text", Encode.string "Fresh Display List" )
+                            , ( "options", Encode.object options )
+                            ]
+                    )
 
             else
                 ( { model | sceneSettings = settings }, Cmd.none )
