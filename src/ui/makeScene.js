@@ -354,7 +354,7 @@ const nodesInUnitCell = (graph, pos, toStd, centeringShifts) => {
 };
 
 
-export const makeNetDisplayList = (data, options) => {
+const makeNetDisplayList = (data, options) => {
   const { graph, sgInfo } = data;
   const { toStd } = sgInfo;
   const shifts = baseShifts(graph.dim, options);
@@ -557,7 +557,7 @@ const convertTile = (tile, centers) => {
 };
 
 
-export const makeTileDisplayList = (data, options) => {
+const makeTileDisplayList = (data, options) => {
   const { tiles, dim } = data;
   const shifts = baseShifts(dim, options);
   const result = [];
@@ -748,7 +748,15 @@ const preprocessors = {
 };
 
 
-const builders = {
+const displayListBuilders = {
+  tiling        : makeTileDisplayList,
+  periodic_graph: makeNetDisplayList,
+  net           : makeNetDisplayList,
+  crystal       : makeNetDisplayList
+};
+
+
+const sceneBuilders = {
   tiling        : makeTilingModel,
   periodic_graph: makeNetModel,
   net           : makeNetModel,
@@ -772,10 +780,21 @@ export const preprocess = (structure, options, runJob, log) => csp.go(
 );
 
 
+export const makeDisplayList = (data, options, runJob, log) => csp.go(
+  function*() {
+    yield log('building fresh display list');
+    const result = displayListBuilders[data.type](data, options);
+
+    yield log('');
+    return result;
+  }
+);
+
+
 export const makeScene = (data, options, runJob, log) => csp.go(
   function*() {
     const type = data.type;
-    const builder = builders[type];
+    const builder = sceneBuilders[type];
 
     if (builder == null)
       throw new Error(`rendering not implemented for type ${type}`);

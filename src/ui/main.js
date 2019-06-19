@@ -204,11 +204,9 @@ const updateDisplayList = (config, model, selected, update) => csp.go(
 const freshDisplayList = (config, model, options) => csp.go(
   function*() {
     try {
-      const makeDL = model.data.type == 'tiling' ?
-            makeScene.makeTileDisplayList :
-            makeScene.makeNetDisplayList;
-
-      const displayList = makeDL(model.data, options);
+      const displayList = yield makeScene.makeDisplayList(
+        model.data, options, callWorker, config.log
+      );
 
       const data = Object.assign({}, model.data, { displayList });
       const scene = yield makeScene.makeScene(
