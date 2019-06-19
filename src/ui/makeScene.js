@@ -339,16 +339,14 @@ export const removeElements = (displayList, selection) => {
 };
 
 
-const nodesInUnitCell = (graph, pos, syms, toStd, centeringShifts) => {
+const nodesInUnitCell = (graph, pos, toStd, centeringShifts) => {
   const result = [];
 
-  for (const orbit of netSyms.nodeOrbits(graph, syms)) {
-    for (const v of orbit) {
-      const p0 = opsQ.times(toStd, pos[v]);
-      for (const s of centeringShifts) {
-        const p = opsQ.mod(opsQ.plus(p0, s), 1);
-        result.push([v, opsQ.minus(p, p0)]);
-      }
+  for (const v of periodic.vertices(graph)) {
+    const p0 = opsQ.times(toStd, pos[v]);
+    for (const s of centeringShifts) {
+      const p = opsQ.mod(opsQ.plus(p0, s), 1);
+      result.push([v, opsQ.minus(p, p0)]);
     }
   }
 
@@ -356,7 +354,7 @@ const nodesInUnitCell = (graph, pos, syms, toStd, centeringShifts) => {
 };
 
 
-const makeNetDisplayList = (graph, toStd, syms, shifts) => {
+const makeNetDisplayList = (graph, toStd, shifts) => {
   const itemsSeen = {};
   const result = [];
 
@@ -381,7 +379,7 @@ const makeNetDisplayList = (graph, toStd, syms, shifts) => {
   const centering = spacegroups.centeringLatticePoints(toStd);
   const fromStd = opsQ.inverse(toStd);
 
-  for (const [p, v] of nodesInUnitCell(graph, pos, syms, toStd, centering)) {
+  for (const [p, v] of nodesInUnitCell(graph, pos, toStd, centering)) {
     for (const s of shifts) {
       addNode(p, opsQ.times(fromStd, opsQ.plus(s, v)));
     }
@@ -427,14 +425,14 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(
     const displayList = makeNetDisplayList(
       graph,
       sgInfo.toStd,
-      syms,
       baseShifts(graph.dim, options)
     );
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     return {
       type: structure.type,
-      dim: graph.dim, graph,
+      dim: graph.dim,
+      graph,
       sgInfo,
       embeddings,
       displayList
