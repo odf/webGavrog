@@ -354,7 +354,11 @@ const nodesInUnitCell = (graph, pos, toStd, centeringShifts) => {
 };
 
 
-const makeNetDisplayList = (graph, toStd, shifts) => {
+export const makeNetDisplayList = (data, options) => {
+  const { graph, sgInfo } = data;
+  const { toStd } = sgInfo;
+  const shifts = baseShifts(graph.dim, options);
+
   const itemsSeen = {};
   const result = [];
 
@@ -422,11 +426,7 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
     yield log('Constructing an abstract finite subnet...');
-    const displayList = makeNetDisplayList(
-      graph,
-      sgInfo.toStd,
-      baseShifts(graph.dim, options)
-    );
+    const displayList = makeNetDisplayList({ graph, sgInfo }, options);
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
 
     return {
@@ -557,7 +557,9 @@ const convertTile = (tile, centers) => {
 };
 
 
-const makeTileDisplayList = (tiles, shifts) => {
+export const makeTileDisplayList = (data, options) => {
+  const { tiles, dim } = data;
+  const shifts = baseShifts(dim, options);
   const result = [];
 
   for (const s0 of shifts) {
@@ -600,7 +602,7 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
 
     const centers = rawCenters.map(v => opsQ.toJS(v));
     const tiles = rawTiles.map(tile => convertTile(tile, centers));
-    const displayList = makeTileDisplayList(tiles, baseShifts(dim, options));
+    const displayList = makeTileDisplayList({ tiles, dim }, options);
 
     yield log('Computing an embedding...');
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
