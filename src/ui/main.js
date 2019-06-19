@@ -345,7 +345,7 @@ const render = domNode => {
       else
         config.log(`Name "${text}" not found.`);
     }
-    else if (mode == "menuChoice") {
+    else if (mode == "action") {
       if (action[text])
         action[text](selected, options);
     }

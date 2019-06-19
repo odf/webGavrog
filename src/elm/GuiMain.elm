@@ -1116,7 +1116,7 @@ executeAction action model =
             ( updateView3d View3d.requestRedraw model
             , toJS <|
                 Encode.object
-                    [ ( "mode", Encode.string "menuChoice" )
+                    [ ( "mode", Encode.string "action" )
                     , ( "text", Encode.string <| actionLabel action )
                     , ( "options", Encode.object options )
                     ]
@@ -1137,7 +1137,7 @@ executeAction action model =
             ( model
             , toJS <|
                 Encode.object
-                    [ ( "mode", Encode.string "menuChoice" )
+                    [ ( "mode", Encode.string "action" )
                     , ( "text", Encode.string <| actionLabel action )
                     , ( "selected", Encode.list Encode.object selected )
                     ]
