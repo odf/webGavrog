@@ -141,19 +141,6 @@ const nonDegenerateChamber = (elms, pos) =>
   elms.find(D => opsR.ne(chamberDeterminant(pos, D), 0));
 
 
-export const symmetries = (ds, cov, pos) => {
-  const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const A = opsR.inverse(chamberBasis(pos, D0));
-
-  const phi = properties.morphism(cov, 1, ds, 1);
-  const E0 = phi[D0];
-
-  return cov.elements()
-    .filter(D => phi[D] == E0)
-    .map(D => opsR.times(A, chamberBasis(pos, D)));
-};
-
-
 export const makeCover = ds =>
   delaney.dim(ds) == 3 ?
   delaney3d.pseudoToroidalCover(ds) :
