@@ -382,10 +382,21 @@ const makeNetDisplayList = (data, options) => {
   const pos= periodic.barycentricPlacement(graph);
   const centering = spacegroups.centeringLatticePoints(toStd);
   const fromStd = opsQ.inverse(toStd);
+  const basis = opsQ.identityMatrix(graph.dim);
 
   for (const [p, v] of nodesInUnitCell(graph, pos, toStd, centering)) {
+    const loc = opsQ.plus(v, opsQ.times(toStd, pos[p]));
+
     for (const s of shifts) {
-      addNode(p, opsQ.times(fromStd, opsQ.plus(s, v)));
+      const extra = [opsQ.plus(s, v)];
+
+      for (const i of range(0, graph.dim)) {
+        if (loc[i] == 0)
+          extra = extra.concat(extra.map(t => opsQ.plus(t, basis[i])));
+      }
+
+      for (const t of extra)
+        addNode(p, opsQ.times(fromStd, t));
     }
   }
 
