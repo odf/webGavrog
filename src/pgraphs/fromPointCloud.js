@@ -17,7 +17,7 @@ const withRelevantDistances = (p, points, dot) => (
 );
 
 const allDistances = (points, nrSeeds, dot) => {
-  const tmp = points.slice(0, nrSeeds)
+  const tmp = points /*.slice(0, nrSeeds)*/ /* TODO: fix optimization */
         .map(p => withRelevantDistances(p, points, dot));
   return sortByDist([].concat(...tmp));
 };
