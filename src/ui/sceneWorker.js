@@ -1,4 +1,4 @@
-import 'babel-polyfill';
+import '@babel/polyfill';
 
 import * as pickler  from '../common/pickler';
 import * as delaney  from '../dsymbols/delaney';

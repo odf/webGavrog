@@ -17,7 +17,7 @@ fs.writeFileSync(path.resolve(__dirname, 'src', 'version.js'),
 
 
 module.exports = {
-  entry: ['babel-polyfill', './src/ui/main.js'],
+  entry: ['@babel/polyfill', './src/ui/main.js'],
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
