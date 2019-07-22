@@ -515,11 +515,9 @@ if (require.main == module) {
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries(g);
-      const gens = syms.generators;
       const edgeLists = syms.representativeEdgeLists;
-      console.log(`found ${syms.symmetries.length} symmetries in total`
-                  + ` from ${gens.length} generators:`);
-      for (const sym of gens)
+      console.log(`found ${syms.symmetries.length} symmetries`);
+      for (const sym of syms.symmetries)
         console.log(sym.transform);
       console.log(`found ${edgeLists.length} representative base(s):`);
       for (const edgeList of edgeLists)
