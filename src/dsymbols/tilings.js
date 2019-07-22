@@ -6,6 +6,7 @@ import * as delaney2d   from './delaney2d';
 import * as delaney3d   from './delaney3d';
 import * as fundamental from './fundamental';
 import * as covers      from './covers';
+import embed            from '../pgraphs/embedding';
 import * as periodic    from '../pgraphs/periodic';
 
 import {
@@ -86,6 +87,31 @@ export const skeleton = cov => {
   };
 };
 
+
+const facialRing = (start, cov, skel) => {
+  const result = [];
+
+  let D = start;
+  do {
+    const E = cov.s(0, D);
+    const sD = skel.cornerShifts[D][0];
+    const sE = skel.cornerShifts[E][0];
+    const t = skel.edgeTranslations[D][0];
+    const shift = opsR.minus(t ? opsR.plus(sE, t) : sE, sD);
+
+    result.push([skel.chamber2node[D], shift]);
+    D = cov.s(1, E);
+  }
+  while (D != start);
+
+  return result;
+};
+
+
+export const facialRings = (cov, skel) => (
+  properties.orbitReps(cov, _remainingIndices(cov, 2))
+    .map(D => facialRing(D, cov, skel))
+);
 
 
 const chamberPositions = (cov, skel) => {
@@ -289,7 +315,6 @@ if (require.main == module) {
   };
 
   const delaney = require('./delaney');
-  const embed = require('../pgraphs/embedding').default;
   const unitCells = require('../geometry/unitCells');
 
   const test = ds => {
@@ -308,8 +333,16 @@ if (require.main == module) {
     const basis = unitCells.invariantBasis(embedding.gram);
     console.log(`invariant basis: ${basis}`);
 
-    const surf = tileSurfaces(ds, cov, skel, pos);
-    console.log(`tile surfaces: ${JSON.stringify(surf)}`);
+    const rings = facialRings(cov, skel);
+    console.log(`facial rings:`);
+    for (const ring of rings)
+      console.log(`  ${ring}`);
+
+    const seeds = properties.orbitReps(cov, range(delaney.dim(cov)));
+    const surfaces = tileSurfaces(cov, skel, pos, seeds);
+    console.log(`tile surfaces:`);
+    for (const surface of surfaces)
+      console.log(`  ${JSON.stringify(surface)}`);
 
     console.log();
   }
