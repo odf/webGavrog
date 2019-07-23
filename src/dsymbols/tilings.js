@@ -108,9 +108,31 @@ const facialRing = (start, cov, skel) => {
 };
 
 
+const cmpRingEdges = (a, b) => opsR.cmp(a[0], b[0]) || opsR.cmp(a[1], b[1]);
+
+const cmpRingTails = (a, b, i) => (
+  i >= a.length ? 0 : cmpRingEdges(a[i], b[i]) || cmpRingTails(a, b, i + 1)
+);
+
+const cmpRings = (a, b) => cmpRingTails(a, b, 0);
+
+
+const canonicalRing = (orbit, cov, skel) => {
+  let best = null;
+
+  for (const D of orbit) {
+    const ring = facialRing(D, cov, skel);
+    if (best == null || cmpRings(ring, best) < 0)
+      best = ring;
+  }
+
+  return best;
+};
+
+
 export const facialRings = (cov, skel) => (
-  properties.orbitReps(cov, _remainingIndices(cov, 2))
-    .map(D => facialRing(D, cov, skel))
+  properties.orbits(cov, _remainingIndices(cov, 2))
+    .map(orb => canonicalRing(orb, cov, skel))
 );
 
 
