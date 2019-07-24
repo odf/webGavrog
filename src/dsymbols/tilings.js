@@ -116,14 +116,25 @@ const cmpRingTails = (a, b, i) => (
 
 const cmpRings = (a, b) => cmpRingTails(a, b, 0);
 
+const ringShifted = (r, i) => r.slice(i).concat(r.slice(0, i));
 
-const canonicalRing = (orbit, cov, skel) => {
+const ringReverse = r => {
+  const n = r.length;
+  return r.map(
+    (_, i) => [r[(n - i) % n][0], r[(n - i - 1) % n][1].map(x => -x)]
+  );
+};
+
+
+const canonicalRing = ring => {
+  const rev = ringReverse(ring);
   let best = null;
 
-  for (const D of orbit) {
-    const ring = facialRing(D, cov, skel);
-    if (best == null || cmpRings(ring, best) < 0)
-      best = ring;
+  for (let i = 0; i < ring.length; ++i) {
+    if (best == null || cmpRings(ringShifted(ring, i), best) < 0)
+      best = ringShifted(ring, i);
+    if (cmpRings(ringShifted(rev, i), best) < 0)
+      best = ringShifted(rev, i);
   }
 
   return best;
@@ -131,8 +142,8 @@ const canonicalRing = (orbit, cov, skel) => {
 
 
 export const facialRings = (cov, skel) => (
-  properties.orbits(cov, _remainingIndices(cov, 2))
-    .map(orb => canonicalRing(orb, cov, skel))
+  properties.orbitReps(cov, _remainingIndices(cov, 2))
+    .map(D => canonicalRing(facialRing(D, cov, skel)))
 );
 
 
