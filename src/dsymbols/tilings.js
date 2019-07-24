@@ -1,3 +1,5 @@
+import * as pickler from '../common/pickler';
+
 import * as cosets      from '../fpgroups/cosets';
 import * as delaney     from './delaney';
 import * as properties  from './properties';
@@ -8,6 +10,7 @@ import * as fundamental from './fundamental';
 import * as covers      from './covers';
 import embed            from '../pgraphs/embedding';
 import * as periodic    from '../pgraphs/periodic';
+import * as symmetries  from '../pgraphs/symmetries';
 
 import {
   rationalLinearAlgebraModular,
@@ -16,6 +19,10 @@ import {
 
 const opsR = rationalLinearAlgebraModular;
 const opsF = numericalLinearAlgebra;
+
+
+const encode = pickler.serialize;
+const decode = pickler.deserialize;
 
 
 const range = n => [...Array(n).keys()];
@@ -124,6 +131,8 @@ const cmpRings = (a, b) => cmpRingTails(a, b, 0);
 const ringShifted = (r, i) => r.slice(i).concat(r.slice(0, i));
 const ringReverse = r => r.slice().reverse().map(e => e.reverse());
 
+const mapRing = (ring, sym) => ring.map(e => decode(sym.src2img[encode(e)]));
+
 
 const canonicalRing = ring => {
   const rev = ringReverse(ring);
@@ -140,10 +149,29 @@ const canonicalRing = ring => {
 };
 
 
-export const facialRings = (cov, skel) => (
+const facialRings = (cov, skel) => (
   properties.orbitReps(cov, _remainingIndices(cov, 2))
     .map(D => canonicalRing(facialRing(D, cov, skel)))
 );
+
+
+const facePreservingSymmetries = (cov, skel) => {
+  const rings = facialRings(cov, skel);
+
+  const isRing = {};
+  for (const r of rings)
+    isRing[encode(canonicalRing(r))] = true;
+
+  const syms = symmetries.symmetries(skel.graph).symmetries;
+  const good = [];
+
+  for (const sym of syms) {
+    if (rings.every(r => isRing[encode(canonicalRing(mapRing(r, sym)))]))
+      good.push(sym);
+  }
+
+  return good;
+};
 
 
 const chamberPositions = (cov, skel) => {
@@ -370,6 +398,11 @@ if (require.main == module) {
     for (const ring of rings)
       console.log(`  ${ring}`);
 
+    const allSyms = symmetries.symmetries(skel.graph).symmetries;
+    const goodSyms = facePreservingSymmetries(cov, skel);
+    console.log(
+      `skeleton has ${allSyms.length}, tiling ${goodSyms.length} symmetries`
+    );
     const seeds = properties.orbitReps(cov, range(delaney.dim(cov)));
     const surfaces = tileSurfaces(cov, skel, pos, seeds);
     console.log(`tile surfaces:`);
