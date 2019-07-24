@@ -97,9 +97,12 @@ const facialRing = (start, cov, skel) => {
     const sD = skel.cornerShifts[D][0];
     const sE = skel.cornerShifts[E][0];
     const t = skel.edgeTranslations[D][0];
+
+    const head = skel.chamber2node[D];
+    const tail = skel.chamber2node[E];
     const shift = opsR.minus(t ? opsR.plus(sE, t) : sE, sD);
 
-    result.push([skel.chamber2node[D], shift]);
+    result.push(periodic.makeEdge(head, tail, shift));
     D = cov.s(1, E);
   }
   while (D != start);
@@ -108,7 +111,9 @@ const facialRing = (start, cov, skel) => {
 };
 
 
-const cmpRingEdges = (a, b) => opsR.cmp(a[0], b[0]) || opsR.cmp(a[1], b[1]);
+const cmpRingEdges = (a, b) => (
+  opsR.cmp(a.head, b.head) || opsR.cmp(a.shift, b.shift)
+);
 
 const cmpRingTails = (a, b, i) => (
   i >= a.length ? 0 : cmpRingEdges(a[i], b[i]) || cmpRingTails(a, b, i + 1)
@@ -117,13 +122,7 @@ const cmpRingTails = (a, b, i) => (
 const cmpRings = (a, b) => cmpRingTails(a, b, 0);
 
 const ringShifted = (r, i) => r.slice(i).concat(r.slice(0, i));
-
-const ringReverse = r => {
-  const n = r.length;
-  return r.map(
-    (_, i) => [r[(n - i) % n][0], r[(n - i - 1) % n][1].map(x => -x)]
-  );
-};
+const ringReverse = r => r.slice().reverse().map(e => e.reverse());
 
 
 const canonicalRing = ring => {
