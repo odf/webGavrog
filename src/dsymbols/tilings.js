@@ -415,6 +415,9 @@ if (require.main == module) {
   test(delaney.parse('<1.1:1 3:1,1,1,1:4,3,4>'));
   test(delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
   test(delaney.parse('<1.1:2 3:1 2,1 2,1 2,2:3 3,3 4,4>'));
+  test(delaney.parse(
+    '<1.1:6 3:2 4 6,1 2 3 5 6,3 4 5 6,2 3 4 5 6:6 4,2 3 3,8 4>'
+  ));
   test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
   test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
 }
