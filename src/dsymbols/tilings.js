@@ -155,7 +155,7 @@ const facialRings = (cov, skel) => (
 );
 
 
-const facePreservingSymmetries = (cov, skel) => {
+export const facePreservingSymmetries = (cov, skel) => {
   const rings = facialRings(cov, skel);
 
   const isRing = {};
