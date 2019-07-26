@@ -95,7 +95,8 @@ const title = model => {
     const len = model.structures.length;
     const name = model.structures[model.index].name;
     const collection = fname ? `"${fname}"` : 'builtin';
-    return `#${index}/${len} - ${name || ''} (${collection})`;
+    const groupName = model.data.sgInfo.groupName;
+    return `#${index}/${len} - ${name || ''} (${collection}) ${groupName}`;
   }
   else
     return '';

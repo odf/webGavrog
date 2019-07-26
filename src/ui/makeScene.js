@@ -423,10 +423,6 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(
     const graph = periodic.graphWithNormalizedShifts(structure.graph);
     console.log(`${Math.round(t())} msec to normalize shifts`);
 
-    yield log('Computing an embedding...');
-    const embeddings = yield runJob({ cmd: 'embedding', val: graph });
-    console.log(`${Math.round(t())} msec to compute the embeddings`);
-
     yield log('Computing symmetries...');
     const syms = netSyms.symmetries(graph).symmetries;
     const symOps = netSyms.affineSymmetries(graph, syms);
@@ -439,6 +435,10 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(
     yield log('Constructing an abstract finite subnet...');
     const displayList = makeNetDisplayList({ graph, sgInfo }, options);
     console.log(`${Math.round(t())} msec to construct a finite subnet`);
+
+    yield log('Computing an embedding...');
+    const embeddings = yield runJob({ cmd: 'embedding', val: graph });
+    console.log(`${Math.round(t())} msec to compute the embeddings`);
 
     return {
       type: structure.type,
@@ -603,8 +603,17 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
     yield log('Extracting the skeleton...');
     const skel = yield runJob({ cmd: 'skeleton', val: cov });
     console.log(`${Math.round(t())} msec to extract the skeleton`);
-    yield log('Listing translation orbits of tiles...');
 
+    yield log('Computing symmetries...');
+    const syms = tilings.facePreservingSymmetries(cov, skel);
+    const symOps = netSyms.affineSymmetries(skel.graph, syms);
+    console.log(`${Math.round(t())} msec to compute symmetries`);
+
+    yield log('Identifying the spacegroup...');
+    const sgInfo = sgFinder.identifySpacegroup(symOps);
+    console.log(`${Math.round(t())} msec to identify the spacegroup`);
+
+    yield log('Listing translation orbits of tiles...');
     const { orbitReps, centers: rawCenters, tiles: rawTiles } = yield runJob({
       cmd: 'tilesByTranslations',
       val: { ds, cov, skel }
@@ -620,7 +629,16 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to compute the embeddings`);
 
     return {
-      type, dim, ds, cov, skel, tiles, orbitReps, embeddings, displayList
+      type,
+      dim,
+      ds,
+      cov,
+      skel,
+      sgInfo,
+      tiles,
+      orbitReps,
+      embeddings,
+      displayList
     };
   }
 );
