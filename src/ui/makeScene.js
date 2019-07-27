@@ -167,6 +167,8 @@ const baseShifts = (dim, options) => dim == 3 ?
 
 
 const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
+  const asVec3 = v => [v[0], v[1], v[2] == null ? 0.1 : v[2]];
+
   stickRadius += 0.001;
 
   const meshes = model.meshes.slice();
@@ -183,6 +185,7 @@ const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
 
   for (const coeffs of corners) {
     const p = opsF.plus(origin, opsF.times(coeffs, basis));
+
     instances.push({
       meshType: 'cellEdge',
       meshIndex: n,
@@ -547,12 +550,12 @@ const splitMeshes = (meshes, faceLabelLists) => {
 
 const convertTile = (tile, centers) => {
   const { classIndex, symmetry, neighbors } = tile;
-  const sym = opsQ.toJS(symmetry.map(v => v.slice(0, -1)));
+  const sym = symmetry.map(v => v.slice(0, -1));
 
   const basis = sym.slice(0, -1);
   const shift = sym.slice(-1)[0];
 
-  const center = opsF.plus(opsF.times(centers[classIndex], basis), shift);
+  const center = opsQ.plus(opsQ.times(centers[classIndex], basis), shift);
 
   if (shift.length == 2) {
     for (const v of basis)
@@ -562,25 +565,55 @@ const convertTile = (tile, centers) => {
     center.push(0);
   }
 
-  const transform = { basis, shift };
+  const transform = {
+    basis: opsQ.toJS(basis),
+    shift: opsQ.toJS(shift)
+  };
 
   return { classIndex, transform, center, neighbors };
 };
 
 
-const makeTileDisplayList = (data, options) => {
-  const { tiles, dim } = data;
-  const shifts = baseShifts(dim, options);
+const tilesInUnitCell = (tiles, toStd, centeringShifts) => {
+  const dim = opsQ.dimension(toStd);
   const result = [];
 
-  for (const s0 of shifts) {
-    for (let latticeIndex = 0; latticeIndex < tiles.length; ++latticeIndex) {
-      const c = tiles[latticeIndex].center.slice(0, s0.length);
-      const s = opsF.minus(s0, c.map(x => opsF.floor(x)));
-      const shift = [s[0], s[1], s[2] || 0];
-
-      result.push({ itemType: 'tile', latticeIndex, shift });
+  for (let index = 0; index < tiles.length; ++index) {
+    const c0 = opsQ.times(toStd, tiles[index].center.slice(0, dim));
+    for (const s of centeringShifts) {
+      const c = opsQ.mod(opsQ.plus(c0, s), 1);
+      result.push([index, opsQ.minus(c, c0)]);
     }
+  }
+
+  return result;
+};
+
+
+const makeTileDisplayList = (data, options) => {
+  const { tiles, dim, sgInfo } = data;
+  const { toStd } = sgInfo;
+  const shifts = baseShifts(dim, options);
+
+  const tilesSeen = {};
+  const result = [];
+
+  const addTile = (latticeIndex, shift) => {
+    const key = encode([latticeIndex, shift]);
+    if (!tilesSeen[key]) {
+      if (shift.length == 2)
+        shift.push(0);
+      result.push({ itemType: 'tile', latticeIndex, shift });
+      tilesSeen[key] = true;
+    }
+  };
+
+  const centering = spacegroups.centeringLatticePoints(toStd);
+  const fromStd = opsQ.inverse(toStd);
+
+  for (const [index, v] of tilesInUnitCell(tiles, toStd, centering)) {
+    for (const s of shifts)
+      addTile(index, opsQ.times(fromStd, opsQ.plus(s, v)));
   }
 
   return result;
@@ -614,15 +647,14 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
     yield log('Listing translation orbits of tiles...');
-    const { orbitReps, centers: rawCenters, tiles: rawTiles } = yield runJob({
+    const { orbitReps, centers, tiles: rawTiles } = yield runJob({
       cmd: 'tilesByTranslations',
       val: { ds, cov, skel }
     });
     console.log(`${Math.round(t())} msec to list the tile orbits`);
 
-    const centers = rawCenters.map(v => opsQ.toJS(v));
     const tiles = rawTiles.map(tile => convertTile(tile, centers));
-    const displayList = makeTileDisplayList({ tiles, dim }, options);
+    const displayList = makeTileDisplayList({ tiles, dim, sgInfo }, options);
 
     yield log('Computing an embedding...');
     const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
@@ -682,8 +714,10 @@ const mapTiles = (tiles, basis, scale) => {
   return tiles.map(tile => {
     const transform = {
       basis: opsF.times(invBasis, opsF.times(tile.transform.basis, b1)),
-      shift: opsF.plus(opsF.times(tile.transform.shift, b1),
-                      opsF.times(tile.center, b2))
+      shift: opsF.plus(
+        opsF.times(tile.transform.shift, b1),
+        opsF.times(opsQ.toJS(tile.center), b2)
+      )
     };
 
     return Object.assign({}, tile, { transform });
@@ -695,9 +729,10 @@ const makeTileInstances = (displayList, tiles, partLists, basis) => {
   const instances = [];
 
   for (let i = 0; i < displayList.length; ++i) {
-    const { latticeIndex, shift, skippedParts } = displayList[i];
+    const { latticeIndex, shift: shiftRaw, skippedParts } = displayList[i];
     const { classIndex, transform, neighbors } = tiles[latticeIndex];
     const parts = partLists[classIndex];
+    const shift = opsQ.toJS(shiftRaw);
 
     for (let j = 0; j < parts.length; ++j) {
       if (skippedParts && skippedParts[j])
@@ -723,13 +758,16 @@ const makeTileInstances = (displayList, tiles, partLists, basis) => {
 
 
 const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
-  const { ds, cov, skel, tiles, orbitReps, embeddings, displayList } = data;
+  const {
+    ds, cov, skel, tiles, orbitReps, sgInfo, embeddings, displayList
+  } = data;
 
   const dim = delaney.dim(ds);
 
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
 
+  const rawBasis = unitCells.invariantBasis(embedding.gram);
   const basis = unitCells.invariantBasis(embedding.gram);
   if (dim == 2) {
     basis[0].push(0);
@@ -765,7 +803,24 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     displayList, mappedTiles, partLists, basis
   );
 
-  return { meshes: subMeshes, instances };
+  const model = { meshes: subMeshes, instances };
+
+  yield log('Done making the tiling model.');
+
+  const fromStd = opsQ.inverse(sgInfo.toStd);
+  const cellBasis = opsQ.identityMatrix(dim).map(
+    v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), rawBasis)
+  );
+
+  const o = opsQ.origin(dim);
+  const origin = dim == 3 ?
+        opsQ.vector(o) :
+        opsF.times(opsQ.toJS(opsQ.vector(opsQ.times(fromStd, o))), rawBasis);
+
+  if (options.showUnitCell)
+    return addUnitCell(model, cellBasis, origin, 0.01, 0.01);
+  else
+    return model;
 });
 
 
