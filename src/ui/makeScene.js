@@ -29,6 +29,8 @@ const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
 const normalized = v => opsF.div(v, opsF.norm(v));
 const asVec3 = v => [v[0], v[1], v[2] || 0];
 
+const applyToPoint = (cc, vec) => opsQ.vector(opsQ.times(cc, opsQ.point(vec)));
+
 
 const geometry = (vertsIn, faces) => {
   const normals = vertsIn.map(v => opsF.times(v, 0));
@@ -346,7 +348,7 @@ const nodesInUnitCell = (graph, pos, toStd, centeringShifts) => {
   const result = [];
 
   for (const v of periodic.vertices(graph)) {
-    const p0 = opsQ.times(toStd, pos[v]);
+    const p0 = applyToPoint(toStd, pos[v]);
     for (const s of centeringShifts) {
       const p = opsQ.mod(opsQ.plus(p0, s), 1);
       result.push([v, opsQ.minus(p, p0)]);
@@ -388,7 +390,7 @@ const makeNetDisplayList = (data, options) => {
   const basis = opsQ.identityMatrix(graph.dim);
 
   for (const [p, v] of nodesInUnitCell(graph, pos, toStd, centering)) {
-    const loc = opsQ.plus(v, opsQ.times(toStd, pos[p]));
+    const loc = opsQ.plus(v, applyToPoint(toStd, pos[p]));
 
     for (const s of shifts) {
       const extra = [opsQ.plus(s, v)];
@@ -513,10 +515,8 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     const cellBasis = opsQ.identityMatrix(graph.dim).map(
       v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), basis)
     );
-    const o = opsQ.origin(graph.dim);
-    const origin = graph.dim == 3 ?
-          opsQ.vector(o) :
-          opsF.times(opsQ.toJS(opsQ.vector(opsQ.times(fromStd, o))), basis);
+    const o = opsQ.vector(graph.dim);
+    const origin = opsF.times(opsQ.toJS(applyToPoint(fromStd, o)), basis);
 
     const model = { meshes, instances };
 
@@ -579,7 +579,7 @@ const tilesInUnitCell = (tiles, toStd, centeringShifts) => {
   const result = [];
 
   for (let index = 0; index < tiles.length; ++index) {
-    const c0 = opsQ.times(toStd, tiles[index].center.slice(0, dim));
+    const c0 = applyToPoint(toStd, tiles[index].center.slice(0, dim));
     for (const s of centeringShifts) {
       const c = opsQ.mod(opsQ.plus(c0, s), 1);
       result.push([index, opsQ.minus(c, c0)]);
@@ -812,10 +812,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), rawBasis)
   );
 
-  const o = opsQ.origin(dim);
-  const origin = dim == 3 ?
-        opsQ.vector(o) :
-        opsF.times(opsQ.toJS(opsQ.vector(opsQ.times(fromStd, o))), rawBasis);
+  const o = opsQ.vector(dim);
+  const origin = opsF.times(opsQ.toJS(applyToPoint(fromStd, o)), rawBasis);
 
   if (options.showUnitCell)
     return addUnitCell(model, cellBasis, origin, 0.01, 0.01);
