@@ -1231,7 +1231,7 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
 
         CellEdge ->
             netMaterial
-                { hue = 0.0, saturation = 0.0, lightness = 0.5, alpha = 1.0 }
+                { hue = 0.0, saturation = 0.0, lightness = 0.0, alpha = 1.0 }
 
         Unknown ->
             tilingMaterial tilingSettings.tileBaseColor
