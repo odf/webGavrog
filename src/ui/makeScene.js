@@ -362,6 +362,7 @@ const nodesInUnitCell = (graph, pos, toStd, centeringShifts) => {
 const makeNetDisplayList = (data, options) => {
   const { graph, sgInfo } = data;
   const { toStd } = sgInfo;
+  const adj = periodic.adjacencies(graph);
   const shifts = baseShifts(graph.dim, options);
 
   const itemsSeen = {};
@@ -389,23 +390,28 @@ const makeNetDisplayList = (data, options) => {
   const fromStd = opsQ.inverse(toStd);
   const basis = opsQ.identityMatrix(graph.dim);
 
-  for (const [p, v] of nodesInUnitCell(graph, pos, toStd, centering)) {
-    const loc = opsQ.plus(v, applyToPoint(toStd, pos[p]));
+  for (const [v, shift] of nodesInUnitCell(graph, pos, toStd, centering)) {
+    const loc = opsQ.plus(shift, applyToPoint(toStd, pos[v]));
 
-    for (const s of shifts) {
-      const extra = [opsQ.plus(s, v)];
+    for (const sh of shifts) {
+      const copies = [opsQ.plus(sh, shift)];
 
       for (const i of range(0, graph.dim)) {
         if (loc[i] == 0)
-          extra = extra.concat(extra.map(t => opsQ.plus(t, basis[i])));
+          copies = copies.concat(copies.map(t => opsQ.plus(t, basis[i])));
       }
 
-      for (const t of extra)
-        addNode(p, opsQ.times(fromStd, t));
+      for (const t of copies)
+        addNode(v, opsQ.times(fromStd, t));
+
+      if (copies.length == 1) {
+        const b = opsQ.times(fromStd, copies[0]);
+        for (const { v: w, s } of adj[v])
+          addNode(w, opsQ.plus(b, s));
+      }
     }
   }
 
-  const adj = periodic.adjacencies(graph);
   for (const { itemType, item, shift } of result) {
     if (itemType == 'node') {
       for (const edge of periodic.allIncidences(graph, item, adj)) {
