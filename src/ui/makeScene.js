@@ -103,6 +103,9 @@ const makeBall = radius => {
 
 
 const makeStick = (radius, segments) => {
+  if (radius <= 0.001)
+    return geometry([], []);
+
   const n = segments;
   const a = Math.PI * 2 / n;
 
@@ -463,6 +466,9 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(
 );
 
 
+const withDefault = (value, fallback) => value != null ? value : fallback;
+
+
 const makeNetModel = (data, options, runJob, log) => csp.go(
   function*() {
     const { graph, sgInfo, embeddings, displayList } = data;
@@ -471,8 +477,8 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
     const pos = embedding.positions;
     const basis = unitCells.invariantBasis(embedding.gram);
-    const ballRadius = options.netVertexRadius || 0.1;
-    const stickRadius = (options.netEdgeRadius || 0.04) + 0.001;
+    const ballRadius = withDefault(options.netVertexRadius, 0.1);
+    const stickRadius = withDefault(options.netEdgeRadius, 0.04) + 0.001;
 
     const t = util.timer();
 
