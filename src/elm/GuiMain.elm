@@ -1585,7 +1585,7 @@ viewAbout model =
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Version: ")
-            , Element.text "0.1.0 alpha"
+            , Element.text "0.2.0 alpha"
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Revision: ")
