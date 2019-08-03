@@ -55,7 +55,16 @@ export const minimal = ds => {
     return ds;
   else {
     const p = props.typePartition(ds);
-    const reps = ds.elements().filter(D => p.find(D) == D);
+
+    const reps = [];
+    const seen = {};
+    for (const D of ds.elements()) {
+      const r = p.find(D);
+      if (seen[r] == null) {
+        seen[r] = true;
+        reps.push(r);
+      }
+    }
 
     return DS.build(
       DS.dim(ds), reps.length,
