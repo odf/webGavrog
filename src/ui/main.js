@@ -366,7 +366,7 @@ const render = domNode => {
         setStructure(number - (number > 0));
     }
     else if (mode == "search" && text) {
-      const pattern = new RegExp(`\\b${text}\\b`, 'i');
+      const pattern = new RegExp(`^${text}$`, 'i');
       const i = model.structures.findIndex(s => !!pattern.exec(s.name));
 
       if (i >= 0)
