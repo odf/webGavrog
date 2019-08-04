@@ -228,23 +228,26 @@ export const addTiles = (displayList, selection) => {
   const seen = {};
 
   for (const { partIndex, neighbors, extraShiftCryst } of selection) {
-    const { latticeIndex, shift } = neighbors[partIndex];
-    const item = {
-      itemType: 'tile',
-      latticeIndex,
-      shift: opsF.plus(extraShiftCryst, shift)
-    };
-    const key = pickler.serialize(item);
+    if (neighbors != null && partIndex != null) {
+      const { latticeIndex, shift } = neighbors[partIndex];
+      const item = {
+        itemType: 'tile',
+        latticeIndex,
+        shift: opsF.plus(extraShiftCryst, shift)
+      };
+      const key = pickler.serialize(item);
 
-    if (!seen[key]) {
-      result.push(item);
-      seen[key] = true;
+      if (!seen[key]) {
+        result.push(item);
+        seen[key] = true;
+      }
     }
   }
 
   for (const item of displayList) {
     const key = pickler.serialize({
       itemType: item.itemType,
+      item: item.item,
       latticeIndex: item.latticeIndex,
       shift: item.shift
     });
@@ -263,18 +266,20 @@ export const addCoronas = (displayList, selection) => {
   const result = [];
   const seen = {};
 
-  for (const { partIndex, neighbors, extraShiftCryst } of selection) {
-    for (const { latticeIndex, shift } of neighbors) {
-      const item = {
-        itemType: 'tile',
-        latticeIndex,
-        shift: opsF.plus(extraShiftCryst, shift)
-      };
-      const key = pickler.serialize(item);
+  for (const { neighbors, extraShiftCryst } of selection) {
+    if (neighbors != null) {
+      for (const { latticeIndex, shift } of neighbors) {
+        const item = {
+          itemType: 'tile',
+          latticeIndex,
+          shift: opsF.plus(extraShiftCryst, shift)
+        };
+        const key = pickler.serialize(item);
 
-      if (!seen[key]) {
-        result.push(item);
-        seen[key] = true;
+        if (!seen[key]) {
+          result.push(item);
+          seen[key] = true;
+        }
       }
     }
   }
@@ -282,6 +287,7 @@ export const addCoronas = (displayList, selection) => {
   for (const item of displayList) {
     const key = pickler.serialize({
       itemType: item.itemType,
+      item: item.item,
       latticeIndex: item.latticeIndex,
       shift: item.shift
     });
