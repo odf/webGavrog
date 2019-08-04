@@ -1,11 +1,9 @@
 import * as fs from 'fs';
 
-import * as DS         from '../dsymbols/delaney';
-import * as properties from '../dsymbols/properties';
+import * as delaney from '../dsymbols/delaney';
+import * as derived from '../dsymbols/derived';
 
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 
-DS.parseSymbols(text).forEach(function(ds) {
-  if (properties.isMinimal(ds))
-    console.log(''+ds);
-});
+for (const ds of delaney.parseSymbols(text))
+  console.log(`${derived.minimal(ds)}`);
