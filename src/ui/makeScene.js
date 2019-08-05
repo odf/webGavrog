@@ -268,12 +268,10 @@ export const addCoronas = (displayList, selection) => {
 
   for (const { neighbors, extraShiftCryst } of selection) {
     if (neighbors != null) {
-      for (const { latticeIndex, shift } of neighbors) {
-        const item = {
-          itemType: 'tile',
-          latticeIndex,
-          shift: opsF.plus(extraShiftCryst, shift)
-        };
+      for (const neighbor of neighbors) {
+        const item = Object.assign(
+          {}, neighbor, { shift: opsF.plus(extraShiftCryst, neighbor.shift) }
+        );
         const key = pickler.serialize(item);
 
         if (!seen[key]) {
@@ -564,12 +562,12 @@ const splitMeshes = (meshes, faceLabelLists) => {
 
 
 const convertTile = (tile, centers) => {
-  const { classIndex, symmetry, neighbors } = tile;
-  const sym = symmetry.map(v => v.slice(0, -1));
+  const sym = tile.symmetry.map(v => v.slice(0, -1));
 
   const basis = sym.slice(0, -1);
   const shift = sym.slice(-1)[0];
 
+  const classIndex = tile.classIndex;
   const center = opsQ.plus(opsQ.times(centers[classIndex], basis), shift);
 
   if (shift.length == 2) {
@@ -584,6 +582,12 @@ const convertTile = (tile, centers) => {
     basis: opsQ.toJS(basis),
     shift: opsQ.toJS(shift)
   };
+
+  const neighbors = tile.neighbors.map(({ latticeIndex, shift }) => ({
+    itemType: 'tile',
+    latticeIndex,
+    shift
+  }));
 
   return { classIndex, transform, center, neighbors };
 };
