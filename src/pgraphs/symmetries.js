@@ -517,8 +517,12 @@ if (require.main == module) {
       const syms = symmetries(g);
       const edgeLists = syms.representativeEdgeLists;
       console.log(`found ${syms.symmetries.length} symmetries`);
-      for (const sym of syms.symmetries)
-        console.log(sym.transform);
+
+      syms.symmetries
+        .map(s => s.transform)
+        .sort((a, b) => ops.cmp(a, b))
+        .forEach(t => console.log(t));
+
       console.log(`found ${edgeLists.length} representative base(s):`);
       for (const edgeList of edgeLists)
         console.log(`${edgeList}`);
