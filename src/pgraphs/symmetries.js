@@ -518,8 +518,8 @@ if (require.main == module) {
       const edgeLists = syms.representativeEdgeLists;
       console.log(`found ${syms.symmetries.length} symmetries`);
 
-      syms.symmetries
-        .map(s => s.transform)
+      const transforms = affineSymmetries(g, syms.symmetries);
+      transforms
         .sort((a, b) => ops.cmp(a, b))
         .forEach(t => console.log(t));
 
