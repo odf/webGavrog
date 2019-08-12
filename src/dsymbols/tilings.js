@@ -13,17 +13,15 @@ import * as periodic    from '../pgraphs/periodic';
 import * as symmetries  from '../pgraphs/symmetries';
 
 import {
-  rationalLinearAlgebraModular,
-  numericalLinearAlgebra
-} from '../arithmetic/types';
+  coordinateChangesF,
+  coordinateChangesQ
+} from '../geometry/types';
 
-const opsR = rationalLinearAlgebraModular;
-const opsF = numericalLinearAlgebra;
-
+const opsF = coordinateChangesF;
+const opsR = coordinateChangesQ;
 
 const encode = pickler.serialize;
 const decode = pickler.deserialize;
-
 
 const range = n => [...Array(n).keys()];
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
@@ -403,6 +401,11 @@ if (require.main == module) {
     console.log(
       `skeleton has ${allSyms.length}, tiling ${goodSyms.length} symmetries`
     );
+    const transforms = symmetries.affineSymmetries(skel.graph, goodSyms);
+    transforms
+      .sort((a, b) => opsR.cmp(a, b))
+      .forEach(t => console.log(t));
+
     const seeds = properties.orbitReps(cov, range(delaney.dim(cov)));
     const surfaces = tileSurfaces(cov, skel, pos, seeds);
     console.log(`tile surfaces:`);
