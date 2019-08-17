@@ -93,22 +93,27 @@ export const skeleton = cov => {
 };
 
 
+const skeletonEdge = (D, cov, skel) => {
+  const E = cov.s(0, D);
+  const sD = skel.cornerShifts[D][0];
+  const sE = skel.cornerShifts[E][0];
+  const t = skel.edgeTranslations[D][0];
+
+  const head = skel.chamber2node[D];
+  const tail = skel.chamber2node[E];
+  const shift = opsR.minus(t ? opsR.plus(sE, t) : sE, sD);
+
+  return periodic.makeEdge(head, tail, shift);
+};
+
+
 const facialRing = (start, cov, skel) => {
   const result = [];
 
   let D = start;
   do {
-    const E = cov.s(0, D);
-    const sD = skel.cornerShifts[D][0];
-    const sE = skel.cornerShifts[E][0];
-    const t = skel.edgeTranslations[D][0];
-
-    const head = skel.chamber2node[D];
-    const tail = skel.chamber2node[E];
-    const shift = opsR.minus(t ? opsR.plus(sE, t) : sE, sD);
-
-    result.push(periodic.makeEdge(head, tail, shift));
-    D = cov.s(1, E);
+    result.push(skeletonEdge(D, cov, skel))
+    D = cov.s(1, cov.s(0, D));
   }
   while (D != start);
 
