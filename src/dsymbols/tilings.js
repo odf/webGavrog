@@ -57,42 +57,6 @@ const _cornerShifts = (cov, e2t) => {
 };
 
 
-export const skeleton = cov => {
-  const e2t = _edgeTranslations(cov);
-  const c2s = _cornerShifts(cov, e2t);
-
-  const chamber2node = {};
-  let node = 1;
-  for (const orb of properties.orbits(cov, _remainingIndices(cov, 0))) {
-    for (const D of orb)
-      chamber2node[D] = node;
-    node += 1;
-  }
-
-  const zero = opsR.vector(delaney.dim(cov));
-  const edges = properties.orbitReps(cov, _remainingIndices(cov, 1))
-    .map(D => {
-      const E = cov.s(0, D);
-      const v = chamber2node[D];
-      const w = chamber2node[E];
-      const t = e2t[D][0] || zero;
-      const sD = c2s[D][0];
-      const sE = c2s[E][0];
-      const s = opsR.minus(opsR.plus(t, sE), sD);
-
-      return [v, w, s];
-    })
-    .toArray();
-
-  return {
-    graph: periodic.make(edges),
-    chamber2node: chamber2node,
-    edgeTranslations: e2t,
-    cornerShifts: c2s
-  };
-};
-
-
 const skeletonEdge = (D, cov, skel) => {
   const E = cov.s(0, D);
   const sD = skel.cornerShifts[D][0];
@@ -104,6 +68,31 @@ const skeletonEdge = (D, cov, skel) => {
   const shift = opsR.minus(t ? opsR.plus(sE, t) : sE, sD);
 
   return periodic.makeEdge(head, tail, shift);
+};
+
+
+export const skeleton = cov => {
+  const edgeTranslations = _edgeTranslations(cov);
+  const cornerShifts = _cornerShifts(cov, edgeTranslations);
+
+  const chamber2node = {};
+  let node = 1;
+  for (const orb of properties.orbits(cov, _remainingIndices(cov, 0))) {
+    for (const D of orb)
+      chamber2node[D] = node;
+    node += 1;
+  }
+
+  const skel = { chamber2node, edgeTranslations, cornerShifts };
+
+  const edges = [];
+  for (const D of properties.orbitReps(cov, _remainingIndices(cov, 1))) {
+    const e = skeletonEdge(D, cov, skel);
+    edges.push([e.head, e.tail, e.shift]);
+  }
+
+  skel.graph = periodic.make(edges);
+  return skel;
 };
 
 
