@@ -301,6 +301,15 @@ const affineSymmetry = (D0, D1, pos) => {
 };
 
 
+export const deckTransformations = (ds, cov) => {
+  const phi = properties.morphism(cov, 1, ds, 1);
+
+  return cov.elements()
+    .filter(D => phi[D] == 1)
+    .map(D => properties.morphism(cov, D, cov, 1));
+};
+
+
 export const tilesByTranslations = (ds, cov, skel) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
@@ -399,6 +408,10 @@ if (require.main == module) {
     transforms
       .sort((a, b) => opsR.cmp(a, b))
       .forEach(t => console.log(t));
+
+    tilesByTranslations(ds, cov, skel);
+    const deck = deckTransformations(ds, cov);
+    console.log(`tiling has ${deck.length} deck transformations`);
 
     const seeds = properties.orbitReps(cov, range(delaney.dim(cov)));
     const surfaces = tileSurfaces(cov, skel, pos, seeds);
