@@ -303,12 +303,20 @@ export const morphism = (src, srcD0, img, imgD0) => {
       const Ei = img.s(i, E);
 
       if (Di != null || Ei != null) {
-        if (m[Di] == null && eq(tSrc[Di], tImg[Ei])) {
+        if (m[Di] == null) {
+          _assert(
+            eq(tSrc[Di], tImg[Ei]),
+            `expected type[${Ei}] to be ${tSrc[Di]}, got ${tImg[Ei]}`
+          )
+
           q.push([Di, Ei]);
           m[Di] = Ei;
         }
-        else if (m[Di] != Ei)
-          return null;
+        else
+          _assert(
+            m[Di] == Ei,
+            `expected m[${Di}] to be ${Ei}, got ${m[Di]}`
+          )
       }
     }
   }
