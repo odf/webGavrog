@@ -310,6 +310,15 @@ export const deckTransformations = (ds, cov) => {
 };
 
 
+export const affineSymmetries = (ds, cov, skel) => {
+  const pos = chamberPositions(cov, skel);
+  const D0 = nonDegenerateChamber(ds.elements(), pos);
+  const syms = deckTransformations(ds, cov);
+
+  return syms.map(phi => affineSymmetry(D0, phi[D0], pos));
+};
+
+
 export const tilesByTranslations = (ds, cov, skel) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
@@ -404,13 +413,12 @@ if (require.main == module) {
     console.log(
       `skeleton has ${allSyms.length}, tiling ${goodSyms.length} symmetries`
     );
-    const transforms = symmetries.affineSymmetries(skel.graph, goodSyms);
+
+    const transforms = affineSymmetries(ds, cov, skel);
+    console.log(`tiling has ${transforms.length} deck transformations`);
     transforms
       .sort((a, b) => opsR.cmp(a, b))
       .forEach(t => console.log(t));
-
-    const deck = deckTransformations(ds, cov);
-    console.log(`tiling has ${deck.length} deck transformations`);
 
     const seeds = properties.orbitReps(cov, range(delaney.dim(cov)));
     const surfaces = tileSurfaces(cov, skel, pos, seeds);
