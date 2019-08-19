@@ -1,3 +1,5 @@
+import * as pickler from '../common/pickler';
+
 export const extend = pointAndVectorOps => {
 
   const V = pointAndVectorOps;
@@ -25,6 +27,17 @@ export const extend = pointAndVectorOps => {
 
     get __typeName() { return 'AffineTransformation'; }
   };
+
+
+  pickler.register(
+    'AffineTransformation',
+    ({ linear, shift }) =>
+      ({ linear: pickler.pickle(linear), shift: pickler.pickle(shift) }),
+    ({ linear, shift }) =>
+      new AffineTransformation(
+        pickler.unpickle(linear), pickler.unpickle(shift)
+      )
+  );
 
 
   const I = n => V.identityMatrix(n);
