@@ -400,8 +400,7 @@ export const affineSymmetries = (graph, syms) => {
 
   return syms.map(({ src2img, transform }) => {
     const s = ops.minus(pos[src2img[v]], ops.times(pos[v], transform));
-    return ops.times(ops.affineTransformation(I, s),
-                     ops.transposed(transform));
+    return ops.affineTransformation(ops.transposed(transform), s);
   });
 }
 
