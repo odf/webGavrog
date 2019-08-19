@@ -562,10 +562,8 @@ const splitMeshes = (meshes, faceLabelLists) => {
 
 
 const convertTile = (tile, centers) => {
-  const sym = tile.symmetry.map(v => v.slice(0, -1));
-
-  const basis = sym.slice(0, -1);
-  const shift = sym.slice(-1)[0];
+  const basis = opsQ.transposed(opsQ.linearPart(tile.symmetry));
+  const shift = opsQ.shiftPart(tile.symmetry);
 
   const classIndex = tile.classIndex;
   const center = opsQ.plus(opsQ.times(centers[classIndex], basis), shift);

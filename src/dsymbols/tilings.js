@@ -297,7 +297,7 @@ const affineSymmetry = (D0, D1, pos) => {
   const linear = opsR.solve(bas(D0), bas(D1));
   const shift = opsR.minus(pos[D1][0], opsR.times(pos[D0][0], linear));
 
-  return linear.map(r => r.concat(0)).concat([shift.concat([1])]);
+  return opsR.affineTransformation(opsR.transposed(linear), shift);
 };
 
 
@@ -327,7 +327,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
     const E0 = phi[D0];
 
     let classIndex = dsChamberToClassIndex[E0];
-    let symmetry = opsR.identityMatrix(dim + 1);
+    let symmetry = opsR.identityMatrix(dim);
 
     if (classIndex == null) {
       classIndex = orbitReps.length;
