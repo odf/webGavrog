@@ -12,6 +12,8 @@ import embed            from '../pgraphs/embedding';
 import * as periodic    from '../pgraphs/periodic';
 import * as symmetries  from '../pgraphs/symmetries';
 
+import { rationalLinearAlgebraModular } from '../arithmetic/types';
+
 import {
   coordinateChangesF,
   coordinateChangesQ
@@ -30,7 +32,9 @@ const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 const _edgeTranslations = cov => {
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
-  const nul = opsR.nullSpace(cosets.relatorMatrix(n, fg.relators));
+  const nul = rationalLinearAlgebraModular.nullSpace(
+    cosets.relatorMatrix(n, fg.relators)
+  );
   const vec = rel => cosets.relatorAsVector(rel, n);
 
   return fg.edge2word.map(a => a.map(b => opsR.times(vec(b), nul)));
