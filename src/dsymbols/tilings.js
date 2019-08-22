@@ -424,8 +424,20 @@ if (require.main == module) {
       .sort((a, b) => opsR.cmp(a, b))
       .forEach(t => console.log(t));
 
-    const seeds = properties.orbitReps(cov, range(delaney.dim(cov)));
-    const surfaces = tileSurfaces(cov, skel, pos, seeds);
+    const { orbitReps, tiles } = tilesByTranslations(ds, cov, skel);
+    console.log(`tilings has ${tiles.length} tiles`);
+    tiles
+      .sort(
+        (a, b) =>
+          opsR.cmp(a.classIndex, b.classIndex) ||
+          opsR.cmp(a.symmetry, b.symmetry)
+      )
+      .forEach(
+        ({ classIndex, symmetry }) =>
+          console.log(`class ${classIndex}\nsymmetry ${symmetry}`)
+      );
+
+    const surfaces = tileSurfaces(cov, skel, pos, orbitReps);
     console.log(`tile surfaces:`);
     for (const surface of surfaces)
       console.log(`  ${JSON.stringify(surface)}`);
