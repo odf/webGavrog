@@ -83,7 +83,7 @@ const _closeRelations = (startEdge, wd, edge2word, relsByGen, action) => {
 const _spanningTree = (basePoint, nrGens, action) => {
   const queue = [basePoint];
   const edges = [];
-  const seen  = { basePoint: true };
+  const seen  = { [basePoint]: true };
 
   while (queue.length) {
     const point = queue.shift();
