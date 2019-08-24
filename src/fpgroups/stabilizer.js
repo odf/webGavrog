@@ -126,7 +126,7 @@ export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
     for (let i = 1; i <= nrGens; ++i) {
       for (const g of [i, -i]) {
         const edge = { point: px, gen: g };
-        if (edge2word[px][g] == null) {
+        if ((edge2word[px] || {})[g] == null) {
           const py = action(px, g);
           const wy = point2word[py];
           const h = ++lastGen;
