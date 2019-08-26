@@ -133,7 +133,7 @@ const toStructure = (config, model, i) => csp.go(function*() {
     return newModel;
   } catch (ex) {
     console.error(ex);
-    yield config.log(`ERROR processing structure ${i}!!!`);
+    yield config.log(`ERROR processing structure ${i + 1}!!!`);
     return model;
   }
 });
