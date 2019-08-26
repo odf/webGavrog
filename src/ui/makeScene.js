@@ -655,12 +655,11 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to extract the skeleton`);
 
     yield log('Computing symmetries...');
-    const syms = tilings.facePreservingSymmetries(cov, skel);
-    const symOps = netSyms.affineSymmetries(skel.graph, syms);
+    const syms = tilings.affineSymmetries(ds, cov, skel);
     console.log(`${Math.round(t())} msec to compute symmetries`);
 
     yield log('Identifying the spacegroup...');
-    const sgInfo = sgFinder.identifySpacegroup(symOps);
+    const sgInfo = sgFinder.identifySpacegroup(syms);
     console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
     yield log('Listing translation orbits of tiles...');
