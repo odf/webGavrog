@@ -326,6 +326,7 @@ export const affineSymmetries = (ds, cov, skel) => {
 export const tilesByTranslations = (ds, cov, skel) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
+  const Dx = nonDegenerateChamber(ds.elements(), pos);
   const phi = properties.morphism(cov, 1, ds, 1);
   const idcs = range(dim);
   const tileOrbits = properties.orbits(cov, idcs);
@@ -336,7 +337,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const tiles = [];
 
   for (const elms of tileOrbits) {
-    const D0 = nonDegenerateChamber(elms, pos);
+    const D0 = elms[0];
     const E0 = phi[D0];
 
     let classIndex = dsChamberToClassIndex[E0];
@@ -353,7 +354,8 @@ export const tilesByTranslations = (ds, cov, skel) => {
     else {
       const D0 = orbitReps[classIndex];
       const D1 = elms.find(D => phi[D] == phi[D0]);
-      symmetry = affineSymmetry(D0, D1, pos);
+      const psi = properties.morphism(cov, D0, cov, D1)
+      symmetry = affineSymmetry(Dx, psi[Dx], pos);
     }
 
     for (const E of elms)
@@ -465,5 +467,9 @@ if (require.main == module) {
 
   test(delaney.parse(
     '<1.1:36 3:2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36,6 3 5 12 9 11 20 15 17 19 28 23 25 27 36 31 33 35,14 13 22 21 30 29 18 17 34 33 26 25 36 35 24 23 32 31,8 7 12 11 10 9 14 20 19 18 22 28 27 26 30 36 35 34:3 3 4 4 4,3 3 3 3 3 3,4 4 4 6 6>'
+  ));
+
+  test(delaney.parse(
+    '<011.1:96 3:2 3 5 7 9 10 12 14 15 17 18 20 21 22 24 26 27 29 31 33 34 36 38 40 42 44 46 48 50 52 54 56 58 59 60 62 64 66 68 69 71 73 75 76 78 79 81 82 84 85 86 87 88 90 91 92 93 94 95 96,79 3 9 6 8 12 92 94 15 86 18 60 21 23 34 59 27 33 30 32 40 37 39 46 43 45 52 49 51 58 55 57 66 63 65 95 69 75 72 74 78 87 91 82 93 85 90 96,4 5 10 12 11 80 81 66 65 18 63 64 33 32 22 31 30 28 29 34 41 42 53 54 48 47 58 57 51 52 55 56 60 83 84 70 71 76 78 77 90 89 82 86 88 92 94 96,13 14 15 44 43 42 41 46 45 88 89 90 24 23 22 81 80 91 68 67 95 47 48 49 50 51 52 86 75 74 73 72 71 70 61 62 63 64 65 66 69 82 93 84 83 94 87 96:4 3 4 4 4 4 4 4 3 3 3 3 3 3 4 3 4 4 4 4,3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3,6 8 3 3 6 3 3 6 6 4>'
   ));
 }
