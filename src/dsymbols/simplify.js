@@ -23,13 +23,6 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
       ++next;
     }
     else {
-      for (const i of ds.indices()) {
-        _assert(
-          (ds.v(i, i + 1, D) || 1) == 1,
-          `(${i},${i+1})-branching at removed element ${D} must be trivial`
-        );
-      }
-
       const Dk = ds.s(k, D);
 
       _assert(
@@ -74,13 +67,19 @@ if (require.main == module) {
     const idcs = ds.indices().filter(i => i != dim - 1);
     const inner = fundamental.innerEdges(ds);
 
-    const removed = [];
+    const marked = {};
     for (const [D, i] of fundamental.innerEdges(ds)) {
       if (i == dim) {
         for (const E of properties.orbit(ds, idcs, D)) {
-          removed.push(E);
+          marked[E] = true;
         }
       }
+    }
+
+    const removed = [];
+    for (const D of ds.elements()) {
+      if (marked[D])
+        removed.push(D);
     }
 
     console.log(`#to be removed: ${removed}`);
@@ -91,6 +90,14 @@ if (require.main == module) {
     console.log();
   }
 
-  test(tilings.makeCover(delaney.parse('<1.1:1:1,1,1:3,6>')));
-  test(tilings.makeCover(delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>')));
+  const symbols = [
+    delaney.parse('<1.1:1:1,1,1:3,6>'),
+    delaney.parse('<1.1:2:1 2,1 2,2:3 6,4>'),
+    delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>')
+  ];
+
+  for (const ds of symbols) {
+    test(tilings.makeCover(ds));
+    test(derived.barycentricSubdivision(ds));
+  }
 }
