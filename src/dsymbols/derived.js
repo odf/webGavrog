@@ -80,6 +80,9 @@ const _apply = (p, i) => (i < 0 || i >= p.length) ? i : p[i] - 1;
 
 
 export const barycentricSubdivision = (ds, splitDim) => {
+  if (splitDim == null)
+    splitDim = DS.dim(ds);
+
   if (splitDim == 0)
     return ds;
   else {
