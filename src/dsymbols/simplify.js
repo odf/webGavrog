@@ -61,21 +61,9 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
 export const simplify = ds => {
   const dim = delaney.dim(ds);
   const idcs = ds.indices().filter(i => i != dim - 1);
-
-  const marked = {};
-  for (const [D, i] of fundamental.innerEdges(ds)) {
-    if (i == dim) {
-      for (const E of properties.orbit(ds, idcs, D)) {
-        marked[E] = true;
-      }
-    }
-  }
-
-  const removed = [];
-  for (const D of ds.elements()) {
-    if (marked[D])
-      removed.push(D);
-  }
+  const inner = fundamental.innerEdges(ds);
+  const seeds = inner.filter(([_, i]) => i == dim).map(([D, _]) => D);
+  const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
   return collapse(ds, removed, dim);
 };
