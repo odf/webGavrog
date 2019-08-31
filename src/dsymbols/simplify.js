@@ -58,32 +58,35 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
 };
 
 
+export const simplify = ds => {
+  const dim = delaney.dim(ds);
+  const idcs = ds.indices().filter(i => i != dim - 1);
+
+  const marked = {};
+  for (const [D, i] of fundamental.innerEdges(ds)) {
+    if (i == dim) {
+      for (const E of properties.orbit(ds, idcs, D)) {
+        marked[E] = true;
+      }
+    }
+  }
+
+  const removed = [];
+  for (const D of ds.elements()) {
+    if (marked[D])
+      removed.push(D);
+  }
+
+  return collapse(ds, removed, dim);
+};
+
+
 if (require.main == module) {
   const test = ds => {
     console.log(`#input D-symbol`);
     console.log(`${ds}`);
 
-    const dim = delaney.dim(ds);
-    const idcs = ds.indices().filter(i => i != dim - 1);
-
-    const marked = {};
-    for (const [D, i] of fundamental.innerEdges(ds)) {
-      if (i == dim) {
-        for (const E of properties.orbit(ds, idcs, D)) {
-          marked[E] = true;
-        }
-      }
-    }
-
-    const removed = [];
-    for (const D of ds.elements()) {
-      if (marked[D])
-        removed.push(D);
-    }
-
-    console.log(`#to be removed: ${removed}`);
-
-    const dsx = derived.canonical(collapse(ds, removed, dim));
+    const dsx = derived.canonical(simplify(ds));
     console.log(`#output D-symbol`);
     console.log(`${dsx}`);
     console.log();

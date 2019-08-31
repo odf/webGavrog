@@ -7,29 +7,9 @@ import * as properties from '../dsymbols/properties';
 import * as simplify from '../dsymbols/simplify';
 
 
-const makeFundamental = ds => {
-  const sub = derived.barycentricSubdivision(ds);
-
-  const dim = delaney.dim(sub);
-  const idcs = sub.indices().filter(i => i != dim - 1);
-
-  const marked = {};
-  for (const [D, i] of fundamental.innerEdges(sub)) {
-    if (i == dim) {
-      for (const E of properties.orbit(sub, idcs, D)) {
-        marked[E] = true;
-      }
-    }
-  }
-
-  const removed = [];
-  for (const D of sub.elements()) {
-    if (marked[D])
-      removed.push(D);
-  }
-
-  return derived.canonical(simplify.collapse(sub, removed, dim));
-};
+const makeFundamental = ds => (
+  derived.canonical(simplify.simplify(derived.barycentricSubdivision(ds)))
+);
 
 
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
