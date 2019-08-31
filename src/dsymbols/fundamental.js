@@ -143,7 +143,7 @@ const _findGenerators = ds => {
 };
 
 
-const innerEdges = ds => {
+export const innerEdges = ds => {
   const bnd = new Boundary(ds);
   return bnd.glueRecursively(_spanningTree(ds)).map(a => a.slice(0, 2));
 }
