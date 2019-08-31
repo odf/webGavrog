@@ -58,14 +58,29 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
 };
 
 
-export const simplify = ds => {
+const mergeVolumes = ds => {
   const dim = delaney.dim(ds);
-  const idcs = ds.indices().filter(i => i != dim - 1);
   const inner = fundamental.innerEdges(ds);
   const seeds = inner.filter(([_, i]) => i == dim).map(([D, _]) => D);
+  const idcs = ds.indices().filter(i => i != dim - 1);
   const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
   return collapse(ds, removed, dim);
+};
+
+
+const mergeFacets = ds => {
+  const dim = delaney.dim(ds);
+  const seeds = ds.elements().filter(D => delaney.m(ds, dim, dim - 1, D) == 2);
+  const idcs = ds.indices().filter(i => i != dim - 2);
+  const removed = [].concat(...properties.orbits(ds, idcs, seeds));
+
+  return collapse(ds, removed, dim - 1);
+};
+
+
+export const simplify = ds => {
+  return mergeFacets(mergeVolumes(ds));
 };
 
 
