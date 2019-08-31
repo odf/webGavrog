@@ -65,7 +65,6 @@ if (require.main == module) {
 
     const dim = delaney.dim(ds);
     const idcs = ds.indices().filter(i => i != dim - 1);
-    const inner = fundamental.innerEdges(ds);
 
     const marked = {};
     for (const [D, i] of fundamental.innerEdges(ds)) {
