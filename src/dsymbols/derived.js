@@ -151,6 +151,30 @@ export const canonical = ds => {
 };
 
 
+export const subsymbol = (ds, indices, seed) => {
+  const elements = props.orbit(ds, indices, seed);
+  const dim = indices.length - 1;
+  const size = elements.length;
+
+  const mappedElement = {};
+  for (let D = 1; D <= size; ++D)
+    mappedElement[elements[D - 1]] = D;
+
+  const ops = new Array(dim + 1).fill(0).map(_ => []);
+  const brs = new Array(dim).fill(0).map(_ => []);
+
+  for (const D of elements) {
+    for (let i = 0; i <= dim; ++i)
+      ops[i].push([mappedElement[D], mappedElement[ds.s(indices[i], D)]]);
+
+    for (let i = 0; i < dim; ++i)
+      brs[i].push([mappedElement[D], ds.v(indices[i], indices[i + 1], D)])
+  }
+
+  return DS.build(dim, size, (_, i) => ops[i], (_, i) => brs[i]);
+};
+
+
 if (require.main == module) {
   const test = ds => {
     console.log(`ds = ${ds}`);
@@ -160,6 +184,13 @@ if (require.main == module) {
     console.log(`    minimal image : ${minimal(ds)}`);
     console.log(`    oriented cover: ${orientedCover(ds)}`);
     console.log(`    canonical     : ${canonical(ds)}`);
+    console.log();
+
+    for (const i of ds.indices()) {
+      const idcs = ds.indices().filter(k => k != i);
+      const sub = subsymbol(ds, idcs, 1);
+      console.log(`    ${JSON.stringify(idcs)}-subsymbol at 1: ${sub}`);
+    }
     console.log();
 
     for (const i of ds.indices())
