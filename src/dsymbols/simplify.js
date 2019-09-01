@@ -1,4 +1,5 @@
 import * as delaney from './delaney';
+import * as delaney2d from './delaney2d';
 import * as derived from './derived';
 import * as fundamental from './fundamental';
 import * as properties from './properties';
@@ -12,9 +13,6 @@ const _assert = (condition, message) => {
 
 
 export const collapse = (ds, toBeRemoved, connectorIndex) => {
-  console.log(
-    `## collapse(${ds}, ${JSON.stringify(toBeRemoved)}, ${connectorIndex})`
-  );
   const dim = delaney.dim(ds);
   const k = connectorIndex;
   const old2new = {};
@@ -61,13 +59,32 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
 };
 
 
-const mergeVolumes = ds => {
-  console.log(`## mergeVolumes(${ds})`);
+const isFundamentalTile = (ds, D) => {
+  const idcs = ds.indices().filter(i => i < ds.dim);
+  const sub = derived.subsymbol(ds, idcs, D);
+
+  if (ds.dim == 3) {
+    return delaney2d.curvature(sub) == 4;
+  }
+  else if (ds.dim == 2) {
+    return properties.isLoopless(sub) && ds.v(0, 1, D) == 1;
+  }
+};
+
+
+const mergeTiles = ds => {
   const dim = delaney.dim(ds);
   const inner = fundamental.innerEdges(ds);
-  console.log(`##   inner = ${JSON.stringify(inner)}`);
-  const seeds = inner.filter(([_, i]) => i == dim).map(([D, _]) => D);
-  console.log(`##   seeds = ${JSON.stringify(seeds)}`);
+
+  const seeds = (
+    inner
+      .filter(([D, i]) => (
+        i == dim &&
+          (isFundamentalTile(ds, D) || isFundamentalTile(ds, ds.s(i, D)))
+      ))
+      .map(([D, _]) => D)
+  );
+
   const idcs = ds.indices().filter(i => i != dim - 1);
   const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
@@ -94,7 +111,9 @@ const chain = (ds, ...fns) => {
 
 
 export const simplify = ds => chain(
-  ds, mergeVolumes, mergeFacets
+  ds,
+  mergeTiles, mergeFacets,
+  derived.dual, mergeTiles, mergeFacets, derived.dual
 );
 
 
