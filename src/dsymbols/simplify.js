@@ -12,6 +12,9 @@ const _assert = (condition, message) => {
 
 
 export const collapse = (ds, toBeRemoved, connectorIndex) => {
+  console.log(
+    `## collapse(${ds}, ${JSON.stringify(toBeRemoved)}, ${connectorIndex})`
+  );
   const dim = delaney.dim(ds);
   const k = connectorIndex;
   const old2new = {};
@@ -59,9 +62,12 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
 
 
 const mergeVolumes = ds => {
+  console.log(`## mergeVolumes(${ds})`);
   const dim = delaney.dim(ds);
   const inner = fundamental.innerEdges(ds);
+  console.log(`##   inner = ${JSON.stringify(inner)}`);
   const seeds = inner.filter(([_, i]) => i == dim).map(([D, _]) => D);
+  console.log(`##   seeds = ${JSON.stringify(seeds)}`);
   const idcs = ds.indices().filter(i => i != dim - 1);
   const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
@@ -79,9 +85,17 @@ const mergeFacets = ds => {
 };
 
 
-export const simplify = ds => {
-  return mergeFacets(mergeVolumes(ds));
+const chain = (ds, ...fns) => {
+  for (const fn of fns)
+    ds = fn(ds);
+
+  return ds;
 };
+
+
+export const simplify = ds => chain(
+  ds, mergeVolumes, mergeFacets
+);
 
 
 if (require.main == module) {
