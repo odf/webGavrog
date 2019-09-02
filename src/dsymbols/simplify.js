@@ -72,23 +72,48 @@ const isFundamentalTile = (ds, D) => {
 };
 
 
-const mergeTiles = ds => {
-  const dim = delaney.dim(ds);
-  const inner = fundamental.innerEdges(ds);
-
-  const seeds = (
-    inner
-      .filter(([D, i]) => (
-        i == dim &&
-          (isFundamentalTile(ds, D) || isFundamentalTile(ds, ds.s(i, D)))
-      ))
-      .map(([D, _]) => D)
-  );
-
-  const idcs = ds.indices().filter(i => i != dim - 1);
+const mergeTiles = (ds, seeds) => {
+  const idcs = ds.indices().filter(i => i != ds.dim - 1);
   const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
-  return collapse(ds, removed, dim);
+  return collapse(ds, removed, ds.dim);
+};
+
+
+const mergeFundamentalTiles = ds => {
+  const seeds = [];
+
+  for (const [D, i] of fundamental.innerEdges(ds)) {
+    if (i < ds.dim)
+      continue;
+
+    if (isFundamentalTile(ds, D) && isFundamentalTile(ds, ds.s(i, D)))
+      seeds.push(D);
+  }
+
+  return mergeTiles(ds, seeds);
+};
+
+
+const mergeNonFundamentalTiles = ds => {
+  const idcsTile = ds.indices().filter(i => i < ds.dim);
+  const idcsFacet = ds.indices().filter(i => i < ds.dim - 1);
+
+  const seeds = [];
+
+  for (const orbit of properties.orbits(ds, idcsTile, ds.elements())) {
+    if (!isFundamentalTile(ds, orbit[0]))
+      continue;
+
+    for (const E of properties.orbitReps(ds, idcsFacet, orbit)) {
+      if (!isFundamentalTile(ds, ds.s(ds.dim, E))) {
+        seeds.push(E);
+        break;
+      }
+    }
+  }
+
+  return mergeTiles(ds, seeds);
 };
 
 
@@ -112,8 +137,10 @@ const chain = (ds, ...fns) => {
 
 export const simplify = ds => chain(
   ds,
-  mergeTiles, mergeFacets,
-  derived.dual, mergeTiles, mergeFacets, derived.dual
+  mergeFundamentalTiles, mergeFacets, mergeNonFundamentalTiles, mergeFacets,
+  derived.dual,
+  mergeFundamentalTiles, mergeFacets, mergeNonFundamentalTiles, mergeFacets,
+  derived.dual
 );
 
 
