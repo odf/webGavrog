@@ -104,11 +104,13 @@ const title = model => {
 
 
 const toStructure = (config, model, i) => csp.go(function*() {
-  try {
-    const structures = model.structures;
-    const n = structures.length;
-    const index = i < 0 ? n + i % n : i % n;
+  const structures = model.structures;
+  const n = structures.length;
+  const index = i < 0 ? n + i % n : i % n;
 
+  let newModel = model;
+
+  try {
     if (structures[index].isRaw) {
       yield config.log('Converting structure data...');
       structures[index] = yield callWorker({
@@ -124,18 +126,19 @@ const toStructure = (config, model, i) => csp.go(function*() {
       data, model.options, callWorker, config.log
     );
 
-    const newModel =
-          Object.assign({}, model, { structures, index, data, scene });
+    newModel = Object.assign({}, model, { structures, index, data, scene });
 
     yield config.sendScene(scene, data.dim, true);
     yield config.sendTitle(title(newModel));
-
-    return newModel;
-  } catch (ex) {
-    console.error(ex);
-    yield config.log(`ERROR processing structure ${i + 1}!!!`);
-    return model;
   }
+  catch (ex) {
+    console.error(ex);
+    yield config.log(`ERROR processing structure ${index + 1}!!!`);
+
+    newModel = Object.assign({}, model, { index });
+  }
+
+  return newModel;
 });
 
 
