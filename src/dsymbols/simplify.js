@@ -127,6 +127,21 @@ const mergeFacets = ds => {
 };
 
 
+const mergeEdges = ds => {
+  const idcs = ds.indices().filter(i => i > 0);
+
+  const seeds = [];
+
+  for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
+    if (orbit.every(D => delaney.m(ds, 1, 2, D) == 2))
+      seeds.push(orbit[0]);
+  }
+
+  const removed = [].concat(...properties.orbits(ds, idcs, seeds));
+  return collapse(ds, removed, 1);
+};
+
+
 const chain = (ds, ...fns) => {
   for (const fn of fns)
     ds = fn(ds);
@@ -137,9 +152,12 @@ const chain = (ds, ...fns) => {
 
 export const simplify = ds => chain(
   ds,
-  mergeFundamentalTiles, mergeFacets, mergeNonFundamentalTiles, mergeFacets,
+  mergeFundamentalTiles, mergeFacets,
+  mergeNonFundamentalTiles, mergeFacets,
+  mergeEdges,
   derived.dual,
-  mergeFundamentalTiles, mergeFacets, mergeNonFundamentalTiles, mergeFacets,
+  //mergeFundamentalTiles, mergeFacets,
+  //mergeNonFundamentalTiles, mergeFacets,
   derived.dual
 );
 
