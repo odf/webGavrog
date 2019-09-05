@@ -81,8 +81,8 @@ onmessage = event => {
     output = handlers[cmd](val);
     ok = true;
   } catch (ex) {
-    console.log(ex);
-    console.log(ex.stack);
+    output = `${ex}\n${ex.stack}`;
+    ok = false;
   }
 
   postMessage(pickler.pickle({ id, output, ok }));
