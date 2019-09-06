@@ -281,6 +281,15 @@ const edgeCycle = faces => {
 
   for (let f = 0; f < faces.length; ++f) {
     const is = faces[f];
+
+    if (is.length < 3)
+      throw new Error(`Tile face of length ${is.length} found, must be >= 3`);
+    else {
+      const s = is.slice().sort();
+      if (s.some((n, i) => n == s[i + 1]))
+        throw new Error(`Tile face with duplicate vertex found.`);
+    }
+
     for (let k = 0; k < is.length; ++k)
       edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
   }
