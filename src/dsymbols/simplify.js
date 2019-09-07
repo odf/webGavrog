@@ -150,15 +150,23 @@ const chain = (ds, ...fns) => {
 };
 
 
-export const simplify = ds => chain(
-  ds,
+export const simplify = ds => {
+  ds = chain(
+    ds, mergeFundamentalTiles, mergeFacets, mergeNonFundamentalTiles
+  );
 
-  mergeFundamentalTiles, mergeFacets,
-  mergeNonFundamentalTiles, mergeFacets,
-  mergeEdges,
+  let dsOld;
 
-  derived.dual, mergeFacets, derived.dual
-);
+  do {
+    dsOld = ds;
+    ds = chain(
+      ds, mergeFacets, mergeEdges, derived.dual, mergeFacets, derived.dual
+    );
+  }
+  while (ds.size < dsOld.size);
+
+  return ds;
+};
 
 
 if (require.main == module) {
