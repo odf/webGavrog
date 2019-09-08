@@ -296,10 +296,10 @@ export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
 };
 
 
-const affineSymmetry = (D0, D1, pos) => {
+const affineSymmetry = (D0, D1, E0, E1, pos) => {
   const bas = D => chamberBasis(pos, D);
   const linear = opsR.solve(bas(D0), bas(D1));
-  const shift = opsR.minus(pos[D1][0], opsR.times(pos[D0][0], linear));
+  const shift = opsR.minus(pos[E1][0], opsR.times(pos[E0][0], linear));
 
   return opsR.affineTransformation(opsR.transposed(linear), shift);
 };
@@ -319,7 +319,7 @@ export const affineSymmetries = (ds, cov, skel) => {
   const D0 = nonDegenerateChamber(ds.elements(), pos);
   const syms = deckTransformations(ds, cov);
 
-  return syms.map(phi => affineSymmetry(D0, phi[D0], pos));
+  return syms.map(phi => affineSymmetry(D0, phi[D0], D0, phi[D0], pos));
 };
 
 
@@ -355,7 +355,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
       const D0 = orbitReps[classIndex];
       const D1 = elms.find(D => phi[D] == phi[D0]);
       const psi = properties.morphism(cov, D0, cov, D1)
-      symmetry = affineSymmetry(Dx, psi[Dx], pos);
+      symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
     }
 
     for (const E of elms)
