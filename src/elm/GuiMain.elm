@@ -82,6 +82,7 @@ type Action
     | OpenNetDialog
     | OpenTilingDialog
     | OpenTiling2dDialog
+    | OpenModifierDialog
     | OpenEmbeddingDialog
     | AboutDialog
     | AddTile
@@ -104,6 +105,7 @@ type Msg
     | UpdateNetSettings NetSettings
     | UpdateTilingSettings TilingSettings
     | UpdateTiling2dSettings Tiling2dSettings
+    | UpdateModifierSettings ModifierSettings
     | UpdateEmbeddingSettings EmbeddingSettings
     | JSData Decode.Value
     | HideAbout
@@ -198,6 +200,12 @@ type alias TextBoxConfig =
     }
 
 
+type Modifier
+    = None
+    | Dual
+    | TNet
+
+
 type Dialog
     = FixedMenu (Menu.Config Action) (Menu.State Action)
     | ContextMenu (Menu.Config Action) (Menu.State Action) Position
@@ -208,6 +216,7 @@ type Dialog
     | NetSettingsDialog
     | TilingSettingsDialog
     | Tiling2dSettingsDialog
+    | ModifierSettingsDialog
     | EmbeddingSettingsDialog
 
 
@@ -267,6 +276,11 @@ type alias Tiling2dSettings =
     }
 
 
+type alias ModifierSettings =
+    { activeModifier : Modifier
+    }
+
+
 type alias EmbeddingSettings =
     { skipRelaxation : Bool
     }
@@ -282,6 +296,7 @@ type alias Model =
     , netSettings : NetSettings
     , tilingSettings : TilingSettings
     , tiling2dSettings : Tiling2dSettings
+    , modifierSettings : ModifierSettings
     , embeddingSettings : EmbeddingSettings
     , title : String
     , status : String
@@ -372,6 +387,9 @@ init flags =
             , colorByTranslationClass = False
             , edgeWidth = 0.5
             }
+      , modifierSettings =
+            { activeModifier = None
+            }
       , embeddingSettings =
             { skipRelaxation = False
             }
@@ -458,6 +476,9 @@ actionLabel action =
 
         OpenTiling2dDialog ->
             "2D Tiling Settings..."
+
+        OpenModifierDialog ->
+            "Modifier Settings..."
 
         OpenEmbeddingDialog ->
             "Embedding Settings..."
@@ -624,6 +645,7 @@ mainMenuConfig =
     , makeMenuEntry OpenNetDialog
     , makeMenuEntry OpenTilingDialog
     , makeMenuEntry OpenTiling2dDialog
+    , makeMenuEntry OpenModifierDialog
     , makeMenuEntry OpenEmbeddingDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
@@ -889,6 +911,34 @@ update msg model =
             else
                 ( { model | tiling2dSettings = settings }, Cmd.none )
 
+        UpdateModifierSettings settings ->
+            if settings /= model.modifierSettings then
+                let
+                    value =
+                        case settings.activeModifier of
+                            None ->
+                                "none"
+
+                            Dual ->
+                                "dual"
+
+                            TNet ->
+                                "t-net"
+
+                    options =
+                        [ ( "modifier", Encode.string value ) ]
+                in
+                ( { model | modifierSettings = settings }
+                , toJS <|
+                    Encode.object
+                        [ ( "mode", Encode.string "options" )
+                        , ( "options", Encode.object options )
+                        ]
+                )
+
+            else
+                ( { model | modifierSettings = settings }, Cmd.none )
+
         UpdateEmbeddingSettings settings ->
             if settings /= model.embeddingSettings then
                 let
@@ -1067,6 +1117,11 @@ executeAction action model =
 
         OpenTiling2dDialog ->
             ( { model | dialogStack = [ Tiling2dSettingsDialog ] }
+            , Cmd.none
+            )
+
+        OpenModifierDialog ->
+            ( { model | dialogStack = [ ModifierSettingsDialog ] }
             , Cmd.none
             )
 
@@ -1561,6 +1616,12 @@ viewCurrentDialog model =
                     UpdateTiling2dSettings
                     model.tiling2dSettings
 
+        ModifierSettingsDialog :: _ ->
+            wrap <|
+                viewModifierSettings
+                    UpdateModifierSettings
+                    model.modifierSettings
+
         EmbeddingSettingsDialog :: _ ->
             wrap <|
                 viewEmbeddingSettings
@@ -2024,7 +2085,7 @@ viewTiling2dSettings toMsg settings =
                 (Element.text "2D Tiling Settings")
             , Element.el
                 [ Element.alignRight
-                , Element.Events.onClick (RunAction OpenEmbeddingDialog)
+                , Element.Events.onClick (RunAction OpenModifierDialog)
                 , Element.pointer
                 ]
                 (Styling.makeIcon "►")
@@ -2063,6 +2124,44 @@ viewTiling2dSettings toMsg settings =
         ]
 
 
+viewModifierSettings :
+    (ModifierSettings -> Msg)
+    -> ModifierSettings
+    -> Element.Element Msg
+viewModifierSettings toMsg settings =
+    Element.column
+        [ Element.spacing 12 ]
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.alignLeft
+                , Element.Events.onClick (RunAction OpenTiling2dDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "◄")
+            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
+                (Element.text "Modifier Settings")
+            , Element.el
+                [ Element.alignRight
+                , Element.Events.onClick (RunAction OpenEmbeddingDialog)
+                , Element.pointer
+                ]
+                (Styling.makeIcon "►")
+            ]
+        , viewSeparator
+        , Input.radio [ Element.spacing 12 ]
+            { onChange =
+                \option -> toMsg { settings | activeModifier = option }
+            , selected = Just settings.activeModifier
+            , label = Input.labelHidden "Active"
+            , options =
+                [ Input.option None (Element.text "None")
+                , Input.option Dual (Element.text "Dual")
+                , Input.option TNet (Element.text "T-Net")
+                ]
+            }
+        ]
+
+
 viewEmbeddingSettings :
     (EmbeddingSettings -> Msg)
     -> EmbeddingSettings
@@ -2073,7 +2172,7 @@ viewEmbeddingSettings toMsg settings =
         [ Element.row [ Element.width Element.fill ]
             [ Element.el
                 [ Element.alignLeft
-                , Element.Events.onClick (RunAction OpenTiling2dDialog)
+                , Element.Events.onClick (RunAction OpenModifierDialog)
                 , Element.pointer
                 ]
                 (Styling.makeIcon "◄")
