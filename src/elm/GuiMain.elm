@@ -200,7 +200,7 @@ type alias TextBoxConfig =
     }
 
 
-type Modifier
+type TilingModifier
     = None
     | Dual
     | TNet
@@ -277,7 +277,7 @@ type alias Tiling2dSettings =
 
 
 type alias ModifierSettings =
-    { activeModifier : Modifier
+    { tilingModifier : TilingModifier
     }
 
 
@@ -388,7 +388,7 @@ init flags =
             , edgeWidth = 0.5
             }
       , modifierSettings =
-            { activeModifier = None
+            { tilingModifier = None
             }
       , embeddingSettings =
             { skipRelaxation = False
@@ -915,7 +915,7 @@ update msg model =
             if settings /= model.modifierSettings then
                 let
                     value =
-                        case settings.activeModifier of
+                        case settings.tilingModifier of
                             None ->
                                 "none"
 
@@ -926,7 +926,7 @@ update msg model =
                                 "t-net"
 
                     options =
-                        [ ( "modifier", Encode.string value ) ]
+                        [ ( "tilingModifier", Encode.string value ) ]
                 in
                 ( { model | modifierSettings = settings }
                 , toJS <|
@@ -2148,11 +2148,14 @@ viewModifierSettings toMsg settings =
                 (Styling.makeIcon "►")
             ]
         , viewSeparator
-        , Input.radio [ Element.spacing 12 ]
+        , Input.radio [ Element.width Element.fill, Element.spacing 6 ]
             { onChange =
-                \option -> toMsg { settings | activeModifier = option }
-            , selected = Just settings.activeModifier
-            , label = Input.labelHidden "Active"
+                \option -> toMsg { settings | tilingModifier = option }
+            , selected = Just settings.tilingModifier
+            , label =
+                Input.labelAbove
+                    [ Element.padding 12, Font.bold, Element.centerX ]
+                    (Element.text "Tiling Modifiers")
             , options =
                 [ Input.option None (Element.text "None")
                 , Input.option Dual (Element.text "Dual")
