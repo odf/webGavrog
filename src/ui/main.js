@@ -382,10 +382,19 @@ const render = domNode => {
         action[text](selected, options);
     }
     else if (mode == "options") {
+      const changedMod = (
+        model.data.type == 'tiling' &&
+          options.tilingModifier &&
+          options.tilingModifier != model.options.tilingModifier
+      );
+
       for (const key in options)
         model.options[key] = options[key];
 
-      updateModel(updateStructure(config, model));
+      if (changedMod)
+        setStructure(model.index);
+      else
+        updateModel(updateStructure(config, model));
     }
   });
 

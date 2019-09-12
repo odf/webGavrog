@@ -203,7 +203,7 @@ type alias TextBoxConfig =
 type TilingModifier
     = None
     | Dual
-    | TNet
+    | TAnalog
 
 
 type Dialog
@@ -922,8 +922,8 @@ update msg model =
                             Dual ->
                                 "dual"
 
-                            TNet ->
-                                "t-net"
+                            TAnalog ->
+                                "t-analog"
 
                     options =
                         [ ( "tilingModifier", Encode.string value ) ]
@@ -2159,7 +2159,7 @@ viewModifierSettings toMsg settings =
             , options =
                 [ Input.option None (Element.text "None")
                 , Input.option Dual (Element.text "Dual")
-                , Input.option TNet (Element.text "T-Net")
+                , Input.option TAnalog (Element.text "T-Analog")
                 ]
             }
         ]

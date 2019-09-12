@@ -3,6 +3,7 @@ import * as csp from 'plexus-csp';
 import * as pickler from '../common/pickler';
 import * as util from '../common/util';
 import * as delaney from '../dsymbols/delaney';
+import * as derived from '../dsymbols/derived';
 import * as properties from '../dsymbols/properties';
 import * as tilings from '../dsymbols/tilings';
 import * as lattices from '../geometry/lattices';
@@ -640,6 +641,19 @@ const makeTileDisplayList = (data, options) => {
 const preprocessTiling = (structure, options, runJob, log) => csp.go(
   function*() {
     const t = util.timer();
+
+    if (options.tilingModifier == 'dual')
+      structure = Object.assign(
+        {},
+        structure,
+        { symbol: derived.dual(structure.symbol), cover: null }
+      )
+    else if (options.tilingModifier == 't-analog')
+      structure = Object.assign(
+        {},
+        structure,
+        { symbol: derived.tAnalog(structure.symbol), cover: null }
+      )
 
     const type = structure.type;
     const ds = structure.symbol;

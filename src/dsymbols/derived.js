@@ -123,6 +123,9 @@ export const barycentricSubdivision = (ds, splitDim) => {
 };
 
 
+export const tAnalog = ds => dual(barycentricSubdivision(ds));
+
+
 export const canonical = ds => {
   const inv = props.invariant(ds);
   const dim = DS.dim(ds);
