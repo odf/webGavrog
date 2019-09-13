@@ -354,6 +354,9 @@ const render = domNode => {
     ['Remove Tile(s)']: (selected) => updateModel(updateDisplayList(
       config, model, selected, makeScene.removeTiles
     )),
+    ['Remove Tile Class(es)']: (selected) => updateModel(updateDisplayList(
+      config, model, selected, makeScene.removeTileClasses(model.data.tiles)
+    )),
     ['Remove Element(s)']: (selected) => updateModel(updateDisplayList(
       config, model, selected, makeScene.removeElements
     )),

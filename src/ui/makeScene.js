@@ -322,6 +322,21 @@ export const removeTiles = (displayList, selection) => {
 };
 
 
+export const removeTileClasses = tiles => (displayList, selection) => {
+  const latticesRemoved = {};
+  for (const { classIndex } of selection) {
+    for (let i = 0; i < tiles.length; ++i) {
+      if (tiles[i].classIndex == classIndex)
+        latticesRemoved[i] = true;
+    }
+  }
+
+  return displayList.filter(
+    ({ latticeIndex }, _) => !latticesRemoved[latticeIndex]
+  );
+};
+
+
 export const removeElements = (displayList, selection) => {
   const toBeRemoved = {};
   for (const inst of selection) {

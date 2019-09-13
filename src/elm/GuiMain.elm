@@ -89,6 +89,7 @@ type Action
     | AddCorona
     | RestoreTile
     | RemoveTile
+    | RemoveTileClass
     | RemoveElement
     | RotateView Direction Float
 
@@ -498,6 +499,9 @@ actionLabel action =
         RemoveTile ->
             "Remove Tile(s)"
 
+        RemoveTileClass ->
+            "Remove Tile Class(es)"
+
         RemoveElement ->
             "Remove Element(s)"
 
@@ -683,6 +687,7 @@ contextMenuConfig =
     , makeMenuEntry AddCorona
     , makeMenuEntry RestoreTile
     , makeMenuEntry RemoveTile
+    , makeMenuEntry RemoveTileClass
     , makeMenuEntry RemoveElement
     ]
 
