@@ -88,15 +88,30 @@ const fileSaver = () => {
 };
 
 
+const structureName = model => {
+  const s = model.structures[model.index];
+
+  let ext = '';
+  if (s.type == 'tiling') {
+    if (model.options.tilingModifier == 'dual')
+      ext = '-d';
+    else if (model.options.tilingModifier == 't-analog')
+      ext = '-t';
+  }
+
+  return (s.name || 'unnamed') + ext;
+};
+
+
 const title = model => {
   if (model.structures && model.index != null) {
     const fname = model.filename;
     const index = model.index + 1;
     const len = model.structures.length;
-    const name = model.structures[model.index].name;
+    const name = structureName(model);
     const collection = fname ? `"${fname}"` : 'builtin';
     const groupName = model.data.sgInfo.groupName;
-    return `#${index}/${len} - ${name || ''} (${collection}) ${groupName}`;
+    return `#${index}/${len} - ${name} (${collection}) ${groupName}`;
   }
   else
     return '';
