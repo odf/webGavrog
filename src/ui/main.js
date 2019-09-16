@@ -320,6 +320,39 @@ const saveScreenshot = (config, options) => {
 };
 
 
+const saveSceneOBJ = (config, model) => {
+  const { meshes, instances } = model.scene;
+
+  const lines = [];
+  let offset = 1;
+
+  for (const { meshIndex, transform } of instances) {
+    const { basis, shift } = transform;
+    const mesh = meshes[meshIndex];
+
+    for (const v of mesh.vertices) {
+      const pos = ops.plus(ops.times(v.pos, basis), shift);
+      lines.push('v ' + pos.join(' '));
+    }
+
+    for (const v of mesh.vertices) {
+      const normal = ops.times(v.normal, basis);
+      lines.push('vn ' + normal.join(' '));
+    }
+
+    for (const f of mesh.faces) {
+      const vs = f.map(v => v + offset);
+      lines.push('f ' + vs.map(v => `${v}//${v}`).join(' '));
+    }
+
+    offset += mesh.vertices.length;
+  }
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  config.saveFile(blob, 'gavrog.obj');
+};
+
+
 const render = domNode => {
   const model = { options: {}, structures };
 
@@ -353,6 +386,7 @@ const render = domNode => {
     ['Save Structure...']: () => saveStructure(config, model),
     ['Save Screenshot...']: (selected, options) =>
       saveScreenshot(config, options),
+    ['Save Scene As OBJ...']: () => saveSceneOBJ(config, model),
     ['First']: () => setStructure(0),
     ['Prev']: () => setStructure(model.index - 1),
     ['Next']: () => setStructure(model.index + 1),

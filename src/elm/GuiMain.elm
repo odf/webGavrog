@@ -69,6 +69,7 @@ type Action
     | OpenFile
     | SaveStructure
     | SaveScreenshot
+    | SaveSceneAsOBJ
     | FirstInFile
     | PreviousInFile
     | NextInFile
@@ -419,6 +420,9 @@ actionLabel action =
         SaveScreenshot ->
             "Save Screenshot..."
 
+        SaveSceneAsOBJ ->
+            "Save Scene As OBJ..."
+
         FirstInFile ->
             "First"
 
@@ -633,6 +637,7 @@ mainMenuConfig =
     [ makeMenuEntry OpenFile
     , makeMenuEntry SaveStructure
     , makeMenuEntry SaveScreenshot
+    , makeMenuEntry SaveSceneAsOBJ
     , Menu.Separator
     , makeMenuEntry FirstInFile
     , makeMenuEntry PreviousInFile
