@@ -326,10 +326,13 @@ const saveSceneOBJ = (config, model) => {
   const lines = [];
   let offset = 1;
 
-  for (const { meshIndex, transform, extraShift } of instances) {
+  for (let i = 0; i < instances.length; ++i) {
+    const { classIndex, meshIndex, transform, extraShift } = instances[i];
     const { basis, shift: baseShift } = transform;
     const shift = ops.plus(baseShift, extraShift);
     const mesh = meshes[meshIndex];
+
+    lines.push(`o c${classIndex}-m${meshIndex}-i${i}`);
 
     for (const v of mesh.vertices) {
       const pos = ops.plus(ops.times(v.pos, basis), shift);
