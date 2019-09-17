@@ -327,12 +327,22 @@ const saveSceneOBJ = (config, model) => {
   let offset = 1;
 
   for (let i = 0; i < instances.length; ++i) {
-    const { classIndex, meshIndex, transform, extraShift } = instances[i];
-    const { basis, shift: baseShift } = transform;
-    const shift = ops.plus(baseShift, extraShift);
-    const mesh = meshes[meshIndex];
+    const inst = instances[i];
+    const basis = inst.transform.basis;
+    const shift = ops.plus(inst.transform.shift, inst.extraShift);
+    const mesh = meshes[inst.meshIndex];
 
-    lines.push(`o c${classIndex}-m${meshIndex}-i${i}`);
+    const colorIndex = model.options.colorByTranslations ?
+          inst.latticeIndex : inst.classIndex;
+
+    lines.push(`o c${inst.classIndex}-m${inst.meshIndex}-i${i}`);
+
+    if (inst.meshType == 'tileFace')
+      lines.push(`usemtl tileFace-${colorIndex}`);
+    else if (inst.meshType == 'tileEdges')
+      lines.push(`usemtl tileEdges-${colorIndex}`);
+    else
+      lines.push(`usemtl ${inst.meshType}`);
 
     for (const v of mesh.vertices) {
       const pos = ops.plus(ops.times(v.pos, basis), shift);

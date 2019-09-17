@@ -889,6 +889,9 @@ update msg model =
                         , ( "tightenSurfaces", Encode.bool settings.tighten )
                         , ( "tileScale", Encode.float settings.tileScale )
                         , ( "edgeWidth", Encode.float settings.edgeWidth )
+                        , ( "colorByTranslations"
+                          , Encode.bool settings.colorByTranslationClass
+                          )
                         ]
                 in
                 ( { model | tilingSettings = settings }
