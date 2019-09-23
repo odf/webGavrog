@@ -312,24 +312,25 @@ const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
 };
 
 
+const compareFaces = (f1, f2) => {
+  for (const i in f1) {
+    const d = f1[i].index - f2[i].index;
+    if (d != 0)
+      return d < 0;
+
+    for (const j in f1[i].shift) {
+      const d = f1[i].shift[j] - f2[i].shift[j];
+      if (d != 0)
+        return d < 0;
+    }
+  }
+  return false;
+};
+
+
 const normalizedFace = face => {
   let best = null;
   let bestShift = null;
-
-  const less = (f1, f2) => {
-    for (const i in f1) {
-      const d = f1[i].index - f2[i].index;
-      if (d != 0)
-        return d < 0;
-
-      for (const j in f1[i].shift) {
-        const d = f1[i].shift[j] - f2[i].shift[j];
-        if (d != 0)
-          return d < 0;
-      }
-    }
-    return false;
-  };
 
   for (const i in face) {
     const s = face[i].shift;
@@ -337,11 +338,11 @@ const normalizedFace = face => {
       .map(({ index, shift }) => ({ index, shift: opsF.minus(shift, s) }));
     const fb = [fa[0]].concat(fa.slice(1).reverse());
 
-    if (best == null || less(fa, best)) {
+    if (best == null || compareFaces(fa, best)) {
       best = fa;
       bestShift = s;
     }
-    if (less(fb, best)) {
+    if (compareFaces(fb, best)) {
       best = fb;
       bestShift = s;
     }
@@ -351,20 +352,36 @@ const normalizedFace = face => {
 };
 
 
+const normalizedTile = tile => {
+  let best = null;
+
+  for (const { shift: s0 } of tile) {
+    const mapped = tile.map(({ face, shift }) => ({
+      face, shift: opsF.minus(shift, s0)
+    }));
+    mapped.sort(({ face: f1, shift: s1 }, { face: f2, shift: s2 }) => {
+      
+    });
+  }
+};
+
+
+const _cornerAction = (pos, action) => (op, { index, shift }) => {
+  const oldPos = opsF.plus(pos[index], shift);
+  const newPos = applyToPoint(op, oldPos);
+  const newIndex = action[index][op];
+
+  return {
+    index: newIndex,
+    shift: opsF.minus(newPos, pos[newIndex]).map(x => opsF.round(x))
+  }
+};
+
+
 const applyOpsToFaces = (pos, action, faces, symOps) => {
   _timers && _timers.start("applyOpsToFaces");
 
-  const apply = (op, { index, shift }) => {
-    const oldPos = opsF.plus(pos[index], shift);
-    const newPos = applyToPoint(op, oldPos);
-    const newIndex = action[index][op];
-
-    return {
-      index: newIndex,
-      shift: opsF.minus(newPos, pos[newIndex]).map(x => opsF.round(x))
-    }
-  };
-
+  const apply = _cornerAction(pos, action);
   const seen = {};
   const result = [];
 
@@ -381,6 +398,34 @@ const applyOpsToFaces = (pos, action, faces, symOps) => {
   }
 
   _timers && _timers.stop("applyOpsToFaces");
+
+  return result;
+};
+
+
+const applyOpsToTiles = (pos, action, faces, tiles, symOps) => {
+  _timers && _timers.start("applyOpsToTiles");
+
+  const apply = _cornerAction(pos, action);
+  const seen = {};
+  const result = [];
+
+  for (const t of tiles) {
+    for (const op of symOps) {
+      const mappedFaces = t.map(
+        i => normalizedFace(faces[i].map(e => apply(op, e)))
+      );
+      const tNew = normalizedTile(mappedFaces);
+      const key = JSON.stringify(tNew);
+
+      if (!seen[key]) {
+        seen[key] = true;
+        result.push(tNew);
+      }
+    }
+  }
+
+  _timers && _timers.stop("applyOpsToTiles");
 
   return result;
 };
@@ -632,11 +677,17 @@ export const tilingFromFacelist = spec => {
   const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
   const { pos, action, faces: codedFaces } =
     applyOpsToCorners(facesMapped, primitive.ops, pointsEq);
-  const allFaces = applyOpsToFaces(pos, action, codedFaces, primitive.ops);
 
-  const ds = buildTiling(pos, allFaces);
+  let ds;
 
-  // TODO also support the case were tiles are given explicitly
+  if (tiles.length == 0) {
+    const allFaces = applyOpsToFaces(pos, action, codedFaces, primitive.ops);
+    ds = buildTiling(pos, allFaces);
+  }
+  else {
+    errors.push("Explicit tiles are not supported yet.");
+  }
+
   // TODO include original vertex positions in output
 
   _timers && _timers.stop('tilingFromFacelist');
