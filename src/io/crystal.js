@@ -353,15 +353,29 @@ const normalizedFace = face => {
 
 
 const normalizedTile = tile => {
+  const cmpPairs = (p, q) => (
+    compareFaces(p.face, q.face) || opsF.cmp(p.shift, q.shift)
+  );
+
+  const cmpTiles = (ps, qs) => {
+    for (let i = 0; i < ps.length; ++i) {
+      const d = cmpPairs(ps[i], qs[i]);
+      if (d)
+        return d;
+    }
+    return 0;
+  };
+
   let best = null;
 
   for (const { shift: s0 } of tile) {
-    const mapped = tile.map(({ face, shift }) => ({
-      face, shift: opsF.minus(shift, s0)
-    }));
-    mapped.sort(({ face: f1, shift: s1 }, { face: f2, shift: s2 }) => {
-      
-    });
+    const mapped = (
+      tile
+        .map(({ face, shift }) => ({ face, shift: opsF.minus(shift, s0) }))
+        .sort(cmpPairs)
+    );
+    if (best == null || cmpTiles(best, mapped) < 0)
+      best = mapped;
   }
 };
 
