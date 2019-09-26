@@ -316,12 +316,12 @@ const compareFaces = (f1, f2) => {
   for (const i in f1) {
     const d = f1[i].index - f2[i].index;
     if (d != 0)
-      return d < 0;
+      return d;
 
     for (const j in f1[i].shift) {
       const d = f1[i].shift[j] - f2[i].shift[j];
       if (d != 0)
-        return d < 0;
+        return d;
     }
   }
   return false;
@@ -338,11 +338,11 @@ const normalizedFace = face => {
       .map(({ index, shift }) => ({ index, shift: opsF.minus(shift, s) }));
     const fb = [fa[0]].concat(fa.slice(1).reverse());
 
-    if (best == null || compareFaces(fa, best)) {
+    if (best == null || compareFaces(fa, best) < 0) {
       best = fa;
       bestShift = s;
     }
-    if (compareFaces(fb, best)) {
+    if (compareFaces(fb, best) < 0) {
       best = fb;
       bestShift = s;
     }
@@ -403,8 +403,8 @@ const applyOpsToFaces = (pos, action, faces, symOps) => {
 
   for (const f of faces) {
     for (const op of symOps) {
-      const fNew = normalizedFace(f.map(e => apply(op, e)));
-      const key = JSON.stringify(fNew.face);
+      const { face: fNew } = normalizedFace(f.map(e => apply(op, e)));
+      const key = JSON.stringify(fNew);
 
       if (!seen[key]) {
         seen[key] = true;
@@ -464,7 +464,7 @@ const sectorNormals = vs => {
 const collectEdges = faces => {
   const facesAtEdge = {};
 
-  faces.forEach(({ face, shift }, i) => {
+  faces.forEach((face, i) => {
     const n = face.length;
     const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
 
@@ -486,7 +486,7 @@ const collectEdges = faces => {
 
 
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
-  const explicitFaces = faces.map(f => f.face.map(
+  const explicitFaces = faces.map(f => f.map(
     item => opsF.plus(opsF.vector(corners[item.index]), item.shift)));
 
   const normals = explicitFaces.map(sectorNormals)
@@ -514,8 +514,8 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
 
     incidences.forEach(([face1, edge1, rev1, angle1], i) => {
       const [face2, edge2, rev2, angle2] = incidences[(i + 1) % m];
-      const [offset1, size1] = [offsets[face1], faces[face1].face.length];
-      const [offset2, size2] = [offsets[face2], faces[face2].face.length];
+      const [offset1, size1] = [offsets[face1], faces[face1].length];
+      const [offset2, size2] = [offsets[face2], faces[face2].length];
 
       let a, b, c, d;
 
@@ -553,7 +553,7 @@ const tilingBase = faces => {
   const faceOffsets = [];
   let offset = 1;
 
-  for (const { face } of faces) {
+  for (const face of faces) {
     const n = face.length;
 
     for (let i = 0; i < 4 * n; i += 2)
@@ -690,26 +690,41 @@ export const tilingFromFacelist = spec => {
   const { pos, action, faces: codedFaces } =
     applyOpsToCorners(facesMapped, primitive.ops, pointsEq);
 
-  let ds;
+  const allFaces = applyOpsToFaces(pos, action, codedFaces, primitive.ops);
+  const { pairings, faceOffsets, size } = tilingBase(allFaces);
 
   if (tiles.length == 0) {
-    const allFaces = applyOpsToFaces(pos, action, codedFaces, primitive.ops);
-    const { pairings, faceOffsets, size } = tilingBase(allFaces);
     pairings[2] = op2PairingsForPlainMode(pos, allFaces, faceOffsets);
-
-    ds = delaney.build(
-      3,
-      size,
-      (ds, i) => pairings[i],
-      (ds, i) => ds.elements().map(D => [D, 1])
-    );
   }
   else {
     const allTiles = applyOpsToTiles(
       pos, action, codedFaces, tiles, primitive.ops
     );
-    errors.push("Explicit tiles are not supported yet.");
+
+    const tilesAtFace = {};
+
+    for (let i = 0; i < allTiles.length; ++i) {
+      for (const { face, shift } of allTiles[i]) {
+        const key = JSON.stringify(face);
+        if (tilesAtFace[key] == null)
+          tilesAtFace[key] = [];
+        tilesAtFace[key].push([i, shift]);
+      }
+    }
+
+    for (const key in tilesAtFace) {
+      const n = tilesAtFace[key].length;
+      if (n != 2)
+        throw new Error(`Face is incident to ${n} tile(s).`);
+    }
   }
+
+  const ds = delaney.build(
+    3,
+    size,
+    (ds, i) => pairings[i],
+    (ds, i) => ds.elements().map(D => [D, 1])
+  );
 
   // TODO include original vertex positions in output
 
