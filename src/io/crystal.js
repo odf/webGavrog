@@ -377,6 +377,8 @@ const normalizedTile = tile => {
     if (best == null || cmpTiles(best, mapped) < 0)
       best = mapped;
   }
+
+  return best;
 };
 
 
@@ -546,7 +548,7 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
 };
 
 
-const buildTiling = (pos, faces) => {
+const tilingBase = faces => {
   const pairings = [[], [], [], []];
   const faceOffsets = [];
   let offset = 1;
@@ -570,11 +572,7 @@ const buildTiling = (pos, faces) => {
     offset += 4 * n;
   }
 
-  pairings[2] = op2PairingsForPlainMode(pos, faces, faceOffsets);
-
-  return delaney.build(3, offset - 1,
-                       (ds, i) => pairings[i],
-                       (ds, i) => ds.elements().map(D => [D, 1]));
+  return { pairings, faceOffsets, size: offset - 1 };
 };
 
 
@@ -696,9 +694,20 @@ export const tilingFromFacelist = spec => {
 
   if (tiles.length == 0) {
     const allFaces = applyOpsToFaces(pos, action, codedFaces, primitive.ops);
-    ds = buildTiling(pos, allFaces);
+    const { pairings, faceOffsets, size } = tilingBase(allFaces);
+    pairings[2] = op2PairingsForPlainMode(pos, allFaces, faceOffsets);
+
+    ds = delaney.build(
+      3,
+      size,
+      (ds, i) => pairings[i],
+      (ds, i) => ds.elements().map(D => [D, 1])
+    );
   }
   else {
+    const allTiles = applyOpsToTiles(
+      pos, action, codedFaces, tiles, primitive.ops
+    );
     errors.push("Explicit tiles are not supported yet.");
   }
 
