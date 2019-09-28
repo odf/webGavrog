@@ -485,6 +485,34 @@ const collectEdges = faces => {
 };
 
 
+const collectTileEdges = tile => {
+  const facesAtEdge = {};
+
+  tile.forEach(({ face, shift }, i) => {
+    const n = face.length;
+    const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
+
+    edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
+      const key = JSON.stringify(
+        [v1, v2, opsF.minus(s2, s1), opsF.plus(shift, s1)]
+      );
+      const keyInv = JSON.stringify(
+        [v2, v1, opsF.minus(s1, s2), opsF.plus(shift, s2)]
+      );
+
+      if (facesAtEdge[key])
+        facesAtEdge[key].push([i, j, false]);
+      else if (facesAtEdge[keyInv])
+        facesAtEdge[keyInv].push([i, j, true]);
+      else
+        facesAtEdge[key] = [[i, j, false]];
+    });
+  });
+
+  return facesAtEdge;
+};
+
+
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
   const explicitFaces = faces.map(f => f.map(
     item => opsF.plus(opsF.vector(corners[item.index]), item.shift)));
@@ -545,6 +573,35 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
   }
 
   return result;
+};
+
+
+const op2PairingsForTileMode = (faces, offsets, tiles, tilesAtFace) => {
+  for (let tIdx = 0; tIdx < tiles.length; ++tIdx) {
+    const tile = tiles[tIdx];
+    const facesAtEdge = collectTileEdges(tile);
+
+    for (const key of Object.keys(facesAtEdge)) {
+      const flist = facesAtEdge[key];
+      if (flist.length != 2)
+        throw new Error(`tile edge incident to ${flist.length} edge(s)`);
+
+      const [[Da, Ea], [Db, Eb]] = flist.map(([fIdx, eIdx, rev]) => {
+        const { face, shift } = tile[fIdx];
+        const taf = tilesAtFace[JSON.stringify(face)];
+
+        let t;
+        if (taf[0][0] == tIdx && opsQ.eq(taf[0][1], shift))
+          t = 0;
+        else if (taf[1][0] == tIdx && opsQ.eq(taf[1][1], shift))
+          t = 1;
+        else
+          throw new Error(`face-tile inconsistency`);
+
+        return [ null, null ];
+      });
+    }
+  }
 };
 
 
@@ -717,6 +774,10 @@ export const tilingFromFacelist = spec => {
       if (n != 2)
         throw new Error(`Face is incident to ${n} tile(s).`);
     }
+
+    pairings[2] = op2PairingsForTileMode(
+      allFaces, faceOffsets, allTiles, tilesAtFace
+    );
   }
 
   const ds = delaney.build(
