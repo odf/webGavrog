@@ -2,6 +2,7 @@ import * as csp from 'plexus-csp';
 
 import * as pickler from '../common/pickler';
 import * as version from '../version';
+import * as derived from '../dsymbols/derived';
 import parseDSymbols from '../io/ds';
 
 import { structures } from './builtinStructures';
@@ -275,7 +276,14 @@ const saveStructure = (config, model) => {
   const structure = model.structures[model.index];
 
   if (structure.type == 'tiling') {
-    const text = structure.symbol.toString();
+    const mod = model.options.tilingModifier;
+    const ds = structure.symbol;
+
+    const text =
+          mod == 'dual' ? derived.dual(ds).toString() :
+          mod == 't-analog' ? derived.tAnalog(ds).toString() :
+          ds.toString();
+
     const blob = new Blob([text], { type: 'text/plain' });
     config.saveFile(blob, 'gavrog.ds');
   }
