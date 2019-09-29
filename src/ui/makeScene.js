@@ -661,13 +661,19 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
       structure = Object.assign(
         {},
         structure,
-        { symbol: derived.dual(structure.symbol), cover: null }
+        {
+          symbol: derived.dual(structure.symbol),
+          cover: structure.cover && derived.dual(structure.cover)
+        }
       )
     else if (options.tilingModifier == 't-analog')
       structure = Object.assign(
         {},
         structure,
-        { symbol: derived.tAnalog(structure.symbol), cover: null }
+        {
+          symbol: derived.tAnalog(structure.symbol),
+          cover: structure.cover && derived.tAnalog(structure.cover)
+        }
       )
 
     const type = structure.type;
