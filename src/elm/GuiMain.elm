@@ -223,7 +223,8 @@ type Dialog
 
 
 type alias DisplaySettings =
-    { editBackgroundColor : Bool
+    { orthogonalView : Bool
+    , editBackgroundColor : Bool
     , backgroundColor : ColorDialog.Color
     , fadeToBackground : Float
     , fadeToBlue : Float
@@ -319,7 +320,8 @@ init flags =
       , title = ""
       , status = "Welcome!"
       , displaySettings =
-            { editBackgroundColor = False
+            { orthogonalView = False
+            , editBackgroundColor = False
             , backgroundColor = Color.toHsla Color.white
             , showSurfaceMesh = False
             , fadeToBlue = 0.0
@@ -1425,7 +1427,8 @@ view model =
                 settings.backgroundColor
 
         options =
-            { drawWires = settings.showSurfaceMesh
+            { orthogonalView = settings.orthogonalView
+            , drawWires = settings.showSurfaceMesh
             , fadeToBackground = settings.fadeToBackground
             , fadeToBlue = settings.fadeToBlue
             , addOutlines = settings.addOutlines
@@ -1853,6 +1856,12 @@ viewDisplaySettings toMsg settings =
             defaultValueSliderConfig
             settings.fadeToBlue
         , viewSeparator
+        , Input.checkbox []
+            { onChange = \onOff -> toMsg { settings | orthogonalView = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.orthogonalView
+            , label = Input.labelRight [] <| Element.text "Orthogonal View"
+            }
         , Input.checkbox []
             { onChange = \onOff -> toMsg { settings | showSurfaceMesh = onOff }
             , icon = Input.defaultCheckbox

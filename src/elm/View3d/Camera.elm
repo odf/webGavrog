@@ -10,6 +10,7 @@ module View3d.Camera exposing
     , needsFrameEvents
     , needsMouseEvents
     , nextFrame
+    , orthogonalMatrix
     , perspectiveMatrix
     , pickingRay
     , pinchTo
@@ -422,6 +423,27 @@ perspectiveMatrix (State state) =
                 atan (tan (degrees (fov / 2)) / aspectRatio) * 360 / pi
     in
     Mat4.makePerspective fovy aspectRatio 1 10000
+
+
+orthogonalMatrix : State -> Mat4
+orthogonalMatrix (State state) =
+    let
+        aspectRatio =
+            state.size.width / state.size.height
+
+        fov =
+            state.fieldOfView
+
+        delta =
+            tan (degrees (fov / 2)) * state.cameraDistance
+
+        dx =
+            delta * max aspectRatio 1
+
+        dy =
+            delta * min aspectRatio 1
+    in
+    Mat4.makeOrtho -dx dx -dy dy 1 10000
 
 
 cameraDistance : State -> Float

@@ -567,6 +567,14 @@ requestRedraw model =
 
 view : (Msg -> msg) -> Model -> Renderer.Options -> Color -> Html msg
 view toMsg model options bgColor =
+    let
+        perspective =
+            if options.orthogonalView then
+                Camera.orthogonalMatrix model.cameraState
+
+            else
+                Camera.perspectiveMatrix model.cameraState
+    in
     WebGL.toHtml
         [ Html.Attributes.style "display" "block"
         , Html.Attributes.style "background" (Color.toCssString bgColor)
@@ -596,7 +604,7 @@ view toMsg model options bgColor =
             model.selected
             (Camera.cameraDistance model.cameraState)
             (Camera.viewingMatrix model.cameraState)
-            (Camera.perspectiveMatrix model.cameraState)
+            perspective
         )
 
 

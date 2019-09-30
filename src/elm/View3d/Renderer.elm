@@ -38,7 +38,8 @@ type alias Scene a =
 
 
 type alias Options =
-    { drawWires : Bool
+    { orthogonalView : Bool
+    , drawWires : Bool
     , fadeToBackground : Float
     , fadeToBlue : Float
     , backgroundColor : Vec3
