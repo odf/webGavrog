@@ -144,7 +144,7 @@ updateZoom factor alter (State state) =
     if alter then
         let
             fieldOfView =
-                clamp 2.5 150 <| state.fieldOfView * factor
+                clamp 2 90 <| state.fieldOfView * factor
 
             clampedFactor =
                 fieldOfView / state.fieldOfView
