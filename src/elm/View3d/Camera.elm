@@ -142,17 +142,24 @@ pickingRay pos state =
 updateZoom : Float -> Bool -> State -> State
 updateZoom factor alter (State state) =
     if alter then
+        let
+            fieldOfView =
+                clamp 2.5 150 <| state.fieldOfView * factor
+
+            clampedFactor =
+                fieldOfView / state.fieldOfView
+        in
         State
             { state
-                | fieldOfView =
-                    clamp 2.5 150 <| factor * state.fieldOfView
+                | fieldOfView = fieldOfView
+                , cameraDistance = state.cameraDistance / clampedFactor
             }
 
     else
         State
             { state
                 | cameraDistance =
-                    clamp 2.5 1000 <| factor * state.cameraDistance
+                    clamp 2.5 1000 <| state.cameraDistance * factor
             }
 
 
