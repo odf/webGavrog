@@ -77,8 +77,9 @@ const branchings = ds => {
 
     children([ds, curv, unused]) {
       if (unused.length) {
-        if (Q.lt(curv, 0))
-          return ds;
+        if (Q.lt(curv, 0)) {
+          return [[ds, curv, []]];
+        }
         else {
           const [i, D, r, loopless] = unused[0];
           const v0 = ds.v(i, i + 1, D);
