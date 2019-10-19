@@ -93,7 +93,11 @@ const branchings = ds => {
     root: [ds0, DS2D.curvature(ds0), unused],
 
     extract([ds, curv, unused]) {
-      if (unused.length == 0 && _isCanonical(ds, maps))
+      if (
+        unused.length == 0
+          && _isCanonical(ds, maps)
+          && (Q.le(curv, 0) || DS2D.isSpherical(ds))
+      )
         return ds;
     },
 
