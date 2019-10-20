@@ -70,6 +70,8 @@ export const isSpherical = ds => {
 
 
 export const orbifoldSymbol = ds => {
+  //TODO correctly handle multiple boundary components
+
   const orbitType = (i, j, D) => [ds.v(i, j, D), _loopless(ds, i, j, D)];
 
   const types = _map1dOrbits(orbitType, ds);
@@ -112,6 +114,68 @@ export const toroidalCover = ds => {
 };
 
 
+const _cutsOffDisk = (ds, candidates, branched) => {
+  const pairs = [];
+  for (const D of candidates) {
+    const E = ds.s(1, D);
+    pairs.push([D, D]);
+    pairs.push([E, E]);
+  }
+  const tmp = DS.withPairings(ds, 1, pairs);
+  const patch = d.subsymbol(tmp, [0, 1, 2], candidates[0]);
+
+  if (patch.size == ds.size || patch.size == candidates.length)
+    return false;
+
+  const osym = orbifoldSymbol(patch).slice(0, 2);
+
+  return (osym == '1*' || (branched && osym == '2*'));
+};
+
+
+export const isPseudoConvex = ds => {
+  _assert(DS.dim(ds) == 2, 'must be two-dimensional');
+  _assert(p.isConnected(ds), 'must be connected');
+
+  ds = d.orientedCover(ds);
+  const ori = p.partialOrientation(ds);
+
+  for (const A1 of ds.elements()) {
+    if (ori[A1] < 0)
+      continue;
+    const face1 = p.orbit(ds, [0, 1], A1);
+    const vert1 = p.orbit(ds, [1, 2], A1);
+
+    for (const A2 of face1) {
+      if (ori[A2] > 0)
+        continue;
+
+      if (vert1.indexOf(A2) >= 0) {
+        if (_cutsOffDisk(ds, [A1, A2], true))
+          return false;
+      }
+
+      for (const B2 of p.orbit(ds, [1, 2], A2)) {
+        if (ori[B2] < 0 || face1.indexOf(B2) >= 0)
+          continue;
+
+        for (const B1 of p.orbit(ds, [0, 1], B2)) {
+          if (ori[B1] > 0)
+            continue;
+
+          if (vert1.indexOf(B1) >= 0) {
+            if (_cutsOffDisk(ds, [A1, A2, B2, B1], false))
+              return false;
+          }
+        }
+      }
+    }
+  }
+
+  return true;
+};
+
+
 if (require.main == module) {
   const test = ds => {
     const is = fn => fn(ds) ? 'is' : 'is not';
@@ -123,6 +187,7 @@ if (require.main == module) {
     console.log(`  symbol ${is(isEuclidean)} euclidean`);
     console.log(`  symbol ${is(isHyperbolic)} hyperbolic`);
     console.log(`  symbol ${is(isSpherical)} spherical`);
+    console.log(`  symbol ${is(isPseudoConvex)} pseudo-convex`);
     console.log(`  orbifold symbol = ${orbifoldSymbol(ds)}`);
 
     if (isEuclidean(ds)) {
@@ -150,4 +215,5 @@ if (require.main == module) {
   test(DS.parse('<1.1:2:2,1 2,1 2:2,4 5>'));
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
+  test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>'));
 }
