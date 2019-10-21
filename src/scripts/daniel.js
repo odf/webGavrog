@@ -91,7 +91,10 @@ const _goodResult = ds => {
   if (!DS2D.isSpherical(ds))
     return false;
 
-  return _orbits(ds).every(([i, D, r, loopless]) => ds.v(i, i+1, D) <= 5);
+  const forbidden = [
+    '55', '66', '77', '*55', '*66', '*77', '2*5', '2*6', '2*7'
+  ];
+  return forbidden.indexOf(DS2D.orbifoldSymbol(ds)) < 0;
 };
 
 
