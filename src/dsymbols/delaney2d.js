@@ -115,6 +115,9 @@ export const toroidalCover = ds => {
 
 
 const _cutsOffDisk = (ds, candidates, branched) => {
+  console.log(
+    `_cutsOffDisk(${ds}, ${JSON.stringify(candidates)}, ${branched})`
+  );
   const pairs = [];
   for (const D of candidates) {
     const E = ds.s(1, D);
@@ -123,13 +126,32 @@ const _cutsOffDisk = (ds, candidates, branched) => {
   }
   const tmp = DS.withPairings(ds, 1, pairs);
   const patch = d.subsymbol(tmp, [0, 1, 2], candidates[0]);
+  console.log(`  patch = ${patch}`);
 
-  if (patch.size == ds.size || patch.size == candidates.length)
+  if (patch.size == candidates.length)
     return false;
 
-  const osym = orbifoldSymbol(patch).slice(0, 2);
+  console.log(`  isWeaklyOriented = ${p.isWeaklyOriented(patch)}`);
+  if (!p.isWeaklyOriented(patch))
+    return false;
 
-  return (osym == '1*' || (branched && osym == '2*'));
+  const nrLoops = i => patch.elements().filter(D => ds.s(i, D) == D).length;
+  const nrOrbits = (i, j) => DS.orbitReps2(patch, 0, 1).length;
+
+  const nf = patch.size;
+  const ne = (3 * nf + nrLoops(0) + nrLoops(1) + nrLoops(2)) / 2;
+  const nv = nrOrbits(0, 1) + nrOrbits(0, 2) + nrOrbits(1, 2);
+  console.log(`  nf = ${nf}, ne = ${ne}, nv = ${nv}`);
+
+  if (nf - ne + nv != 1)
+    return false;
+
+  const orbitType = (i, j, D) => [patch.v(i, j, D), _loopless(patch, i, j, D)];
+  const types = _map1dOrbits(orbitType, patch);
+  const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
+  console.log(`  cones = ${JSON.stringify(cones)}`);
+
+  return cones.length == 0 || (branched && cones.length == 1 && cones[0] == 2);
 };
 
 
