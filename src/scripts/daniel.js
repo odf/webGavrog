@@ -84,6 +84,17 @@ const isMinimallyHyperbolic = ds => {
 };
 
 
+const _goodResult = ds => {
+  if (Q.le(DS2D.curvature(ds), 0))
+    return true;
+
+  if (!DS2D.isSpherical(ds))
+    return false;
+
+  return _orbits(ds).every(([i, D, r, loopless]) => ds.v(i, i+1, D) <= 5);
+};
+
+
 const branchings = ds => {
   const unused = _openOrbits(ds);
   const maps = props.automorphisms(ds);
@@ -93,11 +104,7 @@ const branchings = ds => {
     root: [ds0, DS2D.curvature(ds0), unused],
 
     extract([ds, curv, unused]) {
-      if (
-        unused.length == 0
-          && _isCanonical(ds, maps)
-          && (Q.le(curv, 0) || DS2D.isSpherical(ds))
-      )
+      if (unused.length == 0 && _isCanonical(ds, maps) && _goodResult(ds))
         return ds;
     },
 
