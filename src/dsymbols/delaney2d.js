@@ -143,7 +143,10 @@ const _cutsOffDisk = (ds, candidates, branched) => {
   const patch = d.subsymbol(tmp, [0, 1, 2], candidates[0]);
   console.log(`  patch = ${patch}`);
 
-  if (patch.size == candidates.length)
+  if (
+    patch.size == candidates.length
+      || patch.size == ds.size - candidates.length
+  )
     return false;
 
   console.log(`  isWeaklyOriented = ${p.isWeaklyOriented(patch)}`);
