@@ -141,9 +141,15 @@ const branchings = ds => {
 
 
 if (require.main == module) {
-  const maxDsSize = parseInt(process.argv[2]);
+  const arg = process.argv[2];
 
-  covers.covers(DS.parse('<1.1:1:1,1,1:0,0>'), maxDsSize)
-    .flatMap(ds => generators.results(branchings(ds)))
-    .forEach(ds => console.log(`${ds}`));
+  if (Number.isInteger(parseInt(arg))) {
+    covers.covers(DS.parse('<1.1:1:1,1,1:0,0>'), parseInt(arg))
+      .flatMap(ds => generators.results(branchings(ds)))
+      .forEach(ds => console.log(`${ds}`));
+  }
+  else {
+    for (const ds of generators.results(branchings(DS.parseSymbols(arg)[0])))
+      console.log(`${ds}`);
+  }
 }
