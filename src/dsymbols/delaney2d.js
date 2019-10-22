@@ -62,7 +62,10 @@ export const isSpherical = ds => {
     const dso = d.orientedCover(ds);
     const cones = _map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1);
 
-    return cones.length > 2 || (cones.length == 2 && cones[0] == cones[1]);
+    return (
+      cones.length != 1
+        && (cones.length != 2 || (cones[0] == cones[1]))
+    );
   }
   else
     return false;
@@ -238,4 +241,7 @@ if (require.main == module) {
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
   test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>'));
+  test(DS.parse(
+    '<1.1:12:1 2 4 6 8 10 12,5 9 7 11 6 12 10,2 3 4 8 7 12 11:3 3 3,3 3 3>'
+  ));
 }
