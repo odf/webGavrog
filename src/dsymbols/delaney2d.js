@@ -117,6 +117,18 @@ export const toroidalCover = ds => {
 };
 
 
+const _eulerCharacteristic = ds => {
+  const nrLoops = i => ds.elements().filter(D => ds.s(i, D) == D).length;
+  const nrOrbits = (i, j) => DS.orbitReps2(ds, i, j).length;
+
+  const nf = ds.size;
+  const ne = (3 * nf + nrLoops(0) + nrLoops(1) + nrLoops(2)) / 2;
+  const nv = nrOrbits(0, 1) + nrOrbits(0, 2) + nrOrbits(1, 2);
+
+  return nf - ne + nv;
+};
+
+
 const _cutsOffDisk = (ds, candidates, branched) => {
   console.log(
     `_cutsOffDisk(${ds}, ${JSON.stringify(candidates)}, ${branched})`
@@ -138,15 +150,9 @@ const _cutsOffDisk = (ds, candidates, branched) => {
   if (!p.isWeaklyOriented(patch))
     return false;
 
-  const nrLoops = i => patch.elements().filter(D => ds.s(i, D) == D).length;
-  const nrOrbits = (i, j) => DS.orbitReps2(patch, 0, 1).length;
-
-  const nf = patch.size;
-  const ne = (3 * nf + nrLoops(0) + nrLoops(1) + nrLoops(2)) / 2;
-  const nv = nrOrbits(0, 1) + nrOrbits(0, 2) + nrOrbits(1, 2);
-  console.log(`  nf = ${nf}, ne = ${ne}, nv = ${nv}`);
-
-  if (nf - ne + nv != 1)
+  const euler = _eulerCharacteristic(patch);
+  console.log(`  euler Char: ${euler}`);
+  if (euler != 1)
     return false;
 
   const orbitType = (i, j, D) => [patch.v(i, j, D), _loopless(patch, i, j, D)];
