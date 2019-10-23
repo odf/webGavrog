@@ -129,10 +129,9 @@ const _eulerCharacteristic = ds => {
 };
 
 
-const _cutsOffDisk = (ds, candidates, branched) => {
-  console.log(
-    `_cutsOffDisk(${ds}, ${JSON.stringify(candidates)}, ${branched})`
-  );
+const _cutsOffDisk = (ds, candidates, allow2Cone) => {
+  // TODO may not work correctly if degree-2 vertices are allowed
+
   const pairs = [];
   for (const D of candidates) {
     const E = ds.s(1, D);
@@ -141,7 +140,6 @@ const _cutsOffDisk = (ds, candidates, branched) => {
   }
   const tmp = DS.withPairings(ds, 1, pairs);
   const patch = d.subsymbol(tmp, [0, 1, 2], candidates[0]);
-  console.log(`  patch = ${patch}`);
 
   if (
     patch.size == candidates.length
@@ -149,21 +147,19 @@ const _cutsOffDisk = (ds, candidates, branched) => {
   )
     return false;
 
-  console.log(`  isWeaklyOriented = ${p.isWeaklyOriented(patch)}`);
   if (!p.isWeaklyOriented(patch))
     return false;
 
-  const euler = _eulerCharacteristic(patch);
-  console.log(`  euler Char: ${euler}`);
-  if (euler != 1)
+  if (_eulerCharacteristic(patch) != 1)
     return false;
 
   const orbitType = (i, j, D) => [patch.v(i, j, D), _loopless(patch, i, j, D)];
   const types = _map1dOrbits(orbitType, patch);
   const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
-  console.log(`  cones = ${JSON.stringify(cones)}`);
 
-  return cones.length == 0 || (branched && cones.length == 1 && cones[0] == 2);
+  return (
+    cones.length == 0 || (allow2Cone && cones.length == 1 && cones[0] == 2)
+  );
 };
 
 
@@ -174,32 +170,22 @@ export const isPseudoConvex = ds => {
   ds = d.orientedCover(ds);
   const ori = p.partialOrientation(ds);
 
-  for (const A1 of ds.elements()) {
-    if (ori[A1] < 0)
-      continue;
-    const face1 = p.orbit(ds, [0, 1], A1);
-    const vert1 = p.orbit(ds, [1, 2], A1);
+  const candidates = (D, i) => p.orbit(ds, [1, i], D)
+    .filter(E => ori[E] != ori[D] && (ds.s(1, D) != E || ds.v(1, i, D) > 1));
 
-    for (const A2 of face1) {
-      if (ori[A2] > 0)
-        continue;
-
-      if (vert1.indexOf(A2) >= 0) {
-        if (_cutsOffDisk(ds, [A1, A2], true))
-          return false;
-      }
-
-      for (const B2 of p.orbit(ds, [1, 2], A2)) {
-        if (ori[B2] < 0 || face1.indexOf(B2) >= 0)
-          continue;
-
-        for (const B1 of p.orbit(ds, [0, 1], B2)) {
-          if (ori[B1] > 0)
-            continue;
-
-          if (vert1.indexOf(B1) >= 0) {
-            if (_cutsOffDisk(ds, [A1, A2, B2, B1], false))
-              return false;
+  for (const A1 of ds.elements().filter(D => ori[D] > 0)) {
+    for (const A2 of candidates(A1, 0)) {
+      for (const B2 of candidates(A2, 2)) {
+        if (B2 == A1) {
+          if (_cutsOffDisk(ds, [A1, A2], true))
+            return false;
+        }
+        else {
+          for (const B1 of candidates(B2, 0)) {
+            if (B1 != A2 && candidates(B1, 2).indexOf(A1) >= 0) {
+              if (_cutsOffDisk(ds, [A1, A2, B2, B1], false))
+                return false;
+            }
           }
         }
       }
