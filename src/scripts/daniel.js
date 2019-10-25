@@ -1,8 +1,10 @@
 import * as generators from '../common/generators';
 
+import * as cosets from '../fpgroups/cosets';
 import * as covers from '../dsymbols/covers';
 import * as DS from '../dsymbols/delaney';
 import * as DS2D from '../dsymbols/delaney2d';
+import * as fundamental from '../dsymbols/fundamental';
 import * as props from '../dsymbols/properties';
 
 import { rationals } from '../arithmetic/types';
@@ -140,13 +142,25 @@ const branchings = ds => {
 }
 
 
+function* genCovers(ds, maxDeg) {
+  const fun = fundamental.fundamentalGroup(ds);
+  const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
+
+  for (const table of generators.results(tableGenerator))
+    yield covers.coverForTable(ds, table, fun.edge2word);
+};
+
+
 if (require.main == module) {
   const arg = process.argv[2];
 
   if (Number.isInteger(parseInt(arg))) {
-    covers.covers(DS.parse('<1.1:1:1,1,1:0,0>'), parseInt(arg))
-      .flatMap(ds => generators.results(branchings(ds)))
-      .forEach(ds => console.log(`${ds}`));
+    const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
+
+    for (const dset of genCovers(ds0, parseInt(arg))) {
+      for (const ds of generators.results(branchings(dset)))
+        console.log(`${ds}`);
+    }
   }
   else {
     for (const ds of generators.results(branchings(DS.parseSymbols(arg)[0])))
