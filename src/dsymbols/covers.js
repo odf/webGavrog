@@ -24,13 +24,16 @@ export const subgroupCover = (ds, subgroupGens) => {
 export const finiteUniversalCover = ds => subgroupCover(ds, []);
 
 
-export const covers = (ds, maxDeg) => {
+export function* coversGenerator(ds, maxDeg) {
   const fun = fundamental.fundamentalGroup(ds);
   const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
 
-  return seq(generators.results(tableGenerator))
-    .map(table => coverForTable(ds, table, fun.edge2word));
+  for (const table of generators.results(tableGenerator))
+    yield coverForTable(ds, table, fun.edge2word);
 };
+
+
+export const covers = (ds, maxDeg) => seq(coversGenerator(ds, maxDeg));
 
 
 if (require.main == module) {
