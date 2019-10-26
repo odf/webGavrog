@@ -19,9 +19,8 @@ const _withMinimalBranchings = ds => {
 
 if (require.main == module) {
   const maxDsSize = parseInt(process.argv[2]);
+  const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
 
-  covers.covers(DS.parse('<1.1:1:1,1,1:0,0>'), maxDsSize)
-    .forEach(
-      ds => console.log(`${derived.canonical(_withMinimalBranchings(ds))}`)
-    );
+  for (const ds of covers.coversGenerator(ds0, maxDsSize))
+    console.log(`${derived.canonical(_withMinimalBranchings(ds))}`);
 }
