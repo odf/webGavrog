@@ -1,4 +1,5 @@
 import * as generators from '../common/generators';
+import * as util from '../common/util';
 
 import * as covers from '../dsymbols/covers';
 import * as DS from '../dsymbols/delaney';
@@ -7,6 +8,9 @@ import * as props from '../dsymbols/properties';
 
 import { rationals } from '../arithmetic/types';
 const Q = rationals;
+
+
+const timers = null; //util.timers();
 
 
 const _loopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
@@ -98,17 +102,65 @@ const _goodResult = ds => {
 };
 
 
+const _morphism = (src, srcD0, img, imgD0) => {
+  const idcs = src.indices();
+
+  const q = [[srcD0, imgD0]];
+  const m = new Array(src.size + 1);
+  m[srcD0] = imgD0;
+
+  while (q.length) {
+    const [D, E] = q.shift();
+
+    for (const i of idcs) {
+      const Di = src.s(i, D);
+      const Ei = img.s(i, E);
+
+      if (Di != null || Ei != null) {
+        if (m[Di] == null) {
+          q.push([Di, Ei]);
+          m[Di] = Ei;
+        }
+        else if (m[Di] != Ei)
+          return null;
+      }
+    }
+  }
+
+  return m;
+};
+
+
+const _automorphisms = ds => {
+  const elms = ds.elements();
+  if (elms.length) {
+    const D = elms[0];
+    return elms.map(E => _morphism(ds, D, ds, E)).filter(m => m != null);
+  }
+};
+
+
 const branchings = ds => {
+  timers && timers.start('branchings.init');
   const unused = _openOrbits(ds);
-  const maps = props.automorphisms(ds);
+  timers && timers.start('branchings.init.automorphisms');
+  const maps = _automorphisms(ds);
+  timers && timers.stop('branchings.init.automorphisms');
   const ds0 = _withMinimalBranchings(ds);
+  const curv0 = DS2D.curvature(ds0);
+  timers && timers.stop('branchings.init');
 
   return generators.backtracker({
-    root: [ds0, DS2D.curvature(ds0), unused],
+    root: [ds0, curv0, unused],
 
     extract([ds, curv, unused]) {
-      if (unused.length == 0 && _isCanonical(ds, maps) && _goodResult(ds))
-        return ds;
+      if (unused.length == 0) {
+        timers && timers.start('branchings.extract');
+        const keep = _isCanonical(ds, maps) && _goodResult(ds);
+        timers && timers.stop('branchings.extract');
+        if (keep)
+          return ds;
+      }
     },
 
     children([ds, curv, unused]) {
@@ -117,6 +169,7 @@ const branchings = ds => {
           return [[ds, curv, []]];
         }
         else {
+          timers && timers.start('branchings.children');
           const [i, D, r, loopless] = unused[0];
           const v0 = ds.v(i, i+1, D);
           const out = [];
@@ -131,6 +184,7 @@ const branchings = ds => {
             if (Q.lt(newCurv, 0))
               break;
           }
+          timers && timers.stop('branchings.children');
 
           return out;
         }
@@ -143,16 +197,23 @@ const branchings = ds => {
 if (require.main == module) {
   const arg = process.argv[2];
 
+  timers && timers.start('total');
+
   if (Number.isInteger(parseInt(arg))) {
     const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
 
     for (const dset of covers.coversGenerator(ds0, parseInt(arg))) {
+      timers && timers.start('branchings');
       for (const ds of generators.results(branchings(dset)))
         console.log(`${ds}`);
+      timers && timers.stop('branchings');
     }
   }
   else {
     for (const ds of generators.results(branchings(DS.parseSymbols(arg)[0])))
       console.log(`${ds}`);
   }
+
+  timers && timers.stop('total');
+  timers && console.log(`${JSON.stringify(timers.current(), null, 2)}`);
 }
