@@ -88,17 +88,49 @@ const isMinimallyHyperbolic = ds => {
 };
 
 
-const _goodResult = ds => {
-  if (Q.le(DS2D.curvature(ds), 0))
-    return true;
+const _goodResult = (ds, curv) => {
+  let good;
 
-  if (!DS2D.isSpherical(ds))
-    return false;
+  if (Q.le(curv, 0))
+    good = true;
+  else {
+    const cones = [];
+    const corners = [];
+    for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
+      for (const D of DS.orbitReps2(ds, i, j)) {
+        const v = ds.v(i, j, D);
+        if (v > 1) {
+          if (_loopless(ds, i, j, D))
+            cones.push(v);
+          else
+            corners.push(v);
+        }
+      }
+    }
+    const front = cones.sort().reverse().join('');
+    const middle = props.isLoopless(ds) ? '' : '*';
+    const back = corners.sort().reverse().join('');
+    const cross = props.isWeaklyOriented(ds) ? '' : 'x';
+    const key = front + middle + back + cross;
 
-  const forbidden = [
-    '55', '66', '77', '*55', '*66', '*77', '2*5', '2*6', '2*7'
-  ];
-  return forbidden.indexOf(DS2D.orbifoldSymbol(ds)) < 0;
+    const goodKeys = [
+      '', '*', 'x',
+      '532', '432', '332',
+      '422', '322', '222',
+      '44', '33', '22',
+      '*532', '*432', '*332', '3*2',
+      '*422', '*322', '*222', '2*4', '2*3', '2*2',
+      '*44', '*33', '*22', '4*', '3*', '2*', '4x', '3x', '2x',
+      // TODO the following are only allowed for backwards compatibility
+      '722', '622', '522',
+      '*722', '*622', '*522',
+      '7*', '6*', '5*', '7x', '6x', '5x'
+    ];
+
+    good = goodKeys.indexOf(key) >= 0;
+  }
+
+  return good;
 };
 
 
@@ -143,9 +175,7 @@ const _automorphisms = ds => {
 const branchings = ds => {
   timers && timers.start('branchings.init');
   const unused = _openOrbits(ds);
-  timers && timers.start('branchings.init.automorphisms');
   const maps = _automorphisms(ds);
-  timers && timers.stop('branchings.init.automorphisms');
   const ds0 = _withMinimalBranchings(ds);
   const curv0 = DS2D.curvature(ds0);
   timers && timers.stop('branchings.init');
@@ -156,7 +186,7 @@ const branchings = ds => {
     extract([ds, curv, unused]) {
       if (unused.length == 0) {
         timers && timers.start('branchings.extract');
-        const keep = _isCanonical(ds, maps) && _goodResult(ds);
+        const keep = _isCanonical(ds, maps) && _goodResult(ds, curv);
         timers && timers.stop('branchings.extract');
         if (keep)
           return ds;
