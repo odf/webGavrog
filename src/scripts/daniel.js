@@ -69,8 +69,7 @@ const _newCurvature = (curv, loopless, v, vOld) =>
   );
 
 
-const isMinimallyHyperbolic = ds => {
-  const curv = DS2D.curvature(ds);
+const _isMinimallyHyperbolic = (ds, curv) => {
   if (Q.ge(curv, 0))
     return false;
 
@@ -216,7 +215,7 @@ const branchings = ds => {
             const newCurv = _newCurvature(curv, loopless, v, v0);
             const newDs = DS.withBranchings(ds, i, [[D, v]]);
 
-            if (Q.ge(newCurv, 0) || isMinimallyHyperbolic(newDs))
+            if (Q.ge(newCurv, 0) || _isMinimallyHyperbolic(newDs, newCurv))
               out.push([ newDs, newCurv, unused.slice(1) ]);
 
             if (Q.lt(newCurv, 0))
