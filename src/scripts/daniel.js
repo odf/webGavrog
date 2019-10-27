@@ -171,20 +171,28 @@ const _automorphisms = ds => {
 };
 
 
+const _curvature = ds => {
+  timers && timers.start('curvature');
+  const denom = 420;
+  let numer = -DS.size(ds) * denom;
+  for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
+    for (const D of DS.orbitReps2(ds, i, j)) {
+      const k = _loopless(ds, i, j, D) ? 2 : 1;
+      numer += k * denom / ds.v(i, j, D);
+    }
+  }
+  const curv = Q.div(numer, denom);
+  timers && timers.stop('curvature');
+  return curv;
+};
+
+
 const branchings = ds => {
   timers && timers.start('branchings.init');
   const unused = _openOrbits(ds);
   const maps = _automorphisms(ds);
   const ds0 = _withMinimalBranchings(ds);
-  timers && timers.start('branchings.init.curvature');
-  let curv0 = -DS.size(ds0);
-  for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
-    for (const D of DS.orbitReps2(ds0, i, j)) {
-      const k = _loopless(ds0, i, j, D) ? 2 : 1;
-      curv0 = Q.plus(curv0, Q.div(k, ds0.v(i, j, D)));
-    }
-  }
-  timers && timers.stop('branchings.init.curvature');
+  const curv0 = _curvature(ds0);
   timers && timers.stop('branchings.init');
 
   return generators.backtracker({
