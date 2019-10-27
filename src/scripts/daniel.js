@@ -10,7 +10,7 @@ import { rationals } from '../arithmetic/types';
 const Q = rationals;
 
 
-const timers = null; //util.timers();
+const timers = util.timers();
 
 
 const _loopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
@@ -177,7 +177,15 @@ const branchings = ds => {
   const unused = _openOrbits(ds);
   const maps = _automorphisms(ds);
   const ds0 = _withMinimalBranchings(ds);
-  const curv0 = DS2D.curvature(ds0);
+  timers && timers.start('branchings.init.curvature');
+  let curv0 = -DS.size(ds0);
+  for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
+    for (const D of DS.orbitReps2(ds0, i, j)) {
+      const k = _loopless(ds0, i, j, D) ? 2 : 1;
+      curv0 = Q.plus(curv0, Q.div(k, ds0.v(i, j, D)));
+    }
+  }
+  timers && timers.stop('branchings.init.curvature');
   timers && timers.stop('branchings.init');
 
   return generators.backtracker({
