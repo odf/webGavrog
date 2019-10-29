@@ -1,9 +1,11 @@
 import * as generators from '../common/generators';
+import * as cosets from '../fpgroups/cosets';
 import * as util from '../common/util';
 
 import * as covers from '../dsymbols/covers';
 import * as DS from '../dsymbols/delaney';
 import * as DS2D from '../dsymbols/delaney2d';
+import * as fundamental from '../dsymbols/fundamental';
 import * as props from '../dsymbols/properties';
 
 import { rationals } from '../arithmetic/types';
@@ -121,9 +123,9 @@ const _goodResult = (ds, curv) => {
       '*422', '*322', '*222', '2*4', '2*3', '2*2',
       '*44', '*33', '*22', '4*', '3*', '2*', '4x', '3x', '2x',
       // TODO the following are only allowed for backwards compatibility
-      '722', '622', '522',
-      '*722', '*622', '*522',
-      '7*', '6*', '5*', '7x', '6x', '5x'
+      //'722', '622', '522',
+      //'*722', '*622', '*522',
+      //'7*', '6*', '5*', '7x', '6x', '5x'
     ];
 
     good = goodKeys.indexOf(key) >= 0;
@@ -239,6 +241,99 @@ const branchings = ds => {
 }
 
 
+const delaneySets = maxSize => {
+  const _firstUndefined = data => {
+    const i = data.indexOf(null);
+    if (i >= 0)
+      return [Math.floor(i / 3) + 1, i % 3];
+  };
+
+  const _get = (data, i, D) => data[(D - 1) * 3 + i];
+
+  const _set = (data, i, D, E) => {
+    data[(D - 1) * 3 + i] = E;
+    data[(E - 1) * 3 + i] = D;
+  };
+
+  const _makeDelaneySet = data => {
+    const dim = 2;
+    const size = data.length / 3;
+    const ops = new Array(dim + 1).fill(0).map(_ => []);
+    const brs = new Array(dim).fill(0).map(_ => []);
+
+    for (let D = 1; D <= size; ++D) {
+      for (let i = 0; i <= 2; ++i)
+        brs[i].push([D, _get(data, i, D)]);
+    }
+    return DS.build(dim, size, (_, i) => ops[i], (_, i) => brs[i]);
+  };
+
+  const _close02Orbit = (data, D) => {
+  };
+
+  const _potentialChildren = (data, maxSize) => {
+    const size = data.length / 3;
+    const limit = Math.min(size + 1, maxSize);
+    const [D, i] = _firstUndefined(data);
+    const result = [];
+
+    for (const E of range(D, limit)) {
+      if (E > size)
+        data = data.concat([null, null, null]);
+
+      if (_get(data, E, i) == null) {
+        out = data.slice();
+        _set(out, i, D, E);
+        _close02Orbits(out, D);
+        result.push(out);
+      }
+    }
+
+    return result;
+  };
+
+  return generators.backtracker({
+    root: [null, null, null],
+
+    extract(data) {
+      return _firstUndefined(data) ? null : _makeDelaneySet(data);
+    },
+
+    children(data) {
+      return _potentialChildren(data, maxSize).filter(_isCanonical);
+    }
+  });
+}
+
+
+function* coversGenerator(ds, maxDeg) {
+  timers && timers.start('covers');
+  const fun = fundamental.fundamentalGroup(ds);
+  const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
+  const iter = generators.results(tableGenerator);
+  timers && timers.stop('covers');
+
+  while (true) {
+    timers && timers.start('covers');
+    timers && timers.start('covers.generator');
+    const result = iter.next();
+    timers && timers.stop('covers.generator');
+    timers && timers.stop('covers');
+
+    if (result.done)
+      break;
+
+    timers && timers.start('covers');
+    timers && timers.start('covers.convert');
+    const cover = covers.coverForTable(ds, result.value, fun.edge2word);
+    timers && timers.stop('covers.convert');
+    timers && timers.stop('covers');
+
+    yield cover;
+  }
+};
+
+
 if (require.main == module) {
   const arg = process.argv[2];
 
@@ -247,7 +342,7 @@ if (require.main == module) {
   if (Number.isInteger(parseInt(arg))) {
     const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
 
-    for (const dset of covers.coversGenerator(ds0, parseInt(arg))) {
+    for (const dset of coversGenerator(ds0, parseInt(arg))) {
       timers && timers.start('branchings');
       for (const ds of generators.results(branchings(dset)))
         console.log(`${ds}`);
