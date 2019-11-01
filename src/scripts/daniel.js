@@ -5,6 +5,7 @@ import * as util from '../common/util';
 import * as covers from '../dsymbols/covers';
 import * as DS from '../dsymbols/delaney';
 import * as DS2D from '../dsymbols/delaney2d';
+import * as dsets2d from '../dsymbols/dsets2d';
 import * as fundamental from '../dsymbols/fundamental';
 import * as props from '../dsymbols/properties';
 
@@ -278,8 +279,8 @@ if (require.main == module) {
     const maxSize = parseInt(arg);
     const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
 
-    for (const dset of coversGenerator(ds0, maxSize)) {
-    //for (const dset of generators.results(delaneySets(maxSize))) {
+    //for (const dset of coversGenerator(ds0, maxSize)) {
+    for (const dset of generators.results(dsets2d.delaneySets(maxSize))) {
       timers && timers.start('branchings');
       for (const ds of generators.results(branchings(dset)))
         console.log(`${ds}`);

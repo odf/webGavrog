@@ -124,7 +124,7 @@ const _isCanonical = data => {
 };
 
 
-const delaneySets = maxSize => {
+export const delaneySets = maxSize => {
   return generators.backtracker({
     root: [null, null, null],
 
