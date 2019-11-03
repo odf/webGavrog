@@ -74,7 +74,12 @@ pickler.register(
 );
 
 
-const _dsymbol = (dim, s, v) => Object.freeze(new DSymbol(dim, s, v));
+export const makeDSymbol = (dim, s, v) =>
+  Object.freeze(new DSymbol(dim, s, v));
+
+
+export const makeDSet = (dim, s) =>
+  makeDSymbol(dim, s, new Array(dim * s.length / (dim + 1)).fill(0));
 
 
 const _assert = (condition, message) => {
@@ -119,7 +124,7 @@ export const withPairings = (ds, i, specs) => {
       set(D, 0);
   }
 
-  return _dsymbol(ds.dim, sNew, ds._v);
+  return makeDSymbol(ds.dim, sNew, ds._v);
 };
 
 
@@ -143,12 +148,12 @@ export const withBranchings = (ds, i, specs) => {
     while (E != D);
   }
 
-  return _dsymbol(ds.dim, ds._s, vNew);
+  return makeDSymbol(ds.dim, ds._s, vNew);
 };
 
 
 export const build = (dim, size, pairingsFn, branchingsFn) => {
-  let ds = _dsymbol(dim, new Array((dim+1) * size), new Array(dim * size));
+  let ds = makeDSymbol(dim, new Array((dim+1) * size), new Array(dim * size));
 
   const ds0 = ds;
   for (let i = 0; i <= dim; ++i)
@@ -221,7 +226,7 @@ export const parse = str => {
     }
   }
 
-  return _dsymbol(dim, s, v);
+  return makeDSymbol(dim, s, v);
 };
 
 
