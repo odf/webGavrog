@@ -1,7 +1,10 @@
 import * as generators from '../common/generators';
+import * as util from '../common/util';
 
-import * as derived from './derived';
 import * as DS from './delaney';
+
+
+const timers = util.timers();
 
 
 const _firstUndefined = data => {
@@ -24,16 +27,21 @@ const _set = (data, i, D, E) => {
 
 
 const _makeDelaneySet = data => {
+  timers && timers.start('make delaney set');
+
   const dim = 2;
   const size = _size(data);
-  const ops = new Array(dim + 1).fill(0).map(_ => []);
-  const brs = new Array(dim).fill(0).map(_ => []);
+
+  const s = new Array((dim + 1) * size).fill(0);
 
   for (let D = 1; D <= size; ++D) {
-    for (let i = 0; i <= 2; ++i)
-      ops[i].push([D, _get(data, i, D)]);
+    for (let i = 0; i <= dim; ++i)
+      s[i * size + D - 1] = _get(data, i, D);
   }
-  return DS.build(dim, size, (_, i) => ops[i], (_, i) => brs[i]);
+
+  timers && timers.stop('make delaney set');
+
+  return DS.makeDSet(dim, s);
 };
 
 
@@ -56,34 +64,38 @@ const _scan02Orbit = (data, D) => {
 
 
 const _potentialChildren = (data, maxSize) => {
+  timers && timers.start('potential children');
+
   const size = _size(data);
   const limit = Math.min(size + 1, maxSize);
   const undef = _firstUndefined(data);
 
-  if (undef == null)
-    return [];
-
-  const [D, i] = undef;
   const result = [];
 
-  for (let E = D; E <= limit; ++E) {
-    if (E > size)
-      data = data.concat([null, null, null]);
+  if (undef != null) {
+    const [D, i] = undef;
 
-    if (_get(data, i, E) == null) {
-      const out = data.slice();
-      _set(out, i, D, E);
+    for (let E = D; E <= limit; ++E) {
+      if (E > size)
+        data = data.concat([null, null, null]);
 
-      const [head, tail, gap, k] = _scan02Orbit(out, D);
+      if (_get(data, i, E) == null) {
+        const out = data.slice();
+        _set(out, i, D, E);
 
-      if (gap == 1) {
-        _set(out, k, head, tail);
-        result.push(out);
+        const [head, tail, gap, k] = _scan02Orbit(out, D);
+
+        if (gap == 1) {
+          _set(out, k, head, tail);
+          result.push(out);
+        }
+        else if (gap > 0 || head == tail)
+          result.push(out);
       }
-      else if (gap > 0 || head == tail)
-        result.push(out);
     }
   }
+
+  timers && timers.stop('potential children');
 
   return result;
 };
@@ -116,11 +128,20 @@ const _compareRenumberedFrom = (data, D0) => {
 
 
 const _isCanonical = data => {
+  timers && timers.start('is canonical');
+
+  let result = true;
+
   for (let D = 1; D <= _size(data); ++D) {
-    if (_compareRenumberedFrom(data, D) < 0)
-      return false;
+    if (_compareRenumberedFrom(data, D) < 0) {
+      result = false;
+      break;
+    }
   }
-  return true;
+
+  timers && timers.stop('is canonical');
+
+  return result;
 };
 
 
@@ -140,22 +161,33 @@ export const delaneySets = maxSize => {
 
 
 const _withMinimalBranchings = ds => {
+  timers && timers.start('minimal branching');
+
   const branchings = (i, j) =>
     DS.orbitReps2(ds, i, j)
     .filter(D => !ds.v(i, j, D))
     .map(D => [D, Math.ceil(3 / DS.r(ds, i, j, D))]);
 
-  return DS.withBranchings(
+  const out = DS.withBranchings(
     DS.withBranchings(ds, 0, branchings(0, 1)),
     1,
     branchings(1, 2)
   );
+
+  timers && timers.stop('minimal branching');
+
+  return out;
 };
 
 
 if (require.main == module) {
+  timers && timers.start('total');
+
   const maxDsSize = parseInt(process.argv[2]);
 
   for (const ds of generators.results(delaneySets(maxDsSize)))
-    console.log(`${derived.canonical(_withMinimalBranchings(ds))}`);
+    console.log(`${_withMinimalBranchings(ds)}`);
+
+  timers && timers.stop('total');
+  timers && console.log(`${JSON.stringify(timers.current(), null, 2)}`);
 }
