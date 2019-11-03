@@ -1,12 +1,8 @@
 import * as generators from '../common/generators';
-import * as cosets from '../fpgroups/cosets';
 import * as util from '../common/util';
 
-import * as covers from '../dsymbols/covers';
 import * as DS from '../dsymbols/delaney';
-import * as DS2D from '../dsymbols/delaney2d';
 import * as dsets2d from '../dsymbols/dsets2d';
-import * as fundamental from '../dsymbols/fundamental';
 import * as props from '../dsymbols/properties';
 
 import { rationals } from '../arithmetic/types';
@@ -242,34 +238,6 @@ const branchings = ds => {
 }
 
 
-function* coversGenerator(ds, maxDeg) {
-  timers && timers.start('covers');
-  const fun = fundamental.fundamentalGroup(ds);
-  const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
-  const iter = generators.results(tableGenerator);
-  timers && timers.stop('covers');
-
-  while (true) {
-    timers && timers.start('covers');
-    timers && timers.start('covers.generator');
-    const result = iter.next();
-    timers && timers.stop('covers.generator');
-    timers && timers.stop('covers');
-
-    if (result.done)
-      break;
-
-    timers && timers.start('covers');
-    timers && timers.start('covers.convert');
-    const cover = covers.coverForTable(ds, result.value, fun.edge2word);
-    timers && timers.stop('covers.convert');
-    timers && timers.stop('covers');
-
-    yield cover;
-  }
-};
-
-
 if (require.main == module) {
   const arg = process.argv[2];
 
@@ -279,7 +247,6 @@ if (require.main == module) {
     const maxSize = parseInt(arg);
     const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
 
-    //for (const dset of coversGenerator(ds0, maxSize)) {
     for (const dset of generators.results(dsets2d.delaneySets(maxSize))) {
       timers && timers.start('branchings');
       for (const ds of generators.results(branchings(dset)))
