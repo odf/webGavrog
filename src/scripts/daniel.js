@@ -34,16 +34,24 @@ const _openOrbits = ds =>
 
 
 const _withMinimalBranchings = ds => {
-  const branchings = (i, j) =>
-    DS.orbitReps2(ds, i, j)
-    .filter(D => !ds.v(i, j, D))
-    .map(D => [D, Math.ceil(3 / DS.r(ds, i, j, D))]);
+  const s = new Array((ds.dim +1) * ds.size).fill(0);
+  const v = new Array(ds.dim * ds.size).fill(0);
 
-  return DS.withBranchings(
-    DS.withBranchings(ds, 0, branchings(0, 1)),
-    1,
-    branchings(1, 2)
-  );
+  for (let D = 1; D <= ds.size; ++D) {
+    for (let i = 0; i <= ds.dim; ++i)
+      s[i * ds.size + D - 1] = ds.s(i, D);
+  }
+
+  for (let i = 0; i < ds.dim; ++i) {
+    const j = i + 1;
+    for (const D of DS.orbitReps2(ds, i, j)) {
+      const q = Math.ceil(3 / DS.r(ds, i, j, D));
+      for (const E of DS.orbit2(ds, i, j, D))
+        v[i * ds.size + E - 1] = q;
+    }
+  }
+
+  return DS.makeDSymbol(ds.dim, s, v);
 };
 
 
@@ -119,10 +127,6 @@ const _goodResult = (ds, curv) => {
       '*532', '*432', '*332', '3*2',
       '*422', '*322', '*222', '2*4', '2*3', '2*2',
       '*44', '*33', '*22', '4*', '3*', '2*', '4x', '3x', '2x',
-      // TODO the following are only allowed for backwards compatibility
-      //'722', '622', '522',
-      //'*722', '*622', '*522',
-      //'7*', '6*', '5*', '7x', '6x', '5x'
     ];
 
     good = goodKeys.indexOf(key) >= 0;
@@ -171,7 +175,6 @@ const _automorphisms = ds => {
 
 
 const _curvature = ds => {
-  timers && timers.start('curvature');
   const denom = 420;
   let numer = -DS.size(ds) * denom;
   for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
@@ -181,17 +184,25 @@ const _curvature = ds => {
     }
   }
   const curv = Q.div(numer, denom);
-  timers && timers.stop('curvature');
+
   return curv;
 };
 
 
 const branchings = ds => {
   timers && timers.start('branchings.init');
+  timers && timers.start('branchings.init.openOrbit');
   const unused = _openOrbits(ds);
+  timers && timers.stop('branchings.init.openOrbit');
+  timers && timers.start('branchings.init.automorphism');
   const maps = _automorphisms(ds);
+  timers && timers.stop('branchings.init.automorphism');
+  timers && timers.start('branchings.init.withMinimalBranchings');
   const ds0 = _withMinimalBranchings(ds);
+  timers && timers.stop('branchings.init.withMinimalBranchings');
+  timers && timers.start('branchings.init.curvature');
   const curv0 = _curvature(ds0);
+  timers && timers.stop('branchings.init.curvature');
   timers && timers.stop('branchings.init');
 
   return generators.backtracker({
