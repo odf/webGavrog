@@ -163,19 +163,26 @@ export const delaneySets = maxSize => {
 const _withMinimalBranchings = ds => {
   timers && timers.start('minimal branching');
 
-  const branchings = (i, j) =>
-    DS.orbitReps2(ds, i, j)
-    .filter(D => !ds.v(i, j, D))
-    .map(D => [D, Math.ceil(3 / DS.r(ds, i, j, D))]);
+  const s = new Array((ds.dim +1) * ds.size).fill(0);
+  const v = new Array(ds.dim * ds.size).fill(0);
 
-  const out = DS.withBranchings(
-    DS.withBranchings(ds, 0, branchings(0, 1)),
-    1,
-    branchings(1, 2)
-  );
+  for (let D = 1; D <= ds.size; ++D) {
+    for (let i = 0; i <= ds.dim; ++i)
+      s[i * ds.size + D - 1] = ds.s(i, D);
+  }
+
+  for (let i = 0; i < ds.dim; ++i) {
+    const j = i + 1;
+    for (const D of DS.orbitReps2(ds, i, j)) {
+      const q = Math.ceil(3 / DS.r(ds, i, j, D));
+      for (const E of DS.orbit2(ds, i, j, D))
+        v[i * ds.size + E - 1] = q;
+    }
+  }
+
+  const out = DS.makeDSymbol(ds.dim, s, v);
 
   timers && timers.stop('minimal branching');
-
   return out;
 };
 
