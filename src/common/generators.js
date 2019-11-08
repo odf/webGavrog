@@ -32,20 +32,6 @@ export function* results(gen, pred) {
 };
 
 
-export const empty = () => backtracker({
-  root    : null,
-  extract : () => {},
-  children: () => {}
-});
-
-
-export const singleton = x => backtracker({
-  root    : x,
-  extract : x => x,
-  children: () => {}
-});
-
-
 if (require.main == module) {
   const n = parseInt(process.argv[2]) || 4;
 
@@ -73,9 +59,6 @@ if (require.main == module) {
     }
   });
 
-  const out = [];
   for (const a of results(gen))
-    out.push(a);
-
-  console.log(JSON.stringify(out));
+    console.log(`${a}`);
 }
