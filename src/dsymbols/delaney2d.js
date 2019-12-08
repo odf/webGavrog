@@ -168,21 +168,32 @@ export const isPseudoConvex = ds => {
   _assert(p.isConnected(ds), 'must be connected');
 
   ds = d.orientedCover(ds);
+  //console.log(`isPseudoConvex(${ds})`);
   const ori = p.partialOrientation(ds);
 
   const candidates = (D, i) => p.orbit(ds, [1, i], D)
     .filter(E => ori[E] != ori[D] && (ds.s(1, D) != E || ds.v(1, i, D) > 1));
 
   for (const A1 of ds.elements().filter(D => ori[D] > 0)) {
+    //console.log(`  A1 = ${A1}`);
     for (const A2 of candidates(A1, 0)) {
+      //console.log(`    A2 = ${A2}`);
       for (const B2 of candidates(A2, 2)) {
         if (B2 == A1) {
+          //console.log(`      B2 = ${B2}`);
           if (_cutsOffDisk(ds, [A1, A2], true))
             return false;
         }
+        else if (candidates(A2, 0).includes(B2)) {
+          continue;
+        }
         else {
+          //console.log(`      B2 = ${B2}`);
           for (const B1 of candidates(B2, 0)) {
-            if (B1 != A2 && candidates(B1, 2).indexOf(A1) >= 0) {
+            if (candidates(B2, 2).includes(B1))
+              continue;
+            //console.log(`        B1 = ${B1}`);
+            if (B1 != A2 && candidates(B1, 2).includes(A1)) {
               if (_cutsOffDisk(ds, [A1, A2, B2, B1], false))
                 return false;
             }
@@ -239,4 +250,5 @@ if (require.main == module) {
   test(DS.parse(
     '<1.1:12:1 2 4 6 8 10 12,5 9 7 11 6 12 10,2 3 4 8 7 12 11:3 3 3,3 3 3>'
   ));
+  test(DS.parse('<1.1:12:2 4 6 8 10 12,6 3 5 12 9 11,7 8 11 12 6 10:3 3,9 3>'));
 }
