@@ -325,7 +325,7 @@ export const m = (ds, i, j, D) => ds.v(i, j, D) * r(ds, i, j, D);
 
 export const parseSymbols = text => text
   .split('\n')
-  .filter(line => !line.match(/^\s*(#.*)?$/))
+  .filter(line => line.match(/^\s*</))
   .map(parse);
 
 
