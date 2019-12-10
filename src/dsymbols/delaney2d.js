@@ -140,11 +140,9 @@ const _cutsOffDisk = (ds, candidates, allow2Cone) => {
   }
   const tmp = DS.withPairings(ds, 1, pairs);
   const patch = d.subsymbol(tmp, [0, 1, 2], candidates[0]);
+  const n = candidates.length;
 
-  if (
-    patch.size == candidates.length
-      || patch.size == ds.size - candidates.length
-  )
+  if (patch.size == n || patch.size == ds.size - n)
     return false;
 
   if (!p.isWeaklyOriented(patch))
@@ -164,42 +162,62 @@ const _cutsOffDisk = (ds, candidates, allow2Cone) => {
 
 
 export const isPseudoConvex = ds => {
+  // TODO this does not work at all
+
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
   _assert(p.isConnected(ds), 'must be connected');
 
+  const log = () => {};
+  //const log = console.log;
+
   ds = d.orientedCover(ds);
-  //console.log(`isPseudoConvex(${ds})`);
+  log(`isPseudoConvex(${ds})`);
   const ori = p.partialOrientation(ds);
 
-  const candidates = (D, i) => p.orbit(ds, [1, i], D)
-    .filter(E => ori[E] != ori[D] && (ds.s(1, D) != E || ds.v(1, i, D) > 1));
-
   for (const A1 of ds.elements().filter(D => ori[D] > 0)) {
-    //console.log(`  A1 = ${A1}`);
-    for (const A2 of candidates(A1, 0)) {
-      //console.log(`    A2 = ${A2}`);
-      for (const B2 of candidates(A2, 2)) {
+    log(`  A1 = ${A1}`);
+    let A2 = ds.s(0, A1);
+    const onFaceTrail = Array(ds.size + 1).fill(false);
+    onFaceTrail[A1] = true;
+
+    while (!onFaceTrail[A2]) {
+      log(`    A2 = ${A2}`);
+      let B2 = ds.s(2, A2);
+      const onVertTrail = Array(ds.size + 1).fill(false);
+      onVertTrail[A2] = true;
+
+      while (!onVertTrail[B2]) {
+        log(`      B2 = ${B2}`);
         if (B2 == A1) {
-          //console.log(`      B2 = ${B2}`);
           if (_cutsOffDisk(ds, [A1, A2], true))
             return false;
+          else
+            break;
         }
-        else if (candidates(A2, 0).includes(B2)) {
-          continue;
-        }
-        else {
-          //console.log(`      B2 = ${B2}`);
-          for (const B1 of candidates(B2, 0)) {
-            if (candidates(B2, 2).includes(B1))
-              continue;
-            //console.log(`        B1 = ${B1}`);
-            if (B1 != A2 && candidates(B1, 2).includes(A1)) {
-              if (_cutsOffDisk(ds, [A1, A2, B2, B1], false))
-                return false;
-            }
+        else if (onFaceTrail[B2])
+          break;
+
+        let B1 = ds.s(0, B2);
+        const onEitherFaceTrail = onFaceTrail.slice();
+        onEitherFaceTrail[B2] = true;
+
+        while (!onEitherFaceTrail[B1]) {
+          log(`        B1 = ${B1}`);
+          if (!onVertTrail[B1] && p.orbit(ds, [1, 2], B1).includes(A1)) {
+            if (_cutsOffDisk(ds, [A1, A2, B2, B1], false))
+              return false;
           }
+
+          onEitherFaceTrail[B1] = onEitherFaceTrail[ds.s(1, B1)] = true;
+          B1 = ds.s(0, ds.s(1, B1));
         }
+
+        onVertTrail[B2] = onVertTrail[ds.s(1, B2)] = true;
+        B2 = ds.s(2, ds.s(1, B2));
       }
+
+      onFaceTrail[A2] = onFaceTrail[ds.s(1, A2)] = true;
+      A2 = ds.s(0, ds.s(1, A2));
     }
   }
 
@@ -247,8 +265,5 @@ if (require.main == module) {
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
   test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>'));
-  test(DS.parse(
-    '<1.1:12:1 2 4 6 8 10 12,5 9 7 11 6 12 10,2 3 4 8 7 12 11:3 3 3,3 3 3>'
-  ));
-  test(DS.parse('<1.1:12:2 4 6 8 10 12,6 3 5 12 9 11,7 8 11 12 6 10:3 3,9 3>'));
+  test(DS.parse('<1.1:4:2 4,1 3 4,3 4:4,4>'));
 }
