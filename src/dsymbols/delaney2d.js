@@ -162,7 +162,7 @@ const _cutsOffDisk = (ds, candidates, allow2Cone) => {
 
 
 export const isPseudoConvex = ds => {
-  // TODO this does not work at all
+  // TODO need to fix some false negatives
 
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
   _assert(p.isConnected(ds), 'must be connected');
@@ -176,17 +176,17 @@ export const isPseudoConvex = ds => {
 
   for (const A1 of ds.elements().filter(D => ori[D] > 0)) {
     log(`  A1 = ${A1}`);
+    const onTrail1 = Array(ds.size + 1).fill(0);
+    onTrail1[A1] = 1;
     let A2 = ds.s(0, A1);
-    const onFaceTrail = Array(ds.size + 1).fill(false);
-    onFaceTrail[A1] = true;
 
-    while (!onFaceTrail[A2]) {
+    while (!onTrail1[A2]) {
       log(`    A2 = ${A2}`);
+      const onTrail2 = onTrail1.slice();
+      onTrail2[A2] = 1;
       let B2 = ds.s(2, A2);
-      const onVertTrail = Array(ds.size + 1).fill(false);
-      onVertTrail[A2] = true;
 
-      while (!onVertTrail[B2]) {
+      while (B2 == A1 || !onTrail2[B2]) {
         log(`      B2 = ${B2}`);
         if (B2 == A1) {
           if (_cutsOffDisk(ds, [A1, A2], true))
@@ -194,29 +194,35 @@ export const isPseudoConvex = ds => {
           else
             break;
         }
-        else if (onFaceTrail[B2])
-          break;
 
+        const onTrail3 = onTrail2.slice();
+        onTrail3[B2] = 1;
         let B1 = ds.s(0, B2);
-        const onEitherFaceTrail = onFaceTrail.slice();
-        onEitherFaceTrail[B2] = true;
 
-        while (!onEitherFaceTrail[B1]) {
+        while (!onTrail3[B1]) {
           log(`        B1 = ${B1}`);
-          if (!onVertTrail[B1] && p.orbit(ds, [1, 2], B1).includes(A1)) {
-            if (_cutsOffDisk(ds, [A1, A2, B2, B1], false))
-              return false;
+
+          const onTrail4 = onTrail3.slice();
+          onTrail4[B1] = 1;
+          let T = ds.s(2, B1);
+
+          while (T != A1 && ds.s(1, T) != B1 && !onTrail4[T]) {
+            onTrail4[T] = onTrail4[ds.s(1, T)] = 1;
+            T = ds.s(2, ds.s(1, T));
           }
 
-          onEitherFaceTrail[B1] = onEitherFaceTrail[ds.s(1, B1)] = true;
+          if (T == A1 && _cutsOffDisk(ds, [A1, A2, B2, B1], false))
+            return false;
+
+          onTrail3[B1] = onTrail3[ds.s(1, B1)] = 1;
           B1 = ds.s(0, ds.s(1, B1));
         }
 
-        onVertTrail[B2] = onVertTrail[ds.s(1, B2)] = true;
+        onTrail2[B2] = onTrail2[ds.s(1, B2)] = 1;
         B2 = ds.s(2, ds.s(1, B2));
       }
 
-      onFaceTrail[A2] = onFaceTrail[ds.s(1, A2)] = true;
+      onTrail1[A2] = onTrail1[ds.s(1, A2)] = 1;
       A2 = ds.s(0, ds.s(1, A2));
     }
   }
