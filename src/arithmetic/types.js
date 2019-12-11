@@ -170,9 +170,9 @@ if (require.main == module) {
     }
   }
 
-  for (const p of [3, 5, 7, 11, 13]) {
+  for (const p of [2, 3, 5, 7, 11, 13]) {
     console.log();
-    for (let a = 2; a < p; ++a) {
+    for (let a = 1; a < p; ++a) {
       inverseTest(a, p);
     }
   }
