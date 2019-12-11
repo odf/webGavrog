@@ -130,8 +130,6 @@ const _eulerCharacteristic = ds => {
 
 
 const _cutsOffDisk = (ds, candidates, allow2Cone) => {
-  // TODO may not work correctly if degree-2 vertices are allowed
-
   const pairs = [];
   for (const D of candidates) {
     const E = ds.s(1, D);
@@ -140,9 +138,8 @@ const _cutsOffDisk = (ds, candidates, allow2Cone) => {
   }
   const tmp = DS.withPairings(ds, 1, pairs);
   const patch = d.subsymbol(tmp, [0, 1, 2], candidates[0]);
-  const n = candidates.length;
 
-  if (patch.size == n || patch.size == ds.size - n)
+  if (patch.size == candidates.length)
     return false;
 
   if (!p.isWeaklyOriented(patch))
