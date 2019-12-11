@@ -148,6 +148,8 @@ const _cutsOffDisk = (ds, candidates, allow2Cone) => {
   if (_eulerCharacteristic(patch) != 1)
     return false;
 
+  // TODO handle special case in spherical symbols
+
   const orbitType = (i, j, D) => [patch.v(i, j, D), _loopless(patch, i, j, D)];
   const types = _map1dOrbits(orbitType, patch);
   const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
@@ -207,6 +209,7 @@ export const isPseudoConvex = ds => {
             onTrail4[T] = onTrail4[ds.s(1, T)] = 1;
             T = ds.s(2, ds.s(1, T));
           }
+          log(`          T = ${T}`);
 
           if (T == A1 && _cutsOffDisk(ds, [A1, A2, B2, B1], false))
             return false;
@@ -267,6 +270,7 @@ if (require.main == module) {
   test(DS.parse('<1.1:2:2,1 2,1 2:2,4 5>'));
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
-  test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>'));
+  test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>')); // not pseudo-convex
   test(DS.parse('<1.1:4:2 4,1 3 4,3 4:4,4>'));
+  test(DS.parse('<1.1:16:2 4 6 8 10 12 14 16,8 3 5 7 16 11 13 15,6 5 11 12 15 16 14 13:4 4,4 4>'));
 }
