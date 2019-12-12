@@ -129,18 +129,39 @@ const _eulerCharacteristic = ds => {
 };
 
 
-const _cutsOffDisk = (ds, candidates, allow2Cone) => {
+const _cutsOffDisk = (ds, cut, allow2Cone) => {
+  const checkCones = cones => (
+    cones.length == 0 || (allow2Cone && cones.length == 1 && cones[0] == 2)
+  );
+
   const pairs = [];
-  for (const D of candidates) {
+  for (const D of cut) {
     const E = ds.s(1, D);
     pairs.push([D, D]);
     pairs.push([E, E]);
   }
   const tmp = DS.withPairings(ds, 1, pairs);
-  const patch = d.subsymbol(tmp, [0, 1, 2], candidates[0]);
+  const patch = d.subsymbol(tmp, [0, 1, 2], cut[0]);
 
-  if (patch.size == candidates.length)
+  if (patch.size == cut.length)
     return false;
+
+  if (patch.size == ds.size) {
+    const vs = [ds.v(0, 1, cut[0]), ds.v(1, 2, cut[0])];
+    if (cut.length > 2)
+      vs.push(ds.v(1, 2, cut[1]));
+
+    if (checkCones(vs.filter(v => v > 1)))
+      return false;
+  }
+
+  if (patch.size == ds.size - cut.length) {
+    if (
+      cut.every(D => ds.v(1, 2, D) == 1)
+        && cut.every(D => ds.v(0, 1, D) == 1)
+    )
+      return false;
+  }
 
   if (!p.isWeaklyOriented(patch))
     return false;
@@ -148,21 +169,14 @@ const _cutsOffDisk = (ds, candidates, allow2Cone) => {
   if (_eulerCharacteristic(patch) != 1)
     return false;
 
-  // TODO handle special case in spherical symbols
-
   const orbitType = (i, j, D) => [patch.v(i, j, D), _loopless(patch, i, j, D)];
   const types = _map1dOrbits(orbitType, patch);
-  const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
 
-  return (
-    cones.length == 0 || (allow2Cone && cones.length == 1 && cones[0] == 2)
-  );
+  return checkCones(types.filter(([v, c]) => v > 1 && c).map(([v]) => v));
 };
 
 
 export const isPseudoConvex = ds => {
-  // TODO need to fix some false negatives
-
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
   _assert(p.isConnected(ds), 'must be connected');
 
