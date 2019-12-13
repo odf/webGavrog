@@ -13,8 +13,7 @@ const reader = readline.createInterface({
 
 reader.on('line', line => {
   if (line.match(/^\s*</)) {
-    const ds = parse(line);
-    if (isEuclidean(ds))
-      console.log(`${ds}`);
+    if (isEuclidean(parse(line)))
+      console.log(line);
   }
 });
