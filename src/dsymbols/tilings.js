@@ -170,7 +170,7 @@ export const facePreservingSymmetries = (cov, skel) => {
 };
 
 
-const chamberPositions = (cov, skel) => {
+export const chamberPositions = (cov, skel) => {
   const sum = v => v.reduce((x, y) => x == null ? y : opsR.plus(x, y));
 
   const pos = periodic.barycentricPlacement(skel.graph);
