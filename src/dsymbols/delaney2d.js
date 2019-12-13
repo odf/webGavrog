@@ -146,21 +146,23 @@ const _cutsOffDisk = (ds, cut, allow2Cone) => {
   if (patch.size == cut.length)
     return false;
 
-  if (patch.size == ds.size) {
-    const vs = [ds.v(0, 1, cut[0]), ds.v(1, 2, cut[0])];
-    if (cut.length > 2)
-      vs.push(ds.v(1, 2, cut[1]));
+  if (_eulerCharacteristic(ds) > 0) {
+    if (patch.size == ds.size) {
+      const vs = [ds.v(0, 1, cut[0]), ds.v(1, 2, cut[0])];
+      if (cut.length > 2)
+        vs.push(ds.v(1, 2, cut[1]));
 
-    if (checkCones(vs.filter(v => v > 1)))
-      return false;
-  }
+      if (checkCones(vs.filter(v => v > 1)))
+        return false;
+    }
 
-  if (patch.size == ds.size - cut.length) {
-    if (
-      cut.every(D => ds.v(1, 2, D) == 1)
-        && cut.every(D => ds.v(0, 1, D) == 1)
-    )
-      return false;
+    if (patch.size == ds.size - cut.length) {
+      if (
+        cut.every(D => ds.v(1, 2, D) == 1)
+          && cut.every(D => ds.v(0, 1, D) == 1)
+      )
+        return false;
+    }
   }
 
   if (!p.isWeaklyOriented(patch))
@@ -286,5 +288,4 @@ if (require.main == module) {
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
   test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>')); // not pseudo-convex
   test(DS.parse('<1.1:4:2 4,1 3 4,3 4:4,4>'));
-  test(DS.parse('<1.1:16:2 4 6 8 10 12 14 16,8 3 5 7 16 11 13 15,6 5 11 12 15 16 14 13:4 4,4 4>'));
 }
