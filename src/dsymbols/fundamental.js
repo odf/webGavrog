@@ -11,8 +11,8 @@ class Boundary {
     const m = ds.dim + 1;
 
     this._ds = ds;
-    this._pos = (D, i, j) => ((D - 1) * m + i) * m + j;
-    this._data = new Array(ds.size * m * m);
+    this._pos = (D, i, j) => (D * m + i) * m + j;
+    this._data = new Array((ds.size + 1) * m * m);
 
     for (const D of ds.elements()) {
       for (const i of ds.indices()) {
@@ -39,13 +39,20 @@ class Boundary {
     for (const j of this._ds.indices()) {
       if (j != i && this.opposite([D, i, j])) {
         const [chD, kD, nD] = this.opposite([D, i, j]);
-        const [chE, kE, nE] = this.opposite([E, i, j]);
-        const count = D == E ? nD : nD + nE;
 
-        this.setOpposite([chD, kD, _other(i, j, kD)], [chE, kE, count]);
-        this.setOpposite([chE, kE, _other(i, j, kE)], [chD, kD, count]);
-        this.setOpposite([D, i, j], null);
-        this.setOpposite([E, i, j], null);
+        if (D == E) {
+          this.setOpposite([chD, kD, _other(i, j, kD)], [0, 0, nD]);
+          this.setOpposite([D, i, j], null);
+        }
+        else {
+          const [chE, kE, nE] = this.opposite([E, i, j]);
+          const count = nD + nE;
+
+          this.setOpposite([chD, kD, _other(i, j, kD)], [chE, kE, count]);
+          this.setOpposite([chE, kE, _other(i, j, kE)], [chD, kD, count]);
+          this.setOpposite([D, i, j], null);
+          this.setOpposite([E, i, j], null);
+        }
 
         if ((this._ds.s(i, D) == D) == (this._ds.s(kD, chD) == chD))
           todo.push([chD, kD, _other(i, j, kD)]);
@@ -74,6 +81,24 @@ class Boundary {
     }
 
     return glued;
+  }
+
+  toString() {
+    const lines = [];
+
+    for (const D of this._ds.elements()) {
+      for (const i of this._ds.indices()) {
+        for (const j of this._ds.indices()) {
+          if (j != i) {
+            const val = this.opposite([D, i, j]);
+            if (val)
+              lines.push(`${[D, i, j]} -> ${val}`);
+          }
+        }
+      }
+    }
+
+    return lines.join('\n');
   }
 }
 
@@ -226,4 +251,8 @@ if (require.main == module) {
 
   test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
   test(DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
+
+  test(DS.parse(
+    '<1.1:12:2 5 7 10 11 12,1 4 6 9 7 12 11,3 5 8 6 11 12 10:4 4,6 3 3>'
+  ));
 }
