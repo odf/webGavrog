@@ -160,8 +160,16 @@ const _cutsOffDisk = (ds, cut, allow2Cone) => {
       if (
         cut.every(D => ds.v(1, 2, D) == 1)
           && cut.every(D => ds.v(0, 1, D) == 1)
-      )
-        return false;
+      ) {
+        const rest = d.subsymbol(tmp, [0, 1, 2], ds.s(1, cut[0]));
+
+        const orbitType = (i, j, D) =>
+              [rest.v(i, j, D), _loopless(rest, i, j, D)];
+        const types = _map1dOrbits(orbitType, rest);
+
+        if (checkCones(types.filter(([v, c]) => v > 1 && c).map(([v]) => v)))
+          return false;
+      }
     }
   }
 
@@ -185,7 +193,7 @@ export const isPseudoConvex = ds => {
   const log = () => {};
   //const log = console.log;
 
-  ds = d.orientedCover(ds);
+  ds = d.canonical(d.orientedCover(ds));
   log(`isPseudoConvex(${ds})`);
   const ori = p.partialOrientation(ds);
 
@@ -288,4 +296,6 @@ if (require.main == module) {
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
   test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>')); // not pseudo-convex
   test(DS.parse('<1.1:4:2 4,1 3 4,3 4:4,4>'));
+
+  test(DS.parse('<1.1:12:1 3 5 8 10 11 12,2 3 6 7 10 12 11,1 4 5 9 7 11 10 12:3 3 3,6 3 3>'));
 }
