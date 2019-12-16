@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 
 import { rationalMatrices } from '../arithmetic/types';
+import * as util from '../common/util';
 import { finiteUniversalCover } from '../dsymbols/covers';
 import { orbitReps2, orbit2, parseSymbols } from '../dsymbols/delaney';
 import { makeCover, skeleton, chamberPositions } from '../dsymbols/tilings';
@@ -88,6 +89,7 @@ const isThreeConnectedSpherical = ds => {
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 
 let count = 0;
+const timers = util.timers();
 
 for (const ds of parseSymbols(text)) {
   const euclidean = isEuclidean(ds);
@@ -99,12 +101,17 @@ for (const ds of parseSymbols(text)) {
       console.log(`# ${count} symbols checked`);
 
     try {
+      timers.start('claim');
       const claim = isPseudoConvex(ds);
+      timers.stop('claim');
+
+      timers.start('verification');
       const verification = (
         euclidean ?
           hasNonDegenerateBarycentricPlacement(ds) :
           isThreeConnectedSpherical(ds)
       );
+      timers.stop('verification');
 
       if (claim != verification)
         console.log(`${ds}`);
@@ -114,3 +121,5 @@ for (const ds of parseSymbols(text)) {
     }
   }
 }
+
+console.log(`${JSON.stringify(timers.current(), null, 2)}`);
