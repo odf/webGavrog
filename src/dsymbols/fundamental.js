@@ -185,23 +185,20 @@ export const fundamentalGroup = ds => {
           const w = _traceWord(ds, edge2word, i, j, D);
           const v = ds.v(i, j, D);
           if (v && w.length > 0)
-            orbits.push([D, i, j, w, v]);
+            orbits.push([w, v, D, i, j]);
         }
       }
     }
   }
 
-  const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[4], orb[3]));
+  const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[1], orb[0]));
 
   const mirrors = gen2edge
     .map(([D, i], g) => [D, i, g])
     .filter(([D, i, g]) => g > 0 && ds.s(i, D) == D)
     .map(([D, _, g]) => freeWords.word([g, g]));
 
-  const cones = orbits
-    .filter(orb => orb[4] > 1)
-    .map(orb => orb.slice(3))
-    .sort();
+  const cones = orbits.filter(orb => orb[1] > 1).sort();
 
   const nrGenerators = gen2edge.length - 1;
   const relators =
