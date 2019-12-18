@@ -305,7 +305,7 @@ const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
   const volWeight = Math.pow(10, -passNr);
   const energy = _energyEvaluator(posSpace, gramSpace, edgeOrbits, volWeight);
 
-  const result = amoeba(energy, params.length, params, 10000, 1e-6, 0.1);
+  const result = amoeba(energy, params, 10000, 1e-6, 0.1);
 
   return result.position;
 };

@@ -1,70 +1,87 @@
-const newPoint = (simplex, factor, fn) => {
-  const dim = simplex.length - 1;
-  const p = new Array(dim + 1).fill(0);
+// Implementation of the Nelder-Mead optimization algorithm.
 
-  for (let i = 1; i < dim + 1; ++i) {
-    let c = 0;
-    for (let j = 0; j < dim; ++j)
-      c += simplex[j][i];
-    p[i] = factor * simplex[dim][i] + (1 - factor) * c / dim;
+const step = (simplex, values, order, dim, fn) => {
+  const setPoint = (k, factor) => {
+    for (let i = 0; i < dim; ++i) {
+      let c = 0;
+      for (let j = 0; j < dim; ++j)
+        c += simplex[order[j]][i];
+      simplex[k][i] = factor * simplex[order[dim]][i] + (1 - factor) * c / dim;
+    }
+  };
+
+  const copyPoint = (to, from) => {
+    for (let i = 0; i < dim; ++i)
+      simplex[to][i] = simplex[from][i];
+  };
+
+  setPoint(dim + 1, -1.0);
+  const vr = fn(simplex[dim + 1]);
+
+  if (vr < values[order[0]]) {
+    setPoint(dim + 2, -2.0);
+    const ve = fn(simplex[dim + 2]);
+    copyPoint(order[dim], ve < vr ? dim + 2 : dim + 1);
+    values[order[dim]] = Math.min(ve, vr);
   }
-
-  p[0] = fn(p.slice(1));
-
-  return p;
-};
-
-
-const step = (simplex, fn) => {
-  const dim = simplex.length - 1;
-
-  const pr = newPoint(simplex, -1.0, fn);
-
-  if (pr[0] < simplex[0][0]) {
-    const pe = newPoint(simplex, -2.0, fn);
-    simplex[dim] = pe[0] < pr[0] ? pe : pr;
+  else if (vr < values[order[dim - 1]]) {
+    copyPoint(order[dim], dim + 1);
+    values[order[dim]] = vr;
   }
-  else if (pr[0] < simplex[dim - 1][0])
-    simplex[dim] = pr;
   else {
-    const pc = newPoint(simplex, 0.5, fn);
-    if (pc[0] < simplex[dim][0])
-      simplex[dim] = pc;
+    setPoint(dim + 1, 0.5);
+    const vc = fn(simplex[dim + 1]);
+    if (vc < values[order[dim]]) {
+      copyPoint(order[dim], dim + 1);
+      values[order[dim]] = vc;
+    }
     else {
-      for (let i = 0; i <= dim; ++i) {
-        simplex[i] = simplex[i].map((x, j) => (x + simplex[0][j]) / 2);
-        simplex[i][0] = fn(simplex[i].slice(1));
+      for (let i = 1; i <= dim; ++i) {
+        for (let j = 0; j < dim; ++j)
+          simplex[order[i]][j] += simplex[order[0]][j] / 2;
+        values[order[i]] = fn(simplex[order[i]]);
       }
     }
   }
 
-  simplex.sort((a, b) => a[0] - b[0]);
+  order.sort((a, b) => values[a] - values[b]);
 };
 
 
-const optimize = (fn, dim, start, maxSteps, tolerance, initialScale=1.0) => {
-  const array = n => Array(n).fill(0);
-  const m = array(dim).map((_, i) => array(dim).fill(initialScale, i, i+1));
+const optimize = (fn, start, maxSteps, tolerance, initialScale=1.0) => {
+  const dim = start.length;
+  const simplex = [new Float64Array(start)];
 
-  const simplex = [start].concat(m.map(e => e.map((x, i) => x + start[i])))
-    .map(p => [fn(p)].concat(p))
-    .sort((a, b) => a[0] - b[0]);
+  for (let i = 0; i < dim; ++i) {
+    const p = new Float64Array(start);
+    p[i] += initialScale;
+    simplex.push(p);
+  }
+
+  const values = new Float64Array(simplex.map(x => fn(x)));
+  const order = new Int32Array(simplex.map((_, i) => i));
+  order.sort((a, b) => values[a] - values[b]);
+
+  simplex.push(new Float64Array(start));
+  simplex.push(new Float64Array(start));
 
   let i = 0;
   while (i < maxSteps) {
-    const vlo = simplex[0][0];
-    const vhi = simplex[dim][0];
-    if (2 * Math.abs(vhi - vlo) <=
-        tolerance * Math.max(tolerance, Math.abs(vlo) + Math.abs(vhi)))
+    const vlo = values[order[0]];
+    const vhi = values[order[dim]];
+    if (
+      2 * Math.abs(vhi - vlo) <=
+        tolerance * Math.max(tolerance, Math.abs(vlo) + Math.abs(vhi))
+    )
       break;
 
-    step(simplex, fn);
+    step(simplex, values, order, dim, fn);
     ++i;
   }
 
   return {
-    position: simplex[0].slice(1),
-    value: simplex[0][0],
+    position: simplex[order[0]],
+    value: values[order[0]],
     steps: i
   };
 };
@@ -83,7 +100,7 @@ export default optimize;
 
 if (require.main == module) {
   console.log('Himmelblau:');
-  console.log(optimize(himmelblau, 2, [-1, -1], 1000, 1e-12));
+  console.log(optimize(himmelblau, [-1, -1], 1000, 1e-12));
   console.log('Rosenbrock:');
-  console.log(optimize(rosenbrock(1, 100), 2, [-1, -1], 1000, 1e-12));
+  console.log(optimize(rosenbrock(1, 100), [-1, -1], 1000, 1e-12));
 }
