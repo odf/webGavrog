@@ -69,6 +69,11 @@ JS.Test.describe('floats', function() {
           ops.minus(a, ops.mod(a, b))
         ),
       options));
+
+    this.it('satisfies a % b >= 0', spec.property(
+      [jsc.number(), jsc.number()],
+      (a, b) => areClose(0, b) || ops.ge(ops.mod(a, b), 0),
+      options));
   });
 });
 
