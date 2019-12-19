@@ -4,8 +4,17 @@ export const extend = baseOps => {
       return 0;
     else {
       const t = x % y;
-      return t < 0 ? t + y : t;
+      return t < 0 ? t + Math.abs(y) : t;
     }
+  };
+
+  const idiv = (x, y) => {
+    if (y == 0)
+      throw new Error('division by zero');
+    else if (x == 0)
+      return x;
+
+    return y < 0 ? Math.ceil(x / y) : Math.floor(x / y);
   };
 
 
@@ -47,7 +56,8 @@ export const extend = baseOps => {
     [ 'minus', (x, y) => x - y                          ],
     [ 'times', (x, y) => (x == 0 || y == 0) ? 0 : x * y ],
     [ 'div'  , (x, y) => x == 0 ? 0 : x / y             ],
-    [ 'mod'  , mod ]
+    [ 'mod'  , mod ],
+    [ 'idiv' , idiv ]
   ]) {
     methods[name] = {
       Float: {
