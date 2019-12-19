@@ -141,6 +141,15 @@ JS.Test.describe('long integers', function() {
                                       ops.minus(a, ops.mod(a, b)));
       },
       options));
+
+    this.it('satisfies a % b >= 0', spec.property(
+      [spec.generators.digitStrings(), spec.generators.digitStrings()],
+      (sa, sb) => {
+        const a = ops.integer(sa);
+        const b = ops.integer(sb);
+        return ops.eq(0, b) || ops.ge(ops.mod(a, b), 0);
+      },
+      options));
   });
 });
 
