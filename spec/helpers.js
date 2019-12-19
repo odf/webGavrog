@@ -50,14 +50,24 @@ export const generators = {
     const generator = jsc.generator.bless(size => {
       const n = jsc.random(1, Math.max(1, size));
       const v = new Array(n);
+
       for (let i = 0; i < n; ++i)
         v[i] = digits.generator();
+
+      while (v.length > 1 && v[0] == 0)
+        v.shift()
+
+      if ((v.length > 1 || v[0] != 0) && jsc.random(0, 1))
+        v.unshift('-');
+
       return v.join('');
     });
 
     const shrink = jsc.shrink.bless(s => {
       if (s.length <= 1)
         return [];
+      else if (s.length == 2 && s[0] == '-')
+        return [s.slice(1)];
       else
         return seq.range(0, s.length).map(i => skip(s, i)).toArray();
     });

@@ -51,10 +51,10 @@ const fib = n => {
 
 
 JS.Test.describe('long integers', function() {
-  this.describe('a digit string not starting with a zero', function() {
+  this.describe('a digit string', function() {
     this.it('stays the same when parsed and then formatted', spec.property(
       [spec.generators.digitStrings()],
-      s => s[0] == '0' || s == ops.integer(s).toString()));
+      s => s == ops.integer(s).toString()));
   });
 
 
