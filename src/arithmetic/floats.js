@@ -1,18 +1,14 @@
 export const extend = baseOps => {
   const mod = (x, y) => {
-    if (x == 0)
-      return 0;
-    else {
-      const t = x % y;
-      return t < 0 ? t + Math.abs(y) : t;
-    }
+    if (y == 0)
+      throw new Error('division by zero');
+
+    return x < 0 ? x % y + Math.abs(y) : x % y;
   };
 
   const idiv = (x, y) => {
     if (y == 0)
       throw new Error('division by zero');
-    else if (x == 0)
-      return x;
 
     return y < 0 ? Math.ceil(x / y) : Math.floor(x / y);
   };
