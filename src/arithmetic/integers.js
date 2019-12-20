@@ -33,7 +33,7 @@ export const extend = (baseOps, baseLength = 0) => {
     }
 
     toString() {
-      if (_isZero(this))
+      if (isZero(this))
         return '0';
       else if (this.sign < 0)
         return '-' + negative(this).toString();
@@ -64,12 +64,12 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const negative = n => make(-n.sign, n.digits);
-  const abs      = n => n.sign == 0 ? 0 : make(1, n.digits);
   const sgn      = n => n.sign;
-  const _isZero  = n => n.sign == 0;
-  const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
+  const abs      = n => n.sign == 0 ? 0 : make(1, n.digits);
+  const isZero   = n => n.sign == 0;
+  const isEven   = n => n.sign == 0 || n.digits[0] % 2 == 0;
 
-  const _last = a => a[a.length - 1];
+  const last = a => a[a.length - 1];
 
 
   const make = (s, d) => {
@@ -187,7 +187,7 @@ export const extend = (baseOps, baseLength = 0) => {
     if (borrow)
       throw new Error("panic: internal function called with bad arguments");
 
-    while (_last(result) == 0)
+    while (last(result) == 0)
       result.pop();
 
     return result;
@@ -195,9 +195,9 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const cmp = (a, b) => {
-    if (_isZero(a))
+    if (isZero(a))
       return -b.sign;
-    else if (_isZero(b))
+    else if (isZero(b))
       return a.sign;
     else if (a.sign != b.sign)
       return a.sign;
@@ -207,9 +207,9 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const plus = (a, b) => {
-    if (_isZero(a))
+    if (isZero(a))
       return make(b.sign, b.digits);
-    else if (_isZero(b))
+    else if (isZero(b))
       return make(a.sign, a.digits);
     else if (a.sign != b.sign)
       return minus(a, new LongInt(-b.sign, b.digits));
@@ -219,9 +219,9 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const minus = (a, b) => {
-    if (_isZero(a))
+    if (isZero(a))
       return negative(b);
-    else if (_isZero(b))
+    else if (isZero(b))
       return make(a.sign, a.digits);
     else if (a.sign != b.sign)
       return plus(a, new LongInt(-b.sign, b.digits));
@@ -288,7 +288,7 @@ export const extend = (baseOps, baseLength = 0) => {
     for (let i = 0; i < r.length; ++i)
       _timesSingleDigit(s, r[i], result, i);
 
-    while (_last(result) == 0)
+    while (last(result) == 0)
       result.pop();
 
     return result;
@@ -296,7 +296,7 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const times = (a, b) => {
-    if (_isZero(a) || _isZero(b))
+    if (isZero(a) || isZero(b))
       return 0;
     else
       return make(a.sign * b.sign, _times(a.digits, b.digits));
@@ -307,7 +307,7 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const _divmod = (r, s) => {
-    const k = BASELENGTH - 1 - Math.floor(Math.log2(_last(s)));
+    const k = BASELENGTH - 1 - Math.floor(Math.log2(last(s)));
     r = _shiftLeft(r, k);
     s = _shiftLeft(s, k);
 
@@ -324,7 +324,7 @@ export const extend = (baseOps, baseLength = 0) => {
       q[j] = Math.min(_quotient2by1(r[n + j], r[n + j - 1], s[n - 1]), BASE-1);
 
       let t = _timesSingleDigit(s, q[j]);
-      while (_last(t) == 0)
+      while (last(t) == 0)
         t.pop();
 
       while (_cmp(r, t, j) < 0) {
@@ -334,7 +334,7 @@ export const extend = (baseOps, baseLength = 0) => {
       r = _minus(r, _shiftLeft(t, j * BASELENGTH), true);
     }
 
-    while (_last(q) == 0)
+    while (last(q) == 0)
       q.pop();
 
     return [q, _shiftRight(r, k)];
@@ -388,7 +388,7 @@ export const extend = (baseOps, baseLength = 0) => {
       t[t.length - 1] = Math.floor(t[t.length - 1] / fr);
     }
 
-    while (_last(t) == 0)
+    while (last(t) == 0)
       t.pop();
 
     return t;
@@ -407,10 +407,10 @@ export const extend = (baseOps, baseLength = 0) => {
         t[i] = t[i] % fr * fl + Math.floor(t[i - 1] / fr);
 
       t[0] = t[0] % fr * fl;
-      t.push(Math.floor(_last(r) / fr));
+      t.push(Math.floor(last(r) / fr));
     }
 
-    while (_last(t) == 0)
+    while (last(t) == 0)
       t.pop();
 
     return new Array(Math.floor(n / BASELENGTH)).fill(0).concat(t);
@@ -445,15 +445,15 @@ export const extend = (baseOps, baseLength = 0) => {
 
     r[r.length - 1] = Math.floor(r[r.length - 1] / 2);
 
-    while (_last(r) == 0)
+    while (last(r) == 0)
       r.pop();
   };
 
 
   const gcdBinary = (a, b) => {
-    if (_isZero(a))
+    if (isZero(a))
       return make(1, b.digits);
-    else if (_isZero(b) || cmp(a, b) == 0)
+    else if (isZero(b) || cmp(a, b) == 0)
       return make(1, a.digits);
 
     let r = a.digits.slice();
