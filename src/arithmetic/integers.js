@@ -342,52 +342,6 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
 
-  const idiv = (a, b) => {
-    if (b.sign == 0)
-      throw new Error('division by zero');
-    else if (a.sign == 0)
-      return a;
-
-    const s = a.sign * b.sign;
-    const d = _cmp(a.digits, b.digits);
-
-    if (d == 0)
-      return s;
-    else if (d < 0)
-      return s > 0 ? 0 : s;
-    else {
-      const [q, r] = _divmod(a.digits, b.digits);
-      if (s > 0 || r.length == 0)
-        return make(s, q);
-      else
-        return make(s, _plus(q, [1]));
-    }
-  };
-
-
-  const mod = (a, b) => {
-    if (b.sign == 0)
-      throw new Error('division by zero');
-    else if (a.sign == 0)
-      return 0;
-
-    const s = a.sign * b.sign;
-    const d = _cmp(a.digits, b.digits);
-
-    if (d == 0)
-      return 0;
-    else if (d < 0)
-      return s > 0 ? a : make(b.sign, _minus(b.digits, a.digits));
-    else {
-      const [q, r] = _divmod(a.digits, b.digits);
-      if (s > 0 || r.length == 0)
-        return make(b.sign, r);
-      else
-        return make(b.sign, _minus(b.digits, r));
-    }
-  };
-
-
   const divmod = (a, b) => {
     if (b.sign == 0)
       throw new Error('division by zero');
@@ -399,16 +353,26 @@ export const extend = (baseOps, baseLength = 0) => {
 
     if (d == 0)
       return [s, 0];
-    else if (d < 0)
-      return s > 0 ? [0, a] : [s, make(b.sign, _minus(b.digits, a.digits))];
     else {
-      const [q, r] = _divmod(a.digits, b.digits);
-      if (s > 0 || r.length == 0)
-        return [make(s, q), make(b.sign, r)];
+      const [q, r] = (d < 0) ? [[], a.digits] : _divmod(a.digits, b.digits);
+      if (r.length == 0)
+        return [make(s, q), 0];
+      else if (a.sign > 0)
+        return [
+          make(b.sign, q),
+          make(1, r)
+        ];
       else
-        return [make(s, _plus(q, [1])), make(b.sign, _minus(b.digits, r))];
+        return [
+          make(-b.sign, _plus(q, [1])),
+          make(1, _minus(b.digits, r))
+        ];
     }
   };
+
+
+  const idiv = (a, b) => divmod(a, b)[0];
+  const mod = (a, b) => divmod(a, b)[1];
 
 
   const _shiftRight = (r, n) => {
@@ -548,6 +512,21 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
 
+  const modPrimitive = (x, y) => {
+    if (y == 0)
+      throw new Error('division by zero');
+
+    return x < 0 ? x % y + Math.abs(y) : x % y;
+  };
+
+  const idivPrimitive = (x, y) => {
+    if (y == 0)
+      throw new Error('division by zero');
+
+    return y < 0 ? Math.ceil(x / y) : Math.floor(x / y);
+  };
+
+
   return baseOps.register({
     __context__: () => 'integers',
 
@@ -647,7 +626,7 @@ export const extend = (baseOps, baseLength = 0) => {
       },
       Integer: {
         LongInt: (x, y) => idiv(promote(x), y),
-        Integer: (x, y) => Math.floor(x / y)
+        Integer: (x, y) => idivPrimitive(x, y)
       }
     },
     mod: {
@@ -657,7 +636,7 @@ export const extend = (baseOps, baseLength = 0) => {
       },
       Integer: {
         LongInt: (x, y) => mod(promote(x), y),
-        Integer: (x, y) => x - Math.floor(x / y) * y
+        Integer: (x, y) => modPrimitive(x, y)
       }
     },
     divmod: {
@@ -667,7 +646,7 @@ export const extend = (baseOps, baseLength = 0) => {
       },
       Integer: {
         LongInt: (x, y) => divmod(promote(x), y),
-        Integer: (x, y) => [Math.floor(x / y), x - Math.floor(x / y) * y]
+        Integer: (x, y) => [idivPrimitive(x, y), modPrimitive(x, y)]
       }
     },
     shiftRight: {
