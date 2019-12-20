@@ -35,19 +35,21 @@ export const extend = (baseOps, baseLength = 0) => {
     toString() {
       if (isZero(this))
         return '0';
-      else if (this.sign < 0)
-        return '-' + negative(this).toString();
       else {
         const s = [];
         let t = this.digits;
         let r;
-        while (t.length > 0) {
+
+        while (t.length > 1) {
           [t, r] = _divmod(t, [decimalBase]);
-          if (t.length > 0)
-            s.push((r[0] + decimalBase).toString().slice(1));
-          else
-            s.push(r[0].toString());
+          s.push((r[0] + decimalBase).toString().slice(1));
         }
+
+        s.push(t[0].toString());
+
+        if (this.sign < 0)
+          s.push('-');
+
         return s.reverse().join('');
       }
     }
