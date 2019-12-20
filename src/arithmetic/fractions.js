@@ -120,7 +120,11 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 
   const idiv = (q, r) => {
     const t = div(q, r);
-    return (intOps.typeOf(t) == typeName ? floor : intOps.floor)(t);
+
+    if (intOps.typeOf(t) == typeName)
+      return sgn(r) < 0 ? ceil(t): floor(t);
+    else
+      return sgn(r) < 0 ? intOps.ceil(t) : intOps.floor(t);
   };
 
 
