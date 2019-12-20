@@ -64,7 +64,7 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const negative = n => make(-n.sign, n.digits);
-  const abs      = n => sgn(n) ? make(1, n.digits) : n;
+  const abs      = n => n.sign == 0 ? 0 : make(1, n.digits);
   const sgn      = n => n.sign;
   const _isZero  = n => n.sign == 0;
   const isEven   = n => _isZero(n) || n.digits[0] % 2 == 0;
@@ -73,15 +73,16 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const make = (s, d) => {
-    while (_last(d) == 0)
-      d.pop();
+    let i = d.length;
+    while (i > 0 && d[i - 1] == 0)
+      --i;
 
-    if (d.length > 1)
-      return new LongInt(s, d);
-    else if (d.length == 1)
+    if (i == 0)
+      return 0;
+    else if (i == 1)
       return s * d[0];
     else
-      return 0;
+      return new LongInt(s, d.slice(0, i));
   };
 
 
@@ -91,9 +92,10 @@ export const extend = (baseOps, baseLength = 0) => {
     const sign = (n > 0) - (n < 0);
     n = Math.abs(n);
 
-    const digits = [];
-    while (n > 0) {
-      digits.push(n % BASE);
+    const m = Math.ceil(Math.log(n + 1) / Math.log(BASE));
+    const digits = new Array(m);
+    for (let i = 0; i < m; ++i) {
+      digits[i] = n % BASE;
       n = Math.floor(n / BASE);
     }
 
@@ -122,10 +124,7 @@ export const extend = (baseOps, baseLength = 0) => {
       digits = _plus(_times(digits, [decimalBase]), [parseInt(chunk)]);
     }
 
-    while (digits.length > 0 && _last(digits) == 0)
-      digits.pop();
-
-    const sign = digits.length == 0 ? 0 : literal[0] == '-' ? -1 : 1;
+    const sign = literal[0] == '-' ? -1 : 1;
     
     return make(sign, digits);
   };
