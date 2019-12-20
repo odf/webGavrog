@@ -30,14 +30,14 @@ const call = (dispatch, op, ops) => (...args) => {
 };
 
 
-const _isObject = o => o != null && o.constructor == Object;
+const isObject = o => o != null && o.constructor == Object;
 
 
 const mergeDeep = (obj, mods) => {
   const out = Object.assign({}, obj);
 
   for (const k in mods) {
-    if (_isObject(out[k]) && _isObject(mods[k]))
+    if (isObject(out[k]) && isObject(mods[k]))
       out[k] = mergeDeep(out[k], mods[k]);
     else
       out[k] = mods[k];
