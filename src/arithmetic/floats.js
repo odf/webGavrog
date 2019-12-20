@@ -3,7 +3,8 @@ export const extend = baseOps => {
     if (y == 0)
       throw new Error('division by zero');
 
-    return x < 0 ? x % y + Math.abs(y) : x % y;
+    const t = x % y;
+    return t < 0 ? t + Math.abs(y) : t;
   };
 
   const idiv = (x, y) => {

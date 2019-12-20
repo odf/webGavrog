@@ -453,11 +453,9 @@ export const extend = (baseOps, baseLength = 0) => {
 
   const gcdBinary = (a, b) => {
     if (_isZero(a))
-      return b;
-    else if (_isZero(b))
-      return a;
-    else if (cmp(a, b) == 0)
-      return a;
+      return make(1, b.digits);
+    else if (_isZero(b) || cmp(a, b) == 0)
+      return make(1, a.digits);
 
     let r = a.digits.slice();
     let s = b.digits.slice();
@@ -512,14 +510,15 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
 
-  const modPrimitive = (x, y) => {
+  const modInt = (x, y) => {
     if (y == 0)
       throw new Error('division by zero');
 
-    return x < 0 ? x % y + Math.abs(y) : x % y;
+    const t = x % y;
+    return t < 0 ? t + Math.abs(y) : t;
   };
 
-  const idivPrimitive = (x, y) => {
+  const idivInt = (x, y) => {
     if (y == 0)
       throw new Error('division by zero');
 
@@ -626,7 +625,7 @@ export const extend = (baseOps, baseLength = 0) => {
       },
       Integer: {
         LongInt: (x, y) => idiv(promote(x), y),
-        Integer: (x, y) => idivPrimitive(x, y)
+        Integer: (x, y) => idivInt(x, y)
       }
     },
     mod: {
@@ -636,7 +635,7 @@ export const extend = (baseOps, baseLength = 0) => {
       },
       Integer: {
         LongInt: (x, y) => mod(promote(x), y),
-        Integer: (x, y) => modPrimitive(x, y)
+        Integer: (x, y) => modInt(x, y)
       }
     },
     divmod: {
@@ -646,7 +645,7 @@ export const extend = (baseOps, baseLength = 0) => {
       },
       Integer: {
         LongInt: (x, y) => divmod(promote(x), y),
-        Integer: (x, y) => [idivPrimitive(x, y), modPrimitive(x, y)]
+        Integer: (x, y) => [idivInt(x, y), modInt(x, y)]
       }
     },
     shiftRight: {
