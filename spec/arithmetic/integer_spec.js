@@ -59,11 +59,14 @@ JS.Test.describe('long integers', function() {
 
 
   this.describe('a long integer a and a natural number n', function() {
-    this.it('satisfy a >> n = [a / 2^n]', spec.property(
+    this.it('satisfy abs(a >> n) = [abs(a) / 2^n]', spec.property(
       [spec.generators.digitStrings(), jsc.nat()],
       (sa, n) => {
         const a = ops.integer(sa);
-        return ops.eq(ops.shiftRight(a, n), ops.idiv(a, pow(2, n)));
+        return ops.eq(
+          ops.abs(ops.shiftRight(a, n)),
+          ops.idiv(ops.abs(a), pow(2, n))
+        );
       },
       options));
 
@@ -75,11 +78,14 @@ JS.Test.describe('long integers', function() {
       },
       options));
 
-    this.it('satisfy gcd(a*fib(n), a*fib(n+1)) == a', spec.property(
+    this.it('satisfy gcd(a*fib(n), a*fib(n+1)) == abs(a)', spec.property(
       [spec.generators.digitStrings(), jsc.nat()],
       (sa, n) => {
         const a = ops.integer(sa);
-        return ops.eq(ops.gcd(ops.times(a, fib(n)), ops.times(a, fib(n+1))), a);
+        return ops.eq(
+          ops.gcd(ops.times(a, fib(n)), ops.times(a, fib(n+1))),
+          ops.abs(a)
+        );
       },
       options));
   });
