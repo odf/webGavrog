@@ -130,7 +130,10 @@ export const extend = (baseOps, baseLength = 0) => {
 
     for (let i = offset; i < s.length; i += decimalBaseLength) {
       const chunk = s.slice(i, i + decimalBaseLength);
-      digits = _plus(_times(digits, [decimalBase]), [parseInt(chunk)]);
+      digits = _plus(
+        _timesSingleDigit(digits, decimalBase),
+        [parseInt(chunk)]
+      );
     }
 
     return make(sign, digits);
@@ -232,26 +235,23 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
 
-  const _lo = d => d % HALFBASE;
-  const _hi = d => Math.floor(d / HALFBASE);
+  const _split = d => [d % HALFBASE, Math.floor(d / HALFBASE)];
 
 
   const _timesSingleDigit = (s, d, target=null, offset=0) => {
     if (target == null)
       target = new Array(s.length + offset + 1).fill(0);
 
-    const dlo = _lo(d);
-    const dhi = _hi(d);
-
+    const [dlo, dhi] = _split(d);
     let carry = 0;
 
     for (let i = 0; i < s.length; ++i) {
-      const slo = _lo(s[i]);
-      const shi = _hi(s[i]);
-
+      const [slo, shi] = _split(s[i]);
       const m = dlo * shi + dhi * slo;
-      let lo = dlo * slo + _lo(m) * HALFBASE;
-      let hi = dhi * shi + _hi(m);
+      const [mlo, mhi] = _split(m);
+
+      let lo = dlo * slo + mlo * HALFBASE;
+      let hi = dhi * shi + mhi;
 
       if (lo >= BASE) {
         lo -= BASE;
@@ -277,24 +277,17 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
 
-  const _times = (r, s) => {
-    const result = new Array(r.length + s.length).fill(0);
-
-    for (let i = 0; i < r.length; ++i)
-      _timesSingleDigit(s, r[i], result, i);
-
-    while (last(result) == 0)
-      result.pop();
-
-    return result;
-  };
-
-
   const times = (a, b) => {
     if (isZero(a) || isZero(b))
       return 0;
-    else
-      return make(a.sign * b.sign, _times(a.digits, b.digits));
+    else {
+      const digitsOut = new Array(a.digits.length + b.digits.length).fill(0);
+
+      for (let i = 0; i < a.digits.length; ++i)
+        _timesSingleDigit(b.digits, a.digits[i], digitsOut, i);
+
+      return make(a.sign * b.sign, digitsOut);
+    }
   };
 
 
