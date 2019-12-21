@@ -63,13 +63,21 @@ export const generators = {
       return v.join('');
     });
 
+    const normalize = s => {
+      const start = s[0] == '-' ? 1 : 0;
+      let i = start;
+      while (i < s.length - 1 && s[i] == '0')
+        ++i;
+      return s.slice(0, start).concat(s.slice(i));
+    };
+
     const shrink = jsc.shrink.bless(s => {
       if (s.length <= 1)
         return [];
       else if (s.length == 2 && s[0] == '-')
         return [s.slice(1)];
       else
-        return seq.range(0, s.length).map(i => skip(s, i)).toArray();
+        return seq.range(0, s.length).map(i => normalize(skip(s, i))).toArray();
     });
 
     const show = s => s;
