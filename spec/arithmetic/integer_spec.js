@@ -50,11 +50,25 @@ const fib = n => {
 };
 
 
+const areClose = (x, y, eps=Math.pow(2, -52)) =>
+      (x == 0 && Math.abs(y) < eps) ||
+      (y == 0 && Math.abs(x) < eps) ||
+      Math.abs(x - y) <= eps * Math.max(Math.abs(x), Math.abs(y));
+
+
 JS.Test.describe('long integers', function() {
   this.describe('a digit string', function() {
     this.it('stays the same when parsed and then formatted', spec.property(
       [spec.generators.digitStrings()],
-      s => s == ops.integer(s).toString()));
+      s => s == ops.integer(s).toString(),
+      options
+    ));
+
+    this.it('stays close when parsed and converted to native', spec.property(
+      [spec.generators.digitStrings()],
+      s => areClose(ops.toJS(ops.integer(s)), parseInt(s)),
+      options
+    ));
   });
 
 

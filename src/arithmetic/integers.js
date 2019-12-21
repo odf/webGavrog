@@ -105,10 +105,16 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
   const toJS = n => {
-    if (n.sign == 0)
+    if (isZero(n))
       return 0;
-    else
-      return (n.sign * n.digits[0] * Math.pow(BASE, n.digits.length - 1));
+    else if (n.digits.length == 1)
+      return n.sign * n.digits[0];
+    else {
+      const k = n.digits.length - 2;
+      return (
+        n.sign * (n.digits[k + 1] * BASE + n.digits[k]) * Math.pow(BASE, k)
+      );
+    }
   };
 
 
