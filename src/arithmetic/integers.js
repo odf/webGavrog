@@ -156,16 +156,10 @@ export const extend = (baseOps, baseLength = 0) => {
     const result = r.slice();
     let carry = 0;
 
-    for (let i = 0; i < s.length; ++i) {
-      const sum = r[i] + s[i] + carry;
+    for (let i = 0; i < r.length && (i < s.length || carry); ++i) {
+      const sum = carry + (i < s.length ? r[i] + s[i] : r[i]);
       carry = sum >= BASE;
-      result[i] = carry ? sum - BASE : sum;
-    }
-
-    for (let i = s.length; carry && i < r.length; ++i) {
-      const sum = r[i] + carry;
-      carry = sum >= BASE;
-      result[i] = carry ? sum - BASE : sum;
+      result[i] = sum % BASE;
     }
 
     if (carry)
@@ -179,14 +173,8 @@ export const extend = (baseOps, baseLength = 0) => {
     const result = inplace ? r : r.slice();
     let borrow = 0;
 
-    for (let i = 0; i < s.length; ++i) {
-      const dif = r[i] - s[i] - borrow;
-      borrow = dif < 0;
-      result[i] = borrow ? dif + BASE : dif;
-    }
-
-    for (let i = s.length; borrow && i < r.length; ++i) {
-      const dif = r[i] - borrow;
+    for (let i = 0; i < r.length && (i < s.length || borrow); ++i) {
+      const dif = (i < s.length ? r[i] - s[i] : r[i]) - borrow;
       borrow = dif < 0;
       result[i] = borrow ? dif + BASE : dif;
     }
