@@ -120,8 +120,9 @@ export const extend = (baseOps, baseLength = 0) => {
 
   const parse = literal => {
     if (!literal.match(/^[+-]?\d{1,3}(_?\d{3})*$/))
-      throw new Error("expected an integer literal, got "+literal);
+      throw new Error(`expected an integer literal, got "${literal}"`);
 
+    const sign = literal[0] == '-' ? -1 : 1;
     const s = literal.replace(/^[+-]/, '').replace(/_/g, '');
     const offset = s.length % decimalBaseLength;
 
@@ -132,8 +133,6 @@ export const extend = (baseOps, baseLength = 0) => {
       digits = _plus(_times(digits, [decimalBase]), [parseInt(chunk)]);
     }
 
-    const sign = literal[0] == '-' ? -1 : 1;
-    
     return make(sign, digits);
   };
 
