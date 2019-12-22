@@ -291,9 +291,6 @@ export const extend = (baseOps, baseLength = 0) => {
   };
 
 
-  const _quotient2by1 = (ahi, alo, b) => Math.floor(ahi * BASE / b + alo / b);
-
-
   const _divmod = (r, s) => {
     const k = BASELENGTH - 1 - Math.floor(Math.log2(last(s)));
     r = _shiftLeft(r, k);
@@ -309,7 +306,10 @@ export const extend = (baseOps, baseLength = 0) => {
     }
 
     for (let j = m - 1; r.length > 0 && j >= 0; --j) {
-      q[j] = Math.min(_quotient2by1(r[n + j], r[n + j - 1], s[n - 1]), BASE-1);
+      q[j] = Math.min(
+        Math.floor(r[n + j] * BASE / s[n - 1] + r[n + j - 1] / s[n - 1]),
+        BASE - 1
+      );
 
       let t = _timesSingleDigit(s, q[j]);
       while (last(t) == 0)
@@ -426,10 +426,8 @@ export const extend = (baseOps, baseLength = 0) => {
 
 
   const _divideByTwoInPlace = r => {
-    const f = BASE / 2;
-
     for (let i = 0; i < r.length - 1; ++i)
-      r[i] = Math.floor(r[i] / 2) + (r[i + 1] % 2 ? f : 0);
+      r[i] = Math.floor(r[i] / 2) + (BASE / 2) * (r[i + 1] % 2);
 
     r[r.length - 1] = Math.floor(r[r.length - 1] / 2);
 
