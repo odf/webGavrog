@@ -439,7 +439,7 @@ export const extend = (baseOps, baseLength = 0) => {
   const gcdBinary = (a, b) => {
     if (isZero(a))
       return make(1, b.digits);
-    else if (isZero(b) || cmp(a, b) == 0)
+    else if (isZero(b) || _cmp(a.digits, b.digits) == 0)
       return make(1, a.digits);
 
     let r = a.digits.slice();
