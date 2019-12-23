@@ -36,12 +36,14 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
     else if (intOps.eq(numer, 0))
       return numer;
     else {
-      const a = intOps.gcd(denom, numer);
+      const [q, r] = intOps.divmod(numer, denom);
 
-      if (intOps.eq(a, denom))
-        return intOps.idiv(numer, a);
-      else
+      if (intOps.eq(r, 0))
+        return q;
+      else {
+        const a = intOps.gcd(denom, numer);
         return new Fraction(intOps.idiv(numer, a), intOps.idiv(denom, a));
+      }
     }
   };
 
