@@ -584,6 +584,29 @@ const strongComponents = outEdges => {
 };
 
 
+const strongSourceComponents = outEdges => {
+  const components = strongComponents(outEdges);
+
+  const node2component = {};
+  for (let i = 0; i < components.length; ++i) {
+    for (const v of components[i])
+      node2component[v] = i;
+  }
+
+  const isSource = components.map(_ => true);
+  for (const v of Object.keys(outEdges)) {
+    for (const e of outEdges[v]) {
+      const cHead = node2component[e.head];
+      const cTail = node2component[e.tail];
+      if (cHead != cTail)
+        isSource[cTail] = false;
+    }
+  }
+
+  return components.filter((c, i) => isSource[i]);
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -604,7 +627,12 @@ if (require.main == module) {
       for (const e of sdg[k])
         console.log(`  ${e}`);
     }
-    console.log(`strong components: ${JSON.stringify(strongComponents(sdg))}`);
+    console.log(
+      `strong components: ${JSON.stringify(strongComponents(sdg))}`
+    );
+    console.log(
+      `strong source components: ${JSON.stringify(strongSourceComponents(sdg))}`
+    );
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries(g);
