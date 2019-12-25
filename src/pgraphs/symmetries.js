@@ -497,6 +497,93 @@ export const angleOrbits = (graph, syms, adj=pg.adjacencies(graph)) => {
 };
 
 
+const stableDeductionGraph = graph => {
+  const pos = pg.barycentricPlacement(graph);
+  const adj = pg.adjacencies(graph);
+
+  const res = {};
+
+  for (const v of pg.vertices(graph)) {
+    const edgeVecs = {};
+    for (const e of pg.allIncidences(graph, v, adj)) {
+      const k = encode(pg.edgeVector(e, pos));
+      if (edgeVecs[k] == null)
+        edgeVecs[k] = [];
+      edgeVecs[k].push(e);
+    }
+
+    const outEdges = [];
+    for (const k of Object.keys(edgeVecs)) {
+      if (edgeVecs[k].length == 1)
+        outEdges.push(edgeVecs[k][0]);
+    }
+    res[encode(v)] = outEdges;
+  }
+
+  return res;
+};
+
+
+const postOrder = outEdges => {
+  const res = [];
+  const seen = {};
+
+  const visit = v => {
+    if (!seen[v]) {
+      seen[v] = true;
+      for (const e of outEdges[v])
+        visit(e.tail);
+      res.push(v);
+    }
+  };
+
+  for (const v of Object.keys(outEdges))
+    visit(decode(v));
+
+  return res;
+};
+
+
+const strongComponents = outEdges => {
+  const inEdges = {};
+  for (const v of Object.keys(outEdges)) {
+    for (const e of outEdges[v]) {
+      const w = e.tail;
+      if (inEdges[w] == null)
+        inEdges[w] = [];
+      inEdges[w].push(e);
+    }
+  }
+
+  const todo = postOrder(outEdges).reverse();
+  const rootFor = {};
+  const stack = [];
+
+  for (const root of todo) {
+    stack.push(root);
+
+    while (stack.length) {
+      const v = stack.pop();
+      if (rootFor[v] == null) {
+        rootFor[v] = root;
+        for (const e of inEdges[v])
+          stack.push(e.head);
+      }
+    }
+  }
+
+  const underRoot = {};
+  for (const v of Object.keys(outEdges)) {
+    const root = rootFor[v];
+    if (underRoot[root] == null)
+      underRoot[root] = [];
+    underRoot[root].push(decode(v));
+  }
+
+  return Object.values(underRoot);
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -511,6 +598,13 @@ if (require.main == module) {
 
     const edgeLists = characteristicEdgeLists(g);
     console.log(`found ${edgeLists.length} characteristic edgeLists`);
+    console.log(`stable deduction graph:`);
+    const sdg = stableDeductionGraph(g);
+    for (const k of Object.keys(sdg)) {
+      for (const e of sdg[k])
+        console.log(`  ${e}`);
+    }
+    console.log(`strong components: ${JSON.stringify(strongComponents(sdg))}`);
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries(g);
@@ -522,7 +616,7 @@ if (require.main == module) {
         .sort((a, b) => ops.cmp(a, b))
         .forEach(t => console.log(t));
 
-      console.log(`found ${edgeLists.length} representative base(s):`);
+      console.log(`found ${edgeLists.length} representative base(s)`);
       for (const edgeList of edgeLists)
         console.log(`${edgeList}`);
       console.log();
@@ -585,4 +679,11 @@ if (require.main == module) {
                  [ 1, 2, [ 0, 1, 0 ] ],
                  [ 1, 1, [ 0, 0, 1 ] ],
                  [ 2, 2, [ 0, 0, 1 ] ] ]));
+
+  test(pg.make([ [ 1, 1, [ 0, 1 ] ],
+                 [ 1, 2, [ 0, 0 ] ],
+                 [ 1, 2, [ -1, 0 ] ],
+                 [ 1, 3, [ 0, 0 ] ],
+                 [ 1, 3, [ -1, 0 ] ],
+                 [ 2, 3, [ 0, 0 ] ] ]));
 }
