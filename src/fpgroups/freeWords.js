@@ -73,7 +73,7 @@ export const relatorRepresentative = w => relatorPermutations(w)
 
 
 if (require.main == module) {
-  const timer = require('../common/util').timer();
+  const timer = require('../common/timing').timer();
 
   console.log(product([[1,2,3], [-3,-2,4]]));
   console.log(raisedTo(3, [1,2,3,4,5,-2,-1]));

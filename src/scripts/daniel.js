@@ -1,5 +1,5 @@
 import * as generators from '../common/generators';
-import * as util from '../common/util';
+import * as timing from '../common/timing';
 
 import * as DS from '../dsymbols/delaney';
 import * as dsets2d from '../dsymbols/dsets2d';
@@ -9,7 +9,7 @@ import { rationals } from '../arithmetic/types';
 const Q = rationals;
 
 
-const timers = util.timers();
+const timers = timing.timers();
 
 
 const _loopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)

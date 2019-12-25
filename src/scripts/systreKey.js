@@ -1,4 +1,4 @@
-import * as util from '../common/util';
+import * as timing from '../common/timing';
 import * as io from '../io/cgd';
 import * as pgr from '../pgraphs/periodic';
 import * as sym from '../pgraphs/symmetries';
@@ -12,7 +12,7 @@ Array.prototype.toString = function() {
 };
 
 
-const timers = util.timers();
+const timers = timing.timers();
 
 require('../io/crystal').useTimers(timers);
 

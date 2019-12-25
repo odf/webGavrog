@@ -1,7 +1,7 @@
 import * as csp from 'plexus-csp';
 
 import * as pickler from '../common/pickler';
-import * as util from '../common/util';
+import * as timing from '../common/timing';
 import * as delaney from '../dsymbols/delaney';
 import * as derived from '../dsymbols/derived';
 import * as properties from '../dsymbols/properties';
@@ -448,7 +448,7 @@ const makeNetDisplayList = (data, options) => {
 
 const preprocessNet = (structure, options, runJob, log) => csp.go(
   function*() {
-    const t = util.timer();
+    const t = timing.timer();
 
     yield log('Normalizing shifts...');
     const graph = periodic.graphWithNormalizedShifts(structure.graph);
@@ -497,7 +497,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     const ballRadius = withDefault(options.netVertexRadius, 0.1);
     const stickRadius = withDefault(options.netEdgeRadius, 0.04);
 
-    const t = util.timer();
+    const t = timing.timer();
 
     yield log('Making the net geometry...');
     const meshes = [ makeBall(ballRadius), makeStick(stickRadius, 48) ];
@@ -655,7 +655,7 @@ const makeTileDisplayList = (data, options) => {
 
 const preprocessTiling = (structure, options, runJob, log) => csp.go(
   function*() {
-    const t = util.timer();
+    const t = timing.timer();
 
     if (options.tilingModifier == 'dual')
       structure = Object.assign(
@@ -730,7 +730,7 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
 const makeMeshes = (
   cov, skel, pos, seeds, basis, subDLevel, tighten, edgeWidth, runJob, log
 ) => csp.go(function*() {
-  const t = util.timer();
+  const t = timing.timer();
 
   yield log('Making the base tile surfaces...');
   const templates = yield runJob({

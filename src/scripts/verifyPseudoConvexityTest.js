@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 
 import { rationalMatrices } from '../arithmetic/types';
-import * as util from '../common/util';
+import * as timing from '../common/timing';
 import { finiteUniversalCover } from '../dsymbols/covers';
 import { orbitReps2, orbit2, parseSymbols } from '../dsymbols/delaney';
 import { makeCover, skeleton, chamberPositions } from '../dsymbols/tilings';
@@ -89,7 +89,7 @@ const isThreeConnectedSpherical = ds => {
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 
 let count = 0;
-const timers = util.timers();
+const timers = timing.timers();
 
 for (const ds of parseSymbols(text)) {
   const euclidean = isEuclidean(ds);

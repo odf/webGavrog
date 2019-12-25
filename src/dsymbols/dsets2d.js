@@ -1,10 +1,10 @@
 import * as generators from '../common/generators';
-import * as util from '../common/util';
+import * as timing from '../common/timing';
 
 import * as DS from './delaney';
 
 
-const timers = util.timers();
+const timers = timing.timers();
 
 
 const _firstUndefined = data => {

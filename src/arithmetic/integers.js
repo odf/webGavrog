@@ -657,7 +657,7 @@ export const extend = (baseOps, baseLength = 0) => {
 
 if (require.main == module) {
   const ops = extend(require('./base').arithmetic());
-  const timer = require('../common/util').timer();
+  const timer = require('../common/timing').timer();
 
   const N = 59;
   let t = 1;

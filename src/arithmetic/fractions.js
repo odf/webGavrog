@@ -177,7 +177,7 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 if (require.main == module) {
   const a = require('./integers').extend(require('./base').arithmetic());
   const ops = extend(a, ['Integer', 'LongInt']);
-  const timer = require('../common/util').timer();
+  const timer = require('../common/timing').timer();
 
   const N = 128;
   let t = 0, q = 1;
