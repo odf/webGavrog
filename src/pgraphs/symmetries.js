@@ -156,7 +156,7 @@ export const isMinimal = graph => {
   const start = verts[0];
   const pos = pg.barycentricPlacement(graph);
   const adj = pg.adjacencies(graph);
-  const ebv = edgesByVector(graph, pos, adj);
+  const ebv = uniqueEdgesByVector(graph, pos, adj);
 
   for (const v of verts.slice(1)) {
     if (automorphism(graph, start, v, id, ebv) != null)
@@ -176,7 +176,7 @@ export const isLadder = graph => {
   const start = verts[0];
   const pos = pg.barycentricPlacement(graph);
   const adj = pg.adjacencies(graph);
-  const ebv = edgesByVector(graph, pos, adj);
+  const ebv = uniqueEdgesByVector(graph, pos, adj);
 
   for (const v of verts) {
     if (v == start)
@@ -199,7 +199,7 @@ const translationalEquivalences = graph => {
   const start = verts[0];
   const pos = pg.barycentricPlacement(graph);
   const adj = pg.adjacencies(graph);
-  const ebv = edgesByVector(graph, pos, adj);
+  const ebv = uniqueEdgesByVector(graph, pos, adj);
 
   const p = new part.Partition();
 
@@ -307,13 +307,24 @@ const isUnimodular = A =>
   ops.eq(1, ops.abs(ops.determinant(A)));
 
 
-const edgesByVector = (graph, pos, adj) => {
+const uniqueEdgesByVector = (graph, pos, adj) => {
   const result = {};
 
   for (const v of pg.vertices(graph)) {
-    const m = result[v] = {};
-    for (const e of pg.allIncidences(graph, v, adj))
-      m[encode(pg.edgeVector(e, pos))] = e;
+    const seen = {};
+    const m = {};
+
+    for (const e of pg.allIncidences(graph, v, adj)) {
+      const key = encode(pg.edgeVector(e, pos));
+      if (seen[key])
+        delete m[key];
+      else {
+        m[key] = e;
+        seen[key] = true;
+      }
+    }
+
+    result[v] = m;
   }
 
   return result;
@@ -351,7 +362,7 @@ export const symmetries = graph => {
   if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable; cannot compute symmetries');
 
-  const ebv = edgesByVector(graph, pos, pg.adjacencies(graph));
+  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
 
   const edgeLists = goodEdgeLists(graph, characteristicEdgeLists(graph));
   const bases = edgeLists.map(es => ({
