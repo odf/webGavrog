@@ -646,6 +646,36 @@ const edgeListsForComponents = (components, edgeLists) => {
 };
 
 
+const symmetriesAdvanced = graph => {
+  const I = ops.identityMatrix(graph.dim);
+  const pos = pg.barycentricPlacement(graph);
+  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
+  const sdg = stableDeductionGraph(g);
+
+  const sourceComponents = strongSourceComponents(sdg);
+  const sourceEdgeLists = edgeListsForComponents(
+    sourceComponents, edgeListCandidates(g)
+  );
+
+  const bases = sourceEdgeLists.map(
+    els => els.map(
+      es => ({
+        v: es[0].head,
+        B: es.map(e => pg.edgeVector(e, pos))
+      })
+    )
+  );
+
+  const keys = sourceEdgeLists.map(els => els.map(encode));
+  const mapped = (es, phi) => es.map(e => decode(phi.src2img[encode(e)]));
+
+  const v0 = bases[0][0].v;
+  const invB0 = ops.inverse(bases[0][0].B);
+
+  const p = new part.LabelledPartition((a, b) => a || b);
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
