@@ -607,6 +607,34 @@ const strongSourceComponents = outEdges => {
 };
 
 
+const edgeListCandidates = graph => {
+  const adj = pg.adjacencies(graph);
+  const pos = pg.barycentricPlacement(graph);
+
+  const stars = [].concat(...pg.vertices(graph).map(
+    v => _goodCombinations(pg.allIncidences(graph, v, adj), pos)));
+
+  const chains = _goodEdgeChains(graph);
+
+  const scatters = _goodCombinations(_directedEdges(graph), pos);
+
+  return { stars, chains, scatters };
+};
+
+
+const edgeListsForComponents = (components, edgeLists) => {
+  const { stars, chains, scatters } = edgeLists;
+
+  for (const lists of [stars, chains, scatters]) {
+    const res = components.map(
+      nodes => lists.filter(list => nodes.includes(list[0].head))
+    );
+    if (res.every(els => els.length > 0))
+      return res;
+  }
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -621,18 +649,11 @@ if (require.main == module) {
 
     const edgeLists = characteristicEdgeLists(g);
     console.log(`found ${edgeLists.length} characteristic edgeLists`);
-    console.log(`stable deduction graph:`);
-    const sdg = stableDeductionGraph(g);
-    for (const k of Object.keys(sdg)) {
-      for (const e of sdg[k])
-        console.log(`  ${e}`);
-    }
-    console.log(
-      `strong components: ${JSON.stringify(strongComponents(sdg))}`
-    );
-    console.log(
-      `strong source components: ${JSON.stringify(strongSourceComponents(sdg))}`
-    );
+    for (const el of edgeLists.slice(0, 4))
+      console.log(`  ${el.map(e => e.toString())}`);
+    if (edgeLists.length > 4)
+      console.log(`  ...`);
+    console.log();
 
     if (pg.isConnected(g) && pg.isLocallyStable(g)) {
       const syms = symmetries(g);
@@ -664,6 +685,34 @@ if (require.main == module) {
 
       const orbits = edgeOrbits(g, syms.symmetries);
       console.log(`edge orbits: ${JSON.stringify(orbits)}`);
+    }
+    else {
+      console.log(`stable deduction graph:`);
+      const sdg = stableDeductionGraph(g);
+      for (const k of Object.keys(sdg)) {
+        for (const e of sdg[k])
+          console.log(`  ${e}`);
+      }
+      console.log(
+        `strong components: ${JSON.stringify(strongComponents(sdg))}`
+      );
+
+      const sourceComponents = strongSourceComponents(sdg);
+      console.log(
+        `strong source components: ${JSON.stringify(sourceComponents)}`
+      );
+
+      const sourceEdgeLists = edgeListsForComponents(
+        sourceComponents, edgeListCandidates(g)
+      );
+      console.log(`sourceEdgeLists:`);
+      for (const lists of sourceEdgeLists) {
+        for (const list of lists)
+          console.log(
+            `  ${list.map(e => `(${e.head}, ${e.tail}, ${e.shift})`)}`
+          );
+        console.log();
+      }
     }
     console.log();
     console.log();
