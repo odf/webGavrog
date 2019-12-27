@@ -658,18 +658,18 @@ const symmetriesAdvanced = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
   const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
-  const sdg = stableDeductionGraph(g);
+  const sdg = stableDeductionGraph(graph);
 
   const sourceComponents = strongSourceComponents(sdg);
   const sourceEdgeLists = edgeListsForComponents(
-    sourceComponents, edgeListCandidates(g)
+    sourceComponents, edgeListCandidates(graph)
   );
 
   const seedIndices = [0];
   for (let i = 0; i < sourceEdgeLists.length - 1; ++i)
     seedIndices.push(seedIndices[i] + sourceEdgeLists[i].length);
 
-  const edgesLists = [].concat(...sourceEdgeLists);
+  const edgeLists = [].concat(...sourceEdgeLists);
   const bases = edgeLists.map(es => ({
     v: es[0].head,
     B: es.map(e => pg.edgeVector(e, pos))
@@ -684,8 +684,10 @@ const symmetriesAdvanced = graph => {
     if (stack.length < seedIndices.length)
       stack.push({ i: 0 });
     else {
-      while (stack[stack.length - 1].i >= edgesLists.length - 1)
-        a.pop();
+      while (
+        stack.length > 0 && stack[stack.length - 1].i >= edgeLists.length - 1
+      )
+        stack.pop();
     }
 
     if (stack.length == 0)
@@ -704,13 +706,15 @@ const symmetriesAdvanced = graph => {
       const isoIn = stack.length > 1 ? stack[stack.length - 2].iso : null;
       const iso = automorphism(vSrc, vImg, M, ebv, isoIn);
       if (iso) {
-        gens.push(iso);
         stack[stack.length - 1].iso = iso;
+
+        if (stack.length == seedIndices.length)
+          gens.push(iso);
       }
     }
   }
 
-  return groupOfAutomorphisms(gens, phi => encode(mapped(edgeLists[0], phi)));
+  return gens;
 };
 
 
@@ -791,6 +795,20 @@ if (require.main == module) {
             `  ${list.map(e => `(${e.head}, ${e.tail}, ${e.shift})`)}`
           );
         console.log();
+      }
+
+      const syms = symmetriesAdvanced(g);
+      console.log(`stationary symmetries:`);
+      const I = ops.identityMatrix(g.dim);
+      for (const s of syms) {
+        if (ops.eq(s.transform, I)) {
+          const d = {};
+          for (const k of Object.keys(s.src2img)) {
+            if (Number.isInteger(decode(k)))
+              d[k] = s.src2img[k];
+          }
+          console.log(`  ${JSON.stringify(d)}`);
+        }
       }
     }
     console.log();
