@@ -83,8 +83,8 @@ const characteristicEdgeLists = graph => {
 };
 
 
-const automorphism = (graph, start1, start2, transform, edgeByVec) => {
-  const src2img = { [start1]: start2 };
+const automorphism = (graph, start1, start2, transform, edgeByVec, given) => {
+  const src2img = Object.assign({ [start1]: start2 }, given);
   const queue = [[start1, start2]];
 
   while (queue.length) {
