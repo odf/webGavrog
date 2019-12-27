@@ -88,7 +88,7 @@ const automorphism = (srcStart, imgStart, transform, edgeByVec, partial) => {
   if (partial) {
     if (ops.ne(partial.transform, transform))
       return null;
-    Object.assign(src2img, partial);
+    Object.assign(src2img, partial.src2img);
   }
   src2img[srcStart] = imgStart;
 
@@ -665,22 +665,52 @@ const symmetriesAdvanced = graph => {
     sourceComponents, edgeListCandidates(g)
   );
 
-  const bases = sourceEdgeLists.map(
-    els => els.map(
-      es => ({
-        v: es[0].head,
-        B: es.map(e => pg.edgeVector(e, pos))
-      })
-    )
-  );
+  const seedIndices = [0];
+  for (let i = 0; i < sourceEdgeLists.length - 1; ++i)
+    seedIndices.push(seedIndices[i] + sourceEdgeLists[i].length);
 
-  const keys = sourceEdgeLists.map(els => els.map(encode));
+  const edgesLists = [].concat(...sourceEdgeLists);
+  const bases = edgeLists.map(es => ({
+    v: es[0].head,
+    B: es.map(e => pg.edgeVector(e, pos))
+  }));
+  const keys = edgeLists.map(encode);
   const mapped = (es, phi) => es.map(e => decode(phi.src2img[encode(e)]));
 
-  const v0 = bases[0][0].v;
-  const invB0 = ops.inverse(bases[0][0].B);
+  const gens = [];
+  const stack = [];
 
-  const p = new part.LabelledPartition((a, b) => a || b);
+  while (true) {
+    if (stack.length < seedIndices.length)
+      stack.push({ i: 0 });
+    else {
+      while (stack[stack.length - 1].i >= edgesLists.length - 1)
+        a.pop();
+    }
+
+    if (stack.length == 0)
+      break;
+
+    stack[stack.length - 1].i += 1;
+
+    const iSrc = seedIndices[stack.length - 1];
+    const iImg = stack[stack.length - 1].i;
+
+    const { v: vSrc, B: BSrc } = bases[iSrc];
+    const { v: vImg, B: BImg } = bases[iImg];
+    const M = ops.times(ops.inverse(BSrc), BImg);
+
+    if (isUnimodular(M)) {
+      const isoIn = stack.length > 1 ? stack[stack.length - 2].iso : null;
+      const iso = automorphism(vSrc, vImg, M, ebv, isoIn);
+      if (iso) {
+        gens.push(iso);
+        stack[stack.length - 1].iso = iso;
+      }
+    }
+  }
+
+  return groupOfAutomorphisms(gens, phi => encode(mapped(edgeLists[0], phi)));
 };
 
 
