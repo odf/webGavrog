@@ -83,12 +83,20 @@ const characteristicEdgeLists = graph => {
 };
 
 
-const automorphism = (graph, start1, start2, transform, edgeByVec, given) => {
-  const src2img = Object.assign({ [start1]: start2 }, given);
-  const queue = [[start1, start2]];
+const automorphism = (srcStart, imgStart, transform, edgeByVec, partial) => {
+  const src2img = {};
+  if (partial) {
+    if (ops.ne(partial.transform, transform))
+      return null;
+    Object.assign(src2img, partial);
+  }
+  src2img[srcStart] = imgStart;
+
+  const queue = [srcStart];
 
   while (queue.length) {
-    const [w1, w2] = queue.shift();
+    const w1 = queue.shift();
+    const w2 = src2img[w1];
 
     for (const [d1, e1] of Object.entries(edgeByVec[w1])) {
       const e2 = edgeByVec[w2][encode(ops.times(decode(d1), transform))];
@@ -99,7 +107,7 @@ const automorphism = (graph, start1, start2, transform, edgeByVec, given) => {
 
       if (src2img[e1.tail] == null) {
         src2img[e1.tail] = e2.tail;
-        queue.push([e1.tail, e2.tail]);
+        queue.push(e1.tail);
       }
       else if (src2img[e1.tail] != e2.tail)
         return null;
@@ -159,7 +167,7 @@ export const isMinimal = graph => {
   const ebv = uniqueEdgesByVector(graph, pos, adj);
 
   for (const v of verts.slice(1)) {
-    if (automorphism(graph, start, v, id, ebv) != null)
+    if (automorphism(start, v, id, ebv) != null)
       return false;
   }
 
@@ -184,7 +192,7 @@ export const isLadder = graph => {
 
     const d = ops.minus(pos[v], pos[start]);
     if (d.every(x => ops.eq(ops.mod(x, 1), 0))) {
-      if (automorphism(graph, start, v, id, ebv) != null)
+      if (automorphism(start, v, id, ebv) != null)
         return true;
     }
   }
@@ -205,7 +213,7 @@ const translationalEquivalences = graph => {
 
   for (const v of verts) {
     if (p.find(start) != p.find(v)) {
-      const iso = automorphism(graph, start, v, id, ebv);
+      const iso = automorphism(start, v, id, ebv);
       if (iso != null) {
         for (const w of verts)
           p.union(w, iso.src2img[w]);
@@ -376,7 +384,7 @@ export const symmetries = graph => {
   const invB0 = ops.inverse(bases[0].B);
 
   const I = ops.identityMatrix(graph.dim);
-  const gens = [automorphism(graph, v0, v0, I, ebv)];
+  const gens = [automorphism(v0, v0, I, ebv)];
 
   const p = new part.LabelledPartition((a, b) => a || b);
 
@@ -384,7 +392,7 @@ export const symmetries = graph => {
     if (p.find(keys[i]) != p.find(keys[0]) && !p.getLabel(keys[i])) {
       const { v, B } = bases[i];
       const M = ops.times(invB0, B);
-      const iso = isUnimodular(M) && automorphism(graph, v0, v, M, ebv);
+      const iso = isUnimodular(M) && automorphism(v0, v, M, ebv);
 
       if (iso) {
         gens.push(iso);
