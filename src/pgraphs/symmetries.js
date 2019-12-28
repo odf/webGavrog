@@ -698,10 +698,8 @@ const automorphismUnstable = (
 };
 
 
-const symmetriesUnstable = graph => {
-  const I = ops.identityMatrix(graph.dim);
+const collectBasesUnstable = graph => {
   const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
   const sdg = stableDeductionGraph(graph);
 
   const sourceComponents = strongSourceComponents(sdg);
@@ -709,48 +707,69 @@ const symmetriesUnstable = graph => {
     sourceComponents, edgeListCandidates(graph)
   );
 
-  const seedIndices = [0];
-  for (let i = 0; i < sourceEdgeLists.length - 1; ++i)
-    seedIndices.push(seedIndices[i] + sourceEdgeLists[i].length);
+  const seedIndices = [];
+  const bases = [];
+  const basesSeen = {};
 
-  const edgeLists = [].concat(...sourceEdgeLists);
-  const bases = edgeLists.map(es => ({
-    v: es[0].head,
-    B: es.map(e => pg.edgeVector(e, pos))
-  }));
-  const keys = edgeLists.map(encode);
-  const mapped = (es, phi) => es.map(e => decode(phi.src2img[encode(e)]));
+  for (const els of sourceEdgeLists) {
+    seedIndices.push(bases.length);
+
+    for (const es of els) {
+      const base = { v: es[0].head, B: es.map(e => pg.edgeVector(e, pos)) };
+      const key = encode(base);
+
+      if (!basesSeen[key]) {
+        bases.push(base);
+        basesSeen[key] = true;
+      }
+    }
+  }
+
+  return { bases, seedIndices };
+};
+
+
+const advanceStack = (stack, maxSize, maxEntry) => {
+  if (stack.length < maxSize)
+    stack.push(0);
+  else {
+    while (stack.length > 0 && stack[stack.length - 1] >= maxEntry)
+      stack.pop();
+
+    if (stack.length == 0)
+      return null;
+    else
+      stack[stack.length - 1] += 1;
+  }
+
+  return stack;
+};
+
+
+const symmetriesUnstable = graph => {
+  const I = ops.identityMatrix(graph.dim);
+  const pos = pg.barycentricPlacement(graph);
+  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
+  const { bases, seedIndices } = collectBasesUnstable(graph);
 
   const gens = [];
   const stack = [];
+  const partials = new Array(seedIndices.length);
 
   while (true) {
-    if (stack.length < seedIndices.length)
-      stack.push({ i: 0 });
-    else {
-      while (
-        stack.length > 0 && stack[stack.length - 1].i >= edgeLists.length - 1
-      )
-        stack.pop();
+    if (!advanceStack(stack, seedIndices.length, bases.length - 1))
+      break;
 
-      if (stack.length == 0)
-        break;
-      else
-        stack[stack.length - 1].i += 1;
-    }
-
-    const iSrc = seedIndices[stack.length - 1];
-    const iImg = stack[stack.length - 1].i;
-
-    const { v: vSrc, B: BSrc } = bases[iSrc];
-    const { v: vImg, B: BImg } = bases[iImg];
+    const { v: vSrc, B: BSrc } = bases[seedIndices[stack.length - 1]];
+    const { v: vImg, B: BImg } = bases[stack[stack.length - 1]];
     const M = ops.times(ops.inverse(BSrc), BImg);
 
     if (isUnimodular(M)) {
-      const isoIn = stack.length > 1 ? stack[stack.length - 2].iso : null;
+      const isoIn = stack.length > 1 ? partials[stack.length - 2] : null;
       const iso = automorphismUnstable(vSrc, vImg, M, ebv, isoIn);
+
       if (iso) {
-        stack[stack.length - 1].iso = iso;
+        partials[stack.length - 1] = iso;
 
         if (stack.length == seedIndices.length)
           gens.push(iso);
