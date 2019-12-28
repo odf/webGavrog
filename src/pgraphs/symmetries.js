@@ -732,12 +732,12 @@ const symmetriesUnstable = graph => {
         stack.length > 0 && stack[stack.length - 1].i >= edgeLists.length - 1
       )
         stack.pop();
+
+      if (stack.length == 0)
+        break;
+      else
+        stack[stack.length - 1].i += 1;
     }
-
-    if (stack.length == 0)
-      break;
-
-    stack[stack.length - 1].i += 1;
 
     const iSrc = seedIndices[stack.length - 1];
     const iImg = stack[stack.length - 1].i;
@@ -782,7 +782,11 @@ if (require.main == module) {
       console.log(`  ...`);
     console.log();
 
-    if (pg.isConnected(g) && pg.isLocallyStable(g)) {
+    if (
+      pg.isConnected(g) &&
+        pg.isLocallyStable(g) &&
+        !pg.hasSecondOrderCollisions(g)
+    ) {
       const syms = symmetries(g);
       const edgeLists = syms.representativeEdgeLists;
       console.log(`found ${syms.symmetries.length} symmetries`);
@@ -843,6 +847,7 @@ if (require.main == module) {
         }
       }
     }
+
     console.log();
     console.log();
     console.log();
@@ -907,4 +912,10 @@ if (require.main == module) {
                  [ 1, 3, [ -1,  0,  0] ],
                  [ 1, 3, [  0, -1,  0] ],
                  [ 1, 3, [ -1, -1,  0] ] ]));
+
+  test(pg.make([ [ 1, 1, [ 1, 0 ] ],
+                 [ 1, 1, [ 0, 1 ] ],
+                 [ 2, 2, [ 1, 0 ] ],
+                 [ 2, 2, [ 0, 1 ] ],
+                 [ 1, 2, [ 0, 0 ] ] ]));
 }
