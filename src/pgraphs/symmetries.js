@@ -83,15 +83,8 @@ const characteristicEdgeLists = graph => {
 };
 
 
-const automorphism = (srcStart, imgStart, transform, edgeByVec, partial) => {
-  const src2img = {};
-  if (partial) {
-    if (ops.ne(partial.transform, transform))
-      return null;
-    Object.assign(src2img, partial.src2img);
-  }
-  src2img[srcStart] = imgStart;
-
+const automorphism = (srcStart, imgStart, transform, edgeByVec) => {
+  const src2img = { [srcStart]: imgStart };
   const queue = [srcStart];
 
   while (queue.length) {
@@ -654,7 +647,58 @@ const edgeListsForComponents = (components, edgeLists) => {
 };
 
 
-const symmetriesAdvanced = graph => {
+const automorphismUnstable = (
+  startSrc, startImg, transform, edgeByVec, partial
+) => {
+  const src2img = {};
+  const img2src = {};
+  if (partial) {
+    if (ops.ne(partial.transform, transform))
+      return null;
+    Object.assign(src2img, partial.src2img);
+    Object.assign(img2src, partial.img2src);
+  }
+
+  const assign = (src, img) => {
+    if (src2img[src] != null && src2img[src] != img)
+      return false;
+    if (img2src[img] != null && img2src[img] != src)
+      return false;
+
+    src2img[src] = img;
+    img2src[img] = src;
+    return true;
+  };
+
+  if (!assign(startSrc, startImg))
+    return null;
+
+  const queue = [startSrc];
+
+  while (queue.length) {
+    const wSrc = queue.shift();
+    const wImg = src2img[wSrc];
+
+    for (const [dSrc, eSrc] of Object.entries(edgeByVec[wSrc])) {
+      const eImg = edgeByVec[wImg][encode(ops.times(decode(dSrc), transform))];
+      if (eImg == null)
+        return null;
+
+      const isNew = src2img[eSrc.tail] == null;
+
+      if (!assign(encode(eSrc), encode(eImg)) || !assign(eSrc.tail, eImg.tail))
+        return null;
+
+      if (isNew)
+        queue.push(eSrc.tail);
+    }
+  }
+
+  return { src2img, img2src, transform };
+};
+
+
+const symmetriesUnstable = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
   const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
@@ -704,7 +748,7 @@ const symmetriesAdvanced = graph => {
 
     if (isUnimodular(M)) {
       const isoIn = stack.length > 1 ? stack[stack.length - 2].iso : null;
-      const iso = automorphism(vSrc, vImg, M, ebv, isoIn);
+      const iso = automorphismUnstable(vSrc, vImg, M, ebv, isoIn);
       if (iso) {
         stack[stack.length - 1].iso = iso;
 
@@ -785,19 +829,7 @@ if (require.main == module) {
         `strong source components: ${JSON.stringify(sourceComponents)}`
       );
 
-      const sourceEdgeLists = edgeListsForComponents(
-        sourceComponents, edgeListCandidates(g)
-      );
-      console.log(`sourceEdgeLists:`);
-      for (const lists of sourceEdgeLists) {
-        for (const list of lists)
-          console.log(
-            `  ${list.map(e => `(${e.head}, ${e.tail}, ${e.shift})`)}`
-          );
-        console.log();
-      }
-
-      const syms = symmetriesAdvanced(g);
+      const syms = symmetriesUnstable(g);
       console.log(`stationary symmetries:`);
       const I = ops.identityMatrix(g.dim);
       for (const s of syms) {
