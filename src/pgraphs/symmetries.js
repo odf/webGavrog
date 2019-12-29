@@ -647,7 +647,7 @@ const edgeListsForComponents = (components, edgeLists) => {
 };
 
 
-const automorphismUnstable = (
+const extendAutomorphism = (
   startSrc, startImg, transform, edgeByVec, partial
 ) => {
   const src2img = {};
@@ -680,18 +680,54 @@ const automorphismUnstable = (
     const wImg = src2img[wSrc];
 
     for (const [dSrc, eSrc] of Object.entries(edgeByVec[wSrc])) {
-      const eImg = edgeByVec[wImg][encode(ops.times(decode(dSrc), transform))];
-      if (eImg == null)
-        return null;
-
       const isNew = src2img[eSrc.tail] == null;
+      const eImg = edgeByVec[wImg][encode(ops.times(decode(dSrc), transform))];
 
-      if (!assign(encode(eSrc), encode(eImg)) || !assign(eSrc.tail, eImg.tail))
+      if (eImg == null || !assign(eSrc.tail, eImg.tail))
         return null;
-
-      if (isNew)
+      else if (isNew)
         queue.push(eSrc.tail);
     }
+  }
+
+  return { src2img, img2src, transform };
+};
+
+
+const extendAutomorphismWithEdges = (graph, iso) => {
+  const { transform } = iso;
+  const src2img = Object.assign({}, iso.src2img);
+  const img2src = Object.assign({}, iso.img2src);
+
+  const hasEdge = {};
+  for (const e of graph.edges) {
+    hasEdge[encode(e)] = true;
+    hasEdge[encode(e.reverse())] = true;
+  }
+
+  const pos = pg.barycentricPlacement(graph);
+
+  const assign = (src, img) => {
+    src2img[src] = img;
+    img2src[img] = src;
+  };
+
+  for (const eSrc of graph.edges) {
+    const vSrc = eSrc.head;
+    const wSrc = eSrc.tail;
+    const dSrc = ops.minus(ops.plus(pos[wSrc], eSrc.shift), pos[vSrc]);
+
+    const vImg = iso.src2img[vSrc];
+    const wImg = iso.src2img[wSrc];
+    const dImg = ops.times(dSrc, transform);
+    const shiftImg = ops.minus(ops.plus(pos[vImg], dImg), pos[wImg]);
+
+    const eImg = pg.makeEdge(vImg, wImg, shiftImg);
+    if (!hasEdge[encode(eImg)])
+      return null;
+
+    assign(encode(eSrc), encode(eImg));
+    assign(encode(eSrc.reverse()), encode(eImg.reverse()));
   }
 
   return { src2img, img2src, transform };
@@ -766,13 +802,16 @@ const symmetriesUnstable = graph => {
 
     if (isUnimodular(M)) {
       const isoIn = stack.length > 1 ? partials[stack.length - 2] : null;
-      const iso = automorphismUnstable(vSrc, vImg, M, ebv, isoIn);
+      const iso = extendAutomorphism(vSrc, vImg, M, ebv, isoIn);
 
       if (iso) {
         partials[stack.length - 1] = iso;
 
-        if (stack.length == seedIndices.length)
-          gens.push(iso);
+        if (stack.length == seedIndices.length) {
+          const res = extendAutomorphismWithEdges(graph, iso);
+          if (res)
+            gens.push(res);
+        }
       }
     }
   }
