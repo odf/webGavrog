@@ -765,8 +765,8 @@ const collectBasesUnstable = graph => {
 };
 
 
-const advanceStack = (stack, maxSize, maxEntry) => {
-  if (stack.length < maxSize)
+const advanceStack = (stack, data, maxSize, maxEntry) => {
+  if (stack.length < maxSize && (stack.length == 0 || data[stack.length - 1]))
     stack.push(0);
   else {
     while (stack.length > 0 && stack[stack.length - 1] >= maxEntry)
@@ -793,7 +793,7 @@ const symmetriesUnstable = graph => {
   const partials = new Array(seedIndices.length);
 
   while (true) {
-    if (!advanceStack(stack, seedIndices.length, bases.length - 1))
+    if (!advanceStack(stack, partials, seedIndices.length, bases.length - 1))
       break;
 
     const { v: vSrc, B: BSrc } = bases[seedIndices[stack.length - 1]];
@@ -803,10 +803,9 @@ const symmetriesUnstable = graph => {
     if (isUnimodular(M)) {
       const isoIn = stack.length > 1 ? partials[stack.length - 2] : null;
       const iso = extendAutomorphism(vSrc, vImg, M, ebv, isoIn);
+      partials[stack.length - 1] = iso;
 
       if (iso) {
-        partials[stack.length - 1] = iso;
-
         if (stack.length == seedIndices.length) {
           const res = extendAutomorphismWithEdges(graph, iso);
           if (res)
@@ -976,4 +975,26 @@ if (require.main == module) {
                  [ 2, 2, [ 1, 0 ] ],
                  [ 2, 2, [ 0, 1 ] ],
                  [ 1, 2, [ 0, 0 ] ] ]));
+
+  test(pg.make([ [ 1, 1, [ 1, 0 ] ],
+                 [ 1, 1, [ 0, 1 ] ],
+                 [ 2, 2, [ 1, 0 ] ],
+                 [ 2, 2, [ 0, 1 ] ],
+                 [ 3, 3, [ 1, 0 ] ],
+                 [ 3, 3, [ 0, 1 ] ],
+                 [ 1, 2, [ 0, 0 ] ],
+                 [ 2, 3, [ 0, 0 ] ] ]));
+
+  test(pg.make([ [ 1, 1, [ 1, 0 ] ],
+                 [ 1, 1, [ 0, 1 ] ],
+                 [ 2, 2, [ 1, 0 ] ],
+                 [ 2, 2, [ 0, 1 ] ],
+                 [ 3, 3, [ 1, 0 ] ],
+                 [ 3, 3, [ 0, 1 ] ],
+                 [ 4, 4, [ 1, 0 ] ],
+                 [ 4, 4, [ 0, 1 ] ],
+                 [ 1, 2, [ 0, 0 ] ],
+                 [ 2, 3, [ 0, 0 ] ],
+                 [ 3, 4, [ 0, 0 ] ],
+                 [ 4, 1, [ 0, 0 ] ] ]));
 }
