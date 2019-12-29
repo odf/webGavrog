@@ -765,55 +765,35 @@ const collectBasesUnstable = graph => {
 };
 
 
-const advanceStack = (stack, data, maxSize, maxEntry) => {
-  if (stack.length < maxSize && (stack.length == 0 || data[stack.length - 1]))
-    stack.push(0);
-  else {
-    while (stack.length > 0 && stack[stack.length - 1] >= maxEntry)
-      stack.pop();
-
-    if (stack.length == 0)
-      return null;
-    else
-      stack[stack.length - 1] += 1;
-  }
-
-  return stack;
-};
-
-
 const symmetriesUnstable = graph => {
-  const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
   const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
   const { bases, seedIndices } = collectBasesUnstable(graph);
 
   const gens = [];
-  const stack = [];
-  const partials = new Array(seedIndices.length);
 
-  while (true) {
-    if (!advanceStack(stack, partials, seedIndices.length, bases.length - 1))
-      break;
+  const extend = (partial, level) => {
+    if (level >= seedIndices.length) {
+      const res = extendAutomorphismWithEdges(graph, partial);
+      if (res)
+        gens.push(res);
+    }
+    else {
+      const { v: vSrc, B: BSrc } = bases[seedIndices[level]];
 
-    const { v: vSrc, B: BSrc } = bases[seedIndices[stack.length - 1]];
-    const { v: vImg, B: BImg } = bases[stack[stack.length - 1]];
-    const M = ops.times(ops.inverse(BSrc), BImg);
+      for (const { v: vImg, B: BImg } of bases) {
+        const M = ops.times(ops.inverse(BSrc), BImg);
 
-    if (isUnimodular(M)) {
-      const isoIn = stack.length > 1 ? partials[stack.length - 2] : null;
-      const iso = extendAutomorphism(vSrc, vImg, M, ebv, isoIn);
-      partials[stack.length - 1] = iso;
-
-      if (iso) {
-        if (stack.length == seedIndices.length) {
-          const res = extendAutomorphismWithEdges(graph, iso);
-          if (res)
-            gens.push(res);
+        if (isUnimodular(M)) {
+          const iso = extendAutomorphism(vSrc, vImg, M, ebv, partial);
+          if (iso)
+            extend(iso, level + 1);
         }
       }
     }
-  }
+  };
+
+  extend(null, 0);
 
   return gens;
 };
