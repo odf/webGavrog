@@ -736,11 +736,10 @@ const extendAutomorphismWithEdges = (graph, iso) => {
 
 const collectBasesUnstable = graph => {
   const pos = pg.barycentricPlacement(graph);
-  const sdg = stableDeductionGraph(graph);
 
-  const sourceComponents = strongSourceComponents(sdg);
   const sourceEdgeLists = edgeListsForComponents(
-    sourceComponents, edgeListCandidates(graph)
+    strongSourceComponents(stableDeductionGraph(graph)),
+    edgeListCandidates(graph)
   );
 
   const seedIndices = [];
@@ -775,20 +774,16 @@ const symmetriesUnstable = graph => {
   const extend = (partial, level) => {
     if (level >= seedIndices.length) {
       const res = extendAutomorphismWithEdges(graph, partial);
-      if (res)
-        gens.push(res);
+      res && gens.push(res);
     }
     else {
       const { v: vSrc, B: BSrc } = bases[seedIndices[level]];
 
       for (const { v: vImg, B: BImg } of bases) {
         const M = ops.times(ops.inverse(BSrc), BImg);
-
-        if (isUnimodular(M)) {
-          const iso = extendAutomorphism(vSrc, vImg, M, ebv, partial);
-          if (iso)
-            extend(iso, level + 1);
-        }
+        const good = level ? ops.eq(M, partial.transform) : isUnimodular(M);
+        const iso = good && extendAutomorphism(vSrc, vImg, M, ebv, partial);
+        iso && extend(iso, level + 1);
       }
     }
   };
