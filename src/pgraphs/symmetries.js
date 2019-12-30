@@ -764,7 +764,7 @@ const collectBasesUnstable = graph => {
 };
 
 
-const symmetriesUnstable = graph => {
+export const symmetriesUnstable = graph => {
   const pos = pg.barycentricPlacement(graph);
   const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
   const { bases, seedIndices } = collectBasesUnstable(graph);
