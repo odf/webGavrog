@@ -16,6 +16,8 @@ Array.prototype.toString = function() {
   return `${this.map(x => x.toString()).join(' ')}`;
 };
 
+const modZ = v => v.map(x => ops.mod(x, 1));
+
 
 for (const path of process.argv.slice(2)) {
   const text = fs.readFileSync(path, { encoding: 'utf8' });
@@ -24,7 +26,7 @@ for (const path of process.argv.slice(2)) {
     console.log(name);
     console.log();
 
-    const verts = periodic.vertices(graph);
+    const verts = periodic.vertices(graph).sort();
     console.log(`vertices: ${verts}`);
     console.log();
 
@@ -36,7 +38,7 @@ for (const path of process.argv.slice(2)) {
     const pos = periodic.barycentricPlacement(graph);
     console.log('positions:');
     for (const v of verts)
-      console.log(`  ${v} -> ${pos[v]}`);
+      console.log(`  ${v} -> ${modZ(pos[v])}`);
 
     console.log();
 
@@ -47,14 +49,20 @@ for (const path of process.argv.slice(2)) {
       const syms = symmetries.symmetriesUnstable(graph);
       console.log(`stationary symmetries:`);
       const I = ops.identityMatrix(graph.dim);
+      const v0 = verts[0];
+
       for (const s of syms) {
         if (ops.eq(s.transform, I)) {
-          const out = [];
-          for (const v of verts) {
-            if (s.src2img[v] != v)
-              out.push(`${v} -> ${s.src2img[v]}`);
+          const shift = modZ(ops.minus(pos[v0], pos[s.src2img[v0]]));
+
+          if (ops.eq(shift, ops.vector(graph.dim))) {
+            const out = [];
+            for (const v of verts) {
+              if (s.src2img[v] != v)
+                out.push(`${v} -> ${s.src2img[v]}`);
+            }
+            console.log(`  ${out.join(', ')}`);
           }
-          console.log(`  ${out.join(', ')}`);
         }
       }
     }
