@@ -337,7 +337,7 @@ const goodEdgeLists = (graph, edgeLists) => {
 
   const atLoop = edgeLists.filter(edgeList => {
     const v = edgeList[0].head;
-    return adj[v].every(e => e.tail == v);
+    return adj[v].some(e => e.tail == v);
   });
 
   if (atLoop.length > 0)
