@@ -17,6 +17,7 @@ Array.prototype.toString = function() {
 };
 
 const modZ = v => v.map(x => ops.mod(x, 1));
+const idivZ = v => v.map(x => ops.idiv(x, 1));
 
 
 for (const path of process.argv.slice(2)) {
@@ -26,7 +27,7 @@ for (const path of process.argv.slice(2)) {
     console.log(name);
     console.log();
 
-    const verts = periodic.vertices(graph).sort();
+    const verts = periodic.vertices(graph).sort((v, w) => ops.cmp(v, w));
     console.log(`vertices: ${verts}`);
     console.log();
 
@@ -38,7 +39,7 @@ for (const path of process.argv.slice(2)) {
     const pos = periodic.barycentricPlacement(graph);
     console.log('positions:');
     for (const v of verts)
-      console.log(`  ${v} -> ${modZ(pos[v])}`);
+      console.log(`  ${v} -> ${modZ(pos[v])} + ${idivZ(pos[v])}`);
 
     console.log();
 
