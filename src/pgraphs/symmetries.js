@@ -634,16 +634,22 @@ const edgeListCandidates = graph => {
 };
 
 
-const edgeListsForComponents = (components, edgeLists) => {
+const edgeListsForComponents = (graph, components, edgeLists) => {
   const { stars, chains, scatters } = edgeLists;
 
-  for (const lists of [stars, chains, scatters]) {
-    const res = components.map(
-      nodes => lists.filter(list => nodes.includes(list[0].head))
-    );
-    if (res.every(els => els.length > 0))
-      return res;
+  const res = [];
+
+  for (const nodes of components) {
+    for (const lists of [stars, chains, scatters]) {
+      const els = lists.filter(list => nodes.includes(list[0].head));
+      if (els.length > 0) {
+        res.push(goodEdgeLists(graph, els));
+        break;
+      }
+    }
   }
+
+  return res;
 };
 
 
@@ -738,6 +744,7 @@ const collectBasesUnstable = graph => {
   const pos = pg.barycentricPlacement(graph);
 
   const sourceEdgeLists = edgeListsForComponents(
+    graph,
     strongSourceComponents(stableDeductionGraph(graph)),
     edgeListCandidates(graph)
   );
