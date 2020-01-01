@@ -47,24 +47,15 @@ for (const path of process.argv.slice(2)) {
     if (verts.some(v => adj[v].length < 3))
       console.log(`graph ${name} has vertices with less than 3 incident edges`);
     else {
-      const syms = symmetries.symmetriesUnstable(graph);
       console.log(`stationary symmetries:`);
-      const I = ops.identityMatrix(graph.dim);
-      const v0 = verts[0];
 
-      for (const s of syms) {
-        if (ops.eq(s.transform, I)) {
-          const shift = modZ(ops.minus(pos[v0], pos[s.src2img[v0]]));
-
-          if (ops.eq(shift, ops.vector(graph.dim))) {
-            const out = [];
-            for (const v of verts) {
-              if (s.src2img[v] != v)
-                out.push(`${v} -> ${s.src2img[v]}`);
-            }
-            console.log(`  ${out.join(', ')}`);
-          }
+      for (const s of symmetries.stationarySymmetries(graph)) {
+        const out = [];
+        for (const v of verts) {
+          if (s.src2img[v] != v)
+            out.push(`${v} -> ${s.src2img[v]}`);
         }
+        console.log(`  ${out.join(', ')}`);
       }
     }
 

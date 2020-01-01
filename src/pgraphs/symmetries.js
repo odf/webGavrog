@@ -795,6 +795,43 @@ export const symmetriesUnstable = graph => {
 };
 
 
+const equalModZ = (p, q) => ops.minus(p, q).every(x => ops.isInteger(x));
+
+
+export const stationarySymmetries = graph => {
+  const I = ops.identityMatrix(graph.dim);
+  const pos = pg.barycentricPlacement(graph);
+  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
+  const components = strongSourceComponents(stableDeductionGraph(graph));
+
+  const seeds = components.map(c => c[0]);
+  const candidates = [].concat(...components);
+
+  const gens = [];
+
+  const extend = (partial, level) => {
+    if (level >= seeds.length) {
+      const res = extendAutomorphismWithEdges(graph, partial);
+      res && gens.push(res);
+    }
+    else {
+      const v = seeds[level];
+
+      for (const w of candidates) {
+        if (equalModZ(pos[v], pos[w])) {
+          const iso = extendAutomorphism(v, w, I, ebv, partial);
+          iso && extend(iso, level + 1);
+        }
+      }
+    }
+  };
+
+  extend(null, 0);
+
+  return gens;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
