@@ -665,34 +665,28 @@ const extendAutomorphism = (
     Object.assign(img2src, partial.img2src);
   }
 
-  const assign = (src, img) => {
-    if (src2img[src] != null && src2img[src] != img)
-      return false;
-    if (img2src[img] != null && img2src[img] != src)
-      return false;
-
-    src2img[src] = img;
-    img2src[img] = src;
-    return true;
-  };
-
-  if (!assign(startSrc, startImg))
-    return null;
-
-  const queue = [startSrc];
+  const queue = [ [ startSrc, startImg ] ];
 
   while (queue.length) {
-    const wSrc = queue.shift();
-    const wImg = src2img[wSrc];
+    const [ vSrc, vImg ] = queue.shift();
 
-    for (const [dSrc, eSrc] of Object.entries(edgeByVec[wSrc])) {
-      const isNew = src2img[eSrc.tail] == null;
-      const eImg = edgeByVec[wImg][encode(ops.times(decode(dSrc), transform))];
-
-      if (eImg == null || !assign(eSrc.tail, eImg.tail))
+    if (src2img[vSrc] != null || img2src[vImg] != null) {
+      if (src2img[vSrc] != vImg || img2src[vImg] != vSrc)
         return null;
-      else if (isNew)
-        queue.push(eSrc.tail);
+    }
+    else {
+      src2img[vSrc] = vImg;
+      img2src[vImg] = vSrc;
+
+      for (const [ dSrc, eSrc ] of Object.entries(edgeByVec[vSrc])) {
+        const dImg = encode(ops.times(decode(dSrc), transform));
+        const eImg = edgeByVec[vImg][dImg];
+
+        if (eImg == null)
+          return null;
+        else
+          queue.push([ eSrc.tail, eImg.tail ]);
+      }
     }
   }
 
