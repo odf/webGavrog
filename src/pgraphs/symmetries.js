@@ -805,7 +805,10 @@ export const stationarySymmetries = graph => {
   const components = strongSourceComponents(stableDeductionGraph(graph));
 
   const seeds = components.map(c => c[0]);
-  const candidates = [].concat(...components);
+  const allCandidates = [].concat(...components);
+  const candidates = seeds.map(
+    v => allCandidates.filter(w => equalModZ(pos[v], pos[w]))
+  );
 
   const gens = [];
 
@@ -817,11 +820,9 @@ export const stationarySymmetries = graph => {
     else {
       const v = seeds[level];
 
-      for (const w of candidates) {
-        if (equalModZ(pos[v], pos[w])) {
-          const iso = extendAutomorphism(v, w, I, ebv, partial);
-          iso && extend(iso, level + 1);
-        }
+      for (const w of candidates[level]) {
+        const iso = extendAutomorphism(v, w, I, ebv, partial);
+        iso && extend(iso, level + 1);
       }
     }
   };
