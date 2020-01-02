@@ -20,6 +20,31 @@ const modZ = v => v.map(x => ops.mod(x, 1));
 const idivZ = v => v.map(x => ops.idiv(x, 1));
 
 
+const cycles = (perm, verts) => {
+  const res = [];
+  const seen = {};
+
+  for (const v of verts) {
+    if (!seen[v]) {
+      const c = [v];
+      seen[v] = true;
+
+      let w = perm[v];
+      while (w != v) {
+        c.push(w);
+        seen[w] = true;
+        w = perm[w];
+      }
+
+      if (c.length > 1)
+        res.push(c);
+    }
+  }
+
+  return res;
+};
+
+
 for (const path of process.argv.slice(2)) {
   const text = fs.readFileSync(path, { encoding: 'utf8' });
 
@@ -50,12 +75,11 @@ for (const path of process.argv.slice(2)) {
       console.log(`stationary symmetries:`);
 
       for (const s of symmetries.stationarySymmetries(graph)) {
-        const out = [];
-        for (const v of verts) {
-          if (s.src2img[v] != v)
-            out.push(`${v} -> ${s.src2img[v]}`);
-        }
-        console.log(`  ${out.join(', ')}`);
+        const cs = cycles(s.src2img, verts);
+        if (cs.length == 0)
+          console.log('()');
+        else
+          console.log(cs.map(c => `(${c.join(',')})`).join(''));
       }
     }
 
