@@ -833,6 +833,31 @@ export const stationarySymmetries = graph => {
 };
 
 
+const cycles = (perm, verts) => {
+  const res = [];
+  const seen = {};
+
+  for (const v of verts) {
+    if (!seen[v]) {
+      const c = [v];
+      seen[v] = true;
+
+      let w = perm[v];
+      while (w != v) {
+        c.push(w);
+        seen[w] = true;
+        w = perm[w];
+      }
+
+      if (c.length > 1)
+        res.push(c);
+    }
+  }
+
+  return res;
+};
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
@@ -853,68 +878,66 @@ if (require.main == module) {
       console.log(`  ...`);
     console.log();
 
-    if (
-      pg.isConnected(g) &&
-        pg.isLocallyStable(g) &&
-        !pg.hasSecondOrderCollisions(g)
-    ) {
-      const syms = symmetries(g);
-      const edgeLists = syms.representativeEdgeLists;
-      console.log(`found ${syms.symmetries.length} symmetries`);
-
-      const transforms = affineSymmetries(g, syms.symmetries);
-      transforms
-        .sort((a, b) => ops.cmp(a, b))
-        .forEach(t => console.log(t));
-
-      console.log(`found ${edgeLists.length} representative base(s)`);
-      for (const edgeList of edgeLists)
-        console.log(`${edgeList}`);
-      console.log();
-
-      const minimal = isMinimal(g);
-      console.log(`minimal = ${minimal}`);
-      if (!minimal) {
-        const p = translationalEquivalences(g);
-        const vs = extraTranslationVectors(g, p);
-        const cls = translationalEquivalenceClasses(g, p);
-        console.log(`translational equivalences: ${p}`);
-        console.log(`extra translations = ${vs}`);
-        console.log(`equivalence classes: ${cls}`);
-        console.log(`minimal image: ${minimalImage(g)}`);
-      }
-      console.log();
-
-      const orbits = edgeOrbits(g, syms.symmetries);
-      console.log(`edge orbits: ${JSON.stringify(orbits)}`);
+    if (!pg.isConnected(g)) {
+      console.log(`graph is not connected`);
     }
     else {
-      console.log(`stable deduction graph:`);
-      const sdg = stableDeductionGraph(g);
-      for (const k of Object.keys(sdg)) {
-        for (const e of sdg[k])
-          console.log(`  ${e}`);
+      if (pg.isLocallyStable(g) && !pg.hasSecondOrderCollisions(g)) {
+        const syms = symmetries(g);
+        const edgeLists = syms.representativeEdgeLists;
+        console.log(`found ${syms.symmetries.length} symmetries`);
+
+        const transforms = affineSymmetries(g, syms.symmetries);
+        transforms
+          .sort((a, b) => ops.cmp(a, b))
+          .forEach(t => console.log(t));
+
+        console.log(`found ${edgeLists.length} representative base(s)`);
+        for (const edgeList of edgeLists)
+          console.log(`${edgeList}`);
+        console.log();
+
+        const minimal = isMinimal(g);
+        console.log(`minimal = ${minimal}`);
+        if (!minimal) {
+          const p = translationalEquivalences(g);
+          const vs = extraTranslationVectors(g, p);
+          const cls = translationalEquivalenceClasses(g, p);
+          console.log(`translational equivalences: ${p}`);
+          console.log(`extra translations = ${vs}`);
+          console.log(`equivalence classes: ${cls}`);
+          console.log(`minimal image: ${minimalImage(g)}`);
+        }
+        console.log();
+
+        const orbits = edgeOrbits(g, syms.symmetries);
+        console.log(`edge orbits: ${JSON.stringify(orbits)}`);
       }
-      console.log(
-        `strong components: ${JSON.stringify(strongComponents(sdg))}`
-      );
+      else {
+        console.log(`stable deduction graph:`);
+        const sdg = stableDeductionGraph(g);
+        for (const k of Object.keys(sdg)) {
+          for (const e of sdg[k])
+            console.log(`  ${e}`);
+        }
+        console.log(
+          `strong components: ${JSON.stringify(strongComponents(sdg))}`
+        );
 
-      const sourceComponents = strongSourceComponents(sdg);
-      console.log(
-        `strong source components: ${JSON.stringify(sourceComponents)}`
-      );
+        const sourceComponents = strongSourceComponents(sdg);
+        console.log(
+          `strong source components: ${JSON.stringify(sourceComponents)}`
+        );
 
-      const syms = symmetriesUnstable(g);
-      console.log(`stationary symmetries:`);
-      const I = ops.identityMatrix(g.dim);
-      for (const s of syms) {
-        if (ops.eq(s.transform, I)) {
-          const d = {};
-          for (const k of Object.keys(s.src2img)) {
-            if (Number.isInteger(decode(k)))
-              d[k] = s.src2img[k];
-          }
-          console.log(`  ${JSON.stringify(d)}`);
+        console.log(`stationary symmetries:`);
+
+        const verts = pg.vertices(g);
+        for (const s of stationarySymmetries(g)) {
+          const cs = cycles(s.src2img, verts);
+          if (cs.length == 0)
+            console.log('()');
+          else
+            console.log(cs.map(c => `(${c.join(',')})`).join(''));
         }
       }
     }
