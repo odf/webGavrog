@@ -619,40 +619,6 @@ const strongSourceComponents = outEdges => {
 };
 
 
-const edgeListCandidates = graph => {
-  const adj = pg.adjacencies(graph);
-  const pos = pg.barycentricPlacement(graph);
-
-  const stars = [].concat(...pg.vertices(graph).map(
-    v => _goodCombinations(pg.allIncidences(graph, v, adj), pos)));
-
-  const chains = _goodEdgeChains(graph);
-
-  const scatters = _goodCombinations(_directedEdges(graph), pos);
-
-  return { stars, chains, scatters };
-};
-
-
-const edgeListsForComponents = (graph, components, edgeLists) => {
-  const { stars, chains, scatters } = edgeLists;
-
-  const res = [];
-
-  for (const nodes of components) {
-    for (const lists of [stars, chains, scatters]) {
-      const els = lists.filter(list => nodes.includes(list[0].head));
-      if (els.length > 0) {
-        res.push(goodEdgeLists(graph, els));
-        break;
-      }
-    }
-  }
-
-  return res;
-};
-
-
 const extendAutomorphism = (
   startSrc, startImg, transform, edgeByVec, partial
 ) => {
@@ -731,67 +697,6 @@ const extendAutomorphismWithEdges = (graph, iso) => {
   }
 
   return { src2img, img2src, transform };
-};
-
-
-const collectBasesUnstable = graph => {
-  const pos = pg.barycentricPlacement(graph);
-
-  const sourceEdgeLists = edgeListsForComponents(
-    graph,
-    strongSourceComponents(stableDeductionGraph(graph)),
-    edgeListCandidates(graph)
-  );
-
-  const seedIndices = [];
-  const bases = [];
-  const basesSeen = {};
-
-  for (const els of sourceEdgeLists) {
-    seedIndices.push(bases.length);
-
-    for (const es of els) {
-      const base = { v: es[0].head, B: es.map(e => pg.edgeVector(e, pos)) };
-      const key = encode(base);
-
-      if (!basesSeen[key]) {
-        bases.push(base);
-        basesSeen[key] = true;
-      }
-    }
-  }
-
-  return { bases, seedIndices };
-};
-
-
-export const symmetriesUnstable = graph => {
-  const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
-  const { bases, seedIndices } = collectBasesUnstable(graph);
-
-  const gens = [];
-
-  const extend = (partial, level) => {
-    if (level >= seedIndices.length) {
-      const res = extendAutomorphismWithEdges(graph, partial);
-      res && gens.push(res);
-    }
-    else {
-      const { v: vSrc, B: BSrc } = bases[seedIndices[level]];
-
-      for (const { v: vImg, B: BImg } of bases) {
-        const M = ops.times(ops.inverse(BSrc), BImg);
-        const good = level ? ops.eq(M, partial.transform) : isUnimodular(M);
-        const iso = good && extendAutomorphism(vSrc, vImg, M, ebv, partial);
-        iso && extend(iso, level + 1);
-      }
-    }
-  };
-
-  extend(null, 0);
-
-  return gens;
 };
 
 
