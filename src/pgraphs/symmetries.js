@@ -660,6 +660,20 @@ const extendAutomorphism = (
 };
 
 
+const mappedEdge = (eSrc, iso, pos, transform) => {
+  const vSrc = eSrc.head;
+  const wSrc = eSrc.tail;
+  const dSrc = ops.minus(ops.plus(pos[wSrc], eSrc.shift), pos[vSrc]);
+
+  const vImg = iso.src2img[vSrc];
+  const wImg = iso.src2img[wSrc];
+  const dImg = ops.times(dSrc, transform);
+  const shiftImg = ops.minus(ops.plus(pos[vImg], dImg), pos[wImg]);
+
+  return pg.makeEdge(vImg, wImg, shiftImg);
+};
+
+
 const extendAutomorphismWithEdges = (graph, iso) => {
   const { transform } = iso;
   const src2img = Object.assign({}, iso.src2img);
@@ -679,16 +693,7 @@ const extendAutomorphismWithEdges = (graph, iso) => {
   };
 
   for (const eSrc of graph.edges) {
-    const vSrc = eSrc.head;
-    const wSrc = eSrc.tail;
-    const dSrc = ops.minus(ops.plus(pos[wSrc], eSrc.shift), pos[vSrc]);
-
-    const vImg = iso.src2img[vSrc];
-    const wImg = iso.src2img[wSrc];
-    const dImg = ops.times(dSrc, transform);
-    const shiftImg = ops.minus(ops.plus(pos[vImg], dImg), pos[wImg]);
-
-    const eImg = pg.makeEdge(vImg, wImg, shiftImg);
+    const eImg = mappedEdge(eSrc, iso, pos, transform);
     if (!hasEdge[encode(eImg)])
       return null;
 
