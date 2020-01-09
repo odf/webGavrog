@@ -74,13 +74,16 @@ for (const path of process.argv.slice(2)) {
     else {
       console.log(`stationary symmetries:`);
 
-      for (const s of symmetries.stationarySymmetries(graph)) {
+      const stationary = symmetries.stationarySymmetries(graph);
+      for (const s of stationary.symmetries) {
         const cs = cycles(s.src2img, verts);
         if (cs.length == 0)
           console.log('()');
         else
           console.log(cs.map(c => `(${c.join(',')})`).join(''));
       }
+      if (!stationary.complete)
+        console.log('...');
     }
 
     console.log();

@@ -718,11 +718,16 @@ export const stationarySymmetries = graph => {
     ))
   ));
 
-  const gens = [];
+  const symmetries = [];
+  const MAX_COUNT = 50000;
+  let count = 0;
 
   const extend = (partial, level) => {
+    if (count > MAX_COUNT)
+      return;
+
     if (level >= seeds.length)
-      gens.push(partial);
+      symmetries.push(partial);
     else {
       const v = seeds[level];
 
@@ -730,6 +735,7 @@ export const stationarySymmetries = graph => {
         const iso = extendAutomorphism(
           v, w, I, ebv, pos, incident, hasEdge, partial
         );
+        count += 1;
         iso && extend(iso, level + 1);
       }
     }
@@ -737,7 +743,7 @@ export const stationarySymmetries = graph => {
 
   extend(null, 0);
 
-  return gens;
+  return { symmetries, complete: count <= MAX_COUNT };
 };
 
 
@@ -840,13 +846,16 @@ if (require.main == module) {
         console.log(`stationary symmetries:`);
 
         const verts = pg.vertices(g);
-        for (const s of stationarySymmetries(g)) {
+        const stationary = stationarySymmetries(g);
+        for (const s of stationary.symmetries) {
           const cs = cycles(s.src2img, verts);
           if (cs.length == 0)
             console.log('()');
           else
             console.log(cs.map(c => `(${c.join(',')})`).join(''));
         }
+        if (!stationary.complete)
+          console.log('...');
       }
     }
 
