@@ -619,8 +619,22 @@ const strongSourceComponents = outEdges => {
 };
 
 
+const mappedEdge = (eSrc, src2img, pos, transform) => {
+  const vSrc = eSrc.head;
+  const wSrc = eSrc.tail;
+  const dSrc = ops.minus(ops.plus(pos[wSrc], eSrc.shift), pos[vSrc]);
+
+  const vImg = src2img[vSrc];
+  const wImg = src2img[wSrc];
+  const dImg = ops.times(dSrc, transform);
+  const shiftImg = ops.minus(ops.plus(pos[vImg], dImg), pos[wImg]);
+
+  return pg.makeEdge(vImg, wImg, shiftImg);
+};
+
+
 const extendAutomorphism = (
-  startSrc, startImg, transform, edgeByVec, partial
+  startSrc, startImg, transform, uniqEdgeByVec, pos, incident, hasEdge, partial
 ) => {
   const src2img = {};
   const img2src = {};
@@ -630,6 +644,11 @@ const extendAutomorphism = (
     Object.assign(src2img, partial.src2img);
     Object.assign(img2src, partial.img2src);
   }
+
+  const assign = (src, img) => {
+    src2img[src] = img;
+    img2src[img] = src;
+  };
 
   const queue = [ [ startSrc, startImg ] ];
 
@@ -641,12 +660,22 @@ const extendAutomorphism = (
         return null;
     }
     else {
-      src2img[vSrc] = vImg;
-      img2src[vImg] = vSrc;
+      assign(vSrc, vImg);
 
-      for (const [ dSrc, eSrc ] of Object.entries(edgeByVec[vSrc])) {
+      for (const eSrc of incident[vSrc]) {
+        if (src2img[eSrc.tail] != null) {
+          const eImg = mappedEdge(eSrc, src2img, pos, transform);
+          if (!hasEdge[encode(eImg)])
+            return null;
+
+          assign(encode(eSrc), encode(eImg));
+          assign(encode(eSrc.reverse()), encode(eImg.reverse()));
+        }
+      }
+
+      for (const [ dSrc, eSrc ] of Object.entries(uniqEdgeByVec[vSrc])) {
         const dImg = encode(ops.times(decode(dSrc), transform));
-        const eImg = edgeByVec[vImg][dImg];
+        const eImg = uniqEdgeByVec[vImg][dImg];
 
         if (eImg == null)
           return null;
@@ -660,24 +689,19 @@ const extendAutomorphism = (
 };
 
 
-const mappedEdge = (eSrc, iso, pos, transform) => {
-  const vSrc = eSrc.head;
-  const wSrc = eSrc.tail;
-  const dSrc = ops.minus(ops.plus(pos[wSrc], eSrc.shift), pos[vSrc]);
-
-  const vImg = iso.src2img[vSrc];
-  const wImg = iso.src2img[wSrc];
-  const dImg = ops.times(dSrc, transform);
-  const shiftImg = ops.minus(ops.plus(pos[vImg], dImg), pos[wImg]);
-
-  return pg.makeEdge(vImg, wImg, shiftImg);
-};
+const equalModZ = (p, q) => ops.minus(p, q).every(x => ops.isInteger(x));
 
 
-const extendAutomorphismWithEdges = (graph, iso) => {
-  const { transform } = iso;
-  const src2img = Object.assign({}, iso.src2img);
-  const img2src = Object.assign({}, iso.img2src);
+export const stationarySymmetries = graph => {
+  const I = ops.identityMatrix(graph.dim);
+  const pos = pg.barycentricPlacement(graph);
+  const adj = pg.adjacencies(graph);
+  const ebv = uniqueEdgesByVector(graph, pos, adj);
+  const components = strongSourceComponents(stableDeductionGraph(graph));
+
+  const incident = {};
+  for (const v of pg.vertices(graph))
+    incident[v] = pg.allIncidences(graph, v, adj);
 
   const hasEdge = {};
   for (const e of graph.edges) {
@@ -685,55 +709,27 @@ const extendAutomorphismWithEdges = (graph, iso) => {
     hasEdge[encode(e.reverse())] = true;
   }
 
-  const pos = pg.barycentricPlacement(graph);
-
-  const assign = (src, img) => {
-    src2img[src] = img;
-    img2src[img] = src;
-  };
-
-  for (const eSrc of graph.edges) {
-    const eImg = mappedEdge(eSrc, iso, pos, transform);
-    if (!hasEdge[encode(eImg)])
-      return null;
-
-    assign(encode(eSrc), encode(eImg));
-    assign(encode(eSrc.reverse()), encode(eImg.reverse()));
-  }
-
-  return { src2img, img2src, transform };
-};
-
-
-const equalModZ = (p, q) => ops.minus(p, q).every(x => ops.isInteger(x));
-
-
-export const stationarySymmetries = graph => {
-  const I = ops.identityMatrix(graph.dim);
-  const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
-  const components = strongSourceComponents(stableDeductionGraph(graph));
-
   const seeds = components.map(c => c[0]);
   const allCandidates = [].concat(...components);
-  const candidates = seeds.map(
-    v => allCandidates.filter(
-      w => equalModZ(pos[v], pos[w]) && extendAutomorphism(v, w, I, ebv, null)
-    )
-  );
+  const candidates = seeds.map(v => (
+    allCandidates.filter(w => (
+      equalModZ(pos[v], pos[w])
+        && extendAutomorphism(v, w, I, ebv, pos, incident, hasEdge, null)
+    ))
+  ));
 
   const gens = [];
 
   const extend = (partial, level) => {
-    if (level >= seeds.length) {
-      const res = extendAutomorphismWithEdges(graph, partial);
-      res && gens.push(res);
-    }
+    if (level >= seeds.length)
+      gens.push(partial);
     else {
       const v = seeds[level];
 
       for (const w of candidates[level]) {
-        const iso = extendAutomorphism(v, w, I, ebv, partial);
+        const iso = extendAutomorphism(
+          v, w, I, ebv, pos, incident, hasEdge, partial
+        );
         iso && extend(iso, level + 1);
       }
     }
