@@ -717,7 +717,9 @@ export const stationarySymmetries = graph => {
   const seeds = components.map(c => c[0]);
   const allCandidates = [].concat(...components);
   const candidates = seeds.map(
-    v => allCandidates.filter(w => equalModZ(pos[v], pos[w]))
+    v => allCandidates.filter(
+      w => equalModZ(pos[v], pos[w]) && extendAutomorphism(v, w, I, ebv, null)
+    )
   );
 
   const gens = [];
