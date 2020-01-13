@@ -24,8 +24,7 @@ const properties = {
     [spec.generators.linearEquations(jsc.nat)],
     ([A, _]) => {
       const N = ops.nullSpace(A);
-      return N == null ||
-        ops.times(A, N).every(v => v.every(x => ops.eq(x, 0)));
+      return N == null || ops.times(A, N).every(v => ops.sgn(v) == 0);
     }
   ),
 

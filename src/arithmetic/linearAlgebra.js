@@ -12,11 +12,11 @@ export const extend = (matrixOps, overField=true, eps=null) => {
 
     for (const row in bs || []) {
       let b = bs[row];
-      const colB = b.findIndex(x => ops.ne(x, 0));
-      const colV = v.findIndex(x => ops.ne(x, 0));
-
       if (v.length != b.length)
         throw Error("shapes don't match");
+
+      const colB = b.findIndex(x => ops.ne(x, 0));
+      const colV = v.findIndex(x => ops.ne(x, 0));
 
       if (colV < colB) {
         if (colV >= 0)
@@ -137,7 +137,7 @@ export const extend = (matrixOps, overField=true, eps=null) => {
   const leftNullSpace = mat => {
     const [nrows, ncols] = ops.shape(mat);
     const [lft, rgt] = reducedBasis(mat, ops.identityMatrix(nrows));
-    const k = lft.findIndex(v => v.every(x => ops.eq(x, 0)));
+    const k = lft.findIndex(v => ops.sgn(v) == 0);
 
     if (k >= 0)
       return rgt.slice(k);
