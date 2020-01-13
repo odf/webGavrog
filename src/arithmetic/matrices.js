@@ -89,10 +89,14 @@ export const extend = (scalarOps, scalarTypes) => {
       throw new Error('shapes do not match');
 
     const out = matrix(nrowsA, ncolsB);
-    for (let i = 0; i < nrowsA; ++i)
-      for (let j = 0; j < ncolsB; ++j)
+    for (let i = 0; i < nrowsA; ++i) {
+      for (let j = 0; j < ncolsB; ++j) {
+        let res = 0;
         for (let k = 0; k < ncolsA; ++k)
-          out[i][j] = sops.plus(out[i][j], sops.times(A[i][k], B[k][j]));
+          res = sops.plus(res, sops.times(A[i][k], B[k][j]));
+        out[i][j] = res;
+      }
+    }
 
     return out;
   };
