@@ -1,0 +1,7 @@
+import * as JS from 'jstest';
+
+import { permutations } from '../../src/common/combinatorics';
+
+
+JS.Test.describe('permutations', function() {
+});
