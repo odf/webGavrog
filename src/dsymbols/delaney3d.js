@@ -51,7 +51,7 @@ export const pseudoToroidalCover = ds => {
     throw new Error('violates the crystallographic restriction');
 
   const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
-  const base = seq(generators.results(tableGen)).map(cosets.coreTable);
+  const base = seq(tableGen).map(cosets.coreTable);
 
   const cores = base
     .filter(ct => _flattensAll(ct, cones))

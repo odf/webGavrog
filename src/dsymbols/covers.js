@@ -26,9 +26,8 @@ export const finiteUniversalCover = ds => subgroupCover(ds, []);
 
 export function* coversGenerator(ds, maxDeg) {
   const fun = fundamental.fundamentalGroup(ds);
-  const tableGenerator = cosets.tables(fun.nrGenerators, fun.relators, maxDeg);
 
-  for (const table of generators.results(tableGenerator))
+  for (const table of cosets.tables(fun.nrGenerators, fun.relators, maxDeg))
     yield coverForTable(ds, table, fun.edge2word);
 };
 

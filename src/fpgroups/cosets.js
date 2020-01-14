@@ -290,17 +290,15 @@ const _isCanonical = table => range(1, table.size)
 export const tables = (nrGens, relators, maxCosets) => {
   const rels = _expandRelators(relators);
 
-  return generators.backtracker({
-    root: new CosetTable(nrGens),
+  const root = new CosetTable(nrGens);
 
-    extract(table) {
-      return _firstFreeInTable(table) ? null : table.asCompactMatrix();
-    },
+  const extract =
+    table => _firstFreeInTable(table) ? null : table.asCompactMatrix();
 
-    children(table) {
-      return _potentialChildren(table, rels, maxCosets).filter(_isCanonical);
-    }
-  });
+  const children =
+    table => _potentialChildren(table, rels, maxCosets).filter(_isCanonical);
+
+  return generators.backtrack({ extract, root, children });
 };
 
 
@@ -378,6 +376,6 @@ if (require.main == module) {
 
   console.log(_expandRelators([[1,2,-3]]));
 
-  for (const x of generators.results(tables(2, [[1,1],[2,2],[1,2,1,2]], 8)))
+  for (const x of tables(2, [[1,1],[2,2],[1,2,1,2]], 8))
     console.log(JSON.stringify(x));
 }
