@@ -24,10 +24,6 @@ export function* backtrack({ extract, root, children }) {
 }
 
 
-export const backtracker = spec => spec;
-export const results = backtrack;
-
-
 if (require.main == module) {
   const n = parseInt(process.argv[2]) || 4;
 

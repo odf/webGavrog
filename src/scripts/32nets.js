@@ -1,5 +1,3 @@
-import * as generators from '../common/generators';
-
 import * as branch from '../dsymbols/branchings2d';
 import * as covers from '../dsymbols/covers';
 import * as DS from '../dsymbols/delaney';
@@ -14,7 +12,7 @@ if (require.main == module) {
     .filter(ds => DS.orbitReps2(ds, 1, 2).length == 3
             && DS.orbitReps2(ds, 0, 2).length == 2)
     .filter(DS2D.isProtoEuclidean)
-    .flatMap(ds => generators.results(branchings(ds)))
+    .flatMap(ds => branchings(ds))
     .filter(props.isMinimal)
     .forEach(ds => console.log(`${ds}`));
 }

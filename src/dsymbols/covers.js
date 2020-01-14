@@ -1,7 +1,6 @@
 import * as DS          from './delaney';
 import * as fundamental from './fundamental';
 import * as derived     from './derived';
-import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
 import { seq }          from '../common/lazyseq';
 

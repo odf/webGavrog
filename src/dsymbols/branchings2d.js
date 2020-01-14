@@ -56,7 +56,7 @@ export const branchings = (
     Q.cmp(_newCurvature(curv, loopless, v), curvatureAtLeast) >= 0 &&
     r * v >= (i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast);
 
-  return generators.backtracker({
+  return generators.backtrack({
     root: [ds, DS2D.curvature(ds), _openOrbits(ds)],
 
     extract([ds, curv, unused]) {
@@ -92,7 +92,7 @@ if (require.main == module) {
   covers.covers(DS.parse('<1.1:1:1,1,1:0,3>'), n * 6)
     .filter(ds => DS.orbitReps2(ds, 1, 2).length == n)
     .filter(DS2D.isProtoEuclidean)
-    .flatMap(ds => generators.results(branchings(ds, 4)))
+    .flatMap(ds => branchings(ds, 4))
     .filter(noEdgeSharingQuads)
     .filter(props.isMinimal)
     .filter(DS2D.isEuclidean)

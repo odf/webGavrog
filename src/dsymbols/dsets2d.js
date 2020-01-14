@@ -146,17 +146,15 @@ const _isCanonical = data => {
 
 
 export const delaneySets = maxSize => {
-  return generators.backtracker({
-    root: [null, null, null],
+  const root = [null, null, null];
 
-    extract(data) {
-      return _firstUndefined(data) ? null : _makeDelaneySet(data);
-    },
+  const extract =
+    data => _firstUndefined(data) ? null : _makeDelaneySet(data);
 
-    children(data) {
-      return _potentialChildren(data, maxSize).filter(_isCanonical);
-    }
-  });
+  const children =
+    data => _potentialChildren(data, maxSize).filter(_isCanonical);
+
+  return generators.backtrack({ extract, root, children });
 }
 
 
@@ -192,7 +190,7 @@ if (require.main == module) {
 
   const maxDsSize = parseInt(process.argv[2]);
 
-  for (const ds of generators.results(delaneySets(maxDsSize)))
+  for (const ds of delaneySets(maxDsSize))
     console.log(`${_withMinimalBranchings(ds)}`);
 
   timers && timers.stop('total');

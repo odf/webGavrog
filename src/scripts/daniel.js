@@ -205,47 +205,47 @@ const branchings = ds => {
   timers && timers.stop('branchings.init.curvature');
   timers && timers.stop('branchings.init');
 
-  return generators.backtracker({
-    root: [ds0, curv0, unused],
+  const root = [ds0, curv0, unused];
 
-    extract([ds, curv, unused]) {
-      if (unused.length == 0) {
-        timers && timers.start('branchings.extract');
-        const keep = _isCanonical(ds, maps) && _goodResult(ds, curv);
-        timers && timers.stop('branchings.extract');
-        if (keep)
-          return ds;
+  const extract = ([ds, curv, unused]) => {
+    if (unused.length == 0) {
+      timers && timers.start('branchings.extract');
+      const keep = _isCanonical(ds, maps) && _goodResult(ds, curv);
+      timers && timers.stop('branchings.extract');
+      if (keep)
+        return ds;
+    }
+  };
+
+  const children = ([ds, curv, unused]) => {
+    if (unused.length) {
+      if (Q.lt(curv, 0)) {
+        return [[ds, curv, []]];
       }
-    },
+      else {
+        timers && timers.start('branchings.children');
+        const [i, D, r, loopless] = unused[0];
+        const v0 = ds.v(i, i+1, D);
+        const out = [];
 
-    children([ds, curv, unused]) {
-      if (unused.length) {
-        if (Q.lt(curv, 0)) {
-          return [[ds, curv, []]];
+        for (let v = v0; v <= 7; ++v) {
+          const newCurv = _newCurvature(curv, loopless, v, v0);
+          const newDs = DS.withBranchings(ds, i, [[D, v]]);
+
+          if (Q.ge(newCurv, 0) || _isMinimallyHyperbolic(newDs, newCurv))
+            out.push([ newDs, newCurv, unused.slice(1) ]);
+
+          if (Q.lt(newCurv, 0))
+            break;
         }
-        else {
-          timers && timers.start('branchings.children');
-          const [i, D, r, loopless] = unused[0];
-          const v0 = ds.v(i, i+1, D);
-          const out = [];
+        timers && timers.stop('branchings.children');
 
-          for (let v = v0; v <= 7; ++v) {
-            const newCurv = _newCurvature(curv, loopless, v, v0);
-            const newDs = DS.withBranchings(ds, i, [[D, v]]);
-
-            if (Q.ge(newCurv, 0) || _isMinimallyHyperbolic(newDs, newCurv))
-              out.push([ newDs, newCurv, unused.slice(1) ]);
-
-            if (Q.lt(newCurv, 0))
-              break;
-          }
-          timers && timers.stop('branchings.children');
-
-          return out;
-        }
+        return out;
       }
     }
-  });
+  };
+
+  return generators.backtrack({ extract, root, children });
 }
 
 
@@ -258,15 +258,15 @@ if (require.main == module) {
     const maxSize = parseInt(arg);
     const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
 
-    for (const dset of generators.results(dsets2d.delaneySets(maxSize))) {
+    for (const dset of dsets2d.delaneySets(maxSize)) {
       timers && timers.start('branchings');
-      for (const ds of generators.results(branchings(dset)))
+      for (const ds of branchings(dset))
         console.log(`${ds}`);
       timers && timers.stop('branchings');
     }
   }
   else {
-    for (const ds of generators.results(branchings(DS.parseSymbols(arg)[0])))
+    for (const ds of branchings(DS.parseSymbols(arg)[0]))
       console.log(`${ds}`);
   }
 

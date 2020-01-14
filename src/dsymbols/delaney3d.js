@@ -2,7 +2,6 @@ import { stabilizer } from '../fpgroups/stabilizer';
 import { abelianInvariants } from '../fpgroups/invariants';
 import { seq, range } from '../common/lazyseq';
 
-import * as generators  from '../common/generators';
 import * as cosets      from '../fpgroups/cosets';
 import * as fundamental from './fundamental';
 import * as derived     from './derived';
