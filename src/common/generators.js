@@ -1,41 +1,37 @@
-export const backtracker = (spec, stack=[[spec.root]]) => ({
-  current() {
-    return stack[0][0];
-  },
-  result() {
-    return spec.extract(stack[0][0]);
-  },
-  skip() {
-    const k = stack.findIndex(a => a.length >= 2);
-    if (k >= 0)
-      return backtracker(spec, [stack[k].slice(1)].concat(stack.slice(k + 1)));
-  },
-  step() {
-    const todo = spec.children(stack[0][0]) || [];
-    return todo.length ? backtracker(spec, [todo].concat(stack)) : this.skip();
+const last = as => as[as.length - 1];
+
+
+export function* backtrack({ extract, root, children }) {
+  const stack = [[root]];
+
+  while (stack.length) {
+    const val = extract(last(last(stack)));
+
+    if (val != null)
+      yield val;
+
+    const todo = children(last(last(stack))).slice().reverse();
+
+    if (todo && todo.length)
+      stack.push(todo);
+    else {
+      while (stack.length && last(stack).length < 2)
+        stack.pop();
+      if (stack.length)
+        last(stack).pop();
+    }
   }
-});
+}
 
 
-export function* results(gen, pred) {
-  let g = gen;
-
-  while (g) {
-    if (!pred || pred(g.current())) {
-      const val = g.result();
-      g = g.step();
-      if (val != null)
-        yield val;
-    } else
-      g = g.skip();
-  }
-};
+export const backtracker = spec => spec;
+export const results = backtrack;
 
 
 if (require.main == module) {
   const n = parseInt(process.argv[2]) || 4;
 
-  const gen = backtracker({
+  const spec ={
     root: {
       xs: [],
       sz: 0,
@@ -57,8 +53,8 @@ if (require.main == module) {
 
       return ch;
     }
-  });
+  };
 
-  for (const a of results(gen))
+  for (const a of backtrack(spec))
     console.log(`${a}`);
 }
