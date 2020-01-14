@@ -10,10 +10,10 @@ export function* backtrack({ extract, root, children }) {
     if (val != null)
       yield val;
 
-    const todo = children(last(last(stack))).slice().reverse();
+    const todo = children(last(last(stack)));
 
     if (todo && todo.length)
-      stack.push(todo);
+      stack.push(todo.slice().reverse());
     else {
       while (stack.length && last(stack).length < 2)
         stack.pop();
