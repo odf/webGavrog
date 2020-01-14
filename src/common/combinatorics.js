@@ -1,29 +1,26 @@
-const _swap = (a, i, j) => [a[i], a[j]] = [a[j], a[i]];
-
-
 export function* permutations(n) {
-  const p = [];
-  for (let i = 1; i <= n; ++i)
-    p.push(i);
+  const perms = function*(as) {
+    if (as.length < 2) {
+      yield as.slice();
+    }
+    else if (as.length == 2) {
+      yield [as[0], as[1]];
+      yield [as[1], as[0]];
+    }
+    else {
+      for (let i = 0; i < as.length; ++i) {
+        const a = as[i];
+        const rest = as.slice(0, i).concat(as.slice(i + 1));
 
-  while (true) {
-    let i, j;
-
-    yield p.slice();
-
-    for (i = n-2; i >= 0 && p[i] > p[i+1]; --i)
-      ;
-    if (i < 0)
-      break;
-
-    for (j = n-1; p[j] < p[i]; --j)
-      ;
-
-    _swap(p, i, j);
-
-    for (++i, j = n-1; i < j; ++i, --j)
-      _swap(p, i, j);
+        for (const p of perms(rest))
+          yield [a].concat(p);
+      }
+    }
   }
+
+  const as = [...Array(n + 1).keys()].slice(1);
+  for (const p of perms(as))
+    yield p;
 };
 
 
