@@ -75,11 +75,10 @@ class CosetTable {
           const bg = this.get(b, g);
           if (ag == null)
             this.set(a, g, bg);
-          else {
-            if (bg != null && this.canon(ag) != this.canon(bg))
-              queue.push([ag, bg]);
+          else if (bg == null)
             this.set(b, g, ag);
-          }
+          else if (this.canon(ag) != this.canon(bg))
+            queue.push([ag, bg]);
         }
       }
     }
