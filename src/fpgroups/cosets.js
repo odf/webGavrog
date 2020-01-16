@@ -4,14 +4,6 @@ import * as generators from '../common/generators';
 import { Partition } from '../common/unionFind';
 
 
-const allGens = function*(nrGens) {
-  for (let i = 1; i <= nrGens; ++i)
-    yield i;
-  for (let i = 1; i <= nrGens; ++i)
-    yield -i;
-}
-
-
 class CosetTable {
   constructor(nrGens) {
     this.nrGens = nrGens;
@@ -26,8 +18,11 @@ class CosetTable {
     return t;
   }
 
-  allGens() {
-    return allGens(this.nrGens)
+  *allGens() {
+    for (let i = 1; i <= this.nrGens; ++i)
+      yield i;
+    for (let i = 1; i <= this.nrGens; ++i)
+      yield -i;
   }
 
   get size() {
