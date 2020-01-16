@@ -4,14 +4,6 @@ import * as generators from '../common/generators';
 import { Partition } from '../common/unionFind';
 
 
-const range = (from, to) => {
-  if (to < from)
-    return new Array(from - to).fill(0).map((_, i) => from - i);
-  else
-    return new Array(to - from).fill(0).map((_, i) => from + i);
-};
-
-
 const allGens = function*(nrGens) {
   for (let i = 1; i <= nrGens; ++i)
     yield i;
@@ -87,7 +79,7 @@ class CosetTable {
   asCompactMatrix() {
     const toIdx = {};
     let i = 0;
-    for (const k of range(0, this.table.length)) {
+    for (let k = 0; k < this.size; ++k) {
       if (this.canon(k) == k) {
         toIdx[k] = i;
         ++i;
@@ -95,7 +87,7 @@ class CosetTable {
     }
 
     const result = [];
-    for (const k of range(0, this.table.length)) {
+    for (let k = 0; k < this.size; ++k) {
       if (toIdx[k] != null) {
         const row = {};
         for (const g of this.allGens())
@@ -206,7 +198,7 @@ export const cosetRepresentatives = table => {
 
 
 const _firstFreeInTable = table => {
-  for (const k of range(0, table.size)) {
+  for (let k = 0; k < table.size; ++k) {
     for (const g of table.allGens()) {
       if (table.get(k, g) == null)
         return [k, g];
@@ -242,7 +234,7 @@ const _potentialChildren = (table, rels, maxCosets) => {
   const result = [];
 
   if (k != null) {
-    for (const pos of range(k, limit)) {
+    for (let pos = k; pos < limit; ++pos) {
       if (table.get(pos, -g) == null) {
         const t = table.clone();
         t.join(k, pos, g);
@@ -282,8 +274,13 @@ const _compareRenumberedFom = (table, start) => {
 };
 
 
-const _isCanonical = table => range(1, table.size)
-  .every(start => _compareRenumberedFom(table, start) >= 0);
+const _isCanonical = table => {
+  for (let start = 1; start < table.size; ++start) {
+    if (_compareRenumberedFom(table, start) < 0)
+      return false;
+  }
+  return true;
+};
 
 
 export const tables = (nrGens, relators, maxCosets) => {
@@ -333,7 +330,7 @@ export const coreTable = base =>
   _inducedTable(
     Math.max(...Object.keys(base[0])),
     (es, g) => es.map(e => base[e][g]),
-    range(0, base.length)
+    [...Array(base.length).keys()]
   );
 
 
