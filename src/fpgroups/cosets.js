@@ -1,7 +1,11 @@
 import * as fw         from './freeWords';
 import * as generators from '../common/generators';
+import * as pickler from '../common/pickler';
 
 import { Partition } from '../common/unionFind';
+
+
+const encode = pickler.serialize;
 
 
 class CosetTable {
@@ -97,12 +101,17 @@ class CosetTable {
 
 
 const scan = (table, w, start, limit) => {
-  let [row, i] = [start, 0];
+  let row = start;
 
-  while (i < limit && table.get(row, w[i]) != null)
-    [row, i] = [table.get(row, w[i]), i + 1];
+  for (let index = 0; index < limit; ++index) {
+    const nextRow = table.get(row, w[index]);
+    if (nextRow == null)
+      return { row, index };
+    else
+      row = nextRow;
+  }
 
-  return { row, index: i };
+  return { row, index: limit };
 };
 
 
@@ -125,22 +134,21 @@ const scanAndIdentify = (table, w, start) => {
 };
 
 
-const _insertInOrderedSet = (elm, set, cmp) => {
-  let i = 0;
-  while (i < set.length && cmp(elm, set[i]) < 0)
-    ++i;
-  if (i >= set.length || cmp(elm, set[i]) != 0)
-    set.splice(i, 0, elm);
-};
-
-
 const _expandRelators = relators => {
+  const seen = {};
   const out = [];
+
   for (const rel of relators) {
-    for (const w of fw.relatorPermutations(rel))
-      _insertInOrderedSet(w, out, fw.compare);
+    for (const w of fw.relatorPermutations(rel)) {
+      const key = encode(w);
+      if (!seen[key]) {
+        seen[key] = true;
+        out.push(w);
+      }
+    }
   }
-  return out;
+
+  return out.sort(fw.compare).reverse();
 };
 
 
@@ -293,10 +301,10 @@ export const tables = (nrGens, relators, maxCosets) => {
 };
 
 
-const _inducedTable = (nrGens, img, img0) => {
+const _inducedTable = (nrGens, img, start) => {
   const table = new CosetTable(nrGens);
-  const o2n = { [img0]: 0 };
-  const n2o = [img0];
+  const o2n = { [start]: 0 };
+  const n2o = [start];
 
   for (let i = 0; i < table.size; ++i) {
     for (const g of table.allGens()) {
