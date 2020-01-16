@@ -10,7 +10,7 @@ const _normalize = ws => {
     for (const x of w) {
       if (!Number.isSafeInteger(x))
         throw new Error(`illegal word ${w} - all letters must be integers`);
-      else else if (x == 0)
+      else if (x == 0)
         throw new Error(`illegal word ${w} - all letters must be non-zero`);
       else if (head > 0 && x == - tmp[head-1])
         --head;
