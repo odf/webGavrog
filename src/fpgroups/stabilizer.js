@@ -1,26 +1,16 @@
 import * as fw from './freeWords';
 
 
-const _insertInOrderedSet = (elm, set, cmp) => {
-  let i = 0;
-  while (i < set.length && cmp(elm, set[i]) < 0)
-    ++i;
-  if (i >= set.length || cmp(elm, set[i]) != 0)
-    set.splice(i, 0, elm);
-};
-
-
 const _relatorsByStartGen = relators => {
   const result = {};
-  for (const rel of relators) {
-    for (const w of fw.relatorPermutations(rel)) {
-      const g = w[0];
-      if (result[g] == null)
-        result[g] = [w];
-      else
-        _insertInOrderedSet(w, result[g], fw.compare);
-    }
+
+  for (const w of fw.expandedRelators(relators)) {
+    if (result[w[0]] == null)
+      result[w[0]] = [];
+
+    result[w[0]].push(w);
   }
+
   return result;
 };
 
@@ -137,14 +127,18 @@ export const stabilizer = (basePoint, nrGens, relators, domain, action) => {
     }
   }
 
+  const seen = {};
   const subrels = [];
   for (const p of domain) {
     for (const r of relators) {
       const w = fw.relatorRepresentative(_traceWord(p, r, edge2word, action));
-      if (w && fw.compare(w, fw.empty))
-        _insertInOrderedSet(w, subrels, fw.compare);
+      if (w && w.length && !seen[w]) {
+        seen[w] = true;
+        subrels.push(w);
+      }
     }
   }
+  subrels.sort(fw.compare).reverse();
 
   return { generators, relators: subrels };
 };
