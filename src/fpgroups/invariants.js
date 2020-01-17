@@ -1,4 +1,4 @@
-import * as cosets from '../fpgroups/cosets';
+import * as fw from '../fpgroups/freeWords';
 
 import { integers } from '../arithmetic/types';
 const ops = integers;
@@ -119,7 +119,7 @@ const diagonalizeInPlace = mat => {
 
 
 export const abelianInvariants = (nrGens, rels) => {
-  const mat = cosets.relatorMatrix(nrGens, rels);
+  const mat = fw.relatorMatrix(nrGens, rels);
   const n = Math.min(...shapeOfMatrix(mat));
 
   diagonalizeInPlace(mat);

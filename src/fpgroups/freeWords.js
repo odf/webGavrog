@@ -72,6 +72,41 @@ export const relatorRepresentative = w => relatorPermutations(w)
   .reduce((a, b) => a == null || compare(a, b) > 0 ? b : a, null)
 
 
+export const expandedRelators = relators => {
+  const seen = {};
+  const out = [];
+
+  for (const rel of relators) {
+    for (const w of relatorPermutations(rel)) {
+      if (!seen[w]) {
+        seen[w] = true;
+        out.push(w);
+      }
+    }
+  }
+
+  return out.sort(compare).reverse();
+};
+
+
+export const relatorAsVector = (rel, nrgens) => {
+  const out = new Array(nrgens).fill(0);
+
+  for (const w of rel) {
+    if (w < 0)
+      --out[-w - 1];
+    else if (w > 0)
+      ++out[w - 1];
+  }
+
+  return out;
+};
+
+
+export const relatorMatrix = (nrgens, relators) =>
+  relators.map(rel => relatorAsVector(rel, nrgens));
+
+
 if (require.main == module) {
   const timer = require('../common/timing').timer();
 

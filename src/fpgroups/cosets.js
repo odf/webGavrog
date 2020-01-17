@@ -1,11 +1,7 @@
 import * as fw         from './freeWords';
 import * as generators from '../common/generators';
-import * as pickler from '../common/pickler';
 
 import { Partition } from '../common/unionFind';
-
-
-const encode = pickler.serialize;
 
 
 class CosetTable {
@@ -134,26 +130,8 @@ const scanAndIdentify = (table, w, start) => {
 };
 
 
-const _expandRelators = relators => {
-  const seen = {};
-  const out = [];
-
-  for (const rel of relators) {
-    for (const w of fw.relatorPermutations(rel)) {
-      const key = encode(w);
-      if (!seen[key]) {
-        seen[key] = true;
-        out.push(w);
-      }
-    }
-  }
-
-  return out.sort(fw.compare).reverse();
-};
-
-
 export const cosetTable = (nrGens, relators, subgroupGens) => {
-  const rels = _expandRelators(relators);
+  const rels = fw.expandedRelators(relators);
   const table = new CosetTable(nrGens);
 
   for (let i = 0; i < table.size; ++i) {
@@ -287,7 +265,7 @@ const _isCanonical = table => {
 
 
 export const tables = (nrGens, relators, maxCosets) => {
-  const rels = _expandRelators(relators);
+  const rels = fw.expandedRelators(relators);
 
   const root = new CosetTable(nrGens);
 
@@ -337,24 +315,6 @@ export const coreTable = base =>
   );
 
 
-export const relatorAsVector = (rel, nrgens) => {
-  const out = new Array(nrgens).fill(0);
-
-  for (const w of rel) {
-    if (w < 0)
-      --out[-w - 1];
-    else if (w > 0)
-      ++out[w - 1];
-  }
-
-  return out;
-};
-
-
-export const relatorMatrix = (nrgens, relators) =>
-  relators.map(rel => relatorAsVector(rel, nrgens));
-
-
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x && x.toString()).join(', ') + ' ]';
@@ -373,7 +333,7 @@ if (require.main == module) {
   test(base);
   test(coreTable(base));
 
-  console.log(_expandRelators([[1,2,-3]]));
+  console.log(fw.expandedRelators([[1,2,-3]]));
 
   for (const x of tables(2, [[1,1],[2,2],[1,2,1,2]], 8))
     console.log(JSON.stringify(x));

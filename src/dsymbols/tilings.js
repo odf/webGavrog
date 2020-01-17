@@ -1,6 +1,6 @@
 import * as pickler from '../common/pickler';
 
-import * as cosets      from '../fpgroups/cosets';
+import * as freeWords   from '../fpgroups/freeWords';
 import * as delaney     from './delaney';
 import * as properties  from './properties';
 import * as derived     from './derived';
@@ -33,9 +33,9 @@ const _edgeTranslations = cov => {
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
   const nul = rationalLinearAlgebraModular.nullSpace(
-    cosets.relatorMatrix(n, fg.relators)
+    freeWords.relatorMatrix(n, fg.relators)
   );
-  const vec = rel => cosets.relatorAsVector(rel, n);
+  const vec = rel => freeWords.relatorAsVector(rel, n);
 
   return fg.edge2word.map(a => a.map(b => opsR.times(vec(b), nul)));
 };
