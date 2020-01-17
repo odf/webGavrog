@@ -15,7 +15,7 @@ export const coordinateChangesQ = require('./coordinateChanges')
 
 
 export const pointsF = require('./points')
-  .extend(numericalLinearAlgebra, ['Integer', 'LongInt', 'Fraction']);
+  .extend(numericalLinearAlgebra, ['Integer', 'Float']);
 
 export const affineTransformationsF = require('./affineTransformations')
   .extend(pointsF);
