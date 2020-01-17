@@ -43,12 +43,11 @@ export const extend = pointAndVectorOps => {
   const I = n => V.identityMatrix(n);
 
 
-  const make = (linear, shift = []) => {
-    for (let i = 0; i < shift.length; ++i)
-      if (!V.eq(shift[i], 0))
-        return new AffineTransformation(linear, shift);
-
-    return linear;
+  const make = (linear, shift) => {
+    if (shift == null || V.sgn(shift) == 0)
+      return linear;
+    else
+      return new AffineTransformation(linear, shift);
   };
 
 
@@ -66,14 +65,7 @@ export const extend = pointAndVectorOps => {
   const applyToPoint = (t, p) =>
     V.point(V.plus(V.times(t.linear, V.vector(p)), t.shift));
 
-
-  const compare = (m1, s1, m2, s2) => {
-    const d = V.cmp(m1, m2);
-    if (d)
-      return d;
-    else
-      return V.cmp(s1, s2);
-  };
+  const compare = (m1, s1, m2, s2) => V.cmp(m1, m2) || V.cmp(s1, s2);
 
 
   const methods = {
@@ -81,7 +73,7 @@ export const extend = pointAndVectorOps => {
       `affineTransformations(${pointAndVectorOps.__context__()})`,
 
     dimension: {
-      AffineTransformation: t => V.shape(t.linear)[0]
+      AffineTransformation: t => t.shift.length
     },
 
     linearPart: {
