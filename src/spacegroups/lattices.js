@@ -2,27 +2,24 @@ import { numericalLinearAlgebra } from '../arithmetic/types';
 
 
 export const lattices = (ops, eps=0, dot=ops.times) => {
-  const sum = (...args) => args.reduce((a, b) => ops.plus(a, b));
+  const sum = (u, v, w) => w ? ops.plus(ops.plus(u, v), w) : ops.plus(u, v);
   const abs = v => ops.sgn(v) < 0 ? ops.negative(v) : v;
-  const cmp = (v, w) => ops.cmp(v, w);
 
 
   const gaussReduced = (u, v) => {
-    const vs = [u, v];
     const norm = v => dot(v, v);
+    if (ops.lt(norm(v), norm(u)))
+      [u, v] = [v, u];
 
-    while (true) {
-      const [i, j] = ops.lt(norm(vs[0]), norm(vs[1])) ? [0, 1] : [1, 0];
-      const t = ops.round(ops.div(dot(vs[0], vs[1]), norm(vs[i])));
-      vs[j] = ops.minus(vs[j], ops.times(t, vs[i]));
-      if (ops.ge(norm(vs[j]), ops.times(norm(vs[i]), 1-eps)))
-        break;
+    while (ops.lt(norm(u), ops.times(norm(v), 1 - eps))) {
+      const t = ops.round(ops.div(dot(u, v), norm(u)));
+      [u, v] = [ops.minus(v, ops.times(t, u)), u];
     }
 
-    if (ops.gt(dot(vs[0], vs[1]), 0))
-      vs[1] = ops.negative(vs[1]);
+    if (ops.gt(dot(u, v), 0))
+      v = ops.negative(v);
 
-    return vs;
+    return [u, v];
   };
 
 
@@ -73,31 +70,24 @@ export const lattices = (ops, eps=0, dot=ops.times) => {
   };
 
 
-  const compareVectors = (v, w) =>
-        ops.sgn(ops.minus(dot(v, v), dot(w, w))) || cmp(abs(w), abs(v));
-
-
   const reducedLatticeBasis = vs => {
+    const cmp = (v, w) => (
+      ops.cmp(dot(v, v), dot(w, w)) || ops.cmp(abs(w), abs(v))
+    );
     const dim = vs[0].length;
-    const tmp = dirichletVectors(vs, dot).sort(compareVectors);
     const A = [];
+    let i = 0;
 
-    const _normalized = v => {
-      let t = v.map(x => Math.abs(x) < eps ? 0 : x);
-      if (ops.sgn(t) < 0)
-        t = ops.negative(t);
-      if (A.length > 0 && ops.gt(dot(A[0], t), 0))
-        t = ops.negative(t);
-      return t;
-    };
+    for (const v of dirichletVectors(vs, dot).sort(cmp)) {
+      const t = abs(v.map(x => Math.abs(x) < eps ? 0 : x));
+      A[i] = (A[0] && ops.gt(dot(A[0], t), 0)) ? ops.negative(t) : t;
 
-    for (let k = 0, i = 0; k < tmp.length && i < dim; ++k) {
-      A[i] = _normalized(tmp[k]);
-      if (ops.rank(A) > i)
+      if (ops.rank(A) > i) {
         ++i;
+        if (i >= dim)
+          return A;
+      }
     }
-
-    return A;
   };
 
 
