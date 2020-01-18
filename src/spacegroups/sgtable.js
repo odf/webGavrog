@@ -1,8 +1,6 @@
-import { coordinateChangesQ } from '../geometry/types';
+import { coordinateChangesQ as ops } from '../geometry/types';
 import parseOperator from './parseOperator';
 import spaceGroupData from '../data/sgtable';
-
-const V = coordinateChangesQ;
 
 
 const parseSpaceGroupData = data => {
@@ -30,21 +28,22 @@ const parseSpaceGroupData = data => {
           name: fields[1],
           system: fields[2],
           centering: fields[3],
-          fromStd: V.coordinateChange(
-            parseOperator(fields.slice(4).join('')))
+          fromStd: ops.coordinateChange(
+            parseOperator(fields.slice(4).join(''))
+          )
         });
       }
       else {
         const op = parseOperator(fields.slice(1).join(''));
         currentName = fields[0];
 
-        if (V.eq(op, V.identityMatrix(V.dimension(op))))
+        if (ops.eq(op, ops.identityMatrix(ops.dimension(op))))
           canonicalName = currentName;
 
         table[currentName] = {
           name: currentName,
           canonicalName,
-          transform: V.coordinateChange(op),
+          transform: ops.coordinateChange(op),
           operators: []
         };
       }
@@ -85,7 +84,7 @@ export const settingByName = (name, options = {}) => {
   const base = alias[rawBase] || rawBase;
   const extension = rest.join(':').toUpperCase();
 
-  if (extension && 'RH12'.split('').indexOf(extension) < 0)
+  if (extension && !'RH12'.includes(extension))
     return { error: `Illegal extension ${extension} in group setting ${name}` };
 
   for (const name of candidates(base, extension, options)) {
