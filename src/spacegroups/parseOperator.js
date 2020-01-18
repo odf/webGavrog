@@ -1,5 +1,4 @@
-import { affineTransformationsQ } from '../geometry/types';
-const ops = affineTransformationsQ;
+import { affineTransformationsQ as ops } from '../geometry/types';
 
 
 const parseOperator = s => {
@@ -14,8 +13,9 @@ const parseOperator = s => {
 
   for (let i = 0; i < d; ++i) {
     for (const term of parts[i].split(/(?=[+-])/)) {
-      const [matched, sign, coeff, axis] =
-            term.match(/^([+-])?(\d+(?:\/\d+)?)?(?:\*?([xyz]))?$/) || [];
+      const [matched, sign, coeff, axis] = (
+        term.match(/^([+-])?(\d+(?:\/\d+)?)?(?:\*?([xyz]))?$/) || []
+      );
 
       if (!matched)
         throw new Error(`illegal term ${term} in coordinate ${i}`);
