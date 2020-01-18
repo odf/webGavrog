@@ -1,10 +1,7 @@
 import {
-  coordinateChangesQ,
-  coordinateChangesF
+  coordinateChangesQ as opsQ,
+  coordinateChangesF as opsF
 } from '../geometry/types';
-
-const opsQ = coordinateChangesQ;
-const opsF = coordinateChangesF;
 
 
 export const mapGramMatrix = (transform, gram) => {
@@ -25,15 +22,18 @@ export const invariantBasis = gram => {
     ortho.push(opsF.div(v, opsF.sqrt(dot(v, v))))
   }
 
+  // by construction, the following produces the inverse of ortho
   return opsF.times(gram, opsF.transposed(ortho));
 };
 
 
 export const symmetrizedGramMatrix = (gram, symOps) => {
-  const M = symOps
-    .map(S => opsQ.toJS(opsQ.linearPart(S)))
-    .map(S => opsF.times(S, opsF.times(gram, opsF.transposed(S))))
-    .reduce((A, B) => opsF.plus(A, B));
+  let M = opsF.identityMatrix(gram.length);
+
+  for (const sym of symOps) {
+    const S = opsQ.toJS(opsQ.linearPart(sym));
+    M = opsF.plus(M, opsF.times(S, opsF.times(gram, opsF.transposed(S))));
+  }
 
   return opsF.div(M, symOps.length);
 };
