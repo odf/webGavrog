@@ -1,5 +1,5 @@
 import { rationalLinearAlgebraModular } from '../arithmetic/types';
-import { coordinateChangesQ } from './types';
+import { coordinateChangesQ } from '../geometry/types';
 import { lattices } from './lattices';
 import operator from './parseOperator';
 import * as sg from './spacegroups';

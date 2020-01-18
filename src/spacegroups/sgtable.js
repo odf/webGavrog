@@ -1,4 +1,4 @@
-import { coordinateChangesQ } from './types';
+import { coordinateChangesQ } from '../geometry/types';
 import parseOperator from './parseOperator';
 import spaceGroupData from '../data/sgtable';
 

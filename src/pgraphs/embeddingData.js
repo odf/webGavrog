@@ -1,8 +1,8 @@
 import * as pickler from '../common/pickler';
 import * as symmetries from '../pgraphs/symmetries';
 import * as stats from '../pgraphs/statistics';
-import * as unitCells from '../geometry/unitCells';
-import * as spacegroups from '../geometry/spacegroups';
+import * as unitCells from '../spacegroups/unitCells';
+import * as spacegroups from '../spacegroups/spacegroups';
 
 import {
   coordinateChangesQ,

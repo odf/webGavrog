@@ -1,11 +1,11 @@
 const ops = require('../geometry/types').coordinateChangesQ;
 
 import * as pg from '../pgraphs/periodic';
-import * as sg from '../geometry/sgtable';
+import * as sg from '../spacegroups/sgtable';
 import * as cr from './crystal';
 
 import parseBlocks from './parseCgd';
-import parseOperator from '../geometry/parseOperator';
+import parseOperator from '../spacegroups/parseOperator';
 
 
 const translation = {

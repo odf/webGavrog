@@ -391,7 +391,7 @@ if (require.main == module) {
   };
 
   const delaney = require('./delaney');
-  const unitCells = require('../geometry/unitCells');
+  const unitCells = require('../spacegroups/unitCells');
 
   const test = ds => {
     console.log(`ds = ${ds}`);

@@ -1,7 +1,7 @@
 import * as csp from 'plexus-csp';
 
-import * as sgtable from '../geometry/sgtable';
-import { identifySpacegroup } from '../geometry/spacegroupFinder';
+import * as sgtable from '../spacegroups/sgtable';
+import { identifySpacegroup } from '../spacegroups/spacegroupFinder';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 import { systreKey } from '../pgraphs/invariant';

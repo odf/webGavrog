@@ -1,8 +1,8 @@
 import * as pg from './periodic';
 import * as symmetries from './symmetries';
 import * as stats from './statistics';
-import * as sg from '../geometry/spacegroups';
-import * as unitCells from '../geometry/unitCells';
+import * as sg from '../spacegroups/spacegroups';
+import * as unitCells from '../spacegroups/unitCells';
 import amoeba from '../common/amoeba';
 
 import { affineTransformationsQ } from '../geometry/types';

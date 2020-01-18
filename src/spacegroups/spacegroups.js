@@ -1,15 +1,15 @@
 import * as pickler from '../common/pickler';
-import { rationals } from '../arithmetic/types';
 import * as mats from '../arithmetic/matrices';
 
 import {
+  rationals,
   rationalLinearAlgebra,
   rationalLinearAlgebraModular
 } from '../arithmetic/types';
 
 
-import { coordinateChangesQ } from './types';
-import * as parms from './parameterVectors';
+import { coordinateChangesQ } from '../geometry/types';
+import * as parms from '../geometry/parameterVectors';
 
 const V = coordinateChangesQ;
 

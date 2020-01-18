@@ -1,4 +1,4 @@
-import { lattices } from '../geometry/lattices';
+import { lattices } from '../spacegroups/lattices';
 import { pointsF }  from '../geometry/types';
 
 const ops = pointsF;
