@@ -16,14 +16,6 @@ const opsP = mats.extend(
   ['Integer', 'LongInt', 'Fraction', 'ParameterVector']);
 
 
-const isIdentity = mat =>
-  opsQ.eq(mat, opsQ.identityMatrix(opsQ.dimension(mat)));
-
-
-const operatorDimension = op =>
-  (opsQ.typeOf(op) == 'Matrix' ? op : op.linear).length;
-
-
 export const opModZ = op => {
   if (opsQ.typeOf(op) == 'Matrix')
     return op;
@@ -33,55 +25,50 @@ export const opModZ = op => {
 
 
 export const fullOperatorList = gens => {
-  const seen = {};
-  gens.forEach(g => seen[g] = true);
+  const I = opsQ.identityMatrix(opsQ.dimension(gens[0]));
+  const seen = { [encode(I)]: true };
+  const result = [I];
 
-  const ops = gens.slice();
+  for (let i = 0; i < result.length; ++i) {
+    const A = result[i];
 
-  for (let i = 0; i < ops.length; ++i) {
-    const A = ops[i];
     for (const B of gens) {
-      const AB = opModZ(opsQ.times(A, opsQ.inverse(B)));
-      if (!seen[AB]) {
-        ops.push(AB);
-        seen[AB] = true;
+      const AB = opModZ(opsQ.times(A, B));
+      const key = encode(AB);
+      if (!seen[key]) {
+        seen[key] = true;
+        result.push(AB);
       }
     }
   }
 
-  return ops;
-};
-
-
-const primitiveCell = ops => {
-  let basis = opsQ.identityMatrix(operatorDimension(ops[0]));
-
-  for (const op of ops) {
-    if (opsQ.typeOf(op) == 'AffineTransformation' && isIdentity(op.linear))
-      basis = rationalLinearAlgebraModular.extendBasis(op.shift, basis);
-  }
-
-  return basis;
-};
-
-
-const dedupe = as => {
-  const seen = {};
-  const result = [];
-  for (const a of as) {
-    if (!seen[a]) {
-      result.push(a);
-      seen[a] = true;
-    }
-  }
   return result;
 };
 
 
 export const primitiveSetting = stdOps => {
-  const cell = primitiveCell(stdOps);
+  const I = opsQ.identityMatrix(opsQ.dimension(stdOps[0]));
+  let cell = I;
+
+  for (const op of stdOps) {
+    if (opsQ.typeOf(op) == 'AffineTransformation' && opsQ.eq(I, op.linear))
+      cell = rationalLinearAlgebraModular.extendBasis(op.shift, cell);
+  }
+
   const fromStd = opsQ.coordinateChange(opsQ.inverse(opsQ.transposed(cell)));
-  const ops = dedupe(stdOps.map(op => opModZ(opsQ.times(fromStd, op))));
+
+  const seen = {};
+  const ops = [];
+
+  for (const op of stdOps) {
+    const A = opModZ(opsQ.times(fromStd, op));
+    const key = encode(A);
+
+    if (!seen[key]) {
+      seen[key] = true;
+      ops.push(A);
+    }
+  }
 
   return { cell, fromStd, ops };
 };
@@ -125,10 +112,15 @@ export const shiftSpace = ops => {
   const I = opsQ.identityMatrix(d);
   const primitive = primitiveSetting(ops);
   const toStd = opsQ.inverse(primitive.fromStd);
-  const pops = primitive.ops.map(op => opModZ(opsQ.times(toStd, op)));
 
-  const M = [].concat(...pops.map(op => opsQ.minus(opsQ.linearPart(op), I)));
-  return opsQ.transposed(rationalLinearAlgebraModular.nullSpace(M));
+  let eqns = null;
+  for (const op of primitive.ops) {
+    const A = opsQ.minus(opsQ.linearPart(opsQ.times(toStd, op)), I);
+    for (const row of A)
+      eqns = rationalLinearAlgebra.extendBasis(row, eqns);
+  }
+
+  return opsQ.transposed(rationalLinearAlgebraModular.nullSpace(eqns));
 };
 
 
@@ -144,8 +136,8 @@ export const centeringLatticePoints = toStd => {
     for (const w of lattice) {
       const s = opsQ.mod(opsQ.plus(v, w), 1);
       if (!seen[encode(s)]) {
-        latticePoints.push(s);
         seen[encode(s)] = true;
+        latticePoints.push(s);
       }
     }
   }
@@ -163,10 +155,6 @@ if (require.main == module) {
     [[-1,0],[0,1]],
     opsQ.affineTransformation([[1,0],[0,1]], opsQ.div([1,1], 2))
   ];
-
-  console.log(isIdentity([[1,0,0],[0,1,0],[0,0,1]]));
-  console.log(isIdentity([[1,0,0],[0,1,-1],[0,0,1]]));
-  console.log();
 
   const primitive = primitiveSetting(fullOperatorList(ops));
   console.log('Primitive setting:');
