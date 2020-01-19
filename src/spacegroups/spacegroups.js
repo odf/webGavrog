@@ -1,4 +1,4 @@
-import * as pickler from '../common/pickler';
+import { serialize as encode } from '../common/pickler';
 import * as mats from '../arithmetic/matrices';
 
 import {
@@ -8,100 +8,27 @@ import {
 } from '../arithmetic/types';
 
 
-import { coordinateChangesQ } from '../geometry/types';
+import { coordinateChangesQ as opsQ } from '../geometry/types';
 import * as parms from '../geometry/parameterVectors';
 
-const V = coordinateChangesQ;
-
-const encode = pickler.serialize;
-
-const P = mats.extend(
+const opsP = mats.extend(
   parms.extend(rationals, ['Integer', 'LongInt', 'Fraction']),
   ['Integer', 'LongInt', 'Fraction', 'ParameterVector']);
 
 
-const isIdentity = mat => V.eq(mat, V.identityMatrix(V.dimension(mat)));
-
-
-const checkInteger = x => {
-  if (!V.isInteger(x))
-    throw new Error(`expected an integer, got ${x}`);
-};
-
-
-const checkShiftCoordinate = x => {
-  if (!V.isRational(x))
-    throw new Error(`expected a rational number, got ${x}`);
-  if (!V.eq(x, V.mod(x, 1)))
-    throw new Error(`expected a number in [0,1), got ${x}`);
-};
-
-
-const checkLinearPartOfOperator = (M, d) => {
-  const [n, m] = V.shape(M);
-
-  if (n != d || m != d)
-    throw new Error(`expected a ${d}x${d} matrix, got ${M}`);
-
-  M.forEach(row => row.forEach(checkInteger));
-
-  const det = V.determinant(M);
-
-  if (V.abs(det) != 1)
-    throw new Error(
-      `expected a unimodular matrix, got ${M} with determinant ${det}`
-    );
-};
-
-
-const checkTranslationalPartOfOperator = (s, d) => {
-  if (s.length != d)
-    throw new Error(`expected a ${d}-dimensional vector, got ${s}`);
-
-  s.forEach(checkShiftCoordinate);
-};
-
-
-const checkOperatorType = op => {
-  const t = V.typeOf(op);
-
-  if (t != 'Matrix' && t != 'AffineTransformation')
-    throw new Error(`expected a Matrix or AffineTransformation, got ${op}`);
-};
-
-
-const checkOperator = (op, d) => {
-  checkOperatorType(op);
-
-  if (V.typeOf(op) == 'Matrix')
-    checkLinearPartOfOperator(op, d);
-  else {
-    checkLinearPartOfOperator(op.linear, d);
-    checkTranslationalPartOfOperator(op.shift, d);
-  }
-};
+const isIdentity = mat =>
+  opsQ.eq(mat, opsQ.identityMatrix(opsQ.dimension(mat)));
 
 
 const operatorDimension = op =>
-  (V.typeOf(op) == 'Matrix' ? op : op.linear).length;
-
-
-const checkOperatorList = ops => {
-  if (!ops.length)
-    return;
-
-  ops.forEach(checkOperatorType);
-
-  const d = operatorDimension(ops[0]);
-  ops.forEach(op => checkOperator(op, d));
-};
+  (opsQ.typeOf(op) == 'Matrix' ? op : op.linear).length;
 
 
 export const opModZ = op => {
-  if (V.typeOf(op) == 'Matrix')
+  if (opsQ.typeOf(op) == 'Matrix')
     return op;
   else
-    return V.affineTransformation(op.linear, V.mod(op.shift, 1));
+    return opsQ.affineTransformation(op.linear, opsQ.mod(op.shift, 1));
 };
 
 
@@ -114,7 +41,7 @@ export const fullOperatorList = gens => {
   for (let i = 0; i < ops.length; ++i) {
     const A = ops[i];
     for (const B of gens) {
-      const AB = opModZ(V.times(A, V.inverse(B)));
+      const AB = opModZ(opsQ.times(A, opsQ.inverse(B)));
       if (!seen[AB]) {
         ops.push(AB);
         seen[AB] = true;
@@ -126,24 +53,11 @@ export const fullOperatorList = gens => {
 };
 
 
-const checkGroup = ops => {
-  const seen = {};
-  ops.forEach(op => seen[op] = true);
-
-  ops.forEach(A => {
-    ops.forEach(B => {
-      if (!seen[opModZ(V.times(A, V.inverse(B)))])
-        throw new Error('operators do not form a group');
-    })
-  });
-};
-
-
 const primitiveCell = ops => {
-  let basis = V.identityMatrix(operatorDimension(ops[0]));
+  let basis = opsQ.identityMatrix(operatorDimension(ops[0]));
 
   for (const op of ops) {
-    if (V.typeOf(op) == 'AffineTransformation' && isIdentity(op.linear))
+    if (opsQ.typeOf(op) == 'AffineTransformation' && isIdentity(op.linear))
       basis = rationalLinearAlgebraModular.extendBasis(op.shift, basis);
   }
 
@@ -166,31 +80,31 @@ const dedupe = as => {
 
 export const primitiveSetting = stdOps => {
   const cell = primitiveCell(stdOps);
-  const fromStd = V.coordinateChange(V.inverse(V.transposed(cell)));
-  const ops = dedupe(stdOps.map(op => opModZ(V.times(fromStd, op))));
+  const fromStd = opsQ.coordinateChange(opsQ.inverse(opsQ.transposed(cell)));
+  const ops = dedupe(stdOps.map(op => opModZ(opsQ.times(fromStd, op))));
 
   return { cell, fromStd, ops };
 };
 
 
 export const gramMatrixConfigurationSpace = ops => {
-  const d = V.dimension(ops[0]);
+  const d = opsQ.dimension(ops[0]);
   const m = (d * (d+1)) / 2;
 
   // -- make a parametrized Gram matrix with unknowns encoded by vectors
-  const M = V.matrix(d, d);
+  const M = opsQ.matrix(d, d);
   let k = 0;
   for (let i = 0; i < d; ++i) {
     for (let j = i; j < d; ++j) {
-      M[i][j] = M[j][i] = P.unitParameterVector(m, k++);
+      M[i][j] = M[j][i] = opsP.unitParameterVector(m, k++);
     }
   }
 
   // -- collect equations for the configuration space
   let eqns = null;
   for (const op of ops) {
-    const S = V.linearPart(op);
-    const A = P.minus(P.times(S, P.times(M, P.transposed(S))), M);
+    const S = opsQ.linearPart(op);
+    const A = opsP.minus(opsP.times(S, opsP.times(M, opsP.transposed(S))), M);
 
     for (const row of A) {
       for (const x of row)
@@ -200,35 +114,35 @@ export const gramMatrixConfigurationSpace = ops => {
 
   // -- return the solution space
   if (eqns == null)
-    return V.identityMatrix(m);
+    return opsQ.identityMatrix(m);
   else
-    return V.transposed(rationalLinearAlgebraModular.nullSpace(eqns));
+    return opsQ.transposed(rationalLinearAlgebraModular.nullSpace(eqns));
 };
 
 
 export const shiftSpace = ops => {
-  const d = V.dimension(ops[0]);
-  const I = V.identityMatrix(d);
+  const d = opsQ.dimension(ops[0]);
+  const I = opsQ.identityMatrix(d);
   const primitive = primitiveSetting(ops);
-  const toStd = V.inverse(primitive.fromStd);
-  const pops = primitive.ops.map(op => opModZ(V.times(toStd, op)));
+  const toStd = opsQ.inverse(primitive.fromStd);
+  const pops = primitive.ops.map(op => opModZ(opsQ.times(toStd, op)));
 
-  const M = [].concat(...pops.map(op => V.minus(V.linearPart(op), I)));
-  return V.transposed(rationalLinearAlgebraModular.nullSpace(M));
+  const M = [].concat(...pops.map(op => opsQ.minus(opsQ.linearPart(op), I)));
+  return opsQ.transposed(rationalLinearAlgebraModular.nullSpace(M));
 };
 
 
 export const centeringLatticePoints = toStd => {
-  const lattice = V.transposed(V.linearPart(toStd.oldToNew));
+  const lattice = opsQ.transposed(opsQ.linearPart(toStd.oldToNew));
 
-  const origin = V.vector(V.dimension(lattice));
+  const origin = opsQ.vector(opsQ.dimension(lattice));
   const latticePoints = [origin];
   const seen = { [encode(origin)]: true };
 
   for (let i = 0; i < latticePoints.length; ++i) {
     const v = latticePoints[i];
     for (const w of lattice) {
-      const s = V.mod(V.plus(v, w), 1);
+      const s = opsQ.mod(opsQ.plus(v, w), 1);
       if (!seen[encode(s)]) {
         latticePoints.push(s);
         seen[encode(s)] = true;
@@ -245,40 +159,10 @@ if (require.main == module) {
     return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
-  const check = (op, d) => {
-    try {
-      if (d == null) {
-        checkOperatorList(op);
-        checkGroup(op);
-        console.log(`Operator list ${op} is okay`);
-      }
-      else {
-        checkOperator(op, d);
-        console.log(`Operator ${op} is okay`);
-      }
-    } catch(ex) {
-      console.log(`${ex}`);
-    }
-  };
-
-  const M = [[1,1,0],[0,1,5],[0,0,-1]];
-
-  check(M, 3);
-  check(V.affineTransformation(M, V.div([1,2,3], 3)), 3);
-
-  check([1,1,0], 3);
-  check([[1,1,0],[0,1,5]], 3);
-  check([[1,1,0],[0,1,5],[0,0.2,1]], 3);
-  check([[1,1,0],[0,1,5],[0,0,-2]], 3);
-  check(V.affineTransformation(M, [V.div(5,3),0,1]), 3);
-
-  check([ [[1,1],[3,4]], [[1,0],[1,1],[1,3]] ]);
   const ops = [
     [[-1,0],[0,1]],
-    V.affineTransformation([[1,0],[0,1]], V.div([1,1], 2))
+    opsQ.affineTransformation([[1,0],[0,1]], opsQ.div([1,1], 2))
   ];
-  check(ops);
-  check(fullOperatorList(ops));
 
   console.log(isIdentity([[1,0,0],[0,1,0],[0,0,1]]));
   console.log(isIdentity([[1,0,0],[0,1,-1],[0,0,1]]));
@@ -291,6 +175,8 @@ if (require.main == module) {
   console.log(`  ops    : ${primitive.ops}`);
   console.log();
 
+  const clps = centeringLatticePoints(opsQ.inverse(primitive.fromStd));
+  console.log(`Centering lattice points: ${clps}`);
   const confSpace = gramMatrixConfigurationSpace(ops);
   console.log(`Gram config. space: ${confSpace}`);
   const shifts = shiftSpace(ops);
