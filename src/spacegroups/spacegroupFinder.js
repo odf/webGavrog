@@ -779,13 +779,18 @@ if (require.main == module) {
     return '[' + this.map(x => x.toString()).join(',') + ']';
   };
 
+  let count = 0;
+
   for (const entry of sgtable.allSettings()) {
     const s = `group ${entry.name} (${entry.canonicalName})`;
     const ops = entry.operators;
 
     try {
-      if (opsQ.dimension(entry.transform) != 2)
-        continue;
+      if (opsQ.dimension(entry.transform) != 2) {
+        count += 1;
+        if (count % 17)
+          continue;
+      }
 
       const result = identifySpacegroup(ops) || {};
 
