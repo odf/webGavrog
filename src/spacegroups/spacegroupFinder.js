@@ -26,7 +26,7 @@ const CS_3D_MONOCLINIC   = "Crystal System 3d Monoclinic";
 const CS_3D_TRICLINIC    = "Crystal System 3d Triclinic";
 
 
-const mappedCrystalSystem = {
+const crystalSystemShortName = {
   [CS_2D_OBLIQUE     ]: 'oblique',
   [CS_2D_RECTANGULAR ]: 'rectangular',
   [CS_2D_SQUARE      ]: 'square',
@@ -669,9 +669,8 @@ const matchingOriginShift = (imgOps, srcOps) => {
 
 const primitiveOps = ops => {
   const primitive = sg.primitiveSetting(ops);
-  return primitive.ops.map(
-    op => opsQ.times(opsQ.inverse(primitive.fromStd), op)
-  );
+  const toStd = opsQ.inverse(primitive.fromStd);
+  return primitive.ops.map(op => opsQ.times(toStd, op));
 };
 
 
@@ -680,7 +679,7 @@ const transformedAndSorted = (ops, transform) =>
 
 
 const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
-  const system = mappedCrystalSystem[crystalSystem];
+  const system = crystalSystemShortName[crystalSystem];
 
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
     const stdToPrimitive = opsQ.times(toPrimitive, fromStd);
