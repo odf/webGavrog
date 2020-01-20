@@ -84,7 +84,7 @@ const vectorsCollinear = (v, w) => opsQ.eq(
 const vectorsOrthogonal = (v, w) => opsQ.eq(0, opsQ.times(v, w));
 
 
-const operatorType = op => {
+const operatorWithDetails = op => {
   const dimension = opsQ.dimension(op);
   const A = opsQ.linearPart(op);
   const direct = sgnDet(A) >= 0;
@@ -112,36 +112,28 @@ const operatorType = op => {
     }
   }
 
-  return { dimension, direct, order, clockwise };
+  return { op, dimension, direct, order, clockwise };
 };
 
 
 const crystalSystemAndBasis2d = ops => {
-  const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
-  const mirrors = opsWithTypes.filter(op => !op.direct);
+  const opsWithDetails = ops.map(operatorWithDetails);
+  const mirrors = opsWithDetails.filter(s => !s.direct);
+  const n = opsWithDetails.map(s => s.order).reduce((a, b) => a > b ? a : b);
+  const m = n == 6 ? 3 : n;
 
-  const { order: n, op: R } = opsWithTypes
-    .filter(op => op.direct && op.clockwise)
-    .reduce((op1, op2) => op2.order > op1.order ? op2 : op1);
-
-  let crystalSystem;
-
-  if (n == 6)
-    crystalSystem = CS_2D_HEXAGONAL;
-  else if (n == 4)
-    crystalSystem = CS_2D_SQUARE;
-  else if (n == 3)
-    crystalSystem = CS_2D_HEXAGONAL;
-  else if (mirrors.length)
-    crystalSystem = CS_2D_RECTANGULAR;
-  else
-    crystalSystem = CS_2D_OBLIQUE;
+  const crystalSystem =
+    m == 4 ? CS_2D_SQUARE :
+    m == 3 ? CS_2D_HEXAGONAL :
+    mirrors.length ? CS_2D_RECTANGULAR : CS_2D_OBLIQUE;
 
   const x = mirrors.length ? operatorAxis(mirrors[0].op) : [1, 0];
   let y;
 
-  if (n >= 3)
-    y = n == 6 ? opsQ.times(R, opsQ.times(R, x)) : opsQ.times(R, x);
+  if (m >= 3) {
+    const s = opsWithDetails.find(s => s.direct && s.clockwise && s.order == m);
+    y = opsQ.times(s.op, x);
+  }
   else if (mirrors.length > 1)
     y = operatorAxis(mirrors[1].op);
   else {
@@ -160,9 +152,9 @@ const isIn = (val, expected) =>
 
 
 const crystalSystemAndBasis3d = ops => {
-  const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
+  const opsWithDetails = ops.map(operatorWithDetails);
 
-  const ofType = (order, direct, clockwise) => opsWithTypes.filter(
+  const ofType = (order, direct, clockwise) => opsWithDetails.filter(
     op => isIn(op.order, order)
       && isIn(op.direct, direct)
       && isIn(op.clockwise, clockwise));
@@ -719,8 +711,8 @@ export const identifySpacegroup = ops => {
     };
   }
   else if (dim == 1) {
-    const opsWithTypes = ops.map(op => Object.assign(operatorType(op), { op }));
-    const mirrors = opsWithTypes.filter(op => !op.direct);
+    const opsWithDetails = ops.map(operatorWithDetails);
+    const mirrors = opsWithDetails.filter(op => !op.direct);
     const name = mirrors.length ? 'opm' : 'op1';
 
     return {
