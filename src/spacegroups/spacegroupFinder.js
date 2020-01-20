@@ -147,34 +147,30 @@ const crystalSystemAndBasis2d = ops => {
 };
 
 
-const isIn = (val, expected) =>
-  expected.constructor == Array ? expected.indexOf(val) >= 0 : val == expected;
-
-
 const crystalSystemAndBasis3d = ops => {
   const opsWithDetails = ops.map(operatorWithDetails);
 
-  const ofType = (order, direct, clockwise) => opsWithDetails.filter(
-    op => isIn(op.order, order)
-      && isIn(op.direct, direct)
-      && isIn(op.clockwise, clockwise));
+  const ofTypes = (orders, direct, clockwise) => opsWithDetails.filter(
+    s => orders.includes(s.order)
+      && direct.includes(s.direct)
+      && clockwise.includes(s.clockwise)
+  );
 
-  const mirrors    = ofType([2, 3, 4, 6], false, true);
-  const inversions = ofType(1, false, true);
-  const directGood = inversions.length ? true : [true, false];
+  const mirrors = ofTypes([2, 3, 4, 6], [false], [true]);
+  const inversions = ofTypes([1], [false], [true]);
+  const direct = inversions.length ? [true] : [true, false];
 
-  const twoFold    = ofType(2, directGood, true);
-  const threeFold  = ofType(3, true, true);
-  const fourFold   = ofType(4, directGood, true);
-  const sixFold    = ofType(6, directGood, true);
+  const twoFold   = ofTypes([2], direct, [true]);
+  const threeFold = ofTypes([3], [true], [true]);
+  const fourFold  = ofTypes([4], direct, [true]);
+  const sixFold   = ofTypes([6], direct, [true]);
 
   let crystalSystem, x, y, z, R;
 
   if (sixFold.length > 0) {
-    const A = sixFold[0].op;
     crystalSystem = CS_3D_HEXAGONAL;
-    z = operatorAxis(A);
-    R = opsQ.times(A, A);
+    R = threeFold[0].op;
+    z = operatorAxis(R);
   }
   else if (fourFold.length > 1) {
     crystalSystem = CS_3D_CUBIC;
@@ -216,13 +212,11 @@ const crystalSystemAndBasis3d = ops => {
   }
 
   if (x == null) {
-    for (const { op } of twoFold) {
-      const t = operatorAxis(op);
-      if (!vectorsCollinear(z, t)) {
-        x = t;
-        break;
-      }
-    }
+    const s = twoFold.find(
+      s => !vectorsCollinear(z, opsQ.times(opsQ.linearPart(s.op), z))
+    );
+    if (s)
+      x = operatorAxis(s.op);
   }
 
   if (x == null) {
