@@ -301,22 +301,19 @@ basisNormalizer[CS_2D_HEXAGONAL] = b => ({
 
 
 basisNormalizer[CS_3D_CUBIC] = b => {
-  const r = opsQ.abs(b[0].find(x => opsQ.ne(0, x)));
-  const n = b[0].filter(x => opsQ.ne(0, x)).length;
+  const nz = b[0].filter(x => opsQ.ne(0, x));
 
-  const [a, c] = (n == 1) ?
-    [r, 'P'] :
-    [opsQ.times(r, 2), (n == 2) ? 'F' : 'I'];
+  const a = opsQ.times(opsQ.abs(nz[0]), nz.length == 1 ? 1 : 2);
+  const c = [null, 'P', 'F', 'I'][nz.length];
 
   return { basis: [[a, 0, 0], [0, a, 0], [0, 0, a]], centering: c };
 };
 
 
 basisNormalizer[CS_3D_HEXAGONAL] = b => {
-  const [u, w] = vectorsCollinear([0, 0, 1], b[0]) ?
-    [b[2], b[0]] : vectorsCollinear([0, 0, 1], b[1]) ?
-    [b[0], b[1]] :
-    [b[0], b[2]];
+  const [u, w] =
+    vectorsCollinear([0, 0, 1], b[0]) ? [b[2], b[0]] :
+    vectorsCollinear([0, 0, 1], b[1]) ? [b[0], b[1]] : [b[0], b[2]];
 
   const v = opsQ.times(operator("-y, x-y, z"), u);
 
@@ -325,17 +322,17 @@ basisNormalizer[CS_3D_HEXAGONAL] = b => {
 
 
 basisNormalizer[CS_3D_TRIGONAL] = b => {
-  const basis = vectorsCollinear([0, 0, 1], b[0]) ?
-    [b[1], b[2], b[0]] : vectorsCollinear([0, 0, 1], b[1]) ?
-    [b[0], b[2], b[1]] :
-    [b[0], b[1], b[2]];
+  const basis =
+    vectorsCollinear([0, 0, 1], b[0]) ? [b[1], b[2], b[0]] :
+    vectorsCollinear([0, 0, 1], b[1]) ? [b[0], b[2], b[1]] : [b[0], b[1], b[2]];
 
-  const r =
-    basis.find(v => !vectorsCollinear([0, 0, 1], v) && opsQ.ne(0, v[2]));
+  const r = basis.find(
+    v => !vectorsCollinear([0, 0, 1], v) && opsQ.ne(0, v[2])
+  );
 
   if (r) {
     if (opsQ.lt(r[2], 0)) {
-      basis[0] = opsQ.times(operator("2x-y,x+y, 0"), r);
+      basis[0] = opsQ.times(operator("2x-y, x+y, 0"), r);
       basis[2] = opsQ.times(operator("0, 0, -3z"), r);
     }
     else {
