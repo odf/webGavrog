@@ -91,6 +91,7 @@ const operatorWithDetails = op => {
   const M = (dimension % 2 == 1 && !direct) ? opsQ.negative(A) : A;
   const t = opsQ.shiftPart(op);
   const order = matrixOrder(M, 6);
+  const axis = operatorAxis(M);
 
   let clockwise = true;
 
@@ -103,16 +104,13 @@ const operatorWithDetails = op => {
     }
   }
   else if (dimension == 3) {
-    if (order == 0 || order > 2) {
-      const a = operatorAxis(M);
-      if (a) {
-        const v = vectorsCollinear([1, 0, 0], a) ? [0, 1, 0] : [1, 0, 0];
-        clockwise = sgnDet([a, v, opsQ.times(M, v)]) >= 0;
-      }
+    if ((order == 0 || order > 2) && axis) {
+      const v = vectorsCollinear([1, 0, 0], axis) ? [0, 1, 0] : [1, 0, 0];
+      clockwise = sgnDet([axis, v, opsQ.times(M, v)]) >= 0;
     }
   }
 
-  return { op, dimension, direct, order, clockwise };
+  return { op, dimension, direct, order, axis, clockwise };
 };
 
 
@@ -127,7 +125,7 @@ const crystalSystemAndBasis2d = ops => {
     m == 3 ? CS_2D_HEXAGONAL :
     mirrors.length ? CS_2D_RECTANGULAR : CS_2D_OBLIQUE;
 
-  const x = mirrors.length ? operatorAxis(mirrors[0].op) : [1, 0];
+  const x = mirrors.length ? mirrors[0].axis : [1, 0];
   let y;
 
   if (m >= 3) {
@@ -135,7 +133,7 @@ const crystalSystemAndBasis2d = ops => {
     y = opsQ.times(s.op, x);
   }
   else if (mirrors.length > 1)
-    y = operatorAxis(mirrors[1].op);
+    y = mirrors[1].axis;
   else {
     const t = x[0] == 0 ? [1, 0] : [0, 1];
     y = mirrors.length ? opsQ.minus(t, opsQ.times(mirrors[0].op, t)) : t;
@@ -170,11 +168,11 @@ const crystalSystemAndBasis3d = ops => {
   if (sixFold.length > 0) {
     crystalSystem = CS_3D_HEXAGONAL;
     R = threeFold[0].op;
-    z = operatorAxis(R);
+    z = threeFold[0].axis;
   }
   else if (fourFold.length > 1) {
     crystalSystem = CS_3D_CUBIC;
-    z = operatorAxis(fourFold[0].op);
+    z = fourFold[0].axis;
     R = threeFold[0].op;
     x = opsQ.times(R, z);
     y = opsQ.times(R, x);
@@ -182,11 +180,11 @@ const crystalSystemAndBasis3d = ops => {
   else if (fourFold.length > 0) {
     crystalSystem = CS_3D_TETRAGONAL;
     R = fourFold[0].op;
-    z = operatorAxis(R);
+    z = fourFold[0].axis;
   }
   else if (threeFold.length > 1) {
     crystalSystem = CS_3D_CUBIC;
-    z = operatorAxis(twoFold[0].op);
+    z = twoFold[0].axis;
     R = threeFold[0].op;
     x = opsQ.times(R, z);
     y = opsQ.times(R, x);
@@ -194,17 +192,17 @@ const crystalSystemAndBasis3d = ops => {
   else if (threeFold.length > 0) {
     crystalSystem = CS_3D_TRIGONAL;
     R = threeFold[0].op;
-    z = operatorAxis(R);
+    z = threeFold[0].axis;
   }
   else if (twoFold.length > 1) {
     crystalSystem = CS_3D_ORTHORHOMBIC;
-    x = operatorAxis(twoFold[0].op);
-    y = operatorAxis(twoFold[1].op);
-    z = operatorAxis(twoFold[2].op);
+    x = twoFold[0].axis;
+    y = twoFold[1].axis;
+    z = twoFold[2].axis;
   }
   else if (twoFold.length > 0) {
     crystalSystem = CS_3D_MONOCLINIC;
-    z = operatorAxis(twoFold[0].op);
+    z = twoFold[0].axis;
   }
   else {
     crystalSystem = CS_3D_TRICLINIC;
@@ -212,11 +210,9 @@ const crystalSystemAndBasis3d = ops => {
   }
 
   if (x == null) {
-    const s = twoFold.find(
-      s => !vectorsCollinear(z, opsQ.times(opsQ.linearPart(s.op), z))
-    );
+    const s = twoFold.find(s => !vectorsCollinear(z, s.axis));
     if (s)
-      x = operatorAxis(s.op);
+      x = s.axis;
   }
 
   if (x == null) {
@@ -765,6 +761,7 @@ if (require.main == module) {
     return '[' + this.map(x => x.toString()).join(',') + ']';
   };
 
+  const k = parseInt(process.argv[2]) || 17;
   let count = 0;
 
   for (const entry of sgtable.allSettings()) {
@@ -774,7 +771,7 @@ if (require.main == module) {
     try {
       if (opsQ.dimension(entry.transform) != 2) {
         count += 1;
-        if (count % 17)
+        if (count % k)
           continue;
       }
 
