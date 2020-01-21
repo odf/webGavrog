@@ -47,12 +47,14 @@ export const fullOperatorList = gens => {
 
 
 export const primitiveSetting = stdOps => {
-  const I = opsQ.identityMatrix(opsQ.dimension(stdOps[0]));
+  const dim = opsQ.dimension(stdOps[0]);
+  const I = opsQ.identityMatrix(dim);
   let cell = I;
 
   for (const op of stdOps) {
-    if (opsQ.typeOf(op) == 'AffineTransformation' && opsQ.eq(I, op.linear))
-      cell = rationalLinearAlgebraModular.extendBasis(op.shift, cell);
+    const shift = opsQ.shiftPart(op);
+    if (opsQ.sgn(shift) != 0 && opsQ.eq(I, opsQ.linearPart(op)))
+      cell = rationalLinearAlgebraModular.extendBasis(shift, cell);
   }
 
   const fromStd = opsQ.coordinateChange(opsQ.inverse(opsQ.transposed(cell)));
