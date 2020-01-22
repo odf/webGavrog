@@ -664,7 +664,7 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
         if (shift) {
           const toStdRaw = [opsQ.inverse(stdToPrimitive), shift, toPrimitive, M]
-                .reduce((a, b) => opsQ.times(a, b));
+            .reduce((a, b) => opsQ.times(a, b));
           const toStd = opsQ.coordinateChange(sg.opModZ(toStdRaw.oldToNew));
 
           return { name, toStd };
