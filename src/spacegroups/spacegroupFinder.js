@@ -41,6 +41,13 @@ const crystalSystemShortName = {
 };
 
 
+let _timers = null;
+
+export function useTimers(timers) {
+  _timers = timers;
+};
+
+
 const matrixOrder = (M, max) => {
   const I = opsQ.identityMatrix(opsQ.dimension(M));
   let A = M;
@@ -651,10 +658,14 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
   const system = crystalSystemShortName[crystalSystem];
 
   for (const { name, fromStd } of sgtable.lookupSettings(system, centering)) {
+    _timers && _timers.start('matchOperators:prepare-settings');
     const stdToPrimitive = opsQ.times(toPrimitive, fromStd);
     const { operators } = sgtable.settingByName(name);
-    const opsToMatch =
-      transformedAndSorted(primitiveOps(operators), stdToPrimitive);
+    _timers && _timers.start('matchOperators:prepare-settings:primitiveOps');
+    const primOps = primitiveOps(operators);
+    _timers && _timers.stop('matchOperators:prepare-settings:primitiveOps');
+    const opsToMatch = transformedAndSorted(primOps, stdToPrimitive);
+    _timers && _timers.stop('matchOperators:prepare-settings');
 
     if (opsToMatch.length == ops.length) {
       for (const spec of variations(crystalSystem, centering)) {
@@ -710,11 +721,13 @@ export const identifySpacegroup = ops => {
     const { normalized, centering } = normalizedBasis(crystalSystem, pCell);
     const toNormalized = changeToBasis(opsQ.times(normalized, basis));
 
+    _timers && _timers.start('identifySpacegroup:matchOperators');
     const match = matchOperators(
       transformedAndSorted(primitiveOps(ops), toNormalized),
       changeToBasis(opsQ.times(pCell, opsQ.inverse(normalized))),
       crystalSystem,
       centering);
+    _timers && _timers.stop('identifySpacegroup:matchOperators');
 
     if (match) {
       const [groupName, extension] = match.name.split(':');
@@ -734,6 +747,9 @@ export const identifySpacegroup = ops => {
 
 
 if (require.main == module) {
+  const timers = require('../common/timing').timers();
+  useTimers(timers);
+
   Array.prototype.toString = function() {
     return '[' + this.map(x => x.toString()).join(',') + ']';
   };
@@ -751,6 +767,8 @@ if (require.main == module) {
   const k = parseInt(process.argv[2]) || 17;
   let count = 0;
 
+  timers.start('total');
+
   for (const entry of sgtable.allSettings()) {
     const s = `group ${entry.name} (${entry.canonicalName})`;
     const ops = entry.operators;
@@ -762,7 +780,9 @@ if (require.main == module) {
           continue;
       }
 
+      timers.start('identifySpacegroup');
       const result = identifySpacegroup(ops) || {};
+      timers.stop('identifySpacegroup');
 
       if (result.fullName != entry.canonicalName)
         console.log(`${s} >>> found ${result.fullName}`);
@@ -775,4 +795,7 @@ if (require.main == module) {
       console.log(ex);
     }
   }
+
+  timers.stop('total');
+  console.log(`${JSON.stringify(timers.current(), null, 2)}`);
 }
