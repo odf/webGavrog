@@ -597,21 +597,20 @@ const solveModuloZ = (lft, rgt) => {
 
   const [n, m] = opsQ.shape(lft);
   const [B, U] = reducedBasis(opsQ.transposed(lft), opsQ.identityMatrix(m))
-        .map(t => opsQ.transposed(t));
+    .map(t => opsQ.transposed(t));
 
   const y = [];
   for (const i in rgt) {
-    const d = B[i][i];
     const v = opsQ.minus(rgt[i], opsQ.times(B[i].slice(0, i), y));
 
-    if (opsQ.eq(d, 0)) {
+    if (opsQ.eq(B[i][i], 0)) {
       if (v.some(x => !opsQ.isInteger(x)))
         return null;
       else
         y.push(v.map(x => 0));
     }
     else
-      y.push(v.map(x => opsQ.div(x, d)));
+      y.push(v.map(x => opsQ.div(x, B[i][i])));
   }
 
   return opsQ.times(U, y.concat(opsQ.matrix(m - n, y[0].length)));
@@ -623,12 +622,11 @@ const matchingOriginShift = (imgOps, srcOps) => {
 
   if (linearParts.every((m, i) => opsQ.eq(m, opsQ.linearPart(imgOps[i])))) {
     const I = opsQ.identityMatrix(opsQ.dimension(imgOps[0]));
-    const As = [], bs = [];
-    for (let i = 0; i < srcOps.length; ++i) {
-      As.push(opsQ.minus(linearParts[i], I));
-      bs.push(opsQ.transposed(opsQ.minus(opsQ.shiftPart(srcOps[i]),
-                                   opsQ.shiftPart(imgOps[i]))));
-    }
+
+    const As = linearParts.map(M => opsQ.minus(M, I));
+    const bs = srcOps.map((op, i) => opsQ.transposed(
+      opsQ.minus(opsQ.shiftPart(op), opsQ.shiftPart(imgOps[i]))
+    ));
 
     const s = solveModuloZ([].concat(...As), [].concat(...bs));
 
@@ -646,7 +644,7 @@ const primitiveOps = ops => {
 
 
 const transformedAndSorted = (ops, transform) =>
-      ops.map(op => opsQ.times(transform, op)).sort((a, b) => opsQ.cmp(a, b));
+  ops.map(op => opsQ.times(transform, op)).sort((a, b) => opsQ.cmp(a, b));
 
 
 const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
@@ -656,7 +654,7 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
     const stdToPrimitive = opsQ.times(toPrimitive, fromStd);
     const { operators } = sgtable.settingByName(name);
     const opsToMatch =
-          transformedAndSorted(primitiveOps(operators), stdToPrimitive);
+      transformedAndSorted(primitiveOps(operators), stdToPrimitive);
 
     if (opsToMatch.length == ops.length) {
       for (const spec of variations(crystalSystem, centering)) {
@@ -678,7 +676,7 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
 
 
 const changeToBasis = basis =>
-      opsQ.coordinateChange(opsQ.inverse(opsQ.transposed(basis)));
+  opsQ.coordinateChange(opsQ.inverse(opsQ.transposed(basis)));
 
 
 export const identifySpacegroup = ops => {
