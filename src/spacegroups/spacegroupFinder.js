@@ -733,20 +733,19 @@ export const identifySpacegroup = ops => {
 };
 
 
-const checkTestResult = ({ operators: ops, transform }, { toStd }) => {
-  const expected = ops.map(op => sg.opModZ(opsQ.times(transform, op))).sort();
-  const seen = ops.map(op => sg.opModZ(opsQ.times(toStd, op))).sort();
-
-  if (expected.some((_, i) => opsQ.ne(expected[i], seen[i]))) {
-    for (let i = 0; i < expected.length; ++i)
-      console.log(`  ${expected[i]} <=> ${seen[i]}`);
-  }
-};
-
-
 if (require.main == module) {
   Array.prototype.toString = function() {
     return '[' + this.map(x => x.toString()).join(',') + ']';
+  };
+
+  const checkTestResult = ({ operators: ops, transform }, { toStd }) => {
+    const expected = ops.map(op => sg.opModZ(opsQ.times(transform, op))).sort();
+    const seen = ops.map(op => sg.opModZ(opsQ.times(toStd, op))).sort();
+
+    if (expected.some((_, i) => opsQ.ne(expected[i], seen[i]))) {
+      for (let i = 0; i < expected.length; ++i)
+        console.log(`  ${expected[i]} <=> ${seen[i]}`);
+    }
   };
 
   const k = parseInt(process.argv[2]) || 17;
