@@ -542,38 +542,37 @@ const normalizedBasis = (crystalSystem, basisIn) => {
 
 
 const variations = (crystalSystem, centering) => {
-  const change = s => opsQ.coordinateChange(operator(s));
-
   if (crystalSystem == CS_3D_MONOCLINIC) {
     if (centering == 'A')
-      return [ "x,y,z", "-x,y-x,-z" ].map(change);
+      return [ "x,y,z", "-x,y-x,-z" ];
     else
-      return [ "x,y,z", "-y,x-y,z", "y-x,-x,z" ].map(change);
+      return [ "x,y,z", "-y,x-y,z", "y-x,-x,z" ];
   }
   else if (crystalSystem == CS_3D_ORTHORHOMBIC) {
     if (centering == 'C')
-      return [ "x,y,z", "y,x,-z" ].map(change);
+      return [ "x,y,z", "y,x,-z" ];
     else
-      return [
-        "x,y,z", "z,x,y", "y,z,x", "y,x,-z", "x,z,-y", "z,y,-x"
-      ].map(change);
+      return ["x,y,z", "z,x,y", "y,z,x", "y,x,-z", "x,z,-y", "z,y,-x"];
   }
   else if (crystalSystem == CS_3D_TRIGONAL) {
     if (centering == 'P')
-      return [ "x,y,z", "x-y,x,z" ].map(change);
+      return [ "x,y,z", "x-y,x,z" ];
     else
-      return [ "x,y,z" ].map(change);
+      return [ "x,y,z" ];
   }
   else if (crystalSystem == CS_3D_CUBIC)
-    return [ "x,y,z", "-y,x,z" ].map(change);
-  else if (crystalSystem == CS_3D_HEXAGONAL ||
-           crystalSystem == CS_3D_TETRAGONAL ||
-           crystalSystem == CS_3D_TRICLINIC)
-    return [ "x,y,z" ].map(change);
+    return [ "x,y,z", "-y,x,z" ];
+  else if (
+    crystalSystem == CS_3D_HEXAGONAL ||
+      crystalSystem == CS_3D_TETRAGONAL ||
+      crystalSystem == CS_3D_TRICLINIC
+  ) {
+    return [ "x,y,z" ];
+  }
   else if (crystalSystem == CS_2D_RECTANGULAR)
-    return [ "x,y", "y,-x" ].map(change);
+    return [ "x,y", "y,-x" ];
   else
-    return [ "x,y" ].map(change);
+    return [ "x,y" ];
 };
 
 
@@ -660,7 +659,8 @@ const matchOperators = (ops, toPrimitive, crystalSystem, centering) => {
           transformedAndSorted(primitiveOps(operators), stdToPrimitive);
 
     if (opsToMatch.length == ops.length) {
-      for (const M of variations(crystalSystem, centering)) {
+      for (const spec of variations(crystalSystem, centering)) {
+        const M = opsQ.coordinateChange(operator(spec));
         const probes = transformedAndSorted(ops, opsQ.times(toPrimitive, M));
         const shift = matchingOriginShift(opsToMatch, probes);
 
