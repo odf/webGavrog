@@ -416,38 +416,38 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
   else
     v = copy;
 
-  const n = v[0].filter(x => opsQ.ne(0, x)).length;
   d = v.map(v => v.filter(x => opsQ.ne(0, x)).length);
 
   let a, b, c, centering;
-  if (n == 3) {
+
+  if (d[0] == 3) {
     [a, b, c] = opsQ.times(2, v[0]);
     centering = 'I';
   }
-  else if (n == 2) {
+  else if (d[0] == 2) {
     const p = v[0].findIndex(x => opsQ.eq(0, x));
-    const v1p = opsQ.abs(v[1][p]);
-    const v2p = opsQ.abs(v[2][p]);
 
-    let m;
-    if (opsQ.eq(0, v2p) || (opsQ.ne(0, v1p) && opsQ.gt(v2p, v1p))) {
+    if (
+      opsQ.eq(0, v[2][p]) || (
+        opsQ.ne(0, v[1][p]) &&
+          opsQ.lt(opsQ.abs(v[1][p]), opsQ.abs(v[2][p]))
+      )
+    ) {
       [v[1], v[2]] = [v[2], v[1]];
-      m = d[1];
+      [d[1], d[2]] = [d[2], d[1]];
     }
-    else
-      m = d[2];
 
     if (p == 1) {
       a = opsQ.times(v[0][0], 2);
-      b = opsQ.times(v[2][1], m);
+      b = opsQ.times(v[2][1], d[2]);
       c = opsQ.times(v[0][2], 2);
-      centering = m == 2 ? 'F' : 'B';
+      centering = d[2] == 2 ? 'F' : 'B';
     }
     else if (p == 2) {
       a = opsQ.times(v[0][0], 2);
       b = opsQ.times(v[0][1], 2);
-      c = opsQ.times(v[2][2], m);
-      centering = m == 2 ? 'F' : 'C';
+      c = opsQ.times(v[2][2], d[2]);
+      centering = d[2] == 2 ? 'F' : 'C';
     }
     else
       throw new RuntimeError('this should not happen');
@@ -456,31 +456,24 @@ basisNormalizer[CS_3D_ORTHORHOMBIC] = basis => {
     if (!vectorsCollinear(x, v[0]))
       throw new RuntimeError('this should not happen');
 
-    const v11 = opsQ.abs(v[1][1]);
-    const v21 = opsQ.abs(v[2][1]);
-
-    let m;
-    if (opsQ.eq(0, v11) || (opsQ.ne(0, v21) && opsQ.gt(v11, v21))) {
+    if (
+      opsQ.eq(0, v[1][1]) || (
+        opsQ.ne(0, v[2][1]) &&
+          opsQ.lt(opsQ.abs(v[2][1]), opsQ.abs(v[1][1]))
+      )
+    ) {
       [v[1], v[2]] = [v[2], v[1]];
-      m = d[2];
+      [d[1], d[2]] = [d[2], d[1]];
     }
-    else
-      m = d[1];
 
     a = v[0][0];
-    if (m == 2) {
-      [b, c] = opsQ.times(v[1], 2).slice(1);
+
+    if (d[1] == 2) {
+      [b, c] = opsQ.times(v[1].slice(1), 2);
       centering = 'A';
     }
     else {
-      if (opsQ.ne(0, v[1][1])) {
-        b = v[1][1];
-        c = v[2][2];
-      }
-      else {
-        b = v[2][1];
-        c = v[1][2];
-      }
+      [b, c] = opsQ.eq(0, v[1][1]) ? [v[2][1], v[1][2]] : [v[1][1], v[2][2]];
       centering = 'P';
     }
   }
