@@ -218,18 +218,18 @@ const crystalSystemAndBasis3d = ops => {
 
   if (x == null) {
     const s = twoFold.find(s => !vectorsCollinear(z, s.axis));
+
     if (s)
       x = s.axis;
-  }
-
-  if (x == null) {
-    x = vectorsCollinear(z, [1, 0, 0]) ? [0, 1, 0] : [1, 0, 0];
-    if (mirrors.length > 0)
-      x = opsQ.plus(x, opsQ.times(mirrors[0].op, x));
-    else if (twoFold.length > 0)
-      x = opsQ.minus(x, opsQ.times(twoFold[0].op, x));
-    else if (crystalSystem == CS_3D_TRIGONAL)
-      x = opsQ.minus(x, opsQ.times(R, x));
+    else {
+      x = vectorsCollinear(z, [1, 0, 0]) ? [0, 1, 0] : [1, 0, 0];
+      if (mirrors.length > 0)
+        x = opsQ.plus(x, opsQ.times(mirrors[0].op, x));
+      else if (twoFold.length > 0)
+        x = opsQ.minus(x, opsQ.times(twoFold[0].op, x));
+      else if (crystalSystem == CS_3D_TRIGONAL)
+        x = opsQ.minus(x, opsQ.times(R, x));
+    }
   }
 
   if (y == null) {
