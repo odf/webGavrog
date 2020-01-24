@@ -1,13 +1,10 @@
 import * as pickler from '../common/pickler';
-
-import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from '../arithmetic/types';
-
 import modularSolver from '../arithmetic/solveRational';
-import * as solveRational from '../arithmetic/solveRational';
 
-
-export const ops = rationalLinearAlgebra;
+import {
+  rationalLinearAlgebra as ops,
+  rationalLinearAlgebraModular
+} from '../arithmetic/types';
 
 const encode = pickler.serialize;
 const decode = pickler.deserialize;
@@ -26,7 +23,7 @@ class VectorLabeledEdge {
 
   reverse() {
     return new VectorLabeledEdge(
-      this.tail, this.head, rationalLinearAlgebra.negative(this.shift));
+      this.tail, this.head, ops.negative(this.shift));
   }
 
   canonical() {
