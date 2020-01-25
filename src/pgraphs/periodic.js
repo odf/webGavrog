@@ -72,21 +72,6 @@ pickler.register(
 );
 
 
-const dedupe = as => {
-  const seen = {};
-  const out = [];
-
-  for (const a of as) {
-    if (!seen[a]) {
-      seen[a] = true;
-      out.push(a);
-    }
-  }
-
-  return out;
-};
-
-
 export const makeEdge = (head, tail, shift) =>
   new VectorLabeledEdge(head, tail, shift);
 
@@ -117,12 +102,19 @@ export const makeGraph = edgeData => {
 
 
 export const vertices = graph => {
+  const seen = {};
   const verts = [];
+
   for (const e of graph.edges) {
-    verts.push(e.head);
-    verts.push(e.tail);
+    for (const v of [e.head, e.tail]) {
+      if (!seen[v]) {
+        seen[v] = true;
+        verts.push(v);
+      }
+    }
   }
-  return dedupe(verts);
+
+  return verts;
 };
 
 
