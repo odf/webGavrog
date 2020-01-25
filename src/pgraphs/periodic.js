@@ -18,7 +18,10 @@ class VectorLabeledEdge {
   }
 
   toString() {
-    return `VectorLabeledEdge(${this.head}, ${this.tail}, ${this.shift})`;
+    if (ops.sgn(this.shift) == 0)
+      return `${this.head} -> ${this.tail}`;
+    else
+      return `${this.head} -> ${this.tail} + ${this.shift}`;
   }
 
   reverse() {
@@ -46,7 +49,7 @@ class Graph {
   }
 
   toString() {
-    return `PGraph(${this.edges})`;
+    return `PGraph(${this.edges.join(', ')})`;
   }
 
   get __typeName() { return 'PeriodicGraph'; }
