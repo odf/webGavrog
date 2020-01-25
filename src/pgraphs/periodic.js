@@ -145,19 +145,7 @@ export const incidences = graph => {
 };
 
 
-export const adjacencies = graph => {
-  const incds = incidences(graph);
-  const res = {};
-
-  for (const v of Object.keys(incds))
-    res[v] = incds[v].map(e => ({ v: e.tail, s: e.shift }));
-
-  return res;
-};
-
-
 export const coordinationSeq = (graph, start, dist) => {
-  const adj  = adjacencies(graph);
   const zero = ops.vector(graph.dim);
 
   let oldShell = {};
@@ -168,7 +156,7 @@ export const coordinationSeq = (graph, start, dist) => {
     const nextShell = {};
     for (const item of Object.keys(thisShell)) {
       const [v, s] = JSON.parse(item);
-      for (const { v: w, s: t } of adj[v]) {
+      for (const { tail: w, shift: t } of incidences(graph)[v]) {
         const key = JSON.stringify([w, ops.plus(s, t)]);
         if (!oldShell[key] && !thisShell[key])
           nextShell[key] = true;
@@ -185,7 +173,6 @@ export const coordinationSeq = (graph, start, dist) => {
 
 
 const _componentInOrbitGraph = (graph, start) => {
-  const adj = adjacencies(graph);
   const bridges = [];
   const nodes = [start];
   const nodeShifts = { [start]: ops.vector(graph.dim) };
@@ -194,7 +181,7 @@ const _componentInOrbitGraph = (graph, start) => {
     const v = nodes[i];
     const av = nodeShifts[v];
 
-    for (const {v: w, s: shift} of adj[v]) {
+    for (const {tail: w, shift} of incidences(graph)[v]) {
       if (nodeShifts[w] == null) {
         nodes.push(w);
         nodeShifts[w] = ops.minus(av, shift);
@@ -288,7 +275,6 @@ export const barycentricPlacement = graph => {
   if (graph._$pos != undefined)
     return graph._$pos;
 
-  const adj   = adjacencies(graph);
   const verts = vertices(graph);
 
   const vIdcs = {};
@@ -304,7 +290,7 @@ export const barycentricPlacement = graph => {
 
   for (let i = 1; i < n; ++i) {
     const v = verts[i];
-    for (const { v: w, s } of adj[v]) {
+    for (const { tail: w, shift: s } of incidences(graph)[v]) {
       if (w != v) {
         const j = vIdcs[w];
         A[i][j] -= 1;
@@ -345,14 +331,12 @@ export const isStable = graph => {
 
 export const isLocallyStable = graph => {
   const pos = barycentricPlacement(graph);
-
-  const adj = adjacencies(graph);
   const verts = vertices(graph);
 
   for (const v of verts) {
     const seen = {};
 
-    for (const { v: w, s } of adj[v]) {
+    for (const { tail: w, shift: s } of incidences(graph)[v]) {
       const key = encode(ops.plus(pos[w], s));
       if (seen[key])
         return false;
@@ -392,14 +376,13 @@ export const edgeVector = (e, pos) =>
 
 export const graphWithNormalizedShifts = graph => {
   const v0 = graph.edges[0].head;
-  const adj = adjacencies(graph);
   const shifts = { [v0]: ops.vector(graph.dim) };
   const queue = [v0];
 
   while (queue.length) {
     const v = queue.shift();
 
-    for (const { v: w, s } of adj[v]) {
+    for (const { tail: w, shift: s } of incidences(graph)[v]) {
       if (shifts[w] == null) {
         shifts[w] = ops.plus(s, shifts[v]);
         queue.push(w)

@@ -68,8 +68,7 @@ for (const path of process.argv.slice(2)) {
 
     console.log();
 
-    const adj = periodic.adjacencies(graph);
-    if (verts.some(v => adj[v].length < 3))
+    if (verts.some(v => periodic.incidences(graph)[v].length < 3))
       console.log(`graph ${name} has vertices with less than 3 incident edges`);
     else {
       console.log(`stationary symmetries:`);

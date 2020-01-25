@@ -18,11 +18,9 @@ DS.parseSymbols(text).forEach(function(ds) {
     const G   = tilings.skeleton(tilings.makeCover(ds)).graph;
     const pos = periodic.barycentricPlacement(G);
 
-    good = Object.entries(periodic.adjacencies(G)).every(function(e) {
-      const p = pos[e[0]];
-      const nbrs = e[1].map(n => ops.minus(ops.plus(pos[n.v], n.s), p));
-      return ops.rank(nbrs) == dim;
-    });
+    good = Object.values(periodic.incidences(G)).every(
+      es => dim == ops.rank(es.map(e => periodic.edgeVector(e, pos)))
+    );
   }
 
   if (good)

@@ -62,12 +62,10 @@ export const angleStatistics = (graph, pos, dot) => {
 
 
 export const shortestNonEdge = (graph, pos, dot) => {
-  const adj = periodic.adjacencies(graph);
-
   const nodes = periodic.vertices(graph).map(v => ({
     id: v,
     pos: opsF.point(pos[v]),
-    degree: adj[v].length + 1
+    degree: periodic.incidences(graph)[v].length + 1
   }));
 
   const seen = {};

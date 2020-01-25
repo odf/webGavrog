@@ -382,7 +382,6 @@ const nodesInUnitCell = (graph, pos, toStd, centeringShifts) => {
 const makeNetDisplayList = (data, options) => {
   const { graph, sgInfo } = data;
   const { toStd } = sgInfo;
-  const adj = periodic.adjacencies(graph);
   const shifts = baseShifts(graph.dim, options);
 
   const itemsSeen = {};
@@ -426,7 +425,7 @@ const makeNetDisplayList = (data, options) => {
 
       if (copies.length == 1) {
         const b = opsQ.times(fromStd, copies[0]);
-        for (const { v: w, s } of adj[v])
+        for (const { tail: w, shift: s } of periodic.incidences(graph)[v])
           addNode(w, opsQ.plus(b, s));
       }
     }

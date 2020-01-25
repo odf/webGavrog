@@ -328,11 +328,11 @@ const uniqueEdgesByVector = (graph, pos) => {
 
 
 const goodEdgeLists = (graph, edgeLists) => {
-  const adj = pg.adjacencies(graph);
+  const incidences = pg.incidences(graph);
 
   const atLoop = edgeLists.filter(edgeList => {
     const v = edgeList[0].head;
-    return adj[v].some(e => e.tail == v);
+    return incidences[v].some(e => e.tail == v);
   });
 
   if (atLoop.length > 0)
@@ -340,15 +340,20 @@ const goodEdgeLists = (graph, edgeLists) => {
 
   const atLune = edgeLists.filter(edgeList => {
     const v = edgeList[0].head;
-    const neighbours = adj[v].map(e => e.tail).sort();
+    const neighbours = incidences[v].map(e => e.tail).sort();
     return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
   });
 
   if (atLune.length > 0)
     return atLune;
 
-  const maxDeg = Object.keys(adj).map(v => adj[v].length).max();
-  return edgeLists.filter(edgeList => adj[edgeList[0].head].length == maxDeg);
+  const maxDeg = Math.max(
+      ...Object.keys(incidences).map(v => incidences[v].length)
+  );
+
+  return edgeLists.filter(
+    edgeList => incidences[edgeList[0].head].length == maxDeg
+  );
 };
 
 

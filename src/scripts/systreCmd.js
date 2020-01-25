@@ -475,10 +475,9 @@ const processGraph = (
     showEmbedding(data, nodeToName, writeInfo);
 
   if (options.outputCgd) {
-    const adj = periodic.adjacencies(G);
     const degrees = {};
     for (const v of periodic.vertices(G))
-      degrees[v] = adj[v].length;
+      degrees[v] = periodic.incidences(G)[v].length;
 
     writeCgd(name, group, data, nodeToName, degrees, writeData);
   }
