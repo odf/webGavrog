@@ -102,6 +102,9 @@ export const makeGraph = edgeData => {
 
 
 export const vertices = graph => {
+  if (graph._$verts != undefined)
+    return graph._$verts;
+
   const seen = {};
   const verts = [];
 
@@ -113,6 +116,8 @@ export const vertices = graph => {
       }
     }
   }
+
+  graph._$verts = verts;
 
   return verts;
 };
