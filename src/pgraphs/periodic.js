@@ -123,21 +123,40 @@ export const vertices = graph => {
 };
 
 
-export const adjacencies = graph => {
-  const target = e => ({ v: e.tail, s: e.shift });
+export const incidences = graph => {
+  if (graph._$incds != undefined)
+    return graph._$incds;
 
   const res = {};
+
   for (const e of graph.edges) {
     if (res[e.head] == null)
       res[e.head] = [];
-    res[e.head].push(target(e));
+    res[e.head].push(e);
 
     if (res[e.tail] == null)
       res[e.tail] = [];
-    res[e.tail].push(target(e.reverse()));
+    res[e.tail].push(e.reverse());
   }
+
+  graph._$incds = res;
+
   return res;
 };
+
+
+export const adjacencies = graph => {
+  const incds = incidences(graph);
+  const res = {};
+
+  for (const v of Object.keys(incds))
+    res[v] = incds[v].map(e => ({ v: e.tail, s: e.shift }));
+
+  return res;
+};
+
+
+export const allIncidences = (graph, v) => incidences(graph)[v];
 
 
 export const coordinationSeq = (graph, start, dist) => {
@@ -351,12 +370,11 @@ export const isLocallyStable = graph => {
 
 export const hasSecondOrderCollisions = graph => {
   const pos = barycentricPlacement(graph);
-  const adj = adjacencies(graph);
   const verts = vertices(graph);
   const seen = {};
 
   for (const v of verts) {
-    const vectors = allIncidences(graph, v, adj)
+    const vectors = allIncidences(graph, v)
           .map(e => edgeVector(e, pos))
           .sort((v, w) => ops.cmp(v, w));
 
@@ -369,10 +387,6 @@ export const hasSecondOrderCollisions = graph => {
 
   return false;
 };
-
-
-export const allIncidences = (graph, v, adj=adjacencies(graph)) =>
-  adj[v].map(({v: w, s}) => makeEdge(v, w, s));
 
 
 export const edgeVector = (e, pos) =>
