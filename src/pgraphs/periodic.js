@@ -91,14 +91,25 @@ export const makeEdge = (head, tail, shift) =>
   new VectorLabeledEdge(head, tail, shift);
 
 
-export const make = data => {
-  const edges = dedupe(data.map(([h, t, s]) => makeEdge(h, t, s).canonical()));
+export const makeGraph = edgeData => {
+  const seen = {};
+  const edges = [];
+
+  for (const spec of edgeData) {
+    const edge = (Array.isArray(spec) ? makeEdge(...spec) : spec).canonical();
+    const key = encode(edge);
+
+    if (!seen[key]) {
+      seen[key] = true;
+      edges.push(edge);
+    }
+  }
 
   if (edges.length == 0)
     throw new Error('cannot be empty');
 
-  const dim = edges[0].shift.length;
-  if (edges.some(e => e.shift.length != dim))
+  const dim = ops.dimension(edges[0].shift);
+  if (edges.some(e => ops.dimension(e.shift) != dim))
     throw new Error('must have consistent shift dimensions');
 
   return new Graph(dim, edges);
@@ -230,7 +241,7 @@ const _componentInCoverGraph = (graph, start) => {
 
   const multiplicity = dim == graph.dim ? ops.abs(ops.determinant(basis)) : 0;
 
-  return { basis, multiplicity, nodes, graph: make(newEdges) };
+  return { basis, multiplicity, nodes, graph: makeGraph(newEdges) };
 };
 
 
@@ -388,7 +399,7 @@ export const graphWithNormalizedShifts = graph => {
     }
   }
 
-  return make(graph.edges.map(e => {
+  return makeGraph(graph.edges.map(e => {
     const h = e.head;
     const t = e.tail;
     const s = e.shift;
@@ -451,7 +462,7 @@ export const finiteCover = (graph, cell) => {
     }
   }
 
-  return make(coverEdges);
+  return makeGraph(coverEdges);
 };
 
 
@@ -504,63 +515,81 @@ if (require.main == module) {
     console.log();
   };
 
-  test(make([ [ 1, 2, [ 0, 0 ] ],
-              [ 1, 2, [ 1, 0 ] ],
-              [ 1, 2, [ 0, 1 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 2, [ 0, 0 ] ],
+      [ 1, 2, [ 1, 0 ] ],
+      [ 1, 2, [ 0, 1 ] ] ]
+  ));
 
-  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
-              [ 1, 2, [ 0, 1, 0 ] ],
-              [ 1, 2, [ 0, 0, 1 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 2, [ 0, 0, 0 ] ],
+      [ 1, 2, [ 0, 1, 0 ] ],
+      [ 1, 2, [ 0, 0, 1 ] ] ]
+  ));
 
-  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
-              [ 1, 2, [ 1, 0, 0 ] ],
-              [ 1, 2, [ 0, 1, 0 ] ],
-              [ 1, 2, [ 0, 0, 1 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 2, [ 0, 0, 0 ] ],
+      [ 1, 2, [ 1, 0, 0 ] ],
+      [ 1, 2, [ 0, 1, 0 ] ],
+      [ 1, 2, [ 0, 0, 1 ] ] ]
+  ));
 
-  test(make([ [ 1, 1, [ 1, 0 ] ],
-              [ 1, 1, [ 0, 1 ] ],
-              [ 1, 2, [ 0, 0 ] ],
-              [ 1, 2, [ 1, 1 ] ],
-              [ 1, 3, [ 0, 0 ] ],
-              [ 1, 3, [ 1, -1 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 1, [ 1, 0 ] ],
+      [ 1, 1, [ 0, 1 ] ],
+      [ 1, 2, [ 0, 0 ] ],
+      [ 1, 2, [ 1, 1 ] ],
+      [ 1, 3, [ 0, 0 ] ],
+      [ 1, 3, [ 1, -1 ] ] ]
+  ));
 
-  test(make([ [ 1, 1, [ 1, 0 ] ],
-              [ 1, 1, [ 0, 1 ] ],
-              [ 1, 2, [ 0, 0 ] ],
-              [ 1, 2, [ 1, 1 ] ],
-              [ 1, 3, [ 0, 0 ] ],
-              [ 1, 3, [ 1, -1 ] ],
-              [ 1, 4, [ 0, 0 ] ],
-              [ 1, 4, [ 1, -1 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 1, [ 1, 0 ] ],
+      [ 1, 1, [ 0, 1 ] ],
+      [ 1, 2, [ 0, 0 ] ],
+      [ 1, 2, [ 1, 1 ] ],
+      [ 1, 3, [ 0, 0 ] ],
+      [ 1, 3, [ 1, -1 ] ],
+      [ 1, 4, [ 0, 0 ] ],
+      [ 1, 4, [ 1, -1 ] ] ]
+  ));
 
-  test(make([ [ 1, 1, [ -1,  1,  1 ] ],
-              [ 1, 1, [  0, -1,  1 ] ],
-              [ 1, 1, [  0,  0, -1 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 1, [ -1,  1,  1 ] ],
+      [ 1, 1, [  0, -1,  1 ] ],
+      [ 1, 1, [  0,  0, -1 ] ] ]
+  ));
 
-  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
-              [ 1, 2, [ 2, 0, 0 ] ],
-              [ 1, 2, [ 0, 2, 0 ] ],
-              [ 1, 2, [ 0, 0, 2 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 2, [ 0, 0, 0 ] ],
+      [ 1, 2, [ 2, 0, 0 ] ],
+      [ 1, 2, [ 0, 2, 0 ] ],
+      [ 1, 2, [ 0, 0, 2 ] ] ]
+  ));
 
-  test(make([ [ 1, 3, [ 0, 0, 0 ] ],
-              [ 1, 3, [ 2, 0, 0 ] ],
-              [ 1, 3, [ 0, 2, 0 ] ],
-              [ 1, 3, [ 0, 0, 2 ] ],
-              [ 2, 4, [ 0, 0, 0 ] ],
-              [ 2, 4, [ 2, 0, 0 ] ],
-              [ 2, 4, [ 0, 2, 0 ] ],
-              [ 2, 4, [ 0, 0, 2 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 3, [ 0, 0, 0 ] ],
+      [ 1, 3, [ 2, 0, 0 ] ],
+      [ 1, 3, [ 0, 2, 0 ] ],
+      [ 1, 3, [ 0, 0, 2 ] ],
+      [ 2, 4, [ 0, 0, 0 ] ],
+      [ 2, 4, [ 2, 0, 0 ] ],
+      [ 2, 4, [ 0, 2, 0 ] ],
+      [ 2, 4, [ 0, 0, 2 ] ] ]
+  ));
 
-  test(make([ [ 1, 2, [ 0, 0, 0 ] ],
-              [ 2, 3, [ 0, 0, 0 ] ],
-              [ 3, 4, [ 0, 0, 0 ] ],
-              [ 4, 5, [ 0, 0, 0 ] ],
-              [ 5, 6, [ 0, 0, 0 ] ],
-              [ 6, 1, [ 0, 0, 0 ] ],
-              [ 1, 2, [ 1, 0, 0 ] ],
-              [ 2, 3, [ 0, 1, 0 ] ],
-              [ 3, 4, [ 0, 0, 1 ] ],
-              [ 4, 5, [ -1, 0, 0 ] ],
-              [ 5, 6, [ 0, -1, 0 ] ],
-              [ 6, 1, [ 0, 0, -1 ] ] ]));
+  test(makeGraph(
+    [ [ 1, 2, [ 0, 0, 0 ] ],
+      [ 2, 3, [ 0, 0, 0 ] ],
+      [ 3, 4, [ 0, 0, 0 ] ],
+      [ 4, 5, [ 0, 0, 0 ] ],
+      [ 5, 6, [ 0, 0, 0 ] ],
+      [ 6, 1, [ 0, 0, 0 ] ],
+      [ 1, 2, [ 1, 0, 0 ] ],
+      [ 2, 3, [ 0, 1, 0 ] ],
+      [ 3, 4, [ 0, 0, 1 ] ],
+      [ 4, 5, [ -1, 0, 0 ] ],
+      [ 5, 6, [ 0, -1, 0 ] ],
+      [ 6, 1, [ 0, 0, -1 ] ] ]
+  ));
 }

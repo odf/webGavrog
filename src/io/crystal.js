@@ -698,7 +698,7 @@ export function netFromCrystal(spec) {
   const allEdges = degreesSatisfied(allNodes, convertedEdges)
     ? convertedEdges
     : withInducedEdges(allNodes, convertedEdges, primitiveGram);
-  const graph = pg.make(allEdges);
+  const graph = pg.makeGraph(allEdges);
 
   _timers && _timers.stop('netFromCrystal');
 

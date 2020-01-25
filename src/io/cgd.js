@@ -147,7 +147,7 @@ const processPeriodicGraphData = data => {
 
   return {
     name    : state.output.name,
-    graph   : pg.make(edges),
+    graph   : pg.makeGraph(edges),
     warnings: state.warnings,
     errors  : state.errors
   };

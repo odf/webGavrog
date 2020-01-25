@@ -95,7 +95,7 @@ export const skeleton = cov => {
     edges.push([e.head, e.tail, e.shift]);
   }
 
-  skel.graph = periodic.make(edges);
+  skel.graph = periodic.makeGraph(edges);
   return skel;
 };
 
