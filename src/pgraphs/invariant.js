@@ -16,7 +16,7 @@ const _solveInRows = (v, M) =>
   ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
 
 
-const _traversal = function*(graph, v0, transform, adj) {
+const _traversal = function*(graph, v0, transform) {
   const zero = ops.vector(graph.dim);
 
   const pos = pg.barycentricPlacement(graph);
@@ -33,7 +33,7 @@ const _traversal = function*(graph, v0, transform, adj) {
     const vn = old2new[vo];
 
     const neighbors = [];
-    for (const e of pg.allIncidences(graph, vo, adj)) {
+    for (const e of pg.incidences(graph)[vo]) {
       const w = e.tail;
       const s = ops.plus(vShift, ops.times(e.shift, transform));
       neighbors.push([w, s, ops.plus(s, ops.times(pos[w], transform))]);
@@ -172,7 +172,6 @@ export const invariant = graph => {
   if (DEBUG)
     console.log(`Computing invariant for ${graph.edges.map(printEdge)}\n`);
 
-  const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
   const sym = ps.symmetries(graph);
 
@@ -187,7 +186,7 @@ export const invariant = graph => {
 
   for (const edgeList of bases) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
-    const trav = S.seq(_traversal(graph, edgeList[0].head, transform, adj));
+    const trav = S.seq(_traversal(graph, edgeList[0].head, transform));
 
     if (best == null) {
       best = trav;

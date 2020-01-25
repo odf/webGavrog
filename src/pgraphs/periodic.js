@@ -156,9 +156,6 @@ export const adjacencies = graph => {
 };
 
 
-export const allIncidences = (graph, v) => incidences(graph)[v];
-
-
 export const coordinationSeq = (graph, start, dist) => {
   const adj  = adjacencies(graph);
   const zero = ops.vector(graph.dim);
@@ -374,7 +371,7 @@ export const hasSecondOrderCollisions = graph => {
   const seen = {};
 
   for (const v of verts) {
-    const vectors = allIncidences(graph, v)
+    const vectors = incidences(graph)[v]
           .map(e => edgeVector(e, pos))
           .sort((v, w) => ops.cmp(v, w));
 

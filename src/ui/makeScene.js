@@ -434,7 +434,7 @@ const makeNetDisplayList = (data, options) => {
 
   for (const { itemType, item, shift } of result) {
     if (itemType == 'node') {
-      for (const edge of periodic.allIncidences(graph, item, adj)) {
+      for (const edge of periodic.incidences(graph)[item]) {
         const key = encode(['node', edge.tail, opsQ.plus(shift, edge.shift)]);
         if (itemsSeen[key])
           addEdge(edge, shift);

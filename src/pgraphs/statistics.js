@@ -32,11 +32,10 @@ export const edgeStatistics = (graph, pos, dot) => {
 
 
 export const angleStatistics = (graph, pos, dot) => {
-  const adj = periodic.adjacencies(graph);
   const angles = [];
 
   for (const v of periodic.vertices(graph)) {
-    const neighbors = periodic.allIncidences(graph, v, adj);
+    const neighbors = periodic.incidences(graph)[v];
     const pv = pos[v];
 
     for (let i = 0; i < neighbors.length - 1; ++i) {

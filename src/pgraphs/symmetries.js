@@ -40,7 +40,6 @@ const _goodCombinations = (edges, pos) => {
 
 
 const _goodEdgeChains = graph => {
-  const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
   const dim = graph.dim;
   const results = [];
@@ -50,7 +49,7 @@ const _goodEdgeChains = graph => {
       results.push(es);
     else {
       const v = es[es.length - 1].tail;
-      for (const e of pg.allIncidences(graph, v, adj)) {
+      for (const e of pg.incidences(graph)[v]) {
         const next = es.concat([e]);
         const M = next.map(e => pg.edgeVector(e, pos));
         if (ops.rank(M) == next.length)
@@ -67,11 +66,10 @@ const _goodEdgeChains = graph => {
 
 
 const characteristicEdgeLists = graph => {
-  const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
 
   const stars = [].concat(...pg.vertices(graph).map(
-    v => _goodCombinations(pg.allIncidences(graph, v, adj), pos)));
+    v => _goodCombinations(pg.incidences(graph)[v], pos)));
   if (stars.length)
     return stars;
 
@@ -156,8 +154,7 @@ export const isMinimal = graph => {
   const verts = pg.vertices(graph);
   const start = verts[0];
   const pos = pg.barycentricPlacement(graph);
-  const adj = pg.adjacencies(graph);
-  const ebv = uniqueEdgesByVector(graph, pos, adj);
+  const ebv = uniqueEdgesByVector(graph, pos);
 
   for (const v of verts.slice(1)) {
     if (automorphism(start, v, id, ebv) != null)
@@ -176,8 +173,7 @@ export const isLadder = graph => {
   const verts = pg.vertices(graph);
   const start = verts[0];
   const pos = pg.barycentricPlacement(graph);
-  const adj = pg.adjacencies(graph);
-  const ebv = uniqueEdgesByVector(graph, pos, adj);
+  const ebv = uniqueEdgesByVector(graph, pos);
 
   for (const v of verts) {
     if (v == start)
@@ -199,8 +195,7 @@ const translationalEquivalences = graph => {
   const verts = pg.vertices(graph);
   const start = verts[0];
   const pos = pg.barycentricPlacement(graph);
-  const adj = pg.adjacencies(graph);
-  const ebv = uniqueEdgesByVector(graph, pos, adj);
+  const ebv = uniqueEdgesByVector(graph, pos);
 
   const p = new part.Partition();
 
@@ -308,14 +303,14 @@ const isUnimodular = A =>
   ops.eq(1, ops.abs(ops.determinant(A)));
 
 
-const uniqueEdgesByVector = (graph, pos, adj) => {
+const uniqueEdgesByVector = (graph, pos) => {
   const result = {};
 
   for (const v of pg.vertices(graph)) {
     const seen = {};
     const m = {};
 
-    for (const e of pg.allIncidences(graph, v, adj)) {
+    for (const e of pg.incidences(graph)[v]) {
       const key = encode(pg.edgeVector(e, pos));
       if (seen[key])
         delete m[key];
@@ -363,7 +358,7 @@ export const symmetries = graph => {
   if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable; cannot compute symmetries');
 
-  const ebv = uniqueEdgesByVector(graph, pos, pg.adjacencies(graph));
+  const ebv = uniqueEdgesByVector(graph, pos);
 
   const edgeLists = goodEdgeLists(graph, characteristicEdgeLists(graph));
   const bases = edgeLists.map(es => ({
@@ -475,14 +470,14 @@ function* _pairs(list) {
 };
 
 
-export const angleOrbits = (graph, syms, adj=pg.adjacencies(graph)) => {
+export const angleOrbits = (graph, syms) => {
   const pos = pg.barycentricPlacement(graph);
   const seen = {};
   const p = new part.Partition();
 
   for (const v of pg.vertices(graph)) {
     for (const [{ tail: u, shift: su }, { tail: w, shift: sw }]
-         of _pairs(pg.allIncidences(graph, v, adj)))
+         of _pairs(pg.incidences(graph)[v]))
     {
       const s = ops.minus(sw, su);
       const c = ops.plus(s, ops.minus(pos[w], pos[u]));
@@ -511,13 +506,12 @@ export const angleOrbits = (graph, syms, adj=pg.adjacencies(graph)) => {
 
 const stableDeductionGraph = graph => {
   const pos = pg.barycentricPlacement(graph);
-  const adj = pg.adjacencies(graph);
 
   const res = {};
 
   for (const v of pg.vertices(graph)) {
     const edgeVecs = {};
-    for (const e of pg.allIncidences(graph, v, adj)) {
+    for (const e of pg.incidences(graph)[v]) {
       const k = encode(pg.edgeVector(e, pos));
       if (edgeVecs[k] == null)
         edgeVecs[k] = [];
@@ -695,13 +689,12 @@ const equalModZ = (p, q) => ops.minus(p, q).every(x => ops.isInteger(x));
 export const stationarySymmetries = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
-  const adj = pg.adjacencies(graph);
-  const ebv = uniqueEdgesByVector(graph, pos, adj);
+  const ebv = uniqueEdgesByVector(graph, pos);
   const components = strongSourceComponents(stableDeductionGraph(graph));
 
   const incident = {};
   for (const v of pg.vertices(graph))
-    incident[v] = pg.allIncidences(graph, v, adj);
+    incident[v] = pg.incidences(graph)[v];
 
   const hasEdge = {};
   for (const e of graph.edges) {
