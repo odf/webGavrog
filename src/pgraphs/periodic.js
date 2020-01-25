@@ -26,13 +26,15 @@ class VectorLabeledEdge {
 
   reverse() {
     return new VectorLabeledEdge(
-      this.tail, this.head, ops.negative(this.shift));
+      this.tail, this.head, ops.negative(this.shift)
+    );
   }
 
   canonical() {
-    if (this.tail < this.head
-        || (this.tail == this.head && this.shift.find(x => x != 0) < 0)
-       )
+    if (
+      this.tail < this.head ||
+        (this.tail == this.head && ops.sgn(this.shift) < 0)
+    )
       return this.reverse();
     else
       return this;
