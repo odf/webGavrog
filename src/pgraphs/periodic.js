@@ -145,6 +145,10 @@ export const incidences = graph => {
 };
 
 
+export const edgeVector = (e, pos) =>
+  ops.plus(e.shift, ops.minus(pos[e.tail], pos[e.head]));
+
+
 export const coordinationSeq = (graph, start, dist) => {
   const zero = ops.vector(graph.dim);
 
@@ -203,6 +207,24 @@ const traverseWithShiftAdjustments = function*(graph, start) {
       }
     }
   }
+};
+
+
+export const graphWithNormalizedShifts = graph => {
+  const seen = {};
+  const edges = [];
+
+  for (const v of vertices(graph)) {
+    if (!seen[v]) {
+      for (const e of traverseWithShiftAdjustments(graph, v)) {
+        seen[e.head] = true;
+        seen[e.tail] = true;
+        edges.push(e);
+      }
+    }
+  }
+
+  return makeGraph(edges);
 };
 
 
@@ -401,28 +423,6 @@ export const hasSecondOrderCollisions = graph => {
   }
 
   return false;
-};
-
-
-export const edgeVector = (e, pos) =>
-  ops.plus(e.shift, ops.minus(pos[e.tail], pos[e.head]));
-
-
-export const graphWithNormalizedShifts = graph => {
-  const seen = {};
-  const edges = [];
-
-  for (const v of vertices(graph)) {
-    if (!seen[v]) {
-      for (const e of traverseWithShiftAdjustments(graph, v)) {
-        seen[e.head] = true;
-        seen[e.tail] = true;
-        edges.push(e);
-      }
-    }
-  }
-
-  return makeGraph(edges);
 };
 
 
