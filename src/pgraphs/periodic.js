@@ -230,18 +230,9 @@ export const graphWithNormalizedShifts = graph => {
 
 const annotatedGraphComponent = (graph, start) => {
   const edges = Array.from(traverseWithShiftAdjustments(graph, start));
-  const seen = { [start]: true };
-  const nodes = [start];
   let basisVecs = null;
 
   for (const e of edges) {
-    for (const v of [e.head, e.tail]) {
-      if (!seen[v]) {
-        seen[v] = true;
-        nodes.push(v);
-      }
-    }
-
     if (ops.sgn(e.shift) != 0)
       basisVecs = rationalLinearAlgebraModular.extendBasis(e.shift, basisVecs);
   }
@@ -261,15 +252,17 @@ const annotatedGraphComponent = (graph, start) => {
     e => [e.head, e.tail, ops.times(e.shift, t)]
   ));
 
-  return { basis, multiplicity, nodes, graph: component };
+  return { basis, multiplicity, graph: component };
 };
 
 
 export const isConnected = graph => {
-  const verts = vertices(graph);
-  const { nodes, multiplicity } = annotatedGraphComponent(graph, verts[0]);
+  const comp = annotatedGraphComponent(graph, vertices(graph)[0]);
 
-  return nodes.length >= verts.length && multiplicity == 1;
+  return (
+    vertices(comp.graph).length == vertices(graph).length &&
+      comp.multiplicity == 1
+  );
 };
 
 
@@ -282,7 +275,7 @@ export const connectedComponents = graph => {
     if (!seen[start]) {
       const comp = annotatedGraphComponent(graph, start);
       result.push(comp);
-      for (const v of comp.nodes)
+      for (const v of vertices(comp.graph))
         seen[v] = true;
     }
   }
@@ -491,7 +484,7 @@ if (require.main == module) {
 
     for (const comp of connectedComponents(g)) {
       console.log(`  component:`);
-      console.log(`    nodes = ${comp.nodes}`);
+      console.log(`    nodes = ${vertices(comp.graph)}`);
       console.log(`    graph = ${comp.graph}`);
       console.log(`    basis = ${comp.basis}`);
       console.log(`    multiplicity = ${comp.multiplicity}`);
