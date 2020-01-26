@@ -302,14 +302,11 @@ export const barycentricPlacement = graph => {
   A[0][0] = 1;
 
   for (let i = 1; i < n; ++i) {
-    const v = verts[i];
-    for (const { tail: w, shift: s } of incidences(graph)[v]) {
-      if (w != v) {
-        const j = vIdcs[w];
-        A[i][j] -= 1;
-        A[i][i] += 1;
-        t[i] = ops.plus(t[i], s);
-      }
+    for (const e of incidences(graph)[verts[i]]) {
+      const j = vIdcs[e.tail];
+      A[i][j] -= 1;
+      A[i][i] += 1;
+      t[i] = ops.plus(t[i], e.shift);
     }
   }
 
