@@ -175,6 +175,37 @@ export const coordinationSeq = (graph, start, dist) => {
 };
 
 
+const traverseWithShiftAdjustments = function*(graph, start) {
+  const shifts = { [start]: ops.vector(graph.dim) };
+  const seen = {};
+  const queue = [start];
+
+  while (queue.length) {
+    const v = queue.shift();
+
+    for (const e of incidences(graph)[v]) {
+      if (shifts[e.tail] == null) {
+        shifts[e.tail] = ops.plus(e.shift, shifts[v]);
+        queue.push(e.tail);
+      }
+
+      const edge = e.canonical();
+      const key = encode(edge);
+
+      if (!seen[key]) {
+        seen[key] = true;
+        const shift = ops.minus(
+          ops.plus(edge.shift, shifts[edge.head]),
+          shifts[edge.tail]
+        );
+
+        yield new VectorLabeledEdge(edge.head, edge.tail, shift);
+      }
+    }
+  }
+};
+
+
 const _componentInOrbitGraph = (graph, start) => {
   const bridges = [];
   const nodes = [start];
@@ -378,28 +409,20 @@ export const edgeVector = (e, pos) =>
 
 
 export const graphWithNormalizedShifts = graph => {
-  const v0 = graph.edges[0].head;
-  const shifts = { [v0]: ops.vector(graph.dim) };
-  const queue = [v0];
+  const seen = {};
+  const edges = [];
 
-  while (queue.length) {
-    const v = queue.shift();
-
-    for (const { tail: w, shift: s } of incidences(graph)[v]) {
-      if (shifts[w] == null) {
-        shifts[w] = ops.plus(s, shifts[v]);
-        queue.push(w)
+  for (const v of vertices(graph)) {
+    if (!seen[v]) {
+      for (const e of traverseWithShiftAdjustments(graph, v)) {
+        seen[e.head] = true;
+        seen[e.tail] = true;
+        edges.push(e);
       }
     }
   }
 
-  return makeGraph(graph.edges.map(e => {
-    const h = e.head;
-    const t = e.tail;
-    const s = e.shift;
-
-    return [h, t, ops.minus(shifts[t], ops.plus(shifts[h], s))];
-  }));
+  return makeGraph(edges);
 };
 
 
@@ -473,6 +496,10 @@ if (require.main == module) {
 
   const test = g => {
     console.log(`g = ${g}`);
+    console.log();
+
+    const g1 = graphWithNormalizedShifts(g);
+    console.log(`graphWithNormalizedShifts(g) = ${g1}`);
     console.log();
 
     console.log(`pickled: ${JSON.stringify(pickler.pickle(g))}`);
