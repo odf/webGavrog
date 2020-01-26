@@ -267,11 +267,10 @@ export const isConnected = graph => {
 
 
 export const connectedComponents = graph => {
-  const verts = vertices(graph);
   const seen = {};
   const result = [];
 
-  for (const start of verts) {
+  for (const start of vertices(graph)) {
     if (!seen[start]) {
       const comp = annotatedGraphComponent(graph, start);
       result.push(comp);
@@ -324,10 +323,9 @@ export const barycentricPlacement = graph => {
 
 export const isStable = graph => {
   const pos = barycentricPlacement(graph);
-  const verts = vertices(graph);
   const seen = {};
 
-  for (const v of verts) {
+  for (const v of vertices(graph)) {
     const key = encode(pos[v].map(x => ops.mod(x, 1)));
     if (seen[key])
       return false;
@@ -341,9 +339,8 @@ export const isStable = graph => {
 
 export const isLocallyStable = graph => {
   const pos = barycentricPlacement(graph);
-  const verts = vertices(graph);
 
-  for (const v of verts) {
+  for (const v of vertices(graph)) {
     const seen = {};
 
     for (const { tail: w, shift: s } of incidences(graph)[v]) {
@@ -361,10 +358,9 @@ export const isLocallyStable = graph => {
 
 export const hasSecondOrderCollisions = graph => {
   const pos = barycentricPlacement(graph);
-  const verts = vertices(graph);
   const seen = {};
 
-  for (const v of verts) {
+  for (const v of vertices(graph)) {
     const vectors = incidences(graph)[v]
           .map(e => edgeVector(e, pos))
           .sort((v, w) => ops.cmp(v, w));
@@ -403,13 +399,12 @@ export const finiteCover = (graph, cell) => {
     }
   }
 
-  const verts = vertices(graph);
   const pos = barycentricPlacement(graph);
 
   let nextNode = 1;
   const coverToNode = {};
 
-  for (const v of verts) {
+  for (const v of vertices(graph)) {
     const p = ops.times(pos[v], lattice);
     for (const s of latticePoints) {
       coverToNode[encode([v, ops.mod(ops.plus(p, s), 1)])] = nextNode;
