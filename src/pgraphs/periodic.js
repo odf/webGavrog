@@ -228,84 +228,48 @@ export const graphWithNormalizedShifts = graph => {
 };
 
 
-const _componentInOrbitGraph = (graph, start) => {
-  const bridges = [];
+const annotatedGraphComponent = (graph, start) => {
+  const edges = Array.from(traverseWithShiftAdjustments(graph, start));
+  const seen = { [start]: true };
   const nodes = [start];
-  const nodeShifts = { [start]: ops.vector(graph.dim) };
+  let basisVecs = null;
 
-  for (let i = 0; i < nodes.length; ++i) {
-    const v = nodes[i];
-    const av = nodeShifts[v];
-
-    for (const {tail: w, shift} of incidences(graph)[v]) {
-      if (nodeShifts[w] == null) {
-        nodes.push(w);
-        nodeShifts[w] = ops.minus(av, shift);
-      }
-      else {
-        const aw = nodeShifts[w];
-        const newShift = ops.plus(shift, ops.minus(aw, av));
-        if (ops.sgn(newShift) > 0)
-          bridges.push({ v, w, s: newShift });
+  for (const e of edges) {
+    for (const v of [e.head, e.tail]) {
+      if (!seen[v]) {
+        seen[v] = true;
+        nodes.push(v);
       }
     }
+
+    if (ops.sgn(e.shift) != 0)
+      basisVecs = rationalLinearAlgebraModular.extendBasis(e.shift, basisVecs);
   }
 
-  return { nodes, nodeShifts, bridges };
-};
-
-
-const _makeBasis = M => {
-  let basis = null;
-  for (const row of M)
-    basis = rationalLinearAlgebraModular.extendBasis(row, basis);
-  return basis;
-};
-
-
-const _makeCoordinateTransform = (B, dim) => {
-  if (B.length < dim) {
-    B = B.slice();
-    for (const vec of ops.identityMatrix(dim)) {
-      if (ops.rank(B.concat([vec])) > ops.rank(B))
-        B.push(vec);
-    }
-  }
-
-  return ops.inverse(B);
-};
-
-
-const _componentInCoverGraph = (graph, start) => {
-  const { nodes, nodeShifts, bridges } = _componentInOrbitGraph(graph, start);
-  const basis = _makeBasis(bridges.map(b => b.s));
+  const basis = basisVecs.slice();
   const dim = basis.length;
-  const transform = _makeCoordinateTransform(basis, graph.dim);
+  const multiplicity =
+    dim == graph.dim ? ops.abs(ops.determinant(basis)) : Infinity;
 
-  const old2new = {};
-  for (let i = 0; i < nodes.length; ++i)
-    old2new[nodes[i]] = i + 1;
+  for (const vec of ops.identityMatrix(graph.dim)) {
+    if (ops.rank(basisVecs.concat([vec])) > ops.rank(basisVecs))
+      basisVecs.push(vec);
+  }
 
-  const newEdges = graph.edges
-    .filter(({ head, tail }) => old2new[head] != null && old2new[tail] != null)
-    .map(({ head, tail, shift }) => {
-      const [v, w] = [old2new[head], old2new[tail]];
-      const [av, aw] = [nodeShifts[head], nodeShifts[tail]];
-      const t = ops.times(ops.plus(shift, ops.minus(aw, av)), transform);
-      return [v, w, t.slice(0, dim)];
-    });
+  const t = ops.inverse(basisVecs).map(row => row.slice(0, dim));
+  const component = makeGraph(edges.map(
+    e => [e.head, e.tail, ops.times(e.shift, t)]
+  ));
 
-  const multiplicity = dim == graph.dim ? ops.abs(ops.determinant(basis)) : 0;
-
-  return { basis, multiplicity, nodes, graph: makeGraph(newEdges) };
+  return { basis, multiplicity, nodes, graph: component };
 };
 
 
 export const isConnected = graph => {
   const verts = vertices(graph);
-  const comp = _componentInCoverGraph(graph, verts[0]);
+  const { nodes, multiplicity } = annotatedGraphComponent(graph, verts[0]);
 
-  return comp.nodes.length >= verts.length && comp.multiplicity == 1;
+  return nodes.length >= verts.length && multiplicity == 1;
 };
 
 
@@ -316,7 +280,7 @@ export const connectedComponents = graph => {
 
   for (const start of verts) {
     if (!seen[start]) {
-      const comp = _componentInCoverGraph(graph, start);
+      const comp = annotatedGraphComponent(graph, start);
       result.push(comp);
       for (const v of comp.nodes)
         seen[v] = true;
