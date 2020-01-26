@@ -326,7 +326,7 @@ export const isStable = graph => {
   const seen = {};
 
   for (const v of vertices(graph)) {
-    const key = encode(pos[v].map(x => ops.mod(x, 1)));
+    const key = encode(ops.mod(pos[v], 1));
     if (seen[key])
       return false;
     else
@@ -343,8 +343,8 @@ export const isLocallyStable = graph => {
   for (const v of vertices(graph)) {
     const seen = {};
 
-    for (const { tail: w, shift: s } of incidences(graph)[v]) {
-      const key = encode(ops.plus(pos[w], s));
+    for (const e of incidences(graph)[v]) {
+      const key = encode(ops.plus(pos[e.tail], e.shift));
       if (seen[key])
         return false;
       else
@@ -361,11 +361,10 @@ export const hasSecondOrderCollisions = graph => {
   const seen = {};
 
   for (const v of vertices(graph)) {
-    const vectors = incidences(graph)[v]
-          .map(e => edgeVector(e, pos))
-          .sort((v, w) => ops.cmp(v, w));
+    const p = ops.mod(pos[v], 1);
+    const vectors = incidences(graph)[v].map(e => edgeVector(e, pos));
+    const key = encode([p].concat(vectors.sort((v, w) => ops.cmp(v, w))));
 
-    const key = encode([].concat([pos[v].map(x => ops.mod(x, 1))], vectors));
     if (seen[key])
       return true;
     else
