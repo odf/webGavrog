@@ -243,7 +243,7 @@ const annotatedGraphComponent = (graph, start) => {
     dim == graph.dim ? ops.abs(ops.determinant(basis)) : Infinity;
 
   for (const vec of ops.identityMatrix(graph.dim)) {
-    if (ops.rank(basisVecs.concat([vec])) > ops.rank(basisVecs))
+    if (ops.rank(basisVecs.concat([vec])) > basisVecs.length)
       basisVecs.push(vec);
   }
 
