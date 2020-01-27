@@ -1,5 +1,6 @@
 import * as pickler from '../common/pickler';
 import modularSolver from '../arithmetic/solveRational';
+import * as spacegroups from '../spacegroups/spacegroups';
 
 import {
   rationalLinearAlgebra as ops,
@@ -375,30 +376,10 @@ export const hasSecondOrderCollisions = graph => {
 };
 
 
-export const finiteCover = (graph, cell) => {
-  if (!cell.every(v => v.every(x => ops.isInteger(x))))
-    throw new Error('cell vectors must be integral');
-  else if (ops.eq(0, ops.determinant(cell)))
-    throw new Error('cell vectors must form a basis');
-
-  const lattice = ops.times(ops.identityMatrix(graph.dim), ops.inverse(cell));
-
-  const origin = ops.vector(graph.dim);
-  const latticePoints = [origin];
-  const seen = { [encode(origin)]: true };
-
-  for (let i = 0; i < latticePoints.length; ++i) {
-    const v = latticePoints[i];
-    for (const w of lattice) {
-      const s = ops.mod(ops.plus(v, w), 1);
-      if (!seen[encode(s)]) {
-        latticePoints.push(s);
-        seen[encode(s)] = true;
-      }
-    }
-  }
-
+export const finiteCover = (graph, superCell) => {
   const pos = barycentricPlacement(graph);
+  const lattice = ops.inverse(superCell);
+  const latticePoints = spacegroups.sublatticePoints(lattice);
 
   let nextNode = 1;
   const coverToNode = {};
@@ -414,16 +395,15 @@ export const finiteCover = (graph, cell) => {
   const coverEdges = [];
   for (const e of graph.edges) {
     const head = ops.times(pos[e.head], lattice);
-    const tail = ops.times(ops.plus(pos[e.tail], e.shift), lattice);
-    const vec = ops.minus(tail, head);
+    const vec = ops.times(edgeVector(e, pos), lattice);
+
     for (const s of latticePoints) {
       const p = ops.mod(ops.plus(head, s), 1);
       const q = ops.plus(p, vec);
-      const r = ops.mod(q, 1);
-      const t = ops.minus(q, r);
       const v = coverToNode[encode([e.head, p])];
-      const w = coverToNode[encode([e.tail, r])];
-      coverEdges.push([v, w, t]);
+      const w = coverToNode[encode([e.tail, ops.mod(q, 1)])];
+
+      coverEdges.push([v, w, q.map(x => ops.floor(x))]);
     }
   }
 
