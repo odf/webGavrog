@@ -126,9 +126,7 @@ export const shiftSpace = ops => {
 };
 
 
-export const centeringLatticePoints = toStd => {
-  const lattice = opsQ.transposed(opsQ.linearPart(toStd.oldToNew));
-
+export const sublatticePoints = lattice => {
   const origin = opsQ.vector(opsQ.dimension(lattice));
   const latticePoints = [origin];
   const seen = { [encode(origin)]: true };
@@ -146,6 +144,14 @@ export const centeringLatticePoints = toStd => {
 
   return latticePoints;
 };
+
+
+export const centeringLattice = toStd =>
+  opsQ.transposed(opsQ.linearPart(toStd.oldToNew));
+
+
+export const centeringLatticePoints = toStd =>
+  sublatticePoints(centeringLattice(toStd));
 
 
 if (require.main == module) {
