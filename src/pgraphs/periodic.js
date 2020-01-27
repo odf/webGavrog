@@ -471,6 +471,7 @@ if (require.main == module) {
 
       console.log(`  stable: ${isStable(g)}`);
       console.log(`  locally stable: ${isLocallyStable(g)}`);
+      console.log(`  second-order collisions: ${hasSecondOrderCollisions(g)}`);
     }
 
     for (const comp of connectedComponents(g)) {
