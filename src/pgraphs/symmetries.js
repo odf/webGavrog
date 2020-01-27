@@ -10,71 +10,70 @@ import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
 
 
-const _directedEdges = graph => {
-  const out = [];
+const directedEdges = function*(graph) {
   for (const e of graph.edges) {
-    out.push(e);
-    out.push(e.reverse());
+    yield e;
+    yield e.reverse();
   }
-  return out;
 };
 
 
-const _goodCombinations = (edges, pos) => {
-  const dim = ops.dimension(edges[0].shift);
-  const results = [];
-
-  for (const c of comb.combinations(edges.length, dim)) {
-    const vectors = c.map(i => pg.edgeVector(edges[i - 1], pos));
-    if (ops.rank(vectors) == dim) {
-      for (const p of comb.permutations(dim))
-        results.push(p.map(i => edges[c[i - 1] - 1]));
-    }
-  }
-
-  return results;
-};
-
-
-const _goodEdgeChains = graph => {
+const goodEdgeChains = function*(graph) {
   const pos = pg.barycentricPlacement(graph);
   const dim = graph.dim;
-  const results = [];
 
-  const extend = es => {
+  const extend = function*(es) {
     if (es.length == dim)
-      results.push(es);
+      yield es;
     else {
       const v = es[es.length - 1].tail;
+
       for (const e of pg.incidences(graph)[v]) {
         const next = es.concat([e]);
         const M = next.map(e => pg.edgeVector(e, pos));
+
         if (ops.rank(M) == next.length)
-          extend(next);
+          yield* extend(next);
       }
     }
   };
 
-  for (const e of _directedEdges(graph))
-    extend([e]);
+  for (const e of directedEdges(graph))
+    yield* extend([e]);
+};
 
-  return results;
+
+const goodCombinations = function*(edges, pos) {
+  edges = Array.from(edges);
+
+  const dim = ops.dimension(edges[0].shift);
+  const vectors = edges.map(e => pg.edgeVector(e, pos));
+
+  for (const c of comb.combinations(edges.length, dim)) {
+    if (ops.rank(c.map(i => vectors[i - 1])) == dim) {
+      for (const p of comb.permutations(dim))
+        yield p.map(i => edges[c[i - 1] - 1]);
+    }
+  }
 };
 
 
 const characteristicEdgeLists = graph => {
   const pos = pg.barycentricPlacement(graph);
 
-  const stars = [].concat(...pg.vertices(graph).map(
-    v => _goodCombinations(pg.incidences(graph)[v], pos)));
+  const stars = [];
+  for (const v of pg.vertices(graph)) {
+    for (const es of goodCombinations(pg.incidences(graph)[v], pos))
+      stars.push(es);
+  }
   if (stars.length)
     return stars;
 
-  const chains = _goodEdgeChains(graph);
+  const chains = Array.from(goodEdgeChains(graph));
   if (chains.length)
     return chains;
 
-  return _goodCombinations(_directedEdges(graph), pos);
+  return Array.from(goodCombinations(directedEdges(graph), pos));
 };
 
 
