@@ -1,16 +1,13 @@
-import * as pickler from '../common/pickler';
+import {
+  serialize as encode,
+  deserialize as decode
+} from '../common/pickler';
 
 import * as pg from './periodic';
 import { rationalLinearAlgebraModular } from '../arithmetic/types';
-import { coordinateChangesQ } from '../geometry/types';
+import { coordinateChangesQ as ops } from '../geometry/types';
 import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
-
-
-const ops = coordinateChangesQ;
-
-const encode = pickler.serialize;
-const decode = pickler.deserialize;
 
 
 const _directedEdges = graph => {
