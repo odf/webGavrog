@@ -145,6 +145,30 @@ const groupOfAutomorphisms = (generators, keyFn) => {
 };
 
 
+const uniqueEdgesByVector = (graph, pos) => {
+  const result = {};
+
+  for (const v of pg.vertices(graph)) {
+    const seen = {};
+    const m = {};
+
+    for (const e of pg.incidences(graph)[v]) {
+      const key = encode(pg.edgeVector(e, pos));
+      if (seen[key])
+        delete m[key];
+      else {
+        m[key] = e;
+        seen[key] = true;
+      }
+    }
+
+    result[v] = m;
+  }
+
+  return result;
+};
+
+
 export const isMinimal = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
@@ -297,30 +321,6 @@ export const minimalImage = graph => minimalImageWithOrbits(graph).graph;
 const isUnimodular = A =>
   A.every(row => row.every(x => ops.isInteger(x))) &&
   ops.eq(1, ops.abs(ops.determinant(A)));
-
-
-const uniqueEdgesByVector = (graph, pos) => {
-  const result = {};
-
-  for (const v of pg.vertices(graph)) {
-    const seen = {};
-    const m = {};
-
-    for (const e of pg.incidences(graph)[v]) {
-      const key = encode(pg.edgeVector(e, pos));
-      if (seen[key])
-        delete m[key];
-      else {
-        m[key] = e;
-        seen[key] = true;
-      }
-    }
-
-    result[v] = m;
-  }
-
-  return result;
-};
 
 
 const goodEdgeLists = (graph, edgeLists) => {
