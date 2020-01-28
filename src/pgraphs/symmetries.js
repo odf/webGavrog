@@ -134,6 +134,7 @@ const groupOfAutomorphisms = (identity, generators) => {
 
   for (let next = 0; next < result.length; ++next) {
     const phi = result[next];
+
     for (const psi of generators) {
       const product = productAutomorphism(phi, psi);
       const key = keyFn(product);
@@ -174,18 +175,11 @@ const uniqueEdgesByVector = (graph, pos) => {
 
 
 export const isMinimal = graph => {
-  const id = ops.identityMatrix(graph.dim);
+  const I = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
-  const start = verts[0];
-  const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph, pos);
+  const ebv = uniqueEdgesByVector(graph, pg.barycentricPlacement(graph));
 
-  for (const v of verts.slice(1)) {
-    if (automorphism(start, v, id, ebv) != null)
-      return false;
-  }
-
-  return true;
+  return verts.slice(1).every(v => automorphism(verts[0], v, I, ebv) == null);
 }
 
 
