@@ -125,10 +125,9 @@ const productAutomorphism = (phi, psi) => {
 };
 
 
-const groupOfAutomorphisms = (generators, keyFn) => {
-  const result = generators.slice();
-  const seen = {};
-  generators.forEach(gen => seen[keyFn(gen)] = true);
+const groupOfAutomorphisms = (identity, generators, keyFn) => {
+  const result = [identity];
+  const seen = { [keyFn(identity)]: true };
 
   for (let next = 0; next < result.length; ++next) {
     const phi = result[next];
@@ -374,8 +373,7 @@ export const symmetries = graph => {
   const v0 = bases[0].v;
   const invB0 = ops.inverse(bases[0].B);
 
-  const I = ops.identityMatrix(graph.dim);
-  const gens = [automorphism(v0, v0, I, ebv)];
+  const gens = [];
 
   const p = new part.LabelledPartition((a, b) => a || b);
 
@@ -395,10 +393,15 @@ export const symmetries = graph => {
     }
   }
 
+  const group = groupOfAutomorphisms(
+    automorphism(v0, v0, ops.identityMatrix(graph.dim), ebv),
+    gens,
+    phi => encode(mapped(edgeLists[0], phi))
+  );
+
   return {
     representativeEdgeLists: keys.filter(k => k == p.find(k)).map(decode),
-    symmetries: groupOfAutomorphisms(
-      gens, phi => encode(mapped(edgeLists[0], phi)))
+    symmetries: group
   };
 };
 
