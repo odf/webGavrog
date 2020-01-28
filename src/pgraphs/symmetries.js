@@ -125,7 +125,7 @@ const automorphism = (srcStart, imgStart, transform, edgeByVec) => {
 };
 
 
-const productAutomorphism = (phi, psi) => {
+const groupOfAutomorphisms = (identity, generators) => {
   const compose = (f, g) => {
     const h = {};
     for (const x of Object.keys(f)) {
@@ -136,14 +136,6 @@ const productAutomorphism = (phi, psi) => {
     return h;
   };
 
-  const src2img = compose(phi.src2img, psi.src2img);
-  const transform = ops.times(phi.transform, psi.transform);
-
-  return { src2img, transform };
-};
-
-
-const groupOfAutomorphisms = (identity, generators) => {
   const v0 = Object.keys(identity.src2img)[0];
   const keyFn = phi => encode([phi.src2img[v0], phi.transform]);
 
@@ -154,7 +146,11 @@ const groupOfAutomorphisms = (identity, generators) => {
     const phi = result[next];
 
     for (const psi of generators) {
-      const product = productAutomorphism(phi, psi);
+      const product = {
+        src2img: compose(phi.src2img, psi.src2img),
+        transform: ops.times(phi.transform, psi.transform)
+      };
+
       const key = keyFn(product);
 
       if (!seen[key]) {
