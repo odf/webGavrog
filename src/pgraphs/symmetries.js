@@ -222,13 +222,14 @@ export const isLadder = graph => {
 const extraTranslationVectors = (graph, equivs) => {
   const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
-  const class0 = equivs.find(verts[0]);
-  const pos0 = pos[verts[0]];
   const vectors = [];
 
-  for (const v of verts.slice(1)) {
-    if (equivs.find(v) == class0)
-      vectors.push(ops.mod(ops.minus(pos[v], pos0), 1));
+  for (const v of verts) {
+    if (equivs.find(v) == equivs.find(verts[0])) {
+      const vec = ops.mod(ops.minus(pos[v], pos[verts[0]]), 1);
+      if (ops.sgn(vec) != 0)
+        vectors.push(vec);
+    }
   }
 
   return vectors;
