@@ -201,17 +201,15 @@ export const isLadder = graph => {
 
 
 const translationalEquivalences = graph => {
-  const id = ops.identityMatrix(graph.dim);
+  const I = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
-  const start = verts[0];
-  const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph, pos);
+  const ebv = uniqueEdgesByVector(graph, pg.barycentricPlacement(graph));
 
   const p = new part.Partition();
 
   for (const v of verts) {
-    if (p.find(start) != p.find(v)) {
-      const iso = automorphism(start, v, id, ebv);
+    if (p.find(verts[0]) != p.find(v)) {
+      const iso = automorphism(verts[0], v, I, ebv);
       if (iso != null) {
         for (const w of verts)
           p.union(w, iso.src2img[w]);
