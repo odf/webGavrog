@@ -366,30 +366,27 @@ export const symmetries = graph => {
   const ebv = uniqueEdgesByVector(graph, pos);
 
   const edgeLists = goodEdgeLists(graph, characteristicEdgeLists(graph));
-  const bases = edgeLists.map(es => ({
-    v: es[0].head,
-    B: es.map(e => pg.edgeVector(e, pos))
-  }));
+  const baseVertices = edgeLists.map(es => es[0].head);
+  const bases = edgeLists.map(es => es.map(e => pg.edgeVector(e, pos)));
   const keys = edgeLists.map(encode);
-  const mapped = (es, phi) => es.map(e => decode(phi.src2img[encode(e)]));
 
-  const v0 = bases[0].v;
-  const invB0 = ops.inverse(bases[0].B);
+  const v0 = baseVertices[0];
+  const invB0 = ops.inverse(bases[0]);
 
   const gens = [];
-
   const p = new part.LabelledPartition((a, b) => a || b);
 
   for (let i = 0; i < edgeLists.length; ++i) {
     if (p.find(keys[i]) != p.find(keys[0]) && !p.getLabel(keys[i])) {
-      const { v, B } = bases[i];
-      const M = ops.times(invB0, B);
-      const iso = isUnimodular(M) && automorphism(v0, v, M, ebv);
+      const M = ops.times(invB0, bases[i]);
+      const iso = isUnimodular(M) && automorphism(v0, baseVertices[i], M, ebv);
 
       if (iso) {
         gens.push(iso);
-        for (let k = 0; k < edgeLists.length; ++k)
-          p.union(keys[k], encode(mapped(edgeLists[k], iso)));
+        for (let k = 0; k < edgeLists.length; ++k) {
+          const mapped = edgeLists[k].map(e => decode(iso.src2img[encode(e)]));
+          p.union(keys[k], encode(mapped));
+        }
       }
       else
         p.setLabel(keys[i], true);
