@@ -82,21 +82,23 @@ const automorphism = (srcStart, imgStart, transform, edgeByVec) => {
   const queue = [srcStart];
 
   while (queue.length) {
-    const w1 = queue.shift();
-    const w2 = src2img[w1];
+    const vSrc = queue.shift();
+    const vImg = src2img[vSrc];
 
-    for (const [d1, e1] of Object.entries(edgeByVec[w1])) {
-      const e2 = edgeByVec[w2][encode(ops.times(decode(d1), transform))];
-      if (e2 == null)
+    for (const [dSrc, eSrc] of Object.entries(edgeByVec[vSrc])) {
+      const dImg = encode(ops.times(decode(dSrc), transform));
+      const eImg = edgeByVec[vImg][dImg];
+
+      if (eImg == null)
         return null;
 
-      src2img[encode(e1)] = encode(e2);
+      src2img[encode(eSrc)] = encode(eImg);
 
-      if (src2img[e1.tail] == null) {
-        src2img[e1.tail] = e2.tail;
-        queue.push(e1.tail);
+      if (src2img[eSrc.tail] == null) {
+        src2img[eSrc.tail] = eImg.tail;
+        queue.push(eSrc.tail);
       }
-      else if (src2img[e1.tail] != e2.tail)
+      else if (src2img[eSrc.tail] != eImg.tail)
         return null;
     }
   }
