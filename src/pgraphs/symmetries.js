@@ -174,32 +174,6 @@ const uniqueEdgesByVector = (graph, pos) => {
 };
 
 
-export const isMinimal = graph => {
-  const I = ops.identityMatrix(graph.dim);
-  const verts = pg.vertices(graph);
-  const ebv = uniqueEdgesByVector(graph, pg.barycentricPlacement(graph));
-
-  return verts.slice(1).every(v => automorphism(verts[0], v, I, ebv) == null);
-}
-
-
-export const isLadder = graph => {
-  if (pg.isStable(graph) || !pg.isLocallyStable(graph))
-    return false;
-
-  const I = ops.identityMatrix(graph.dim);
-  const verts = pg.vertices(graph);
-  const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph, pos);
-
-  const candidates = verts.slice(1).filter(
-    v => ops.minus(pos[v], pos[verts[0]]).every(x => ops.isInteger(x))
-  );
-
-  return candidates.some(v => automorphism(verts[0], v, I, ebv) != null);
-};
-
-
 const translationalEquivalences = graph => {
   const I = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
@@ -218,6 +192,30 @@ const translationalEquivalences = graph => {
   }
 
   return p;
+};
+
+
+export const isMinimal = graph => {
+  const verts = pg.vertices(graph);
+  const p = translationalEquivalences(graph);
+
+  return verts.every(v => v == verts[0] || p.find(v) != p.find(verts[0]));
+}
+
+
+export const isLadder = graph => {
+  if (pg.isStable(graph) || !pg.isLocallyStable(graph))
+    return false;
+
+  const verts = pg.vertices(graph);
+  const p = translationalEquivalences(graph);
+  const pos = pg.barycentricPlacement(graph);
+
+  return verts.some(v => (
+    v != verts[0] &&
+      p.find(v) == p.find(verts[0]) &&
+      ops.eq(ops.mod(pos[v], 1), ops.mod(pos[verts[0]], 1))
+  ));
 };
 
 
