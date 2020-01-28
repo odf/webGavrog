@@ -10,6 +10,24 @@ import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
 
 
+const equivalenceClasses = (equivs, elements) => {
+  const repToClass = {};
+  const classes = [];
+
+  for (const v of elements) {
+    const rep = equivs.find(v);
+    if (repToClass[rep] == null) {
+      repToClass[rep] = classes.length;
+      classes.push([v]);
+    }
+    else
+      classes[repToClass[rep]].push(v);
+  }
+
+  return classes;
+};
+
+
 const directedEdges = function*(graph) {
   for (const e of graph.edges) {
     yield e;
@@ -219,49 +237,19 @@ export const isLadder = graph => {
 };
 
 
-const extraTranslationVectors = (graph, equivs) => {
+const extendedTranslationBasis = (graph, equivs) => {
   const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
-  const vectors = [];
+
+  let basis = ops.identityMatrix(graph.dim);
 
   for (const v of verts) {
     if (equivs.find(v) == equivs.find(verts[0])) {
-      const vec = ops.mod(ops.minus(pos[v], pos[verts[0]]), 1);
-      if (ops.sgn(vec) != 0)
-        vectors.push(vec);
+      const t = ops.mod(ops.minus(pos[v], pos[verts[0]]), 1);
+      basis = rationalLinearAlgebraModular.extendBasis(t, basis);
     }
   }
 
-  return vectors;
-};
-
-
-const equivalenceClasses = (equivs, elements) => {
-  const repToClass = {};
-  const classes = [];
-
-  for (const v of elements) {
-    const rep = equivs.find(v);
-    if (repToClass[rep] == null) {
-      repToClass[rep] = classes.length;
-      classes.push([v]);
-    }
-    else
-      classes[repToClass[rep]].push(v);
-  }
-
-  return classes;
-};
-
-
-const translationalEquivalenceClasses = (graph, equivs) =>
-  equivalenceClasses(equivs, pg.vertices(graph));
-
-
-const fullTranslationBasis = vectors => {
-  let basis = ops.identityMatrix(vectors[0].length);
-  for (const v of vectors)
-    basis = rationalLinearAlgebraModular.extendBasis(v, basis);
   return basis;
 };
 
@@ -272,9 +260,8 @@ export const minimalImageWithOrbits = graph => {
   else {
     const pos = pg.barycentricPlacement(graph);
     const equivs = translationalEquivalences(graph);
-    const classes = translationalEquivalenceClasses(graph, equivs);
-    const vectors = extraTranslationVectors(graph, equivs);
-    const basisChange = ops.inverse(fullTranslationBasis(vectors));
+    const classes = equivalenceClasses(equivs, pg.vertices(graph));
+    const basisChange = ops.inverse(extendedTranslationBasis(graph, equivs));
 
     const old2new = {};
     for (let i = 0; i < classes.length; ++i) {
@@ -796,10 +783,10 @@ if (require.main == module) {
 
         if (!minimal) {
           const p = translationalEquivalences(g);
-          const vs = extraTranslationVectors(g, p);
-          const cls = translationalEquivalenceClasses(g, p);
+          const basis = extendedTranslationBasis(g, p);
+          const cls = equivalenceClasses(p, pg.vertices(g));
           console.log(`translational equivalences: ${p}`);
-          console.log(`extra translations = ${vs}`);
+          console.log(`extended translation basis = ${basis}`);
           console.log(`equivalence classes: ${cls}`);
           console.log(`minimal image: ${minimalImage(g)}`);
         }
