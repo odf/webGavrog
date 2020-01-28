@@ -251,37 +251,32 @@ const extendedTranslationBasis = (graph, equivs) => {
 
 
 export const minimalImageWithOrbits = graph => {
-  if (isMinimal(graph))
-    return { graph };
-  else {
-    const pos = pg.barycentricPlacement(graph);
-    const equivs = translationalEquivalences(graph);
-    const classes = equivalenceClasses(equivs, pg.vertices(graph));
-    const basisChange = ops.inverse(extendedTranslationBasis(graph, equivs));
+  const equivs = translationalEquivalences(graph);
+  const orbits = equivalenceClasses(equivs, pg.vertices(graph));
 
-    const old2new = {};
-    for (let i = 0; i < classes.length; ++i) {
-      for (const v of classes[i])
-        old2new[v] = i;
+  if (orbits.every(cl => cl.length == 1))
+    return { graph, orbits };
+
+  const pos = pg.barycentricPlacement(graph);
+  const B = ops.inverse(extendedTranslationBasis(graph, equivs));
+
+  const imgs = {};
+  const shifts = {};
+
+  for (let i = 0; i < orbits.length; ++i) {
+    for (const v of orbits[i]) {
+      imgs[v] = i + 1;
+      shifts[v] = ops.minus(pos[v], pos[orbits[i][0]])
     }
-
-    const imgEdges = [];
-    for (const { head: v, tail: w, shift: s } of graph.edges) {
-      const vNew = old2new[v];
-      const wNew = old2new[w];
-      const vShift = ops.minus(pos[v], pos[classes[vNew][0]]);
-      const wShift = ops.minus(pos[w], pos[classes[wNew][0]]);
-      const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)),
-                             basisChange);
-
-      imgEdges.push([vNew + 1, wNew + 1, sNew]);
-    }
-
-    return {
-      graph: pg.makeGraph(imgEdges),
-      orbits: classes
-    };
   }
+
+  const edges = graph.edges.map(e => [
+    imgs[e.head],
+    imgs[e.tail],
+    ops.times(ops.plus(e.shift, ops.minus(shifts[e.tail], shifts[e.head])), B)
+  ]);
+
+  return { graph: pg.makeGraph(edges), orbits };
 };
 
 
