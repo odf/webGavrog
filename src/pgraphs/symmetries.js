@@ -187,24 +187,16 @@ export const isLadder = graph => {
   if (pg.isStable(graph) || !pg.isLocallyStable(graph))
     return false;
 
-  const id = ops.identityMatrix(graph.dim);
+  const I = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
-  const start = verts[0];
   const pos = pg.barycentricPlacement(graph);
   const ebv = uniqueEdgesByVector(graph, pos);
 
-  for (const v of verts) {
-    if (v == start)
-      continue;
+  const candidates = verts.slice(1).filter(
+    v => ops.minus(pos[v], pos[verts[0]]).every(x => ops.isInteger(x))
+  );
 
-    const d = ops.minus(pos[v], pos[start]);
-    if (d.every(x => ops.eq(ops.mod(x, 1), 0))) {
-      if (automorphism(start, v, id, ebv) != null)
-        return true;
-    }
-  }
-
-  return false;
+  return candidates.some(v => automorphism(verts[0], v, I, ebv) != null);
 };
 
 
@@ -784,6 +776,9 @@ if (require.main == module) {
       console.log(`graph is not connected`);
     }
     else {
+      const ladder = isLadder(g);
+      console.log(`ladder = ${ladder}`);
+
       if (pg.isLocallyStable(g) && !pg.hasSecondOrderCollisions(g)) {
         const syms = symmetries(g);
         const edgeLists = syms.representativeEdgeLists;
@@ -801,6 +796,7 @@ if (require.main == module) {
 
         const minimal = isMinimal(g);
         console.log(`minimal = ${minimal}`);
+
         if (!minimal) {
           const p = translationalEquivalences(g);
           const vs = extraTranslationVectors(g, p);
