@@ -125,7 +125,10 @@ const productAutomorphism = (phi, psi) => {
 };
 
 
-const groupOfAutomorphisms = (identity, generators, keyFn) => {
+const groupOfAutomorphisms = (identity, generators) => {
+  const v0 = Object.keys(identity.src2img)[0];
+  const keyFn = phi => encode([phi.src2img[v0], phi.transform]);
+
   const result = [identity];
   const seen = { [keyFn(identity)]: true };
 
@@ -393,16 +396,11 @@ export const symmetries = graph => {
     }
   }
 
-  const group = groupOfAutomorphisms(
-    automorphism(v0, v0, ops.identityMatrix(graph.dim), ebv),
-    gens,
-    phi => encode(mapped(edgeLists[0], phi))
-  );
+  const representativeEdgeLists = keys.filter(k => k == p.find(k)).map(decode);
+  const identity = automorphism(v0, v0, ops.identityMatrix(graph.dim), ebv);
+  const syms = groupOfAutomorphisms(identity, gens);
 
-  return {
-    representativeEdgeLists: keys.filter(k => k == p.find(k)).map(decode),
-    symmetries: group
-  };
+  return { representativeEdgeLists, symmetries: syms };
 };
 
 
