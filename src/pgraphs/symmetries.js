@@ -125,17 +125,18 @@ const automorphism = (srcStart, imgStart, transform, edgeByVec) => {
 };
 
 
-const groupOfAutomorphisms = (identity, generators) => {
-  const compose = (f, g) => {
-    const h = {};
-    for (const x of Object.keys(f)) {
-      h[x] = g[f[x]];
-      if (h[x] == null)
-        throw new Error('automorphisms do not compose');
-    }
-    return h;
-  };
+const composeMaps = (f, g) => {
+  const h = {};
+  for (const x of Object.keys(f)) {
+    h[x] = g[f[x]];
+    if (h[x] == null)
+      throw new Error('automorphisms do not compose');
+  }
+  return h;
+};
 
+
+const groupOfAutomorphisms = (identity, generators) => {
   const v0 = Object.keys(identity.src2img)[0];
   const keyFn = phi => encode([phi.src2img[v0], phi.transform]);
 
@@ -147,7 +148,7 @@ const groupOfAutomorphisms = (identity, generators) => {
 
     for (const psi of generators) {
       const product = {
-        src2img: compose(phi.src2img, psi.src2img),
+        src2img: composeMaps(phi.src2img, psi.src2img),
         transform: ops.times(phi.transform, psi.transform)
       };
 
