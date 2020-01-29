@@ -738,10 +738,8 @@ if (require.main == module) {
 
     const edgeLists = characteristicEdgeLists(g);
     console.log(`found ${edgeLists.length} characteristic edgeLists`);
-    for (const el of edgeLists.slice(0, 4))
+    for (const el of edgeLists)
       console.log(`  ${el.map(e => e.toString())}`);
-    if (edgeLists.length > 4)
-      console.log(`  ...`);
     console.log();
 
     if (!pg.isConnected(g)) {
