@@ -284,11 +284,6 @@ export const minimalImageWithOrbits = graph => {
 export const minimalImage = graph => minimalImageWithOrbits(graph).graph;
 
 
-const isUnimodular = A =>
-  A.every(row => row.every(x => ops.isInteger(x))) &&
-  ops.eq(1, ops.abs(ops.determinant(A)));
-
-
 const goodEdgeLists = (graph, edgeLists) => {
   const incidences = pg.incidences(graph);
 
@@ -320,6 +315,10 @@ const goodEdgeLists = (graph, edgeLists) => {
 
 
 export const symmetries = graph => {
+  const isUnimodular = A =>
+    A.every(row => row.every(x => ops.isInteger(x))) &&
+    ops.eq(1, ops.abs(ops.determinant(A)));
+
   const pos = pg.barycentricPlacement(graph);
 
   if (!pg.isLocallyStable(graph))
