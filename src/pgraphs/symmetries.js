@@ -76,22 +76,49 @@ const goodCombinations = function*(edges, pos) {
 };
 
 
+const filteredEdgeLists = (graph, lists) => {
+  const headIncidences = es => pg.incidences(graph)[es[0].head];
+
+  const atLoop =
+    lists.filter(es => headIncidences(es).some(e => e.tail == e.head));
+
+  if (atLoop.length)
+    return atLoop;
+
+  const atLune = lists.filter(es => {
+    const neighbours = headIncidences(es).map(e => e.tail).sort();
+    return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
+  });
+
+  if (atLune.length)
+    return atLune;
+
+  const headDegree = es => headIncidences(es).length;
+  const maxDeg = Math.max(...lists.map(headDegree));
+  return lists.filter(es => headDegree(es) == maxDeg);
+};
+
+
 const characteristicEdgeLists = graph => {
   const pos = pg.barycentricPlacement(graph);
+  const lists = [];
 
-  const stars = [];
   for (const v of pg.vertices(graph)) {
     for (const es of goodCombinations(pg.incidences(graph)[v], pos))
-      stars.push(es);
+      lists.push(es);
   }
-  if (stars.length)
-    return stars;
 
-  const chains = Array.from(goodEdgeChains(graph));
-  if (chains.length)
-    return chains;
+  if (lists.length == 0) {
+    for (const es of goodEdgeChains(graph))
+      lists.push(es);
+  }
 
-  return Array.from(goodCombinations(directedEdges(graph), pos));
+  if (lists.length == 0) {
+    for (const es of goodCombinations(directedEdges(graph), pos))
+      lists.push(es);
+  }
+
+  return filteredEdgeLists(graph, lists);
 };
 
 
@@ -284,36 +311,6 @@ export const minimalImageWithOrbits = graph => {
 export const minimalImage = graph => minimalImageWithOrbits(graph).graph;
 
 
-const goodEdgeLists = (graph, edgeLists) => {
-  const incidences = pg.incidences(graph);
-
-  const atLoop = edgeLists.filter(edgeList => {
-    const v = edgeList[0].head;
-    return incidences[v].some(e => e.tail == v);
-  });
-
-  if (atLoop.length > 0)
-    return atLoop;
-
-  const atLune = edgeLists.filter(edgeList => {
-    const v = edgeList[0].head;
-    const neighbours = incidences[v].map(e => e.tail).sort();
-    return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
-  });
-
-  if (atLune.length > 0)
-    return atLune;
-
-  const maxDeg = Math.max(
-      ...Object.keys(incidences).map(v => incidences[v].length)
-  );
-
-  return edgeLists.filter(
-    edgeList => incidences[edgeList[0].head].length == maxDeg
-  );
-};
-
-
 export const symmetries = graph => {
   const isUnimodular = A =>
     A.every(row => row.every(x => ops.isInteger(x))) &&
@@ -326,7 +323,7 @@ export const symmetries = graph => {
 
   const ebv = uniqueEdgesByVector(graph, pos);
 
-  const edgeLists = goodEdgeLists(graph, characteristicEdgeLists(graph));
+  const edgeLists = characteristicEdgeLists(graph);
   const baseVertices = edgeLists.map(es => es[0].head);
   const bases = edgeLists.map(es => es.map(e => pg.edgeVector(e, pos)));
   const keys = edgeLists.map(encode);
