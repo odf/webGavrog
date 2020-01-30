@@ -371,27 +371,15 @@ export const affineSymmetries = (graph, syms) => {
 
 
 export const nodeOrbits = (graph, syms) => {
-  const seen = {};
+  const verts = pg.vertices(graph);
   const p = new part.Partition();
 
-  for (const v of pg.vertices(graph)) {
-    const kv = encode(v);
-    if (seen[kv])
-      continue;
-    seen[kv] = true;
-
-    for (const phi of syms) {
-      const w = phi.src2img[v];
-      const kw = encode(w);
-      if (seen[kw])
-        continue;
-      seen[kw] = true;
-
-      p.union(v, w);
-    }
+  for (const { src2img } of syms) {
+    for (const v of verts)
+      p.union(v, src2img[v]);
   }
 
-  return equivalenceClasses(p, Object.keys(seen).map(decode));
+  return equivalenceClasses(p, verts);
 }
 
 
