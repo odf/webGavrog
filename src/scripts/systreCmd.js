@@ -430,6 +430,8 @@ const processGraph = (
   writeInfo(`   Point group has ${syms.length} elements.`);
 
   const nodeOrbits = symmetries.nodeOrbits(G, syms);
+  nodeOrbits.sort((a, b) => a[0] - b[0]);
+
   writeInfo(`   ${pluralize(nodeOrbits.length, 'kind')} of node.`);
   writeInfo();
 
