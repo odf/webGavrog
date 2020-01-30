@@ -766,7 +766,13 @@ if (require.main == module) {
         console.log();
 
         const orbits = edgeOrbits(g, syms.symmetries);
-        console.log(`edge orbits: ${JSON.stringify(orbits)}`);
+        console.log(`edge orbits:`);
+        for (let i = 0; i < orbits.length; ++i) {
+          if (i > 0)
+            console.log();
+          for (const e of orbits[i])
+            console.log(`  ${e}`);
+        }
       }
       else {
         console.log(`stable deduction graph:`);
