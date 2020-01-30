@@ -192,7 +192,8 @@ const groupOfAutomorphisms = (identity, generators) => {
 };
 
 
-const uniqueEdgesByVector = (graph, pos) => {
+const uniqueEdgesByVector = graph => {
+  const pos = pg.barycentricPlacement(graph);
   const result = {};
 
   for (const v of pg.vertices(graph)) {
@@ -219,7 +220,7 @@ const uniqueEdgesByVector = (graph, pos) => {
 const translationalEquivalences = graph => {
   const I = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
-  const ebv = uniqueEdgesByVector(graph, pg.barycentricPlacement(graph));
+  const ebv = uniqueEdgesByVector(graph);
 
   const p = new part.Partition();
 
@@ -312,16 +313,15 @@ export const minimalImage = graph => minimalImageWithOrbits(graph).graph;
 
 
 export const symmetries = graph => {
+  if (!pg.isLocallyStable(graph))
+    throw new Error('graph is not locally stable; cannot compute symmetries');
+
   const isUnimodular = A =>
     A.every(row => row.every(x => ops.isInteger(x))) &&
     ops.eq(1, ops.abs(ops.determinant(A)));
 
   const pos = pg.barycentricPlacement(graph);
-
-  if (!pg.isLocallyStable(graph))
-    throw new Error('graph is not locally stable; cannot compute symmetries');
-
-  const ebv = uniqueEdgesByVector(graph, pos);
+  const ebv = uniqueEdgesByVector(graph);
 
   const edgeLists = characteristicEdgeLists(graph);
   const baseVertices = edgeLists.map(es => es[0].head);
@@ -648,7 +648,7 @@ const equalModZ = (p, q) => ops.minus(p, q).every(x => ops.isInteger(x));
 export const stationarySymmetries = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph, pos);
+  const ebv = uniqueEdgesByVector(graph);
   const components = strongSourceComponents(stableDeductionGraph(graph));
 
   const incident = {};
