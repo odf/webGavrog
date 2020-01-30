@@ -284,7 +284,7 @@ export const minimalImageWithOrbits = graph => {
   const orbits = equivalenceClasses(equivs, pg.vertices(graph));
 
   if (orbits.every(cl => cl.length == 1))
-    return { graph, orbits };
+    return { graph };
 
   const pos = pg.barycentricPlacement(graph);
   const B = ops.inverse(extendedTranslationBasis(graph, equivs));
