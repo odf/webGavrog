@@ -360,14 +360,13 @@ export const symmetries = graph => {
 
 
 export const affineSymmetries = (graph, syms) => {
-  const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
   const v = pg.vertices(graph)[0];
 
-  return syms.map(({ src2img, transform }) => {
-    const s = ops.minus(pos[src2img[v]], ops.times(pos[v], transform));
-    return ops.affineTransformation(ops.transposed(transform), s);
-  });
+  return syms.map(({ src2img, transform }) => ops.affineTransformation(
+    ops.transposed(transform),
+    ops.minus(pos[src2img[v]], ops.times(pos[v], transform))
+  ));
 }
 
 
