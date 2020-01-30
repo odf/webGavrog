@@ -399,26 +399,11 @@ export const edgeOrbits = (graph, syms) => {
 
 
 const stableDeductionGraph = graph => {
-  const pos = pg.barycentricPlacement(graph);
-
+  const ebv = uniqueEdgesByVector(graph);
   const res = {};
 
-  for (const v of pg.vertices(graph)) {
-    const edgeVecs = {};
-    for (const e of pg.incidences(graph)[v]) {
-      const k = encode(pg.edgeVector(e, pos));
-      if (edgeVecs[k] == null)
-        edgeVecs[k] = [];
-      edgeVecs[k].push(e);
-    }
-
-    const outEdges = [];
-    for (const k of Object.keys(edgeVecs)) {
-      if (edgeVecs[k].length == 1)
-        outEdges.push(edgeVecs[k][0]);
-    }
-    res[encode(v)] = outEdges;
-  }
+  for (const v of pg.vertices(graph))
+    res[v] = Object.values(ebv[v]);
 
   return res;
 };
