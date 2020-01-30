@@ -384,27 +384,17 @@ export const nodeOrbits = (graph, syms) => {
 
 
 export const edgeOrbits = (graph, syms) => {
-  const seen = {};
+  const edges = graph.edges;
   const p = new part.Partition();
 
-  for (const a of graph.edges) {
-    const ka = encode(a);
-    if (seen[ka])
-      continue;
-    seen[ka] = true;
-
-    for (const phi of syms) {
-      const b = decode(phi.src2img[ka]).canonical();
-      const kb = encode(b);
-      if (seen[kb])
-        continue;
-      seen[kb] = true;
-
-      p.union(ka, kb);
+  for (const { src2img } of syms) {
+    for (const eSrc of edges) {
+      const eImg = decode(src2img[encode(eSrc)]).canonical();
+      p.union(encode(eSrc), encode(eImg));
     }
   }
 
-  return equivalenceClasses(p, Object.keys(seen)).map(cl => cl.map(decode));
+  return equivalenceClasses(p, edges.map(encode)).map(cl => cl.map(decode));
 }
 
 
