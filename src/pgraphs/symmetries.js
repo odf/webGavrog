@@ -398,48 +398,6 @@ export const edgeOrbits = (graph, syms) => {
 }
 
 
-function* _pairs(list) {
-  for (const i in list)
-    for (const j in list)
-      if (j > i)
-        yield [list[i], list[j]];
-};
-
-
-export const angleOrbits = (graph, syms) => {
-  const pos = pg.barycentricPlacement(graph);
-  const seen = {};
-  const p = new part.Partition();
-
-  for (const v of pg.vertices(graph)) {
-    for (const [{ tail: u, shift: su }, { tail: w, shift: sw }]
-         of _pairs(pg.incidences(graph)[v]))
-    {
-      const s = ops.minus(sw, su);
-      const c = ops.plus(s, ops.minus(pos[w], pos[u]));
-      const ka = encode(pg.makeEdge(u, w, s).canonical());
-
-      if (!seen[ka]) {
-        seen[ka] = true;
-
-        for (const { src2img, transform } of syms) {
-          const ux = src2img[u];
-          const wx = src2img[w];
-          const d = ops.minus(pos[wx], pos[ux]);
-          const sx = ops.minus(ops.times(c, transform), d);
-          const kb = encode(pg.makeEdge(ux, wx, sx).canonical());
-
-          seen[kb] = true;
-          p.union(ka, kb);
-        }
-      }
-    }
-  }
-
-  return equivalenceClasses(p, Object.keys(seen)).map(cl => cl.map(decode));
-};
-
-
 const stableDeductionGraph = graph => {
   const pos = pg.barycentricPlacement(graph);
 
