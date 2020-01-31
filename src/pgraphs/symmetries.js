@@ -10,6 +10,14 @@ import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
 
 
+const mapObject = (obj, fn) => {
+  const out = {};
+  for (const k of Object.keys(obj))
+    out[k] = fn(obj[k]);
+  return out;
+};
+
+
 const equivalenceClasses = (equivs, elements) => {
   const repToClass = {};
   const classes = [];
@@ -152,17 +160,6 @@ const automorphism = (srcStart, imgStart, transform, edgeByVec) => {
 };
 
 
-const composeMaps = (f, g) => {
-  const h = {};
-  for (const x of Object.keys(f)) {
-    h[x] = g[f[x]];
-    if (h[x] == null)
-      throw new Error('automorphisms do not compose');
-  }
-  return h;
-};
-
-
 const groupOfAutomorphisms = (identity, generators) => {
   const v0 = Object.keys(identity.src2img)[0];
   const keyFn = phi => encode([phi.src2img[v0], phi.transform]);
@@ -175,7 +172,7 @@ const groupOfAutomorphisms = (identity, generators) => {
 
     for (const psi of generators) {
       const product = {
-        src2img: composeMaps(phi.src2img, psi.src2img),
+        src2img: mapObject(phi.src2img, elem => psi.src2img[elem]),
         transform: ops.times(phi.transform, psi.transform)
       };
 
@@ -398,17 +395,6 @@ export const edgeOrbits = (graph, syms) => {
 }
 
 
-const stableDeductionGraph = graph => {
-  const ebv = uniqueEdgesByVector(graph);
-  const res = {};
-
-  for (const v of pg.vertices(graph))
-    res[v] = Object.values(ebv[v]);
-
-  return res;
-};
-
-
 const postOrder = outEdges => {
   const res = [];
   const seen = {};
@@ -569,7 +555,7 @@ export const stationarySymmetries = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
   const ebv = uniqueEdgesByVector(graph);
-  const components = strongSourceComponents(stableDeductionGraph(graph));
+  const components = strongSourceComponents(mapObject(ebv, Object.values));
 
   const incident = {};
   for (const v of pg.vertices(graph))
@@ -709,7 +695,7 @@ if (require.main == module) {
       }
       else {
         console.log(`stable deduction graph:`);
-        const sdg = stableDeductionGraph(g);
+        const sdg = mapObject(uniqueEdgesByVector(g), Object.values);
         for (const k of Object.keys(sdg)) {
           for (const e of sdg[k])
             console.log(`  ${e}`);
