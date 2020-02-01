@@ -409,7 +409,7 @@ const postOrder = outEdges => {
   };
 
   for (const v of Object.keys(outEdges))
-    visit(decode(v));
+    visit(v);
 
   return res;
 };
