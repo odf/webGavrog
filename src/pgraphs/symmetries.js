@@ -548,9 +548,6 @@ const extendAutomorphism = (
 };
 
 
-const equalModZ = (p, q) => ops.minus(p, q).every(x => ops.isInteger(x));
-
-
 export const stationarySymmetries = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
@@ -571,8 +568,8 @@ export const stationarySymmetries = graph => {
   const allCandidates = [].concat(...components);
   const candidates = seeds.map(v => (
     allCandidates.filter(w => (
-      equalModZ(pos[v], pos[w])
-        && extendAutomorphism(v, w, I, ebv, pos, incident, hasEdge, null)
+      ops.minus(pos[v], pos[w]).every(x => ops.isInteger(x)) &&
+        extendAutomorphism(v, w, I, ebv, pos, incident, hasEdge, null)
     ))
   ));
 
