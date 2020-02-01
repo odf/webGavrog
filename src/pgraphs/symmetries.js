@@ -545,13 +545,11 @@ const extendAutomorphism = (
 
 
 export const stationarySymmetries = graph => {
-  const I = ops.identityMatrix(graph.dim);
+  const init = { transform: ops.identityMatrix(graph.dim) };
   const pos = pg.barycentricPlacement(graph);
-
   const ebv = uniqueEdgesByVector(graph);
-  const components = strongSourceComponents(
-    pg.vertices(graph), mapObject(ebv, Object.values)
-  );
+  const stableDigraph = mapObject(ebv, Object.values);
+  const components = strongSourceComponents(pg.vertices(graph), stableDigraph);
 
   const hasEdge = {};
   for (const e of graph.edges) {
@@ -564,7 +562,7 @@ export const stationarySymmetries = graph => {
   const candidates = seeds.map(v => (
     allCandidates.filter(w => (
       ops.minus(pos[v], pos[w]).every(x => ops.isInteger(x)) &&
-        extendAutomorphism({ transform: I }, v, w, graph, ebv, hasEdge)
+        extendAutomorphism(init, v, w, graph, ebv, hasEdge)
     ))
   ));
 
@@ -573,9 +571,6 @@ export const stationarySymmetries = graph => {
   let count = 0;
 
   const extend = (partial, level) => {
-    if (count > MAX_COUNT)
-      return;
-
     if (level >= seeds.length)
       symmetries.push(partial);
     else {
@@ -583,13 +578,13 @@ export const stationarySymmetries = graph => {
 
       for (const w of candidates[level]) {
         const iso = extendAutomorphism(partial, v, w, graph, ebv, hasEdge);
-        count += 1;
-        iso && extend(iso, level + 1);
+        if (iso && (++count < MAX_COUNT))
+          extend(iso, level + 1);
       }
     }
   };
 
-  extend({ transform: I }, 0);
+  extend(init, 0);
 
   return { symmetries, complete: count <= MAX_COUNT };
 };
