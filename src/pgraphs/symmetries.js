@@ -458,23 +458,20 @@ const strongComponents = (vertices, outEdges) => {
 const strongSourceComponents = (vertices, outEdges) => {
   const components = strongComponents(vertices, outEdges);
 
-  const node2component = {};
+  const componentNr = {};
   for (let i = 0; i < components.length; ++i) {
     for (const v of components[i])
-      node2component[v] = i;
+      componentNr[v] = i;
   }
 
-  const isSource = components.map(_ => true);
   for (const v of vertices) {
     for (const e of outEdges[v] || []) {
-      const cHead = node2component[e.head];
-      const cTail = node2component[e.tail];
-      if (cHead != cTail)
-        isSource[cTail] = false;
+      if (componentNr[e.head] != componentNr[e.tail])
+        components[componentNr[e.tail]] = [];
     }
   }
 
-  return components.filter((c, i) => isSource[i]);
+  return components.filter(c => c.length);
 };
 
 
