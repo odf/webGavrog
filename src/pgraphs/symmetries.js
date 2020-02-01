@@ -515,6 +515,7 @@ const extendAutomorphism = (
     else {
       assign(vSrc, vImg);
 
+      // compute and check induced edge mappsings
       for (const eSrc of pg.incidences(graph)[vSrc]) {
         if (src2img[eSrc.tail] != null) {
           const eImg = mappedEdge(eSrc, src2img, pos, transform);
@@ -526,6 +527,7 @@ const extendAutomorphism = (
         }
       }
 
+      // advance traversal along edges with unique difference vectors
       for (const [ dSrc, eSrc ] of Object.entries(uniqEdgeByVec[vSrc])) {
         const dImg = encode(ops.times(decode(dSrc), transform));
         const eImg = uniqEdgeByVec[vImg][dImg];
