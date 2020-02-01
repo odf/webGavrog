@@ -490,16 +490,13 @@ const mappedEdge = (eSrc, src2img, pos, transform) => {
 
 
 const extendAutomorphism = (
-  startSrc, startImg, transform, uniqEdgeByVec, pos, incident, hasEdge, partial
+  partial, startSrc, startImg, graph, uniqEdgeByVec, hasEdge
 ) => {
-  const src2img = {};
-  const img2src = {};
-  if (partial) {
-    if (ops.ne(partial.transform, transform))
-      return null;
-    Object.assign(src2img, partial.src2img);
-    Object.assign(img2src, partial.img2src);
-  }
+  const { transform } = partial;
+  const src2img = Object.assign({}, partial.src2img || {});
+  const img2src = Object.assign({}, partial.img2src || {});
+
+  const pos = pg.barycentricPlacement(graph);
 
   const assign = (src, img) => {
     src2img[src] = img;
@@ -518,7 +515,7 @@ const extendAutomorphism = (
     else {
       assign(vSrc, vImg);
 
-      for (const eSrc of incident[vSrc]) {
+      for (const eSrc of pg.incidences(graph)[vSrc]) {
         if (src2img[eSrc.tail] != null) {
           const eImg = mappedEdge(eSrc, src2img, pos, transform);
           if (!hasEdge[encode(eImg)])
@@ -548,7 +545,6 @@ const extendAutomorphism = (
 export const stationarySymmetries = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
-  const incident = pg.incidences(graph);
 
   const ebv = uniqueEdgesByVector(graph);
   const components = strongSourceComponents(
@@ -566,7 +562,7 @@ export const stationarySymmetries = graph => {
   const candidates = seeds.map(v => (
     allCandidates.filter(w => (
       ops.minus(pos[v], pos[w]).every(x => ops.isInteger(x)) &&
-        extendAutomorphism(v, w, I, ebv, pos, incident, hasEdge, null)
+        extendAutomorphism({ transform: I }, v, w, graph, ebv, hasEdge)
     ))
   ));
 
@@ -584,16 +580,14 @@ export const stationarySymmetries = graph => {
       const v = seeds[level];
 
       for (const w of candidates[level]) {
-        const iso = extendAutomorphism(
-          v, w, I, ebv, pos, incident, hasEdge, partial
-        );
+        const iso = extendAutomorphism(partial, v, w, graph, ebv, hasEdge);
         count += 1;
         iso && extend(iso, level + 1);
       }
     }
   };
 
-  extend(null, 0);
+  extend({ transform: I }, 0);
 
   return { symmetries, complete: count <= MAX_COUNT };
 };
