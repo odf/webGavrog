@@ -395,30 +395,30 @@ export const edgeOrbits = (graph, syms) => {
 }
 
 
-const postOrder = outEdges => {
+const postOrder = (vertices, outEdges) => {
   const res = [];
   const seen = {};
 
   const visit = v => {
     if (!seen[v]) {
       seen[v] = true;
-      for (const e of outEdges[v])
+      for (const e of outEdges[v] || [])
         visit(e.tail);
       res.push(v);
     }
   };
 
-  for (const v of Object.keys(outEdges))
+  for (const v of vertices)
     visit(v);
 
   return res;
 };
 
 
-const strongComponents = outEdges => {
+const strongComponents = (vertices, outEdges) => {
   const inEdges = {};
-  for (const v of Object.keys(outEdges)) {
-    for (const e of outEdges[v]) {
+  for (const v of vertices) {
+    for (const e of outEdges[v] || []) {
       const w = e.tail;
       if (inEdges[w] == null)
         inEdges[w] = [];
@@ -426,7 +426,7 @@ const strongComponents = outEdges => {
     }
   }
 
-  const todo = postOrder(outEdges).reverse();
+  const todo = postOrder(vertices, outEdges).reverse();
   const rootFor = {};
   const stack = [];
 
@@ -444,19 +444,19 @@ const strongComponents = outEdges => {
   }
 
   const underRoot = {};
-  for (const v of Object.keys(outEdges)) {
+  for (const v of vertices) {
     const root = rootFor[v];
     if (underRoot[root] == null)
       underRoot[root] = [];
-    underRoot[root].push(decode(v));
+    underRoot[root].push(v);
   }
 
   return Object.values(underRoot);
 };
 
 
-const strongSourceComponents = outEdges => {
-  const components = strongComponents(outEdges);
+const strongSourceComponents = (vertices, outEdges) => {
+  const components = strongComponents(vertices, outEdges);
 
   const node2component = {};
   for (let i = 0; i < components.length; ++i) {
@@ -465,8 +465,8 @@ const strongSourceComponents = outEdges => {
   }
 
   const isSource = components.map(_ => true);
-  for (const v of Object.keys(outEdges)) {
-    for (const e of outEdges[v]) {
+  for (const v of vertices) {
+    for (const e of outEdges[v] || []) {
       const cHead = node2component[e.head];
       const cTail = node2component[e.tail];
       if (cHead != cTail)
@@ -551,12 +551,12 @@ const extendAutomorphism = (
 export const stationarySymmetries = graph => {
   const I = ops.identityMatrix(graph.dim);
   const pos = pg.barycentricPlacement(graph);
-  const ebv = uniqueEdgesByVector(graph);
-  const components = strongSourceComponents(mapObject(ebv, Object.values));
+  const incident = pg.incidences(graph);
 
-  const incident = {};
-  for (const v of pg.vertices(graph))
-    incident[v] = pg.incidences(graph)[v];
+  const ebv = uniqueEdgesByVector(graph);
+  const components = strongSourceComponents(
+    pg.vertices(graph), mapObject(ebv, Object.values)
+  );
 
   const hasEdge = {};
   for (const e of graph.edges) {
@@ -633,7 +633,9 @@ if (require.main == module) {
   };
 
   const test = g => {
-    console.log(`vertices: ${pg.vertices(g)}`);
+    const verts = pg.vertices(g);
+
+    console.log(`vertices: ${verts}`);
     console.log('edges:');
     for (const e of g.edges)
       console.log(`  ${e}`);
@@ -673,7 +675,7 @@ if (require.main == module) {
         if (!minimal) {
           const p = translationalEquivalences(g);
           const basis = extendedTranslationBasis(g, p);
-          const cls = equivalenceClasses(p, pg.vertices(g));
+          const cls = equivalenceClasses(p, verts);
           console.log(`translational equivalences: ${p}`);
           console.log(`extended translation basis = ${basis}`);
           console.log(`equivalence classes: ${cls}`);
@@ -697,18 +699,18 @@ if (require.main == module) {
           for (const e of sdg[k])
             console.log(`  ${e}`);
         }
+
         console.log(
-          `strong components: ${JSON.stringify(strongComponents(sdg))}`
+          `strong components: ${JSON.stringify(strongComponents(verts, sdg))}`
         );
 
-        const sourceComponents = strongSourceComponents(sdg);
+        const sourceComponents = strongSourceComponents(verts, sdg);
         console.log(
           `strong source components: ${JSON.stringify(sourceComponents)}`
         );
 
         console.log(`stationary symmetries:`);
 
-        const verts = pg.vertices(g);
         const stationary = stationarySymmetries(g);
         for (const s of stationary.symmetries) {
           const cs = cycles(s.src2img, verts);
