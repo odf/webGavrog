@@ -497,14 +497,9 @@ const mappedEdge = (eSrc, src2img, transform, graph) => {
 
 
 const extendAutomorphism = (partial, startSrc, startImg, graph, edgeByVec) => {
-  const { transform } = partial;
   const src2img = Object.assign({}, partial.src2img || {});
   const img2src = Object.assign({}, partial.img2src || {});
-
-  const assign = (src, img) => {
-    src2img[src] = img;
-    img2src[img] = src;
-  };
+  const assign = (src, img) => { src2img[src] = img; img2src[img] = src; };
 
   const queue = [ [ startSrc, startImg ] ];
 
@@ -521,31 +516,28 @@ const extendAutomorphism = (partial, startSrc, startImg, graph, edgeByVec) => {
       // compute and check induced edge mappsings
       for (const eSrc of pg.incidences(graph)[vSrc]) {
         if (src2img[eSrc.tail] != null) {
-          const eImg = mappedEdge(eSrc, src2img, transform, graph);
-
+          const eImg = mappedEdge(eSrc, src2img, partial.transform, graph);
           if (eImg == null)
             return null;
-          else {
-            assign(encode(eSrc), encode(eImg));
-            assign(encode(eSrc.reverse()), encode(eImg.reverse()));
-          }
+
+          assign(encode(eSrc), encode(eImg));
+          assign(encode(eSrc.reverse()), encode(eImg.reverse()));
         }
       }
 
       // advance traversal along edges with unique difference vectors
       for (const [ dSrc, eSrc ] of Object.entries(edgeByVec[vSrc])) {
-        const dImg = encode(ops.times(decode(dSrc), transform));
+        const dImg = encode(ops.times(decode(dSrc), partial.transform));
         const eImg = edgeByVec[vImg][dImg];
-
         if (eImg == null)
           return null;
-        else
-          queue.push([ eSrc.tail, eImg.tail ]);
+
+        queue.push([ eSrc.tail, eImg.tail ]);
       }
     }
   }
 
-  return { src2img, img2src, transform };
+  return { src2img, img2src, transform: partial.transform };
 };
 
 
