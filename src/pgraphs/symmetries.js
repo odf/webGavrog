@@ -130,29 +130,29 @@ const characteristicEdgeLists = graph => {
 };
 
 
-const automorphism = (srcStart, imgStart, transform, edgeByVec) => {
-  const src2img = { [srcStart]: imgStart };
-  const queue = [srcStart];
+const automorphism = (startSrc, startImg, transform, edgeByVec) => {
+  const src2img = {};
+  const queue = [ [ startSrc, startImg ] ];
 
   while (queue.length) {
-    const vSrc = queue.shift();
-    const vImg = src2img[vSrc];
+    const [ vSrc, vImg ] = queue.shift();
 
-    for (const [dSrc, eSrc] of Object.entries(edgeByVec[vSrc])) {
-      const dImg = encode(ops.times(decode(dSrc), transform));
-      const eImg = edgeByVec[vImg][dImg];
-
-      if (eImg == null)
+    if (src2img[vSrc] != null) {
+      if (src2img[vSrc] != vImg)
         return null;
+    }
+    else {
+      src2img[vSrc] = vImg;
 
-      src2img[encode(eSrc)] = encode(eImg);
+      for (const [dSrc, eSrc] of Object.entries(edgeByVec[vSrc])) {
+        const dImg = encode(ops.times(decode(dSrc), transform));
+        const eImg = edgeByVec[vImg][dImg];
+        if (eImg == null)
+          return null;
 
-      if (src2img[eSrc.tail] == null) {
-        src2img[eSrc.tail] = eImg.tail;
-        queue.push(eSrc.tail);
+        src2img[encode(eSrc)] = encode(eImg);
+        queue.push([ eSrc.tail, eImg.tail ]);
       }
-      else if (src2img[eSrc.tail] != eImg.tail)
-        return null;
     }
   }
 
