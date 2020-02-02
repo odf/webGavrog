@@ -3,11 +3,13 @@ import * as S from '../common/lazyseq';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
-import { rationalLinearAlgebra as ops,
-         rationalLinearAlgebraModular } from '../arithmetic/types';
+import {
+  rationalLinearAlgebra as ops,
+  rationalLinearAlgebraModular
+ } from '../arithmetic/types';
 
 
-class Adjustment {
+class Basis {
   constructor(dim) {
     this.dim = dim;
     this.vectors = [];
@@ -42,7 +44,7 @@ const _traversal = function*(graph, v0, transform) {
   const old2new = {[v0]: 1};
   const newPos = { [v0]: ops.times(pos[v0], transform) };
   const queue = [[v0, zero]];
-  const adjustment = new Adjustment(graph.dim);
+  const basis = new Basis(graph.dim);
   let next = 2;
 
   while (queue.length) {
@@ -68,7 +70,7 @@ const _traversal = function*(graph, v0, transform) {
         queue.push([wo, s]);
       }
       else if (vn <= wn) {
-        const shift = adjustment.add(ops.minus(p, newPos[wo]));
+        const shift = basis.add(ops.minus(p, newPos[wo]));
         if (vn < wn || ops.sgn(shift) < 0)
           yield [vn, wn, shift];
       }
