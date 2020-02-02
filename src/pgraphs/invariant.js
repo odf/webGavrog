@@ -3,13 +3,8 @@ import * as S from '../common/lazyseq';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
-import { rationalLinearAlgebra,
+import { rationalLinearAlgebra as ops,
          rationalLinearAlgebraModular } from '../arithmetic/types';
-
-const ops = rationalLinearAlgebra;
-
-
-const DEBUG = false;
 
 
 const _solveInRows = (v, M) =>
@@ -144,9 +139,6 @@ const _postprocessTraversal = trav => {
   const dim = ops.dimension(shifts[0]);
   const basis = _triangulate(shifts).matrix.slice(0, dim);
 
-  if (DEBUG)
-    console.log(`Shift basis: Matrix(${basis})\n`);
-
   const basisChange = ops.inverse(basis);
 
   return trav.map(([head, tail, shift]) => {
@@ -169,9 +161,6 @@ const printTraversal = trav => trav.toArray().map(printStep).join('\n')
 
 
 export const invariant = graph => {
-  if (DEBUG)
-    console.log(`Computing invariant for ${graph.edges.map(printEdge)}\n`);
-
   const pos = pg.barycentricPlacement(graph);
   const sym = ps.symmetries(graph);
 
@@ -181,29 +170,21 @@ export const invariant = graph => {
   let best = null;
 
   const bases = sym.representativeEdgeLists;
-  if (DEBUG)
-    console.log(`  Found ${bases.length} bases`);
 
   for (const edgeList of bases) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
     const trav = S.seq(_traversal(graph, edgeList[0].head, transform));
 
-    if (best == null) {
+    if (best == null)
       best = trav;
-      if (DEBUG)
-        console.log(`Best traversal so far:\n${printTraversal(best)}\n`);
-    }
     else {
       let [t, b] = [trav, best];
 
       while (!t.isNil && _cmpSteps(t.first(), b.first()) == 0)
         [t, b] = [t.rest(), b.rest()];
 
-      if (!t.isNil && _cmpSteps(t.first(), b.first()) < 0) {
+      if (!t.isNil && _cmpSteps(t.first(), b.first()) < 0)
         best = trav;
-        if (DEBUG)
-          console.log(`Best traversal so far:\n${printTraversal(best)}\n`);
-      }
     }
   }
 
