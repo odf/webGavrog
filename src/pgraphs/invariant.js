@@ -7,21 +7,50 @@ import { rationalLinearAlgebra as ops,
          rationalLinearAlgebraModular } from '../arithmetic/types';
 
 
-const _solveInRows = (v, M) =>
-  ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
+class Adjustment {
+  constructor(dim) {
+    this.dim = dim;
+    this.vectors = [];
+    this.matrix = null;
+  }
+
+  solve(vecIn) {
+    if (this.vectors.length)
+      return ops.transposed(ops.solve(
+        ops.transposed(this.vectors), ops.transposed(vecIn)
+      ));
+  }
+
+  add(vecIn) {
+    if (ops.sgn(vecIn) == 0)
+      return vecIn;
+    else if (this.matrix != null)
+      return ops.times(vecIn, this.matrix);
+    else {
+      const vecOut = this.solve(vecIn);
+
+      if (vecOut)
+        return vecOut[0].concat(ops.vector(this.dim - vecOut[0].length));
+      else {
+        this.vectors.push(vecIn);
+        if (this.vectors.length == this.dim)
+          this.matrix = ops.inverse(this.vectors);
+        return ops.unitVector(this.dim, this.vectors.length - 1);
+      }
+    }
+  }
+};
 
 
 const _traversal = function*(graph, v0, transform) {
   const zero = ops.vector(graph.dim);
-
   const pos = pg.barycentricPlacement(graph);
+
   const old2new = {[v0]: 1};
   const newPos = { [v0]: ops.times(pos[v0], transform) };
   const queue = [[v0, zero]];
-  const essentialShifts = [];
-
+  const adjustment = new Adjustment(graph.dim);
   let next = 2;
-  let basisAdjustment = null;
 
   while (queue.length) {
     const [vo, vShift] = queue.shift();
@@ -38,35 +67,16 @@ const _traversal = function*(graph, v0, transform) {
 
     for (const [wo, s, p] of neighbors) {
       const wn = old2new[wo];
+
       if (wn == null) {
         yield [vn, next, zero];
         old2new[wo] = next++;
         newPos[wo] = p;
         queue.push([wo, s]);
       }
-      else if (wn < vn)
-        continue;
-      else {
-        const rawShift = ops.minus(p, newPos[wo]);
-        let shift;
-        if (basisAdjustment != null)
-          shift = ops.times(rawShift, basisAdjustment);
-        else if (ops.sgn(rawShift) == 0)
-          shift = rawShift;
-        else {
-          if (essentialShifts.length)
-            shift = _solveInRows(rawShift, essentialShifts);
-
-          if (shift == null) {
-            shift = ops.unitVector(graph.dim, essentialShifts.length);
-            essentialShifts.push(rawShift);
-            if (essentialShifts.length == graph.dim)
-              basisAdjustment = ops.inverse(essentialShifts);
-          }
-          else
-            shift = shift[0].concat(ops.vector(graph.dim - shift[0].length));
-        }
-        if (vn < wn || (vn == wn && ops.sgn(shift) < 0))
+      else if (vn <= wn) {
+        const shift = adjustment.add(ops.minus(p, newPos[wo]));
+        if (vn < wn || ops.sgn(shift) < 0)
           yield [vn, wn, shift];
       }
     }
