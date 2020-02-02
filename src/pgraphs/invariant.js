@@ -14,29 +14,22 @@ class Adjustment {
     this.matrix = null;
   }
 
-  solve(vecIn) {
-    if (this.vectors.length)
-      return ops.transposed(ops.solve(
-        ops.transposed(this.vectors), ops.transposed(vecIn)
-      ));
-  }
-
   add(vecIn) {
     if (ops.sgn(vecIn) == 0)
       return vecIn;
     else if (this.matrix != null)
       return ops.times(vecIn, this.matrix);
+    else if (ops.rank(this.vectors.concat([vecIn])) > this.vectors.length) {
+      this.vectors.push(vecIn);
+      if (this.vectors.length == this.dim)
+        this.matrix = ops.inverse(this.vectors);
+      return ops.unitVector(this.dim, this.vectors.length - 1);
+    }
     else {
-      const vecOut = this.solve(vecIn);
-
-      if (vecOut)
-        return vecOut[0].concat(ops.vector(this.dim - vecOut[0].length));
-      else {
-        this.vectors.push(vecIn);
-        if (this.vectors.length == this.dim)
-          this.matrix = ops.inverse(this.vectors);
-        return ops.unitVector(this.dim, this.vectors.length - 1);
-      }
+      const tmp = ops.transposed(ops.solve(
+        ops.transposed(this.vectors), ops.transposed(vecIn)
+      ));
+      return tmp[0].concat(ops.vector(this.dim - tmp[0].length));
     }
   }
 };
