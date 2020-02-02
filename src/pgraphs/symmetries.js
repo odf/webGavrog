@@ -558,26 +558,26 @@ export const stationarySymmetries = graph => {
   ));
 
   const symmetries = [];
-  const MAX_COUNT = 50000;
-  let count = 0;
+  let stepsLeft = 50000;
 
   const extend = (partial, level) => {
     if (level >= seeds.length)
       symmetries.push(partial);
-    else {
+    else if (stepsLeft > 0) {
       const v = seeds[level];
 
       for (const w of candidates[level]) {
         const iso = extendAutomorphism(partial, v, w, graph, ebv);
-        if (iso && (++count < MAX_COUNT))
-          extend(iso, level + 1);
+        if (--stepsLeft <= 0)
+          return;
+        iso && extend(iso, level + 1);
       }
     }
   };
 
   extend(init, 0);
 
-  return { symmetries, complete: count <= MAX_COUNT };
+  return { symmetries, complete: stepsLeft >= 0 };
 };
 
 
