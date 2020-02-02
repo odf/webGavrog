@@ -13,26 +13,23 @@ class Basis {
   constructor(dim) {
     this.dim = dim;
     this.vectors = [];
-    this.matrix = null;
+    this.matrix = ops.identityMatrix(dim);
   }
 
   add(vecIn) {
-    if (ops.sgn(vecIn) == 0)
-      return vecIn;
-    else if (this.matrix != null)
-      return ops.times(vecIn, this.matrix);
-    else if (ops.rank(this.vectors.concat([vecIn])) > this.vectors.length) {
+    const n = this.vectors.length;
+
+    if (this.dim > n && ops.rank(this.vectors.concat([vecIn])) > n) {
       this.vectors.push(vecIn);
-      if (this.vectors.length == this.dim)
-        this.matrix = ops.inverse(this.vectors);
-      return ops.unitVector(this.dim, this.vectors.length - 1);
+
+      const basis = this.vectors.slice();
+      for (const vec of ops.identityMatrix(this.dim)) {
+        if (ops.rank(basis.concat([vec])) > basis.length)
+          basis.push(vec);
+      }
+      this.matrix = ops.inverse(basis);
     }
-    else {
-      const tmp = ops.transposed(ops.solve(
-        ops.transposed(this.vectors), ops.transposed(vecIn)
-      ));
-      return tmp[0].concat(ops.vector(this.dim - tmp[0].length));
-    }
+    return ops.times(vecIn, this.matrix);
   }
 };
 
