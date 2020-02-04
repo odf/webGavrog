@@ -54,52 +54,48 @@ const placeOrderedTraversal = function*(graph, start, transform) {
 
 
 const traversalWithNormalizations = (graph, traversal) => {
-  const zero = ops.vector(graph.dim);
   const edges = [];
-  const vertexShifts = {};
-  const vertexMapping = {};
+  const shifts = {};
+  const mapping = {};
   const basis = new Basis(graph.dim);
   let nrVerticesMapped = 0;
 
   const advance = () => {
-    const { value: e, done } = traversal.next();
-    if (done)
-      return false;
+    const { value: edge, done } = traversal.next();
 
-    if (vertexMapping[e.head] == null) {
-      vertexMapping[e.head] = ++nrVerticesMapped;
-      vertexShifts[e.head] = zero;
-    }
-    const v = vertexMapping[e.head];
-    const w = vertexMapping[e.tail];
+    if (!done) {
+      if (mapping[edge.head] == null) {
+        mapping[edge.head] = ++nrVerticesMapped;
+        shifts[edge.head] = ops.vector(graph.dim);
+      }
+      const v = mapping[edge.head];
 
-    if (w == null) {
-      vertexMapping[e.tail] = ++nrVerticesMapped;
-      vertexShifts[e.tail] = ops.plus(e.shift, vertexShifts[e.head]);
-      edges.push([v, vertexMapping[e.tail], zero]);
-    }
-    else if (v <= w) {
-      const shift = basis.add(ops.minus(
-        ops.plus(e.shift, vertexShifts[e.head]),
-        vertexShifts[e.tail]
-      ));
-      if (v < w || ops.sgn(shift) < 0)
-        edges.push([v, w, shift]);
+      if (mapping[edge.tail] == null) {
+        mapping[edge.tail] = ++nrVerticesMapped;
+        shifts[edge.tail] = ops.plus(edge.shift, shifts[edge.head]);
+      }
+      const w = mapping[edge.tail];
+
+      if (v <= w) {
+        const d = ops.minus(shifts[edge.head], shifts[edge.tail]);
+        const shift = basis.add(ops.plus(edge.shift, d));
+
+        if (v < w || ops.sgn(shift) < 0)
+          edges.push([v, w, shift]);
+      }
     }
 
-    return true;
+    return !done;
   };
 
   return {
     get(i) {
-      while (edges.length <= i && advance())
-        ;
+      while (edges.length <= i && advance()) {}
       return edges[i];
     },
     result() {
-      while (advance())
-        ;
-      return { edges, vertexMapping, basisChange: basis.matrix };
+      while (advance()) {}
+      return { edges, mapping, basisChange: basis.matrix };
     }
   };
 };
