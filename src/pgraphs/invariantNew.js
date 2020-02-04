@@ -43,7 +43,7 @@ const placeOrderedTraversal = function*(graph, start, transform) {
     incidences.sort(([ea, da], [eb, db]) => ops.cmp(da, db));
 
     for (const [e] of incidences) {
-      const key = encode(e.canonical());
+      const key = encode(e);
       if (!seen[key]) {
         seen[key] = true;
         yield e;
@@ -83,14 +83,12 @@ const traversalWithNormalizations = (graph, traversal) => {
       vertexShifts[e.tail] = ops.plus(e.shift, vertexShifts[e.head]);
       edges.push([v, vertexMapping[e.tail], zero]);
     }
-    else {
+    else if (v <= w) {
       const shift = basis.add(ops.minus(
         ops.plus(e.shift, vertexShifts[e.head]),
         vertexShifts[e.tail]
       ));
-      if (v > w || (v == w && ops.sgn(shift) > 0))
-        edges.push([w, v, ops.negative(shift)]);
-      else
+      if (v < w || ops.sgn(shift) < 0)
         edges.push([v, w, shift]);
     }
 
