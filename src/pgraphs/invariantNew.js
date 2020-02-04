@@ -4,13 +4,18 @@ import * as ps from './symmetries';
 
 
 class Basis {
-  constructor(dim) {
-    this.dim = dim;
+  constructor() {
+    this.dim = null;
     this.vectors = [];
-    this.matrix = ops.identityMatrix(dim);
+    this.matrix = null;
   }
 
   add(vecIn) {
+    if (this.dim == null) {
+      this.dim = vecIn.length;
+      this.matrix = ops.identityMatrix(this.dim);
+    }
+
     const n = this.vectors.length;
 
     if (this.dim > n && ops.rank(this.vectors.concat([vecIn])) > n) {
@@ -53,11 +58,11 @@ const placeOrderedTraversal = function*(graph, start, transform) {
 };
 
 
-const traversalWithNormalizations = (graph, traversal) => {
+const traversalWithNormalizations = traversal => {
   const edges = [];
   const shifts = {};
   const mapping = {};
-  const basis = new Basis(graph.dim);
+  const basis = new Basis();
   let nrVerticesMapped = 0;
 
   const advance = () => {
@@ -66,7 +71,7 @@ const traversalWithNormalizations = (graph, traversal) => {
     if (!done) {
       if (mapping[edge.head] == null) {
         mapping[edge.head] = ++nrVerticesMapped;
-        shifts[edge.head] = ops.vector(graph.dim);
+        shifts[edge.head] = ops.times(0, edge.shift);
       }
       const v = mapping[edge.head];
 
@@ -195,10 +200,8 @@ export const invariant = graph => {
 
   for (const edgeList of bases) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
-    const trav = traversalWithNormalizations(
-      graph,
-      placeOrderedTraversal(graph, edgeList[0].head, transform)
-    );
+    const base = placeOrderedTraversal(graph, edgeList[0].head, transform);
+    const trav = traversalWithNormalizations(base);
 
     if (best == null)
       best = trav;
