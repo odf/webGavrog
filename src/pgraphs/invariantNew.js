@@ -1,4 +1,3 @@
-import { serialize as encode } from '../common/pickler';
 import { rationalLinearAlgebra as ops } from '../arithmetic/types';
 import * as pg from './periodic';
 import * as ps from './symmetries';
@@ -31,27 +30,23 @@ class Basis {
 
 const placeOrderedTraversal = function*(graph, start, transform) {
   const pos = pg.barycentricPlacement(graph);
-  const seen = {start};
+  const seen = {};
   const queue = [start];
 
   while (queue.length) {
     const v = queue.shift();
 
-    const incidences = pg.incidences(graph)[v].map(e => [
-      e, ops.times(pg.edgeVector(e, pos), transform)
-    ]);
-    incidences.sort(([ea, da], [eb, db]) => ops.cmp(da, db));
+    if (!seen[v]) {
+      seen[v] = true;
 
-    for (const [e] of incidences) {
-      const key = encode(e);
-      if (!seen[key]) {
-        seen[key] = true;
-        yield e;
-      }
+      const incidences = pg.incidences(graph)[v].map(e => [
+        e, ops.times(pg.edgeVector(e, pos), transform)
+      ]);
+      incidences.sort(([ea, da], [eb, db]) => ops.cmp(da, db));
 
-      if (!seen[e.tail]) {
-        seen[e.tail] = true;
+      for (const [e] of incidences) {
         queue.push(e.tail);
+        yield e;
       }
     }
   }
