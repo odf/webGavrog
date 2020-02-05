@@ -1,3 +1,8 @@
+import {
+  serialize as encode,
+  deserialize as decode
+} from '../common/pickler';
+
 import { rationalLinearAlgebra as ops } from '../arithmetic/types';
 import * as pg from './periodic';
 import * as ps from './symmetries';
@@ -85,8 +90,10 @@ const traversalWithNormalizations = traversal => {
         const d = ops.minus(shifts[edge.head], shifts[edge.tail]);
         const shift = basis.add(ops.plus(edge.shift, d));
 
-        if (v < w || ops.sgn(shift) < 0)
+        if (v < w || ops.sgn(shift) < 0) {
+          mapping[encode(edge)] = encode(pg.makeEdge(v, w, shift));
           edges.push([v, w, shift]);
+        }
       }
     }
 
@@ -187,7 +194,7 @@ const postprocessTraversal = trav => {
 };
 
 
-export const invariant = graph => {
+export const invariantWithMapping = graph => {
   const pos = pg.barycentricPlacement(graph);
   const sym = ps.symmetries(graph);
 
@@ -220,8 +227,13 @@ export const invariant = graph => {
     }
   }
 
-  return postprocessTraversal(best.result().edges).sort(_cmpSteps);
+  const result = best.result();
+  const edges = postprocessTraversal(result.edges).sort(_cmpSteps);
+  return Object.assign({}, result, { edges });
 };
+
+
+export const invariant = graph => invariantWithMapping(graph).edges;
 
 
 export const systreKey = graph => {
@@ -247,7 +259,16 @@ if (require.main == module) {
   };
 
   const test = g => {
-    for (const e of invariant(g))
+    const inv = invariantWithMapping(g);
+
+    for (const k of Object.keys(inv.mapping))
+      console.log(`(${decode(k)}) => (${decode(inv.mapping[k])})`);
+    console.log();
+
+    console.log(inv.basisChange);
+    console.log();
+
+    for (const e of inv.edges)
       console.log(e);
     console.log();
 
