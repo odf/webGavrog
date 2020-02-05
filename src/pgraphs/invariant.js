@@ -1,22 +1,26 @@
-import * as S from '../common/lazyseq';
+import {
+  serialize as encode,
+  deserialize as decode
+} from '../common/pickler';
 
+import { rationalLinearAlgebra as ops } from '../arithmetic/types';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
-import {
-  rationalLinearAlgebra as ops,
-  rationalLinearAlgebraModular
- } from '../arithmetic/types';
-
 
 class Basis {
-  constructor(dim) {
-    this.dim = dim;
+  constructor() {
+    this.dim = null;
     this.vectors = [];
-    this.matrix = ops.identityMatrix(dim);
+    this.matrix = null;
   }
 
   add(vecIn) {
+    if (this.dim == null) {
+      this.dim = vecIn.length;
+      this.matrix = ops.identityMatrix(this.dim);
+    }
+
     const n = this.vectors.length;
 
     if (this.dim > n && ops.rank(this.vectors.concat([vecIn])) > n) {
@@ -34,49 +38,82 @@ class Basis {
 };
 
 
-const _traversal = function*(graph, v0, transform) {
-  const zero = ops.vector(graph.dim);
+const placeOrderedTraversal = function*(graph, start, transform) {
   const pos = pg.barycentricPlacement(graph);
-
-  const old2new = {[v0]: 1};
-  const newPos = { [v0]: ops.times(pos[v0], transform) };
-  const queue = [[v0, zero]];
-  const basis = new Basis(graph.dim);
-  let next = 2;
+  const seen = {};
+  const queue = [start];
 
   while (queue.length) {
-    const [vo, vShift] = queue.shift();
-    const vn = old2new[vo];
+    const v = queue.shift();
 
-    const neighbors = [];
-    for (const e of pg.incidences(graph)[vo]) {
-      const w = e.tail;
-      const s = ops.plus(vShift, ops.times(e.shift, transform));
-      neighbors.push([w, s, ops.plus(s, ops.times(pos[w], transform))]);
-    }
+    if (!seen[v]) {
+      seen[v] = true;
 
-    neighbors.sort(([wa, sa, pa], [wb, sb, pb]) => ops.cmp(pa, pb));
+      const incidences = pg.incidences(graph)[v].map(e => [
+        e, ops.times(pg.edgeVector(e, pos), transform)
+      ]);
+      incidences.sort(([ea, da], [eb, db]) => ops.cmp(da, db));
 
-    for (const [wo, s, p] of neighbors) {
-      const wn = old2new[wo];
-
-      if (wn == null) {
-        yield [vn, next, zero];
-        old2new[wo] = next++;
-        newPos[wo] = p;
-        queue.push([wo, s]);
-      }
-      else if (vn <= wn) {
-        const shift = basis.add(ops.minus(p, newPos[wo]));
-        if (vn < wn || ops.sgn(shift) < 0)
-          yield [vn, wn, shift];
+      for (const [e] of incidences) {
+        queue.push(e.tail);
+        yield e;
       }
     }
   }
 };
 
 
-const _triangulate = matrix => {
+const traversalWithNormalizations = traversal => {
+  const edges = [];
+  const shifts = {};
+  const mapping = {};
+  const basis = new Basis();
+  let nrVerticesMapped = 0;
+
+  const advance = () => {
+    const { value: edge, done } = traversal.next();
+
+    if (!done) {
+      if (mapping[edge.head] == null) {
+        mapping[edge.head] = ++nrVerticesMapped;
+        shifts[edge.head] = ops.times(0, edge.shift);
+      }
+      const v = mapping[edge.head];
+
+      if (mapping[edge.tail] == null) {
+        mapping[edge.tail] = ++nrVerticesMapped;
+        shifts[edge.tail] = ops.plus(edge.shift, shifts[edge.head]);
+      }
+      const w = mapping[edge.tail];
+
+      if (v <= w) {
+        const d = ops.minus(shifts[edge.head], shifts[edge.tail]);
+        const shift = basis.add(ops.plus(edge.shift, d));
+
+        if (v < w || ops.sgn(shift) < 0) {
+          mapping[encode(edge)] = encode(pg.makeEdge(v, w, shift));
+          edges.push([v, w, shift]);
+        }
+      }
+    }
+
+    return !done;
+  };
+
+  return {
+    get(i) {
+      while (edges.length <= i && advance()) {}
+      return edges[i];
+    },
+    result() {
+      while (advance()) {}
+      return { edges, mapping, basisChange: basis.matrix };
+    }
+  };
+};
+
+
+const triangulate = matrix => {
   const A = matrix.map(v => v.slice());
   const [nrows, ncols] = ops.shape(A);
 
@@ -136,10 +173,10 @@ const _triangulate = matrix => {
 };
 
 
-const _postprocessTraversal = trav => {
+const postprocessTraversal = trav => {
   const shifts = trav.map(([head, tail, shift]) => shift);
   const dim = ops.dimension(shifts[0]);
-  const basis = _triangulate(shifts).matrix.slice(0, dim);
+  const basis = triangulate(shifts).matrix.slice(0, dim);
 
   const basisChange = ops.inverse(basis);
 
@@ -157,12 +194,7 @@ const _postprocessTraversal = trav => {
 };
 
 
-const printEdge = e => `(${e.head},${e.tail},${e.shift}])`;
-const printStep = ([head, tail, shift]) => `  (${head},${tail},${shift})`;
-const printTraversal = trav => trav.toArray().map(printStep).join('\n')
-
-
-export const invariant = graph => {
+export const invariantWithMapping = graph => {
   const pos = pg.barycentricPlacement(graph);
   const sym = ps.symmetries(graph);
 
@@ -175,23 +207,34 @@ export const invariant = graph => {
 
   for (const edgeList of bases) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
-    const trav = S.seq(_traversal(graph, edgeList[0].head, transform));
+    const base = placeOrderedTraversal(graph, edgeList[0].head, transform);
+    const trav = traversalWithNormalizations(base);
 
     if (best == null)
       best = trav;
     else {
-      let [t, b] = [trav, best];
+      for (let i = 0; ; ++i) {
+        const next = trav.get(i);
+        if (next == null)
+          break;
 
-      while (!t.isNil && _cmpSteps(t.first(), b.first()) == 0)
-        [t, b] = [t.rest(), b.rest()];
-
-      if (!t.isNil && _cmpSteps(t.first(), b.first()) < 0)
-        best = trav;
+        const d = _cmpSteps(next, best.get(i));
+        if (d < 0)
+          best = trav;
+        else if (d > 0)
+          break;
+      }
     }
   }
 
-  return _postprocessTraversal(best.toArray()).sort(_cmpSteps);
+  const result = best.result();
+  const edges = postprocessTraversal(result.edges).sort(_cmpSteps);
+  //TODO incorporate final basis change in all output properties
+  return Object.assign({}, result, { edges });
 };
+
+
+export const invariant = graph => invariantWithMapping(graph).edges;
 
 
 export const systreKey = graph => {
@@ -217,10 +260,19 @@ if (require.main == module) {
   };
 
   const test = g => {
-    const trav = invariant(g);
+    const inv = invariantWithMapping(g);
 
-    for (const e of trav)
+    for (const k of Object.keys(inv.mapping))
+      console.log(`(${decode(k)}) => (${decode(inv.mapping[k])})`);
+    console.log();
+
+    console.log(inv.basisChange);
+    console.log();
+
+    for (const e of inv.edges)
       console.log(e);
+    console.log();
+
     console.log();
   };
 
