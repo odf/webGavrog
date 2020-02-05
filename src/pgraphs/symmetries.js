@@ -84,29 +84,6 @@ const goodCombinations = function*(edges, pos) {
 };
 
 
-const filteredEdgeLists = (graph, lists) => {
-  const headIncidences = es => pg.incidences(graph)[es[0].head];
-
-  const atLoop =
-    lists.filter(es => headIncidences(es).some(e => e.tail == e.head));
-
-  if (atLoop.length)
-    return atLoop;
-
-  const atLune = lists.filter(es => {
-    const neighbours = headIncidences(es).map(e => e.tail).sort();
-    return neighbours.some((w, i) => i > 0 && w == neighbours[i - 1]);
-  });
-
-  if (atLune.length)
-    return atLune;
-
-  const headDegree = es => headIncidences(es).length;
-  const maxDeg = Math.max(...lists.map(headDegree));
-  return lists.filter(es => headDegree(es) == maxDeg);
-};
-
-
 const characteristicEdgeLists = graph => {
   const pos = pg.barycentricPlacement(graph);
   const lists = [];
@@ -126,7 +103,7 @@ const characteristicEdgeLists = graph => {
       lists.push(es);
   }
 
-  return filteredEdgeLists(graph, lists);
+  return lists;
 };
 
 
