@@ -229,6 +229,7 @@ export const invariantWithMapping = graph => {
 
   const result = best.result();
   const edges = postprocessTraversal(result.edges).sort(_cmpSteps);
+  //TODO incorporate final basis change in all output properties
   return Object.assign({}, result, { edges });
 };
 
