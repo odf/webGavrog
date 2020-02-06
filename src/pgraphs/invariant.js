@@ -113,72 +113,55 @@ const traversalWithNormalizations = traversal => {
 };
 
 
+const findPivot = (A, col, startRow) => {
+  const pairs = A
+    .map((row, i) => [ops.abs(row[col]), i])
+    .filter(([x, i]) => i >= startRow && ops.sgn(x));
+
+  if (pairs.length)
+    return pairs.reduce((acc, val) => ops.lt(val[0], acc[0]) ? val : acc)[1];
+};
+
+
 const triangulate = matrix => {
   const A = matrix.map(v => v.slice());
   const [nrows, ncols] = ops.shape(A);
 
-  let sign = 1;
   let row = 0;
-  let col = 0;
 
-  // --- try to annihilate one entry at a time
-  while (row < nrows && col < ncols) {
-    // --- find the entry of smallest norm in the current column
-    let pivot = null;
-    let pivotRow = -1;
+  for (let col = 0; col < ncols; ++col) {
+    while (true) {
+      const pivotRow = findPivot(A, col, row);
+      if (pivotRow == null)
+        break;
 
-    for (let i = row; i < nrows; ++i) {
-      const val = ops.abs(A[i][col]);
-      if (ops.ne(0, val) && (pivot == null || ops.lt(val, pivot))) {
-        pivot = val;
-        pivotRow = i;
+      if (pivotRow != row)
+        [A[row], A[pivotRow]] = [A[pivotRow], A[row]];
+
+      if (ops.sgn(A[row]) < 0)
+        A[row] = ops.negative(A[row]);
+
+      for (let i = row + 1; i < nrows; ++i) {
+        if (ops.ne(0, A[i][col])) {
+          const f = ops.idiv(A[i][col], A[row][col]);
+          A[i] = ops.minus(A[i], ops.times(f, A[row]));
+        }
       }
-    }
 
-    // --- if the current column is "clean", move on to the next one
-    if (pivot == null) {
-      col += 1;
-      continue;
-    }
-
-    // --- move the pivot to the current row
-    if (pivotRow != row) {
-      [A[row], A[pivotRow]] = [A[pivotRow], A[row]];
-      sign = -sign;
-    }
-
-    // --- make the pivot positive
-    if (ops.sgn(A[row]) < 0) {
-      A[row] = ops.negative(A[row]);
-      sign = -sign;
-    }
-
-    // --- attempt to clear the current column below the diagonal
-    for (let i = row + 1; i < nrows; ++i) {
-      if (ops.ne(0, A[i][col])) {
-        const f = ops.idiv(A[i][col], A[row][col]);
-        A[i] = ops.minus(A[i], ops.times(f, A[row]));
+      if (A.every((v, i) => i <= row || ops.eq(0, v[col]))) {
+        row += 1;
+        break;
       }
-    }
-
-    // --- if clearing was successful, move on
-    if (A.slice(row + 1).every(v => ops.eq(0, v[col]))) {
-      row += 1;
-      col += 1;
     }
   }
 
-  // --- we're done
-  return { matrix: A, sign };
+  return A.slice(0, ncols);
 };
 
 
 const postprocessTraversal = trav => {
   const shifts = trav.map(([head, tail, shift]) => shift);
-  const dim = ops.dimension(shifts[0]);
-  const basis = triangulate(shifts).matrix.slice(0, dim);
-
-  const basisChange = ops.inverse(basis);
+  const basisChange = ops.inverse(triangulate(shifts));
 
   return trav.map(([head, tail, shift]) => {
     const newShift = ops.times(shift, basisChange);
