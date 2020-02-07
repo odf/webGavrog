@@ -63,51 +63,63 @@ const placeOrderedTraversal = function*(graph, start, transform) {
 };
 
 
-const traversalWithNormalizations = traversal => {
-  const edges = [];
+const adjustedTraversal = function*(traversal) {
   const shifts = {};
   const mapping = {};
   const basis = new Basis();
   let nrVerticesMapped = 0;
 
-  const advance = () => {
-    const { value: edge, done } = traversal.next();
+  for (const edge of traversal) {
+    if (mapping[edge.head] == null) {
+      mapping[edge.head] = ++nrVerticesMapped;
+      shifts[edge.head] = ops.times(0, edge.shift);
+    }
+    const v = mapping[edge.head];
 
-    if (!done) {
-      if (mapping[edge.head] == null) {
-        mapping[edge.head] = ++nrVerticesMapped;
-        shifts[edge.head] = ops.times(0, edge.shift);
-      }
-      const v = mapping[edge.head];
+    if (mapping[edge.tail] == null) {
+      mapping[edge.tail] = ++nrVerticesMapped;
+      shifts[edge.tail] = ops.plus(edge.shift, shifts[edge.head]);
+    }
+    const w = mapping[edge.tail];
 
-      if (mapping[edge.tail] == null) {
-        mapping[edge.tail] = ++nrVerticesMapped;
-        shifts[edge.tail] = ops.plus(edge.shift, shifts[edge.head]);
-      }
-      const w = mapping[edge.tail];
+    if (v <= w) {
+      const d = ops.minus(shifts[edge.head], shifts[edge.tail]);
+      const shift = basis.add(ops.plus(edge.shift, d));
 
-      if (v <= w) {
-        const d = ops.minus(shifts[edge.head], shifts[edge.tail]);
-        const shift = basis.add(ops.plus(edge.shift, d));
-
-        if (v < w || ops.sgn(shift) < 0) {
-          mapping[encode(edge)] = encode(pg.makeEdge(v, w, shift));
-          edges.push([v, w, shift]);
-        }
+      if (v < w || ops.sgn(shift) < 0) {
+        mapping[encode(edge)] = encode(pg.makeEdge(v, w, shift));
+        yield [v, w, shift];
       }
     }
+  }
+
+  return { mapping, basisChange: basis.matrix };
+};
+
+
+const buffered = iterator => {
+  const generated = [];
+  let returned = null;
+
+  const advance = () => {
+    const { value, done } = iterator.next();
+
+    if (!done)
+      generated.push(value);
+    else if (value != null)
+      returned = value;
 
     return !done;
-  };
+  }
 
   return {
     get(i) {
-      while (edges.length <= i && advance()) {}
-      return edges[i];
+      while (generated.length <= i && advance()) {}
+      return generated[i];
     },
     result() {
       while (advance()) {}
-      return { edges, mapping, basisChange: basis.matrix };
+      return { generated, returned };
     }
   };
 };
@@ -191,7 +203,7 @@ export const invariantWithMapping = graph => {
   for (const edgeList of bases) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
     const base = placeOrderedTraversal(graph, edgeList[0].head, transform);
-    const trav = traversalWithNormalizations(base);
+    const trav = buffered(adjustedTraversal(base));
 
     if (best == null)
       best = trav;
@@ -211,9 +223,9 @@ export const invariantWithMapping = graph => {
   }
 
   const result = best.result();
-  const edges = postprocessTraversal(result.edges).sort(_cmpSteps);
+  const edges = postprocessTraversal(result.generated).sort(_cmpSteps);
   //TODO incorporate final basis change in all output properties
-  return Object.assign({}, result, { edges });
+  return Object.assign({}, result.returned, { edges });
 };
 
 
