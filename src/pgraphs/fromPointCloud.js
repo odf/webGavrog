@@ -57,13 +57,13 @@ const induceEdges = (points, nrSeeds, graph, dot) => {
 
     for (const q of points) { //TODO use fewer points? (first nrSeeds incorrect)
       if (q.id > p.id) {
-        const d = ops.minus(p, q);
+        const d = ops.minus(p.pos, q.pos);
         candidates.push([p, q, dot(d, d)]);
       }
     }
     candidates.sort((a, b) => a[2] - b[2]);
 
-    for (let i = 0; i < p.degree; ++i)
+    for (let i = 0; i < Math.min(candidates.length, p.degree); ++i)
       pairsWithDistances.push(candidates[i]);
   }
   pairsWithDistances.sort((a, b) => a[2] - b[2]);
@@ -94,7 +94,7 @@ const fromPointCloud = (rawPoints, explicitEdges, dot) => {
       const pos = ops.plus(p, dirichletShift);
       const shift = ops.plus(extraShift, dirichletShift);
 
-      points.push({ id, pos, degree, shift, originalId, originalPosition });
+      points.push({ id, pos, degree, shift, originalId, originalPos });
     }
   }
 
