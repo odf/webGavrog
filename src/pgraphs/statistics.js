@@ -25,35 +25,24 @@ const edgeVector = (edge, pos) =>
   opsF.minus(opsF.plus(edge.shift, pos[edge.tail]), pos[edge.head]);
 
 
-export const edgeStatistics = (graph, pos, dot) => {
-  const lengths = [];
+const norm = (v, dot) => opsF.sqrt(dot(v, v));
 
-  for (const e of graph.edges) {
-    const p = pos[e.head];
-    const q = pos[e.tail];
-    const d = opsF.minus(opsF.plus(e.shift, q), p);
-    lengths.push(opsF.sqrt(dot(d, d)));
-  }
 
-  return stats(lengths);
-};
+export const edgeStatistics = (graph, pos, dot) =>
+  stats(graph.edges.map(edge => norm(edgeVector(edge, pos), dot)));
 
 
 export const angleStatistics = (graph, pos, dot) => {
   const angles = [];
 
   for (const v of periodic.vertices(graph)) {
-    const neighbors = periodic.incidences(graph)[v];
+    const vectors = periodic.incidences(graph)[v]
+      .map(e => edgeVector(e, pos))
+      .map(v => opsF.div(v, norm(v, dot)));
 
-    for (let i = 0; i < neighbors.length - 1; ++i) {
-      const du = edgeVector(neighbors[i], pos);
-      const lu = opsF.sqrt(dot(du, du));
-
-      for (let j = i + 1; j < neighbors.length; ++j) {
-        const dw = edgeVector(neighbors[j], pos);
-        const lw = opsF.sqrt(dot(dw, dw));
-
-        const arg = dot(du, dw) / (lu * lw);
+    for (let i = 0; i < vectors.length - 1; ++i) {
+      for (let j = i + 1; j < vectors.length; ++j) {
+        const arg = dot(vectors[i], vectors[j]);
         const alpha = Math.acos(Math.max(-1, Math.min(arg, 1)));
 
         angles.push(alpha / Math.PI * 180.0);
