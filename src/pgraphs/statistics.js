@@ -4,7 +4,19 @@ import * as periodic from '../pgraphs/periodic';
 import fromPointCloud from '../pgraphs/fromPointCloud';
 
 
-const sum = v => v.reduce((x, y) => x + y);
+const stats = xs => {
+  let sum = 0.0;
+  let minimum = Infinity;
+  let maximum = -Infinity;
+
+  for (const x of xs) {
+    sum += x;
+    minimum = x < minimum ? x : minimum;
+    maximum = x > maximum ? x : maximum;
+  }
+
+  return { minimum, maximum, average: sum / xs.length };
+};
 
 
 export const edgeStatistics = (graph, pos, dot) => {
@@ -17,11 +29,7 @@ export const edgeStatistics = (graph, pos, dot) => {
     lengths.push(opsF.sqrt(dot(d, d)));
   }
 
-  const minimum = Math.min(...lengths);
-  const maximum = Math.max(...lengths);
-  const average = sum(lengths) / lengths.length;
-
-  return { minimum, maximum, average };
+  return stats(lengths);
 };
 
 
@@ -47,11 +55,7 @@ export const angleStatistics = (graph, pos, dot) => {
     }
   }
 
-  const minimum = Math.min(...angles);
-  const maximum = Math.max(...angles);
-  const average = sum(angles) / angles.length;
-
-  return { minimum, maximum, average };
+  return stats(angles);
 };
 
 
