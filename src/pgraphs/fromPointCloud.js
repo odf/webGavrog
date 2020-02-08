@@ -28,30 +28,35 @@ const induceEdges = (points, nrSeeds, graph, dot = ops.times) => {
 };
 
 
-class Graph {
+class PGraph {
   constructor() {
     this.neighbors = [];
   }
 
-  degree(i) {
+  degree(p) {
+    const i = p.originalId;
     const nbrs = this.neighbors[i] || [];
     return nbrs.length + nbrs.filter(([j, _]) => j == i).length;
   }
 
-  addNeighbor(i, j, s) {
+  addPlainNeighbor(i, j, s) {
     if (this.neighbors[i] == null)
       this.neighbors[i] = [];
     if (this.neighbors[i].every(([k, t]) => k != j || t != s))
       this.neighbors[i].push([j, s]);
   }
 
-  addEdge(i, j, s) {
+  addPlainEdge(i, j, s) {
     if (i == j)
-      this.addNeighbor(i, j, s < ops.times(0, s) ? ops.negative(s) : s);
+      this.addPlainNeighbor(i, j, s < ops.times(0, s) ? ops.negative(s) : s);
     else {
-      this.addNeighbor(i, j, s);
-      this.addNeighbor(j, i, ops.negative(s));
+      this.addPlainNeighbor(i, j, s);
+      this.addPlainNeighbor(j, i, ops.negative(s));
     }
+  }
+
+  addEdge(p, q) {
+    this.addPlainEdge(p.originalId, q.originalId, ops.minus(q.shift, p.shift));
   }
 
   edges() {
@@ -63,29 +68,6 @@ class Graph {
       }
     }
     return result;
-  }
-};
-
-
-class PGraph {
-  constructor() {
-    this.graph = new Graph();
-  }
-
-  addEdge(p, q) {
-    this.graph.addEdge(p.originalId, q.originalId, ops.minus(q.shift, p.shift));
-  }
-
-  addPlainEdge([i, j, s]) {
-    this.graph.addEdge(i, j, s);
-  }
-
-  degree(p) {
-    return this.graph.degree(p.originalId);
-  }
-
-  edges() {
-    return this.graph.edges();
   }
 };
 
@@ -119,7 +101,7 @@ const fromPointCloud = (rawPoints, explicitEdges, dot) => {
     });
 
   const G = new PGraph();
-  explicitEdges.forEach(G.addPlainEdge);
+  explicitEdges.forEach(([i, j, s]) => G.addPlainEdge(i, j, s));
   induceEdges(points, rawPoints.length, G, dot);
   return G.edges();
 };
