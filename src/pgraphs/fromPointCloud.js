@@ -28,66 +28,65 @@ const induceEdges = (points, nrSeeds, graph, dot = ops.times) => {
 };
 
 
-const graph = () => {
-  const neighbors = [];
+class Graph {
+  constructor() {
+    this.neighbors = [];
+  }
 
-  const degree = i => {
-    const nbrs = neighbors[i] || [];
+  degree(i) {
+    const nbrs = this.neighbors[i] || [];
     return nbrs.length + nbrs.filter(([j, _]) => j == i).length;
-  };
+  }
 
-  const contains = (adjs, j, s) => {
-    for (const [k, v] of adjs) {
-      if (k == j && v <= s && v >= s)
-        return true;
-    }
-    return false;
-  };
+  addNeighbor(i, j, s) {
+    if (this.neighbors[i] == null)
+      this.neighbors[i] = [];
+    if (this.neighbors[i].every(([k, t]) => k != j || t != s))
+      this.neighbors[i].push([j, s]);
+  }
 
-  const addNeighbor = (i, j, s) => {
-    if (neighbors[i] == null)
-      neighbors[i] = [];
-    if (!contains(neighbors[i], j, s))
-      neighbors[i].push([j, s]);
-  };
-
-  const addEdge = (i, j, s) => {
+  addEdge(i, j, s) {
     if (i == j)
-      addNeighbor(i, j, s < ops.times(0, s) ? ops.negative(s) : s);
+      this.addNeighbor(i, j, s < ops.times(0, s) ? ops.negative(s) : s);
     else {
-      addNeighbor(i, j, s);
-      addNeighbor(j, i, ops.negative(s));
+      this.addNeighbor(i, j, s);
+      this.addNeighbor(j, i, ops.negative(s));
     }
-  };
+  }
 
-  const edges = () => {
+  edges() {
     const result = [];
-    neighbors.forEach((ws, i) => {
-      ws.forEach(([j, s]) => {
-        if (i <= j)
+    for (let i = 0; i < this.neighbors.length; ++i) {
+      for (const [j, s] of this.neighbors[i]) {
+        if (j >= i)
           result.push([i, j, s]);
-      });
-    });
+      }
+    }
     return result;
-  };
-
-  return { addEdge, degree, edges };
+  }
 };
 
 
-const pgraph = () => {
-  const G = graph();
+class PGraph {
+  constructor() {
+    this.graph = new Graph();
+  }
 
-  const addEdge = (p, q) => {
-    G.addEdge(p.originalId, q.originalId, ops.minus(q.shift, p.shift));
-  };
+  addEdge(p, q) {
+    this.graph.addEdge(p.originalId, q.originalId, ops.minus(q.shift, p.shift));
+  }
 
-  return {
-    addEdge     : addEdge,
-    addPlainEdge: ([i, j, s]) => G.addEdge(i, j, s),
-    degree      : p  => G.degree(p.originalId),
-    edges       : G.edges
-  };
+  addPlainEdge([i, j, s]) {
+    this.graph.addEdge(i, j, s);
+  }
+
+  degree(p) {
+    return this.graph.degree(p.originalId);
+  }
+
+  edges() {
+    return this.graph.edges();
+  }
 };
 
 
@@ -119,7 +118,7 @@ const fromPointCloud = (rawPoints, explicitEdges, dot) => {
       };
     });
 
-  const G = pgraph();
+  const G = new PGraph();
   explicitEdges.forEach(G.addPlainEdge);
   induceEdges(points, rawPoints.length, G, dot);
   return G.edges();
