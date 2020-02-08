@@ -1,13 +1,7 @@
-import * as pickler from '../common/pickler';
+import { serialize as encode } from '../common/pickler';
+import { coordinateChangesF as opsF } from '../geometry/types';
 import * as periodic from '../pgraphs/periodic';
-
 import fromPointCloud from '../pgraphs/fromPointCloud';
-
-import { coordinateChangesF } from '../geometry/types';
-const opsF = coordinateChangesF;
-
-
-const encode = pickler.serialize;
 
 
 const sum = v => v.reduce((x, y) => x + y);
