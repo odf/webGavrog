@@ -19,7 +19,7 @@ class PGraph {
   addPlainNeighbor(i, j, s) {
     if (this.neighbors[i] == null)
       this.neighbors[i] = [];
-    if (this.neighbors[i].every(([k, t]) => k != j || t != s))
+    if (this.neighbors[i].every(([k, t]) => k != j || ops.ne(t, s)))
       this.neighbors[i].push([j, s]);
   }
 
