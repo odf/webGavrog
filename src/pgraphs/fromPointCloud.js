@@ -3,8 +3,11 @@ import { pointsF as ops }  from '../geometry/types';
 
 
 class PGraph {
-  constructor() {
+  constructor(edges) {
     this.neighbors = [];
+
+    for (const [i, j, s] of edges)
+      this.addPlainEdge(i, j, s);
   }
 
   degree(p) {
@@ -22,7 +25,7 @@ class PGraph {
 
   addPlainEdge(i, j, s) {
     if (i == j)
-      this.addPlainNeighbor(i, j, s < ops.times(0, s) ? ops.negative(s) : s);
+      this.addPlainNeighbor(i, j, ops.sgn(s) < 0 ? ops.negative(s) : s);
     else {
       this.addPlainNeighbor(i, j, s);
       this.addPlainNeighbor(j, i, ops.negative(s));
@@ -74,8 +77,7 @@ const induceEdges = (points, nrSeeds, graph, dot) => {
 
 const fromPointCloud = (rawPoints, explicitEdges, dot) => {
   const eps = Math.pow(2, -40);
-  const { dirichletVectors, shiftIntoDirichletDomain } =
-    lattices(ops, eps, dot);
+  const { dirichletVectors, shiftIntoDirichletDomain } = lattices(ops, eps, dot);
 
   const basis  = ops.identityMatrix(ops.dimension(rawPoints[0].pos));
   const dvs    = dirichletVectors(basis);
@@ -96,12 +98,8 @@ const fromPointCloud = (rawPoints, explicitEdges, dot) => {
     }
   }
 
-  const G = new PGraph();
-  for (const [i, j, s] of explicitEdges)
-    G.addPlainEdge(i, j, s);
-
+  const G = new PGraph(explicitEdges);
   induceEdges(points, rawPoints.length, G, dot);
-
   return G.edges();
 };
 
