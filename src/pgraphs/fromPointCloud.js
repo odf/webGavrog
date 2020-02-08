@@ -1,33 +1,30 @@
 import { lattices } from '../spacegroups/lattices';
-import { pointsF }  from '../geometry/types';
+import { pointsF as ops }  from '../geometry/types';
 
-const ops = pointsF;
-
-
-const norm = (v, dot) => dot(v, v);
-const distance = (p, q, dot) => norm(ops.minus(p, q), dot);
-const sortByDist = (a, key) => a.sort((x, y) => x.dist - y.dist);
-
-const withRelevantDistances = (p, points, dot) => (
-  points
-    .filter(q => q.id > p.id)
-    .map(q => ({ base: p, neighbor: q, dist: distance(p.pos, q.pos, dot) }))
-    .sort((x, y) => x.dist - y.dist)
-    .slice(0, p.degree)
-);
-
-const allDistances = (points, nrSeeds, dot) => {
-  const tmp = points /*.slice(0, nrSeeds)*/ /* TODO: fix optimization */
-        .map(p => withRelevantDistances(p, points, dot));
-  return sortByDist([].concat(...tmp));
-};
 
 const induceEdges = (points, nrSeeds, graph, dot = ops.times) => {
-  allDistances(points, nrSeeds, dot).forEach(
-    ({ base: p, neighbor: q, dist: d }) => {
-      if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
-        graph.addEdge(p, q);
-    });
+  const pairsWithDistances = [];
+
+  for (const p of points) {
+    const candidates = [];
+
+    for (const q of points) { //TODO use fewer points? (first nrSeeds incorrect)
+      if (q.id > p.id) {
+        const d = ops.minus(p, q);
+        candidates.push([p, q, dot(d, d)]);
+      }
+    }
+    candidates.sort((a, b) => a[2] - b[2]);
+
+    for (let i = 0; i < p.degree; ++i)
+      pairsWithDistances.push(candidates[i]);
+  }
+  pairsWithDistances.sort((a, b) => a[2] - b[2]);
+
+  for (const [p, q, d] of pairsWithDistances) {
+    if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
+      graph.addEdge(p, q);
+  }
 };
 
 
