@@ -16,12 +16,12 @@ class Basis {
   }
 
   add(vecIn) {
+    const n = this.vectors.length;
+
     if (this.dim == null) {
       this.dim = vecIn.length;
       this.matrix = ops.identityMatrix(this.dim);
     }
-
-    const n = this.vectors.length;
 
     if (this.dim > n && ops.rank(this.vectors.concat([vecIn])) > n) {
       this.vectors.push(vecIn);
