@@ -65,35 +65,36 @@ const placeOrderedTraversal = function*(graph, start, transform) {
 
 const adjustedTraversal = function*(traversal) {
   const shifts = {};
-  const mapping = {};
+  const vertexMapping = {};
+  const edgeMapping = {};
   const basis = new Basis();
   let nrVerticesMapped = 0;
 
   for (const edge of traversal) {
-    if (mapping[edge.head] == null) {
-      mapping[edge.head] = ++nrVerticesMapped;
+    if (vertexMapping[edge.head] == null) {
+      vertexMapping[edge.head] = ++nrVerticesMapped;
       shifts[edge.head] = ops.times(0, edge.shift);
     }
-    const v = mapping[edge.head];
+    const v = vertexMapping[edge.head];
 
-    if (mapping[edge.tail] == null) {
-      mapping[edge.tail] = ++nrVerticesMapped;
+    if (vertexMapping[edge.tail] == null) {
+      vertexMapping[edge.tail] = ++nrVerticesMapped;
       shifts[edge.tail] = ops.plus(edge.shift, shifts[edge.head]);
     }
-    const w = mapping[edge.tail];
+    const w = vertexMapping[edge.tail];
 
     if (v <= w) {
       const d = ops.minus(shifts[edge.head], shifts[edge.tail]);
       const shift = basis.add(ops.plus(edge.shift, d));
 
       if (v < w || ops.sgn(shift) < 0) {
-        mapping[encode(edge)] = encode(pg.makeEdge(v, w, shift));
+        edgeMapping[encode(edge)] = encode(pg.makeEdge(v, w, shift));
         yield [v, w, shift];
       }
     }
   }
 
-  return { mapping, basisChange: basis.matrix };
+  return { vertexMapping, edgeMapping, basisChange: basis.matrix };
 };
 
 
@@ -171,21 +172,29 @@ const triangulate = matrix => {
 };
 
 
-const postprocessTraversal = trav => {
-  const shifts = trav.map(([head, tail, shift]) => shift);
-  const basisChange = ops.inverse(triangulate(shifts));
+const transformEdges = (edges, M) => edges.map(([head, tail, shift]) => {
+  const newShift = ops.times(shift, M);
 
-  return trav.map(([head, tail, shift]) => {
-    const newShift = ops.times(shift, basisChange);
+  if (newShift.some(x => !ops.isInteger(x)))
+    throw new Error("panic: produced non-integer shift");
 
-    if (newShift.some(x => !ops.isInteger(x)))
-      throw new Error("panic: produced non-integer shift");
+  if (head == tail && ops.sgn(newShift) > 0)
+    return [head, tail, ops.negative(newShift)];
+  else
+    return [head, tail, newShift];
+});
 
-    if (head == tail && ops.sgn(newShift) > 0)
-      return [head, tail, ops.negative(newShift)];
-    else
-      return [head, tail, newShift];
-  });
+
+const transformEdgeMapping = (mapping, M) => {
+  const result = {};
+
+  for (const [key, val] of Object.entries(mapping)) {
+    const edge = decode(val);
+    const shift = ops.times(edge.shift, M);
+    result[key] = encode(pg.makeEdge(edge.head, edge.tail, shift));
+  }
+
+  return result;
 };
 
 
@@ -222,10 +231,16 @@ export const invariantWithMapping = graph => {
     }
   }
 
-  const result = best.result();
-  const edges = postprocessTraversal(result.generated).sort(_cmpSteps);
-  //TODO incorporate final basis change in all output properties
-  return Object.assign({}, result.returned, { edges });
+  const { generated, returned } = best.result();
+  const shifts = generated.map(([head, tail, shift]) => shift);
+  const M = ops.inverse(triangulate(shifts));
+
+  const edges = transformEdges(generated, M).sort(_cmpSteps);
+  const basisChange = ops.times(returned.basisChange, M);
+  const vertexMapping = returned.vertexMapping;
+  const edgeMapping = transformEdgeMapping(returned.edgeMapping, M);
+
+  return { edges, vertexMapping, edgeMapping, basisChange };
 };
 
 
@@ -257,15 +272,23 @@ if (require.main == module) {
   const test = g => {
     const inv = invariantWithMapping(g);
 
-    for (const k of Object.keys(inv.mapping))
-      console.log(`(${decode(k)}) => (${decode(inv.mapping[k])})`);
+    for (const e of g.edges)
+      console.log(`${e}`);
+    console.log();
+
+    for (const k of Object.keys(inv.vertexMapping))
+      console.log(`${k} => ${inv.vertexMapping[k]}`);
+    console.log();
+
+    for (const k of Object.keys(inv.edgeMapping))
+      console.log(`(${decode(k)}) => (${decode(inv.edgeMapping[k])})`);
     console.log();
 
     console.log(inv.basisChange);
     console.log();
 
     for (const e of inv.edges)
-      console.log(e);
+      console.log(`${pg.makeEdge(...e)}`);
     console.log();
 
     console.log();
