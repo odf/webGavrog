@@ -15,8 +15,14 @@ const stats = xs => {
     maximum = x > maximum ? x : maximum;
   }
 
-  return { minimum, maximum, average: sum / xs.length };
+  const average = sum / xs.length;
+
+  return { minimum, maximum, average };
 };
+
+
+const edgeVector = (edge, pos) =>
+  opsF.minus(opsF.plus(edge.shift, pos[edge.tail]), pos[edge.head]);
 
 
 export const edgeStatistics = (graph, pos, dot) => {
@@ -38,19 +44,19 @@ export const angleStatistics = (graph, pos, dot) => {
 
   for (const v of periodic.vertices(graph)) {
     const neighbors = periodic.incidences(graph)[v];
-    const pv = pos[v];
 
     for (let i = 0; i < neighbors.length - 1; ++i) {
-      const { tail: u, shift: su } = neighbors[i];
-      const du = opsF.minus(opsF.plus(su, pos[u]), pv);
+      const du = edgeVector(neighbors[i], pos);
       const lu = opsF.sqrt(dot(du, du));
 
       for (let j = i + 1; j < neighbors.length; ++j) {
-        const { tail: w, shift: sw } = neighbors[j];
-        const dw = opsF.minus(opsF.plus(sw, pos[w]), pv);
+        const dw = edgeVector(neighbors[j], pos);
         const lw = opsF.sqrt(dot(dw, dw));
 
-        angles.push(Math.acos(dot(du, dw) / (lu * lw)) / Math.PI * 180.0);
+        const arg = dot(du, dw) / (lu * lw);
+        const alpha = Math.acos(Math.max(-1, Math.min(arg, 1)));
+
+        angles.push(alpha / Math.PI * 180.0);
       }
     }
   }
