@@ -2,32 +2,6 @@ import { lattices } from '../spacegroups/lattices';
 import { pointsF as ops }  from '../geometry/types';
 
 
-const induceEdges = (points, nrSeeds, graph, dot = ops.times) => {
-  const pairsWithDistances = [];
-
-  for (const p of points) {
-    const candidates = [];
-
-    for (const q of points) { //TODO use fewer points? (first nrSeeds incorrect)
-      if (q.id > p.id) {
-        const d = ops.minus(p, q);
-        candidates.push([p, q, dot(d, d)]);
-      }
-    }
-    candidates.sort((a, b) => a[2] - b[2]);
-
-    for (let i = 0; i < p.degree; ++i)
-      pairsWithDistances.push(candidates[i]);
-  }
-  pairsWithDistances.sort((a, b) => a[2] - b[2]);
-
-  for (const [p, q, d] of pairsWithDistances) {
-    if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
-      graph.addEdge(p, q);
-  }
-};
-
-
 class PGraph {
   constructor() {
     this.neighbors = [];
@@ -72,37 +46,62 @@ class PGraph {
 };
 
 
-const flatMap   = (fn, xs) => xs.reduce((t, x) => t.concat(fn(x)), []);
-const cartesian = (xs, ys) => flatMap(x => ys.map(y => [x, y]), xs);
+const induceEdges = (points, nrSeeds, graph, dot) => {
+  const pairsWithDistances = [];
+
+  for (const p of points) {
+    const candidates = [];
+
+    for (const q of points) { //TODO use fewer points? (first nrSeeds incorrect)
+      if (q.id > p.id) {
+        const d = ops.minus(p, q);
+        candidates.push([p, q, dot(d, d)]);
+      }
+    }
+    candidates.sort((a, b) => a[2] - b[2]);
+
+    for (let i = 0; i < p.degree; ++i)
+      pairsWithDistances.push(candidates[i]);
+  }
+  pairsWithDistances.sort((a, b) => a[2] - b[2]);
+
+  for (const [p, q, d] of pairsWithDistances) {
+    if (graph.degree(p) < p.degree || graph.degree(q) < q.degree)
+      graph.addEdge(p, q);
+  }
+};
 
 
 const fromPointCloud = (rawPoints, explicitEdges, dot) => {
   const eps = Math.pow(2, -40);
   const { dirichletVectors, shiftIntoDirichletDomain } =
-        lattices(ops, eps, dot);
+    lattices(ops, eps, dot);
 
   const basis  = ops.identityMatrix(ops.dimension(rawPoints[0].pos));
   const dvs    = dirichletVectors(basis);
   const dvs2   = ops.times(2, dvs);
   const origin = ops.times(0, dvs[0]);
 
-  const points = cartesian([origin].concat(dvs), rawPoints).map(
-    ([shift, { id, pos, degree }], i) => {
-      const p = ops.plus(pos, shift);
-      const s = shiftIntoDirichletDomain(ops.vector(p), dvs2);
-      return {
-        id: i,
-        pos: ops.plus(p, s),
-        degree,
-        shift: ops.plus(shift, s),
-        originalId: id,
-        originalPosition: pos
-      };
-    });
+  const points = [];
+
+  for (const extraShift of [origin].concat(dvs)) {
+    for (const { id: originalId, pos: originalPos, degree } of rawPoints) {
+      const p = ops.plus(originalPos, extraShift);
+      const dirichletShift = shiftIntoDirichletDomain(ops.vector(p), dvs2);
+      const id = points.length;
+      const pos = ops.plus(p, dirichletShift);
+      const shift = ops.plus(extraShift, dirichletShift);
+
+      points.push({ id, pos, degree, shift, originalId, originalPosition });
+    }
+  }
 
   const G = new PGraph();
-  explicitEdges.forEach(([i, j, s]) => G.addPlainEdge(i, j, s));
+  for (const [i, j, s] of explicitEdges)
+    G.addPlainEdge(i, j, s);
+
   induceEdges(points, rawPoints.length, G, dot);
+
   return G.edges();
 };
 
