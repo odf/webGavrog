@@ -13,21 +13,21 @@ import {
 } from '../arithmetic/types';
 
 
-const _projectiveMatrix = (linear, shift) =>
+const projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
 
-const _nodeSymmetrizer = (v, syms, positions) => {
+const nodeSymmetrizer = (v, syms, positions) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const pos = positions[v];
   const m = opsQ.div(stab.reduce((a, b) => opsQ.plus(a, b)), stab.length);
   const t = opsQ.minus(pos, opsQ.times(pos, m));
 
-  return _projectiveMatrix(m, t);
+  return projectiveMatrix(m, t);
 };
 
 
-const _coordinateParametrization = (graph, syms) => {
+const coordinateParametrization = (graph, syms) => {
   const positions = pg.barycentricPlacement(graph);
   const I = opsQ.identityMatrix(graph.dim + 1);
   const rot = A => A.slice().reverse().map(row => row.slice().reverse());
@@ -41,7 +41,7 @@ const _coordinateParametrization = (graph, syms) => {
       continue;
 
     const pv = positions[v];
-    const sv = _nodeSymmetrizer(v, syms, positions);
+    const sv = nodeSymmetrizer(v, syms, positions);
     const cv = normalized(opsQ.leftNullSpace(opsQ.minus(sv, I)));
 
     nodeInfo[v] = {
@@ -57,10 +57,10 @@ const _coordinateParametrization = (graph, syms) => {
       const pw = positions[w];
 
       const a = sym.transform;
-      const t = _projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
+      const t = projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
 
       const cw = opsQ.times(cv, t);
-      const sw = _nodeSymmetrizer(w, syms, positions);
+      const sw = nodeSymmetrizer(w, syms, positions);
 
       if (opsQ.ne(opsQ.times(cw, sw), cw))
         throw Error(`${cw} * ${sw} = ${opsQ.times(cw, sw)}`);
@@ -75,7 +75,7 @@ const _coordinateParametrization = (graph, syms) => {
 };
 
 
-const _parametersForPosition = (pos, cfg, proj, symmetrizer) => {
+const parametersForPosition = (pos, cfg, proj, symmetrizer) => {
   const n = cfg.length;
 
   if (n > 1)
@@ -86,7 +86,7 @@ const _parametersForPosition = (pos, cfg, proj, symmetrizer) => {
 };
 
 
-const _parametersForGramMatrix = (gram, proj, syms) => {
+const parametersForGramMatrix = (gram, proj, syms) => {
   const G = unitCells.symmetrizedGramMatrix(gram, syms);
   const n = opsF.shape(G)[0];
 
@@ -101,7 +101,7 @@ const _parametersForGramMatrix = (gram, proj, syms) => {
 };
 
 
-const _parametersForConfiguration = (
+const parametersForConfiguration = (
   graph,
   gram,
   positions,
@@ -109,13 +109,13 @@ const _parametersForConfiguration = (
   positionSpace,
   symOps
 ) => {
-  const pieces = [_parametersForGramMatrix(gram, gramProj, symOps)];
+  const pieces = [parametersForGramMatrix(gram, gramProj, symOps)];
 
   for (const v of pg.vertices(graph)) {
     const psv = positionSpace[v];
 
     if (psv.isRepresentative)
-      pieces.push(_parametersForPosition(
+      pieces.push(parametersForPosition(
         positions[v], psv.configSpace, psv.configProj, psv.symmetrizer));
   }
 
@@ -123,7 +123,7 @@ const _parametersForConfiguration = (
 };
 
 
-const _positionFromParameters = (parms, cfg) => {
+const positionFromParameters = (parms, cfg) => {
   const n = parms.length;
   let p = cfg[n].slice(0, -1);
 
@@ -136,7 +136,7 @@ const _positionFromParameters = (parms, cfg) => {
 };
 
 
-const _gramMatrixFromParameters = (parms, cfg) => {
+const gramMatrixFromParameters = (parms, cfg) => {
   const n = Math.sqrt(2 * cfg[0].length + 0.25) - 0.5;
   const G = opsF.matrix(n, n);
 
@@ -166,7 +166,7 @@ const _gramMatrixFromParameters = (parms, cfg) => {
 
 
 
-const _configurationFromParameters = (
+const configurationFromParameters = (
   graph,
   params,
   gramSpace,
@@ -179,14 +179,15 @@ const _configurationFromParameters = (
   for (const v of pg.vertices(graph)) {
     const { index, configSpace } = positionSpace[v];
     const slice = positionParams.slice(index, index + configSpace.length - 1);
-    positions[v] = _positionFromParameters(slice, configSpace);
+    positions[v] = positionFromParameters(slice, configSpace);
   }
 
-  const gram = _gramMatrixFromParameters(gramParams, gramSpace);
-  const edgeLength =
-    _edgeLength(positionParams, positionSpace, gram, positions);
+  const gram = gramMatrixFromParameters(gramParams, gramSpace);
 
-  const lengths = graph.edges.map(edgeLength);
+  const lengths = graph.edges.map(
+    edgeLength(positionParams, positionSpace, gram, positions)
+  );
+
   const avgEdgeLength = sum(lengths) / lengths.length;
 
   return {
@@ -197,14 +198,14 @@ const _configurationFromParameters = (
 };
 
 
-const _edgeLength = (params, positionSpace, gram, fixedPositions) => {
+const edgeLength = (params, positionSpace, gram, fixedPositions) => {
   const position = fixedPositions ?
     v => fixedPositions[v] :
     v => {
       const { index, configSpace } = positionSpace[v];
       const paramsForV = params.slice(index, index + configSpace.length - 1);
 
-      return _positionFromParameters(paramsForV, configSpace);
+      return positionFromParameters(paramsForV, configSpace);
     };
 
   return edge => {
@@ -251,7 +252,7 @@ const dotProduct = gram => (v, w) => {
 };
 
 
-const _energyEvaluator = (
+const energyEvaluator = (
   positionSpace,
   gramSpace,
   edgeOrbits,
@@ -262,13 +263,13 @@ const _energyEvaluator = (
     const gramParams = params.slice(0, gramSpace.length);
     const positionParams = params.slice(gramSpace.length);
 
-    const gram = _gramMatrixFromParameters(gramParams, gramSpace);
+    const gram = gramMatrixFromParameters(gramParams, gramSpace);
 
-    const edgeLength = _edgeLength(
+    const edgeLengthFn = edgeLength(
       positionParams, positionSpace, gram, fixedPositions);
 
     const weightedEdgeLengths = edgeOrbits.map(orb => ({
-      length: edgeLength(orb[0]),
+      length: edgeLengthFn(orb[0]),
       weight: orb.length
     }));
 
@@ -300,7 +301,7 @@ const id = dim => opsQ.identityMatrix(dim);
 
 const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
   const volWeight = Math.pow(10, -passNr);
-  const energy = _energyEvaluator(posSpace, gramSpace, edgeOrbits, volWeight);
+  const energy = energyEvaluator(posSpace, gramSpace, edgeOrbits, volWeight);
 
   const result = amoeba(energy, params, 10000, 1e-6, 0.1);
 
@@ -313,7 +314,7 @@ const embed = (g, relax=true) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  const posSpace = _coordinateParametrization(g, syms);
+  const posSpace = coordinateParametrization(g, syms);
   for (const v in posSpace) {
     const cfg = posSpace[v].configSpace;
     const n = cfg.length;
@@ -333,12 +334,12 @@ const embed = (g, relax=true) => {
     posF[v] = opsQ.toJS(positions[v]);
 
   const symF = symOps.map(s => opsQ.toJS(s));
-  const startParams = _parametersForConfiguration(
+  const startParams = parametersForConfiguration(
     g, gram, posF, gramProjF, posSpace, symF);
 
   const result = {};
   result.barycentric =
-    _configurationFromParameters(g, startParams, gramSpaceF, posSpace);
+    configurationFromParameters(g, startParams, gramSpaceF, posSpace);
 
   if (relax) {
     let params = startParams;
@@ -346,7 +347,7 @@ const embed = (g, relax=true) => {
     for (let pass = 0; pass < 5; ++pass) {
       const newParams = embedStep(
         params, pass, posSpace, gramSpaceF, edgeOrbits);
-      const { positions, gram } = _configurationFromParameters(
+      const { positions, gram } = configurationFromParameters(
         g, newParams, gramSpaceF, posSpace);
 
       const dot = dotProduct(gram);
@@ -369,7 +370,7 @@ const embed = (g, relax=true) => {
     }
 
     result.relaxed =
-      _configurationFromParameters(g, params, gramSpaceF, posSpace);
+      configurationFromParameters(g, params, gramSpaceF, posSpace);
   }
 
   return result;
