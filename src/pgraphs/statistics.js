@@ -4,6 +4,11 @@ import * as periodic from '../pgraphs/periodic';
 import fromPointCloud from '../pgraphs/fromPointCloud';
 
 
+const norm = (v, dot) => opsF.sqrt(dot(v, v));
+const normalized = (v, dot) => opsF.div(v, norm(v, dot));
+const clamp = (val, lo, hi) => Math.max(lo, Math.min(val, hi));
+
+
 const stats = xs => {
   let sum = 0.0;
   let minimum = Infinity;
@@ -25,9 +30,6 @@ const edgeVector = (edge, pos) =>
   opsF.minus(opsF.plus(edge.shift, pos[edge.tail]), pos[edge.head]);
 
 
-const norm = (v, dot) => opsF.sqrt(dot(v, v));
-
-
 export const edgeStatistics = (graph, pos, dot) =>
   stats(graph.edges.map(edge => norm(edgeVector(edge, pos), dot)));
 
@@ -37,15 +39,12 @@ export const angleStatistics = (graph, pos, dot) => {
 
   for (const v of periodic.vertices(graph)) {
     const vectors = periodic.incidences(graph)[v]
-      .map(e => edgeVector(e, pos))
-      .map(v => opsF.div(v, norm(v, dot)));
+      .map(e => normalized(edgeVector(e, pos), dot));
 
     for (let i = 0; i < vectors.length - 1; ++i) {
       for (let j = i + 1; j < vectors.length; ++j) {
-        const arg = dot(vectors[i], vectors[j]);
-        const alpha = Math.acos(Math.max(-1, Math.min(arg, 1)));
-
-        angles.push(alpha / Math.PI * 180.0);
+        const arg = clamp(dot(vectors[i], vectors[j]), -1.0, 1.0);
+        angles.push(Math.acos(arg) / Math.PI * 180.0);
       }
     }
   }
@@ -63,23 +62,19 @@ export const shortestNonEdge = (graph, pos, dot) => {
 
   const seen = {};
   for (const e of graph.edges) {
-    const p = pos[e.head];
-    const q = pos[e.tail];
-    const v = opsF.minus(opsF.plus(e.shift, q), p);
+    const v = edgeVector(e, pos);
     seen[encode([e.head, v])] = true;
     seen[encode([e.tail, opsF.negative(v)])] = true;
   }
 
   const closest = fromPointCloud(nodes, [], dot);
 
-  const extra = [];
+  let minimum = Infinity;
   for (const [head, tail, shift] of closest) {
-    const p = pos[head];
-    const q = pos[tail];
-    const v = opsF.minus(opsF.plus(shift, q), p);
-    if (!seen[encode([head, v])])
-      extra.push(opsF.sqrt(dot(v, v)));
+    const v = edgeVector(periodic.makeEdge(head, tail, shift), pos);
+    if (!seen[encode([head, v])] && norm(v, dot) < minimum)
+      minimum = norm(v, dot);
   }
 
-  return Math.min(...extra);
+  return minimum;
 };
