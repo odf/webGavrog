@@ -17,6 +17,22 @@ const last = a => a[a.length - 1];
 const id = dim => opsQ.identityMatrix(dim);
 
 
+const edgeLength = (edge, gram, positions) => {
+  const pv = positions[edge.head];
+  const pw = positions[edge.tail];
+  const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
+
+  let s = 0;
+  for (let i = 0; i < diff.length; ++i) {
+    s += gram[i][i] * diff[i] * diff[i];
+    for (let j = i + 1; j < diff.length; ++j)
+      s += 2 * gram[i][j] * diff[i] * diff[j];
+  }
+
+  return Math.sqrt(Math.max(0, s));
+};
+
+
 const projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
@@ -166,31 +182,13 @@ const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
   const gram = gramMatrixFromParameters(gramParams, gramSpace);
   const positions = positionsFromParameters(positionParams, posSpace);
 
-  const lengths = graph.edges.map(edgeLength(gram, positions));
+  const lengths = graph.edges.map(e => edgeLength(e, gram, positions));
   const avgEdgeLength = sum(lengths) / lengths.length;
 
   return {
     gram: opsF.div(gram, avgEdgeLength * avgEdgeLength),
     positions,
     params
-  };
-};
-
-
-const edgeLength = (gram, positions) => {
-  return edge => {
-    const pv = positions[edge.head];
-    const pw = positions[edge.tail];
-    const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
-
-    let s = 0;
-    for (let i = 0; i < diff.length; ++i) {
-      s += gram[i][i] * diff[i] * diff[i];
-      for (let j = i + 1; j < diff.length; ++j)
-        s += 2 * gram[i][j] * diff[i] * diff[j];
-    }
-
-    return Math.sqrt(Math.max(0, s));
   };
 };
 
@@ -229,10 +227,9 @@ const energyEvaluator = (posSpace, gramSpace, edgeOrbits, volumeWeight) => {
 
     const gram = gramMatrixFromParameters(gramParams, gramSpace);
     const positions = positionsFromParameters(positionParams, posSpace);
-    const edgeLengthFn = edgeLength(gram, positions);
 
     const weightedEdgeLengths = edgeOrbits.map(orb => ({
-      length: edgeLengthFn(orb[0]),
+      length: edgeLength(orb[0], gram, positions),
       weight: orb.length
     }));
 
