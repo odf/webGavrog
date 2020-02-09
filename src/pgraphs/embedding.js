@@ -35,10 +35,8 @@ const coordinateParametrization = (graph, syms) => {
   const nodeInfo = {};
   let next = 0;
 
-  for (const v of pg.vertices(graph)) {
-    if (nodeInfo[v] != null)
-      continue;
-
+  for (const orb of symmetries.nodeOrbits(graph, syms)) {
+    const v = orb[0];
     const pv = positions[v];
     const sv = nodeSymmetrizer(v, syms, pv);
     const cv = normalized(opsQ.leftNullSpace(opsQ.minus(sv, I)));
@@ -50,21 +48,19 @@ const coordinateParametrization = (graph, syms) => {
     for (const sym of syms) {
       const w = sym.src2img[v];
 
-      if (nodeInfo[w] != null)
-        continue;
+      if (!nodeInfo[w]) {
+        const pw = positions[w];
+        const sw = nodeSymmetrizer(w, syms, pw);
 
-      const pw = positions[w];
+        const a = sym.transform;
+        const t = projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
+        const cw = opsQ.times(cv, t);
 
-      const a = sym.transform;
-      const t = projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
+        if (opsQ.ne(opsQ.times(cw, sw), cw))
+          throw Error(`${cw} * ${sw} = ${opsQ.times(cw, sw)}`);
 
-      const cw = opsQ.times(cv, t);
-      const sw = nodeSymmetrizer(w, syms, pw);
-
-      if (opsQ.ne(opsQ.times(cw, sw), cw))
-        throw Error(`${cw} * ${sw} = ${opsQ.times(cw, sw)}`);
-
-      nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
+        nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
+      }
     }
 
     next += cv.length - 1;
