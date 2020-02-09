@@ -109,8 +109,8 @@ const parametersForPositions = (graph, positions, positionSpace) => {
 };
 
 
-const gramMatrixFromParameters = (parms, cfg) => {
-  const n = Math.sqrt(2 * cfg[0].length + 0.25) - 0.5;
+const gramMatrixFromParameters = (parms, gramSpace) => {
+  const n = Math.sqrt(2 * gramSpace[0].length + 0.25) - 0.5;
   const G = opsF.matrix(n, n);
 
   let k = 0;
@@ -119,7 +119,7 @@ const gramMatrixFromParameters = (parms, cfg) => {
     for (let j = i; j < n; ++j) {
       let x = 0;
       for (let mu = 0; mu < parms.length; ++mu)
-        x += parms[mu] * cfg[mu][k];
+        x += parms[mu] * gramSpace[mu][k];
 
       G[i][j] = G[j][i] = x;
       ++k;
@@ -144,13 +144,12 @@ const positionsFromParameters = (parms, posSpace) => {
 
   for (const v of Object.keys(posSpace)) {
     const { index, configSpace } = posSpace[v];
-    const slice = parms.slice(index, index + configSpace.length - 1);
-    const n = slice.length;
+    const n = configSpace.length - 1;
 
     let p = configSpace[n].slice(0, -1);
     for (let i = 0; i < n; ++i) {
       for (let j = 0; j < p.length; ++j)
-        p[j] += slice[i] * configSpace[i][j];
+        p[j] += parms[index + i] * configSpace[i][j];
     }
 
     positions[v] = p;
