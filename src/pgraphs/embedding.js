@@ -13,6 +13,9 @@ import {
 } from '../arithmetic/types';
 
 
+const last = a => a[a.length - 1];
+
+
 const projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
@@ -70,51 +73,35 @@ const coordinateParametrization = (graph, syms) => {
 };
 
 
-const parametersForPosition = (pos, cfg, proj, symmetrizer) => {
-  const n = cfg.length;
-
-  if (n > 1)
-    return opsF.times(
-      opsF.minus(opsF.times(pos.concat(1), symmetrizer), cfg[n - 1]), proj);
-  else
-    return [];
-};
-
-
 const parametersForGramMatrix = (gram, proj, syms) => {
   const G = unitCells.symmetrizedGramMatrix(gram, syms);
-  const n = opsF.shape(G)[0];
+  const n = opsF.dimension(G);
 
   const a = [];
   for (let i = 0; i < n; ++i) {
-    for (let j = i; j < n; ++j) {
+    for (let j = i; j < n; ++j)
       a.push(G[i][j]);
-    }
   }
 
   return opsF.times(a, proj);
 };
 
 
-const parametersForConfiguration = (
-  graph,
-  gram,
-  positions,
-  gramProj,
-  positionSpace,
-  symOps
-) => {
-  const pieces = [parametersForGramMatrix(gram, gramProj, symOps)];
+const parametersForPositions = (graph, positions, positionSpace) => {
+  const params = [];
 
   for (const v of pg.vertices(graph)) {
     const psv = positionSpace[v];
+    const cfg = psv.configSpace;
 
-    if (psv.isRepresentative)
-      pieces.push(parametersForPosition(
-        positions[v], psv.configSpace, psv.configProj, psv.symmetrizer));
+    if (psv.isRepresentative && cfg.length > 1) {
+      const pos = opsF.times(positions[v].concat(1), psv.symmetrizer);
+      for (const x of opsF.times(opsF.minus(pos, last(cfg)), psv.configProj))
+        params.push(x);
+    }
   }
 
-  return [].concat(...pieces);
+  return params;
 };
 
 
@@ -329,8 +316,8 @@ const embed = (g, relax=true) => {
     posF[v] = opsQ.toJS(positions[v]);
 
   const symF = symOps.map(s => opsQ.toJS(s));
-  const startParams = parametersForConfiguration(
-    g, gram, posF, gramProjF, posSpace, symF);
+  const startParams = parametersForGramMatrix(gram, gramProjF, symF)
+    .concat(parametersForPositions(g, posF, posSpace));
 
   const result = {};
   result.barycentric =
