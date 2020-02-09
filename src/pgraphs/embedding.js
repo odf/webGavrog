@@ -14,6 +14,7 @@ import {
 
 
 const last = a => a[a.length - 1];
+const id = dim => opsQ.identityMatrix(dim);
 
 
 const projectiveMatrix = (linear, shift) =>
@@ -43,10 +44,7 @@ const coordinateParametrization = (graph, syms) => {
     const pv = positions[v];
     const sv = nodeSymmetrizer(v, syms, pv);
     const cv = normalized(opsQ.leftNullSpace(opsQ.minus(sv, I)));
-
-    nodeInfo[v] = {
-      index: next, configSpace: cv, symmetrizer: sv, isRepresentative: true
-    };
+    const lv = cv.length;
 
     for (const sym of syms) {
       const w = sym.src2img[v];
@@ -54,18 +52,24 @@ const coordinateParametrization = (graph, syms) => {
       if (!nodeInfo[w]) {
         const pw = positions[w];
         const sw = nodeSymmetrizer(w, syms, pw);
-
-        const a = sym.transform;
-        const t = projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
+        const a  = sym.transform;
+        const t  = projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
         const cw = opsQ.times(cv, t);
+        const cp = lv == 1 ? [[]] : opsQ.solve(cw.slice(0, -1), id(lv - 1))
 
         if (opsQ.ne(opsQ.times(cw, sw), cw))
           throw Error(`${cw} * ${sw} = ${opsQ.times(cw, sw)}`);
 
-        nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
+        nodeInfo[w] = {
+          index: next,
+          configSpace: opsQ.toJS(cw),
+          symmetrizer: opsQ.toJS(sw),
+          configProj: opsQ.toJS(cp)
+        };
       }
     }
 
+    nodeInfo[v].isRepresentative = true;
     next += cv.length - 1;
   }
 
@@ -278,9 +282,6 @@ const energyEvaluator = (
 };
 
 
-const id = dim => opsQ.identityMatrix(dim);
-
-
 const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
   const volWeight = Math.pow(10, -passNr);
   const energy = energyEvaluator(posSpace, gramSpace, edgeOrbits, volWeight);
@@ -297,14 +298,6 @@ const embed = (g, relax=true) => {
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = coordinateParametrization(g, syms);
-  for (const v in posSpace) {
-    const cfg = posSpace[v].configSpace;
-    const n = cfg.length;
-    posSpace[v].configSpace = opsQ.toJS(cfg);
-    posSpace[v].configProj =
-      n == 1 ? [[]] : opsQ.toJS(opsQ.solve(cfg.slice(0, -1), id(n - 1)));
-    posSpace[v].symmetrizer = opsQ.toJS(posSpace[v].symmetrizer);
-  }
   const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
   const gramSpaceF = opsQ.toJS(gramSpace);
   const gramProjF = opsQ.toJS(opsQ.solve(gramSpace, id(gramSpace.length)));
