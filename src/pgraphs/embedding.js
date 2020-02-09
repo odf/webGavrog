@@ -8,12 +8,9 @@ import amoeba from '../common/amoeba';
 import { affineTransformationsQ } from '../geometry/types';
 
 import {
-  rationalLinearAlgebra,
-  numericalLinearAlgebra
+  rationalLinearAlgebra as opsQ,
+  numericalLinearAlgebra as opsF
 } from '../arithmetic/types';
-
-const opsR = rationalLinearAlgebra;
-const opsF = numericalLinearAlgebra;
 
 
 const _projectiveMatrix = (linear, shift) =>
@@ -23,8 +20,8 @@ const _projectiveMatrix = (linear, shift) =>
 const _nodeSymmetrizer = (v, syms, positions) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const pos = positions[v];
-  const m = opsR.div(stab.reduce((a, b) => opsR.plus(a, b)), stab.length);
-  const t = opsR.minus(pos, opsR.times(pos, m));
+  const m = opsQ.div(stab.reduce((a, b) => opsQ.plus(a, b)), stab.length);
+  const t = opsQ.minus(pos, opsQ.times(pos, m));
 
   return _projectiveMatrix(m, t);
 };
@@ -32,9 +29,9 @@ const _nodeSymmetrizer = (v, syms, positions) => {
 
 const _coordinateParametrization = (graph, syms) => {
   const positions = pg.barycentricPlacement(graph);
-  const I = opsR.identityMatrix(graph.dim + 1);
+  const I = opsQ.identityMatrix(graph.dim + 1);
   const rot = A => A.slice().reverse().map(row => row.slice().reverse());
-  const normalized = A => rot(opsR.reducedBasis(rot(A), null));
+  const normalized = A => rot(opsQ.reducedBasis(rot(A), null));
 
   const nodeInfo = {};
   let next = 0;
@@ -45,7 +42,7 @@ const _coordinateParametrization = (graph, syms) => {
 
     const pv = positions[v];
     const sv = _nodeSymmetrizer(v, syms, positions);
-    const cv = normalized(opsR.leftNullSpace(opsR.minus(sv, I)));
+    const cv = normalized(opsQ.leftNullSpace(opsQ.minus(sv, I)));
 
     nodeInfo[v] = {
       index: next, configSpace: cv, symmetrizer: sv, isRepresentative: true
@@ -60,13 +57,13 @@ const _coordinateParametrization = (graph, syms) => {
       const pw = positions[w];
 
       const a = sym.transform;
-      const t = _projectiveMatrix(a, opsR.minus(pw, opsR.times(pv, a)));
+      const t = _projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
 
-      const cw = opsR.times(cv, t);
+      const cw = opsQ.times(cv, t);
       const sw = _nodeSymmetrizer(w, syms, positions);
 
-      if (opsR.ne(opsR.times(cw, sw), cw))
-        throw Error(`${cw} * ${sw} = ${opsR.times(cw, sw)}`);
+      if (opsQ.ne(opsQ.times(cw, sw), cw))
+        throw Error(`${cw} * ${sw} = ${opsQ.times(cw, sw)}`);
 
       nodeInfo[w] = { index: next, configSpace: cw, symmetrizer: sw };
     }
@@ -298,7 +295,7 @@ const _energyEvaluator = (
 };
 
 
-const id = dim => opsR.identityMatrix(dim);
+const id = dim => opsQ.identityMatrix(dim);
 
 
 const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
@@ -320,22 +317,22 @@ const embed = (g, relax=true) => {
   for (const v in posSpace) {
     const cfg = posSpace[v].configSpace;
     const n = cfg.length;
-    posSpace[v].configSpace = opsR.toJS(cfg);
+    posSpace[v].configSpace = opsQ.toJS(cfg);
     posSpace[v].configProj =
-      n == 1 ? [[]] : opsR.toJS(opsR.solve(cfg.slice(0, -1), id(n - 1)));
-    posSpace[v].symmetrizer = opsR.toJS(posSpace[v].symmetrizer);
+      n == 1 ? [[]] : opsQ.toJS(opsQ.solve(cfg.slice(0, -1), id(n - 1)));
+    posSpace[v].symmetrizer = opsQ.toJS(posSpace[v].symmetrizer);
   }
   const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
-  const gramSpaceF = opsR.toJS(gramSpace);
-  const gramProjF = opsR.toJS(opsR.solve(gramSpace, id(gramSpace.length)));
+  const gramSpaceF = opsQ.toJS(gramSpace);
+  const gramProjF = opsQ.toJS(opsQ.solve(gramSpace, id(gramSpace.length)));
 
   const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
 
   const posF = {};
   for (const v of Object.keys(positions))
-    posF[v] = opsR.toJS(positions[v]);
+    posF[v] = opsQ.toJS(positions[v]);
 
-  const symF = symOps.map(s => opsR.toJS(s));
+  const symF = symOps.map(s => opsQ.toJS(s));
   const startParams = _parametersForConfiguration(
     g, gram, posF, gramProjF, posSpace, symF);
 
