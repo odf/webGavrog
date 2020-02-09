@@ -17,9 +17,8 @@ const projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
 
-const nodeSymmetrizer = (v, syms, positions) => {
+const nodeSymmetrizer = (v, syms, pos) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
-  const pos = positions[v];
   const m = opsQ.div(stab.reduce((a, b) => opsQ.plus(a, b)), stab.length);
   const t = opsQ.minus(pos, opsQ.times(pos, m));
 
@@ -41,7 +40,7 @@ const coordinateParametrization = (graph, syms) => {
       continue;
 
     const pv = positions[v];
-    const sv = nodeSymmetrizer(v, syms, positions);
+    const sv = nodeSymmetrizer(v, syms, pv);
     const cv = normalized(opsQ.leftNullSpace(opsQ.minus(sv, I)));
 
     nodeInfo[v] = {
@@ -60,7 +59,7 @@ const coordinateParametrization = (graph, syms) => {
       const t = projectiveMatrix(a, opsQ.minus(pw, opsQ.times(pv, a)));
 
       const cw = opsQ.times(cv, t);
-      const sw = nodeSymmetrizer(w, syms, positions);
+      const sw = nodeSymmetrizer(w, syms, pw);
 
       if (opsQ.ne(opsQ.times(cw, sw), cw))
         throw Error(`${cw} * ${sw} = ${opsQ.times(cw, sw)}`);
