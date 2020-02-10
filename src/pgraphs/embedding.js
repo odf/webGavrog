@@ -28,7 +28,7 @@ const dotProduct = gram => (v, w) => {
 };
 
 
-const determinant = M => {
+const det = M => {
   if (M.length == 2)
     return M[0][0] * M[1][1] - M[0][1] * M[1][0];
   else if (M.length == 3)
@@ -220,28 +220,28 @@ const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
 const energyEvaluator = (posSpace, gramSpace, edgeOrbits, volumeWeight) => {
   const edgeWeightSum = sumBy(edgeOrbits, orb => orb.length);
   const edgeWeights = edgeOrbits.map(orb => orb.length / edgeWeightSum);
+  const nrVertices = Object.keys(posSpace).length;
+  const posOffset = gramSpace.length;
 
   return params => {
     const gram = gramMatrixFromParameters(params, 0, gramSpace);
-    const positions =
-      positionsFromParameters(params, gramSpace.length, posSpace);
+    const positions = positionsFromParameters(params, posOffset, posSpace);
 
     const edgeLengths = edgeOrbits.map(([e]) => edgeLength(e, gram, positions));
     const avgEdgeLength = sumBy(edgeLengths, (s, i) => s * edgeWeights[i]);
-    const scaling = avgEdgeLength > 1e-12 ? 1.01 / avgEdgeLength : 1.01;
+    const scale = 1.01 / Math.max(avgEdgeLength, 0.001);
 
-    const edgeVariance = sumBy(edgeLengths, (length, i) => {
-      const scaledLength = length * scaling;
+    const edgePenalty = sumBy(edgeLengths, (length, i) => {
+      const scaledLength = length * scale;
       const t = 1.0 - scaledLength * scaledLength;
       return t * t * edgeWeights[i];
     });
 
-    const cellVolumePerNode = opsF.sqrt(determinant(gram)) *
-      Math.pow(scaling, gram.length) / Object.keys(posSpace).length;
+    const cellVolume = Math.sqrt(det(gram)) * Math.pow(scale, gram.length)
+    const volumePerNode = cellVolume / nrVertices;
+    const volumePenalty = Math.exp(1.0 / Math.max(volumePerNode, 1e-9)) - 1.0;
 
-    const volumePenalty = Math.exp(1 / Math.max(cellVolumePerNode, 1e-12)) - 1;
-
-    return edgeVariance + volumeWeight * volumePenalty;
+    return edgePenalty + volumeWeight * volumePenalty;
   };
 };
 
