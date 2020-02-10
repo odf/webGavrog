@@ -15,6 +15,31 @@ import {
 
 const last = a => a[a.length - 1];
 const id = dim => opsQ.identityMatrix(dim);
+const sum = v => v.reduce((x, y) => x + y);
+
+
+const dotProduct = gram => (v, w) => {
+  let s = 0;
+  for (const i in v)
+    for (const j in w)
+      s += v[i] * gram[i][j] * w[j];
+  return s;
+};
+
+
+const determinant = M => {
+  if (M.length == 2)
+    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
+  else if (M.length == 3)
+    return (+ M[0][0] * M[1][1] * M[2][2]
+            + M[0][1] * M[1][2] * M[2][0]
+            + M[0][2] * M[1][0] * M[2][1]
+            - M[0][2] * M[1][1] * M[2][0]
+            - M[0][1] * M[1][0] * M[2][2]
+            - M[0][0] * M[1][2] * M[2][1]);
+  else
+    return opsF.determinant(M);
+};
 
 
 const edgeLength = (edge, gram, positions) => {
@@ -190,33 +215,6 @@ const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
     positions,
     params
   };
-};
-
-
-const sum = v => v.reduce((x, y) => x + y);
-
-
-const determinant = M => {
-  if (M.length == 2)
-    return M[0][0] * M[1][1] - M[0][1] * M[1][0];
-  else if (M.length == 3)
-    return (+ M[0][0] * M[1][1] * M[2][2]
-            + M[0][1] * M[1][2] * M[2][0]
-            + M[0][2] * M[1][0] * M[2][1]
-            - M[0][2] * M[1][1] * M[2][0]
-            - M[0][1] * M[1][0] * M[2][2]
-            - M[0][0] * M[1][2] * M[2][1]);
-  else
-    return opsF.determinant(M);
-};
-
-
-const dotProduct = gram => (v, w) => {
-  let s = 0;
-  for (const i in v)
-    for (const j in w)
-      s += v[i] * gram[i][j] * w[j];
-  return s;
 };
 
 
