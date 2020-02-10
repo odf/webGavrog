@@ -219,6 +219,9 @@ const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
 
 
 const energyEvaluator = (posSpace, gramSpace, edgeOrbits, volumeWeight) => {
+  const edgeWeightSum = sum(edgeOrbits.map(orb => orb.length));
+  const edgeWeights = edgeOrbits.map(orb => orb.length / edgeWeightSum);
+
   return params => {
     const gramParams = params.slice(0, gramSpace.length);
     const positionParams = params.slice(gramSpace.length);
@@ -226,22 +229,14 @@ const energyEvaluator = (posSpace, gramSpace, edgeOrbits, volumeWeight) => {
     const gram = gramMatrixFromParameters(gramParams, gramSpace);
     const positions = positionsFromParameters(positionParams, posSpace);
 
-    const weightedEdgeLengths = edgeOrbits.map(orb => ({
-      length: edgeLength(orb[0], gram, positions),
-      weight: orb.length
-    }));
-
-    const edgeWeightSum = sum(weightedEdgeLengths.map(({ weight }) => weight));
-
-    const avgEdgeLength = 1.0 / edgeWeightSum * sum(
-      weightedEdgeLengths.map(({ length, weight }) => length * weight));
-
+    const edgeLengths = edgeOrbits.map(([e]) => edgeLength(e, gram, positions));
+    const avgEdgeLength = sum(edgeLengths.map((s, i) => s * edgeWeights[i]));
     const scaling = avgEdgeLength > 1e-12 ? 1.01 / avgEdgeLength : 1.01;
 
-    const edgeVariance = sum(weightedEdgeLengths.map(({ length, weight }) => {
+    const edgeVariance = sum(edgeLengths.map((length, i) => {
       const scaledLength = length * scaling;
-      const t = 1 - scaledLength * scaledLength;
-      return t * t * weight / edgeWeightSum;
+      const t = 1.0 - scaledLength * scaledLength;
+      return t * t * edgeWeights[i];
     }));
 
     const cellVolumePerNode = opsF.sqrt(determinant(gram)) *
