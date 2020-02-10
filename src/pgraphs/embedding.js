@@ -16,6 +16,7 @@ import {
 const last = a => a[a.length - 1];
 const id = dim => opsQ.identityMatrix(dim);
 const sum = v => v.reduce((x, y) => x + y);
+const sumBy = (xs, fn) => xs.reduce((a, x, i) => a + fn(x, i), 0);
 
 
 const dotProduct = gram => (v, w) => {
@@ -150,7 +151,7 @@ const parametersForPositions = (graph, positions, positionSpace) => {
 };
 
 
-const gramMatrixFromParameters = (parms, gramSpace) => {
+const gramMatrixFromParameters = (parms, offset, gramSpace) => {
   const n = Math.sqrt(2 * gramSpace[0].length + 0.25) - 0.5;
   const G = opsF.matrix(n, n);
 
@@ -159,8 +160,8 @@ const gramMatrixFromParameters = (parms, gramSpace) => {
   for (let i = 0; i < n; ++i) {
     for (let j = i; j < n; ++j) {
       let x = 0;
-      for (let mu = 0; mu < parms.length; ++mu)
-        x += parms[mu] * gramSpace[mu][k];
+      for (let mu = 0; mu < gramSpace.length; ++mu)
+        x += parms[offset + mu] * gramSpace[mu][k];
 
       G[i][j] = G[j][i] = x;
       ++k;
@@ -180,7 +181,7 @@ const gramMatrixFromParameters = (parms, gramSpace) => {
 
 
 
-const positionsFromParameters = (parms, posSpace) => {
+const positionsFromParameters = (parms, offset, posSpace) => {
   const positions = {};
 
   for (const v of Object.keys(posSpace)) {
@@ -190,7 +191,7 @@ const positionsFromParameters = (parms, posSpace) => {
     let p = configSpace[n].slice(0, -1);
     for (let i = 0; i < n; ++i) {
       for (let j = 0; j < p.length; ++j)
-        p[j] += parms[index + i] * configSpace[i][j];
+        p[j] += parms[offset + index + i] * configSpace[i][j];
     }
 
     positions[v] = p;
@@ -201,11 +202,9 @@ const positionsFromParameters = (parms, posSpace) => {
 
 
 const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
-  const gramParams = params.slice(0, gramSpace.length);
-  const positionParams = params.slice(gramSpace.length);
-
-  const gram = gramMatrixFromParameters(gramParams, gramSpace);
-  const positions = positionsFromParameters(positionParams, posSpace);
+  const gram = gramMatrixFromParameters(params, 0, gramSpace);
+  const positions =
+    positionsFromParameters(params, gramSpace.length, posSpace);
 
   const lengths = graph.edges.map(e => edgeLength(e, gram, positions));
   const avgEdgeLength = sum(lengths) / lengths.length;
@@ -219,25 +218,23 @@ const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
 
 
 const energyEvaluator = (posSpace, gramSpace, edgeOrbits, volumeWeight) => {
-  const edgeWeightSum = sum(edgeOrbits.map(orb => orb.length));
+  const edgeWeightSum = sumBy(edgeOrbits, orb => orb.length);
   const edgeWeights = edgeOrbits.map(orb => orb.length / edgeWeightSum);
 
   return params => {
-    const gramParams = params.slice(0, gramSpace.length);
-    const positionParams = params.slice(gramSpace.length);
-
-    const gram = gramMatrixFromParameters(gramParams, gramSpace);
-    const positions = positionsFromParameters(positionParams, posSpace);
+    const gram = gramMatrixFromParameters(params, 0, gramSpace);
+    const positions =
+      positionsFromParameters(params, gramSpace.length, posSpace);
 
     const edgeLengths = edgeOrbits.map(([e]) => edgeLength(e, gram, positions));
-    const avgEdgeLength = sum(edgeLengths.map((s, i) => s * edgeWeights[i]));
+    const avgEdgeLength = sumBy(edgeLengths, (s, i) => s * edgeWeights[i]);
     const scaling = avgEdgeLength > 1e-12 ? 1.01 / avgEdgeLength : 1.01;
 
-    const edgeVariance = sum(edgeLengths.map((length, i) => {
+    const edgeVariance = sumBy(edgeLengths, (length, i) => {
       const scaledLength = length * scaling;
       const t = 1.0 - scaledLength * scaledLength;
       return t * t * edgeWeights[i];
-    }));
+    });
 
     const cellVolumePerNode = opsF.sqrt(determinant(gram)) *
       Math.pow(scaling, gram.length) / Object.keys(posSpace).length;
