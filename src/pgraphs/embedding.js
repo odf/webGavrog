@@ -19,6 +19,14 @@ const sum = v => v.reduce((x, y) => x + y);
 const sumBy = (xs, fn) => xs.reduce((a, x, i) => a + fn(x, i), 0);
 
 
+const mapObject = (obj, fn) => {
+  const out = {};
+  for (const k of Object.keys(obj))
+    out[k] = fn(obj[k]);
+  return out;
+};
+
+
 const dotProduct = gram => (v, w) => {
   let s = 0;
   for (const i in v)
@@ -119,8 +127,9 @@ const coordinateParametrization = (graph, syms) => {
 };
 
 
-const parametersForGramMatrix = (gram, proj, syms) => {
-  const G = unitCells.symmetrizedGramMatrix(gram, syms);
+const parametersForGramMatrix = (gram, gramSpace, syms) => {
+  const proj = opsQ.solve(gramSpace, id(gramSpace.length));
+  const G = unitCells.symmetrizedGramMatrix(gram, syms.map(s => opsQ.toJS(s)));
   const n = opsF.dimension(G);
 
   const a = [];
@@ -129,20 +138,21 @@ const parametersForGramMatrix = (gram, proj, syms) => {
       a.push(G[i][j]);
   }
 
-  return opsF.times(a, proj);
+  return opsF.times(a, opsQ.toJS(proj));
 };
 
 
-const parametersForPositions = (graph, positions, positionSpace) => {
+const parametersForPositions = (positions, positionSpace) => {
   const params = [];
 
-  for (const v of pg.vertices(graph)) {
+  for (const v of Object.keys(positions)) {
     const psv = positionSpace[v];
     const cfg = psv.configSpace;
 
     if (psv.isRepresentative && cfg.length > 1) {
-      const pos = opsF.times(positions[v].concat(1), psv.symmetrizer);
-      for (const x of opsF.times(opsF.minus(pos, last(cfg)), psv.configProj))
+      const p = opsF.times(opsQ.toJS(positions[v]).concat(1), psv.symmetrizer);
+
+      for (const x of opsF.times(opsF.minus(p, last(cfg)), psv.configProj))
         params.push(x);
     }
   }
@@ -267,19 +277,11 @@ const embed = g => {
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
-  const gramSpaceF = opsQ.toJS(gramSpace);
-  const evaluator = new Evaluator(posSpace, gramSpaceF, edgeOrbits);
 
-  const positions = pg.barycentricPlacement(g);
-  const posF = {};
-  for (const v of Object.keys(positions))
-    posF[v] = opsQ.toJS(positions[v]);
-
+  const evaluator = new Evaluator(posSpace, opsQ.toJS(gramSpace), edgeOrbits);
   const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
-  const gramProjF = opsQ.toJS(opsQ.solve(gramSpace, id(gramSpace.length)));
-  const symF = symOps.map(s => opsQ.toJS(s));
-  const startParams = parametersForGramMatrix(gram, gramProjF, symF)
-    .concat(parametersForPositions(g, posF, posSpace));
+  const startParams = parametersForGramMatrix(gram, gramSpace, symOps)
+    .concat(parametersForPositions(pg.barycentricPlacement(g), posSpace));
 
   let params = startParams;
 
