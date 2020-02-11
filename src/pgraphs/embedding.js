@@ -151,72 +151,6 @@ const parametersForPositions = (graph, positions, positionSpace) => {
 };
 
 
-const gramMatrixFromParameters = (parms, offset, gramSpace) => {
-  const n = Math.sqrt(2 * gramSpace[0].length + 0.25) - 0.5;
-  const G = opsF.matrix(n, n);
-
-  let k = 0;
-
-  for (let i = 0; i < n; ++i) {
-    for (let j = i; j < n; ++j) {
-      let x = 0;
-      for (let mu = 0; mu < gramSpace.length; ++mu)
-        x += parms[offset + mu] * gramSpace[mu][k];
-
-      G[i][j] = G[j][i] = x;
-      ++k;
-    }
-  }
-
-  for (let i = 0; i < n; ++i)
-    G[i][i] = Math.max(G[i][i], 0);
-
-  for (let i = 0; i < n; ++i) {
-    for (let j = i + 1; j < n; ++j)
-      G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
-  }
-
-  return G;
-};
-
-
-
-const positionsFromParameters = (parms, offset, posSpace) => {
-  const positions = {};
-
-  for (const v of Object.keys(posSpace)) {
-    const { index, configSpace } = posSpace[v];
-    const n = configSpace.length - 1;
-
-    let p = configSpace[n].slice(0, -1);
-    for (let i = 0; i < n; ++i) {
-      for (let j = 0; j < p.length; ++j)
-        p[j] += parms[offset + index + i] * configSpace[i][j];
-    }
-
-    positions[v] = p;
-  }
-
-  return positions;
-};
-
-
-const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
-  const gram = gramMatrixFromParameters(params, 0, gramSpace);
-  const positions =
-    positionsFromParameters(params, gramSpace.length, posSpace);
-
-  const lengths = graph.edges.map(e => edgeLength(e, gram, positions));
-  const avgEdgeLength = sum(lengths) / lengths.length;
-
-  return {
-    gram: opsF.div(gram, avgEdgeLength * avgEdgeLength),
-    positions,
-    params
-  };
-};
-
-
 const weightsFromOrbits = orbits => {
   const weightSum = sumBy(orbits, orb => orb.length);
   return orbits.map(orb => orb.length / weightSum);
@@ -224,7 +158,7 @@ const weightsFromOrbits = orbits => {
 
 
 class Evaluator {
-  constructor(posSpace, gramSpace, edgeOrbits, volumeWeight) {
+  constructor(posSpace, gramSpace, edgeOrbits) {
     this.posSpace = posSpace;
     this.gramSpace = gramSpace;
 
@@ -237,10 +171,11 @@ class Evaluator {
     this.edgeWeights = weightsFromOrbits(edgeOrbits);
     this.edgeReps = edgeOrbits.map(([e]) => e);
 
-    this.volumeWeight = volumeWeight;
-
     this.gram = opsF.matrix(this.dim, this.dim);
     this.positions = {};
+
+    this.edgeLengths = edgeOrbits.map(_ => 0);
+    this.avgEdgeLength = 0;
   }
 
   computeGramMatrix(params) {
@@ -282,17 +217,36 @@ class Evaluator {
     }
   }
 
-  energy(params) {
+  update(params) {
     this.computeGramMatrix(params);
     this.computePositions(params);
 
-    const edgeLengths =
-      this.edgeReps.map(e => edgeLength(e, this.gram, this.positions));
+    let avg = 0.0;
+    for (let i = 0; i < this.edgeReps.length; ++i) {
+      const t = edgeLength(this.edgeReps[i], this.gram, this.positions);
+      this.edgeLengths[i] = t;
+      avg += t * this.edgeWeights[i];
+    }
 
-    const avgEdgeLength = sumBy(edgeLengths, (s, i) => s * this.edgeWeights[i]);
-    const scale = 1.01 / Math.max(avgEdgeLength, 0.001);
+    this.avgEdgeLength = avg;
+  }
 
-    const edgePenalty = sumBy(edgeLengths, (length, i) => {
+  geometry(params) {
+    this.update(params);
+
+    return {
+      gram: opsF.div(this.gram, Math.pow(this.avgEdgeLength, 2)),
+      positions: Object.assign({}, this.positions),
+      params: params.slice()
+    };
+  }
+
+  energy(params, volumeWeight) {
+    this.update(params);
+
+    const scale = 1.01 / Math.max(this.avgEdgeLength, 0.001);
+
+    const edgePenalty = sumBy(this.edgeLengths, (length, i) => {
       const scaledLength = length * scale;
       const t = 1.0 - scaledLength * scaledLength;
       return t * t * this.edgeWeights[i];
@@ -302,16 +256,13 @@ class Evaluator {
     const volumePerNode = cellVolume / this.nrVertices;
     const volumePenalty = Math.exp(1.0 / Math.max(volumePerNode, 1e-9)) - 1.0;
 
-    return edgePenalty + this.volumeWeight * volumePenalty;
+    return edgePenalty + volumeWeight * volumePenalty;
   }
 };
 
 
-const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
-  const volWeight = Math.pow(10, -passNr);
-  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, volWeight);
-  const energy = params => evaluator.energy(params);
-
+const embedStep = (params, passNr, evaluator) => {
+  const energy = params => evaluator.energy(params, Math.pow(10, -passNr));
   const result = amoeba(energy, params, 10000, 1e-6, 0.1);
 
   return result.position;
@@ -319,37 +270,33 @@ const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
 
 
 const embed = (g, relax=true) => {
-  const positions = pg.barycentricPlacement(g);
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
   const gramSpaceF = opsQ.toJS(gramSpace);
-  const gramProjF = opsQ.toJS(opsQ.solve(gramSpace, id(gramSpace.length)));
+  const evaluator = new Evaluator(posSpace, gramSpaceF, edgeOrbits);
 
-  const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
-
+  const positions = pg.barycentricPlacement(g);
   const posF = {};
   for (const v of Object.keys(positions))
     posF[v] = opsQ.toJS(positions[v]);
 
+  const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
+  const gramProjF = opsQ.toJS(opsQ.solve(gramSpace, id(gramSpace.length)));
   const symF = symOps.map(s => opsQ.toJS(s));
   const startParams = parametersForGramMatrix(gram, gramProjF, symF)
     .concat(parametersForPositions(g, posF, posSpace));
 
-  const result = {};
-  result.barycentric =
-    configurationFromParameters(g, startParams, gramSpaceF, posSpace);
+  const result = { barycentric: evaluator.geometry(startParams) };
 
   if (relax) {
     let params = startParams;
 
     for (let pass = 0; pass < 5; ++pass) {
-      const newParams = embedStep(
-        params, pass, posSpace, gramSpaceF, edgeOrbits);
-      const { positions, gram } = configurationFromParameters(
-        g, newParams, gramSpaceF, posSpace);
+      const newParams = embedStep(params, pass, evaluator);
+      const { positions, gram } = evaluator.geometry(newParams);
 
       const dot = dotProduct(gram);
       const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
@@ -370,8 +317,7 @@ const embed = (g, relax=true) => {
         break;
     }
 
-    result.relaxed =
-      configurationFromParameters(g, params, gramSpaceF, posSpace);
+    result.relaxed = evaluator.geometry(params);
   }
 
   return result;
