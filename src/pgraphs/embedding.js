@@ -15,7 +15,6 @@ import {
 
 const last = a => a[a.length - 1];
 const id = dim => opsQ.identityMatrix(dim);
-const sum = v => v.reduce((x, y) => x + y);
 const sumBy = (xs, fn) => xs.reduce((a, x, i) => a + fn(x, i), 0);
 
 
@@ -128,8 +127,8 @@ const coordinateParametrization = (graph, syms) => {
 
 
 const parametersForGramMatrix = (gram, gramSpace, syms) => {
-  const proj = opsQ.solve(gramSpace, id(gramSpace.length));
-  const G = unitCells.symmetrizedGramMatrix(gram, syms.map(s => opsQ.toJS(s)));
+  const proj = opsF.solve(gramSpace, id(gramSpace.length));
+  const G = unitCells.symmetrizedGramMatrix(gram, syms);
   const n = opsF.dimension(G);
 
   const a = [];
@@ -138,7 +137,7 @@ const parametersForGramMatrix = (gram, gramSpace, syms) => {
       a.push(G[i][j]);
   }
 
-  return opsF.times(a, opsQ.toJS(proj));
+  return opsF.times(a, proj);
 };
 
 
@@ -150,7 +149,7 @@ const parametersForPositions = (positions, positionSpace) => {
     const cfg = psv.configSpace;
 
     if (psv.isRepresentative && cfg.length > 1) {
-      const p = opsF.times(opsQ.toJS(positions[v]).concat(1), psv.symmetrizer);
+      const p = opsF.times(positions[v].concat(1), psv.symmetrizer);
 
       for (const x of opsF.times(opsF.minus(p, last(cfg)), psv.configProj))
         params.push(x);
@@ -276,12 +275,13 @@ const embed = g => {
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
   const posSpace = coordinateParametrization(g, syms);
-  const gramSpace = sg.gramMatrixConfigurationSpace(symOps);
+  const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
-  const evaluator = new Evaluator(posSpace, opsQ.toJS(gramSpace), edgeOrbits);
+  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits);
   const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
+  const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const startParams = parametersForGramMatrix(gram, gramSpace, symOps)
-    .concat(parametersForPositions(pg.barycentricPlacement(g), posSpace));
+    .concat(parametersForPositions(positions, posSpace));
 
   let params = startParams;
 
