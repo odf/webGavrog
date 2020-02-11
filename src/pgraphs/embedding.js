@@ -228,21 +228,67 @@ class Evaluator {
     this.posSpace = posSpace;
     this.gramSpace = gramSpace;
 
-    this.nrVertices = Object.keys(posSpace).length;
+    this.dim = Math.sqrt(2 * gramSpace[0].length + 0.25) - 0.5;
+
+    this.vertices = Object.keys(posSpace);
+    this.nrVertices = this.vertices.length;
     this.posOffset = gramSpace.length;
 
     this.edgeWeights = weightsFromOrbits(edgeOrbits);
     this.edgeReps = edgeOrbits.map(([e]) => e);
 
     this.volumeWeight = volumeWeight;
+
+    this.gram = opsF.matrix(this.dim, this.dim);
+    this.positions = {};
+  }
+
+  computeGramMatrix(params) {
+    const G = this.gram;
+    let k = 0;
+
+    for (let i = 0; i < this.dim; ++i) {
+      for (let j = i; j < this.dim; ++j) {
+        let x = 0;
+        for (let mu = 0; mu < this.gramSpace.length; ++mu)
+          x += params[mu] * this.gramSpace[mu][k];
+
+        G[i][j] = G[j][i] = x;
+        ++k;
+      }
+    }
+
+    for (let i = 0; i < this.dim; ++i)
+      G[i][i] = Math.max(G[i][i], 0);
+
+    for (let i = 0; i < this.dim; ++i) {
+      for (let j = i + 1; j < this.dim; ++j)
+        G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
+    }
+  }
+
+  computePositions(params) {
+    for (const v of this.vertices) {
+      const { index, configSpace } = this.posSpace[v];
+      const n = configSpace.length - 1;
+
+      let p = configSpace[n].slice(0, -1);
+      for (let i = 0; i < n; ++i) {
+        for (let j = 0; j < p.length; ++j)
+          p[j] += params[this.posOffset + index + i] * configSpace[i][j];
+      }
+
+      this.positions[v] = p;
+    }
   }
 
   energy(params) {
-    const gram = gramMatrixFromParameters(params, 0, this.gramSpace);
-    const positions =
-      positionsFromParameters(params, this.posOffset, this.posSpace);
+    this.computeGramMatrix(params);
+    this.computePositions(params);
 
-    const edgeLengths = this.edgeReps.map(e => edgeLength(e, gram, positions));
+    const edgeLengths =
+      this.edgeReps.map(e => edgeLength(e, this.gram, this.positions));
+
     const avgEdgeLength = sumBy(edgeLengths, (s, i) => s * this.edgeWeights[i]);
     const scale = 1.01 / Math.max(avgEdgeLength, 0.001);
 
@@ -252,7 +298,7 @@ class Evaluator {
       return t * t * this.edgeWeights[i];
     });
 
-    const cellVolume = Math.sqrt(det(gram)) * Math.pow(scale, gram.length)
+    const cellVolume = Math.sqrt(det(this.gram)) * Math.pow(scale, this.dim)
     const volumePerNode = cellVolume / this.nrVertices;
     const volumePenalty = Math.exp(1.0 / Math.max(volumePerNode, 1e-9)) - 1.0;
 
