@@ -261,14 +261,6 @@ class Evaluator {
 };
 
 
-const embedStep = (params, passNr, evaluator) => {
-  const energy = params => evaluator.energy(params, Math.pow(10, -passNr));
-  const result = amoeba(energy, params, 10000, 1e-6, 0.1);
-
-  return result.position;
-};
-
-
 const embed = (g, relax=true) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
@@ -295,7 +287,8 @@ const embed = (g, relax=true) => {
     let params = startParams;
 
     for (let pass = 0; pass < 5; ++pass) {
-      const newParams = embedStep(params, pass, evaluator);
+      const energy = params => evaluator.energy(params, Math.pow(10, -pass));
+      const newParams = amoeba(energy, params, 10000, 1e-6, 0.1).position;
       const { positions, gram } = evaluator.geometry(newParams);
 
       const dot = dotProduct(gram);
