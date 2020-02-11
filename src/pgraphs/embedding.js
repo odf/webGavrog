@@ -292,19 +292,18 @@ const embed = g => {
     const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
     const separation = stats.shortestNonEdge(g, positions, dot);
 
-    const good = separation >= maximum * 0.95;
-    const done = (maximum - minimum) < 1.0e-5;
-
-    if (good)
-      params = newParams;
-    else {
+    if (separation < maximum * 0.95) { //TODO this seems too strict in practice
       console.log(`relaxation failed in pass ${pass}:`);
       console.log(`  min/max edge length: ${minimum}, ${maximum}`);
       console.log(`  vertex separation: ${separation}`);
-    }
-
-    if (done || !good)
       break;
+    }
+    else {
+      params = newParams;
+
+      if ((maximum - minimum) < 1.0e-5)
+        break;
+    }
   }
 
   return {
