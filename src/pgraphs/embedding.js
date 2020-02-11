@@ -170,18 +170,21 @@ class Evaluator {
   constructor(posSpace, gramSpace, edgeOrbits) {
     this.posSpace = posSpace;
     this.gramSpace = gramSpace;
-
-    this.dim = Math.sqrt(2 * gramSpace[0].length + 0.25) - 0.5;
+    this.posOffset = gramSpace.length;
 
     this.vertices = Object.keys(posSpace);
     this.nrVertices = this.vertices.length;
-    this.posOffset = gramSpace.length;
+
+    this.dim = Math.sqrt(2 * gramSpace[0].length + 0.25) - 0.5;
+    this.gram = opsF.matrix(this.dim, this.dim);
+
+    const m = Math.max(...this.vertices) + 1;
+    this.positions = [];
+    for (let i = 0; i < m; ++i)
+      this.positions.push(new Float64Array(this.dim));
 
     this.edgeWeights = weightsFromOrbits(edgeOrbits);
     this.edgeReps = edgeOrbits.map(([e]) => e);
-
-    this.gram = opsF.matrix(this.dim, this.dim);
-    this.positions = {};
 
     this.edgeLengths = edgeOrbits.map(_ => 0);
     this.avgEdgeLength = 0;
@@ -213,16 +216,16 @@ class Evaluator {
 
   computePositions(params) {
     for (const v of this.vertices) {
-      const { index, configSpace } = this.posSpace[v];
-      const n = configSpace.length - 1;
+      const offset = this.posOffset + this.posSpace[v].index;
+      const cfg = this.posSpace[v].configSpace;
+      const n = cfg.length - 1;
+      const p = this.positions[v];
 
-      let p = configSpace[n].slice(0, -1);
-      for (let i = 0; i < n; ++i) {
-        for (let j = 0; j < p.length; ++j)
-          p[j] += params[this.posOffset + index + i] * configSpace[i][j];
+      for (let i = 0; i < this.dim; ++i) {
+        p[i] = cfg[n][i];
+        for (let k = 0; k < n; ++k)
+          p[i] += params[offset + k] * cfg[k][i];
       }
-
-      this.positions[v] = p;
     }
   }
 
@@ -243,10 +246,14 @@ class Evaluator {
   geometry(params) {
     this.update(params);
 
+    const positions = {};
+    for (const v of this.vertices)
+      positions[v] = Array.from(this.positions[v]);
+
     return {
+      params: params.slice(),
       gram: opsF.div(this.gram, Math.pow(this.avgEdgeLength, 2)),
-      positions: Object.assign({}, this.positions),
-      params: params.slice()
+      positions
     };
   }
 
