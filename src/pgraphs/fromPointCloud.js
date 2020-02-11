@@ -39,7 +39,7 @@ class PGraph {
   edges() {
     const result = [];
     for (let i = 0; i < this.neighbors.length; ++i) {
-      for (const [j, s] of this.neighbors[i]) {
+      for (const [j, s] of this.neighbors[i] || []) {
         if (j >= i)
           result.push([i, j, s]);
       }
