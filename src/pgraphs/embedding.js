@@ -261,7 +261,7 @@ class Evaluator {
 };
 
 
-const embed = (g, relax=true) => {
+const embed = g => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
@@ -281,39 +281,36 @@ const embed = (g, relax=true) => {
   const startParams = parametersForGramMatrix(gram, gramProjF, symF)
     .concat(parametersForPositions(g, posF, posSpace));
 
-  const result = { barycentric: evaluator.geometry(startParams) };
+  let params = startParams;
 
-  if (relax) {
-    let params = startParams;
+  for (let pass = 0; pass < 5; ++pass) {
+    const energy = params => evaluator.energy(params, Math.pow(10, -pass));
+    const newParams = amoeba(energy, params, 10000, 1e-6, 0.1).position;
+    const { positions, gram } = evaluator.geometry(newParams);
 
-    for (let pass = 0; pass < 5; ++pass) {
-      const energy = params => evaluator.energy(params, Math.pow(10, -pass));
-      const newParams = amoeba(energy, params, 10000, 1e-6, 0.1).position;
-      const { positions, gram } = evaluator.geometry(newParams);
+    const dot = dotProduct(gram);
+    const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
+    const separation = stats.shortestNonEdge(g, positions, dot);
 
-      const dot = dotProduct(gram);
-      const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
-      const separation = stats.shortestNonEdge(g, positions, dot);
+    const good = separation >= maximum * 0.95;
+    const done = (maximum - minimum) < 1.0e-5;
 
-      const good = separation >= maximum * 0.95;
-      const done = (maximum - minimum) < 1.0e-5;
-
-      if (good)
-        params = newParams;
-      else {
-        console.log(`relaxation failed in pass ${pass}:`);
-        console.log(`  min/max edge length: ${minimum}, ${maximum}`);
-        console.log(`  vertex separation: ${separation}`);
-      }
-
-      if (done || !good)
-        break;
+    if (good)
+      params = newParams;
+    else {
+      console.log(`relaxation failed in pass ${pass}:`);
+      console.log(`  min/max edge length: ${minimum}, ${maximum}`);
+      console.log(`  vertex separation: ${separation}`);
     }
 
-    result.relaxed = evaluator.geometry(params);
+    if (done || !good)
+      break;
   }
 
-  return result;
+  return {
+    barycentric: evaluator.geometry(startParams),
+    relaxed: evaluator.geometry(params)
+  };
 };
 
 
