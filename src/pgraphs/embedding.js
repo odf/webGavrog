@@ -217,38 +217,54 @@ const configurationFromParameters = (graph, params, gramSpace, posSpace) => {
 };
 
 
-const energyEvaluator = (posSpace, gramSpace, edgeOrbits, volumeWeight) => {
-  const edgeWeightSum = sumBy(edgeOrbits, orb => orb.length);
-  const edgeWeights = edgeOrbits.map(orb => orb.length / edgeWeightSum);
-  const nrVertices = Object.keys(posSpace).length;
-  const posOffset = gramSpace.length;
+const weightsFromOrbits = orbits => {
+  const weightSum = sumBy(orbits, orb => orb.length);
+  return orbits.map(orb => orb.length / weightSum);
+};
 
-  return params => {
-    const gram = gramMatrixFromParameters(params, 0, gramSpace);
-    const positions = positionsFromParameters(params, posOffset, posSpace);
 
-    const edgeLengths = edgeOrbits.map(([e]) => edgeLength(e, gram, positions));
-    const avgEdgeLength = sumBy(edgeLengths, (s, i) => s * edgeWeights[i]);
+class Evaluator {
+  constructor(posSpace, gramSpace, edgeOrbits, volumeWeight) {
+    this.posSpace = posSpace;
+    this.gramSpace = gramSpace;
+
+    this.nrVertices = Object.keys(posSpace).length;
+    this.posOffset = gramSpace.length;
+
+    this.edgeWeights = weightsFromOrbits(edgeOrbits);
+    this.edgeReps = edgeOrbits.map(([e]) => e);
+
+    this.volumeWeight = volumeWeight;
+  }
+
+  energy(params) {
+    const gram = gramMatrixFromParameters(params, 0, this.gramSpace);
+    const positions =
+      positionsFromParameters(params, this.posOffset, this.posSpace);
+
+    const edgeLengths = this.edgeReps.map(e => edgeLength(e, gram, positions));
+    const avgEdgeLength = sumBy(edgeLengths, (s, i) => s * this.edgeWeights[i]);
     const scale = 1.01 / Math.max(avgEdgeLength, 0.001);
 
     const edgePenalty = sumBy(edgeLengths, (length, i) => {
       const scaledLength = length * scale;
       const t = 1.0 - scaledLength * scaledLength;
-      return t * t * edgeWeights[i];
+      return t * t * this.edgeWeights[i];
     });
 
     const cellVolume = Math.sqrt(det(gram)) * Math.pow(scale, gram.length)
-    const volumePerNode = cellVolume / nrVertices;
+    const volumePerNode = cellVolume / this.nrVertices;
     const volumePenalty = Math.exp(1.0 / Math.max(volumePerNode, 1e-9)) - 1.0;
 
-    return edgePenalty + volumeWeight * volumePenalty;
-  };
+    return edgePenalty + this.volumeWeight * volumePenalty;
+  }
 };
 
 
 const embedStep = (params, passNr, posSpace, gramSpace, edgeOrbits) => {
   const volWeight = Math.pow(10, -passNr);
-  const energy = energyEvaluator(posSpace, gramSpace, edgeOrbits, volWeight);
+  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, volWeight);
+  const energy = params => evaluator.energy(params);
 
   const result = amoeba(energy, params, 10000, 1e-6, 0.1);
 
