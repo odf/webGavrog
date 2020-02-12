@@ -50,22 +50,6 @@ const det = M => {
 };
 
 
-const edgeLength = (edge, gram, positions) => {
-  const pv = positions[edge.head];
-  const pw = positions[edge.tail];
-  const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
-
-  let s = 0;
-  for (let i = 0; i < diff.length; ++i) {
-    s += gram[i][i] * diff[i] * diff[i];
-    for (let j = i + 1; j < diff.length; ++j)
-      s += 2 * gram[i][j] * diff[i] * diff[j];
-  }
-
-  return Math.sqrt(Math.max(0, s));
-};
-
-
 const projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
@@ -229,18 +213,35 @@ class Evaluator {
     }
   }
 
-  update(params) {
-    this.computeGramMatrix(params);
-    this.computePositions(params);
-
+  computeEdgeLengths() {
     let avg = 0.0;
+
     for (let i = 0; i < this.edgeReps.length; ++i) {
-      const t = edgeLength(this.edgeReps[i], this.gram, this.positions);
+      const edge = this.edgeReps[i];
+
+      const pv = this.positions[edge.head];
+      const pw = this.positions[edge.tail];
+      const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
+
+      let s = 0;
+      for (let i = 0; i < diff.length; ++i) {
+        s += this.gram[i][i] * diff[i] * diff[i];
+        for (let j = i + 1; j < diff.length; ++j)
+          s += 2 * this.gram[i][j] * diff[i] * diff[j];
+      }
+
+      const t = Math.sqrt(Math.max(0, s));
       this.edgeLengths[i] = t;
       avg += t * this.edgeWeights[i];
     }
 
     this.avgEdgeLength = avg;
+  }
+
+  update(params) {
+    this.computeGramMatrix(params);
+    this.computePositions(params);
+    this.computeEdgeLengths();
   }
 
   geometry(params) {
