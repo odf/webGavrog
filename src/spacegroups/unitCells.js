@@ -28,7 +28,7 @@ export const invariantBasis = gram => {
 
 
 export const symmetrizedGramMatrix = (gram, symOps) => {
-  let M = opsF.identityMatrix(gram.length);
+  let M = opsF.times(0, gram);
 
   for (const sym of symOps) {
     const S = opsQ.toJS(opsQ.linearPart(sym));
