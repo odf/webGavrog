@@ -5,8 +5,6 @@ import * as sg from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
 import amoeba from '../common/amoeba';
 
-import { affineTransformationsQ } from '../geometry/types';
-
 import {
   rationalLinearAlgebra as opsQ,
   numericalLinearAlgebra as opsF
@@ -144,12 +142,6 @@ const parametersForPositions = (positions, positionSpace) => {
 };
 
 
-const weightsFromOrbits = orbits => {
-  const weightSum = sumBy(orbits, orb => orb.length);
-  return orbits.map(orb => orb.length / weightSum);
-};
-
-
 class Evaluator {
   constructor(posSpace, gramSpace, edgeOrbits) {
     this.posSpace = posSpace;
@@ -170,7 +162,8 @@ class Evaluator {
     this.gramValid = false;
     this.positionsValid = new Int8Array(m).fill(false);
 
-    this.edgeWeights = weightsFromOrbits(edgeOrbits);
+    const weightSum = sumBy(edgeOrbits, orb => orb.length);
+    this.edgeWeights = edgeOrbits.map(orb => orb.length / weightSum);
     this.edgeReps = edgeOrbits.map(([e]) => e);
 
     this.edgeLengths = edgeOrbits.map(_ => 0);
