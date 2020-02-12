@@ -167,6 +167,9 @@ class Evaluator {
     for (let i = 0; i < m; ++i)
       this.positions.push(new Float64Array(this.dim));
 
+    this.gramValid = false;
+    this.positionsValid = new Int8Array(m).fill(false);
+
     this.edgeWeights = weightsFromOrbits(edgeOrbits);
     this.edgeReps = edgeOrbits.map(([e]) => e);
 
@@ -174,7 +177,16 @@ class Evaluator {
     this.avgEdgeLength = 0;
   }
 
-  computeGramMatrix(params) {
+  setParameters(params) {
+    this.params = params;
+    this.gramValid = false;
+    this.positionsValid.fill(false);
+  }
+
+  computeGramMatrix() {
+    if (this.gramValid)
+      return;
+
     const G = this.gram;
     let k = 0;
 
@@ -182,7 +194,7 @@ class Evaluator {
       for (let j = i; j < this.dim; ++j) {
         let x = 0;
         for (let mu = 0; mu < this.gramSpace.length; ++mu)
-          x += params[mu] * this.gramSpace[mu][k];
+          x += this.params[mu] * this.gramSpace[mu][k];
 
         G[i][j] = G[j][i] = x;
         ++k;
@@ -196,10 +208,12 @@ class Evaluator {
       for (let j = i + 1; j < this.dim; ++j)
         G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
     }
+
+    this.gramValid = true;
   }
 
-  computePositions(params) {
-    for (const v of this.vertices) {
+  position(v) {
+    if (!this.positionsValid[v]) {
       const offset = this.posOffset + this.posSpace[v].index;
       const cfg = this.posSpace[v].configSpace;
       const n = cfg.length - 1;
@@ -208,9 +222,13 @@ class Evaluator {
       for (let i = 0; i < this.dim; ++i) {
         p[i] = cfg[n][i];
         for (let k = 0; k < n; ++k)
-          p[i] += params[offset + k] * cfg[k][i];
+          p[i] += this.params[offset + k] * cfg[k][i];
       }
+
+      this.positionsValid[v] = true;
     }
+
+    return this.positions[v];
   }
 
   computeEdgeLengths() {
@@ -219,8 +237,8 @@ class Evaluator {
     for (let i = 0; i < this.edgeReps.length; ++i) {
       const edge = this.edgeReps[i];
 
-      const pv = this.positions[edge.head];
-      const pw = this.positions[edge.tail];
+      const pv = this.position(edge.head);
+      const pw = this.position(edge.tail);
       const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
 
       let s = 0;
@@ -239,8 +257,8 @@ class Evaluator {
   }
 
   update(params) {
-    this.computeGramMatrix(params);
-    this.computePositions(params);
+    this.setParameters(params);
+    this.computeGramMatrix();
     this.computeEdgeLengths();
   }
 
@@ -249,7 +267,7 @@ class Evaluator {
 
     const positions = {};
     for (const v of this.vertices)
-      positions[v] = Array.from(this.positions[v]);
+      positions[v] = Array.from(this.position(v));
 
     return {
       params: params.slice(),
