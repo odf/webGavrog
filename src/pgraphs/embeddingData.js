@@ -70,16 +70,27 @@ const compareEdges = ([p, v], [q, w]) =>
   comparePoints(p, q) || comparePoints(opsF.plus(p, v), opsF.plus(q, w));
 
 
-const nodeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
-  symmetries.nodeOrbits(graph, syms).map(orbit => {
-    const rawPts = orbit.map(v => opsF.point(pos[v]));
-    const pts = rawPts.map(p => opsF.vector(opsF.modZ(opsF.times(toStd, p))));
-    const allPts = [].concat(
-      ...pts.map(p => centeringShifts.map(v => opsF.mod(opsF.plus(p, v), 1))));
+const nodeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => {
+  const result = [];
 
-    return [allPts.sort(comparePoints)[0], orbit[0]];
-  })
-);
+  for (const orbit of symmetries.nodeOrbits(graph, syms)) {
+    let best = null;
+
+    for (const v of orbit) {
+      const p0 = opsF.vector(opsF.times(toStd, opsF.point(pos[v])));
+
+      for (const s of centeringShifts) {
+        const p = opsF.mod(opsF.plus(p0, s), 1);
+        if (best == null || comparePoints(p, best) < 0)
+          best = p;
+      }
+    }
+
+    result.push([best, orbit[0]]);
+  }
+
+  return result;
+};
 
 
 const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
