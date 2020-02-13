@@ -21,13 +21,22 @@ const dotProduct = gram => (v, w) => {
 const coordinateChangeAsFloat = cc => {
   const tQ = cc.oldToNew;
   const tF = opsF.affineTransformation(
-    opsQ.toJS(opsQ.linearPart(tQ)), opsQ.toJS(opsQ.shiftPart(tQ)));
+    opsQ.toJS(opsQ.linearPart(tQ)),
+    opsQ.toJS(opsQ.shiftPart(tQ))
+  );
 
   return opsF.coordinateChange(tF);
 };
 
 
-const countZeros = s => s.filter(x => opsF.lt(opsF.abs(x), 1e-6)).length;
+const countZeros = xs => {
+  let n = 0;
+  for (const x of xs) {
+    if (opsF.lt(opsF.abs(x), 1e-6))
+      ++n;
+  }
+  return n;
+};
 
 
 const compareCoords = (a, b) => {
@@ -47,22 +56,18 @@ const comparePoints = (p, q) => {
     return 1;
   else if (opsF.sgn(q) < 0 && opsF.sgn(p) >= 0)
     return -1;
-  else if (countZeros(q) != countZeros(p))
-    return countZeros(q) - countZeros(p);
-  else if (compareCoords(opsF.times(p, p), opsF.times(q, q)))
-    return compareCoords(opsF.times(p, p), opsF.times(q, q));
   else {
-    for (let i = 0; i < p.length; ++i) {
-      if (compareCoords(p[i], q[i]))
-        return compareCoords(p[i], q[i]);
-    }
-    return 0;
+    return (
+      countZeros(q) - countZeros(p) ||
+        compareCoords(opsF.times(p, p), opsF.times(q, q)) ||
+        p.reduce((a, _, i) => a || compareCoords(p[i], q[i]), 0)
+    );
   }
 };
 
 
 const compareEdges = ([p, v], [q, w]) =>
-      comparePoints(p, q) || comparePoints(opsF.plus(p, v), opsF.plus(q, w));
+  comparePoints(p, q) || comparePoints(opsF.plus(p, v), opsF.plus(q, w));
 
 
 const nodeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
