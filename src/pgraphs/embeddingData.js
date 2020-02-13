@@ -93,26 +93,31 @@ const nodeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => {
 };
 
 
-const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => (
-  symmetries.edgeOrbits(graph, syms).map(orbit => {
-    const rawEdges = [].concat(...orbit.map(e => {
-      const [p, q] = [pos[e.head], pos[e.tail]];
-      const v = opsF.minus(opsF.plus(e.shift, q), p);
-      return [[opsF.point(p), v], [opsF.point(q), opsF.negative(v)]];
-    }));
-    const edges = rawEdges.map(([p, s]) => [
-      opsF.vector(opsF.modZ(opsF.times(toStd, p))),
-      opsF.times(toStd, s)
-    ]);
-    const allEdges = [].concat(
-      ...edges.map(([p, s]) => centeringShifts.map(v => [
-        opsF.mod(opsF.plus(p, v), 1),
-        s
-      ])));
+const edgeRepresentatives = (graph, syms, pos, toStd, centeringShifts) => {
+  const result = [];
 
-    return allEdges.sort(compareEdges)[0].concat(orbit.length);
-  })
-);
+  for (const orbit of symmetries.edgeOrbits(graph, syms)) {
+    let best = null;
+
+    for (const e of orbit) {
+      const p = opsF.vector(opsF.times(toStd, opsF.point(pos[e.head])));
+      const q = opsF.vector(opsF.times(toStd, opsF.point(pos[e.tail])));
+      const d = opsF.plus(opsF.times(toStd, e.shift), opsF.minus(q, p));
+
+      for (const [v, t] of [[p, d], [q, opsF.negative(d)]]) {
+        for (const s of centeringShifts) {
+          const candidate = [opsF.mod(opsF.plus(v, s), 1), t];
+          if (best == null || compareEdges(candidate, best) < 0)
+            best = candidate;
+        }
+      }
+    }
+
+    result.push(best.concat(orbit.length));
+  }
+
+  return result;
+};
 
 
 export const embeddingData = (graph, toStdRaw, syms, embedding) => {
