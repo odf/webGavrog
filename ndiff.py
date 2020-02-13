@@ -24,7 +24,7 @@ def closeEnough(s1, s2):
         elif f2 == 0:
             return f1 == 0
         else:
-            return abs(f1 - f2) < 0.1 * min(abs(f1), abs(f2))
+            return abs(f1 - f2) < 0.01 * min(abs(f1), abs(f2))
 
 
 if __name__ == "__main__":
