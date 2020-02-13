@@ -1,19 +1,12 @@
-import * as pickler from '../common/pickler';
 import * as symmetries from '../pgraphs/symmetries';
 import * as stats from '../pgraphs/statistics';
 import * as unitCells from '../spacegroups/unitCells';
 import * as spacegroups from '../spacegroups/spacegroups';
 
 import {
-  coordinateChangesQ,
-  coordinateChangesF
+  coordinateChangesQ as opsQ,
+  coordinateChangesF as opsF
 } from '../geometry/types';
-
-const opsQ = coordinateChangesQ;
-const opsF = coordinateChangesF;
-
-
-const encode = pickler.serialize;
 
 
 const dotProduct = gram => (v, w) => {
