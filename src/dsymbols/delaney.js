@@ -54,6 +54,66 @@ class DSymbol {
     }
   }
 
+  orbit2(i, j, D) {
+    const seen = new Int8Array(this.size + 1);
+    const result = [];
+
+    let E = D;
+    do {
+      for (const k of [i, j]) {
+        E = this.s(k, E) || E;
+        if (!seen[E]) {
+          result.push(E);
+          seen[E] = true;
+        }
+      }
+    }
+    while (E != D);
+
+    return result;
+  }
+
+  orbitReps2(i, j) {
+    const seen = new Int8Array(this.size + 1);
+    const result = [];
+
+    for (let D = 1; D <= this.size; ++D) {
+      if (!seen[D]) {
+        let E = D;
+
+        do {
+          E = this.s(i, E) || E;
+          seen[E] = true;
+          E = this.s(j, E) || E;
+          seen[E] = true;
+        }
+        while (E != D);
+
+        result.push(D);
+      }
+    }
+
+    return result;
+  }
+
+  r(i, j, D) {
+    let k = 0;
+    let E = D;
+
+    do {
+      E = this.s(i, E) || E;
+      E = this.s(j, E) || E;
+      ++k;
+    }
+    while (E != D);
+
+    return k;
+  }
+
+  m(i, j, D) {
+    return this.r(i, j, D) * this.v(i, j, D);
+  }
+
   toString() {
     const out = [
       '<1.1:',
@@ -73,8 +133,8 @@ class DSymbol {
     for (let i = 0; i < this.dim; ++i) {
       if (i > 0)
         out.push(',');
-      const reps = orbitReps2(this, i, i+1);
-      out.push(reps.map(D => m(this, i, i+1, D) || 0).join(' '));
+      const reps = this.orbitReps2(i, i+1);
+      out.push(reps.map(D => this.m(i, i+1, D) || 0).join(' '));
     }
 
     out.push('>');
@@ -97,21 +157,6 @@ export const makeDSymbol = (dim, s, v) =>
   Object.freeze(new DSymbol(dim, s, v));
 
 
-export const r = (ds, i, j, D) => {
-  let k = 0;
-  let E = D;
-
-  do {
-    E = ds.s(i, E) || E;
-    E = ds.s(j, E) || E;
-    ++k;
-  }
-  while (E != D);
-
-  return k;
-};
-
-
 export const isElement = (ds, D) => ds.isElement(D);
 export const elements = ds => ds.elements();
 export const size = ds => ds.size;
@@ -122,51 +167,11 @@ export const dim = ds => ds.dim;
 
 export const s = (ds, i, D) => ds.s(i, D);
 export const v = (ds, i, j, D) => ds.v(i, j, D);
-export const m = (ds, i, j, D) => ds.v(i, j, D) * r(ds, i, j, D);
+export const r = (ds, i, j, D) => ds.r(i, j, D);
+export const m = (ds, i, j, D) => ds.m(i, j, D);
 
-
-export const orbit2 = (ds, i, j, D) => {
-  const seen = new Int8Array(ds.size + 1);
-  const result = [];
-
-  let E = D;
-  do {
-    for (const k of [i, j]) {
-      E = ds.s(k, E) || E;
-      if (!seen[E]) {
-        result.push(E);
-        seen[E] = true;
-      }
-    }
-  }
-  while (E != D);
-
-  return result;
-};
-
-
-export const orbitReps2 = (ds, i, j) => {
-  const seen = new Int8Array(ds.size + 1);
-  const result = [];
-
-  for (const D of ds.elements()) {
-    if (!seen[D]) {
-      let E = D;
-
-      do {
-        E = ds.s(i, E) || E;
-        seen[E] = true;
-        E = ds.s(j, E) || E;
-        seen[E] = true;
-      }
-      while (E != D);
-
-      result.push(D);
-    }
-  }
-
-  return result;
-};
+export const orbit2 = (ds, i, j, D) => ds.orbit2(i, j, D);
+export const orbitReps2 = (ds, i, j) => ds.orbitReps2(i, j);
 
 
 const _assert = (condition, message) => {
