@@ -97,6 +97,78 @@ export const makeDSymbol = (dim, s, v) =>
   Object.freeze(new DSymbol(dim, s, v));
 
 
+export const r = (ds, i, j, D) => {
+  let k = 0;
+  let E = D;
+
+  do {
+    E = ds.s(i, E) || E;
+    E = ds.s(j, E) || E;
+    ++k;
+  }
+  while (E != D);
+
+  return k;
+};
+
+
+export const isElement = (ds, D) => ds.isElement(D);
+export const elements = ds => ds.elements();
+export const size = ds => ds.size;
+
+export const isIndex = (ds, i) => ds.isIndex(i);
+export const indices = ds => ds.indices();
+export const dim = ds => ds.dim;
+
+export const s = (ds, i, D) => ds.s(i, D);
+export const v = (ds, i, j, D) => ds.v(i, j, D);
+export const m = (ds, i, j, D) => ds.v(i, j, D) * r(ds, i, j, D);
+
+
+export const orbit2 = (ds, i, j, D) => {
+  const seen = new Int8Array(ds.size + 1);
+  const result = [];
+
+  let E = D;
+  do {
+    for (const k of [i, j]) {
+      E = ds.s(k, E) || E;
+      if (!seen[E]) {
+        result.push(E);
+        seen[E] = true;
+      }
+    }
+  }
+  while (E != D);
+
+  return result;
+};
+
+
+export const orbitReps2 = (ds, i, j) => {
+  const seen = new Int8Array(ds.size + 1);
+  const result = [];
+
+  for (const D of ds.elements()) {
+    if (!seen[D]) {
+      let E = D;
+
+      do {
+        E = ds.s(i, E) || E;
+        seen[E] = true;
+        E = ds.s(j, E) || E;
+        seen[E] = true;
+      }
+      while (E != D);
+
+      result.push(D);
+    }
+  }
+
+  return result;
+};
+
+
 const _assert = (condition, message) => {
   if (!condition)
     throw new Error(message || 'assertion error');
@@ -247,78 +319,6 @@ export const parse = str => {
 
   return makeDSymbol(dim, s, v);
 };
-
-
-export const orbit2 = (ds, i, j, D) => {
-  const seen = new Int8Array(ds.size + 1);
-  const result = [];
-
-  let E = D;
-  do {
-    for (const k of [i, j]) {
-      E = ds.s(k, E) || E;
-      if (!seen[E]) {
-        result.push(E);
-        seen[E] = true;
-      }
-    }
-  }
-  while (E != D);
-
-  return result;
-};
-
-
-export const orbitReps2 = (ds, i, j) => {
-  const seen = new Int8Array(ds.size + 1);
-  const result = [];
-
-  for (const D of ds.elements()) {
-    if (!seen[D]) {
-      let E = D;
-
-      do {
-        E = ds.s(i, E) || E;
-        seen[E] = true;
-        E = ds.s(j, E) || E;
-        seen[E] = true;
-      }
-      while (E != D);
-
-      result.push(D);
-    }
-  }
-
-  return result;
-};
-
-
-export const r = (ds, i, j, D) => {
-  let k = 0;
-  let E = D;
-
-  do {
-    E = ds.s(i, E) || E;
-    E = ds.s(j, E) || E;
-    ++k;
-  }
-  while (E != D);
-
-  return k;
-};
-
-
-export const isElement = (ds, D) => ds.isElement(D);
-export const elements = ds => ds.elements();
-export const size = ds => ds.size;
-
-export const isIndex = (ds, i) => ds.isIndex(i);
-export const indices = ds => ds.indices();
-export const dim = ds => ds.dim;
-
-export const s = (ds, i, D) => ds.s(i, D);
-export const v = (ds, i, j, D) => ds.v(i, j, D);
-export const m = (ds, i, j, D) => ds.v(i, j, D) * r(ds, i, j, D);
 
 
 export const parseSymbols = text => text
