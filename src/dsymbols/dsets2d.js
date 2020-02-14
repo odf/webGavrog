@@ -41,7 +41,7 @@ const _makeDelaneySet = data => {
 
   timers && timers.stop('make delaney set');
 
-  return DS.makeDSet(dim, s);
+  return DS.makeDSymbol(dim, s, new Array(dim * size).fill(0));
 };
 
 

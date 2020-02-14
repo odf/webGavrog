@@ -1,8 +1,7 @@
 import * as pickler from '../common/pickler';
 
 
-const _range = (from, to) =>
-  new Array(to - from).fill(0).map((_, i) => i + from);
+const range = (from, to) => [...Array(to).keys()].slice(from);
 
 
 class DSymbol {
@@ -26,7 +25,7 @@ class DSymbol {
   }
 
   elements() {
-    return _range(1, this.size + 1);
+    return range(1, this.size + 1);
   }
 
   isIndex(i) {
@@ -34,7 +33,7 @@ class DSymbol {
   }
 
   indices() {
-    return _range(0, this.dim + 1);
+    return range(0, this.dim + 1);
   }
 
   s(i, D) {
@@ -56,11 +55,31 @@ class DSymbol {
   }
 
   toString() {
-    return stringify(this);
-  }
+    const out = [
+      '<1.1:',
+      (this.dim == 2 ? [this.size] : [this.size, this.dim]).join(' '),
+      ':'
+    ];
 
-  toJSON() {
-    return stringify(this);
+    for (let i = 0; i <= this.dim; ++i) {
+      if (i > 0)
+        out.push(',');
+      const reps = this.elements().filter(D => (this.s(i, D) || D) >= D);
+      out.push(reps.map(D => this.s(i, D) || 0).join(' '));
+    }
+
+    out.push(':');
+
+    for (let i = 0; i < this.dim; ++i) {
+      if (i > 0)
+        out.push(',');
+      const reps = orbitReps2(this, i, i+1);
+      out.push(reps.map(D => m(this, i, i+1, D) || 0).join(' '));
+    }
+
+    out.push('>');
+
+    return out.join('');
   }
 
   get __typeName() { return 'DelaneySymbol'; }
@@ -76,10 +95,6 @@ pickler.register(
 
 export const makeDSymbol = (dim, s, v) =>
   Object.freeze(new DSymbol(dim, s, v));
-
-
-export const makeDSet = (dim, s) =>
-  makeDSymbol(dim, s, new Array(dim * s.length / (dim + 1)).fill(0));
 
 
 const _assert = (condition, message) => {
@@ -230,10 +245,6 @@ export const parse = str => {
 };
 
 
-export const orbitReps1 = (ds, i) =>
-  ds.elements().filter(D => (ds.s(i, D) || D) >= D);
-
-
 export const orbit2 = (ds, i, j, D) => {
   const seen = new Array(ds.size + 1);
   const result = [];
@@ -278,23 +289,6 @@ export const orbitReps2 = (ds, i, j) => {
 };
 
 
-export const stringify = ds => {
-  const sDefs = ds.indices()
-    .map(i => orbitReps1(ds, i).map(D => ds.s(i, D) || 0).join(' '))
-    .join(',');
-
-  const mDefs = ds.indices()
-    .filter(i => ds.isIndex(i+1))
-    .map(i => orbitReps2(ds, i, i+1).map(D => m(ds, i, i+1, D) || 0).join(' '))
-    .join(',');
-
-  const n = ds.size;
-  const d = ds.dim;
-
-  return `<1.1:${n}${d == 2 ? '' : ` ${d}`}:${sDefs}:${mDefs}>`;
-};
-
-
 export const r = (ds, i, j, D) => {
   let k = 0;
   let E = D;
@@ -332,7 +326,6 @@ export const parseSymbols = text => text
 if (require.main == module) {
   const ds = parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>');
 
-  console.log(stringify(ds));
   console.log(`${ds}`);
   console.log(`pickled: ${JSON.stringify(pickler.pickle(ds))}`);
   console.log(`unpickled: ${pickler.unpickle(pickler.pickle(ds))}`);
