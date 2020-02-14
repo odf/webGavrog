@@ -224,20 +224,13 @@ export const withBranchings = (ds, i, specs) => {
   _assertIndex(ds, i);
 
   const vNew = ds._v.slice();
-  const set = (D, x) => { vNew[i * ds.size + D - 1] = x; };
 
   for (const [D, v] of specs) {
     _assertElement(ds, D);
     _assertNonNegative(v);
 
-    let E = D;
-    do {
-      E = ds.s(i, E) || E;
-      set(E, v);
-      E = ds.s(i+1, E) || E;
-      set(E, v);
-    }
-    while (E != D);
+    for (const E of ds.orbit2(i, i+1, D))
+      vNew[i * ds.size + E - 1] = v;
   }
 
   return makeDSymbol(ds.dim, ds._s, vNew);
