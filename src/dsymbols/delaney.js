@@ -271,51 +271,32 @@ export const parse = str => {
   const degrees = parts[2].split(/,/).map(_parseInts);
 
   const s = new Int32Array((dim+1) * size);
-  const v = new Int32Array(dim * size);
-
-  const get = (a, i, D)    => a[i * size + D - 1];
-  const set = (a, i, D, x) => { a[i * size + D - 1] = x; };
+  const get = (i, D) => s[i * size + D - 1];
+  const set = (i, D, E) => { s[i * size + D - 1] = E; };
 
   for (let i = 0; i <= dim; ++i) {
     let k = -1;
     for (let D = 1; D <= size; ++D) {
-      if (!get(s, i, D)) {
+      if (!get(i, D)) {
         const E = gluings[i][++k];
-        set(s, i, D, E);
-        set(s, i, E, D);
+        set(i, D, E);
+        set(i, E, D);
       }
     }
   }
+
+  let ds = makeDSymbol(dim, s, new Int32Array(dim * size));
 
   for (let i = 0; i < dim; ++i) {
+    const branchings = [];
     let k = -1;
-    for (let D = 1; D <= size; ++D) {
-      if (!get(v, i, D)) {
-        const m = degrees[i][++k];
-        let E = D;
-        let r = 0;
+    for (const D of ds.orbitReps2(i, i+1))
+      branchings.push([D, degrees[i][++k] / ds.r(i, i+1, D)]);
 
-        do {
-          E = get(s, i, E) || E;
-          E = get(s, i+1, E) || E;
-          ++r;
-        }
-        while (E != D);
-
-        const b = m / r;
-
-        do {
-          E = get(s, i, E) || E;
-          set(v, i, E, b);
-          E = get(s, i+1, E) || E;
-          set(v, i, E, b);
-        }
-        while (E != D);
-      }
-    }
+    ds = withBranchings(ds, i, branchings);
   }
 
-  return makeDSymbol(dim, s, v);
+  return ds;
 };
 
 
