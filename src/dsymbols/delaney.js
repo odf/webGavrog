@@ -6,8 +6,8 @@ const range = (from, to) => [...Array(to).keys()].slice(from);
 
 class DSymbol {
   constructor(dim, sData, vData) {
-    this._s = sData.slice();
-    this._v = vData.slice();
+    this._s = new Int32Array(sData);
+    this._v = new Int32Array(vData);
     this._dim = dim;
     this._size = this._v.length / dim;
   }
@@ -168,7 +168,11 @@ export const withBranchings = (ds, i, specs) => {
 
 
 export const build = (dim, size, pairingsFn, branchingsFn) => {
-  let ds = makeDSymbol(dim, new Array((dim+1) * size), new Array(dim * size));
+  let ds = makeDSymbol(
+    dim,
+    new Int32Array((dim+1) * size),
+    new Int32Array(dim * size)
+  );
 
   const ds0 = ds;
   for (let i = 0; i <= dim; ++i)
@@ -196,8 +200,8 @@ export const parse = str => {
   const gluings = parts[1].split(/,/).map(_parseInts);
   const degrees = parts[2].split(/,/).map(_parseInts);
 
-  const s = new Array((dim+1) * size);
-  const v = new Array(dim * size);
+  const s = new Int32Array((dim+1) * size);
+  const v = new Int32Array(dim * size);
 
   const get = (a, i, D)    => a[i * size + D - 1];
   const set = (a, i, D, x) => { a[i * size + D - 1] = x; };
@@ -246,7 +250,7 @@ export const parse = str => {
 
 
 export const orbit2 = (ds, i, j, D) => {
-  const seen = new Array(ds.size + 1);
+  const seen = new Int8Array(ds.size + 1);
   const result = [];
 
   let E = D;
@@ -266,7 +270,7 @@ export const orbit2 = (ds, i, j, D) => {
 
 
 export const orbitReps2 = (ds, i, j) => {
-  const seen = new Array(ds.size + 1);
+  const seen = new Int8Array(ds.size + 1);
   const result = [];
 
   for (const D of ds.elements()) {
