@@ -163,37 +163,35 @@ export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
 export const orbit = (ds, indices, seed) => orbits(ds, indices, [seed])[0];
 
 
-function* protocol(ds, idcs, gen) {
+function* protocol(ds, gen) {
   const emap = {};
   let n = 1;
 
   for (const [Di, i, D] of gen) {
-    const E = emap[D] || n;
-
-    if (E == n)
-      emap[D] = E;
+    if (emap[D] == null)
+      emap[D] = n;
 
     yield i == null ? -1 : i;
     yield emap[Di];
 
     if (i != null)
-      yield E;
+      yield emap[D];
 
-    if (E == n) {
-      for (let i = 0; i < idcs.length - 1; ++i)
-        yield ds.v(idcs[i], idcs[i+1], D);
+    if (emap[D] == n) {
       ++n;
+
+      for (let i = 0; i < ds.dim; ++i)
+        yield ds.v(i, i+1, D);
     }
   }
 };
 
 
 export const invariant = ds => {
-  const idcs = DS.indices(ds);
   let best = null;
 
   for (const D0 of ds.elements()) {
-    const trav = buffered(protocol(ds, idcs, traversal(ds, idcs, [D0])));
+    const trav = buffered(protocol(ds, traversal(ds, ds.indices(), [D0])));
 
     if (best == null)
       best = trav;
