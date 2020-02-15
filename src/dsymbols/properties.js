@@ -1,5 +1,7 @@
-import * as DS from './delaney';
+import { buffered } from '../common/generators';
 import { Partition } from '../common/unionFind';
+
+import * as DS from './delaney';
 
 
 const typeMap = ds => {
@@ -161,52 +163,28 @@ export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
 export const orbit = (ds, indices, seed) => orbits(ds, indices, [seed])[0];
 
 
-const protocol = (ds, idcs, gen) => {
-  const buffer = [];
+function* protocol(ds, idcs, gen) {
   const emap = {};
   let n = 1;
 
-  const advance = () => {
-    const next = gen.next();
-    if (next.done)
-      return false;
-    const entry = next.value;
-
-    const Di = entry[0];
-    const i = entry[1];
-    const D = entry[2];
+  for (const [Di, i, D] of gen) {
     const E = emap[D] || n;
 
     if (E == n)
       emap[D] = E;
 
-    buffer.push(i == null ? -1 : i);
-    buffer.push(emap[Di]);
+    yield i == null ? -1 : i;
+    yield emap[Di];
 
     if (i != null)
-      buffer.push(E);
+      yield E;
 
     if (E == n) {
       for (let i = 0; i < idcs.length - 1; ++i)
-        buffer.push(ds.v(idcs[i], idcs[i+1], D));
+        yield ds.v(idcs[i], idcs[i+1], D);
       ++n;
     }
-
-    return true;
-  };
-
-  return {
-    get(i) {
-      while (buffer.length <= i && advance())
-        ;
-      return buffer[i];
-    },
-    content(fn) {
-      while (advance())
-        ;
-      return buffer;
-    }
-  };
+  }
 };
 
 
@@ -214,28 +192,27 @@ export const invariant = ds => {
   const idcs = DS.indices(ds);
   let best = null;
 
-  ds.elements().forEach(D0 => {
-    const trav = protocol(ds, idcs, traversal(ds, idcs, [D0]));
+  for (const D0 of ds.elements()) {
+    const trav = buffered(protocol(ds, idcs, traversal(ds, idcs, [D0])));
 
     if (best == null)
       best = trav;
     else {
       for (let i = 0; ; ++i) {
         const next = trav.get(i);
-        if (next == undefined)
+        if (next == null)
           break;
 
         const d = next - best.get(i);
-        if (d != 0) {
-          if (d < 0)
-            best = trav;
+        if (d < 0)
+          best = trav;
+        else if (d > 0)
           break;
-        }
       }
     }
-  });
+  }
 
-  return best.content();
+  return best.result().generated;
 };
 
 
