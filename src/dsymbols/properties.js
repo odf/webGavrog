@@ -2,12 +2,6 @@ import * as DS from './delaney';
 import { Partition } from '../common/unionFind';
 
 
-const assert = (condition, message) => {
-  if (!condition)
-    throw new Error(message || 'assertion error');
-};
-
-
 const typeMap = ds => {
   const result = {};
 
@@ -103,48 +97,6 @@ export const traversal = function*(ds, indices, seeds) {
 };
 
 
-export const orbitReps = (ds, indices, seeds) =>
-  [...traversal(ds, indices, seeds || ds.elements())]
-  .filter(e => e[1] == null)
-  .map(e => e[2]);
-
-
-export const orbits = (ds, indices, seeds) => {
-  const seen = {};
-  const result = [];
-
-  for (const [_, i, D] of traversal(ds, indices, seeds || ds.elements())) {
-    if (i == null)
-      result.push([]);
-
-    if (D && !seen[D]) {
-      seen[D] = true;
-      result[result.length - 1].push(D);
-    }
-  }
-
-  return result;
-};
-
-
-export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
-
-
-export const orbit = (ds, indices, seed) => {
-  const seen = {};
-  const result = [];
-
-  for (const [_, i, D] of traversal(ds, indices, [seed])) {
-    if (D && !seen[D]) {
-      seen[D] = true;
-      result.push(D);
-    }
-  }
-
-  return result;
-};
-
-
 export const partialOrientation = ds => {
   const ori = new Array(ds.size + 1);
 
@@ -174,6 +126,48 @@ export const isWeaklyOriented = ds => {
   const ori = partialOrientation(ds);
   const test = (D, Di) => D == Di || ori[D] != ori[Di];
   return forAllEdges(ds, (D, i) => test(D, ds.s(i, D)));
+};
+
+
+export const orbitReps = (ds, indices, seeds) =>
+  [...traversal(ds, indices, seeds || ds.elements())]
+  .filter(e => e[1] == null)
+  .map(e => e[2]);
+
+
+export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
+
+
+export const orbits = (ds, indices, seeds) => {
+  const seen = {};
+  const result = [];
+
+  for (const [_, i, D] of traversal(ds, indices, seeds || ds.elements())) {
+    if (i == null)
+      result.push([]);
+
+    if (D && !seen[D]) {
+      seen[D] = true;
+      result[result.length - 1].push(D);
+    }
+  }
+
+  return result;
+};
+
+
+export const orbit = (ds, indices, seed) => {
+  const seen = {};
+  const result = [];
+
+  for (const [_, i, D] of traversal(ds, indices, [seed])) {
+    if (D && !seen[D]) {
+      seen[D] = true;
+      result.push(D);
+    }
+  }
+
+  return result;
 };
 
 
@@ -252,6 +246,12 @@ export const invariant = ds => {
   });
 
   return best.content();
+};
+
+
+const assert = (condition, message) => {
+  if (!condition)
+    throw new Error(message || 'assertion error');
 };
 
 
