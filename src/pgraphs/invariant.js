@@ -3,6 +3,7 @@ import {
   deserialize as decode
 } from '../common/pickler';
 
+import { buffered } from '../common/generators';
 import { rationalLinearAlgebra as ops } from '../arithmetic/types';
 import * as pg from './periodic';
 import * as ps from './symmetries';
@@ -95,34 +96,6 @@ const adjustedTraversal = function*(traversal) {
   }
 
   return { vertexMapping, edgeMapping, basisChange: basis.matrix };
-};
-
-
-const buffered = iterator => {
-  const generated = [];
-  let returned = null;
-
-  const advance = () => {
-    const { value, done } = iterator.next();
-
-    if (!done)
-      generated.push(value);
-    else if (value != null)
-      returned = value;
-
-    return !done;
-  }
-
-  return {
-    get(i) {
-      while (generated.length <= i && advance()) {}
-      return generated[i];
-    },
-    result() {
-      while (advance()) {}
-      return { generated, returned };
-    }
-  };
 };
 
 

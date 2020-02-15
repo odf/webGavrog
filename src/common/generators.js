@@ -24,6 +24,34 @@ export function* backtrack({ extract, root, children }) {
 }
 
 
+export const buffered = iterator => {
+  const generated = [];
+  let returned = null;
+
+  const advance = () => {
+    const { value, done } = iterator.next();
+
+    if (!done)
+      generated.push(value);
+    else if (value != null)
+      returned = value;
+
+    return !done;
+  }
+
+  return {
+    get(i) {
+      while (generated.length <= i && advance()) {}
+      return generated[i];
+    },
+    result() {
+      while (advance()) {}
+      return { generated, returned };
+    }
+  };
+};
+
+
 if (require.main == module) {
   const n = parseInt(process.argv[2]) || 4;
 
