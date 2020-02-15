@@ -79,8 +79,7 @@ export const traversal = function*(ds, indices, seeds) {
     todo[i] = [];
 
   while (true) {
-    const found = indices.find(k => todo[k].length);
-    const i = (found === undefined) ? null : found;
+    const i = indices.find(k => todo[k].length);
     const D = (i == null) ? seedsLeft.pop() : todo[i].shift();
 
     if (D == null)
