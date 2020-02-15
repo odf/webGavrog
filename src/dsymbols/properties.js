@@ -9,40 +9,17 @@ const assert = (condition, message) => {
 };
 
 
-const fold = (partition, a, b, matchP, spreadFn) => {
-  const p = partition.clone();
-  let q = [[a, b]];
-
-  while (q.length) {
-    const [x, y] = q.shift();
-
-    if (!matchP(x, y))
-      return;
-    else if (p.find(x) == p.find(y))
-      continue;
-    else {
-      p.union(x, y);
-      q = q.concat(spreadFn(x, y));
-    }
-  }
-
-  return p;
-};
-
-
 const typeMap = ds => {
   const result = {};
 
   for (const D of ds.elements())
     result[D] = [];
 
-  for (const i of ds.indices()) {
-    for (const j of ds.indices()) {
-      for (const D of DS.orbitReps2(ds, i, j)) {
-        const m = DS.m(ds, i, j, D);
-        for (const E of DS.orbit2(ds, i, j, D))
-          result[E].push(m);
-      }
+  for (let i = 0; i < ds.dim; ++i) {
+    for (const D of ds.orbitReps2(i, i+1)) {
+      const m = ds.m(i, i+1, D);
+      for (const E of ds.orbit2(i, i+1, D))
+        result[E].push(m);
     }
   }
 
@@ -51,29 +28,46 @@ const typeMap = ds => {
 
 
 const typePartitionFolder = ds => {
-  const tm = typeMap(ds);
-  const match  = (D, E) => tm[D] <= tm[E] && tm[D] >= tm[E];
-  const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
+  const types = typeMap(ds);
 
-  return (p, D, E) => fold(p, D, E, match, spread);
+  return (p0, D0, E0) => {
+    const p = p0.clone();
+    let q = [[D0, E0]];
+
+    while (q.length) {
+      const [D, E] = q.shift();
+
+      if (types[D].some((_, i) => types[D][i] != types[E][i]))
+        return;
+      else if (p.find(D) == p.find(E))
+        continue;
+      else {
+        p.union(D, E);
+        for (const i of ds.indices())
+          q.push([ds.s(i, D), ds.s(i, E)]);
+      }
+    }
+
+    return p;
+  };
 };
 
 
 export const isMinimal = ds => {
-  const folder = typePartitionFolder(ds);
+  const fold = typePartitionFolder(ds);
   const p = new Partition();
   const D0 = ds.elements()[0];
 
-  return ds.elements().slice(1).every(D => folder(p, D0, D) === undefined);
+  return ds.elements().slice(1).every(D => fold(p, D0, D) === undefined);
 };
 
 
 export const typePartition = ds => {
-  const folder = typePartitionFolder(ds);
+  const fold = typePartitionFolder(ds);
   const p = new Partition();
   const D0 = ds.elements()[0];
 
-  return ds.elements().slice(1).reduce((p, D) => folder(p, D0, D) || p, p);
+  return ds.elements().slice(1).reduce((p, D) => fold(p, D0, D) || p, p);
 };
 
 
