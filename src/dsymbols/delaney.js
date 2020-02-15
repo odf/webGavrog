@@ -300,12 +300,6 @@ export const parse = str => {
 };
 
 
-export const parseSymbols = text => text
-  .split('\n')
-  .filter(line => line.match(/^\s*</))
-  .map(parse);
-
-
 if (require.main == module) {
   const ds = parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>');
 

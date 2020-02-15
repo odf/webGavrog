@@ -5,6 +5,8 @@ import * as DS from '../dsymbols/delaney';
 import * as dsets2d from '../dsymbols/dsets2d';
 import * as props from '../dsymbols/properties';
 
+import symbols from '../io/ds';
+
 import { rationals } from '../arithmetic/types';
 const Q = rationals;
 
@@ -266,7 +268,7 @@ if (require.main == module) {
     }
   }
   else {
-    for (const ds of branchings(DS.parseSymbols(arg)[0]))
+    for (const ds of branchings([...symbols(arg)][0]))
       console.log(`${ds}`);
   }
 

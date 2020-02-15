@@ -4,13 +4,13 @@ import * as DS       from '../dsymbols/delaney';
 import * as periodic from '../pgraphs/periodic';
 import * as tilings  from '../dsymbols/tilings';
 
-import { rationalLinearAlgebra } from '../arithmetic/types';
-const ops = rationalLinearAlgebra
+import symbols from '../io/ds';
+import { rationalLinearAlgebra as ops } from '../arithmetic/types';
 
 
 const text = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 
-DS.parseSymbols(text).forEach(function(ds) {
+for (const { symbol: ds } of symbols(text)) {
   let good = false;
 
   if (ds.elements().every(D => DS.m(ds, 0, 1, D) >= 3)) {
@@ -25,4 +25,4 @@ DS.parseSymbols(text).forEach(function(ds) {
 
   if (good)
     console.log(`${ds}`);
-});
+}
