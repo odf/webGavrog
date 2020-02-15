@@ -1,5 +1,4 @@
 import * as DS from './delaney';
-import { seq } from '../common/lazyseq';
 import { Partition } from '../common/unionFind';
 
 
@@ -71,7 +70,7 @@ export const typePartition = ds => {
 };
 
 
-const Traversal = function*(ds, indices, seeds) {
+export const traversal = function*(ds, indices, seeds) {
   const seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
   const todo = {};
   const seen = {};
@@ -117,15 +116,12 @@ const Traversal = function*(ds, indices, seeds) {
   }
 };
 
-export const traversal = (ds, indices, seeds) =>
-  seq(Traversal(ds, indices, seeds));
-
 
 const root = traversal.root = null;
 
 
 export const orbitReps = (ds, indices, seeds) =>
-  traversal(ds, indices, seeds || ds.elements())
+  [...traversal(ds, indices, seeds || ds.elements())]
   .filter(e => e[1] == root)
   .map(e => e[2]);
 
@@ -252,7 +248,7 @@ export const invariant = ds => {
   let best = null;
 
   ds.elements().forEach(D0 => {
-    const trav = protocol(ds, idcs, Traversal(ds, idcs, [D0]));
+    const trav = protocol(ds, idcs, traversal(ds, idcs, [D0]));
 
     if (best == null)
       best = trav;
@@ -339,7 +335,7 @@ if (require.main == module) {
     console.log(`    symbol ${is(isWeaklyOriented)} weakly oriented.`);
     console.log(`    type partition: ${typePartition(ds)}`);
 
-    const trav = traversal(ds, ds.indices(), ds.elements());
+    const trav = [...traversal(ds, ds.indices(), ds.elements())];
     console.log(`    traversal: ${trav}`);
     console.log(`    invariant: ${invariant(ds)}`);
     console.log();
