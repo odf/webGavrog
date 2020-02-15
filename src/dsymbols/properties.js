@@ -71,45 +71,32 @@ export const typePartition = ds => {
 
 
 export const traversal = function*(ds, indices, seeds) {
-  const seedsLeft = (seeds.constructor == Array) ? seeds.slice() : seeds.toJS();
-  const todo = {};
+  const seedsLeft = Array.from(seeds);
   const seen = {};
-  indices = (indices.constructor == Array) ? indices : indices.toJS();
-  indices.forEach(i => { seen[i] = {}; todo[i] = [] });
-  seen[root] = {};
+  const todo = {};
+
+  for (const i of indices)
+    todo[i] = [];
 
   while (true) {
-    let i = null;
-    let D = null;
-    for (const k in indices) {
-      if (todo[indices[k]].length > 0) {
-        i = indices[k];
-        D = todo[i].shift();
-        break;
-      }
-    }
-
-    if (D == null && seedsLeft.length > 0)
-      D = seedsLeft.pop();
+    const found = indices.find(k => todo[k].length);
+    const i = (found === undefined) ? root : found;
+    const D = (i == root) ? seedsLeft.pop() : todo[i].shift();
 
     if (D == null)
       return;
 
-    if (!seen[i][D]) {
+    if (!seen[[D, i]]) {
       const Di = (i == root) ? D : ds.s(i, D);
 
-      indices.forEach(i => {
-        if (!seen[i][Di]) {
-          if (i < 2)
-            todo[i].unshift(Di);
-          else
-            todo[i].push(Di);
-        }
-      });
+      for (const k of indices) {
+        if (k < 2)
+          todo[k].unshift(Di);
+        else
+          todo[k].push(Di);
+      }
 
-      seen[root][Di] = true;
-      seen[i][D]     = true;
-      seen[i][Di]    = true;
+      seen[[Di, root]] = seen[[D, i]] = seen[[Di, i]] = true;
 
       yield [D, i, Di];
     }
