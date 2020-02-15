@@ -174,25 +174,25 @@ export const orbit2 = (ds, i, j, D) => ds.orbit2(i, j, D);
 export const orbitReps2 = (ds, i, j) => ds.orbitReps2(i, j);
 
 
-const _assert = (condition, message) => {
+const assert = (condition, message) => {
   if (!condition)
     throw new Error(message || 'assertion error');
 };
 
 
-const _assertIndex = (ds, i) =>
-  _assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
+const assertIndex = (ds, i) =>
+  assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
 
-const _assertElement = (ds, D) =>
-  _assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
+const assertElement = (ds, D) =>
+  assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
 
 
-const _assertNonNegative = v =>
-  _assert(Number.isInteger(v) && v >= 0, `need non-negative integer, got ${v}`);
+const assertNonNegative = v =>
+  assert(Number.isInteger(v) && v >= 0, `need non-negative integer, got ${v}`);
 
 
 export const withPairings = (ds, i, specs) => {
-  _assertIndex(ds, i);
+  assertIndex(ds, i);
 
   const sNew = ds._s.slice();
   const get = D => sNew[i * ds.size + D - 1];
@@ -201,8 +201,8 @@ export const withPairings = (ds, i, specs) => {
   const dangling = [];
 
   for (const [D, E] of specs) {
-    _assertElement(ds, D);
-    _assertElement(ds, E);
+    assertElement(ds, D);
+    assertElement(ds, E);
 
     dangling.push(get(D));
     dangling.push(get(E));
@@ -221,13 +221,13 @@ export const withPairings = (ds, i, specs) => {
 
 
 export const withBranchings = (ds, i, specs) => {
-  _assertIndex(ds, i);
+  assertIndex(ds, i);
 
   const vNew = ds._v.slice();
 
   for (const [D, v] of specs) {
-    _assertElement(ds, D);
-    _assertNonNegative(v);
+    assertElement(ds, D);
+    assertNonNegative(v);
 
     for (const E of ds.orbit2(i, i+1, D))
       vNew[i * ds.size + E - 1] = v;
@@ -257,18 +257,18 @@ export const build = (dim, size, pairingsFn, branchingsFn) => {
 
 
 export const parse = str => {
-  const _parseInts = str => str.trim().split(/\s+/).map(s => parseInt(s));
+  const parseInts = str => str.trim().split(/\s+/).map(s => parseInt(s));
 
   const parts = str.trim().replace(/^</, '').replace(/>$/, '').split(/:/);
   if (parts[0].match(/\d+\.\d+/))
     parts.shift();
 
-  const dims = _parseInts(parts[0]);
+  const dims = parseInts(parts[0]);
   const size = dims[0];
   const dim  = dims[1] || 2;
 
-  const gluings = parts[1].split(/,/).map(_parseInts);
-  const degrees = parts[2].split(/,/).map(_parseInts);
+  const gluings = parts[1].split(/,/).map(parseInts);
+  const degrees = parts[2].split(/,/).map(parseInts);
 
   const s = new Int32Array((dim+1) * size);
   const get = (i, D) => s[i * size + D - 1];
