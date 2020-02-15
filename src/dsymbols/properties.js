@@ -80,14 +80,14 @@ export const traversal = function*(ds, indices, seeds) {
 
   while (true) {
     const found = indices.find(k => todo[k].length);
-    const i = (found === undefined) ? root : found;
-    const D = (i == root) ? seedsLeft.pop() : todo[i].shift();
+    const i = (found === undefined) ? null : found;
+    const D = (i == null) ? seedsLeft.pop() : todo[i].shift();
 
     if (D == null)
       return;
 
     if (!seen[[D, i]]) {
-      const Di = (i == root) ? D : ds.s(i, D);
+      const Di = (i == null) ? D : ds.s(i, D);
 
       for (const k of indices) {
         if (k < 2)
@@ -96,7 +96,7 @@ export const traversal = function*(ds, indices, seeds) {
           todo[k].push(Di);
       }
 
-      seen[[Di, root]] = seen[[D, i]] = seen[[Di, i]] = true;
+      seen[[Di, null]] = seen[[D, i]] = seen[[Di, i]] = true;
 
       yield [D, i, Di];
     }
@@ -104,12 +104,9 @@ export const traversal = function*(ds, indices, seeds) {
 };
 
 
-const root = traversal.root = null;
-
-
 export const orbitReps = (ds, indices, seeds) =>
   [...traversal(ds, indices, seeds || ds.elements())]
-  .filter(e => e[1] == root)
+  .filter(e => e[1] == null)
   .map(e => e[2]);
 
 
@@ -118,7 +115,7 @@ export const orbits = (ds, indices, seeds) => {
   const result = [];
 
   for (const [_, i, D] of traversal(ds, indices, seeds || ds.elements())) {
-    if (i == root)
+    if (i == null)
       result.push([]);
 
     if (D && !seen[D]) {
@@ -154,7 +151,7 @@ export const partialOrientation = ds => {
 
   for (const [Di, i, D] of traversal(ds, ds.indices(), ds.elements())) {
     if (D && !ori[D])
-      ori[D] = i == root ? 1 : -ori[Di];
+      ori[D] = i == null ? 1 : -ori[Di];
   }
 
   return ori;
@@ -200,10 +197,10 @@ const protocol = (ds, idcs, gen) => {
     if (E == n)
       emap[D] = E;
 
-    buffer.push(i == root ? -1 : i);
+    buffer.push(i == null ? -1 : i);
     buffer.push(emap[Di]);
 
-    if (i != root)
+    if (i != null)
       buffer.push(E);
 
     if (E == n) {

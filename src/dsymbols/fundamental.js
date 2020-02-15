@@ -108,7 +108,7 @@ const _spanningTree = ds => {
   const todo = [];
 
   for (const [D, i, E] of props.traversal(ds, ds.indices(), ds.elements())) {
-    if (i != props.traversal.root && !seen[E])
+    if (i != null && !seen[E])
       todo.push([D, i]);
     seen[E] = true;
   }

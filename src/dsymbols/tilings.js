@@ -50,7 +50,7 @@ const _cornerShifts = (cov, e2t) => {
   for (const i of cov.indices()) {
     const idcs = _remainingIndices(cov, i);
     for (const [Dk, k, D] of properties.traversal(cov, idcs, cov.elements())) {
-      if (k == properties.traversal.root)
+      if (k == null)
         result[D][i] = zero;
       else
         result[D][i] = opsR.minus(result[Dk][i], e2t[Dk][k] || zero);
