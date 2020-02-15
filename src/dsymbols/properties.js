@@ -129,13 +129,14 @@ export const isWeaklyOriented = ds => {
 };
 
 
-export const orbitReps = (ds, indices, seeds) =>
-  [...traversal(ds, indices, seeds || ds.elements())]
-  .filter(e => e[1] == null)
-  .map(e => e[2]);
-
-
-export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
+export const orbitReps = (ds, indices, seeds) => {
+  const result = [];
+  for (const [_, i, D] of traversal(ds, indices, seeds || ds.elements())) {
+    if (i == null)
+      result.push(D);
+  }
+  return result;
+};
 
 
 export const orbits = (ds, indices, seeds) => {
@@ -156,19 +157,8 @@ export const orbits = (ds, indices, seeds) => {
 };
 
 
-export const orbit = (ds, indices, seed) => {
-  const seen = {};
-  const result = [];
-
-  for (const [_, i, D] of traversal(ds, indices, [seed])) {
-    if (D && !seen[D]) {
-      seen[D] = true;
-      result.push(D);
-    }
-  }
-
-  return result;
-};
+export const isConnected = ds => orbitReps(ds, ds.indices()).length < 2;
+export const orbit = (ds, indices, seed) => orbits(ds, indices, [seed])[0];
 
 
 const protocol = (ds, idcs, gen) => {
