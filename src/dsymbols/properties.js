@@ -3,13 +3,13 @@ import { seq } from '../common/lazyseq';
 import { Partition } from '../common/unionFind';
 
 
-const _assert = (condition, message) => {
+const assert = (condition, message) => {
   if (!condition)
     throw new Error(message || 'assertion error');
 };
 
 
-const _fold = (partition, a, b, matchP, spreadFn) => {
+const fold = (partition, a, b, matchP, spreadFn) => {
   const p = partition.clone();
   let q = [[a, b]];
 
@@ -30,7 +30,7 @@ const _fold = (partition, a, b, matchP, spreadFn) => {
 };
 
 
-const _typeMap = ds => {
+const typeMap = ds => {
   const result = {};
 
   for (const D of ds.elements())
@@ -51,11 +51,11 @@ const _typeMap = ds => {
 
 
 const typePartitionFolder = ds => {
-  const tm = _typeMap(ds);
+  const tm = typeMap(ds);
   const match  = (D, E) => tm[D] <= tm[E] && tm[D] >= tm[E];
   const spread = (D, E) => ds.indices().map(i => [ds.s(i, D), ds.s(i, E)]);
 
-  return (p, D, E) => _fold(p, D, E, match, spread);
+  return (p, D, E) => fold(p, D, E, match, spread);
 };
 
 
@@ -184,32 +184,32 @@ export const partialOrientation = ds => {
 };
 
 
-const _forAllEdges = (ds, test) =>
+const forAllEdges = (ds, test) =>
   ds.elements().every(D => ds.indices().every(i => test(D, i)));
 
 
-export const isLoopless = ds => _forAllEdges(ds, (D, i) => D != ds.s(i, D));
+export const isLoopless = ds => forAllEdges(ds, (D, i) => D != ds.s(i, D));
 
 
 export const isOriented = ds => {
   const ori = partialOrientation(ds);
-  return _forAllEdges(ds, (D, i) => ori[D] != ori[ds.s(i, D)]);
+  return forAllEdges(ds, (D, i) => ori[D] != ori[ds.s(i, D)]);
 };
 
 
 export const isWeaklyOriented = ds => {
   const ori = partialOrientation(ds);
   const test = (D, Di) => D == Di || ori[D] != ori[Di];
-  return _forAllEdges(ds, (D, i) => test(D, ds.s(i, D)));
+  return forAllEdges(ds, (D, i) => test(D, ds.s(i, D)));
 };
 
 
-const _protocol = (ds, idcs, gen) => {
+const protocol = (ds, idcs, gen) => {
   const buffer = [];
   const emap = {};
   let n = 1;
 
-  const _advance = () => {
+  const advance = () => {
     const next = gen.next();
     if (next.done)
       return false;
@@ -240,12 +240,12 @@ const _protocol = (ds, idcs, gen) => {
 
   return {
     get(i) {
-      while (buffer.length <= i && _advance())
+      while (buffer.length <= i && advance())
         ;
       return buffer[i];
     },
     content(fn) {
-      while (_advance())
+      while (advance())
         ;
       return buffer;
     }
@@ -258,7 +258,7 @@ export const invariant = ds => {
   let best = null;
 
   ds.elements().forEach(D0 => {
-    const trav = _protocol(ds, idcs, Traversal(ds, idcs, [D0]));
+    const trav = protocol(ds, idcs, Traversal(ds, idcs, [D0]));
 
     if (best == null)
       best = trav;
@@ -283,12 +283,12 @@ export const invariant = ds => {
 
 
 export const morphism = (src, srcD0, img, imgD0) => {
-  _assert(isConnected(src), 'source symbol must be connected');
-  _assert(src.dim == img.dim, 'dimensions must be equal');
+  assert(isConnected(src), 'source symbol must be connected');
+  assert(src.dim == img.dim, 'dimensions must be equal');
 
   const idcs = src.indices();
-  const tSrc = _typeMap(src);
-  const tImg = _typeMap(img);
+  const tSrc = typeMap(src);
+  const tImg = typeMap(img);
   const eq = (as, bs) => as <= bs && bs <= as;
 
   const q = [[srcD0, imgD0]];
@@ -318,7 +318,7 @@ export const morphism = (src, srcD0, img, imgD0) => {
 
 
 export const automorphisms = ds => {
-  _assert(isConnected(ds), 'symbol must be connected');
+  assert(isConnected(ds), 'symbol must be connected');
   const elms = ds.elements();
   if (elms.length) {
     const D = elms[0];
