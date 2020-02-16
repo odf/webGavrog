@@ -12,28 +12,15 @@ export const dual = ds => DS.buildDSymbol({
 
 
 export const cover = (ds, nrSheets, fn) => {
-  const d = DS.dim(ds);
-  const n = DS.size(ds);
+  const src = D => (D - 1) % ds.size + 1;
+  const sheet = D => (D - src(D)) / ds.size;
 
-  const pairingsFn = (_, i) => {
-    const out = [];
-    for (const D of ds.elements()) {
-      for (let k = 0; k < nrSheets; ++k)
-        out.push([k * n + D, fn(k, i, D) * n + ds.s(i, D)]);
-    }
-    return out;
-  };
-
-  const branchingsFn = (tmp, i) => {
-    const out = [];
-    for (const D of DS.orbitReps2(tmp, i, i+1)) {
-      const m = DS.m(ds, i, i+1, (D - 1) % n + 1) || 0;
-      out.push([D, m / DS.r(tmp, i, i+1, D)]);
-    }
-    return out;
-  };
-
-  return DS.build(d, n * nrSheets, pairingsFn, branchingsFn);
+  return DS.buildDSymbol({
+    dim: ds.dim,
+    size: ds.size * nrSheets,
+    getS: (i, D) => ds.size * fn(sheet(D), i, src(D)) + ds.s(i, src(D)),
+    getM: (i, D) => ds.m(i, i+1, src(D)) || 0
+  });
 };
 
 
@@ -53,7 +40,7 @@ export const minimal = ds => {
   else {
     const p = props.typePartition(ds);
 
-    const reps = [];
+    const reps = [0];
     const seen = {};
     for (const D of ds.elements()) {
       const r = p.find(D);
@@ -63,12 +50,12 @@ export const minimal = ds => {
       }
     }
 
-    return DS.build(
-      DS.dim(ds), reps.length,
-      (_, i) => reps.map(
-        (D, k) => [k+1, reps.indexOf(p.find(ds.s(i, D))) + 1]),
-      (tmp, i) => reps.map(
-        (D, k) => [k+1, (DS.m(ds, i, i+1, D) || 0) / DS.r(tmp, i, i+1, k+1)]));
+    return DS.buildDSymbol({
+      dim: ds.dim,
+      size: reps.length - 1,
+      getS: (i, D) => reps.indexOf(p.find(ds.s(i, reps[D]))),
+      getM: (i, D) => ds.m(i, i+1, reps[D]) || 0
+    });
   }
 };
 
