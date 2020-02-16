@@ -217,30 +217,28 @@ export const invariant = ds => {
 };
 
 
-export const morphism = (src, srcD0, img, imgD0) => {
+export const morphism = (
+  src, img, startSrc, startImg, typesSrc=typeMap(src), typesImg=typeMap(img)
+) => {
   if (!isConnected(src))
     throw new Error('source symbol must be connected');
 
   if (src.dim != img.dim)
     throw new Error('dimensions must be equal');
 
-  const idcs = src.indices();
-  const tSrc = typeMap(src);
-  const tImg = typeMap(img);
-
-  const q = [[srcD0, imgD0]];
+  const q = [[startSrc, startImg]];
   const m = new Array(src.size + 1);
-  m[srcD0] = imgD0;
+  m[startSrc] = startImg;
 
   while (q.length) {
     const [D, E] = q.shift();
 
-    for (const i of idcs) {
+    for (let i = 0; i <= src.dim; ++i) {
       const Di = src.s(i, D);
       const Ei = img.s(i, E);
 
       if (Di != null || Ei != null) {
-        if (m[Di] == null && tSrc[Di] == tImg[Ei]) {
+        if (m[Di] == null && typesSrc[Di] == typesImg[Ei]) {
           q.push([Di, Ei]);
           m[Di] = Ei;
         }
@@ -255,11 +253,16 @@ export const morphism = (src, srcD0, img, imgD0) => {
 
 
 export const automorphisms = ds => {
-  const elms = ds.elements();
-  if (elms.length) {
-    const D = elms[0];
-    return elms.map(E => morphism(ds, D, ds, E)).filter(m => m != null);
+  const types = typeMap(ds);
+  const result = [];
+
+  for (let D = 1; D <= ds.size; ++D) {
+    const phi = morphism(ds, ds, 1, D, types, types);
+    if (phi != null)
+      result.push(phi);
   }
+
+  return result;
 };
 
 

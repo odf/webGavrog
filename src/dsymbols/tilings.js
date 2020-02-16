@@ -306,11 +306,11 @@ const affineSymmetry = (D0, D1, E0, E1, pos) => {
 
 
 export const deckTransformations = (ds, cov) => {
-  const phi = properties.morphism(cov, 1, ds, 1);
+  const phi = properties.morphism(cov, ds, 1, 1);
 
   return cov.elements()
     .filter(D => phi[D] == 1)
-    .map(D => properties.morphism(cov, D, cov, 1));
+    .map(D => properties.morphism(cov, cov, D, 1));
 };
 
 
@@ -327,7 +327,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const dim = delaney.dim(cov);
   const pos = chamberPositions(cov, skel);
   const Dx = nonDegenerateChamber(ds.elements(), pos);
-  const phi = properties.morphism(cov, 1, ds, 1);
+  const phi = properties.morphism(cov, ds, 1, 1);
   const idcs = range(dim);
   const tileOrbits = properties.orbits(cov, idcs);
 
@@ -354,7 +354,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
     else {
       const D0 = orbitReps[classIndex];
       const D1 = elms.find(D => phi[D] == phi[D0]);
-      const psi = properties.morphism(cov, D0, cov, D1)
+      const psi = properties.morphism(cov, cov, D0, D1)
       symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
     }
 
