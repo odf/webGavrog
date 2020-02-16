@@ -217,15 +217,12 @@ export const invariant = ds => {
 };
 
 
-const assert = (condition, message) => {
-  if (!condition)
-    throw new Error(message || 'assertion error');
-};
-
-
 export const morphism = (src, srcD0, img, imgD0) => {
-  assert(isConnected(src), 'source symbol must be connected');
-  assert(src.dim == img.dim, 'dimensions must be equal');
+  if (!isConnected(src))
+    throw new Error('source symbol must be connected');
+
+  if (src.dim != img.dim)
+    throw new Error('dimensions must be equal');
 
   const idcs = src.indices();
   const tSrc = typeMap(src);
@@ -258,7 +255,6 @@ export const morphism = (src, srcD0, img, imgD0) => {
 
 
 export const automorphisms = ds => {
-  assert(isConnected(ds), 'symbol must be connected');
   const elms = ds.elements();
   if (elms.length) {
     const D = elms[0];
