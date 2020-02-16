@@ -39,7 +39,7 @@ const typePartitionFolder = ds => {
         return;
       else if (p.find(D) == p.find(E))
         continue;
-      else {
+      else if (D != null) {
         p.union(D, E);
         for (const i of ds.indices())
           q.push([ds.s(i, D), ds.s(i, E)]);
@@ -228,23 +228,19 @@ export const morphism = (
 
   const q = [[startSrc, startImg]];
   const m = new Array(src.size + 1);
-  m[startSrc] = startImg;
 
   while (q.length) {
     const [D, E] = q.shift();
 
-    for (let i = 0; i <= src.dim; ++i) {
-      const Di = src.s(i, D);
-      const Ei = img.s(i, E);
+    if (m[D] == E)
+      continue;
+    else if (m[D] != null || typesSrc[D] != typesImg[E])
+      return null;
+    else if (D != null) {
+      m[D] = E;
 
-      if (Di != null || Ei != null) {
-        if (m[Di] == null && typesSrc[Di] == typesImg[Ei]) {
-          q.push([Di, Ei]);
-          m[Di] = Ei;
-        }
-        else if (m[Di] != Ei)
-          return null;
-      }
+      for (let i = 0; i <= src.dim; ++i)
+        q.push([src.s(i, D), img.s(i, E)]);
     }
   }
 
