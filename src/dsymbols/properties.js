@@ -18,6 +18,9 @@ const typeMap = ds => {
     }
   }
 
+  for (const D of ds.elements())
+    result[D] = result[D].join(',');
+
   return result;
 };
 
@@ -32,7 +35,7 @@ const typePartitionFolder = ds => {
     while (q.length) {
       const [D, E] = q.shift();
 
-      if (types[D].some((_, i) => types[D][i] != types[E][i]))
+      if (types[D] != types[E])
         return;
       else if (p.find(D) == p.find(E))
         continue;
@@ -227,7 +230,6 @@ export const morphism = (src, srcD0, img, imgD0) => {
   const idcs = src.indices();
   const tSrc = typeMap(src);
   const tImg = typeMap(img);
-  const eq = (as, bs) => as <= bs && bs <= as;
 
   const q = [[srcD0, imgD0]];
   const m = new Array(src.size + 1);
@@ -241,7 +243,7 @@ export const morphism = (src, srcD0, img, imgD0) => {
       const Ei = img.s(i, E);
 
       if (Di != null || Ei != null) {
-        if (m[Di] == null && eq(tSrc[Di], tImg[Ei])) {
+        if (m[Di] == null && tSrc[Di] == tImg[Ei]) {
           q.push([Di, Ei]);
           m[Di] = Ei;
         }
