@@ -9,7 +9,7 @@ class DSymbol {
     this._s = new Int32Array(sData);
     this._v = new Int32Array(vData);
     this._dim = dim;
-    this._size = this._v.length / dim;
+    this._size = this._s.length / (dim + 1);
   }
 
   get dim() {
