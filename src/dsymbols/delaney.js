@@ -256,6 +256,53 @@ export const build = (dim, size, pairingsFn, branchingsFn) => {
 };
 
 
+export const buildDSymbol = ({ dim, size, getS, getV, getM }) => {
+  if (getV && getM)
+    throw new Error('must define exactly one of getV and getM');
+
+  const offset = (i, D) => i * size + D - 1;
+  const s = new Int32Array((dim + 1) * size);
+  const v = new Int32Array(dim * size);
+
+  for (let i = 0; i <= dim; ++i) {
+    for (let D = 1; D <= size; ++D) {
+      const Di = getS(i, D);
+
+      for (const [A, B] of [[D, Di], [Di, D]]) {
+        const oldB = s[offset(i, A)];
+
+        if (!Number.isInteger(B) || B < 1 || B > size)
+          throw new Error(`s(${i}, ${A}) set to ${B}, must be in 1..${size}`);
+        else if (oldB == 0)
+          s[offset(i, A)] = B;
+        else if (oldB != B)
+          throw new Error(`s(${i}, ${A}) set to ${B}, was ${oldB}`);
+      }
+    }
+  }
+
+  const ds = new DSymbol(dim, s);
+
+  for (let i = 0; i < dim; ++i) {
+    for (let D = 1; D <= size; ++D) {
+      const val = getM ? getM(i, D) / ds.r(i, i+1, D) : getV(i, D);
+      const oldVal = v[offset(i, D)];
+
+      if (!Number.isInteger(val) || val < 0)
+        throw new Error(`v(${i}, ${D}) set ${val}, must be natural number`);
+      else if (oldVal == 0) {
+        for (const E of ds.orbit2(i, i+1, D))
+          v[offset(i, E)] = val;
+      }
+      else if (oldVal != val)
+        throw new Error(`v(${i}, ${i+1}, ${D}) set to ${val}, was ${oldVal}`);
+    }
+  }
+
+  return makeDSymbol(dim, s, v);
+};
+
+
 export const parse = str => {
   const parseInts = str => str.trim().split(/\s+/).map(s => parseInt(s));
 

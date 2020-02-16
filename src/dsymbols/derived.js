@@ -3,15 +3,12 @@ import * as props from './properties';
 import * as comb  from '../common/combinatorics';
 
 
-export const dual = ds => {
-  const d = DS.dim(ds);
-  const n = DS.size(ds);
-
-  return DS.build(
-    d, n,
-    (_, i) => ds.elements().map(D => [D, ds.s(d - i, D)]),
-    (_, i) => ds.elements().map(D => [D, ds.v(d-i-1, d-i, D)]));
-};
+export const dual = ds => DS.buildDSymbol({
+  dim: ds.dim,
+  size: ds.size,
+  getS: (i, D) => ds.s(ds.dim - i, D),
+  getV: (i, D) => ds.v(ds.dim - i - 1, ds.dim - i, D)
+});
 
 
 export const cover = (ds, nrSheets, fn) => {
