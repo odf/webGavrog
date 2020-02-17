@@ -99,15 +99,13 @@ export const barycentricSubdivision = (ds, splitDim=ds.dim) => {
   if (splitDim == 0)
     return ds;
   else {
-    const perms = [...comb.permutations(splitDim + 1)];
-
     const src = D => (D - 1) % ds.size + 1;
     const sheet = D => (D - src(D)) / ds.size;
-    const perm = D => perms[sheet(D)];
+    const perms = [...comb.permutations(splitDim + 1)];
+    const apply = (D, i) => (perms[sheet(D)][i] || i + 1) - 1;
 
-    const apply = (p, i) => (i < 0 || i >= p.length) ? i : p[i] - 1;
-
-    const sigma = (p, i) => {
+    const sigma = (D, i) => {
+      const p = perms[sheet(D)];
       const q = p.slice();
       [q[i], q[i+1]] = [p[i+1], p[i]];
       return perms.findIndex(p => p <= q && p >= q);
@@ -115,14 +113,14 @@ export const barycentricSubdivision = (ds, splitDim=ds.dim) => {
 
     const getS = (i, D) => (
       i < splitDim ?
-        ds.size * sigma(perm(D), i) + src(D) :
-        ds.size * sheet(D) + ds.s(apply(perm(D), i), src(D))
+        ds.size * sigma(D, i) + src(D) :
+        ds.size * sheet(D) + ds.s(apply(D, i), src(D))
     );
 
     const getV = (i, D) => (
       i < splitDim - 1 ?
         1 :
-        ds.v(apply(perm(D), i), apply(perm(D), i + 1), src(D))
+        ds.v(apply(D, i), apply(D, i + 1), src(D))
     );
 
     return DS.buildDSymbol({
