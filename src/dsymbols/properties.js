@@ -187,10 +187,12 @@ function* protocol(ds, gen) {
         yield ds.v(i, i+1, D);
     }
   }
+
+  return emap;
 };
 
 
-export const invariant = ds => {
+export const invariantWithMapping = ds => {
   let best = null;
 
   for (const D0 of ds.elements()) {
@@ -213,8 +215,12 @@ export const invariant = ds => {
     }
   }
 
-  return best.result().generated;
+  const { generated, returned } = best.result();
+  return { invariant: generated, mapping: returned };
 };
+
+
+export const invariant = ds => invariantWithMapping(ds).invariant;
 
 
 export const morphism = (
