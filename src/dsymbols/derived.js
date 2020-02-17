@@ -27,6 +27,25 @@ export const dual = ds => DS.buildDSymbol({
 });
 
 
+export const subsymbol = (ds, indices, seed) => {
+  const elements = props.orbit(ds, indices, seed);
+
+  const src2img = {};
+  const img2src = {};
+  for (let D = 1; D <= elements.length; ++D) {
+    src2img[elements[D - 1]] = D;
+    img2src[D] = elements[D - 1];
+  }
+
+  return DS.buildDSymbol({
+    dim: indices.length - 1,
+    size: elements.length,
+    getS: (i, D) => src2img[ds.s(indices[i], img2src[D])],
+    getV: (i, D) => ds.v(indices[i], indices[i+1], img2src[D]) || 0
+  });
+};
+
+
 export const cover = (ds, nrSheets, fn) => {
   const src = D => (D - 1) % ds.size + 1;
   const sheet = D => (D - src(D)) / ds.size;
@@ -124,30 +143,6 @@ export const barycentricSubdivision = (ds, splitDim) => {
 
 
 export const tAnalog = ds => dual(barycentricSubdivision(ds));
-
-
-export const subsymbol = (ds, indices, seed) => {
-  const elements = props.orbit(ds, indices, seed);
-  const dim = indices.length - 1;
-  const size = elements.length;
-
-  const mappedElement = {};
-  for (let D = 1; D <= size; ++D)
-    mappedElement[elements[D - 1]] = D;
-
-  const ops = new Array(dim + 1).fill(0).map(_ => []);
-  const brs = new Array(dim).fill(0).map(_ => []);
-
-  for (const D of elements) {
-    for (let i = 0; i <= dim; ++i)
-      ops[i].push([mappedElement[D], mappedElement[ds.s(indices[i], D)]]);
-
-    for (let i = 0; i < dim; ++i)
-      brs[i].push([mappedElement[D], ds.v(indices[i], indices[i + 1], D)])
-  }
-
-  return DS.build(dim, size, (_, i) => ops[i], (_, i) => brs[i]);
-};
 
 
 if (require.main == module) {
