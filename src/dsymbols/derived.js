@@ -95,27 +95,17 @@ export const minimal = ds => {
 };
 
 
-const _apply = (p, i) => (i < 0 || i >= p.length) ? i : p[i] - 1;
-
-
-export const barycentricSubdivision = (ds, splitDim) => {
-  if (splitDim == null)
-    splitDim = DS.dim(ds);
-
+export const barycentricSubdivision = (ds, splitDim=ds.dim) => {
   if (splitDim == 0)
     return ds;
   else {
-    const n = DS.size(ds);
+    const perms = [...comb.permutations(splitDim + 1)];
 
-    const perms = [];
-    const elements = [];
-    let j = 0;
-    for (const p of comb.permutations(splitDim + 1)) {
-      perms.push(p);
-      for (const D of ds.elements())
-        elements.push([p, j, D]);
-      ++j;
-    }
+    const src = D => (D - 1) % ds.size + 1;
+    const sheet = D => (D - src(D)) / ds.size;
+    const perm = D => perms[sheet(D)];
+
+    const apply = (p, i) => (i < 0 || i >= p.length) ? i : p[i] - 1;
 
     const sigma = (p, i) => {
       const q = p.slice();
@@ -123,21 +113,24 @@ export const barycentricSubdivision = (ds, splitDim) => {
       return perms.findIndex(p => p <= q && p >= q);
     };
 
-    const pairingsFn = (_, i) => elements.map(([p, j, D]) => [
-      n * j + D,
-      (i < splitDim) ?
-        n * sigma(p, i) + D :
-        n * j + ds.s(_apply(p, i), D)
-    ]);
+    const getS = (i, D) => (
+      i < splitDim ?
+        ds.size * sigma(perm(D), i) + src(D) :
+        ds.size * sheet(D) + ds.s(apply(perm(D), i), src(D))
+    );
 
-    const branchingsFn = (tmp, i) => elements.map(([p, j, D]) => [
-      n * j + D,
-      (i < splitDim - 1) ?
+    const getV = (i, D) => (
+      i < splitDim - 1 ?
         1 :
-        ds.v(_apply(p, i), _apply(p, i+1), D)
-    ]);
+        ds.v(apply(perm(D), i), apply(perm(D), i + 1), src(D))
+    );
 
-    return DS.build(DS.dim(ds), n * perms.length, pairingsFn, branchingsFn);
+    return DS.buildDSymbol({
+      dim: ds.dim,
+      size: ds.size * perms.length,
+      getS,
+      getV
+    });
   }
 };
 
