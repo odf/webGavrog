@@ -3,6 +3,22 @@ import * as props from './properties';
 import * as comb  from '../common/combinatorics';
 
 
+export const canonical = ds => {
+  const { mapping: src2img } = props.invariantWithMapping(ds);
+
+  const img2src = {};
+  for (const D of ds.elements())
+    img2src[src2img[D]] = D;
+
+  return DS.buildDSymbol({
+    dim: ds.dim,
+    size: ds.size,
+    getS: (i, D) => src2img[ds.s(i, img2src[D])],
+    getV: (i, D) => ds.v(i, i+1, img2src[D]) || 0
+  });
+};
+
+
 export const dual = ds => DS.buildDSymbol({
   dim: ds.dim,
   size: ds.size,
@@ -108,34 +124,6 @@ export const barycentricSubdivision = (ds, splitDim) => {
 
 
 export const tAnalog = ds => dual(barycentricSubdivision(ds));
-
-
-export const canonical = ds => {
-  const inv = props.invariant(ds);
-  const dim = DS.dim(ds);
-  const size = DS.size(ds);
-
-  const ops = new Array(dim + 1).fill(0).map(_ => []);
-  const brs = new Array(dim).fill(0).map(_ => []);
-
-  let n = 0;
-  let k = -1;
-
-  while (k+1 < inv.length) {
-    const i = inv[++k];
-    const D = inv[++k];
-    const E = (i >= 0) ? inv[++k] : D;
-    if (E > n) {
-      for (let j = 0; j < dim; ++j)
-        brs[j].push([E, inv[++k]]);
-      n = E;
-    }
-    if (i >= 0)
-      ops[i].push([D, E]);
-  }
-
-  return DS.build(dim, size, (_, i) => ops[i], (_, i) => brs[i]);
-};
 
 
 export const subsymbol = (ds, indices, seed) => {
