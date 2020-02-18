@@ -102,18 +102,16 @@ const spanningTree = ds => {
 
 
 const traceWord = (ds, edge2word, i, j, D) => {
-  let E = ds.s(i, D);
-  let k = j;
+  let E = D;
   const factors = [];
 
-  while (true) {
-    factors.push(edge2word[E][k] || freeWords.empty);
-    if (E == D && k == i)
-      break;
-
-    E = ds.s(k, E) || E;
-    k = k == i ? j : i;
+  do {
+    factors.push(edge2word[E][i] || freeWords.empty);
+    E = ds.s(i, E) || E;
+    factors.push(edge2word[E][j] || freeWords.empty);
+    E = ds.s(j, E) || E;
   }
+  while (E != D);
 
   return freeWords.product(factors);
 };
@@ -136,7 +134,7 @@ const findGenerators = ds => {
         edge2word[ds.s(i, D)][i] = freeWords.inverse([gen]);
 
         for (const [D, i, j] of bnd.glueRecursively([[D, i]])) {
-          const w = traceWord(ds, edge2word, i, j, D);
+          const w = traceWord(ds, edge2word, j, i, ds.s(i, D));
           if (w.length > 0) {
             edge2word[D][i] = freeWords.inverse(w);
             edge2word[ds.s(i, D)][i] = w;
@@ -180,7 +178,7 @@ export const fundamentalGroup = ds => {
   for (let i = 0; i < ds.dim; ++i) {
     for (let j =  i + 1; j <= ds.dim; ++j) {
       for (const D of props.orbitReps(ds, [i, j])) {
-        const word = traceWord(ds, edge2word, i, j, D);
+        const word = traceWord(ds, edge2word, j, i, ds.s(i, D));
         const degree = ds.v(i, j, D);
         addRelator(freeWords.raisedTo(degree, word));
         addCone(word, degree);
