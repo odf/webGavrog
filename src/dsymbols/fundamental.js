@@ -154,33 +154,35 @@ export const innerEdges = ds => {
 export const fundamentalGroup = ds => {
   const { edge2word, gen2edge } = findGenerators(ds);
 
-  const orbits = [];
-  for (const i of ds.indices()) {
-    for (const j of ds.indices()) {
-      if (j > i) {
-        for (const D of props.orbitReps(ds, [i, j])) {
-          const w = traceWord(ds, edge2word, i, j, D);
-          const v = ds.v(i, j, D);
-          if (v && w.length > 0)
-            orbits.push([w, v, D, i, j]);
+  const nrGenerators = gen2edge.length - 1;
+  const cones = [];
+  const relators = [];
+  const addRelator = wd => relators.push(freeWords.relatorRepresentative(wd));
+
+  for (let g = 1; g <= nrGenerators; ++g) {
+    const [D, i] = gen2edge[g];
+    if (ds.s(i, D) == D)
+      addRelator(freeWords.word([g, g]));
+  }
+
+  for (let i = 0; i < ds.dim; ++i) {
+    for (let j =  i + 1; j <= ds.dim; ++j) {
+      for (const D of props.orbitReps(ds, [i, j])) {
+        const word = traceWord(ds, edge2word, i, j, D);
+        const degree = ds.v(i, j, D);
+
+        if (degree > 0 && word.length > 0) {
+          addRelator(freeWords.raisedTo(degree, word));
+
+          if (degree > 1)
+            cones.push([word, degree]);
         }
       }
     }
   }
 
-  const orbitRelators = orbits.map(orb => freeWords.raisedTo(orb[1], orb[0]));
-
-  const mirrors = gen2edge
-    .map(([D, i], g) => [D, i, g])
-    .filter(([D, i, g]) => g > 0 && ds.s(i, D) == D)
-    .map(([D, _, g]) => freeWords.word([g, g]));
-
-  const cones = orbits.filter(orb => orb[1] > 1).sort();
-
-  const nrGenerators = gen2edge.length - 1;
-  const relators =
-    orbitRelators.concat(mirrors).map(freeWords.relatorRepresentative)
-    .sort();
+  cones.sort();
+  relators.sort();
 
   return { nrGenerators, relators, cones, gen2edge, edge2word };
 };
