@@ -1,4 +1,4 @@
-import * as generators from '../common/generators';
+import { backtrack } from '../common/iterators';
 import * as timing from '../common/timing';
 
 import * as DS from '../dsymbols/delaney';
@@ -247,7 +247,7 @@ const branchings = ds => {
     }
   };
 
-  return generators.backtrack({ extract, root, children });
+  return backtrack({ extract, root, children });
 }
 
 

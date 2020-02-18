@@ -1,5 +1,5 @@
-import * as fw         from './freeWords';
-import * as generators from '../common/generators';
+import * as fw from './freeWords';
+import { backtrack} from '../common/iterators';
 
 import { Partition } from '../common/unionFind';
 
@@ -275,7 +275,7 @@ export const tables = (nrGens, relators, maxCosets) => {
   const children =
     table => _potentialChildren(table, rels, maxCosets).filter(_isCanonical);
 
-  return generators.backtrack({ extract, root, children });
+  return backtrack({ extract, root, children });
 };
 
 

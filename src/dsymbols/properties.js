@@ -1,4 +1,4 @@
-import { buffered } from '../common/generators';
+import { buffered } from '../common/iterators';
 import { Partition } from '../common/unionFind';
 
 import * as DS from './delaney';

@@ -3,7 +3,7 @@ import {
   deserialize as decode
 } from '../common/pickler';
 
-import { buffered } from '../common/generators';
+import { buffered } from '../common/iterators';
 import { rationalLinearAlgebra as ops } from '../arithmetic/types';
 import * as pg from './periodic';
 import * as ps from './symmetries';

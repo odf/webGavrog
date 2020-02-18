@@ -1,4 +1,4 @@
-import * as generators from '../common/generators';
+import { backtrack } from '../common/iterators';
 import * as timing from '../common/timing';
 
 import * as DS from './delaney';
@@ -154,7 +154,7 @@ export const delaneySets = maxSize => {
   const children =
     data => _potentialChildren(data, maxSize).filter(_isCanonical);
 
-  return generators.backtrack({ extract, root, children });
+  return backtrack({ extract, root, children });
 }
 
 

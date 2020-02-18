@@ -1,4 +1,4 @@
-import * as generators from '../common/generators';
+import { backtrack } from '../common/iterators';
 import * as DS from './delaney';
 import * as DS2D from './delaney2d';
 import * as props from './properties';
@@ -56,7 +56,7 @@ export const branchings = (
     Q.cmp(_newCurvature(curv, loopless, v), curvatureAtLeast) >= 0 &&
     r * v >= (i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast);
 
-  return generators.backtrack({
+  return backtrack({
     root: [ds, DS2D.curvature(ds), _openOrbits(ds)],
 
     extract([ds, curv, unused]) {
