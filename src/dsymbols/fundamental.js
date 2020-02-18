@@ -80,24 +80,6 @@ class Boundary {
 
     return glued;
   }
-
-  toString() {
-    const lines = [];
-
-    for (const D of this._ds.elements()) {
-      for (const i of this._ds.indices()) {
-        for (const j of this._ds.indices()) {
-          if (j != i) {
-            const val = this.opposite([D, i, j]);
-            if (val)
-              lines.push(`${[D, i, j]} -> ${val}`);
-          }
-        }
-      }
-    }
-
-    return lines.join('\n');
-  }
 }
 
 
