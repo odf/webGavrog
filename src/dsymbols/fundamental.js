@@ -1,6 +1,5 @@
 import * as freeWords from '../fpgroups/freeWords';
-import * as DS        from './delaney';
-import * as props     from './properties';
+import * as props from './properties';
 
 
 class Boundary {
@@ -67,7 +66,7 @@ class Boundary {
     while (todo.length) {
       const next = todo.shift();
       const [D, i, j] = next;
-      const m = DS.m(this._ds, i, j, D) * (this._ds.s(i, D) == D ? 1 : 2);
+      const m = this._ds.m(i, j, D) * (this._ds.s(i, D) == D ? 1 : 2);
 
       if (j == null || (this.opposite(next) || [])[2] == m) {
         const newTodo = this.glue(D, i);
@@ -102,7 +101,7 @@ const traceWord = (ds, edge2word, i, j, D) => {
   let k = j;
   const factors = [];
 
-  while(true) {
+  while (true) {
     factors.push(edge2word[E][k] || freeWords.empty);
     if (E == D && k == i)
       break;
@@ -126,14 +125,12 @@ const findGenerators = ds => {
     for (const i of ds.indices()) {
       if (ds.indices().some(j => bnd.opposite([D, i, j]))) {
         const gen = gen2edge.length;
-        const glued = bnd.glueRecursively([[D, i]]);
-
         gen2edge.push([D, i]);
 
         edge2word[D][i] = freeWords.word([gen]);
         edge2word[ds.s(i, D)][i] = freeWords.inverse([gen]);
 
-        for (const [D, i, j] of glued) {
+        for (const [D, i, j] of bnd.glueRecursively([[D, i]])) {
           const w = traceWord(ds, edge2word, i, j, D);
           if (w.length > 0) {
             edge2word[D][i] = freeWords.inverse(w);
@@ -149,8 +146,8 @@ const findGenerators = ds => {
 
 
 export const innerEdges = ds => {
-  const bnd = new Boundary(ds);
-  return bnd.glueRecursively(spanningTree(ds)).map(a => a.slice(0, 2));
+  const glued = (new Boundary(ds)).glueRecursively(spanningTree(ds));
+  return glued.map(a => a.slice(0, 2));
 }
 
 
@@ -190,6 +187,8 @@ export const fundamentalGroup = ds => {
 
 
 if (require.main == module) {
+  const delaney = require('./delaney');
+
   Array.prototype.toString = function() {
     return '[ ' + this.map(x => x && x.toString()).join(', ') + ' ]';
   };
@@ -220,16 +219,18 @@ if (require.main == module) {
     console.log();
   };
 
-  test(DS.parse(`<1.1:24:
-                2 4 6 8 10 12 14 16 18 20 22 24,
-                16 3 5 7 9 11 13 15 24 19 21 23,
-                10 9 20 19 14 13 22 21 24 23 18 17:
-                8 4,3 3 3 3>`));
+  test(delaney.parse(
+    `<1.1:24:
+    2 4 6 8 10 12 14 16 18 20 22 24,
+    16 3 5 7 9 11 13 15 24 19 21 23,
+    10 9 20 19 14 13 22 21 24 23 18 17:
+    8 4,3 3 3 3>`
+  ));
 
-  test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
-  test(DS.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
+  test(delaney.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
+  test(delaney.parse('<1.1:2 3:2,1 2,1 2,2:6,3 2,6>'));
 
-  test(DS.parse(
+  test(delaney.parse(
     '<1.1:12:2 5 7 10 11 12,1 4 6 9 7 12 11,3 5 8 6 11 12 10:4 4,6 3 3>'
   ));
 }
