@@ -48,7 +48,7 @@ class DSymbol {
         return this._v[i * this.size + D - 1];
       else if (j == i-1)
         return this._v[j * this.size + D - 1];
-      else if (this.s(i, D) == this.s(j, D))
+      else if (j != i && this.s(i, D) == this.s(j, D))
         return 2;
       else
         return 1;
