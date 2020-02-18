@@ -3,7 +3,7 @@ import * as DS        from './delaney';
 import * as props     from './properties';
 
 
-const _other = (a, b, c) => a == c ? b : a;
+const other = (a, b, c) => a == c ? b : a;
 
 
 class Boundary {
@@ -41,21 +41,21 @@ class Boundary {
         const [chD, kD, nD] = this.opposite([D, i, j]);
 
         if (D == E) {
-          this.setOpposite([chD, kD, _other(i, j, kD)], [0, 0, nD]);
+          this.setOpposite([chD, kD, other(i, j, kD)], [0, 0, nD]);
           this.setOpposite([D, i, j], null);
         }
         else {
           const [chE, kE, nE] = this.opposite([E, i, j]);
           const count = nD + nE;
 
-          this.setOpposite([chD, kD, _other(i, j, kD)], [chE, kE, count]);
-          this.setOpposite([chE, kE, _other(i, j, kE)], [chD, kD, count]);
+          this.setOpposite([chD, kD, other(i, j, kD)], [chE, kE, count]);
+          this.setOpposite([chE, kE, other(i, j, kE)], [chD, kD, count]);
           this.setOpposite([D, i, j], null);
           this.setOpposite([E, i, j], null);
         }
 
         if ((this._ds.s(i, D) == D) == (this._ds.s(kD, chD) == chD))
-          todo.push([chD, kD, _other(i, j, kD)]);
+          todo.push([chD, kD, other(i, j, kD)]);
       }
     }
 
@@ -103,7 +103,7 @@ class Boundary {
 }
 
 
-const _spanningTree = ds => {
+const spanningTree = ds => {
   const seen = {};
   const todo = [];
 
@@ -117,7 +117,7 @@ const _spanningTree = ds => {
 };
 
 
-const _traceWord = (ds, edge2word, i, j, D) => {
+const traceWord = (ds, edge2word, i, j, D) => {
   let E = ds.s(i, D);
   let k = j;
   const factors = [];
@@ -128,19 +128,19 @@ const _traceWord = (ds, edge2word, i, j, D) => {
       break;
 
     E = ds.s(k, E) || E;
-    k = _other(i, j, k);
+    k = other(i, j, k);
   }
 
   return freeWords.product(factors);
 };
 
 
-const _findGenerators = ds => {
+const findGenerators = ds => {
   const edge2word = new Array(ds.size + 1).fill(0).map(_ => []);
   const gen2edge = [[]];
 
   const bnd = new Boundary(ds);
-  bnd.glueRecursively(_spanningTree(ds));
+  bnd.glueRecursively(spanningTree(ds));
 
   for (const D of ds.elements()) {
     for (const i of ds.indices()) {
@@ -154,7 +154,7 @@ const _findGenerators = ds => {
         edge2word[ds.s(i, D)][i] = freeWords.inverse([gen]);
 
         for (const [D, i, j] of glued) {
-          const w = _traceWord(ds, edge2word, i, j, D);
+          const w = traceWord(ds, edge2word, i, j, D);
           if (w.length > 0) {
             edge2word[D][i] = freeWords.inverse(w);
             edge2word[ds.s(i, D)][i] = w;
@@ -170,19 +170,19 @@ const _findGenerators = ds => {
 
 export const innerEdges = ds => {
   const bnd = new Boundary(ds);
-  return bnd.glueRecursively(_spanningTree(ds)).map(a => a.slice(0, 2));
+  return bnd.glueRecursively(spanningTree(ds)).map(a => a.slice(0, 2));
 }
 
 
 export const fundamentalGroup = ds => {
-  const { edge2word, gen2edge } = _findGenerators(ds);
+  const { edge2word, gen2edge } = findGenerators(ds);
 
   const orbits = [];
   for (const i of ds.indices()) {
     for (const j of ds.indices()) {
       if (j > i) {
         for (const D of props.orbitReps(ds, [i, j])) {
-          const w = _traceWord(ds, edge2word, i, j, D);
+          const w = traceWord(ds, edge2word, i, j, D);
           const v = ds.v(i, j, D);
           if (v && w.length > 0)
             orbits.push([w, v, D, i, j]);
@@ -218,11 +218,11 @@ if (require.main == module) {
     console.log('ds = '+ds);
     console.log();
 
-    console.log(`    spanning tree: ${JSON.stringify(_spanningTree(ds))}`);
+    console.log(`    spanning tree: ${JSON.stringify(spanningTree(ds))}`);
     console.log(`    inner edges: ${JSON.stringify(innerEdges(ds))}`);
     console.log();
 
-    const { gen2edge, edge2word } = _findGenerators(ds);
+    const { gen2edge, edge2word } = findGenerators(ds);
 
     console.log(`    generators: ${JSON.stringify(gen2edge)}`);
     console.log();
