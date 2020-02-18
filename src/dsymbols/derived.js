@@ -75,21 +75,23 @@ export const minimal = ds => {
   else {
     const p = props.typePartition(ds);
 
-    const reps = [0];
-    const seen = {};
+    const src2img = {};
+    const img2src = [0];
+
     for (const D of ds.elements()) {
-      const r = p.find(D);
-      if (seen[r] == null) {
-        seen[r] = true;
-        reps.push(r);
+      const E = p.find(D);
+      if (!src2img[E]) {
+        src2img[E] = img2src.length;
+        img2src.push(E);
       }
+      src2img[D] = src2img[E];
     }
 
     return DS.buildDSymbol({
       dim: ds.dim,
-      size: reps.length - 1,
-      getS: (i, D) => reps.indexOf(p.find(ds.s(i, reps[D]))),
-      getM: (i, D) => ds.m(i, i+1, reps[D]) || 0
+      size: img2src.length - 1,
+      getS: (i, D) => src2img[ds.s(i, img2src[D])],
+      getM: (i, D) => ds.m(i, i+1, img2src[D]) || 0
     });
   }
 };
