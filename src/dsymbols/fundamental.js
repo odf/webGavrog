@@ -1,3 +1,8 @@
+import {
+  serialize as encode,
+  deserialize as decode
+} from '../common/pickler';
+
 import * as freeWords from '../fpgroups/freeWords';
 import * as props from './properties';
 
@@ -153,13 +158,20 @@ export const innerEdges = ds => {
 
 export const fundamentalGroup = ds => {
   const { edge2word, gen2edge } = findGenerators(ds);
+  const cones = {};
+  const relators = {};
 
-  const nrGenerators = gen2edge.length - 1;
-  const cones = [];
-  const relators = [];
-  const addRelator = wd => relators.push(freeWords.relatorRepresentative(wd));
+  const addRelator = wd => {
+    if (wd.length)
+      relators[encode(freeWords.relatorRepresentative(wd))] = true;
+  };
 
-  for (let g = 1; g <= nrGenerators; ++g) {
+  const addCone = (word, degree) => {
+    if (degree > 1)
+      cones[encode([word, degree])] = true;
+  };
+
+  for (let g = 1; g < gen2edge.length; ++g) {
     const [D, i] = gen2edge[g];
     if (ds.s(i, D) == D)
       addRelator(freeWords.word([g, g]));
@@ -170,21 +182,19 @@ export const fundamentalGroup = ds => {
       for (const D of props.orbitReps(ds, [i, j])) {
         const word = traceWord(ds, edge2word, i, j, D);
         const degree = ds.v(i, j, D);
-
-        if (degree > 0 && word.length > 0) {
-          addRelator(freeWords.raisedTo(degree, word));
-
-          if (degree > 1)
-            cones.push([word, degree]);
-        }
+        addRelator(freeWords.raisedTo(degree, word));
+        addCone(word, degree);
       }
     }
   }
 
-  cones.sort();
-  relators.sort();
-
-  return { nrGenerators, relators, cones, gen2edge, edge2word };
+  return {
+    nrGenerators: gen2edge.length - 1,
+    relators: Object.keys(relators).map(decode).sort(),
+    cones: Object.keys(cones).map(decode).sort(),
+    gen2edge,
+    edge2word
+  };
 };
 
 
