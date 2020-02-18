@@ -2,8 +2,8 @@ import { backtrack } from '../common/iterators';
 import * as timing from '../common/timing';
 
 import * as DS from '../dsymbols/delaney';
-import * as dsets2d from '../dsymbols/dsets2d';
 import * as props from '../dsymbols/properties';
+import * as dsets2d from './dsets2d';
 
 import symbols from '../io/ds';
 

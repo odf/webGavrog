@@ -1,7 +1,7 @@
 import { backtrack } from '../common/iterators';
-import * as DS from './delaney';
-import * as DS2D from './delaney2d';
-import * as props from './properties';
+import * as DS from '../dsymbols/delaney';
+import * as DS2D from '../dsymbols/delaney2d';
+import * as props from '../dsymbols/properties';
 
 import { rationals } from '../arithmetic/types';
 const Q = rationals;
@@ -82,7 +82,7 @@ export const branchings = (
 
 
 if (require.main == module) {
-  const covers = require('./covers');
+  const covers = require('../dsymbols/covers');
 
   const noEdgeSharingQuads = ds => DS.orbitReps2(ds, 0, 2)
     .every(D => DS.m(ds, 0, 1, D) > 4 || DS.m(ds, 0, 1, ds.s(2, D)) > 4);
