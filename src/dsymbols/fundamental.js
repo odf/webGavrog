@@ -159,29 +159,18 @@ export const fundamentalGroup = ds => {
   const cones = {};
   const relators = {};
 
-  const addRelator = wd => {
-    if (wd.length)
-      relators[encode(freeWords.relatorRepresentative(wd))] = true;
-  };
-
-  const addCone = (word, degree) => {
-    if (degree > 1)
-      cones[encode([word, degree])] = true;
-  };
-
-  for (let g = 1; g < gen2edge.length; ++g) {
-    const [D, i] = gen2edge[g];
-    if (ds.s(i, D) == D)
-      addRelator(freeWords.word([g, g]));
-  }
-
-  for (let i = 0; i < ds.dim; ++i) {
-    for (let j = i + 1; j <= ds.dim; ++j) {
+  for (let i = 0; i <= ds.dim; ++i) {
+    for (let j = i; j <= ds.dim; ++j) {
       for (const D of props.orbitReps(ds, [i, j])) {
         const word = traceWord(ds, edge2word, j, i, ds.s(i, D));
         const degree = ds.v(i, j, D);
-        addRelator(freeWords.raisedTo(degree, word));
-        addCone(word, degree);
+        const rel = freeWords.raisedTo(degree, word);
+
+        if (rel.length)
+          relators[encode(freeWords.relatorRepresentative(rel))] = true;
+
+        if (degree > 1)
+          cones[encode([word, degree])] = true;
       }
     }
   }
