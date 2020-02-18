@@ -256,13 +256,9 @@ export const build = (dim, size, pairingsFn, branchingsFn) => {
 };
 
 
-export const buildDSymbol = ({ dim, size, getS, getV, getM }) => {
-  if (getV && getM)
-    throw new Error('must define exactly one of getV and getM');
-
+export const buildDSet = ({ dim, size, getS }) => {
   const offset = (i, D) => i * size + D - 1;
   const s = new Int32Array((dim + 1) * size);
-  const v = new Int32Array(dim * size);
 
   for (let i = 0; i <= dim; ++i) {
     for (let D = 1; D <= size; ++D) {
@@ -281,10 +277,22 @@ export const buildDSymbol = ({ dim, size, getS, getV, getM }) => {
     }
   }
 
-  const ds = new DSymbol(dim, s);
+  return makeDSymbol(dim, s);
+};
 
-  for (let i = 0; i < dim; ++i) {
-    for (let D = 1; D <= size; ++D) {
+
+export const buildDSymbol = ({ dim, size, getS, getV, getM }, ds) => {
+  if (getV && getM)
+    throw new Error('must define exactly one of getV and getM');
+
+  if (ds == null)
+    ds = buildDSet({ dim, size, getS });
+
+  const offset = (i, D) => i * ds.size + D - 1;
+  const v = new Int32Array(ds.dim * ds.size);
+
+  for (let i = 0; i < ds.dim; ++i) {
+    for (let D = 1; D <= ds.size; ++D) {
       const val = getM ? getM(i, D) / ds.r(i, i+1, D) : getV(i, D);
       const oldVal = v[offset(i, D)];
 
@@ -299,7 +307,7 @@ export const buildDSymbol = ({ dim, size, getS, getV, getM }) => {
     }
   }
 
-  return makeDSymbol(dim, s, v);
+  return makeDSymbol(ds.dim, ds._s, v);
 };
 
 
