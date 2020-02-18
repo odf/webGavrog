@@ -176,7 +176,7 @@ export const fundamentalGroup = ds => {
   }
 
   for (let i = 0; i < ds.dim; ++i) {
-    for (let j =  i + 1; j <= ds.dim; ++j) {
+    for (let j = i + 1; j <= ds.dim; ++j) {
       for (const D of props.orbitReps(ds, [i, j])) {
         const word = traceWord(ds, edge2word, j, i, ds.s(i, D));
         const degree = ds.v(i, j, D);
