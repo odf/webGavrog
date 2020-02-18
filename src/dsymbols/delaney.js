@@ -10,6 +10,7 @@ class DSymbol {
     this._v = new Int32Array(vData);
     this._dim = dim;
     this._size = this._s.length / (dim + 1);
+    this._orbits2 = {};
   }
 
   get dim() {
@@ -54,60 +55,54 @@ class DSymbol {
     }
   }
 
-  orbit2(i, j, D) {
-    const seen = new Int8Array(this.size + 1);
-    const result = [];
+  orbits2(i, j) {
+    if (!this._orbits2[[i, j]]) {
+      const orbitIndex = {};
+      const orbitList = [];
 
-    let E = D;
-    do {
-      for (const k of [i, j]) {
-        E = this.s(k, E) || E;
-        if (!seen[E]) {
-          result.push(E);
-          seen[E] = true;
+      for (let D = 1; D <= this.size; ++D) {
+        if (orbitIndex[D] == null) {
+          const elements = [];
+          let r = 0;
+          let E = D;
+
+          do {
+            E = this.s(i, E) || E;
+            if (orbitIndex[E] == null) {
+              orbitIndex[E] = orbitList.length;
+              elements.push(E);
+            }
+            E = this.s(j, E) || E;
+            if (orbitIndex[E] == null) {
+              orbitIndex[E] = orbitList.length;
+              elements.push(E);
+            }
+            ++r;
+          }
+          while (E != D);
+
+          orbitList.push({ elements, r });
         }
       }
-    }
-    while (E != D);
 
-    return result;
+      this._orbits2[[i, j]] = { list: orbitList, index: orbitIndex };
+    }
+
+    return this._orbits2[[i, j]];
   }
 
-  orbitReps2(i, j) {
-    const seen = new Int8Array(this.size + 1);
-    const result = [];
-
-    for (let D = 1; D <= this.size; ++D) {
-      if (!seen[D]) {
-        let E = D;
-
-        do {
-          E = this.s(i, E) || E;
-          seen[E] = true;
-          E = this.s(j, E) || E;
-          seen[E] = true;
-        }
-        while (E != D);
-
-        result.push(D);
-      }
-    }
-
-    return result;
+  orbit2(i, j, D) {
+    const { list, index } = this.orbits2(i, j);
+    return (list[index[D]] || {}).elements;
   }
 
   r(i, j, D) {
-    let k = 0;
-    let E = D;
+    const { list, index } = this.orbits2(i, j);
+    return (list[index[D]] || {}).r;
+  }
 
-    do {
-      E = this.s(i, E) || E;
-      E = this.s(j, E) || E;
-      ++k;
-    }
-    while (E != D);
-
-    return k;
+  orbitReps2(i, j) {
+    return this.orbits2(i, j).list.map(({ elements }) => elements[0]);
   }
 
   m(i, j, D) {
