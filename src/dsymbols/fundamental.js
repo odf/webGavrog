@@ -3,9 +3,6 @@ import * as DS        from './delaney';
 import * as props     from './properties';
 
 
-const other = (a, b, c) => a == c ? b : a;
-
-
 class Boundary {
   constructor(ds) {
     const m = ds.dim + 1;
@@ -38,24 +35,25 @@ class Boundary {
 
     for (const j of this._ds.indices()) {
       if (j != i && this.opposite([D, i, j])) {
+        const other = k => i + j - k;
         const [chD, kD, nD] = this.opposite([D, i, j]);
 
         if (D == E) {
-          this.setOpposite([chD, kD, other(i, j, kD)], [0, 0, nD]);
+          this.setOpposite([chD, kD, other(kD)], [0, 0, nD]);
           this.setOpposite([D, i, j], null);
         }
         else {
           const [chE, kE, nE] = this.opposite([E, i, j]);
           const count = nD + nE;
 
-          this.setOpposite([chD, kD, other(i, j, kD)], [chE, kE, count]);
-          this.setOpposite([chE, kE, other(i, j, kE)], [chD, kD, count]);
+          this.setOpposite([chD, kD, other(kD)], [chE, kE, count]);
+          this.setOpposite([chE, kE, other(kE)], [chD, kD, count]);
           this.setOpposite([D, i, j], null);
           this.setOpposite([E, i, j], null);
         }
 
         if ((this._ds.s(i, D) == D) == (this._ds.s(kD, chD) == chD))
-          todo.push([chD, kD, other(i, j, kD)]);
+          todo.push([chD, kD, other(kD)]);
       }
     }
 
@@ -124,11 +122,11 @@ const traceWord = (ds, edge2word, i, j, D) => {
 
   while(true) {
     factors.push(edge2word[E][k] || freeWords.empty);
-    if (E == D && k ==i)
+    if (E == D && k == i)
       break;
 
     E = ds.s(k, E) || E;
-    k = other(i, j, k);
+    k = k == i ? j : i;
   }
 
   return freeWords.product(factors);
