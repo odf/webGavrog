@@ -70,17 +70,15 @@ export const isHyperbolic = ds => fullyBranched(ds) && signOfCurvature(ds) < 0;
 
 
 export const isSpherical = ds => {
-  if (fullyBranched(ds) && signOfCurvature(ds) > 0) {
-    const dso = derived.orientedCover(ds);
-    const cones = map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1);
-
-    return (
-      cones.length != 1
-        && (cones.length != 2 || (cones[0] == cones[1]))
-    );
-  }
-  else
+  if (!fullyBranched(ds) || signOfCurvature(ds) <= 0)
     return false;
+  else {
+    const dso = derived.orientedCover(ds);
+    const cones = orbitTypes(dso).map(([v]) => v).filter(v => v > 1);
+    const n = cones.length;
+
+    return !(n == 1 || (n == 2 && cones[0] != cones[1]));
+  }
 };
 
 
