@@ -1,39 +1,45 @@
-import * as DS          from './delaney';
-import * as fundamental from './fundamental';
-import * as derived     from './derived';
-import * as cosets      from '../fpgroups/cosets';
+import { cosetTable, tables } from '../fpgroups/cosets';
+import { cover } from './derived';
+import { fundamentalGroup } from './fundamental';
 
 
-export const coverForTable = (ds, table, edgeToWord) =>
-  derived.cover(ds, table.length, (k, i, D) => (
-    (edgeToWord[D][i] || []).reduce((k, g) => table[k][g], k)));
+const traceWord = (table, start, word) =>
+  word.reduce((row, gen) => table[row][gen], start);
+
+
+export const coverForTable = (ds, table, edgeToWord) => cover(
+  ds,
+  table.length,
+  (sheet, i, D) => traceWord(table, sheet, edgeToWord[D][i] || [])
+);
+
+
+export function* covers(ds, maxDeg) {
+  const { nrGenerators, relators, edge2word } = fundamentalGroup(ds);
+
+  for (const table of tables(nrGenerators, relators, maxDeg))
+    yield coverForTable(ds, table, edge2word);
+};
 
 
 export const subgroupCover = (ds, subgroupGens) => {
-  const fun = fundamental.fundamentalGroup(ds);
+  const { nrGenerators, relators, edgeToWord } = fundamentalGroup(ds);
+  const table = cosetTable(nrGenerators, relators, subgroupGens);
 
-  return coverForTable(
-    ds,
-    cosets.cosetTable(fun.nrGenerators, fun.relators, subgroupGens),
-    fun.edge2word);
+  return coverForTable(ds, table, edge2word);
 };
 
 
 export const finiteUniversalCover = ds => subgroupCover(ds, []);
 
 
-export function* covers(ds, maxDeg) {
-  const fun = fundamental.fundamentalGroup(ds);
-
-  for (const table of cosets.tables(fun.nrGenerators, fun.relators, maxDeg))
-    yield coverForTable(ds, table, fun.edge2word);
-};
-
-
 if (require.main == module) {
+  const delaney = require('./delaney');
   const n = parseInt(process.argv[2]) || 2;
-  const ds = DS.parse('<1.1:1:1,1,1:4,3>');
+  const ds = delaney.parse('<1.1:1:1,1,1:4,3>');
 
-  covers(ds, n).forEach(ds => console.log(`${ds}`));
+  for (const cov of covers(ds, n))
+    console.log(`${cov}`);
+
   console.log(`${finiteUniversalCover(ds)}`);
 }
