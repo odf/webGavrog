@@ -3,7 +3,7 @@ import * as props from './properties';
 import * as derived from './derived';
 import { covers } from './covers';
 
-import { rationals as Q } from '../arithmetic/types';
+import { rationals as opsQ } from '../arithmetic/types';
 
 
 const assert = (condition, message) => {
@@ -12,7 +12,7 @@ const assert = (condition, message) => {
 };
 
 
-const sum = numbers => numbers.reduce((a, x) => Q.plus(a, x), 0);
+const sum = numbers => numbers.reduce((a, x) => opsQ.plus(a, x), 0);
 
 
 function* orbits1d(ds) {
@@ -50,16 +50,16 @@ export const curvature = (ds, vDefault = 1) => {
   assert(props.isConnected(ds), 'must be connected');
 
   const orbitContribution = (i, j, D) =>
-    Q.div((loopless(ds, i, j, D) ? 2 : 1), (ds.v(i, j, D) || vDefault));
+    opsQ.div((loopless(ds, i, j, D) ? 2 : 1), (ds.v(i, j, D) || vDefault));
 
-  return Q.minus(sum(map1dOrbits(orbitContribution, ds)), DS.size(ds));
+  return opsQ.minus(sum(map1dOrbits(orbitContribution, ds)), DS.size(ds));
 };
 
 
-export const isProtoEuclidean = ds => Q.ge(curvature(ds), 0);
-export const isProtoSpherical = ds => Q.gt(curvature(ds), 0);
-export const isEuclidean = ds => fullyBranched(ds) && Q.eq(curvature(ds), 0);
-export const isHyperbolic = ds => fullyBranched(ds) && Q.lt(curvature(ds), 0);
+export const isProtoEuclidean = ds => opsQ.ge(curvature(ds), 0);
+export const isProtoSpherical = ds => opsQ.gt(curvature(ds), 0);
+export const isEuclidean = ds => fullyBranched(ds) && opsQ.eq(curvature(ds), 0);
+export const isHyperbolic = ds => fullyBranched(ds) && opsQ.lt(curvature(ds), 0);
 
 
 export const isSpherical = ds => {
@@ -84,14 +84,14 @@ export const orbifoldSymbol = ds => {
   const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
   const corners = types.filter(([v, c]) => v > 1 && !c).map(([v]) => v);
 
-  const cost = Q.minus(2, sum([
-    Q.div(curvature(ds), 2),
-    sum(cones.map(v => Q.div(v - 1, v))),
-    sum(corners.map(v => Q.div(v - 1, 2*v))),
+  const cost = opsQ.minus(2, sum([
+    opsQ.div(curvature(ds), 2),
+    sum(cones.map(v => opsQ.div(v - 1, v))),
+    sum(corners.map(v => opsQ.div(v - 1, 2*v))),
     (props.isLoopless(ds) ? 0 : 1)
   ]));
 
-  assert(Q.typeOf(cost) == 'Integer',
+  assert(opsQ.typeOf(cost) == 'Integer',
           'residual cost should be an integer, got ${cost}');
 
   const repeat = (c, n) => new Array(n).fill(c);
@@ -278,7 +278,7 @@ if (require.main == module) {
       const curv = curvature(dst);
       const orbs = orbifoldSymbol(dst);
 
-      if (Q.eq(curv, 0) && orbs == 'o')
+      if (opsQ.eq(curv, 0) && orbs == 'o')
         console.log('    (curvature and orbifold symbol okay)');
       else
         console.error(`    !!!! curvature ${curv}, orbifold symbol ${orbs}`);
