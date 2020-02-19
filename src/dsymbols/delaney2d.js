@@ -1,10 +1,9 @@
 import * as DS from './delaney';
-import * as p  from './properties';
-import * as d  from './derived';
-import * as cv from './covers';
+import * as props from './properties';
+import * as derived from './derived';
+import { covers } from './covers';
 
-import { rationals } from '../arithmetic/types';
-const Q = rationals;
+import { rationals as Q } from '../arithmetic/types';
 
 
 const _assert = (condition, message) => {
@@ -42,7 +41,7 @@ const _sum = numbers => numbers.reduce((a, x) => Q.plus(a, x), 0);
 
 export const curvature = (ds, vDefault = 1) => {
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
-  _assert(p.isConnected(ds), 'must be connected');
+  _assert(props.isConnected(ds), 'must be connected');
 
   const orbitContribution = (i, j, D) =>
     Q.div((_loopless(ds, i, j, D) ? 2 : 1), (ds.v(i, j, D) || vDefault));
@@ -59,7 +58,7 @@ export const isHyperbolic = ds => _fullyBranched(ds) && Q.lt(curvature(ds), 0);
 
 export const isSpherical = ds => {
   if (_fullyBranched(ds) && isProtoSpherical(ds)) {
-    const dso = d.orientedCover(ds);
+    const dso = derived.orientedCover(ds);
     const cones = _map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1);
 
     return (
@@ -85,7 +84,7 @@ export const orbifoldSymbol = ds => {
     Q.div(curvature(ds), 2),
     _sum(cones.map(v => Q.div(v - 1, v))),
     _sum(corners.map(v => Q.div(v - 1, 2*v))),
-    (p.isLoopless(ds) ? 0 : 1)
+    (props.isLoopless(ds) ? 0 : 1)
   ]));
 
   _assert(Q.typeOf(cost) == 'Integer',
@@ -95,9 +94,9 @@ export const orbifoldSymbol = ds => {
 
   const sym = [].concat(
     cones.sort().reverse(),
-    (p.isLoopless(ds) ? [] : ['*']),
+    (props.isLoopless(ds) ? [] : ['*']),
     corners.sort().reverse(),
-    (p.isWeaklyOriented(ds) ? repeat('o', cost/2) : repeat('x', cost))
+    (props.isWeaklyOriented(ds) ? repeat('o', cost/2) : repeat('x', cost))
   ).join('');
 
   if (sym == 'x' || sym == '*' || sym == '')
@@ -110,10 +109,10 @@ export const orbifoldSymbol = ds => {
 export const toroidalCover = ds => {
   _assert(isEuclidean(ds), 'must be euclidean');
 
-  const dso = d.orientedCover(ds);
+  const dso = derived.orientedCover(ds);
   const degree = Math.max(..._map1dOrbits(dso.v.bind(dso), dso));
 
-  for (const cov of cv.covers(dso, degree)) {
+  for (const cov of covers(dso, degree)) {
     if (_unbranched(cov))
       return cov;
   };
@@ -144,7 +143,7 @@ const _cutsOffDisk = (ds, cut, allow2Cone) => {
     pairs.push([E, E]);
   }
   const tmp = DS.withPairings(ds, 1, pairs);
-  const patch = d.subsymbol(tmp, [0, 1, 2], cut[0]);
+  const patch = derived.subsymbol(tmp, [0, 1, 2], cut[0]);
 
   if (patch.size == cut.length)
     return false;
@@ -164,7 +163,7 @@ const _cutsOffDisk = (ds, cut, allow2Cone) => {
         cut.every(D => ds.v(1, 2, D) == 1)
           && cut.every(D => ds.v(0, 1, D) == 1)
       ) {
-        const rest = d.subsymbol(tmp, [0, 1, 2], ds.s(1, cut[0]));
+        const rest = derived.subsymbol(tmp, [0, 1, 2], ds.s(1, cut[0]));
 
         const orbitType = (i, j, D) =>
               [rest.v(i, j, D), _loopless(rest, i, j, D)];
@@ -176,7 +175,7 @@ const _cutsOffDisk = (ds, cut, allow2Cone) => {
     }
   }
 
-  if (!p.isWeaklyOriented(patch))
+  if (!props.isWeaklyOriented(patch))
     return false;
 
   if (_eulerCharacteristic(patch) != 1)
@@ -191,14 +190,14 @@ const _cutsOffDisk = (ds, cut, allow2Cone) => {
 
 export const isPseudoConvex = ds => {
   _assert(DS.dim(ds) == 2, 'must be two-dimensional');
-  _assert(p.isConnected(ds), 'must be connected');
+  _assert(props.isConnected(ds), 'must be connected');
 
   const log = () => {};
   //const log = console.log;
 
-  ds = d.canonical(d.orientedCover(ds));
+  ds = derived.canonical(derived.orientedCover(ds));
   log(`isPseudoConvex(${ds})`);
-  const ori = p.partialOrientation(ds);
+  const ori = props.partialOrientation(ds);
 
   for (const A1 of ds.elements().filter(D => ori[D] > 0)) {
     log(`  A1 = ${A1}`);
