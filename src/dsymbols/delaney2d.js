@@ -1,4 +1,4 @@
-import * as DS from './delaney';
+import * as delaney from './delaney';
 import * as props from './properties';
 import * as derived from './derived';
 import { covers } from './covers';
@@ -21,7 +21,7 @@ const orbitTypes = ds => {
 
   for (let i = 0; i < ds.dim; ++i) {
     for (let j = i + 1; j <= ds.dim; ++j) {
-      for (const D of DS.orbitReps2(ds, i, j))
+      for (const D of ds.orbitReps2(i, j))
         result.push([ds.v(i, j, D), loopless(ds, i, j, D)]);
     }
   }
@@ -31,7 +31,7 @@ const orbitTypes = ds => {
 
 
 export const curvature = (ds, vDefault=1) => {
-  assert(DS.dim(ds) == 2, 'must be two-dimensional');
+  assert(ds.dim == 2, 'must be two-dimensional');
 
   let sum = 0;
 
@@ -131,7 +131,7 @@ const traceBoundary = ds => {
 
 const eulerCharacteristic = ds => {
   const nrLoops = i => ds.elements().filter(D => ds.s(i, D) == D).length;
-  const nrOrbits = (i, j) => DS.orbitReps2(ds, i, j).length;
+  const nrOrbits = (i, j) => ds.orbitReps2(i, j).length;
 
   const nf = ds.size;
   const ne = (3 * nf + nrLoops(0) + nrLoops(1) + nrLoops(2)) / 2;
@@ -194,7 +194,7 @@ const cutsOffDisk = (ds, cut, allow2Cone) => {
     pairs.push([D, D]);
     pairs.push([E, E]);
   }
-  const tmp = DS.withPairings(ds, 1, pairs);
+  const tmp = delaney.withPairings(ds, 1, pairs);
   const patch = derived.subsymbol(tmp, [0, 1, 2], cut[0]);
 
   if (patch.size == cut.length)
@@ -237,7 +237,7 @@ const cutsOffDisk = (ds, cut, allow2Cone) => {
 
 
 export const isPseudoConvex = ds => {
-  assert(DS.dim(ds) == 2, 'must be two-dimensional');
+  assert(ds.dim == 2, 'must be two-dimensional');
   assert(props.isConnected(ds), 'must be connected');
 
   const log = () => {};
@@ -334,36 +334,37 @@ if (require.main == module) {
     console.log();
   };
 
-  test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 0,0>'));
-  test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,0>'));
-  test(DS.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
-  test(DS.parse('<1.1:1:1,1,1:5,3>'));
-  test(DS.parse('<1.1:1:1,1,1:6,3>'));
-  test(DS.parse('<1.1:1:1,1,1:7,3>'));
-  test(DS.parse('<1.1:1:1,1,1:15,3>'));
-  test(DS.parse('<1.1:2:2,1 2,1 2:2,4 4>'));
-  test(DS.parse('<1.1:2:2,1 2,1 2:2,4 5>'));
-  test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
-  test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
-  test(DS.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>')); // not pseudo-convex
-  test(DS.parse('<1.1:4:2 4,1 3 4,3 4:4,4>'));
-  test(DS.parse('<1.1:4:1 3 4,2 4,4 2 3:4,4>'));
-  test(DS.parse('<1.1:4:1 3 4,2 4,4 2 3:8,12>'));
-  test(DS.parse(
+  test(delaney.parse('<1.1:3:1 2 3,1 3,2 3:4 0,0>'));
+  test(delaney.parse('<1.1:3:1 2 3,1 3,2 3:4 8,0>'));
+  test(delaney.parse('<1.1:3:1 2 3,1 3,2 3:4 8,3>'));
+  test(delaney.parse('<1.1:1:1,1,1:5,3>'));
+  test(delaney.parse('<1.1:1:1,1,1:6,3>'));
+  test(delaney.parse('<1.1:1:1,1,1:7,3>'));
+  test(delaney.parse('<1.1:1:1,1,1:15,3>'));
+  test(delaney.parse('<1.1:2:2,1 2,1 2:2,4 4>'));
+  test(delaney.parse('<1.1:2:2,1 2,1 2:2,4 5>'));
+  test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
+  test(delaney.parse('<1.1:8:2 4 6 8,8 3 5 7,5 6 8 7:4,4>'));
+  test(delaney.parse('<1.1:5:2 4 5,1 2 3 5,3 4 5:8 3,8 3>')); //not pseudo-convex
+  test(delaney.parse('<1.1:4:2 4,1 3 4,3 4:4,4>'));
+  test(delaney.parse('<1.1:4:1 3 4,2 4,4 2 3:4,4>'));
+  test(delaney.parse('<1.1:4:1 3 4,2 4,4 2 3:8,12>'));
+
+  test(delaney.parse(
     `<1.1:
     12:1 3 4 5 7 8 9 11 12,2 4 6 8 10 12,12 2 3 5 6 7 9 10 11:
     8 12 16,8 12 16>`
   ));
 
-  test(DS.parse(
+  test(delaney.parse(
     '<1.1:12:1 3 5 8 10 11 12,2 3 6 7 10 12 11,1 4 5 9 7 11 10 12:3 3 3,6 3 3>'
   ));
 
-  test(DS.parse(
+  test(delaney.parse(
     '<1.1:16:2 4 6 8 10 12 14 16,16 3 5 7 9 11 13 15,6 5 8 7 14 13 16 15:8,8>'
   ));
 
-  test(DS.parse(
+  test(delaney.parse(
     '<1.1:16:2 4 6 8 10 12 14 16,16 3 5 7 9 11 13 15,5 6 8 7 14 13 16 15:8,8>'
   ));
 }
