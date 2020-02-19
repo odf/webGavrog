@@ -81,37 +81,51 @@ export const toroidalCover = ds => {
 };
 
 
-export const orbifoldSymbol = ds => {
-  //TODO correctly handle multiple boundary components
+const opposite = (ds, i, j, D) => {
+  let k = i;
+  let E = D;
 
-  const sum = numbers => numbers.reduce((a, x) => opsQ.plus(a, x), 0);
-  const types = orbitTypes(ds);
-  const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
-  const corners = types.filter(([v, c]) => v > 1 && !c).map(([v]) => v);
+  while ((ds.s(k, E) || E) != E) {
+    E = ds.s(k, E);
+    k = (i + j) - k;
+  }
 
-  const cost = opsQ.minus(2, sum([
-    opsQ.div(curvature(ds), 2),
-    sum(cones.map(v => opsQ.div(v - 1, v))),
-    sum(corners.map(v => opsQ.div(v - 1, 2*v))),
-    (props.isLoopless(ds) ? 0 : 1)
-  ]));
+  return [k, E];
+};
 
-  assert(opsQ.typeOf(cost) == 'Integer',
-          'residual cost should be an integer, got ${cost}');
 
-  const repeat = (c, n) => new Array(n).fill(c);
+const traceBoundary = ds => {
+  const ori = props.partialOrientation(ds);
+  const result = [];
+  const seen = {};
 
-  const sym = [].concat(
-    cones.sort().reverse(),
-    (props.isLoopless(ds) ? [] : ['*']),
-    corners.sort().reverse(),
-    (props.isWeaklyOriented(ds) ? repeat('o', cost/2) : repeat('x', cost))
-  ).join('');
+  for (let i = 0; i <= ds.dim; ++i) {
+    for (let D = 1; D <= ds.size; ++D) {
+      if (ds.s(i, D) == D && !seen[[i, D]]) {
+        const corners = [];
+        let j = i;
+        let k = (i + ori[D] + 3) % 3;
+        let E = D;
+        let nu;
 
-  if (sym == 'x' || sym == '*' || sym == '')
-    return '1'+sym;
-  else
-    return sym;
+        do {
+          const v = ds.v(j, k, E);
+          if (v > 1)
+            corners.push(v);
+
+          seen[[j, E]] = true;
+          [nu, E] = opposite(ds, k, j, E);
+          k = 3 - (j + k);
+          j = nu;
+        }
+        while (!seen[[j, E]]);
+
+        result.push(corners);
+      }
+    }
+  }
+
+  return result;
 };
 
 
@@ -124,6 +138,47 @@ const eulerCharacteristic = ds => {
   const nv = nrOrbits(0, 1) + nrOrbits(0, 2) + nrOrbits(1, 2);
 
   return nf - ne + nv;
+};
+
+
+const bestCyclic = corners => {
+  let best = corners;
+
+  for (let i = 1; i < corners.length; ++i) {
+    const candidate = corners.slice(i).concat(corners.slice(0, i));
+    if (candidate > best)
+      best = candidate;
+  }
+
+  return best;
+};
+
+
+export const orbifoldSymbol = ds => {
+  const boundaryComponents = traceBoundary(ds);
+  const chi = eulerCharacteristic(ds) + boundaryComponents.length;
+
+  const cones = orbitTypes(ds).filter(([v, c]) => v > 1 && c).map(([v]) => v);
+  cones.sort().reverse();
+
+  const parts = [cones.map(n => n < 10 ? n : `(${n})`).join('')];
+
+  for (const corners of boundaryComponents) {
+    parts.push('*');
+    parts.push(bestCyclic(corners).map(n => n < 10 ? n : `(${n})`).join(''));
+  }
+
+  if (props.isWeaklyOriented(ds))
+    parts.push(new Array((2 - chi) / 2).fill('o').join(''))
+  else
+    parts.push(new Array(2 - chi).fill('x').join(''));
+
+  const sym = parts.join('');
+
+  if (sym == 'x' || sym == '*' || sym == '')
+    return '1' + sym;
+  else
+    return sym;
 };
 
 
