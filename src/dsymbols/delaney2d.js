@@ -12,31 +12,37 @@ const assert = (condition, message) => {
 };
 
 
-const map1dOrbits = (fn, ds) => {
-  const result = [];
+const sum = numbers => numbers.reduce((a, x) => Q.plus(a, x), 0);
 
-  for (const i of ds.indices()) {
-    for (const j of ds.indices()) {
-      if (j > i) {
-        for (const D of DS.orbitReps2(ds, i, j))
-          result.push(fn(i, j, D));
-      }
+
+function* orbits1d(ds) {
+  for (let i = 0; i < ds.dim; ++i) {
+    for (let j = i + 1; j <= ds.dim; ++j) {
+      for (const D of DS.orbitReps2(ds, i, j))
+        yield [i, j, D];
     }
   }
+};
 
+
+const map1dOrbits = (fn, ds) =>
+  [...orbits1d(ds)].map(([i, j, D]) => fn(i, j, D));
+
+
+const loopless = (ds, i, j, D) =>
+  ds.orbit2(i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
+
+
+const orbitTypes = ds => {
+  const result = [];
+  for (const [i, j, D] of orbits1d(ds))
+    result.push([ds.v(i, j, D), loopless(ds, i, j, D)]);
   return result;
 };
 
 
-const loopless = (ds, i, j, D) =>
-  DS.orbit2(ds, i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
-
-
-const unbranched = ds => map1dOrbits(ds.v.bind(ds), ds).every(v => v == 1);
-
-const fullyBranched = ds => map1dOrbits(ds.v.bind(ds), ds).every(v => !!v);
-
-const sum = numbers => numbers.reduce((a, x) => Q.plus(a, x), 0);
+const unbranched = ds => orbitTypes(ds).every(([v]) => v == 1);
+const fullyBranched = ds => orbitTypes(ds).every(([v]) => !!v);
 
 
 export const curvature = (ds, vDefault = 1) => {
@@ -74,9 +80,7 @@ export const isSpherical = ds => {
 export const orbifoldSymbol = ds => {
   //TODO correctly handle multiple boundary components
 
-  const orbitType = (i, j, D) => [ds.v(i, j, D), loopless(ds, i, j, D)];
-
-  const types = map1dOrbits(orbitType, ds);
+  const types = orbitTypes(ds);
   const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
   const corners = types.filter(([v, c]) => v > 1 && !c).map(([v]) => v);
 
@@ -164,10 +168,7 @@ const cutsOffDisk = (ds, cut, allow2Cone) => {
           && cut.every(D => ds.v(0, 1, D) == 1)
       ) {
         const rest = derived.subsymbol(tmp, [0, 1, 2], ds.s(1, cut[0]));
-
-        const orbitType = (i, j, D) =>
-              [rest.v(i, j, D), loopless(rest, i, j, D)];
-        const types = map1dOrbits(orbitType, rest);
+        const types = orbitTypes(rest);
 
         if (checkCones(types.filter(([v, c]) => v > 1 && c).map(([v]) => v)))
           return false;
@@ -181,8 +182,7 @@ const cutsOffDisk = (ds, cut, allow2Cone) => {
   if (eulerCharacteristic(patch) != 1)
     return false;
 
-  const orbitType = (i, j, D) => [patch.v(i, j, D), loopless(patch, i, j, D)];
-  const types = map1dOrbits(orbitType, patch);
+  const types = orbitTypes(patch);
 
   return checkCones(types.filter(([v, c]) => v > 1 && c).map(([v]) => v));
 };
