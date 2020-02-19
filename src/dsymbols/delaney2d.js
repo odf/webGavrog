@@ -156,17 +156,18 @@ const bestCyclic = corners => {
 
 
 export const orbifoldSymbol = ds => {
+  const formatNumbers = ns => ns.map(n => n < 10 ? n : `(${n})`).join('');
   const boundaryComponents = traceBoundary(ds);
   const chi = eulerCharacteristic(ds) + boundaryComponents.length;
 
   const cones = orbitTypes(ds).filter(([v, c]) => v > 1 && c).map(([v]) => v);
   cones.sort().reverse();
 
-  const parts = [cones.map(n => n < 10 ? n : `(${n})`).join('')];
+  const parts = [formatNumbers(cones)];
 
   for (const corners of boundaryComponents) {
     parts.push('*');
-    parts.push(bestCyclic(corners).map(n => n < 10 ? n : `(${n})`).join(''));
+    parts.push(formatNumbers(bestCyclic(corners)));
   }
 
   if (props.isWeaklyOriented(ds))
