@@ -25,10 +25,6 @@ function* orbits1d(ds) {
 };
 
 
-const map1dOrbits = (fn, ds) =>
-  [...orbits1d(ds)].map(([i, j, D]) => fn(i, j, D));
-
-
 const loopless = (ds, i, j, D) =>
   ds.orbit2(i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
@@ -41,7 +37,6 @@ const orbitTypes = ds => {
 };
 
 
-const unbranched = ds => orbitTypes(ds).every(([v]) => v == 1);
 const fullyBranched = ds => orbitTypes(ds).every(([v]) => !!v);
 
 
@@ -82,6 +77,19 @@ export const isSpherical = ds => {
 };
 
 
+export const toroidalCover = ds => {
+  assert(isEuclidean(ds), 'must be euclidean');
+
+  const dso = derived.orientedCover(ds);
+  const degree = Math.max(...orbitTypes(dso).map(([v]) => v));
+
+  for (const cov of covers(dso, degree)) {
+    if (orbitTypes(cov).every(([v]) => v == 1))
+      return cov;
+  };
+};
+
+
 export const orbifoldSymbol = ds => {
   //TODO correctly handle multiple boundary components
 
@@ -112,19 +120,6 @@ export const orbifoldSymbol = ds => {
     return '1'+sym;
   else
     return sym;
-};
-
-
-export const toroidalCover = ds => {
-  assert(isEuclidean(ds), 'must be euclidean');
-
-  const dso = derived.orientedCover(ds);
-  const degree = Math.max(...map1dOrbits(dso.v.bind(dso), dso));
-
-  for (const cov of covers(dso, degree)) {
-    if (unbranched(cov))
-      return cov;
-  };
 };
 
 
