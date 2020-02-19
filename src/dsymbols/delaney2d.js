@@ -30,6 +30,10 @@ const orbitTypes = ds => {
 };
 
 
+const coneDegrees = ds =>
+  orbitTypes(ds).filter(([v, c]) => v > 1 && c).map(([v]) => v);
+
+
 export const curvature = (ds, vDefault=1) => {
   assert(ds.dim == 2, 'must be two-dimensional');
 
@@ -160,10 +164,7 @@ export const orbifoldSymbol = ds => {
   const boundaryComponents = traceBoundary(ds);
   const chi = eulerCharacteristic(ds) + boundaryComponents.length;
 
-  const cones = orbitTypes(ds).filter(([v, c]) => v > 1 && c).map(([v]) => v);
-  cones.sort().reverse();
-
-  const parts = [formatNumbers(cones)];
+  const parts = [formatNumbers(coneDegrees(ds).sort().reverse())];
 
   for (const corners of boundaryComponents) {
     parts.push('*');
@@ -184,19 +185,28 @@ export const orbifoldSymbol = ds => {
 };
 
 
-const cutsOffDisk = (ds, cut, allow2Cone) => {
-  const checkCones = cones => (
-    cones.length == 0 || (allow2Cone && cones.length == 1 && cones[0] == 2)
-  );
-
+const splitAlong = (ds, cut) => {
   const pairs = [];
   for (const D of cut) {
     const E = ds.s(1, D);
     pairs.push([D, D]);
     pairs.push([E, E]);
   }
+
   const tmp = delaney.withPairings(ds, 1, pairs);
-  const patch = derived.subsymbol(tmp, [0, 1, 2], cut[0]);
+
+  return [
+    derived.subsymbol(tmp, [0, 1, 2], cut[0]),
+    derived.subsymbol(tmp, [0, 1, 2], ds.s(1, cut[0]))
+  ];
+};
+
+
+const cutsOffDisk = (ds, cut, allow2Cone) => {
+  const checkCones = cones =>
+    cones.length == 0 || (allow2Cone && cones.length == 1 && cones[0] == 2);
+
+  const [patch, rest] = splitAlong(ds, cut);
 
   if (patch.size == cut.length)
     return false;
@@ -211,29 +221,19 @@ const cutsOffDisk = (ds, cut, allow2Cone) => {
         return false;
     }
 
-    if (patch.size == ds.size - cut.length) {
-      if (
-        cut.every(D => ds.v(1, 2, D) == 1)
-          && cut.every(D => ds.v(0, 1, D) == 1)
-      ) {
-        const rest = derived.subsymbol(tmp, [0, 1, 2], ds.s(1, cut[0]));
-        const types = orbitTypes(rest);
-
-        if (checkCones(types.filter(([v, c]) => v > 1 && c).map(([v]) => v)))
-          return false;
-      }
-    }
+    if (
+      patch.size == ds.size - cut.length &&
+        cut.every(D => ds.v(0, 1, D) == 1 && ds.v(1, 2, D) == 1) &&
+        checkCones(coneDegrees(rest))
+    )
+      return false;
   }
 
-  if (!props.isWeaklyOriented(patch))
-    return false;
-
-  if (eulerCharacteristic(patch) != 1)
-    return false;
-
-  const types = orbitTypes(patch);
-
-  return checkCones(types.filter(([v, c]) => v > 1 && c).map(([v]) => v));
+  return (
+    props.isWeaklyOriented(patch) &&
+    eulerCharacteristic(patch) == 1 &&
+      checkCones(coneDegrees(patch))
+  );
 };
 
 
