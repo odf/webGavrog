@@ -113,7 +113,10 @@ export const toroidalCover = ds => {
   const dso = d.orientedCover(ds);
   const degree = Math.max(..._map1dOrbits(dso.v.bind(dso), dso));
 
-  return cv.covers(dso, degree).filter(_unbranched).first();
+  for (const cov of cv.covers(dso, degree)) {
+    if (_unbranched(cov))
+      return cov;
+  };
 };
 
 

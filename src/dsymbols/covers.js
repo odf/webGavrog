@@ -2,7 +2,6 @@ import * as DS          from './delaney';
 import * as fundamental from './fundamental';
 import * as derived     from './derived';
 import * as cosets      from '../fpgroups/cosets';
-import { seq }          from '../common/lazyseq';
 
 
 export const coverForTable = (ds, table, edgeToWord) =>
@@ -23,15 +22,12 @@ export const subgroupCover = (ds, subgroupGens) => {
 export const finiteUniversalCover = ds => subgroupCover(ds, []);
 
 
-export function* coversGenerator(ds, maxDeg) {
+export function* covers(ds, maxDeg) {
   const fun = fundamental.fundamentalGroup(ds);
 
   for (const table of cosets.tables(fun.nrGenerators, fun.relators, maxDeg))
     yield coverForTable(ds, table, fun.edge2word);
 };
-
-
-export const covers = (ds, maxDeg) => seq(coversGenerator(ds, maxDeg));
 
 
 if (require.main == module) {
