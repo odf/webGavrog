@@ -23,7 +23,7 @@ export function* covers(ds, maxDeg) {
 
 
 export const subgroupCover = (ds, subgroupGens) => {
-  const { nrGenerators, relators, edgeToWord } = fundamentalGroup(ds);
+  const { nrGenerators, relators, edge2word } = fundamentalGroup(ds);
   const table = cosetTable(nrGenerators, relators, subgroupGens);
 
   return coverForTable(ds, table, edge2word);
