@@ -45,25 +45,32 @@ const unbranched = ds => orbitTypes(ds).every(([v]) => v == 1);
 const fullyBranched = ds => orbitTypes(ds).every(([v]) => !!v);
 
 
-export const curvature = (ds, vDefault = 1) => {
+export const curvature = (ds, vDefault=1) => {
   assert(DS.dim(ds) == 2, 'must be two-dimensional');
-  assert(props.isConnected(ds), 'must be connected');
 
-  const orbitContribution = (i, j, D) =>
-    opsQ.div((loopless(ds, i, j, D) ? 2 : 1), (ds.v(i, j, D) || vDefault));
+  let sum = 0;
 
-  return opsQ.minus(sum(map1dOrbits(orbitContribution, ds)), DS.size(ds));
+  for (const [v, loopless] of orbitTypes(ds)) {
+    const numerator = loopless ? 2 : 1;
+    const denominator = v || vDefault;
+    sum = opsQ.plus(sum, opsQ.div(numerator, denominator));
+  }
+
+  return opsQ.minus(sum, ds.size);
 };
 
 
-export const isProtoEuclidean = ds => opsQ.ge(curvature(ds), 0);
-export const isProtoSpherical = ds => opsQ.gt(curvature(ds), 0);
-export const isEuclidean = ds => fullyBranched(ds) && opsQ.eq(curvature(ds), 0);
-export const isHyperbolic = ds => fullyBranched(ds) && opsQ.lt(curvature(ds), 0);
+const signOfCurvature = ds => opsQ.sgn(curvature(ds));
+
+
+export const isProtoEuclidean = ds => signOfCurvature(ds) >= 0;
+export const isProtoSpherical = ds => signOfCurvature(ds) > 0;
+export const isEuclidean = ds => fullyBranched(ds) && signOfCurvature(ds) == 0;
+export const isHyperbolic = ds => fullyBranched(ds) && signOfCurvature(ds) < 0;
 
 
 export const isSpherical = ds => {
-  if (fullyBranched(ds) && isProtoSpherical(ds)) {
+  if (fullyBranched(ds) && signOfCurvature(ds) > 0) {
     const dso = derived.orientedCover(ds);
     const cones = map1dOrbits(dso.v.bind(dso), dso).filter(v => v > 1);
 
