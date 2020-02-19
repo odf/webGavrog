@@ -238,67 +238,38 @@ const cutsOffDisk = (ds, cut, allow2Cone) => {
 
 
 export const isPseudoConvex = ds => {
-  assert(ds.dim == 2, 'must be two-dimensional');
-  assert(props.isConnected(ds), 'must be connected');
+  const dso = derived.orientedCover(ds);
+  const step = (i, j, D) => dso.s(i, dso.s(j, D));
+  const ori = props.partialOrientation(dso);
 
-  const log = () => {};
-  //const log = console.log;
+  for (const A1 of dso.elements().filter(D => ori[D] > 0)) {
+    const seen1 = { [A1]: true };
 
-  ds = derived.canonical(derived.orientedCover(ds));
-  log(`isPseudoConvex(${ds})`);
-  const ori = props.partialOrientation(ds);
+    for (let A2 = dso.s(0, A1); !seen1[A2]; A2 = step(0, 1, A2)) {
+      const seen2 = Object.assign({}, seen1, { [A2]: true });
+      seen1[A2] = seen1[dso.s(1, A2)] = true;
 
-  for (const A1 of ds.elements().filter(D => ori[D] > 0)) {
-    log(`  A1 = ${A1}`);
-    const onTrail1 = Array(ds.size + 1).fill(0);
-    onTrail1[A1] = 1;
-    let A2 = ds.s(0, A1);
+      let B2;
+      for (B2 = dso.s(2, A2); !seen2[B2]; B2 = step(2, 1, B2)) {
+        const seen3 = Object.assign({}, seen2, { [B2]: true });
+        seen2[B2] = seen2[dso.s(1, B2)] = true;
 
-    while (!onTrail1[A2]) {
-      log(`    A2 = ${A2}`);
-      const onTrail2 = onTrail1.slice();
-      onTrail2[A2] = 1;
-      let B2 = ds.s(2, A2);
+        for (let B1 = dso.s(0, B2); !seen3[B1]; B1 = step(0, 1, B1)) {
+          const seen4 = Object.assign({}, seen3, { [B1]: true });
+          seen3[B1] = seen3[dso.s(1, B1)] = true;
 
-      while (B2 == A1 || !onTrail2[B2]) {
-        log(`      B2 = ${B2}`);
-        if (B2 == A1) {
-          if (cutsOffDisk(ds, [A1, A2], true))
+          let T;
+          for (
+            T = dso.s(2, B1); dso.s(1, T) != B1 && !seen4[T]; T = step(2, 1, T)
+          )
+            seen4[T] = seen4[dso.s(1, T)] = true;
+
+          if (T == A1 && cutsOffDisk(dso, [A1, A2, B2, B1], false))
             return false;
-          else
-            break;
         }
-
-        const onTrail3 = onTrail2.slice();
-        onTrail3[B2] = 1;
-        let B1 = ds.s(0, B2);
-
-        while (!onTrail3[B1]) {
-          log(`        B1 = ${B1}`);
-
-          const onTrail4 = onTrail3.slice();
-          onTrail4[B1] = 1;
-          let T = ds.s(2, B1);
-
-          while (T != A1 && ds.s(1, T) != B1 && !onTrail4[T]) {
-            onTrail4[T] = onTrail4[ds.s(1, T)] = 1;
-            T = ds.s(2, ds.s(1, T));
-          }
-          log(`          T = ${T}`);
-
-          if (T == A1 && cutsOffDisk(ds, [A1, A2, B2, B1], false))
-            return false;
-
-          onTrail3[B1] = onTrail3[ds.s(1, B1)] = 1;
-          B1 = ds.s(0, ds.s(1, B1));
-        }
-
-        onTrail2[B2] = onTrail2[ds.s(1, B2)] = 1;
-        B2 = ds.s(2, ds.s(1, B2));
       }
-
-      onTrail1[A2] = onTrail1[ds.s(1, A2)] = 1;
-      A2 = ds.s(0, ds.s(1, A2));
+      if (B2 == A1 && cutsOffDisk(dso, [A1, A2], true))
+        return false;
     }
   }
 
