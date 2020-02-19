@@ -12,32 +12,22 @@ const assert = (condition, message) => {
 };
 
 
-const sum = numbers => numbers.reduce((a, x) => opsQ.plus(a, x), 0);
-
-
-function* orbits1d(ds) {
-  for (let i = 0; i < ds.dim; ++i) {
-    for (let j = i + 1; j <= ds.dim; ++j) {
-      for (const D of DS.orbitReps2(ds, i, j))
-        yield [i, j, D];
-    }
-  }
-};
-
-
 const loopless = (ds, i, j, D) =>
   ds.orbit2(i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
 const orbitTypes = ds => {
   const result = [];
-  for (const [i, j, D] of orbits1d(ds))
-    result.push([ds.v(i, j, D), loopless(ds, i, j, D)]);
+
+  for (let i = 0; i < ds.dim; ++i) {
+    for (let j = i + 1; j <= ds.dim; ++j) {
+      for (const D of DS.orbitReps2(ds, i, j))
+        result.push([ds.v(i, j, D), loopless(ds, i, j, D)]);
+    }
+  }
+
   return result;
 };
-
-
-const fullyBranched = ds => orbitTypes(ds).every(([v]) => !!v);
 
 
 export const curvature = (ds, vDefault=1) => {
@@ -55,6 +45,7 @@ export const curvature = (ds, vDefault=1) => {
 };
 
 
+const fullyBranched = ds => orbitTypes(ds).every(([v]) => !!v);
 const signOfCurvature = ds => opsQ.sgn(curvature(ds));
 
 
@@ -93,6 +84,7 @@ export const toroidalCover = ds => {
 export const orbifoldSymbol = ds => {
   //TODO correctly handle multiple boundary components
 
+  const sum = numbers => numbers.reduce((a, x) => opsQ.plus(a, x), 0);
   const types = orbitTypes(ds);
   const cones = types.filter(([v, c]) => v > 1 && c).map(([v]) => v);
   const corners = types.filter(([v, c]) => v > 1 && !c).map(([v]) => v);
