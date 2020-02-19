@@ -146,7 +146,8 @@ const bestCyclic = corners => {
 
   for (let i = 1; i < corners.length; ++i) {
     const candidate = corners.slice(i).concat(corners.slice(0, i));
-    if (candidate > best)
+    const k = candidate.findIndex((_, k) => candidate[k] != best[k]);
+    if (candidate[k] > best[k])
       best = candidate;
   }
 
@@ -339,6 +340,7 @@ if (require.main == module) {
   test(DS.parse('<1.1:1:1,1,1:5,3>'));
   test(DS.parse('<1.1:1:1,1,1:6,3>'));
   test(DS.parse('<1.1:1:1,1,1:7,3>'));
+  test(DS.parse('<1.1:1:1,1,1:15,3>'));
   test(DS.parse('<1.1:2:2,1 2,1 2:2,4 4>'));
   test(DS.parse('<1.1:2:2,1 2,1 2:2,4 5>'));
   test(DS.parse('<1.1:8:2 4 6 8,8 3 5 7,6 5 8 7:4,4>'));
