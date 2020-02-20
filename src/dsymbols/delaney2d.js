@@ -6,12 +6,6 @@ import { covers } from './covers';
 import { rationals as opsQ } from '../arithmetic/types';
 
 
-const assert = (condition, message) => {
-  if (!condition)
-    throw new Error(message || 'assertion error');
-};
-
-
 const loopless = (ds, i, j, D) =>
   ds.orbit2(i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
@@ -35,7 +29,8 @@ const coneDegrees = ds =>
 
 
 export const curvature = (ds, vDefault=1) => {
-  assert(ds.dim == 2, 'must be two-dimensional');
+  if (ds.dim != 2)
+    throw new Error('must be two-dimensional');
 
   let sum = 0;
 
@@ -73,7 +68,8 @@ export const isSpherical = ds => {
 
 
 export const toroidalCover = ds => {
-  assert(isEuclidean(ds), 'must be euclidean');
+  if (!isEuclidean(ds))
+    throw new Error('must be euclidean');
 
   const dso = derived.orientedCover(ds);
   const degree = Math.max(...orbitTypes(dso).map(([v]) => v));
