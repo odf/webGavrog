@@ -186,14 +186,16 @@ export const orbifoldSymbol = ds => {
 
 
 const splitAlong = (ds, cut) => {
-  const pairs = [];
-  for (const D of cut) {
-    const E = ds.s(1, D);
-    pairs.push([D, D]);
-    pairs.push([E, E]);
-  }
+  const inCut = {};
+  for (const D of cut)
+    inCut[D] = inCut[ds.s(1, D)] = true;
 
-  const tmp = delaney.withPairings(ds, 1, pairs);
+  const tmp = delaney.buildDSymbol({
+    dim: ds.dim,
+    size: ds.size,
+    getS: (i, D) => (i == 1 && inCut[D]) ? D : ds.s(i, D) || 0,
+    getV: (i, D) => ds.v(i, i+1, D) || 0
+  });
 
   return [
     derived.subsymbol(tmp, [0, 1, 2], cut[0]),
