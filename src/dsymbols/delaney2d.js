@@ -255,15 +255,13 @@ export const isPseudoConvex = ds => {
         seen2[B2] = seen2[dso.s(1, B2)] = true;
 
         for (let B1 = dso.s(0, B2); !seen3[B1]; B1 = step(0, 1, B1)) {
-          const seen4 = Object.assign({}, seen3, { [B1]: true });
           seen3[B1] = seen3[dso.s(1, B1)] = true;
+          const seen4 = Object.assign({}, seen3);
 
           let T;
-          for (
-            T = dso.s(2, B1); dso.s(1, T) != B1 && !seen4[T]; T = step(2, 1, T)
-          )
+          for (T = dso.s(2, B1); !seen4[T]; T = step(2, 1, T)) {
             seen4[T] = seen4[dso.s(1, T)] = true;
-
+          }
           if (T == A1 && cutsOffDisk(dso, [A1, A2, B2, B1], false))
             return false;
         }
