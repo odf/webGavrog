@@ -43,7 +43,8 @@ const flattensAll = (ct, cones) =>
   cones.every(([wd, d]) => degree(ct, wd) == d);
 
 
-const constructCandidates = (cones, tables) => {
+const constructCandidates = ({ nrGenerators, relators, cones }) => {
+  const coreTables = [...tables(nrGenerators, relators, 4)].map(coreTable);
   const cones2 = cones.filter(c => c[1] == 2);
   const cones3 = cones.filter(c => c[1] == 3);
 
@@ -51,12 +52,12 @@ const constructCandidates = (cones, tables) => {
   for (const type of pointGroups)
     results[type] = [];
 
-  for (const ct1 of tables) {
+  for (const ct1 of coreTables) {
     if (flattensAll(ct1, cones))
       results[cType(ct1)].push(ct1);
 
     if (ct1.length == 3 && flattensAll(ct1, cones3)) {
-      for (const ct2 of tables) {
+      for (const ct2 of coreTables) {
         if (ct2.length == 2 && flattensAll(ct2, cones2)) {
           const ctx = intersectionTable(ct1, ct2);
           if (ctx.length == 6 && flattensAll(ctx, cones))
@@ -66,7 +67,7 @@ const constructCandidates = (cones, tables) => {
     }
 
     if (ct1.length == 6 && flattensAll(ct1, cones3)) {
-      for (const ct2 of tables) {
+      for (const ct2 of coreTables) {
         if (ct2.length == 2 && !flattensAll(ct2, cones2)) {
           const ctx = intersectionTable(ct1, ct2);
           if (ctx.length == 12 && flattensAll(ctx, cones))
@@ -87,8 +88,7 @@ export const pseudoToroidalCover = ds => {
   if (fg.cones.some(([_, degree]) => degree == 5 || degree > 6))
     throw new Error('violates the crystallographic restriction');
 
-  const csTables = [...tables(fg.nrGenerators, fg.relators, 4)].map(coreTable);
-  const candidates = constructCandidates(fg.cones, csTables);
+  const candidates = constructCandidates(fg);
 
   for (const type of pointGroups) {
     for (const table of candidates[type]) {
