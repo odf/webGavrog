@@ -7,6 +7,10 @@ import { orientedCover } from './derived';
 import { fundamentalGroup } from './fundamental';
 
 
+const pointGroups = [
+  'z1', 'z2', 'z3', 'z4', 'v4', 's3', 'z6', 'd4', 'd6', 'a4', 's4'
+];
+
 const coreType = {
    1: 'z1',
    2: 'z2',
@@ -43,18 +47,20 @@ const constructCandidates = (cones, tables) => {
   const cones2 = cones.filter(c => c[1] == 2);
   const cones3 = cones.filter(c => c[1] == 3);
 
-  const result = [];
+  const results = {};
+  for (const type of pointGroups)
+    results[type] = [];
 
   for (const ct1 of tables) {
     if (flattensAll(ct1, cones))
-      result.push([cType(ct1), ct1]);
+      results[cType(ct1)].push(ct1);
 
     if (ct1.length == 3 && flattensAll(ct1, cones3)) {
       for (const ct2 of tables) {
         if (ct2.length == 2 && flattensAll(ct2, cones2)) {
           const ctx = intersectionTable(ct1, ct2);
           if (ctx.length == 6 && flattensAll(ctx, cones))
-            result.push(['z6', ctx]);
+            results['z6'].push(ctx);
         }
       }
     }
@@ -64,13 +70,13 @@ const constructCandidates = (cones, tables) => {
         if (ct2.length == 2 && !flattensAll(ct2, cones2)) {
           const ctx = intersectionTable(ct1, ct2);
           if (ctx.length == 12 && flattensAll(ctx, cones))
-            result.push(['d6', ctx]);
+            results['d6'].push(ctx);
         }
       }
     }
   }
 
-  return result;
+  return results;
 };
 
 
@@ -84,11 +90,8 @@ export const pseudoToroidalCover = ds => {
   const csTables = [...tables(fg.nrGenerators, fg.relators, 4)].map(coreTable);
   const candidates = constructCandidates(fg.cones, csTables);
 
-  for (const type of 'z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' ')) {
-    for (const [t, table] of candidates) {
-      if (t != type)
-        continue;
-
+  for (const type of pointGroups) {
+    for (const table of candidates[type]) {
       const domain = [...table.keys()];
       const action = (p, g) => table[p][g];
       const stab = stabilizer(0, fg.nrGenerators, fg.relators, domain, action);
