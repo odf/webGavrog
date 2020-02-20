@@ -8,7 +8,7 @@ import * as derived     from './derived';
 import * as covers      from './covers';
 
 
-const _coreType = {
+const coreType = {
    1: 'z1',
    2: 'z2',
    3: 'z3',
@@ -19,14 +19,14 @@ const _coreType = {
 };
 
 
-const _fullyInvolutive = ct =>
+const fullyInvolutive = ct =>
   ct.every(row => Object.keys(row).every(g => row[g] == row[-g]));
 
 const cType = ct =>
-  ct.length == 4 ? (_fullyInvolutive(ct) ? 'v4' : 'z4') : _coreType[ct.length];
+  ct.length == 4 ? (fullyInvolutive(ct) ? 'v4' : 'z4') : coreType[ct.length];
 
 
-const _degree = (ct, word) => {
+const degree = (ct, word) => {
   let k = 0;
   for (let i = 1; ; ++i) {
     k = word.reduce((k, g) => ct[k][g], k);
@@ -36,8 +36,8 @@ const _degree = (ct, word) => {
 };
 
 
-const _flattensAll = (ct, cones) =>
-  cones.every(([wd, d]) => _degree(ct, wd) == d);
+const flattensAll = (ct, cones) =>
+  cones.every(([wd, d]) => degree(ct, wd) == d);
 
 
 export const pseudoToroidalCover = ds => {
@@ -53,25 +53,25 @@ export const pseudoToroidalCover = ds => {
   const base = seq(tableGen).map(cosets.coreTable);
 
   const cores = base
-    .filter(ct => _flattensAll(ct, cones))
+    .filter(ct => flattensAll(ct, cones))
     .map(ct => [cType(ct), ct]);
 
   const cones2 = cones.filter(c => c[1] == 2);
   const cones3 = cones.filter(c => c[1] == 3);
 
-  const z2a = base.filter(ct => ct.length == 2 &&  _flattensAll(ct, cones2));
-  const z2b = base.filter(ct => ct.length == 2 && !_flattensAll(ct, cones2));
-  const z3a = base.filter(ct => ct.length == 3 &&  _flattensAll(ct, cones3));
-  const s3a = base.filter(ct => ct.length == 6 &&  _flattensAll(ct, cones3));
+  const z2a = base.filter(ct => ct.length == 2 &&  flattensAll(ct, cones2));
+  const z2b = base.filter(ct => ct.length == 2 && !flattensAll(ct, cones2));
+  const z3a = base.filter(ct => ct.length == 3 &&  flattensAll(ct, cones3));
+  const s3a = base.filter(ct => ct.length == 6 &&  flattensAll(ct, cones3));
 
   const z6 = z3a.flatMap(
     a => z2a.map(b => cosets.intersectionTable(a, b))
-      .filter(ct => ct.length == 6 && _flattensAll(ct, cones))
+      .filter(ct => ct.length == 6 && flattensAll(ct, cones))
       .map(ct => ['z6', ct]));
 
   const d6 = s3a.flatMap(
     a => z2b.map(b => cosets.intersectionTable(a, b))
-      .filter(ct => ct.length == 12 && _flattensAll(ct, cones))
+      .filter(ct => ct.length == 12 && flattensAll(ct, cones))
       .map(ct => ['d6', ct]));
 
   const candidates = cores.append(z6).append(d6);
