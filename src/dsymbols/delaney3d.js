@@ -43,25 +43,34 @@ const constructCandidates = (cones, base) => {
   const cones2 = cones.filter(c => c[1] == 2);
   const cones3 = cones.filter(c => c[1] == 3);
 
-  const z2a = base.filter(ct => ct.length == 2 &&  flattensAll(ct, cones2));
-  const z2b = base.filter(ct => ct.length == 2 && !flattensAll(ct, cones2));
-  const z3a = base.filter(ct => ct.length == 3 &&  flattensAll(ct, cones3));
-  const s3a = base.filter(ct => ct.length == 6 &&  flattensAll(ct, cones3));
+  const result = [];
 
-  const z6 = [].concat(...z3a.map(
-    a => z2a.map(b => cosets.intersectionTable(a, b))
-      .filter(ct => ct.length == 6 && flattensAll(ct, cones))
-      .map(ct => ['z6', ct])));
+  for (const ct1 of base) {
+    if (flattensAll(ct1, cones))
+      result.push([cType(ct1), ct1]);
 
-  const d6 = [].concat(...s3a.map(
-    a => z2b.map(b => cosets.intersectionTable(a, b))
-      .filter(ct => ct.length == 12 && flattensAll(ct, cones))
-      .map(ct => ['d6', ct])));
+    if (ct1.length == 3 && flattensAll(ct1, cones3)) {
+      for (const ct2 of base) {
+        if (ct2.length == 2 && flattensAll(ct2, cones2)) {
+          const ctx = cosets.intersectionTable(ct1, ct2);
+          if (ctx.length == 6 && flattensAll(ctx, cones))
+            result.push(['z6', ctx]);
+        }
+      }
+    }
 
-  return base
-    .filter(ct => flattensAll(ct, cones))
-    .map(ct => [cType(ct), ct])
-    .concat(z6, d6);
+    if (ct1.length == 6 && flattensAll(ct1, cones3)) {
+      for (const ct2 of base) {
+        if (ct2.length == 2 && !flattensAll(ct2, cones2)) {
+          const ctx = cosets.intersectionTable(ct1, ct2);
+          if (ctx.length == 12 && flattensAll(ctx, cones))
+            result.push(['d6', ctx]);
+        }
+      }
+    }
+  }
+
+  return result;
 };
 
 
