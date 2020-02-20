@@ -52,27 +52,20 @@ const constructCandidates = ({ nrGenerators, relators, cones }) => {
   for (const type of pointGroups)
     results[type] = [];
 
-  for (const ct1 of coreTables) {
-    if (flattensAll(ct1, cones))
-      results[cType(ct1)].push(ct1);
+  for (const table of coreTables) {
+    if (flattensAll(table, cones))
+      results[cType(table)].push(table);
+  }
 
-    if (ct1.length == 3 && flattensAll(ct1, cones3)) {
-      for (const ct2 of coreTables) {
-        if (ct2.length == 2 && flattensAll(ct2, cones2)) {
-          const ctx = intersectionTable(ct1, ct2);
-          if (ctx.length == 6 && flattensAll(ctx, cones))
-            results['z6'].push(ctx);
-        }
-      }
-    }
+  for (const tA of coreTables.filter(ct => flattensAll(ct, cones3))) {
+    for (const tB of coreTables.filter(ct => ct.length == 2)) {
+      const tX = intersectionTable(tA, tB);
 
-    if (ct1.length == 6 && flattensAll(ct1, cones3)) {
-      for (const ct2 of coreTables) {
-        if (ct2.length == 2 && !flattensAll(ct2, cones2)) {
-          const ctx = intersectionTable(ct1, ct2);
-          if (ctx.length == 12 && flattensAll(ctx, cones))
-            results['d6'].push(ctx);
-        }
+      if (flattensAll(tX, cones)) {
+        if (tA.length == 3 && tX.length == 6 && flattensAll(tB, cones2))
+          results['z6'].push(tX);
+        else if (tA.length == 6 && tX.length == 12 && !flattensAll(tB, cones2))
+          results['d6'].push(tX);
       }
     }
   }
