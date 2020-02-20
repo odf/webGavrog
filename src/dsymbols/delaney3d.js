@@ -82,12 +82,18 @@ const constructCandidates = ({ nrGenerators, relators, cones }) => {
 
 
 export const pseudoToroidalCover = ds => {
+  if (ds.dim != 3)
+    throw new Error('must be three-dimensional');
+
+  for (let i = 0; i < ds.dim; ++i) {
+    for (let D = 1; D < ds.size; ++D) {
+      if (![1,2,3,4,6].includes(ds.v(i, i+1, D)))
+        throw new Error('violates the crystallographic restriction');
+    }
+  }
+
   const dso = orientedCover(ds);
   const fg = fundamentalGroup(dso);
-
-  if (fg.cones.some(([_, degree]) => degree == 5 || degree > 6))
-    throw new Error('violates the crystallographic restriction');
-
   const candidates = constructCandidates(fg);
 
   for (const type of pointGroups) {
