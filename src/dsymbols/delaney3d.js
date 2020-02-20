@@ -1,11 +1,12 @@
-import { stabilizer } from '../fpgroups/stabilizer';
-import { abelianInvariants } from '../fpgroups/invariants';
 import { seq, range } from '../common/lazyseq';
 
-import * as cosets      from '../fpgroups/cosets';
-import * as fundamental from './fundamental';
-import * as derived     from './derived';
-import * as covers      from './covers';
+import * as cosets from '../fpgroups/cosets';
+import { stabilizer } from '../fpgroups/stabilizer';
+import { abelianInvariants } from '../fpgroups/invariants';
+
+import { fundamentalGroup } from './fundamental';
+import * as derived from './derived';
+import * as covers from './covers';
 
 
 const coreType = {
@@ -43,7 +44,7 @@ const flattensAll = (ct, cones) =>
 export const pseudoToroidalCover = ds => {
   ds = derived.orientedCover(ds);
 
-  const fg = fundamental.fundamentalGroup(ds);
+  const fg = fundamentalGroup(ds);
   const cones = fg.cones;
 
   if (cones.some(c => c[1] == 5 || c[1] > 6))
