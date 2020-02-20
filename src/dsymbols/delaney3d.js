@@ -4,9 +4,9 @@ import * as cosets from '../fpgroups/cosets';
 import { stabilizer } from '../fpgroups/stabilizer';
 import { abelianInvariants } from '../fpgroups/invariants';
 
+import { coverForTable } from './covers';
+import { orientedCover } from './derived';
 import { fundamentalGroup } from './fundamental';
-import * as derived from './derived';
-import * as covers from './covers';
 
 
 const coreType = {
@@ -42,9 +42,8 @@ const flattensAll = (ct, cones) =>
 
 
 export const pseudoToroidalCover = ds => {
-  ds = derived.orientedCover(ds);
-
-  const fg = fundamentalGroup(ds);
+  const dso = orientedCover(ds);
+  const fg = fundamentalGroup(dso);
   const cones = fg.cones;
 
   if (cones.some(c => c[1] == 5 || c[1] > 6))
@@ -91,7 +90,7 @@ export const pseudoToroidalCover = ds => {
         const inv = abelianInvariants(stab.generators.length, stab.relators);
 
         if (inv.length == 3 && inv.every(x => x == 0))
-          return covers.coverForTable(ds, table, fg.edge2word);
+          return coverForTable(dso, table, fg.edge2word);
       }
     }
   }
