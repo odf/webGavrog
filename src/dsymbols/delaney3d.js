@@ -1,4 +1,4 @@
-import * as cosets from '../fpgroups/cosets';
+import { tables, intersectionTable, coreTable } from '../fpgroups/cosets';
 import { stabilizer } from '../fpgroups/stabilizer';
 import { abelianInvariants } from '../fpgroups/invariants';
 
@@ -39,20 +39,20 @@ const flattensAll = (ct, cones) =>
   cones.every(([wd, d]) => degree(ct, wd) == d);
 
 
-const constructCandidates = (cones, base) => {
+const constructCandidates = (cones, tables) => {
   const cones2 = cones.filter(c => c[1] == 2);
   const cones3 = cones.filter(c => c[1] == 3);
 
   const result = [];
 
-  for (const ct1 of base) {
+  for (const ct1 of tables) {
     if (flattensAll(ct1, cones))
       result.push([cType(ct1), ct1]);
 
     if (ct1.length == 3 && flattensAll(ct1, cones3)) {
-      for (const ct2 of base) {
+      for (const ct2 of tables) {
         if (ct2.length == 2 && flattensAll(ct2, cones2)) {
-          const ctx = cosets.intersectionTable(ct1, ct2);
+          const ctx = intersectionTable(ct1, ct2);
           if (ctx.length == 6 && flattensAll(ctx, cones))
             result.push(['z6', ctx]);
         }
@@ -60,9 +60,9 @@ const constructCandidates = (cones, base) => {
     }
 
     if (ct1.length == 6 && flattensAll(ct1, cones3)) {
-      for (const ct2 of base) {
+      for (const ct2 of tables) {
         if (ct2.length == 2 && !flattensAll(ct2, cones2)) {
-          const ctx = cosets.intersectionTable(ct1, ct2);
+          const ctx = intersectionTable(ct1, ct2);
           if (ctx.length == 12 && flattensAll(ctx, cones))
             result.push(['d6', ctx]);
         }
@@ -77,30 +77,25 @@ const constructCandidates = (cones, base) => {
 export const pseudoToroidalCover = ds => {
   const dso = orientedCover(ds);
   const fg = fundamentalGroup(dso);
-  const cones = fg.cones;
 
-  if (cones.some(([_, degree]) => degree == 5 || degree > 6))
+  if (fg.cones.some(([_, degree]) => degree == 5 || degree > 6))
     throw new Error('violates the crystallographic restriction');
 
-  const tables = [...cosets.tables(fg.nrGenerators, fg.relators, 4)];
-  const base = tables.map(cosets.coreTable);
-  const candidates = constructCandidates(cones, base);
+  const csTables = [...tables(fg.nrGenerators, fg.relators, 4)].map(coreTable);
+  const candidates = constructCandidates(fg.cones, csTables);
 
   for (const type of 'z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' ')) {
     for (const [t, table] of candidates) {
-      if (t == type) {
-        const stab = stabilizer(
-          0,
-          fg.nrGenerators,
-          fg.relators,
-          [...table.keys()],
-          (p, g) => table[p][g]
-        );
-        const inv = abelianInvariants(stab.generators.length, stab.relators);
+      if (t != type)
+        continue;
 
-        if (inv.length == 3 && inv.every(x => x == 0))
-          return coverForTable(dso, table, fg.edge2word);
-      }
+      const domain = [...table.keys()];
+      const action = (p, g) => table[p][g];
+      const stab = stabilizer(0, fg.nrGenerators, fg.relators, domain, action);
+      const inv = abelianInvariants(stab.generators.length, stab.relators);
+
+      if (inv.length == 3 && inv.every(x => x == 0))
+        return coverForTable(dso, table, fg.edge2word);
     }
   }
 };
