@@ -39,21 +39,7 @@ const flattensAll = (ct, cones) =>
   cones.every(([wd, d]) => degree(ct, wd) == d);
 
 
-export const pseudoToroidalCover = ds => {
-  const dso = orientedCover(ds);
-  const fg = fundamentalGroup(dso);
-  const cones = fg.cones;
-
-  if (cones.some(([_, degree]) => degree == 5 || degree > 6))
-    throw new Error('violates the crystallographic restriction');
-
-  const tables = [...cosets.tables(fg.nrGenerators, fg.relators, 4)];
-  const base = tables.map(cosets.coreTable);
-
-  const cores = base
-    .filter(ct => flattensAll(ct, cones))
-    .map(ct => [cType(ct), ct]);
-
+const constructCandidates = (cones, base) => {
   const cones2 = cones.filter(c => c[1] == 2);
   const cones3 = cones.filter(c => c[1] == 3);
 
@@ -72,7 +58,24 @@ export const pseudoToroidalCover = ds => {
       .filter(ct => ct.length == 12 && flattensAll(ct, cones))
       .map(ct => ['d6', ct])));
 
-  const candidates = cores.concat(z6, d6);
+  return base
+    .filter(ct => flattensAll(ct, cones))
+    .map(ct => [cType(ct), ct])
+    .concat(z6, d6);
+};
+
+
+export const pseudoToroidalCover = ds => {
+  const dso = orientedCover(ds);
+  const fg = fundamentalGroup(dso);
+  const cones = fg.cones;
+
+  if (cones.some(([_, degree]) => degree == 5 || degree > 6))
+    throw new Error('violates the crystallographic restriction');
+
+  const tables = [...cosets.tables(fg.nrGenerators, fg.relators, 4)];
+  const base = tables.map(cosets.coreTable);
+  const candidates = constructCandidates(cones, base);
 
   for (const type of 'z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' ')) {
     for (const [t, table] of candidates) {
