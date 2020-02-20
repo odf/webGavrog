@@ -1,5 +1,3 @@
-import { seq, range } from '../common/lazyseq';
-
 import * as cosets from '../fpgroups/cosets';
 import { stabilizer } from '../fpgroups/stabilizer';
 import { abelianInvariants } from '../fpgroups/invariants';
@@ -46,11 +44,11 @@ export const pseudoToroidalCover = ds => {
   const fg = fundamentalGroup(dso);
   const cones = fg.cones;
 
-  if (cones.some(c => c[1] == 5 || c[1] > 6))
+  if (cones.some(([_, degree]) => degree == 5 || degree > 6))
     throw new Error('violates the crystallographic restriction');
 
-  const tableGen = cosets.tables(fg.nrGenerators, fg.relators, 4);
-  const base = seq(tableGen).map(cosets.coreTable);
+  const tables = [...cosets.tables(fg.nrGenerators, fg.relators, 4)];
+  const base = tables.map(cosets.coreTable);
 
   const cores = base
     .filter(ct => flattensAll(ct, cones))
@@ -64,27 +62,26 @@ export const pseudoToroidalCover = ds => {
   const z3a = base.filter(ct => ct.length == 3 &&  flattensAll(ct, cones3));
   const s3a = base.filter(ct => ct.length == 6 &&  flattensAll(ct, cones3));
 
-  const z6 = z3a.flatMap(
+  const z6 = [].concat(...z3a.map(
     a => z2a.map(b => cosets.intersectionTable(a, b))
       .filter(ct => ct.length == 6 && flattensAll(ct, cones))
-      .map(ct => ['z6', ct]));
+      .map(ct => ['z6', ct])));
 
-  const d6 = s3a.flatMap(
+  const d6 = [].concat(...s3a.map(
     a => z2b.map(b => cosets.intersectionTable(a, b))
       .filter(ct => ct.length == 12 && flattensAll(ct, cones))
-      .map(ct => ['d6', ct]));
+      .map(ct => ['d6', ct])));
 
-  const candidates = cores.append(z6).append(d6);
+  const candidates = cores.concat(z6, d6);
 
   for (const type of 'z1 z2 z3 z4 v4 s3 z6 d4 d6 a4 s4'.split(' ')) {
     for (const [t, table] of candidates) {
       if (t == type) {
-        const domain = range(0, table.length);
         const stab = stabilizer(
-          domain.first(),
+          0,
           fg.nrGenerators,
           fg.relators,
-          domain,
+          [...table.keys()],
           (p, g) => table[p][g]
         );
         const inv = abelianInvariants(stab.generators.length, stab.relators);
