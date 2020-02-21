@@ -101,7 +101,7 @@ const mergeNonFundamentalTiles = ds => {
 
   const seeds = [];
 
-  for (const orbit of props.orbits(ds, idcsTile, ds.elements())) {
+  for (const orbit of props.orbits(ds, idcsTile)) {
     if (!isFundamentalTile(ds, orbit[0]))
       continue;
 
