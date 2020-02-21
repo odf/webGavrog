@@ -5,6 +5,10 @@ import * as fundamental from './fundamental';
 import * as properties from './properties';
 
 
+const indicesExcept =
+  (ds, ...idcs) => ds.indices().filter(i => !idcs.includes(i));
+
+
 export const collapse = (ds, toBeRemoved, connectorIndex) => {
   const k = connectorIndex;
   const src2img = {};
@@ -38,7 +42,7 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
 
 
 const isFundamentalTile = (ds, D) => {
-  const idcs = ds.indices().filter(i => i < ds.dim);
+  const idcs = indicesExcept(ds, ds.dim);
   const sub = derived.subsymbol(ds, idcs, D);
 
   if (ds.dim == 3)
@@ -49,7 +53,7 @@ const isFundamentalTile = (ds, D) => {
 
 
 const mergeTiles = (ds, seeds) => {
-  const idcs = ds.indices().filter(i => i != ds.dim - 1);
+  const idcs = indicesExcept(ds, ds.dim - 1);
   const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
   return collapse(ds, removed, ds.dim);
@@ -72,8 +76,8 @@ const mergeFundamentalTiles = ds => {
 
 
 const mergeNonFundamentalTiles = ds => {
-  const idcsTile = ds.indices().filter(i => i < ds.dim);
-  const idcsFacet = ds.indices().filter(i => i < ds.dim - 1);
+  const idcsTile = indicesExcept(ds, ds.dim);
+  const idcsFacet = indicesExcept(ds, ds.dim, ds.dim - 1);
 
   const seeds = [];
 
@@ -96,7 +100,7 @@ const mergeNonFundamentalTiles = ds => {
 const mergeFacets = ds => {
   const dim = delaney.dim(ds);
   const seeds = ds.elements().filter(D => delaney.m(ds, dim, dim - 1, D) == 2);
-  const idcs = ds.indices().filter(i => i != dim - 2);
+  const idcs = indicesExcept(ds, dim - 2);
   const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
   return collapse(ds, removed, dim - 1);
@@ -104,8 +108,7 @@ const mergeFacets = ds => {
 
 
 const mergeEdges = ds => {
-  const idcs = ds.indices().filter(i => i > 0);
-
+  const idcs = indicesExcept(ds, 0);
   const seeds = [];
 
   for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
