@@ -6,45 +6,34 @@ import * as properties from './properties';
 
 
 export const collapse = (ds, toBeRemoved, connectorIndex) => {
-  const dim = delaney.dim(ds);
   const k = connectorIndex;
-  const old2new = {};
-  let next = 1;
+  const src2img = {};
+  const img2src = {};
+  let size = 0;
 
   for (const D of ds.elements()) {
     if (toBeRemoved.indexOf(D) < 0) {
-      old2new[D] = next;
-      ++next;
+      src2img[D] = ++size;
+      img2src[size] = D;
     }
-    else if (old2new[ds.s(k, D)] != null)
+    else if (src2img[ds.s(k, D)] != null)
       throw new Error(
         `must also remove ${k}-neighbor ${ds.s(k, D)} of removed element ${D}`
       );
   }
 
-  const size = next - 1;
-  const ops = new Array(dim + 1).fill(0).map(_ => []);
-  const brs = new Array(dim).fill(0).map(_ => []);
-
-  for (const D of ds.elements()) {
-    if (old2new[D]) {
-      for (const i of ds.indices()) {
-        const Di = ds.s(i, D);
-
-        if (i != connectorIndex) {
-          while (!old2new[Di])
-            Di = ds.s(i, ds.s(connectorIndex, Di));
-        }
-
-        ops[i].push([old2new[D], old2new[Di]]);
-
-        if (i < dim)
-          brs[i].push([old2new[D], ds.v(i, i + 1, D)]);
-      }
+  const getS = (i, D) => {
+    let E = ds.s(i, img2src[D]);
+    if (i != k) {
+      while (!src2img[E])
+        E = ds.s(i, ds.s(k, E));
     }
-  }
+    return src2img[E];
+  };
 
-  return delaney.build(dim, size, (_, i) => ops[i], (_, i) => brs[i]);
+  const getV = (i, D) => ds.v(i, i+1, img2src[D]) || 0;
+
+  return delaney.buildDSymbol({ dim: ds.dim, size, getS, getV });
 };
 
 
