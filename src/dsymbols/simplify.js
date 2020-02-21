@@ -5,12 +5,6 @@ import * as fundamental from './fundamental';
 import * as properties from './properties';
 
 
-const _assert = (condition, message) => {
-  if (!condition)
-    throw new Error(message || 'assertion error');
-};
-
-
 export const collapse = (ds, toBeRemoved, connectorIndex) => {
   const dim = delaney.dim(ds);
   const k = connectorIndex;
@@ -22,14 +16,10 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
       old2new[D] = next;
       ++next;
     }
-    else {
-      const Dk = ds.s(k, D);
-
-      _assert(
-        old2new[Dk] == null,
-        `${k}-neighbor ${Dk} of removed element ${D} must also be removed`
+    else if (old2new[ds.s(k, D)] != null)
+      throw new Error(
+        `must also remove ${k}-neighbor ${ds.s(k, D)} of removed element ${D}`
       );
-    }
   }
 
   const size = next - 1;
