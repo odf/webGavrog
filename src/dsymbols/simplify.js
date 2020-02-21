@@ -55,24 +55,28 @@ const mergeTiles = (ds, seeds) => {
 
 
 const mergeFacets = ds => {
-  const dim = delaney.dim(ds);
-  const seeds = ds.elements().filter(D => delaney.m(ds, dim, dim - 1, D) == 2);
-  const idcs = indicesExcept(ds, dim - 2);
+  const idcs = indicesExcept(ds, ds.dim - 2);
+  const orbits = [];
 
-  return collapse(ds, properties.orbits(ds, idcs, seeds), dim - 1);
+  for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
+    if (orbit.some(D => delaney.m(ds, ds.dim - 1, ds.dim, D) == 2))
+      orbits.push(orbit);
+  }
+
+  return collapse(ds, orbits, ds.dim - 1);
 };
 
 
 const mergeEdges = ds => {
   const idcs = indicesExcept(ds, 0);
-  const seeds = [];
+  const orbits = [];
 
   for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
     if (orbit.every(D => delaney.m(ds, 1, 2, D) == 2))
-      seeds.push(orbit[0]);
+      orbits.push(orbit);
   }
 
-  return collapse(ds, properties.orbits(ds, idcs, seeds), 1);
+  return collapse(ds, orbits, 1);
 };
 
 
