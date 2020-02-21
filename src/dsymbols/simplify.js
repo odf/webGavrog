@@ -3,7 +3,6 @@ import * as delaney2d from './delaney2d';
 import * as derived from './derived';
 import * as fundamental from './fundamental';
 import * as properties from './properties';
-import * as tilings from './tilings';
 
 
 const _assert = (condition, message) => {
