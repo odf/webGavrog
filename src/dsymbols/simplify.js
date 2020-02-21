@@ -47,6 +47,35 @@ export const collapse = (ds, setsToSquash, connector) => {
 };
 
 
+const mergeTiles = (ds, seeds) => {
+  const idcs = indicesExcept(ds, ds.dim - 1);
+
+  return collapse(ds, properties.orbits(ds, idcs, seeds), ds.dim);
+};
+
+
+const mergeFacets = ds => {
+  const dim = delaney.dim(ds);
+  const seeds = ds.elements().filter(D => delaney.m(ds, dim, dim - 1, D) == 2);
+  const idcs = indicesExcept(ds, dim - 2);
+
+  return collapse(ds, properties.orbits(ds, idcs, seeds), dim - 1);
+};
+
+
+const mergeEdges = ds => {
+  const idcs = indicesExcept(ds, 0);
+  const seeds = [];
+
+  for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
+    if (orbit.every(D => delaney.m(ds, 1, 2, D) == 2))
+      seeds.push(orbit[0]);
+  }
+
+  return collapse(ds, properties.orbits(ds, idcs, seeds), 1);
+};
+
+
 const isFundamentalTile = (ds, D) => {
   const idcs = indicesExcept(ds, ds.dim);
   const sub = derived.subsymbol(ds, idcs, D);
@@ -55,13 +84,6 @@ const isFundamentalTile = (ds, D) => {
     return delaney2d.curvature(sub) == 4;
   else if (ds.dim == 2)
     return properties.isLoopless(sub) && ds.v(0, 1, D) == 1;
-};
-
-
-const mergeTiles = (ds, seeds) => {
-  const idcs = indicesExcept(ds, ds.dim - 1);
-
-  return collapse(ds, properties.orbits(ds, idcs, seeds), ds.dim);
 };
 
 
@@ -99,28 +121,6 @@ const mergeNonFundamentalTiles = ds => {
   }
 
   return mergeTiles(ds, seeds);
-};
-
-
-const mergeFacets = ds => {
-  const dim = delaney.dim(ds);
-  const seeds = ds.elements().filter(D => delaney.m(ds, dim, dim - 1, D) == 2);
-  const idcs = indicesExcept(ds, dim - 2);
-
-  return collapse(ds, properties.orbits(ds, idcs, seeds), dim - 1);
-};
-
-
-const mergeEdges = ds => {
-  const idcs = indicesExcept(ds, 0);
-  const seeds = [];
-
-  for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
-    if (orbit.every(D => delaney.m(ds, 1, 2, D) == 2))
-      seeds.push(orbit[0]);
-  }
-
-  return collapse(ds, properties.orbits(ds, idcs, seeds), 1);
 };
 
 
