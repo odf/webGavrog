@@ -12,11 +12,11 @@ export const collapse = (ds, toBeRemoved, connectorIndex) => {
   let size = 0;
 
   for (const D of ds.elements()) {
-    if (toBeRemoved.indexOf(D) < 0) {
+    if (!toBeRemoved.includes(D)) {
       src2img[D] = ++size;
       img2src[size] = D;
     }
-    else if (src2img[ds.s(k, D)] != null)
+    else if (!toBeRemoved.includes(ds.s(k, D)))
       throw new Error(
         `must also remove ${k}-neighbor ${ds.s(k, D)} of removed element ${D}`
       );
