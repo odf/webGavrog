@@ -9,18 +9,24 @@ const indicesExcept =
   (ds, ...idcs) => ds.indices().filter(i => !idcs.includes(i));
 
 
-export const collapse = (ds, toBeRemoved, connectorIndex) => {
-  const k = connectorIndex;
+export const collapse = (ds, setsToSquash, connector) => {
+  const remove = {};
+  for (const set of setsToSquash) {
+    for (const D of set)
+      remove[D] = true;
+  }
+
+  const k = connector;
   const src2img = {};
   const img2src = {};
   let size = 0;
 
   for (const D of ds.elements()) {
-    if (!toBeRemoved.includes(D)) {
+    if (!remove[D]) {
       src2img[D] = ++size;
       img2src[size] = D;
     }
-    else if (!toBeRemoved.includes(ds.s(k, D)))
+    else if (!remove[ds.s(k, D)])
       throw new Error(
         `must also remove ${k}-neighbor ${ds.s(k, D)} of removed element ${D}`
       );
@@ -54,9 +60,8 @@ const isFundamentalTile = (ds, D) => {
 
 const mergeTiles = (ds, seeds) => {
   const idcs = indicesExcept(ds, ds.dim - 1);
-  const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
-  return collapse(ds, removed, ds.dim);
+  return collapse(ds, properties.orbits(ds, idcs, seeds), ds.dim);
 };
 
 
@@ -101,9 +106,8 @@ const mergeFacets = ds => {
   const dim = delaney.dim(ds);
   const seeds = ds.elements().filter(D => delaney.m(ds, dim, dim - 1, D) == 2);
   const idcs = indicesExcept(ds, dim - 2);
-  const removed = [].concat(...properties.orbits(ds, idcs, seeds));
 
-  return collapse(ds, removed, dim - 1);
+  return collapse(ds, properties.orbits(ds, idcs, seeds), dim - 1);
 };
 
 
@@ -116,8 +120,7 @@ const mergeEdges = ds => {
       seeds.push(orbit[0]);
   }
 
-  const removed = [].concat(...properties.orbits(ds, idcs, seeds));
-  return collapse(ds, removed, 1);
+  return collapse(ds, properties.orbits(ds, idcs, seeds), 1);
 };
 
 
