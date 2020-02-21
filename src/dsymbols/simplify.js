@@ -118,15 +118,9 @@ const mergeEdges = ds => {
 };
 
 
-const chain = (ds, ...fns) => {
-  for (const fn of fns)
-    ds = fn(ds);
-
-  return ds;
-};
-
-
 export const simplify = ds => {
+  const chain = (ds, ...fns) => fns.reduce((ds, fn) => fn(ds), ds);
+
   ds = chain(
     ds, mergeFundamentalTiles, mergeFacets, mergeNonFundamentalTiles
   );
