@@ -2,7 +2,7 @@ import * as delaney from './delaney';
 import * as delaney2d from './delaney2d';
 import * as derived from './derived';
 import * as fundamental from './fundamental';
-import * as properties from './properties';
+import * as props from './properties';
 
 
 const indicesExcept =
@@ -48,46 +48,35 @@ export const collapse = (ds, setsToSquash, connector) => {
 
 
 const mergeTiles = (ds, seeds) => {
-  const idcs = indicesExcept(ds, ds.dim - 1);
+  const orbits = props.orbits(ds, indicesExcept(ds, ds.dim - 1), seeds);
 
-  return collapse(ds, properties.orbits(ds, idcs, seeds), ds.dim);
+  return collapse(ds, orbits, ds.dim);
 };
 
 
 const mergeFacets = ds => {
-  const idcs = indicesExcept(ds, ds.dim - 2);
-  const orbits = [];
-
-  for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
-    if (orbit.some(D => delaney.m(ds, ds.dim - 1, ds.dim, D) == 2))
-      orbits.push(orbit);
-  }
+  const orbits = props.orbits(ds, indicesExcept(ds, ds.dim - 2))
+    .filter(orb => orb.some(D => ds.m(ds.dim - 1, ds.dim, D) == 2));
 
   return collapse(ds, orbits, ds.dim - 1);
 };
 
 
 const mergeEdges = ds => {
-  const idcs = indicesExcept(ds, 0);
-  const orbits = [];
-
-  for (const orbit of properties.orbits(ds, idcs, ds.elements())) {
-    if (orbit.every(D => delaney.m(ds, 1, 2, D) == 2))
-      orbits.push(orbit);
-  }
+  const orbits = props.orbits(ds, indicesExcept(ds, 0))
+    .filter(orb => orb.every(D => ds.m(1, 2, D) == 2));
 
   return collapse(ds, orbits, 1);
 };
 
 
 const isFundamentalTile = (ds, D) => {
-  const idcs = indicesExcept(ds, ds.dim);
-  const sub = derived.subsymbol(ds, idcs, D);
+  const sub = derived.subsymbol(ds, indicesExcept(ds, ds.dim), D);
 
   if (ds.dim == 3)
     return delaney2d.curvature(sub) == 4;
   else if (ds.dim == 2)
-    return properties.isLoopless(sub) && ds.v(0, 1, D) == 1;
+    return props.isLoopless(sub) && ds.v(0, 1, D) == 1;
 };
 
 
@@ -112,11 +101,11 @@ const mergeNonFundamentalTiles = ds => {
 
   const seeds = [];
 
-  for (const orbit of properties.orbits(ds, idcsTile, ds.elements())) {
+  for (const orbit of props.orbits(ds, idcsTile, ds.elements())) {
     if (!isFundamentalTile(ds, orbit[0]))
       continue;
 
-    for (const E of properties.orbitReps(ds, idcsFacet, orbit)) {
+    for (const E of props.orbitReps(ds, idcsFacet, orbit)) {
       if (!isFundamentalTile(ds, ds.s(ds.dim, E))) {
         seeds.push(E);
         break;
