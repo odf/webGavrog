@@ -41,12 +41,10 @@ const isFundamentalTile = (ds, D) => {
   const idcs = ds.indices().filter(i => i < ds.dim);
   const sub = derived.subsymbol(ds, idcs, D);
 
-  if (ds.dim == 3) {
+  if (ds.dim == 3)
     return delaney2d.curvature(sub) == 4;
-  }
-  else if (ds.dim == 2) {
+  else if (ds.dim == 2)
     return properties.isLoopless(sub) && ds.v(0, 1, D) == 1;
-  }
 };
 
 
