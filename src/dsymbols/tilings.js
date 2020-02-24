@@ -1,29 +1,25 @@
-import * as pickler from '../common/pickler';
-
 import * as freeWords   from '../fpgroups/freeWords';
-import * as delaney     from './delaney';
+import * as periodic    from '../pgraphs/periodic';
+import * as symmetries  from '../pgraphs/symmetries';
+import embed            from '../pgraphs/embedding';
+
 import * as properties  from './properties';
-import * as derived     from './derived';
 import * as delaney2d   from './delaney2d';
 import * as delaney3d   from './delaney3d';
 import * as fundamental from './fundamental';
-import * as covers      from './covers';
-import embed            from '../pgraphs/embedding';
-import * as periodic    from '../pgraphs/periodic';
-import * as symmetries  from '../pgraphs/symmetries';
 
 import { rationalLinearAlgebraModular } from '../arithmetic/types';
 
 import {
-  coordinateChangesF,
-  coordinateChangesQ
+  coordinateChangesF as opsF,
+  coordinateChangesQ as opsQ
 } from '../geometry/types';
 
-const opsF = coordinateChangesF;
-const opsR = coordinateChangesQ;
+import {
+  serialize as encode,
+  deserialize as decode
+} from '../common/pickler';
 
-const encode = pickler.serialize;
-const decode = pickler.deserialize;
 
 const range = n => [...Array(n).keys()];
 const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
@@ -37,13 +33,13 @@ const _edgeTranslations = cov => {
   );
   const vec = rel => freeWords.relatorAsVector(rel, n);
 
-  return fg.edge2word.map(a => a.map(b => opsR.times(vec(b), nul)));
+  return fg.edge2word.map(a => a.map(b => opsQ.times(vec(b), nul)));
 };
 
 
 const _cornerShifts = (cov, e2t) => {
-  const dim = delaney.dim(cov);
-  const zero = opsR.vector(dim);
+  const dim = cov.dim;
+  const zero = opsQ.vector(dim);
 
   const result = new Array(cov.size + 1).fill(0).map(_ => []);
 
@@ -53,7 +49,7 @@ const _cornerShifts = (cov, e2t) => {
       if (k == null)
         result[D][i] = zero;
       else
-        result[D][i] = opsR.minus(result[Dk][i], e2t[Dk][k] || zero);
+        result[D][i] = opsQ.minus(result[Dk][i], e2t[Dk][k] || zero);
     }
   }
 
@@ -69,7 +65,7 @@ const skeletonEdge = (D, cov, skel) => {
 
   const head = skel.chamber2node[D];
   const tail = skel.chamber2node[E];
-  const shift = opsR.minus(t ? opsR.plus(sE, t) : sE, sD);
+  const shift = opsQ.minus(t ? opsQ.plus(sE, t) : sE, sD);
 
   return periodic.makeEdge(head, tail, shift);
 };
@@ -115,7 +111,7 @@ const facialRing = (start, cov, skel) => {
 
 
 const cmpRingEdges = (a, b) => (
-  opsR.cmp(a.head, b.head) || opsR.cmp(a.shift, b.shift)
+  opsQ.cmp(a.head, b.head) || opsQ.cmp(a.shift, b.shift)
 );
 
 const cmpRingTails = (a, b, i) => (
@@ -171,7 +167,7 @@ export const facePreservingSymmetries = (cov, skel) => {
 
 
 export const chamberPositions = (cov, skel) => {
-  const sum = v => v.reduce((x, y) => x == null ? y : opsR.plus(x, y));
+  const sum = v => v.reduce((x, y) => x == null ? y : opsQ.plus(x, y));
 
   const pos = periodic.barycentricPlacement(skel.graph);
   const result = {};
@@ -179,19 +175,19 @@ export const chamberPositions = (cov, skel) => {
   for (const D of cov.elements()) {
     const p = pos[skel.chamber2node[D]];
     const t = skel.cornerShifts[D][0];
-    result[D] = [opsR.plus(p, t)];
+    result[D] = [opsQ.plus(p, t)];
   }
 
-  for (let i = 1; i <= delaney.dim(cov); ++i) {
+  for (let i = 1; i <= cov.dim; ++i) {
     const idcs = range(i);
 
     for (const orb of properties.orbits(cov, idcs, cov.elements())) {
-      const s = opsR.div(
-        sum(orb.map(E => opsR.minus(result[E][0], skel.cornerShifts[E][i]))),
+      const s = opsQ.div(
+        sum(orb.map(E => opsQ.minus(result[E][0], skel.cornerShifts[E][i]))),
         orb.length);
 
       for (const E of orb)
-        result[E].push(opsR.plus(s, skel.cornerShifts[E][i]));
+        result[E].push(opsQ.plus(s, skel.cornerShifts[E][i]));
     }
   }
 
@@ -201,18 +197,18 @@ export const chamberPositions = (cov, skel) => {
 
 const chamberBasis = (pos, D) => {
   const t = pos[D];
-  return t.slice(1).map(v => opsR.minus(v, t[0]));
+  return t.slice(1).map(v => opsQ.minus(v, t[0]));
 };
 
 
 const determinant = M => {
   if (M.length == 2)
-    return opsR.minus(opsR.times(M[0][0], M[1][1]),
-                      opsR.times(M[0][1], M[1][0]));
+    return opsQ.minus(opsQ.times(M[0][0], M[1][1]),
+                      opsQ.times(M[0][1], M[1][0]));
   else if (M.length == 3)
-    return opsR.times(M[0], opsR.crossProduct(M[1], M[2]));
+    return opsQ.times(M[0], opsQ.crossProduct(M[1], M[2]));
   else
-    return opsR.determinant(M);
+    return opsQ.determinant(M);
 };
 
 
@@ -220,11 +216,11 @@ const chamberDeterminant = (pos, D) => determinant(chamberBasis(pos, D));
 
 
 const nonDegenerateChamber = (elms, pos) =>
-  elms.find(D => opsR.ne(chamberDeterminant(pos, D), 0));
+  elms.find(D => opsQ.ne(chamberDeterminant(pos, D), 0));
 
 
 export const makeCover = ds =>
-  delaney.dim(ds) == 3 ?
+  ds.dim == 3 ?
   delaney3d.pseudoToroidalCover(ds) :
   delaney2d.toroidalCover(ds);
 
@@ -267,13 +263,13 @@ const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
     .map(orb => ori[orb[0]] > 0 ? orb.reverse() : orb)
     .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs[D]));
 
-  return (delaney.dim(cov) == 3 ? tileSurface3D : tileSurface2D)(cPos, faces);
+  return (cov.dim == 3 ? tileSurface3D : tileSurface2D)(cPos, faces);
 };
 
 
 const adjustedOrientation = (cov, pos) => {
   const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const sgn = opsR.sgn(chamberDeterminant(pos, D0));
+  const sgn = opsQ.sgn(chamberDeterminant(pos, D0));
 
   const ori = properties.partialOrientation(cov);
   if (sgn * ori[D0] < 0) {
@@ -286,7 +282,7 @@ const adjustedOrientation = (cov, pos) => {
 
 
 export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
-  const dim = delaney.dim(cov);
+  const dim = cov.dim;
   const idcs = range(dim);
   const pos = chamberPositions(cov, skel);
   const ori = adjustedOrientation(cov, pos);
@@ -298,10 +294,10 @@ export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
 
 const affineSymmetry = (D0, D1, E0, E1, pos) => {
   const bas = D => chamberBasis(pos, D);
-  const linear = opsR.solve(bas(D0), bas(D1));
-  const shift = opsR.minus(pos[E1][0], opsR.times(pos[E0][0], linear));
+  const linear = opsQ.solve(bas(D0), bas(D1));
+  const shift = opsQ.minus(pos[E1][0], opsQ.times(pos[E0][0], linear));
 
-  return opsR.affineTransformation(opsR.transposed(linear), shift);
+  return opsQ.affineTransformation(opsQ.transposed(linear), shift);
 };
 
 
@@ -324,7 +320,7 @@ export const affineSymmetries = (ds, cov, skel) => {
 
 
 export const tilesByTranslations = (ds, cov, skel) => {
-  const dim = delaney.dim(cov);
+  const dim = cov.dim;
   const pos = chamberPositions(cov, skel);
   const Dx = nonDegenerateChamber(ds.elements(), pos);
   const phi = properties.morphism(cov, ds, 1, 1);
@@ -341,7 +337,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
     const E0 = phi[D0];
 
     let classIndex = dsChamberToClassIndex[E0];
-    let symmetry = opsR.identityMatrix(dim);
+    let symmetry = opsQ.identityMatrix(dim);
 
     if (classIndex == null) {
       classIndex = orbitReps.length;
@@ -428,7 +424,7 @@ if (require.main == module) {
     const transforms = affineSymmetries(ds, cov, skel);
     console.log(`tiling has ${transforms.length} deck transformations`);
     transforms
-      .sort((a, b) => opsR.cmp(a, b))
+      .sort((a, b) => opsQ.cmp(a, b))
       .forEach(t => console.log(t));
 
     const { orbitReps, tiles } = tilesByTranslations(ds, cov, skel);
@@ -436,8 +432,8 @@ if (require.main == module) {
     tiles
       .sort(
         (a, b) =>
-          opsR.cmp(a.classIndex, b.classIndex) ||
-          opsR.cmp(a.symmetry, b.symmetry)
+          opsQ.cmp(a.classIndex, b.classIndex) ||
+          opsQ.cmp(a.symmetry, b.symmetry)
       )
       .forEach(
         ({ classIndex, symmetry }) =>
