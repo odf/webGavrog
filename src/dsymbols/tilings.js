@@ -3,7 +3,7 @@ import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 import embed from '../pgraphs/embedding';
 
-import * as properties from './properties';
+import * as props from './properties';
 import * as delaney2d from './delaney2d';
 import * as delaney3d from './delaney3d';
 import { fundamentalGroup } from './fundamental';
@@ -42,7 +42,7 @@ const makeCornerShifts = (cov, e2t) => {
 
   for (const i of cov.indices()) {
     const idcs = remainingIndices(cov, i);
-    for (const [Dk, k, D] of properties.traversal(cov, idcs, cov.elements())) {
+    for (const [Dk, k, D] of props.traversal(cov, idcs, cov.elements())) {
       if (k == null)
         result[D][i] = zero;
       else
@@ -69,27 +69,22 @@ const skeletonEdge = (D, cov, skel) => {
 
 
 export const skeleton = cov => {
-  const edgeTranslations = makeEdgeTranslations(cov);
-  const cornerShifts = makeCornerShifts(cov, edgeTranslations);
-
   const chamber2node = {};
   let node = 1;
-  for (const orb of properties.orbits(cov, remainingIndices(cov, 0))) {
+  for (const orb of props.orbits(cov, remainingIndices(cov, 0))) {
     for (const D of orb)
       chamber2node[D] = node;
     node += 1;
   }
 
+  const edgeTranslations = makeEdgeTranslations(cov);
+  const cornerShifts = makeCornerShifts(cov, edgeTranslations);
   const skel = { chamber2node, edgeTranslations, cornerShifts };
 
-  const edges = [];
-  for (const D of properties.orbitReps(cov, remainingIndices(cov, 1))) {
-    const e = skeletonEdge(D, cov, skel);
-    edges.push([e.head, e.tail, e.shift]);
-  }
+  const reps = props.orbitReps(cov, remainingIndices(cov, 1));
+  const edges = reps.map(D => skeletonEdge(D, cov, skel));
 
-  skel.graph = periodic.makeGraph(edges);
-  return skel;
+  return Object.assign(skel, { graph: periodic.makeGraph(edges) });
 };
 
 
@@ -139,7 +134,7 @@ const canonicalRing = ring => {
 
 
 const facialRings = (cov, skel) => (
-  properties.orbitReps(cov, remainingIndices(cov, 2))
+  props.orbitReps(cov, remainingIndices(cov, 2))
     .map(D => canonicalRing(facialRing(D, cov, skel)))
 );
 
@@ -178,7 +173,7 @@ export const chamberPositions = (cov, skel) => {
   for (let i = 1; i <= cov.dim; ++i) {
     const idcs = range(i);
 
-    for (const orb of properties.orbits(cov, idcs, cov.elements())) {
+    for (const orb of props.orbits(cov, idcs, cov.elements())) {
       const s = opsQ.div(
         sum(orb.map(E => opsQ.minus(result[E][0], skel.cornerShifts[E][i]))),
         orb.length);
@@ -245,7 +240,7 @@ const tileSurface2D = (corners, faces) => {
 
 
 const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
-  const cOrbs = properties.orbits(cov, idcs.slice(1), elms);
+  const cOrbs = props.orbits(cov, idcs.slice(1), elms);
   const cPos = cOrbs.map(
     ([D]) => opsF.plus(pos[skel.chamber2node[D]], skel.cornerShifts[D][0])
   );
@@ -256,7 +251,7 @@ const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
       cIdcs[D] = i;
   });
 
-  const faces = properties.orbits(cov, [0, 1], elms)
+  const faces = props.orbits(cov, [0, 1], elms)
     .map(orb => ori[orb[0]] > 0 ? orb.reverse() : orb)
     .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs[D]));
 
@@ -268,7 +263,7 @@ const adjustedOrientation = (cov, pos) => {
   const D0 = nonDegenerateChamber(cov.elements(), pos);
   const sgn = opsQ.sgn(chamberDeterminant(pos, D0));
 
-  const ori = properties.partialOrientation(cov);
+  const ori = props.partialOrientation(cov);
   if (sgn * ori[D0] < 0) {
     for (const D of cov.elements())
       ori[D] = -ori[D];
@@ -285,7 +280,7 @@ export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
   const ori = adjustedOrientation(cov, pos);
 
   return orbitReps.map(D => tileSurface(
-    cov, skel, vertexPos, ori, properties.orbit(cov, idcs, D), idcs));
+    cov, skel, vertexPos, ori, props.orbit(cov, idcs, D), idcs));
 };
 
 
@@ -299,11 +294,11 @@ const affineSymmetry = (D0, D1, E0, E1, pos) => {
 
 
 export const deckTransformations = (ds, cov) => {
-  const phi = properties.morphism(cov, ds, 1, 1);
+  const phi = props.morphism(cov, ds, 1, 1);
 
   return cov.elements()
     .filter(D => phi[D] == 1)
-    .map(D => properties.morphism(cov, cov, D, 1));
+    .map(D => props.morphism(cov, cov, D, 1));
 };
 
 
@@ -320,9 +315,9 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const dim = cov.dim;
   const pos = chamberPositions(cov, skel);
   const Dx = nonDegenerateChamber(ds.elements(), pos);
-  const phi = properties.morphism(cov, ds, 1, 1);
+  const phi = props.morphism(cov, ds, 1, 1);
   const idcs = range(dim);
-  const tileOrbits = properties.orbits(cov, idcs);
+  const tileOrbits = props.orbits(cov, idcs);
 
   const orbitReps = [];
   const dsChamberToClassIndex = {};
@@ -339,7 +334,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
     if (classIndex == null) {
       classIndex = orbitReps.length;
 
-      for (const E of properties.orbit(ds, idcs, E0))
+      for (const E of props.orbit(ds, idcs, E0))
         dsChamberToClassIndex[E] = classIndex;
 
       orbitReps.push(D0);
@@ -347,7 +342,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
     else {
       const D0 = orbitReps[classIndex];
       const D1 = elms.find(D => phi[D] == phi[D0]);
-      const psi = properties.morphism(cov, cov, D0, D1)
+      const psi = props.morphism(cov, cov, D0, D1)
       symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
     }
 
@@ -362,7 +357,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
 
   for (const tile of tiles) {
     const neighbors = [];
-    for (const D of properties.orbitReps(cov, [0, 1], tile.chambers)) {
+    for (const D of props.orbitReps(cov, [0, 1], tile.chambers)) {
       const E = cov.s(dim, D);
       const latticeIndex = covChamberToLatticeIndex[E];
       const shift = e2t[D][dim] || zero;
@@ -388,8 +383,8 @@ if (require.main == module) {
 
   const test = ds => {
     console.log(`ds = ${ds}`);
-    console.log(`is ${properties.isOriented(ds) ? '' : 'not '}oriented`);
-    console.log(`is ${properties.isConnected(ds) ? '' : 'not '}connected`);
+    console.log(`is ${props.isOriented(ds) ? '' : 'not '}oriented`);
+    console.log(`is ${props.isConnected(ds) ? '' : 'not '}connected`);
 
     const fg = fundamentalGroup(ds);
     console.log(`fundamental group: ${JSON.stringify(fg)}`);
