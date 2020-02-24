@@ -88,15 +88,21 @@ export const skeleton = cov => {
 };
 
 
-const facialRing = (start, cov, skel) => {
+const facialRings = (cov, skel) => {
   const result = [];
 
-  let D = start;
-  do {
-    result.push(skeletonEdge(D, cov, skel))
-    D = cov.s(1, cov.s(0, D));
+  for (const start of props.orbitReps(cov, remainingIndices(cov, 2))) {
+    const ring = [];
+
+    let D = start;
+    do {
+      ring.push(skeletonEdge(D, cov, skel))
+      D = cov.s(1, cov.s(0, D));
+    }
+    while (D != start);
+
+    result.push(canonicalRing(ring));
   }
-  while (D != start);
 
   return result;
 };
@@ -131,12 +137,6 @@ const canonicalRing = ring => {
 
   return best;
 };
-
-
-const facialRings = (cov, skel) => (
-  props.orbitReps(cov, remainingIndices(cov, 2))
-    .map(D => canonicalRing(facialRing(D, cov, skel)))
-);
 
 
 export const facePreservingSymmetries = (cov, skel) => {
