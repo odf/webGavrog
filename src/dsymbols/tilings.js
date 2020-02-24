@@ -1,12 +1,12 @@
-import * as freeWords   from '../fpgroups/freeWords';
-import * as periodic    from '../pgraphs/periodic';
-import * as symmetries  from '../pgraphs/symmetries';
-import embed            from '../pgraphs/embedding';
+import * as freeWords from '../fpgroups/freeWords';
+import * as periodic from '../pgraphs/periodic';
+import * as symmetries from '../pgraphs/symmetries';
+import embed from '../pgraphs/embedding';
 
-import * as properties  from './properties';
-import * as delaney2d   from './delaney2d';
-import * as delaney3d   from './delaney3d';
-import * as fundamental from './fundamental';
+import * as properties from './properties';
+import * as delaney2d from './delaney2d';
+import * as delaney3d from './delaney3d';
+import { fundamentalGroup } from './fundamental';
 
 import { rationalLinearAlgebraModular } from '../arithmetic/types';
 
@@ -26,14 +26,13 @@ const remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
 const makeEdgeTranslations = cov => {
-  const fg  = fundamental.fundamentalGroup(cov);
-  const n   = fg.nrGenerators;
-  const nul = rationalLinearAlgebraModular.nullSpace(
-    freeWords.relatorMatrix(n, fg.relators)
-  );
-  const vec = rel => freeWords.relatorAsVector(rel, n);
+  const { nrGenerators, relators, edge2word } = fundamentalGroup(cov);
+  const mat = freeWords.relatorMatrix(nrGenerators, relators);
+  const nul = rationalLinearAlgebraModular.nullSpace(mat);
 
-  return fg.edge2word.map(a => a.map(b => opsQ.times(vec(b), nul)));
+  return edge2word.map(a => a.map(
+    b => opsQ.times(freeWords.relatorAsVector(b, nrGenerators), nul)
+  ));
 };
 
 
@@ -394,7 +393,7 @@ if (require.main == module) {
     console.log(`is ${properties.isOriented(ds) ? '' : 'not '}oriented`);
     console.log(`is ${properties.isConnected(ds) ? '' : 'not '}connected`);
 
-    const fg = fundamental.fundamentalGroup(ds);
+    const fg = fundamentalGroup(ds);
     console.log(`fundamental group: ${JSON.stringify(fg)}`);
 
     const cov = makeCover(ds);
