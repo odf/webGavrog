@@ -5,6 +5,8 @@ import * as fundamental from './fundamental';
 import * as props from './properties';
 
 
+// TODO This needs serious work, likely incorrect. Not in use now.
+
 const indicesExcept =
   (ds, ...idcs) => ds.indices().filter(i => !idcs.includes(i));
 
