@@ -150,27 +150,25 @@ export const facePreservingSymmetries = (cov, skel) => {
 
 
 export const chamberPositions = (cov, skel) => {
-  const sum = v => v.reduce((x, y) => x == null ? y : opsQ.plus(x, y));
-
   const pos = periodic.barycentricPlacement(skel.graph);
+  const corners = {};
   const result = {};
 
   for (const D of cov.elements()) {
-    const p = pos[skel.chamber2node[D]];
-    const t = skel.cornerShifts[D][0];
-    result[D] = [opsQ.plus(p, t)];
+    corners[D] = opsQ.plus(pos[skel.chamber2node[D]], skel.cornerShifts[D][0]);
+    result[D] = [corners[D]];
   }
 
   for (let i = 1; i <= cov.dim; ++i) {
-    const idcs = range(i);
+    for (const orb of props.orbits(cov, range(i))) {
+      let sum = opsQ.vector(cov.dim);
+      for (const D of orb)
+        sum = opsQ.plus(sum, opsQ.minus(corners[D], skel.cornerShifts[D][i]));
 
-    for (const orb of props.orbits(cov, idcs, cov.elements())) {
-      const s = opsQ.div(
-        sum(orb.map(E => opsQ.minus(result[E][0], skel.cornerShifts[E][i]))),
-        orb.length);
+      const center = opsQ.div(sum, orb.length);
 
-      for (const E of orb)
-        result[E].push(opsQ.plus(s, skel.cornerShifts[E][i]));
+      for (const D of orb)
+        result[D].push(opsQ.plus(center, skel.cornerShifts[D][i]));
     }
   }
 
