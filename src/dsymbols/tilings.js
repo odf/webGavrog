@@ -37,9 +37,7 @@ const makeEdgeTranslations = cov => {
 
 
 const makeCornerShifts = (cov, e2t) => {
-  const dim = cov.dim;
-  const zero = opsQ.vector(dim);
-
+  const zero = opsQ.vector(cov.dim);
   const result = new Array(cov.size + 1).fill(0).map(_ => []);
 
   for (const i of cov.indices()) {
@@ -60,11 +58,11 @@ const skeletonEdge = (D, cov, skel) => {
   const E = cov.s(0, D);
   const sD = skel.cornerShifts[D][0];
   const sE = skel.cornerShifts[E][0];
-  const t = skel.edgeTranslations[D][0];
+  const t = skel.edgeTranslations[D][0] || opsQ.vector(cov.dim);
 
   const head = skel.chamber2node[D];
   const tail = skel.chamber2node[E];
-  const shift = opsQ.minus(t ? opsQ.plus(sE, t) : sE, sD);
+  const shift = opsQ.minus(opsQ.plus(sE, t), sD);
 
   return periodic.makeEdge(head, tail, shift);
 };
