@@ -22,10 +22,10 @@ import {
 
 
 const range = n => [...Array(n).keys()];
-const _remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
+const remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
-const _edgeTranslations = cov => {
+const makeEdgeTranslations = cov => {
   const fg  = fundamental.fundamentalGroup(cov);
   const n   = fg.nrGenerators;
   const nul = rationalLinearAlgebraModular.nullSpace(
@@ -37,14 +37,14 @@ const _edgeTranslations = cov => {
 };
 
 
-const _cornerShifts = (cov, e2t) => {
+const makeCornerShifts = (cov, e2t) => {
   const dim = cov.dim;
   const zero = opsQ.vector(dim);
 
   const result = new Array(cov.size + 1).fill(0).map(_ => []);
 
   for (const i of cov.indices()) {
-    const idcs = _remainingIndices(cov, i);
+    const idcs = remainingIndices(cov, i);
     for (const [Dk, k, D] of properties.traversal(cov, idcs, cov.elements())) {
       if (k == null)
         result[D][i] = zero;
@@ -72,12 +72,12 @@ const skeletonEdge = (D, cov, skel) => {
 
 
 export const skeleton = cov => {
-  const edgeTranslations = _edgeTranslations(cov);
-  const cornerShifts = _cornerShifts(cov, edgeTranslations);
+  const edgeTranslations = makeEdgeTranslations(cov);
+  const cornerShifts = makeCornerShifts(cov, edgeTranslations);
 
   const chamber2node = {};
   let node = 1;
-  for (const orb of properties.orbits(cov, _remainingIndices(cov, 0))) {
+  for (const orb of properties.orbits(cov, remainingIndices(cov, 0))) {
     for (const D of orb)
       chamber2node[D] = node;
     node += 1;
@@ -86,7 +86,7 @@ export const skeleton = cov => {
   const skel = { chamber2node, edgeTranslations, cornerShifts };
 
   const edges = [];
-  for (const D of properties.orbitReps(cov, _remainingIndices(cov, 1))) {
+  for (const D of properties.orbitReps(cov, remainingIndices(cov, 1))) {
     const e = skeletonEdge(D, cov, skel);
     edges.push([e.head, e.tail, e.shift]);
   }
@@ -142,7 +142,7 @@ const canonicalRing = ring => {
 
 
 const facialRings = (cov, skel) => (
-  properties.orbitReps(cov, _remainingIndices(cov, 2))
+  properties.orbitReps(cov, remainingIndices(cov, 2))
     .map(D => canonicalRing(facialRing(D, cov, skel)))
 );
 
@@ -360,7 +360,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
     tiles.push({ classIndex, symmetry, chambers: elms });
   }
 
-  const e2t = _edgeTranslations(cov);
+  const e2t = makeEdgeTranslations(cov);
   const zero = Array(dim).fill(0);
 
   for (const tile of tiles) {
