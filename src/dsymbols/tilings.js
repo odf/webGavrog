@@ -134,22 +134,18 @@ const facialRings = (cov, skel) => {
 
 
 export const facePreservingSymmetries = (cov, skel) => {
-  const mapRing = (ring, sym) => ring.map(e => decode(sym.src2img[encode(e)]));
+  const keyFor = ring => encode(canonicalRing(ring));
   const rings = facialRings(cov, skel);
 
   const isRing = {};
   for (const r of rings)
-    isRing[encode(canonicalRing(r))] = true;
+    isRing[keyFor(r)] = true;
+
+  const mapRing = (ring, sym) => ring.map(e => decode(sym.src2img[encode(e)]));
+  const mapsToRing = sym => ring => isRing[keyFor(mapRing(ring, sym))];
 
   const syms = symmetries.symmetries(skel.graph).symmetries;
-  const good = [];
-
-  for (const sym of syms) {
-    if (rings.every(r => isRing[encode(canonicalRing(mapRing(r, sym)))]))
-      good.push(sym);
-  }
-
-  return good;
+  return syms.filter(sym => rings.every(mapsToRing(sym)));
 };
 
 
