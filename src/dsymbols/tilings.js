@@ -88,6 +88,31 @@ export const skeleton = cov => {
 };
 
 
+const canonicalRing = ring => {
+  const reverse = ring.slice().reverse().map(e => e.reverse());
+  let best = ring;
+
+  for (let i = 0; i < ring.length; ++i) {
+    for (const r of [ring, reverse]) {
+      const candidate = r.slice(i).concat(r.slice(0, i));
+
+      for (let k = 0; k < ring.length; ++k) {
+        const d = (candidate[k].head - best[k].head) ||
+          opsQ.cmp(candidate[k].shift, best[k].shift);
+
+        if (d < 0)
+          best = candidate;
+
+        if (d)
+          break;
+      }
+    }
+  }
+
+  return best;
+};
+
+
 const facialRings = (cov, skel) => {
   const result = [];
 
@@ -108,38 +133,8 @@ const facialRings = (cov, skel) => {
 };
 
 
-const cmpRingEdges = (a, b) => (
-  opsQ.cmp(a.head, b.head) || opsQ.cmp(a.shift, b.shift)
-);
-
-const cmpRingTails = (a, b, i) => (
-  i >= a.length ? 0 : cmpRingEdges(a[i], b[i]) || cmpRingTails(a, b, i + 1)
-);
-
-const cmpRings = (a, b) => cmpRingTails(a, b, 0);
-
-const ringShifted = (r, i) => r.slice(i).concat(r.slice(0, i));
-const ringReverse = r => r.slice().reverse().map(e => e.reverse());
-
-const mapRing = (ring, sym) => ring.map(e => decode(sym.src2img[encode(e)]));
-
-
-const canonicalRing = ring => {
-  const rev = ringReverse(ring);
-  let best = null;
-
-  for (let i = 0; i < ring.length; ++i) {
-    if (best == null || cmpRings(ringShifted(ring, i), best) < 0)
-      best = ringShifted(ring, i);
-    if (cmpRings(ringShifted(rev, i), best) < 0)
-      best = ringShifted(rev, i);
-  }
-
-  return best;
-};
-
-
 export const facePreservingSymmetries = (cov, skel) => {
+  const mapRing = (ring, sym) => ring.map(e => decode(sym.src2img[encode(e)]));
   const rings = facialRings(cov, skel);
 
   const isRing = {};
