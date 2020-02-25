@@ -242,43 +242,38 @@ const tileSurface2D = (corners, faces) => {
 };
 
 
-const tileSurface = (cov, skel, pos, ori, elms) => {
-  const cOrbs = props.orbits(cov, range(1, cov.dim), elms);
-  const cPos = cOrbs.map(
-    ([D]) => opsF.plus(pos[skel.chamber2node[D]], skel.cornerShifts[D][0])
-  );
-
-  const cIdcs = [];
-  for (let i = 0; i < cOrbs.length; ++i) {
-    for (const D of cOrbs[i])
-      cIdcs[D] = i;
-  }
-
-  const faces = [];
-  for (const orb of props.orbits(cov, [0, 1], elms)) {
-    if (ori[orb[0]] > 0)
-      orb.reverse();
-
-    const f = [];
-    for (let i = 0; i < orb.length; i += 2)
-      f.push(cIdcs[orb[i]]);
-
-    faces.push(f);
-  }
-
-  return (cov.dim == 3 ? tileSurface3D : tileSurface2D)(cPos, faces);
-};
-
-
-export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
+export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
+  const makeSurface = cov.dim == 3 ? tileSurface3D : tileSurface2D;
   const pos = chamberPositions(cov, skel);
   const ori = adjustedOrientation(cov, pos);
-
   const result = [];
 
-  for (const D of orbitReps) {
+  for (const D of seeds) {
     const elms = props.orbit(cov, range(0, cov.dim), D);
-    result.push(tileSurface(cov, skel, vertexPos, ori, elms));
+    const cOrbs = props.orbits(cov, range(1, cov.dim), elms);
+    const cPos = cOrbs.map(([D]) => opsF.plus(
+      vertexPos[skel.chamber2node[D]], skel.cornerShifts[D][0]
+    ));
+
+    const cIdcs = [];
+    for (let i = 0; i < cOrbs.length; ++i) {
+      for (const D of cOrbs[i])
+        cIdcs[D] = i;
+    }
+
+    const faces = [];
+    for (const orb of props.orbits(cov, [0, 1], elms)) {
+      if (ori[orb[0]] > 0)
+        orb.reverse();
+
+      const f = [];
+      for (let i = 0; i < orb.length; i += 2)
+        f.push(cIdcs[orb[i]]);
+
+      faces.push(f);
+    }
+
+    result.push(makeSurface(cPos, faces));
   }
 
   return result;
