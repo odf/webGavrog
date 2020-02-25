@@ -200,12 +200,14 @@ const nonDegenerateChamber = (elms, pos) =>
   elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
 
 
-const adjustedOrientation = (cov, pos) => {
-  const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const sgn = opsQ.sgn(chamberDeterminant(pos[D0]));
-
+const normalizedOrientation = (cov, pos) => {
   const ori = props.partialOrientation(cov);
-  if (sgn * ori[D0] < 0) {
+
+  let vol = opsQ.vector(cov.dim);
+  for (const D of cov.elements())
+    vol = opsQ.plus(vol, opsQ.times(ori[D], chamberDeterminant(pos[D])));
+
+  if (opsQ.sgn(vol) < 0) {
     for (const D of cov.elements())
       ori[D] = -ori[D];
   }
@@ -220,10 +222,7 @@ export const makeCover = ds =>
   delaney2d.toroidalCover(ds);
 
 
-const tileSurface3D = (pos, faces) => ({ pos, faces });
-
-
-const tileSurface2D = (corners, faces) => {
+const postprocessSurface2D = (corners, faces) => {
   const pos = [];
   for (const p of corners) {
     pos.push(p.concat(-0.1));
@@ -243,37 +242,38 @@ const tileSurface2D = (corners, faces) => {
 
 
 export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
-  const makeSurface = cov.dim == 3 ? tileSurface3D : tileSurface2D;
-  const pos = chamberPositions(cov, skel);
-  const ori = adjustedOrientation(cov, pos);
+  const ori = normalizedOrientation(cov, chamberPositions(cov, skel));
   const result = [];
 
   for (const D of seeds) {
-    const elms = props.orbit(cov, range(0, cov.dim), D);
-    const cOrbs = props.orbits(cov, range(1, cov.dim), elms);
-    const cPos = cOrbs.map(([D]) => opsF.plus(
+    const tile = props.orbit(cov, range(0, cov.dim), D);
+    const corner = props.orbits(cov, range(1, cov.dim), tile);
+    const pos = corner.map(([D]) => opsF.plus(
       vertexPos[skel.chamber2node[D]], skel.cornerShifts[D][0]
     ));
 
-    const cIdcs = [];
-    for (let i = 0; i < cOrbs.length; ++i) {
-      for (const D of cOrbs[i])
-        cIdcs[D] = i;
+    const cornerForChamber = [];
+    for (let i = 0; i < corner.length; ++i) {
+      for (const D of corner[i])
+        cornerForChamber[D] = i;
     }
 
     const faces = [];
-    for (const orb of props.orbits(cov, [0, 1], elms)) {
+    for (const orb of props.orbits(cov, [0, 1], tile)) {
       if (ori[orb[0]] > 0)
         orb.reverse();
 
       const f = [];
       for (let i = 0; i < orb.length; i += 2)
-        f.push(cIdcs[orb[i]]);
+        f.push(cornerForChamber[orb[i]]);
 
       faces.push(f);
     }
 
-    result.push(makeSurface(cPos, faces));
+    if (cov.dim == 2)
+      result.push(postprocessSurface2D(pos, faces));
+    else
+      result.push({ pos, faces });
   }
 
   return result;
