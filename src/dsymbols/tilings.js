@@ -21,7 +21,7 @@ import {
 } from '../common/pickler';
 
 
-const range = n => [...Array(n).keys()];
+const range = (from, to) => [...Array(to).keys()].slice(from);
 const remainingIndices = (ds, i) => ds.indices().filter(j => j != i);
 
 
@@ -161,7 +161,7 @@ export const chamberPositions = (cov, skel) => {
   }
 
   for (let i = 1; i <= cov.dim; ++i) {
-    for (const orb of props.orbits(cov, range(i))) {
+    for (const orb of props.orbits(cov, range(0, i))) {
       let sum = opsQ.vector(cov.dim);
       for (const D of orb)
         sum = opsQ.plus(sum, opsQ.minus(corners[D], shifts[D][i]));
@@ -228,21 +228,29 @@ const tileSurface2D = (corners, faces) => {
 };
 
 
-const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
-  const cOrbs = props.orbits(cov, idcs.slice(1), elms);
+const tileSurface = (cov, skel, pos, ori, elms) => {
+  const cOrbs = props.orbits(cov, range(1, cov.dim), elms);
   const cPos = cOrbs.map(
     ([D]) => opsF.plus(pos[skel.chamber2node[D]], skel.cornerShifts[D][0])
   );
 
   const cIdcs = [];
-  cOrbs.forEach((orb, i) => {
-    for (const D of orb)
+  for (let i = 0; i < cOrbs.length; ++i) {
+    for (const D of cOrbs[i])
       cIdcs[D] = i;
-  });
+  }
 
-  const faces = props.orbits(cov, [0, 1], elms)
-    .map(orb => ori[orb[0]] > 0 ? orb.reverse() : orb)
-    .map(orb => orb.filter((D, i) => i % 2 == 0).map(D => cIdcs[D]));
+  const faces = [];
+  for (const orb of props.orbits(cov, [0, 1], elms)) {
+    if (ori[orb[0]] > 0)
+      orb.reverse();
+
+    const f = [];
+    for (let i = 0; i < orb.length; i += 2)
+      f.push(cIdcs[orb[i]]);
+
+    faces.push(f);
+  }
 
   return (cov.dim == 3 ? tileSurface3D : tileSurface2D)(cPos, faces);
 };
@@ -263,13 +271,12 @@ const adjustedOrientation = (cov, pos) => {
 
 
 export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
-  const dim = cov.dim;
-  const idcs = range(dim);
+  const idcs = range(0, cov.dim);
   const pos = chamberPositions(cov, skel);
   const ori = adjustedOrientation(cov, pos);
 
   return orbitReps.map(D => tileSurface(
-    cov, skel, vertexPos, ori, props.orbit(cov, idcs, D), idcs));
+    cov, skel, vertexPos, ori, props.orbit(cov, idcs, D)));
 };
 
 
@@ -305,7 +312,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const pos = chamberPositions(cov, skel);
   const Dx = nonDegenerateChamber(ds.elements(), pos);
   const phi = props.morphism(cov, ds, 1, 1);
-  const idcs = range(dim);
+  const idcs = range(0, dim);
   const tileOrbits = props.orbits(cov, idcs);
 
   const orbitReps = [];
