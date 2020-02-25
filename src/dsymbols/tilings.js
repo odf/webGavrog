@@ -200,6 +200,20 @@ const nonDegenerateChamber = (elms, pos) =>
   elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
 
 
+const adjustedOrientation = (cov, pos) => {
+  const D0 = nonDegenerateChamber(cov.elements(), pos);
+  const sgn = opsQ.sgn(chamberDeterminant(pos[D0]));
+
+  const ori = props.partialOrientation(cov);
+  if (sgn * ori[D0] < 0) {
+    for (const D of cov.elements())
+      ori[D] = -ori[D];
+  }
+
+  return ori;
+};
+
+
 export const makeCover = ds =>
   ds.dim == 3 ?
   delaney3d.pseudoToroidalCover(ds) :
@@ -256,27 +270,18 @@ const tileSurface = (cov, skel, pos, ori, elms) => {
 };
 
 
-const adjustedOrientation = (cov, pos) => {
-  const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const sgn = opsQ.sgn(chamberDeterminant(pos[D0]));
-
-  const ori = props.partialOrientation(cov);
-  if (sgn * ori[D0] < 0) {
-    for (const D of cov.elements())
-      ori[D] = -ori[D];
-  }
-
-  return ori;
-};
-
-
 export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
-  const idcs = range(0, cov.dim);
   const pos = chamberPositions(cov, skel);
   const ori = adjustedOrientation(cov, pos);
 
-  return orbitReps.map(D => tileSurface(
-    cov, skel, vertexPos, ori, props.orbit(cov, idcs, D)));
+  const result = [];
+
+  for (const D of orbitReps) {
+    const elms = props.orbit(cov, range(0, cov.dim), D);
+    result.push(tileSurface(cov, skel, vertexPos, ori, elms));
+  }
+
+  return result;
 };
 
 
