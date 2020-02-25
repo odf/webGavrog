@@ -151,11 +151,12 @@ export const facePreservingSymmetries = (cov, skel) => {
 
 export const chamberPositions = (cov, skel) => {
   const pos = periodic.barycentricPlacement(skel.graph);
+  const shifts = skel.cornerShifts;
   const corners = {};
   const result = {};
 
   for (const D of cov.elements()) {
-    corners[D] = opsQ.plus(pos[skel.chamber2node[D]], skel.cornerShifts[D][0]);
+    corners[D] = opsQ.plus(pos[skel.chamber2node[D]], shifts[D][0]);
     result[D] = [corners[D]];
   }
 
@@ -163,12 +164,12 @@ export const chamberPositions = (cov, skel) => {
     for (const orb of props.orbits(cov, range(i))) {
       let sum = opsQ.vector(cov.dim);
       for (const D of orb)
-        sum = opsQ.plus(sum, opsQ.minus(corners[D], skel.cornerShifts[D][i]));
+        sum = opsQ.plus(sum, opsQ.minus(corners[D], shifts[D][i]));
 
       const center = opsQ.div(sum, orb.length);
 
       for (const D of orb)
-        result[D].push(opsQ.plus(center, skel.cornerShifts[D][i]));
+        result[D].push(opsQ.plus(center, shifts[D][i]));
     }
   }
 
