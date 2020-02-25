@@ -177,16 +177,18 @@ export const chamberPositions = (cov, skel) => {
 };
 
 
-const chamberBasis = (pos, D) => {
-  const t = pos[D];
-  return t.slice(1).map(v => opsQ.minus(v, t[0]));
-};
+const chamberBasis = corners =>
+  corners.slice(1).map(v => opsQ.minus(v, corners[0]));
 
 
-const determinant = M => {
+const chamberDeterminant = corners => {
+  const M = chamberBasis(corners);
+
   if (M.length == 2)
-    return opsQ.minus(opsQ.times(M[0][0], M[1][1]),
-                      opsQ.times(M[0][1], M[1][0]));
+    return opsQ.minus(
+      opsQ.times(M[0][0], M[1][1]),
+      opsQ.times(M[0][1], M[1][0])
+    );
   else if (M.length == 3)
     return opsQ.times(M[0], opsQ.crossProduct(M[1], M[2]));
   else
@@ -194,11 +196,8 @@ const determinant = M => {
 };
 
 
-const chamberDeterminant = (pos, D) => determinant(chamberBasis(pos, D));
-
-
 const nonDegenerateChamber = (elms, pos) =>
-  elms.find(D => opsQ.ne(chamberDeterminant(pos, D), 0));
+  elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
 
 
 export const makeCover = ds =>
@@ -251,7 +250,7 @@ const tileSurface = (cov, skel, pos, ori, elms, idcs) => {
 
 const adjustedOrientation = (cov, pos) => {
   const D0 = nonDegenerateChamber(cov.elements(), pos);
-  const sgn = opsQ.sgn(chamberDeterminant(pos, D0));
+  const sgn = opsQ.sgn(chamberDeterminant(pos[D0]));
 
   const ori = props.partialOrientation(cov);
   if (sgn * ori[D0] < 0) {
@@ -275,7 +274,7 @@ export const tileSurfaces = (cov, skel, vertexPos, orbitReps) => {
 
 
 const affineSymmetry = (D0, D1, E0, E1, pos) => {
-  const bas = D => chamberBasis(pos, D);
+  const bas = D => chamberBasis(pos[D]);
   const linear = opsQ.solve(bas(D0), bas(D1));
   const shift = opsQ.minus(pos[E1][0], opsQ.times(pos[E0][0], linear));
 
