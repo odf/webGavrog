@@ -242,22 +242,16 @@ export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
       vertexPos[skel.chamber2node[D]], skel.cornerShifts[D][0]
     ));
 
-    const cornerForChamber = [];
+    const cornerIndex = [];
     for (let i = 0; i < corner.length; ++i) {
       for (const D of corner[i])
-        cornerForChamber[D] = i;
+        cornerIndex[D] = i;
     }
 
     const faces = [];
-    for (const orb of props.orbits(cov, [0, 1], tile)) {
-      if (ori[orb[0]] > 0)
-        orb.reverse();
-
-      const f = [];
-      for (let i = 0; i < orb.length; i += 2)
-        f.push(cornerForChamber[orb[i]]);
-
-      faces.push(f);
+    for (const D of props.orbitReps(cov, [0, 1], tile)) {
+      const orb = props.orbit(cov, [0, 1], ori[D] > 0 ? cov.s(1, D) : D);
+      faces.push(orb.filter((_, i) => i % 2 == 0).map(D => cornerIndex[D]));
     }
 
     if (cov.dim == 2)
