@@ -196,10 +196,6 @@ const chamberDeterminant = corners => {
 };
 
 
-const nonDegenerateChamber = (elms, pos) =>
-  elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
-
-
 const normalizedOrientation = (cov, pos) => {
   const ori = props.partialOrientation(cov);
 
@@ -214,12 +210,6 @@ const normalizedOrientation = (cov, pos) => {
 
   return ori;
 };
-
-
-export const makeCover = ds =>
-  ds.dim == 3 ?
-  delaney3d.pseudoToroidalCover(ds) :
-  delaney2d.toroidalCover(ds);
 
 
 const postprocessSurface2D = (corners, faces) => {
@@ -298,6 +288,10 @@ export const deckTransformations = (ds, cov) => {
 };
 
 
+const nonDegenerateChamber = (elms, pos) =>
+  elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
+
+
 export const affineSymmetries = (ds, cov, skel) => {
   const pos = chamberPositions(cov, skel);
   const D0 = nonDegenerateChamber(ds.elements(), pos);
@@ -367,6 +361,12 @@ export const tilesByTranslations = (ds, cov, skel) => {
 
   return { orbitReps, tiles, centers };
 };
+
+
+export const makeCover = ds =>
+  ds.dim == 3 ?
+  delaney3d.pseudoToroidalCover(ds) :
+  delaney2d.toroidalCover(ds);
 
 
 if (require.main == module) {
