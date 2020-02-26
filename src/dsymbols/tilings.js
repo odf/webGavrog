@@ -267,8 +267,7 @@ export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
 
 
 const affineSymmetry = (D0, D1, E0, E1, pos) => {
-  const bas = D => chamberBasis(pos[D]);
-  const linear = opsQ.solve(bas(D0), bas(D1));
+  const linear = opsQ.solve(chamberBasis(pos[D0]), chamberBasis(pos[D1]));
   const shift = opsQ.minus(pos[E1][0], opsQ.times(pos[E0][0], linear));
 
   return opsQ.affineTransformation(opsQ.transposed(linear), shift);
