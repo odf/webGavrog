@@ -233,22 +233,30 @@ const extrudeFace = (corners, faceIn, offset=0.1) => {
 };
 
 
+const orbitIndex = (ds, idcs, seeds) => {
+  const orbits = props.orbits(ds, idcs, seeds);
+
+  const result = {};
+  for (let i = 0; i < orbits.length; ++i) {
+    for (const D of orbits[i])
+      result[D] = i;
+  }
+
+  return result;
+}
+
+
 export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
   const ori = normalizedOrientation(cov, chamberPositions(cov, skel));
   const result = [];
 
   for (const D of seeds) {
     const tile = props.orbit(cov, range(0, cov.dim), D);
-    const corner = props.orbits(cov, range(1, cov.dim), tile);
-    const pos = corner.map(([D]) => opsF.plus(
-      vertexPos[skel.chamber2node[D]], skel.cornerShifts[D][0]
-    ));
+    const cornerIndex = orbitIndex(cov, range(1, cov.dim), tile);
 
-    const cornerIndex = [];
-    for (let i = 0; i < corner.length; ++i) {
-      for (const D of corner[i])
-        cornerIndex[D] = i;
-    }
+    const pos = props.orbitReps(cov, range(1, cov.dim), tile).map(
+      D => opsF.plus(vertexPos[skel.chamber2node[D]], skel.cornerShifts[D][0])
+    );
 
     const faces = [];
     for (const D of props.orbitReps(cov, [0, 1], tile)) {
@@ -296,29 +304,21 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const Dx = cov.elements().find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
   const proj = props.morphism(cov, ds, 1, 1);
 
+  const tileClassIndex = orbitIndex(ds, range(0, cov.dim));
+  const tileLatticeIndex = orbitIndex(cov, range(0, cov.dim));
+
   const orbitReps = [];
-  const dsChamberToClassIndex = {};
-  const covChamberToLatticeIndex = {};
   const tiles = [];
 
   for (const elms of props.orbits(cov, range(0, cov.dim))) {
-    const E0 = proj[elms[0]];
+    const classIndex = tileClassIndex[proj[elms[0]]];
+    if (orbitReps[classIndex] == null)
+      orbitReps[classIndex] = elms[0];
 
-    if (dsChamberToClassIndex[E0] == null) {
-      for (const E of props.orbit(ds, range(0, cov.dim), E0))
-        dsChamberToClassIndex[E] = orbitReps.length;
-
-      orbitReps.push(elms[0]);
-    }
-
-    const classIndex = dsChamberToClassIndex[E0];
     const D0 = orbitReps[classIndex];
     const D1 = elms.find(D => proj[D] == proj[D0]);
     const psi = props.morphism(cov, cov, D0, D1)
     const symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
-
-    for (const E of elms)
-      covChamberToLatticeIndex[E] = tiles.length;
 
     tiles.push({ classIndex, symmetry, chambers: elms });
   }
@@ -327,7 +327,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
     const neighbors = [];
     for (const D of props.orbitReps(cov, [0, 1], tile.chambers)) {
       const E = cov.s(cov.dim, D);
-      const latticeIndex = covChamberToLatticeIndex[E];
+      const latticeIndex = tileLatticeIndex[E];
       const shift = skel.edgeTranslations[D][cov.dim] || opsQ.vector(cov.dim);
       neighbors.push({ latticeIndex, shift });
     }
