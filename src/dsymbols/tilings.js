@@ -300,9 +300,8 @@ export const affineSymmetries = (ds, cov, skel) => {
 
 
 export const tilesByTranslations = (ds, cov, skel) => {
-  const tileIdcs = range(0, cov.dim);
-  const tileClassIndex = orbitIndex(ds, tileIdcs);
-  const tileLatticeIndex = orbitIndex(cov, tileIdcs);
+  const tileClassIndex = orbitIndex(ds, range(0, cov.dim));
+  const tileLatticeIndex = orbitIndex(cov, range(0, cov.dim));
   const proj = props.morphism(cov, ds, 1, 1);
   const pos = chamberPositions(cov, skel);
   const Dx = cov.elements().find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
@@ -310,7 +309,7 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const orbitReps = [];
   const tiles = [];
 
-  for (const chambers of props.orbits(cov, tileIdcs)) {
+  for (const chambers of props.orbits(cov, range(0, cov.dim))) {
     const classIndex = tileClassIndex[proj[chambers[0]]];
     if (orbitReps[classIndex] == null)
       orbitReps[classIndex] = chambers[0];
@@ -320,12 +319,10 @@ export const tilesByTranslations = (ds, cov, skel) => {
     const psi = props.morphism(cov, cov, D0, D1)
     const symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
 
-    const neighbors = [];
-    for (const D of props.orbitReps(cov, [0, 1], chambers)) {
-      const latticeIndex = tileLatticeIndex[cov.s(cov.dim, D)];
-      const shift = skel.edgeTranslations[D][cov.dim] || opsQ.vector(cov.dim);
-      neighbors.push({ latticeIndex, shift });
-    }
+    const neighbors = props.orbitReps(cov, [0, 1], chambers).map(D => ({
+      latticeIndex: tileLatticeIndex[cov.s(cov.dim, D)],
+      shift: skel.edgeTranslations[D][cov.dim] || opsQ.vector(cov.dim)
+    }));
 
     tiles.push({ chambers, classIndex, symmetry, neighbors });
   }
