@@ -1,11 +1,7 @@
 import * as pickler from '../common/pickler';
 
 export const extend = pointAndVectorOps => {
-
   const V = pointAndVectorOps;
-
-  const scalarToString = x => x.toString();
-  const vectorToString = v => '[' + v.map(scalarToString).join(', ') + ']';
 
 
   class AffineTransformation {
@@ -19,10 +15,11 @@ export const extend = pointAndVectorOps => {
     }
 
     toString() {
-      const coordsLin = '[' + this.linear.map(vectorToString).join(', ') + ']';
+      const vectorToString = v => `[${v.join(', ')}]`;
+      const coordsLinear = `[${this.linear.map(vectorToString).join(', ')}]`;
       const coordsShift = vectorToString(this.shift);
 
-      return `AffineTransformation(${coordsLin}, ${coordsShift})`;
+      return `AffineTransformation(${coordsLinear}, ${coordsShift})`;
     }
 
     get __typeName() { return 'AffineTransformation'; }
@@ -39,17 +36,12 @@ export const extend = pointAndVectorOps => {
       )
   );
 
-
-  const I = n => V.identityMatrix(n);
-
-
   const make = (linear, shift) => {
     if (shift == null || V.sgn(shift) == 0)
       return linear;
     else
       return new AffineTransformation(linear, shift);
   };
-
 
   const compose = (t1, t2) => make(
     V.times(t1.linear, t2.linear),
@@ -93,7 +85,7 @@ export const extend = pointAndVectorOps => {
     },
 
     shift: {
-      Vector : v => make(I(v.length), v)
+      Vector : v => make(V.identityMatrix(v.length), v)
     },
 
     inverse: {
