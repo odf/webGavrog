@@ -292,36 +292,33 @@ export const affineSymmetries = (ds, cov, skel) => {
 
 
 export const tilesByTranslations = (ds, cov, skel) => {
-  const dim = cov.dim;
   const pos = chamberPositions(cov, skel);
   const Dx = cov.elements().find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
-  const phi = props.morphism(cov, ds, 1, 1);
-  const idcs = range(0, dim);
-  const tileOrbits = props.orbits(cov, idcs);
+  const proj = props.morphism(cov, ds, 1, 1);
 
   const orbitReps = [];
   const dsChamberToClassIndex = {};
   const covChamberToLatticeIndex = {};
   const tiles = [];
 
-  for (const elms of tileOrbits) {
+  for (const elms of props.orbits(cov, range(0, cov.dim))) {
     const D0 = elms[0];
-    const E0 = phi[D0];
+    const E0 = proj[D0];
 
     let classIndex = dsChamberToClassIndex[E0];
-    let symmetry = opsQ.identityMatrix(dim);
+    let symmetry = opsQ.identityMatrix(cov.dim);
 
     if (classIndex == null) {
       classIndex = orbitReps.length;
 
-      for (const E of props.orbit(ds, idcs, E0))
+      for (const E of props.orbit(ds, range(0, cov.dim), E0))
         dsChamberToClassIndex[E] = classIndex;
 
       orbitReps.push(D0);
     }
     else {
       const D0 = orbitReps[classIndex];
-      const D1 = elms.find(D => phi[D] == phi[D0]);
+      const D1 = elms.find(D => proj[D] == proj[D0]);
       const psi = props.morphism(cov, cov, D0, D1)
       symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
     }
@@ -333,21 +330,21 @@ export const tilesByTranslations = (ds, cov, skel) => {
   }
 
   const e2t = makeEdgeTranslations(cov);
-  const zero = Array(dim).fill(0);
+  const zero = Array(cov.dim).fill(0);
 
   for (const tile of tiles) {
     const neighbors = [];
     for (const D of props.orbitReps(cov, [0, 1], tile.chambers)) {
-      const E = cov.s(dim, D);
+      const E = cov.s(cov.dim, D);
       const latticeIndex = covChamberToLatticeIndex[E];
-      const shift = e2t[D][dim] || zero;
+      const shift = e2t[D][cov.dim] || zero;
       neighbors.push({ latticeIndex, shift });
     }
 
     tile.neighbors = neighbors;
   }
 
-  const centers = orbitReps.map(D => pos[D][dim]);
+  const centers = orbitReps.map(D => pos[D][cov.dim]);
 
   return { orbitReps, tiles, centers };
 };
