@@ -302,26 +302,20 @@ export const tilesByTranslations = (ds, cov, skel) => {
   const tiles = [];
 
   for (const elms of props.orbits(cov, range(0, cov.dim))) {
-    const D0 = elms[0];
-    const E0 = proj[D0];
+    const E0 = proj[elms[0]];
 
-    let classIndex = dsChamberToClassIndex[E0];
-    let symmetry = opsQ.identityMatrix(cov.dim);
-
-    if (classIndex == null) {
-      classIndex = orbitReps.length;
-
+    if (dsChamberToClassIndex[E0] == null) {
       for (const E of props.orbit(ds, range(0, cov.dim), E0))
-        dsChamberToClassIndex[E] = classIndex;
+        dsChamberToClassIndex[E] = orbitReps.length;
 
-      orbitReps.push(D0);
+      orbitReps.push(elms[0]);
     }
-    else {
-      const D0 = orbitReps[classIndex];
-      const D1 = elms.find(D => proj[D] == proj[D0]);
-      const psi = props.morphism(cov, cov, D0, D1)
-      symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
-    }
+
+    const classIndex = dsChamberToClassIndex[E0];
+    const D0 = orbitReps[classIndex];
+    const D1 = elms.find(D => proj[D] == proj[D0]);
+    const psi = props.morphism(cov, cov, D0, D1)
+    const symmetry = affineSymmetry(Dx, psi[Dx], D0, D1, pos);
 
     for (const E of elms)
       covChamberToLatticeIndex[E] = tiles.length;
@@ -329,15 +323,12 @@ export const tilesByTranslations = (ds, cov, skel) => {
     tiles.push({ classIndex, symmetry, chambers: elms });
   }
 
-  const e2t = makeEdgeTranslations(cov);
-  const zero = Array(cov.dim).fill(0);
-
   for (const tile of tiles) {
     const neighbors = [];
     for (const D of props.orbitReps(cov, [0, 1], tile.chambers)) {
       const E = cov.s(cov.dim, D);
       const latticeIndex = covChamberToLatticeIndex[E];
-      const shift = e2t[D][cov.dim] || zero;
+      const shift = skel.edgeTranslations[D][cov.dim] || opsQ.vector(cov.dim);
       neighbors.push({ latticeIndex, shift });
     }
 
