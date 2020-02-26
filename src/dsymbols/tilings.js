@@ -266,10 +266,6 @@ export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
 };
 
 
-const nonDegenerateChamber = (elms, pos) =>
-  elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
-
-
 const affineSymmetry = (D0, D1, E0, E1, pos) => {
   const bas = D => chamberBasis(pos[D]);
   const linear = opsQ.solve(bas(D0), bas(D1));
@@ -282,7 +278,7 @@ const affineSymmetry = (D0, D1, E0, E1, pos) => {
 export const affineSymmetries = (ds, cov, skel) => {
   const proj = props.morphism(cov, ds, 1, 1);
   const pos = chamberPositions(cov, skel);
-  const D0 = nonDegenerateChamber(ds.elements(), pos);
+  const D0 = cov.elements().find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
 
   const result = [];
   for (const D of cov.elements()) {
@@ -299,7 +295,7 @@ export const affineSymmetries = (ds, cov, skel) => {
 export const tilesByTranslations = (ds, cov, skel) => {
   const dim = cov.dim;
   const pos = chamberPositions(cov, skel);
-  const Dx = nonDegenerateChamber(ds.elements(), pos);
+  const Dx = cov.elements().find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
   const phi = props.morphism(cov, ds, 1, 1);
   const idcs = range(0, dim);
   const tileOrbits = props.orbits(cov, idcs);
