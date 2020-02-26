@@ -212,20 +212,22 @@ const normalizedOrientation = (cov, pos) => {
 };
 
 
-const postprocessSurface2D = (corners, faces) => {
+const extrudeFace = (corners, faceIn, offset=0.1) => {
   const pos = [];
   for (const p of corners) {
-    pos.push(p.concat(-0.1));
-    pos.push(p.concat(0.1));
+    pos.push(p.concat(-offset));
+    pos.push(p.concat(offset));
   }
 
-  const f = faces[0].map(i => 2 * i);
+  const f = faceIn.map(i => 2 * i);
+  const n = f.length;
 
-  faces = [f, f.map(x => x + 1).reverse()]
-    .concat(f.map((x, i) => {
-      const y = f[(i + 1) % f.length];
-      return [y, x, x + 1, y + 1];
-    }));
+  const faces = [f, f.map(x => x + 1).reverse()];
+  for (let i = 0; i < n; ++i) {
+    const x = f[i];
+    const y = f[(i + 1) % n];
+    faces.push([y, x, x + 1, y + 1]);
+  }
 
   return { pos, faces };
 };
@@ -255,7 +257,7 @@ export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
     }
 
     if (cov.dim == 2)
-      result.push(postprocessSurface2D(pos, faces));
+      result.push(extrudeFace(pos, faces[0]));
     else
       result.push({ pos, faces });
   }
