@@ -266,6 +266,10 @@ export const tileSurfaces = (cov, skel, vertexPos, seeds) => {
 };
 
 
+const nonDegenerateChamber = (elms, pos) =>
+  elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
+
+
 const affineSymmetry = (D0, D1, E0, E1, pos) => {
   const bas = D => chamberBasis(pos[D]);
   const linear = opsQ.solve(bas(D0), bas(D1));
@@ -275,25 +279,20 @@ const affineSymmetry = (D0, D1, E0, E1, pos) => {
 };
 
 
-export const deckTransformations = (ds, cov) => {
-  const phi = props.morphism(cov, ds, 1, 1);
-
-  return cov.elements()
-    .filter(D => phi[D] == 1)
-    .map(D => props.morphism(cov, cov, D, 1));
-};
-
-
-const nonDegenerateChamber = (elms, pos) =>
-  elms.find(D => opsQ.ne(chamberDeterminant(pos[D]), 0));
-
-
 export const affineSymmetries = (ds, cov, skel) => {
+  const proj = props.morphism(cov, ds, 1, 1);
   const pos = chamberPositions(cov, skel);
   const D0 = nonDegenerateChamber(ds.elements(), pos);
-  const syms = deckTransformations(ds, cov);
 
-  return syms.map(phi => affineSymmetry(D0, phi[D0], D0, phi[D0], pos));
+  const result = [];
+  for (const D of cov.elements()) {
+    if (proj[D] == 1) {
+      const phi = props.morphism(cov, cov, D, 1);
+      result.push(affineSymmetry(D0, phi[D0], D0, phi[D0], pos));
+    }
+  }
+
+  return result;
 };
 
 
