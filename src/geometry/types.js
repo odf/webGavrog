@@ -33,7 +33,7 @@ if (require.main == module) {
 
   const t = ops.times(ops.shift([1,1,1]), [[1,1,0],[1,2,0],[0,0,1]]);
 
-  //console.log(`${ops.div(ops.plus(ops.origin(3), [1,2,3]), ops.div(3, 2))}`);
+  console.log(`${ops.div(ops.plus(ops.origin(3), [1,2,3]), ops.div(3, 2))}`);
   console.log(`${ops.minus(ops.point([2,4,0]), ops.point([0,1,1]))}`);
   console.log(`${ops.minus(ops.point([2,4,0]), [0,1,1])}`);
   console.log(`${ops.times([[1,2],[3,4]], ops.point([1,2]))}`);

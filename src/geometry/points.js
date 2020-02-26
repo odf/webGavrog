@@ -1,7 +1,5 @@
 export const extend = (vectorOps, scalarTypes) => {
-
   const V = vectorOps;
-
 
   class Point {
     constructor(coords) {
@@ -9,20 +7,18 @@ export const extend = (vectorOps, scalarTypes) => {
     }
 
     toString() {
-      return 'Point(' + this.coords.map(x => x.toString()).join(', ') + ')';
+      return `Point(${this.coords.join(', ')})`;
     }
 
     get __typeName() { return 'Point'; }
   };
 
 
-  const array = n => Array(n).fill(0);
-
   const methods = {
     __context__: () => `points(${vectorOps.__context__()})`,
 
     origin: {
-      Integer: n => new Point(array(n))
+      Integer: n => new Point(V.vector(n))
     },
 
     point: {
