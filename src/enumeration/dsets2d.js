@@ -1,10 +1,5 @@
 import { backtrack } from '../common/iterators';
-import * as timing from '../common/timing';
-
 import * as DS from '../dsymbols/delaney';
-
-
-const timers = timing.timers();
 
 
 const _firstUndefined = data => {
@@ -27,8 +22,6 @@ const _set = (data, i, D, E) => {
 
 
 const _makeDelaneySet = data => {
-  timers && timers.start('make delaney set');
-
   const dim = 2;
   const size = _size(data);
 
@@ -38,8 +31,6 @@ const _makeDelaneySet = data => {
     for (let i = 0; i <= dim; ++i)
       s[i * size + D - 1] = _get(data, i, D);
   }
-
-  timers && timers.stop('make delaney set');
 
   return DS.makeDSymbol(dim, s, new Array(dim * size).fill(0));
 };
@@ -64,8 +55,6 @@ const _scan02Orbit = (data, D) => {
 
 
 const _potentialChildren = (data, maxSize) => {
-  timers && timers.start('potential children');
-
   const size = _size(data);
   const limit = Math.min(size + 1, maxSize);
   const undef = _firstUndefined(data);
@@ -94,8 +83,6 @@ const _potentialChildren = (data, maxSize) => {
       }
     }
   }
-
-  timers && timers.stop('potential children');
 
   return result;
 };
@@ -128,8 +115,6 @@ const _compareRenumberedFrom = (data, D0) => {
 
 
 const _isCanonical = data => {
-  timers && timers.start('is canonical');
-
   let result = true;
 
   for (let D = 1; D <= _size(data); ++D) {
@@ -138,8 +123,6 @@ const _isCanonical = data => {
       break;
     }
   }
-
-  timers && timers.stop('is canonical');
 
   return result;
 };
