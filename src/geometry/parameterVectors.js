@@ -1,6 +1,6 @@
 export const extend = (scalarOps, scalarTypes) => {
-
   const s = scalarOps;
+
 
   class ParameterVector {
     constructor(coords) {
@@ -8,8 +8,7 @@ export const extend = (scalarOps, scalarTypes) => {
     }
 
     toString() {
-      const coords = this.coords.map(x => x.toString()).join(', ');
-      return `ParameterVector(${coords})`;
+      return `ParameterVector(${this.coords.join(', ')})`;
     }
 
     get __typeName() { return 'ParameterVector'; }
@@ -23,19 +22,15 @@ export const extend = (scalarOps, scalarTypes) => {
       throw new Error('size mismatch');
   };
 
-
   const make = v => new ParameterVector(v);
-
 
   const map = {
     V : f => v => make(v.coords.map(x => f(x))),
     VS: f => (v, s) => make(v.coords.map(x => f(x, s))),
     SV: f => (s, v) => make(v.coords.map(x => f(s, x))),
-    VV: f => (v, w) => checkLen(v, w) && make(v.coords.map(
-      (x, i) => f(x, w.coords[i])))
+    VV: f => (v, w) =>
+      checkLen(v, w) && make(v.coords.map((x, i) => f(x, w.coords[i])))
   };
-
-  const array = n => Array(n).fill(0);
 
 
   const methods = {
@@ -47,7 +42,7 @@ export const extend = (scalarOps, scalarTypes) => {
 
     unitParameterVector: {
       Integer: {
-        Integer: (n, k) => make(array(n).fill(1, k, k+1))
+        Integer: (n, k) => make(Array(n).fill(0).fill(1, k, k+1))
       }
     },
 
