@@ -42,6 +42,14 @@ const newCurvature = (curv, loopless, v) =>
   opsQ.plus(curv, opsQ.times(loopless ? 2 : 1, opsQ.minus(opsQ.div(1, v), 1)));
 
 
+const withBranching = (ds, i, D, v) => {
+  const orb = ds.orbit2(i, i+1, D);
+  const getV = (j, E) => j == i && orb.includes(E) ? v : ds.v(j, j+1, E);
+
+  return delaney.buildDSymbol({ getV }, ds);
+};
+
+
 export const branchings = (
   ds,
   faceSizesAtLeast = 3,
@@ -69,11 +77,7 @@ export const branchings = (
           const limit = i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast;
 
           if (opsQ.ge(newCurv, curvatureAtLeast) && r * v >= limit)
-            out.push([
-              delaney.withBranchings(ds, i, [[D, v]]),
-              newCurv,
-              unused.slice(1)
-            ]);
+            out.push([ withBranching(ds, i, D, v), newCurv, unused.slice(1) ]);
         }
 
         return out;
