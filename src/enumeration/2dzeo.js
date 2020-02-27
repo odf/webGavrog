@@ -1,8 +1,11 @@
-import * as branch from '../dsymbols/branchings2d';
+import { seq } from '../common/lazyseq';
+
 import * as covers from '../dsymbols/covers';
 import * as DS from '../dsymbols/delaney';
 import * as DS2D from '../dsymbols/delaney2d';
 import * as props from '../dsymbols/properties';
+
+import * as branch from './branchings2d';
 
 
 const noEdgeSharingQuads = ds => DS.orbitReps2(ds, 0, 2)
@@ -12,7 +15,7 @@ const noEdgeSharingQuads = ds => DS.orbitReps2(ds, 0, 2)
 if (require.main == module) {
   const n = parseInt(process.argv[2])
 
-  covers.covers(DS.parse('<1.1:1:1,1,1:0,3>'), n * 6)
+  seq(covers.covers(DS.parse('<1.1:1:1,1,1:0,3>'), n * 6))
     .filter(ds => DS.orbitReps2(ds, 1, 2).length == n)
     .filter(DS2D.isProtoEuclidean)
     .flatMap(ds => branch.branchings(ds, 4))
