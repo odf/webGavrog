@@ -3,8 +3,7 @@ import * as DS from '../dsymbols/delaney';
 import * as DS2D from '../dsymbols/delaney2d';
 import * as props from '../dsymbols/properties';
 
-import { rationals } from '../arithmetic/types';
-const Q = rationals;
+import { rationals as opsQ } from '../arithmetic/types';
 
 
 const _loopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
@@ -40,7 +39,7 @@ const _isCanonical = (ds, maps) => maps.every(m => _compareMapped(ds, m) >= 0);
 
 
 const _newCurvature = (curv, loopless, v) =>
-  Q.plus(curv, Q.times(loopless ? 2 : 1, Q.minus(Q.div(1, v), 1)));
+  opsQ.plus(curv, opsQ.times(loopless ? 2 : 1, opsQ.minus(opsQ.div(1, v), 1)));
 
 
 export const branchings = (
@@ -53,7 +52,7 @@ export const branchings = (
   const maps = props.automorphisms(ds);
 
   const isCandidate = (curv, i, D, r, loopless, v) =>
-    Q.cmp(_newCurvature(curv, loopless, v), curvatureAtLeast) >= 0 &&
+    opsQ.cmp(_newCurvature(curv, loopless, v), curvatureAtLeast) >= 0 &&
     r * v >= (i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast);
 
   return backtrack({
