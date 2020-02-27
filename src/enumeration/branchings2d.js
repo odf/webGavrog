@@ -6,17 +6,17 @@ import * as props from '../dsymbols/properties';
 import { rationals as opsQ } from '../arithmetic/types';
 
 
-const _loopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
+const isLoopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
   .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
-const _openOrbits = ds => {
+const openOrbits = ds => {
   const result = [];
 
   for (const [i, j] of [[0, 1], [1, 2]]) {
     for (const D of DS.orbitReps2(ds, i, j)) {
       if (!ds.v(i, j, D))
-        result.push([i, D, DS.r(ds, i, j, D), _loopless(ds, i, j, D)]);
+        result.push([i, D, DS.r(ds, i, j, D), isLoopless(ds, i, j, D)]);
     }
   }
 
@@ -24,7 +24,7 @@ const _openOrbits = ds => {
 };
 
 
-const _compareMapped = (ds, m) => {
+const compareMapped = (ds, m) => {
   for (const D of ds.elements()) {
     for (const [i, j] of [[0, 1], [1, 2]]) {
       const d = ds.v(i, j, D) - ds.v(i, j, m[D]);
@@ -35,10 +35,10 @@ const _compareMapped = (ds, m) => {
 };
 
 
-const _isCanonical = (ds, maps) => maps.every(m => _compareMapped(ds, m) >= 0);
+const isCanonical = (ds, maps) => maps.every(m => compareMapped(ds, m) >= 0);
 
 
-const _newCurvature = (curv, loopless, v) =>
+const newCurvature = (curv, loopless, v) =>
   opsQ.plus(curv, opsQ.times(loopless ? 2 : 1, opsQ.minus(opsQ.div(1, v), 1)));
 
 
@@ -52,14 +52,14 @@ export const branchings = (
   const maps = props.automorphisms(ds);
 
   const isCandidate = (curv, i, D, r, loopless, v) =>
-    opsQ.cmp(_newCurvature(curv, loopless, v), curvatureAtLeast) >= 0 &&
+    opsQ.cmp(newCurvature(curv, loopless, v), curvatureAtLeast) >= 0 &&
     r * v >= (i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast);
 
   return backtrack({
-    root: [ds, DS2D.curvature(ds), _openOrbits(ds)],
+    root: [ds, DS2D.curvature(ds), openOrbits(ds)],
 
     extract([ds, curv, unused]) {
-      if (unused.length == 0 && _isCanonical(ds, maps))
+      if (unused.length == 0 && isCanonical(ds, maps))
         return ds;
     },
 
@@ -71,7 +71,7 @@ export const branchings = (
           .filter(v => isCandidate(curv, i, D, r, loopless, v))
           .map(v => [
             DS.withBranchings(ds, i, [[D, v]]),
-            _newCurvature(curv, loopless, v),
+            newCurvature(curv, loopless, v),
             unused.slice(1)
           ]);
       }
