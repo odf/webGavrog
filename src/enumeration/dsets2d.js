@@ -55,20 +55,16 @@ const potentialChildren = (data, maxSize) => {
     const [D, i] = undef;
 
     for (let E = D; E <= limit; ++E) {
-      if (E > size)
-        data = data.concat([null, null, null]);
-
       if (get(data, i, E) == null) {
-        const out = data.slice();
+        const out = E > size ? data.concat([null, null, null]) : data.slice();
         set(out, i, D, E);
 
         const [head, tail, gap, k] = scan02Orbit(out, D);
 
-        if (gap == 1) {
+        if (gap == 1)
           set(out, k, head, tail);
-          result.push(out);
-        }
-        else if (gap > 0 || head == tail)
+
+        if (gap > 0 || head == tail)
           result.push(out);
       }
     }
