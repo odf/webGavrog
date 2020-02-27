@@ -1,5 +1,5 @@
 import { backtrack } from '../common/iterators';
-import * as DS from '../dsymbols/delaney';
+import * as delaney from '../dsymbols/delaney';
 
 
 const firstUndefined = data => {
@@ -32,7 +32,7 @@ const makeDelaneySet = data => {
       s[i * size + D - 1] = get(data, i, D);
   }
 
-  return DS.makeDSymbol(dim, s, new Array(dim * size).fill(0));
+  return delaney.makeDSymbol(dim, s);
 };
 
 
@@ -128,14 +128,14 @@ const isCanonical = data => {
 };
 
 
-export const delaneySets = maxSize => {
-  const root = [null, null, null];
+export const delaneySets = maxSize => backtrack({
+  root: [null, null, null],
 
-  const extract =
-    data => firstUndefined(data) ? null : makeDelaneySet(data);
+  extract(data) {
+    return firstUndefined(data) ? null : makeDelaneySet(data);
+  },
 
-  const children =
-    data => potentialChildren(data, maxSize).filter(isCanonical);
-
-  return backtrack({ extract, root, children });
-}
+  children(data) {
+    return potentialChildren(data, maxSize).filter(isCanonical);
+  }
+});
