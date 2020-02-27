@@ -1,12 +1,12 @@
 import { backtrack } from '../common/iterators';
-import * as DS from '../dsymbols/delaney';
-import * as DS2D from '../dsymbols/delaney2d';
+import * as delaney from '../dsymbols/delaney';
+import * as delaney2d from '../dsymbols/delaney2d';
 import * as props from '../dsymbols/properties';
 
 import { rationals as opsQ } from '../arithmetic/types';
 
 
-const isLoopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
+const isLoopless = (ds, i, j, D) => ds.orbit2(i, j, D)
   .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
@@ -14,9 +14,9 @@ const openOrbits = ds => {
   const result = [];
 
   for (const [i, j] of [[0, 1], [1, 2]]) {
-    for (const D of DS.orbitReps2(ds, i, j)) {
+    for (const D of ds.orbitReps2(i, j)) {
       if (!ds.v(i, j, D))
-        result.push([i, D, DS.r(ds, i, j, D), isLoopless(ds, i, j, D)]);
+        result.push([i, D, ds.r(i, j, D), isLoopless(ds, i, j, D)]);
     }
   }
 
@@ -56,7 +56,7 @@ export const branchings = (
     r * v >= (i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast);
 
   return backtrack({
-    root: [ds, DS2D.curvature(ds), openOrbits(ds)],
+    root: [ds, delaney2d.curvature(ds), openOrbits(ds)],
 
     extract([ds, curv, unused]) {
       if (unused.length == 0 && isCanonical(ds, maps))
@@ -70,7 +70,7 @@ export const branchings = (
         return spinsToTry
           .filter(v => isCandidate(curv, i, D, r, loopless, v))
           .map(v => [
-            DS.withBranchings(ds, i, [[D, v]]),
+            delaney.withBranchings(ds, i, [[D, v]]),
             newCurvature(curv, loopless, v),
             unused.slice(1)
           ]);
