@@ -1,7 +1,7 @@
 import { backtrack } from '../common/iterators';
 import * as timing from '../common/timing';
 
-import * as DS from '../dsymbol/delaney';
+import * as DS from '../dsymbols/delaney';
 
 
 const timers = timing.timers();
