@@ -6,8 +6,8 @@ import * as props from '../dsymbols/properties';
 import { rationals as opsQ } from '../arithmetic/types';
 
 
-const isLoopless = (ds, i, j, D) => ds.orbit2(i, j, D)
-  .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
+const isLoopless = (ds, i, j, D) =>
+  ds.orbit2(i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
 const openOrbits = ds => {
@@ -51,10 +51,6 @@ export const branchings = (
 ) => {
   const maps = props.automorphisms(ds);
 
-  const isCandidate = (curv, i, D, r, loopless, v) =>
-    opsQ.cmp(newCurvature(curv, loopless, v), curvatureAtLeast) >= 0 &&
-    r * v >= (i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast);
-
   return backtrack({
     root: [ds, delaney2d.curvature(ds), openOrbits(ds)],
 
@@ -66,14 +62,21 @@ export const branchings = (
     children([ds, curv, unused]) {
       if (unused.length) {
         const [i, D, r, loopless] = unused[0]
+        const out = [];
 
-        return spinsToTry
-          .filter(v => isCandidate(curv, i, D, r, loopless, v))
-          .map(v => [
-            delaney.withBranchings(ds, i, [[D, v]]),
-            newCurvature(curv, loopless, v),
-            unused.slice(1)
-          ]);
+        for (const v of spinsToTry) {
+          const newCurv = newCurvature(curv, loopless, v);
+          const limit = i == 0 ? faceSizesAtLeast : vertexDegreesAtLeast;
+
+          if (opsQ.ge(newCurv, curvatureAtLeast) && r * v >= limit)
+            out.push([
+              delaney.withBranchings(ds, i, [[D, v]]),
+              newCurv,
+              unused.slice(1)
+            ]);
+        }
+
+        return out;
       }
     }
   });
