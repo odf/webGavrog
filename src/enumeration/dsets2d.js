@@ -21,19 +21,11 @@ const set = (data, i, D, E) => {
 };
 
 
-const makeDelaneySet = data => {
-  const dim = 2;
-  const size = getSize(data);
-
-  const s = new Array((dim + 1) * size).fill(0);
-
-  for (let D = 1; D <= size; ++D) {
-    for (let i = 0; i <= dim; ++i)
-      s[i * size + D - 1] = get(data, i, D);
-  }
-
-  return delaney.makeDSymbol(dim, s);
-};
+const makeDelaneySet = data => delaney.buildDSet({
+  dim: 2,
+  size: getSize(data),
+  getS: (i, D) => get(data, i, D)
+});
 
 
 const scan = (data, w, D, limit) => {
