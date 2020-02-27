@@ -2,22 +2,20 @@ import { backtrack } from '../common/iterators';
 import * as delaney from '../dsymbols/delaney';
 
 
-const firstUndefined = data => {
-  const i = data.indexOf(null);
-  if (i >= 0)
-    return [Math.floor(i / 3) + 1, i % 3];
-};
-
-
 const getSize = data => data.length / 3;
-
-
 const get = (data, i, D) => data[(D - 1) * 3 + i];
 
 
 const set = (data, i, D, E) => {
   data[(D - 1) * 3 + i] = E;
   data[(E - 1) * 3 + i] = D;
+};
+
+
+const firstUndefined = data => {
+  const i = data.indexOf(null);
+  if (i >= 0)
+    return [Math.floor(i / 3) + 1, i % 3];
 };
 
 
@@ -107,16 +105,12 @@ const compareRenumberedFrom = (data, D0) => {
 
 
 const isCanonical = data => {
-  let result = true;
-
   for (let D = 1; D <= getSize(data); ++D) {
-    if (compareRenumberedFrom(data, D) < 0) {
-      result = false;
-      break;
-    }
+    if (compareRenumberedFrom(data, D) < 0)
+      return false;
   }
 
-  return result;
+  return true;
 };
 
 
