@@ -47,13 +47,11 @@ const scan02Orbit = (data, D) => {
 const potentialChildren = (data, maxSize) => {
   const size = getSize(data);
   const limit = Math.min(size + 1, maxSize);
-  const undef = firstUndefined(data);
+  const [D, i] = firstUndefined(data) || [];
 
   const result = [];
 
-  if (undef != null) {
-    const [D, i] = undef;
-
+  if (D != null) {
     for (let E = D; E <= limit; ++E) {
       if (get(data, i, E) == null) {
         const out = E > size ? data.concat([null, null, null]) : data.slice();
