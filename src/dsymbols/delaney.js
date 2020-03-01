@@ -148,8 +148,7 @@ pickler.register(
 );
 
 
-export const makeDSymbol = (dim, s, v) =>
-  Object.freeze(new DSymbol(dim, s, v));
+const makeDSymbol = (dim, s, v) => Object.freeze(new DSymbol(dim, s, v));
 
 
 export const isElement = (ds, D) => ds.isElement(D);
@@ -186,7 +185,7 @@ const assertNonNegative = v =>
   assert(Number.isInteger(v) && v >= 0, `need non-negative integer, got ${v}`);
 
 
-export const withPairings = (ds, i, specs) => {
+const withPairings = (ds, i, specs) => {
   assertIndex(ds, i);
 
   const sNew = ds._s.slice();
@@ -215,7 +214,7 @@ export const withPairings = (ds, i, specs) => {
 };
 
 
-export const withBranchings = (ds, i, specs) => {
+const withBranchings = (ds, i, specs) => {
   assertIndex(ds, i);
 
   const vNew = ds._v.slice();
