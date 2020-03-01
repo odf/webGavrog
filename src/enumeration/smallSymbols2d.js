@@ -15,9 +15,8 @@ const orbits = ds => {
   const result = [];
 
   for (const [i, j] of [[0, 1], [1, 2]]) {
-    for (const D of ds.orbitReps2(i, j)) {
+    for (const D of ds.orbitReps2(i, j))
       result.push([i, D, ds.r(i, j, D), isLoopless(ds, i, j, D)]);
-    }
   }
 
   return result;
@@ -61,25 +60,31 @@ const isMinimallyHyperbolic = (ds, curv) => {
   if (opsQ.sgn(curv) >= 0)
     return false;
 
-  for (const [i, D, r, loopless] of orbits(ds)) {
+  for (const [i, D, r, type] of orbits(ds)) {
     const v = ds.v(i, i+1, D);
 
-    if (v && v > Math.ceil(3 / r)) {
-      const newCurv = newCurvature(curv, loopless, v-1, v);
-      if (opsQ.sgn(newCurv) < 0)
-        return false;
-    }
+    if ((v - 1) * r >= 3 && opsQ.sgn(newCurvature(curv, type, v-1, v)) < 0)
+      return false;
   }
 
   return true;
 };
 
 
-const goodResult = (ds, curv) => {
-  let good;
+const allowedSphericalOrbifolds = [
+  '', '*', 'x',
+  '532', '432', '332',
+  '422', '322', '222',
+  '44', '33', '22',
+  '*532', '*432', '*332', '3*2',
+  '*422', '*322', '*222', '2*4', '2*3', '2*2',
+  '*44', '*33', '*22', '4*', '3*', '2*', '4x', '3x', '2x',
+];
 
+
+const goodResult = (ds, curv) => {
   if (opsQ.sgn(curv) <= 0)
-    good = true;
+    return true;
   else {
     const cones = [];
     const corners = [];
@@ -98,60 +103,45 @@ const goodResult = (ds, curv) => {
     const middle = props.isLoopless(ds) ? '' : '*';
     const back = corners.sort().reverse().join('');
     const cross = props.isWeaklyOriented(ds) ? '' : 'x';
-    const key = front + middle + back + cross;
 
-    const goodKeys = [
-      '', '*', 'x',
-      '532', '432', '332',
-      '422', '322', '222',
-      '44', '33', '22',
-      '*532', '*432', '*332', '3*2',
-      '*422', '*322', '*222', '2*4', '2*3', '2*2',
-      '*44', '*33', '*22', '4*', '3*', '2*', '4x', '3x', '2x',
-    ];
-
-    good = goodKeys.indexOf(key) >= 0;
+    return allowedSphericalOrbifolds.includes(front + middle + back + cross);
   }
-
-  return good;
 };
 
 
-const morphism = (src, srcD0, img, imgD0) => {
-  const idcs = src.indices();
+const morphism = (src, img, srcD0, imgD0) => {
+  const src2img = new Array(src.size + 1);
+  const queue = [[srcD0, imgD0]];
 
-  const q = [[srcD0, imgD0]];
-  const m = new Array(src.size + 1);
-  m[srcD0] = imgD0;
+  while (queue.length) {
+    const [D, E] = queue.shift();
 
-  while (q.length) {
-    const [D, E] = q.shift();
+    if (src2img[D] == E)
+      continue;
+    else if (src2img[D] != null)
+      return null;
+    else if (D != null) {
+      src2img[D] = E;
 
-    for (const i of idcs) {
-      const Di = src.s(i, D);
-      const Ei = img.s(i, E);
-
-      if (Di != null || Ei != null) {
-        if (m[Di] == null) {
-          q.push([Di, Ei]);
-          m[Di] = Ei;
-        }
-        else if (m[Di] != Ei)
-          return null;
-      }
+      for (let i = 0; i <= src.dim; ++i)
+        queue.push([src.s(i, D), img.s(i, E)]);
     }
   }
 
-  return m;
+  return src2img;
 };
 
 
 const automorphisms = ds => {
-  const elms = ds.elements();
-  if (elms.length) {
-    const D = elms[0];
-    return elms.map(E => morphism(ds, D, ds, E)).filter(m => m != null);
+  const result = [];
+
+  for (let D = 1; D <= ds.size; ++D) {
+    const phi = morphism(ds, ds, 1, D);
+    if (phi != null)
+      result.push(phi);
   }
+
+  return result;
 };
 
 
