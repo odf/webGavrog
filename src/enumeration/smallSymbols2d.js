@@ -7,16 +7,16 @@ import symbols from '../io/ds';
 import { rationals as opsQ } from '../arithmetic/types';
 
 
-const _loopless = (ds, i, j, D) => ds.orbit2(i, j, D)
+const loopless = (ds, i, j, D) => ds.orbit2(i, j, D)
   .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
-const _orbits = ds => {
+const orbits = ds => {
   const result = [];
 
   for (const [i, j] of [[0, 1], [1, 2]]) {
     for (const D of ds.orbitReps2(i, j)) {
-      result.push([i, D, ds.r(i, j, D), _loopless(ds, i, j, D)]);
+      result.push([i, D, ds.r(i, j, D), loopless(ds, i, j, D)]);
     }
   }
 
@@ -24,11 +24,11 @@ const _orbits = ds => {
 };
 
 
-const _openOrbits = ds =>
-  _orbits(ds).filter(([i, D, r, loopless]) => !ds.v(i, i+1, D));
+const openOrbits = ds =>
+  orbits(ds).filter(([i, D, r, loopless]) => !ds.v(i, i+1, D));
 
 
-const _withMinimalBranchings = ds => {
+const withMinimalBranchings = ds => {
   const s = new Array((ds.dim +1) * ds.size).fill(0);
   const v = new Array(ds.dim * ds.size).fill(0);
 
@@ -50,7 +50,7 @@ const _withMinimalBranchings = ds => {
 };
 
 
-const _compareMapped = (ds, m) => {
+const compareMapped = (ds, m) => {
   for (const [i, j] of [[0, 1], [1, 2]]) {
     for (const D of ds.elements()) {
       const d = ds.v(i, j, D) - ds.v(i, j, m[D]);
@@ -61,25 +61,25 @@ const _compareMapped = (ds, m) => {
 };
 
 
-const _isCanonical = (ds, maps) => maps.every(m => _compareMapped(ds, m) >= 0);
+const isCanonical = (ds, maps) => maps.every(m => compareMapped(ds, m) >= 0);
 
 
-const _newCurvature = (curv, loopless, v, vOld) =>
+const newCurvature = (curv, loopless, v, vOld) =>
   opsQ.plus(
     curv,
     opsQ.times(loopless ? 2 : 1, opsQ.minus(opsQ.div(1, v), opsQ.div(1, vOld)))
   );
 
 
-const _isMinimallyHyperbolic = (ds, curv) => {
+const isMinimallyHyperbolic = (ds, curv) => {
   if (opsQ.ge(curv, 0))
     return false;
 
-  for (const [i, D, r, loopless] of _orbits(ds)) {
+  for (const [i, D, r, loopless] of orbits(ds)) {
     const v = ds.v(i, i+1, D);
 
     if (v && v > Math.ceil(3 / r)) {
-      const newCurv = _newCurvature(curv, loopless, v-1, v);
+      const newCurv = newCurvature(curv, loopless, v-1, v);
       if (opsQ.lt(newCurv, 0))
         return false;
     }
@@ -89,7 +89,7 @@ const _isMinimallyHyperbolic = (ds, curv) => {
 };
 
 
-const _goodResult = (ds, curv) => {
+const goodResult = (ds, curv) => {
   let good;
 
   if (opsQ.le(curv, 0))
@@ -101,7 +101,7 @@ const _goodResult = (ds, curv) => {
       for (const D of ds.orbitReps2(i, j)) {
         const v = ds.v(i, j, D);
         if (v > 1) {
-          if (_loopless(ds, i, j, D))
+          if (loopless(ds, i, j, D))
             cones.push(v);
           else
             corners.push(v);
@@ -131,7 +131,7 @@ const _goodResult = (ds, curv) => {
 };
 
 
-const _morphism = (src, srcD0, img, imgD0) => {
+const morphism = (src, srcD0, img, imgD0) => {
   const idcs = src.indices();
 
   const q = [[srcD0, imgD0]];
@@ -160,21 +160,21 @@ const _morphism = (src, srcD0, img, imgD0) => {
 };
 
 
-const _automorphisms = ds => {
+const automorphisms = ds => {
   const elms = ds.elements();
   if (elms.length) {
     const D = elms[0];
-    return elms.map(E => _morphism(ds, D, ds, E)).filter(m => m != null);
+    return elms.map(E => morphism(ds, D, ds, E)).filter(m => m != null);
   }
 };
 
 
-const _curvature = ds => {
+const curvature = ds => {
   const denom = 420;
   let numer = -ds.size * denom;
   for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
     for (const D of ds.orbitReps2(i, j)) {
-      const k = _loopless(ds, i, j, D) ? 2 : 1;
+      const k = loopless(ds, i, j, D) ? 2 : 1;
       numer += k * denom / ds.v(i, j, D);
     }
   }
@@ -185,16 +185,16 @@ const _curvature = ds => {
 
 
 const branchings = ds => {
-  const unused = _openOrbits(ds);
-  const maps = _automorphisms(ds);
-  const ds0 = _withMinimalBranchings(ds);
-  const curv0 = _curvature(ds0);
+  const unused = openOrbits(ds);
+  const maps = automorphisms(ds);
+  const ds0 = withMinimalBranchings(ds);
+  const curv0 = curvature(ds0);
 
   const root = [ds0, curv0, unused];
 
   const extract = ([ds, curv, unused]) => {
     if (unused.length == 0) {
-      const keep = _isCanonical(ds, maps) && _goodResult(ds, curv);
+      const keep = isCanonical(ds, maps) && goodResult(ds, curv);
       if (keep)
         return ds;
     }
@@ -211,10 +211,10 @@ const branchings = ds => {
         const out = [];
 
         for (let v = v0; v <= 7; ++v) {
-          const newCurv = _newCurvature(curv, loopless, v, v0);
+          const newCurv = newCurvature(curv, loopless, v, v0);
           const newDs = delaney.withBranchings(ds, i, [[D, v]]);
 
-          if (opsQ.ge(newCurv, 0) || _isMinimallyHyperbolic(newDs, newCurv))
+          if (opsQ.ge(newCurv, 0) || isMinimallyHyperbolic(newDs, newCurv))
             out.push([ newDs, newCurv, unused.slice(1) ]);
 
           if (opsQ.lt(newCurv, 0))
