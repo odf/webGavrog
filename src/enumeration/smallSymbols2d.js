@@ -161,24 +161,18 @@ const curvature = ds => {
 
 
 const withMinimalBranchings = ds => {
-  const s = new Array((ds.dim +1) * ds.size).fill(0);
-  const v = new Array(ds.dim * ds.size).fill(0);
-
-  for (let D = 1; D <= ds.size; ++D) {
-    for (let i = 0; i <= ds.dim; ++i)
-      s[i * ds.size + D - 1] = ds.s(i, D);
-  }
+  const v = new Array(ds.dim * ds.size + 1).fill(0);
 
   for (let i = 0; i < ds.dim; ++i) {
     const j = i + 1;
     for (const D of ds.orbitReps2(i, j)) {
       const q = Math.ceil(3 / ds.r(i, j, D));
       for (const E of ds.orbit2(i, j, D))
-        v[i * ds.size + E - 1] = q;
+        v[i * ds.size + E] = q;
     }
   }
 
-  return delaney.makeDSymbol(ds.dim, s, v);
+  return delaney.buildDSymbol({ getV: (i, D) => v[i * ds.size + D] }, ds);
 };
 
 
