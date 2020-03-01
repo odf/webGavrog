@@ -1,20 +1,17 @@
 import { backtrack } from '../common/iterators';
-import * as timing from '../common/timing';
-
-import * as DS from '../dsymbols/delaney';
+import * as delaney from '../dsymbols/delaney';
 import * as props from '../dsymbols/properties';
 import * as dsets2d from './dsets2d';
-
 import symbols from '../io/ds';
 
-import { rationals } from '../arithmetic/types';
-const Q = rationals;
+import { rationals as opsQ } from '../arithmetic/types';
 
 
+import * as timing from '../common/timing';
 const timers = timing.timers();
 
 
-const _loopless = (ds, i, j, D) => DS.orbit2(ds, i, j, D)
+const _loopless = (ds, i, j, D) => ds.orbit2(i, j, D)
   .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
@@ -22,8 +19,8 @@ const _orbits = ds => {
   const result = [];
 
   for (const [i, j] of [[0, 1], [1, 2]]) {
-    for (const D of DS.orbitReps2(ds, i, j)) {
-      result.push([i, D, DS.r(ds, i, j, D), _loopless(ds, i, j, D)]);
+    for (const D of ds.orbitReps2(i, j)) {
+      result.push([i, D, ds.r(i, j, D), _loopless(ds, i, j, D)]);
     }
   }
 
@@ -46,14 +43,14 @@ const _withMinimalBranchings = ds => {
 
   for (let i = 0; i < ds.dim; ++i) {
     const j = i + 1;
-    for (const D of DS.orbitReps2(ds, i, j)) {
-      const q = Math.ceil(3 / DS.r(ds, i, j, D));
-      for (const E of DS.orbit2(ds, i, j, D))
+    for (const D of ds.orbitReps2(i, j)) {
+      const q = Math.ceil(3 / ds.r(i, j, D));
+      for (const E of ds.orbit2(i, j, D))
         v[i * ds.size + E - 1] = q;
     }
   }
 
-  return DS.makeDSymbol(ds.dim, s, v);
+  return delaney.makeDSymbol(ds.dim, s, v);
 };
 
 
@@ -72,14 +69,14 @@ const _isCanonical = (ds, maps) => maps.every(m => _compareMapped(ds, m) >= 0);
 
 
 const _newCurvature = (curv, loopless, v, vOld) =>
-  Q.plus(
+  opsQ.plus(
     curv,
-    Q.times(loopless ? 2 : 1, Q.minus(Q.div(1, v), Q.div(1, vOld)))
+    opsQ.times(loopless ? 2 : 1, opsQ.minus(opsQ.div(1, v), opsQ.div(1, vOld)))
   );
 
 
 const _isMinimallyHyperbolic = (ds, curv) => {
-  if (Q.ge(curv, 0))
+  if (opsQ.ge(curv, 0))
     return false;
 
   for (const [i, D, r, loopless] of _orbits(ds)) {
@@ -87,7 +84,7 @@ const _isMinimallyHyperbolic = (ds, curv) => {
 
     if (v && v > Math.ceil(3 / r)) {
       const newCurv = _newCurvature(curv, loopless, v-1, v);
-      if (Q.lt(newCurv, 0))
+      if (opsQ.lt(newCurv, 0))
         return false;
     }
   }
@@ -99,13 +96,13 @@ const _isMinimallyHyperbolic = (ds, curv) => {
 const _goodResult = (ds, curv) => {
   let good;
 
-  if (Q.le(curv, 0))
+  if (opsQ.le(curv, 0))
     good = true;
   else {
     const cones = [];
     const corners = [];
     for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
-      for (const D of DS.orbitReps2(ds, i, j)) {
+      for (const D of ds.orbitReps2(i, j)) {
         const v = ds.v(i, j, D);
         if (v > 1) {
           if (_loopless(ds, i, j, D))
@@ -178,14 +175,14 @@ const _automorphisms = ds => {
 
 const _curvature = ds => {
   const denom = 420;
-  let numer = -DS.size(ds) * denom;
+  let numer = -ds.size * denom;
   for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
-    for (const D of DS.orbitReps2(ds, i, j)) {
+    for (const D of ds.orbitReps2(i, j)) {
       const k = _loopless(ds, i, j, D) ? 2 : 1;
       numer += k * denom / ds.v(i, j, D);
     }
   }
-  const curv = Q.div(numer, denom);
+  const curv = opsQ.div(numer, denom);
 
   return curv;
 };
@@ -221,7 +218,7 @@ const branchings = ds => {
 
   const children = ([ds, curv, unused]) => {
     if (unused.length) {
-      if (Q.lt(curv, 0)) {
+      if (opsQ.lt(curv, 0)) {
         return [[ds, curv, []]];
       }
       else {
@@ -232,12 +229,12 @@ const branchings = ds => {
 
         for (let v = v0; v <= 7; ++v) {
           const newCurv = _newCurvature(curv, loopless, v, v0);
-          const newDs = DS.withBranchings(ds, i, [[D, v]]);
+          const newDs = delaney.withBranchings(ds, i, [[D, v]]);
 
-          if (Q.ge(newCurv, 0) || _isMinimallyHyperbolic(newDs, newCurv))
+          if (opsQ.ge(newCurv, 0) || _isMinimallyHyperbolic(newDs, newCurv))
             out.push([ newDs, newCurv, unused.slice(1) ]);
 
-          if (Q.lt(newCurv, 0))
+          if (opsQ.lt(newCurv, 0))
             break;
         }
         timers && timers.stop('branchings.children');
@@ -258,7 +255,7 @@ if (require.main == module) {
 
   if (Number.isInteger(parseInt(arg))) {
     const maxSize = parseInt(arg);
-    const ds0 = DS.parse('<1.1:1:1,1,1:0,0>');
+    const ds0 = delaney.parse('<1.1:1:1,1,1:0,0>');
 
     for (const dset of dsets2d.delaneySets(maxSize)) {
       timers && timers.start('branchings');
