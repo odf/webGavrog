@@ -58,8 +58,8 @@ const _withMinimalBranchings = ds => {
 
 
 const _compareMapped = (ds, m) => {
-  for (const D of ds.elements()) {
-    for (const [i, j] of [[0, 1], [1, 2]]) {
+  for (const [i, j] of [[0, 1], [1, 2]]) {
+    for (const D of ds.elements()) {
       const d = ds.v(i, j, D) - ds.v(i, j, m[D]);
       if (d != 0) return d;
     }
