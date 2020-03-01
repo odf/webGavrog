@@ -7,10 +7,6 @@ import symbols from '../io/ds';
 import { rationals as opsQ } from '../arithmetic/types';
 
 
-import * as timing from '../common/timing';
-const timers = timing.timers();
-
-
 const _loopless = (ds, i, j, D) => ds.orbit2(i, j, D)
   .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
@@ -189,28 +185,16 @@ const _curvature = ds => {
 
 
 const branchings = ds => {
-  timers && timers.start('branchings.init');
-  timers && timers.start('branchings.init.openOrbit');
   const unused = _openOrbits(ds);
-  timers && timers.stop('branchings.init.openOrbit');
-  timers && timers.start('branchings.init.automorphism');
   const maps = _automorphisms(ds);
-  timers && timers.stop('branchings.init.automorphism');
-  timers && timers.start('branchings.init.withMinimalBranchings');
   const ds0 = _withMinimalBranchings(ds);
-  timers && timers.stop('branchings.init.withMinimalBranchings');
-  timers && timers.start('branchings.init.curvature');
   const curv0 = _curvature(ds0);
-  timers && timers.stop('branchings.init.curvature');
-  timers && timers.stop('branchings.init');
 
   const root = [ds0, curv0, unused];
 
   const extract = ([ds, curv, unused]) => {
     if (unused.length == 0) {
-      timers && timers.start('branchings.extract');
       const keep = _isCanonical(ds, maps) && _goodResult(ds, curv);
-      timers && timers.stop('branchings.extract');
       if (keep)
         return ds;
     }
@@ -222,7 +206,6 @@ const branchings = ds => {
         return [[ds, curv, []]];
       }
       else {
-        timers && timers.start('branchings.children');
         const [i, D, r, loopless] = unused[0];
         const v0 = ds.v(i, i+1, D);
         const out = [];
@@ -237,7 +220,6 @@ const branchings = ds => {
           if (opsQ.lt(newCurv, 0))
             break;
         }
-        timers && timers.stop('branchings.children');
 
         return out;
       }
@@ -251,24 +233,17 @@ const branchings = ds => {
 if (require.main == module) {
   const arg = process.argv[2];
 
-  timers && timers.start('total');
-
   if (Number.isInteger(parseInt(arg))) {
     const maxSize = parseInt(arg);
     const ds0 = delaney.parse('<1.1:1:1,1,1:0,0>');
 
     for (const dset of dsets2d.delaneySets(maxSize)) {
-      timers && timers.start('branchings');
       for (const ds of branchings(dset))
         console.log(`${ds}`);
-      timers && timers.stop('branchings');
     }
   }
   else {
     for (const ds of branchings([...symbols(arg)][0]))
       console.log(`${ds}`);
   }
-
-  timers && timers.stop('total');
-  timers && console.log(`${JSON.stringify(timers.current(), null, 2)}`);
 }
