@@ -7,8 +7,8 @@ import symbols from '../io/ds';
 import { rationals as opsQ } from '../arithmetic/types';
 
 
-const loopless = (ds, i, j, D) => ds.orbit2(i, j, D)
-  .every(E => ds.s(i, E) != E && ds.s(j, E) != E);
+const isLoopless = (ds, i, j, D) =>
+  ds.orbit2(i, j, D).every(E => ds.s(i, E) != E && ds.s(j, E) != E);
 
 
 const orbits = ds => {
@@ -16,7 +16,7 @@ const orbits = ds => {
 
   for (const [i, j] of [[0, 1], [1, 2]]) {
     for (const D of ds.orbitReps2(i, j)) {
-      result.push([i, D, ds.r(i, j, D), loopless(ds, i, j, D)]);
+      result.push([i, D, ds.r(i, j, D), isLoopless(ds, i, j, D)]);
     }
   }
 
@@ -26,28 +26,6 @@ const orbits = ds => {
 
 const openOrbits = ds =>
   orbits(ds).filter(([i, D, r, loopless]) => !ds.v(i, i+1, D));
-
-
-const withMinimalBranchings = ds => {
-  const s = new Array((ds.dim +1) * ds.size).fill(0);
-  const v = new Array(ds.dim * ds.size).fill(0);
-
-  for (let D = 1; D <= ds.size; ++D) {
-    for (let i = 0; i <= ds.dim; ++i)
-      s[i * ds.size + D - 1] = ds.s(i, D);
-  }
-
-  for (let i = 0; i < ds.dim; ++i) {
-    const j = i + 1;
-    for (const D of ds.orbitReps2(i, j)) {
-      const q = Math.ceil(3 / ds.r(i, j, D));
-      for (const E of ds.orbit2(i, j, D))
-        v[i * ds.size + E - 1] = q;
-    }
-  }
-
-  return delaney.makeDSymbol(ds.dim, s, v);
-};
 
 
 const compareMapped = (ds, m) => {
@@ -69,6 +47,14 @@ const newCurvature = (curv, loopless, v, vOld) =>
     curv,
     opsQ.times(loopless ? 2 : 1, opsQ.minus(opsQ.div(1, v), opsQ.div(1, vOld)))
   );
+
+
+const withBranching = (ds, i, D, v) => {
+  const orb = ds.orbit2(i, i+1, D);
+  const getV = (j, E) => j == i && orb.includes(E) ? v : ds.v(j, j+1, E);
+
+  return delaney.buildDSymbol({ getV }, ds);
+};
 
 
 const isMinimallyHyperbolic = (ds, curv) => {
@@ -101,7 +87,7 @@ const goodResult = (ds, curv) => {
       for (const D of ds.orbitReps2(i, j)) {
         const v = ds.v(i, j, D);
         if (v > 1) {
-          if (loopless(ds, i, j, D))
+          if (isLoopless(ds, i, j, D))
             cones.push(v);
           else
             corners.push(v);
@@ -174,7 +160,7 @@ const curvature = ds => {
   let numer = -ds.size * denom;
   for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
     for (const D of ds.orbitReps2(i, j)) {
-      const k = loopless(ds, i, j, D) ? 2 : 1;
+      const k = isLoopless(ds, i, j, D) ? 2 : 1;
       numer += k * denom / ds.v(i, j, D);
     }
   }
@@ -184,49 +170,67 @@ const curvature = ds => {
 };
 
 
+const withMinimalBranchings = ds => {
+  const s = new Array((ds.dim +1) * ds.size).fill(0);
+  const v = new Array(ds.dim * ds.size).fill(0);
+
+  for (let D = 1; D <= ds.size; ++D) {
+    for (let i = 0; i <= ds.dim; ++i)
+      s[i * ds.size + D - 1] = ds.s(i, D);
+  }
+
+  for (let i = 0; i < ds.dim; ++i) {
+    const j = i + 1;
+    for (const D of ds.orbitReps2(i, j)) {
+      const q = Math.ceil(3 / ds.r(i, j, D));
+      for (const E of ds.orbit2(i, j, D))
+        v[i * ds.size + E - 1] = q;
+    }
+  }
+
+  return delaney.makeDSymbol(ds.dim, s, v);
+};
+
+
 const branchings = ds => {
   const unused = openOrbits(ds);
   const maps = automorphisms(ds);
   const ds0 = withMinimalBranchings(ds);
   const curv0 = curvature(ds0);
 
-  const root = [ds0, curv0, unused];
+  return backtrack({
+    root: [ds0, curv0, unused],
 
-  const extract = ([ds, curv, unused]) => {
-    if (unused.length == 0) {
-      const keep = isCanonical(ds, maps) && goodResult(ds, curv);
-      if (keep)
+    extract([ds, curv, unused]) {
+      if (unused.length == 0 && isCanonical(ds, maps) && goodResult(ds, curv))
         return ds;
-    }
-  };
+    },
 
-  const children = ([ds, curv, unused]) => {
-    if (unused.length) {
-      if (opsQ.lt(curv, 0)) {
-        return [[ds, curv, []]];
-      }
-      else {
-        const [i, D, r, loopless] = unused[0];
-        const v0 = ds.v(i, i+1, D);
-        const out = [];
+    children([ds, curv, unused]) {
+      if (unused.length) {
+        if (opsQ.lt(curv, 0))
+          return [[ds, curv, []]];
+        else {
+          const [i, D, r, loopless] = unused[0];
+          const v0 = ds.v(i, i+1, D);
+          const out = [];
 
-        for (let v = v0; v <= 7; ++v) {
-          const newCurv = newCurvature(curv, loopless, v, v0);
-          const newDs = delaney.withBranchings(ds, i, [[D, v]]);
+          for (let v = v0; v <= 7; ++v) {
+            const newCurv = newCurvature(curv, loopless, v, v0);
+            const newDs = withBranching(ds, i, D, v);
 
-          if (opsQ.ge(newCurv, 0) || isMinimallyHyperbolic(newDs, newCurv))
-            out.push([ newDs, newCurv, unused.slice(1) ]);
+            if (opsQ.ge(newCurv, 0) || isMinimallyHyperbolic(newDs, newCurv))
+              out.push([ newDs, newCurv, unused.slice(1) ]);
 
-          if (opsQ.lt(newCurv, 0))
-            break;
+            if (opsQ.lt(newCurv, 0))
+              break;
+          }
+
+          return out;
         }
-
-        return out;
       }
     }
-  };
-
-  return backtrack({ extract, root, children });
+  });
 }
 
 
