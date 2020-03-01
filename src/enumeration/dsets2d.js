@@ -73,24 +73,24 @@ const potentialChildren = (data, maxSize) => {
 
 
 const compareRenumberedFrom = (data, D0) => {
-  const n2o = [ null, D0];
-  const o2n = { [D0]: 1 };
+  const img2src = [ null, D0];
+  const src2img = { [D0]: 1 };
 
   for (let D = 1; D <= getSize(data); ++D) {
-    if (D >= n2o.length)
+    if (D >= img2src.length)
       throw new Error("symbol is not transitive");
 
     for (const i of [0, 1, 2]) {
-      const E = get(data, i, n2o[D]);
-      if (E != null && o2n[E] == null) {
-        o2n[E] = n2o.length;
-        n2o.push(E);
+      const E = get(data, i, img2src[D]);
+      if (E != null && src2img[E] == null) {
+        src2img[E] = img2src.length;
+        img2src.push(E);
       }
 
-      const nval = o2n[E];
-      const oval = get(data, i, D);
-      if (oval != nval)
-        return oval == null ? -1 : nval == null ? 1 : nval - oval;
+      const newVal = src2img[E];
+      const oldVal = get(data, i, D);
+      if (oldVal != newVal)
+        return oldVal == null ? -1 : newVal == null ? 1 : newVal - oldVal;
     }
   }
 
