@@ -58,7 +58,7 @@ const withBranching = (ds, i, D, v) => {
 
 
 const isMinimallyHyperbolic = (ds, curv) => {
-  if (opsQ.ge(curv, 0))
+  if (opsQ.sgn(curv) >= 0)
     return false;
 
   for (const [i, D, r, loopless] of orbits(ds)) {
@@ -66,7 +66,7 @@ const isMinimallyHyperbolic = (ds, curv) => {
 
     if (v && v > Math.ceil(3 / r)) {
       const newCurv = newCurvature(curv, loopless, v-1, v);
-      if (opsQ.lt(newCurv, 0))
+      if (opsQ.sgn(newCurv) < 0)
         return false;
     }
   }
@@ -78,7 +78,7 @@ const isMinimallyHyperbolic = (ds, curv) => {
 const goodResult = (ds, curv) => {
   let good;
 
-  if (opsQ.le(curv, 0))
+  if (opsQ.sgn(curv) <= 0)
     good = true;
   else {
     const cones = [];
@@ -208,7 +208,7 @@ const branchings = ds => {
 
     children([ds, curv, unused]) {
       if (unused.length) {
-        if (opsQ.lt(curv, 0))
+        if (opsQ.sgn(curv) < 0)
           return [[ds, curv, []]];
         else {
           const [i, D, r, loopless] = unused[0];
@@ -219,10 +219,10 @@ const branchings = ds => {
             const newCurv = newCurvature(curv, loopless, v, v0);
             const newDs = withBranching(ds, i, D, v);
 
-            if (opsQ.ge(newCurv, 0) || isMinimallyHyperbolic(newDs, newCurv))
+            if (opsQ.sgn(newCurv) >= 0 || isMinimallyHyperbolic(newDs, newCurv))
               out.push([ newDs, newCurv, unused.slice(1) ]);
 
-            if (opsQ.lt(newCurv, 0))
+            if (opsQ.sgn(newCurv) < 0)
               break;
           }
 
