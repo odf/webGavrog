@@ -1,31 +1,41 @@
-import * as delaney  from '../dsymbols/delaney';
+import { parse } from '../dsymbols/delaney';
 
 
 export default function* symbols(text) {
-  let i = 0;
+  const type = 'tiling';
+
+  let lineNr = 0;
+  let startLine = null;
   let buffer = [];
   let attributes = {};
 
   for (const line of text.split(/\r?\n/)) {
-    const lineNr = ++i;
-    const m = line.match(/\s*#\s*@\s*(.*)/);
+    lineNr++;
 
-    if (m && m[1]) {
-      const fields = m[1].trim().split(/\s+/);
+    const match = line.match(/\s*#\s*@\s*(.*)/);
+
+    if (match && match[1]) {
+      if (startLine == null)
+        startLine = lineNr;
+
+      const fields = match[1].trim().split(/\s+/);
       attributes[fields[0]] = fields.slice(1).join(' ');
     }
     else {
-      const content = line.replace(/[#>].*/, '').trim()
-      buffer.push(content);
+      buffer.push(line.replace(/[#>].*/, '').trim());
+
+      if (line.match(/</) && startLine == null)
+        startLine = lineNr
+
       if (line.match(/>/)) {
-        yield Object.assign(
-          attributes,
-          { type: 'tiling',
-            symbol: delaney.parse(buffer.join(' ') + '>')
-          }
-        );
+        const symbol = parse(buffer.join(' ') + '>');
+        const endLine = lineNr;
+
+        yield Object.assign(attributes, { type, symbol, startLine, endLine });
+
         attributes = {};
         buffer = [];
+        startLine = null;
       }
     }
   }
@@ -44,6 +54,9 @@ if (require.main == module) {
     <1:1,1,1:6,3>
 `;
 
-  for (const s of symbols(text))
-    console.log(JSON.stringify(s));
+  for (const s of symbols(text)) {
+    for (const k of Object.keys(s))
+      console.log(`${k}: ${s[k]}`);
+    console.log();
+  }
 }
