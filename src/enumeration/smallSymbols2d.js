@@ -177,13 +177,11 @@ const withMinimalBranchings = ds => {
 
 
 const branchings = ds => {
-  const unused = openOrbits(ds);
   const maps = automorphisms(ds);
   const ds0 = withMinimalBranchings(ds);
-  const curv0 = curvature(ds0);
 
   return backtrack({
-    root: [ds0, curv0, unused],
+    root: [ds0, curvature(ds0), openOrbits(ds)],
 
     extract([ds, curv, unused]) {
       if (unused.length == 0 && isCanonical(ds, maps) && goodResult(ds, curv))
@@ -191,27 +189,27 @@ const branchings = ds => {
     },
 
     children([ds, curv, unused]) {
-      if (unused.length) {
-        if (opsQ.sgn(curv) < 0)
-          return [[ds, curv, []]];
-        else {
-          const [i, D, r, loopless] = unused[0];
-          const v0 = ds.v(i, i+1, D);
-          const out = [];
+      if (unused.length == 0)
+        return [];
+      else if (opsQ.sgn(curv) < 0)
+        return [[ds, curv, []]];
+      else {
+        const [i, D, r, loopless] = unused[0];
+        const v0 = ds.v(i, i+1, D);
+        const out = [];
 
-          for (let v = v0; v <= 7; ++v) {
-            const newCurv = newCurvature(curv, loopless, v, v0);
-            const newDs = withBranching(ds, i, D, v);
+        for (let v = v0; v <= 7; ++v) {
+          const newCurv = newCurvature(curv, loopless, v, v0);
+          const newDs = withBranching(ds, i, D, v);
 
-            if (opsQ.sgn(newCurv) >= 0 || isMinimallyHyperbolic(newDs, newCurv))
-              out.push([ newDs, newCurv, unused.slice(1) ]);
+          if (opsQ.sgn(newCurv) >= 0 || isMinimallyHyperbolic(newDs, newCurv))
+            out.push([ newDs, newCurv, unused.slice(1) ]);
 
-            if (opsQ.sgn(newCurv) < 0)
-              break;
-          }
-
-          return out;
+          if (opsQ.sgn(newCurv) < 0)
+            break;
         }
+
+        return out;
       }
     }
   });
