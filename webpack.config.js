@@ -2,7 +2,7 @@ var fs = require('fs');
 var path = require('path');
 
 const webpack = require('webpack');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 var execSync = require('child_process').execSync;
