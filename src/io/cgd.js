@@ -4,7 +4,7 @@ import * as pg from '../pgraphs/periodic';
 import * as sg from '../spacegroups/sgtable';
 import * as cr from './crystal';
 
-import parseBlocks from './parseCgd';
+import { parseBlocks } from './parseCgd';
 import parseOperator from '../spacegroups/parseOperator';
 
 

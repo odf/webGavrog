@@ -1,5 +1,4 @@
 import { rationals } from '../arithmetic/types';
-const ops = rationals;
 
 
 const tokenizeLine = rawLine => {
@@ -52,7 +51,7 @@ const parseToken = token => {
   if (token.match(/^".*"$/))
     return token.slice(1, -1);
   else if (token.match(/^\d+(\/\d+)?$/))
-    return ops.rational(token);
+    return rationals.rational(token);
   else if (token.match(/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/))
     return parseFloat(token);
   else
@@ -69,7 +68,7 @@ const newBlock = () => ({
 });
 
 
-function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
+export function* parseBlocks(lines, synonyms={}, defaultKey=null) {
   let lineno = 0;
   let block = null;
   let key = null;
@@ -131,9 +130,6 @@ function* parsedDataBlocks(lines, synonyms={}, defaultKey=null) {
     yield block;
   }
 };
-
-
-export default parsedDataBlocks;
 
 
 if (require.main == module) {
