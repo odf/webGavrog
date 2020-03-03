@@ -1,7 +1,7 @@
 import { rationals } from '../arithmetic/types';
 
 
-const tokenizeLine = rawLine => {
+const tokenize = rawLine => {
   const line = rawLine.trim();
 
   const fields = [];
@@ -81,7 +81,7 @@ export function* parseBlocks(lines, synonyms={}, defaultKey=null) {
       key = defaultKey;
     }
 
-    const { fields, start, pos, msg } = tokenizeLine(line);
+    const { fields, start, pos, msg } = tokenize(line);
     if (msg)
       block.errors.push({ lineno, line, start, pos, msg });
 
@@ -135,7 +135,7 @@ export function* parseBlocks(lines, synonyms={}, defaultKey=null) {
 if (require.main == module) {
   const testTokenizer = s => {
     console.log(`'${s}' =>`);
-    console.log(`    ${JSON.stringify(tokenizeLine(s))}`);
+    console.log(`    ${JSON.stringify(tokenize(s))}`);
   }
 
   testTokenizer('  s = "Hi there!" 123 asd fl # asdf  ');
@@ -147,7 +147,7 @@ if (require.main == module) {
 
   const testBlockParser = s => {
     console.log(`'${s}' => `);
-    for (const block of parsedDataBlocks(s.split('\n'))) {
+    for (const block of parseBlocks(s.split('\n'))) {
       console.log(JSON.stringify(block, null, 2));
       console.log();
     }
