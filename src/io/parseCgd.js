@@ -62,15 +62,6 @@ const parseToken = token => {
 };
 
 
-const newBlock = () => ({
-  type: null,
-  entries: [],
-  start: null,
-  end: null,
-  errors: []
-});
-
-
 export function* parseBlocks(lines, synonyms={}, defaultKey=null) {
   let lineno = 0;
   let block = null;
@@ -80,7 +71,7 @@ export function* parseBlocks(lines, synonyms={}, defaultKey=null) {
     ++lineno;
 
     if (block == null) {
-      block = newBlock(lineno)
+      block = { type: null, entries: [], start: null, end: null, errors: [] };
       key = defaultKey;
     }
 
