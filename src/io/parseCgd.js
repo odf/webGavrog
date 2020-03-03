@@ -1,9 +1,7 @@
 import { rationals } from '../arithmetic/types';
 
 
-const tokenize = rawLine => {
-  const line = rawLine.trim();
-
+const tokenize = line => {
   const fields = [];
   let i = 0;
 
