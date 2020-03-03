@@ -1,17 +1,21 @@
 import { rationals } from '../arithmetic/types';
 
 
+const isWhiteSpace = c => c.match(/\s/);
+
+
 const tokenize = line => {
   const fields = [];
   let i = 0;
 
   while (i < line.length && line[i] != '#') {
-    if (!line[i].trim()) {
+    if (isWhiteSpace(line[i])) {
       ++i;
       continue;
     }
 
     let j = i;
+
     if (line[i] == '"') {
       ++j;
       while (j < line.length - 1 && line[j] != '"')
@@ -22,22 +26,23 @@ const tokenize = line => {
       else {
         const msg = "the line ended in the middle of a quoted text";
         fields.push(line.slice(i) + '"');
-        return { fields, start: i, pos: j, msg };
+        return { fields, start: i, pos: j + 1, msg };
       }
 
-      if (j < line.length && line[j].trim() && line[j] != '#') {
+      if (j < line.length && !isWhiteSpace(line[j]) && line[j] != '#') {
         const msg = "missing space after a quoted text";
         fields.push(line.slice(i, j));
         return { fields, start: i, pos: j, msg };
       }
     }
     else {
-      while (j < line.length && line[j].trim() && line[j] != '#')
+      while (j < line.length && !isWhiteSpace(line[j]) && line[j] != '#')
         ++j
     }
 
     if (j > i)
       fields.push(line.slice(i, j));
+
     i = j;
   }
 
