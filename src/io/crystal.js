@@ -2,7 +2,7 @@ import { lattices } from '../spacegroups/lattices';
 import * as spacegroups from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
 
-import * as delaney from '../dsymbols/delaney';
+import { buildDSymbol } from '../dsymbols/delaney';
 import * as derived from '../dsymbols/derived';
 
 import { makeGraph } from '../pgraphs/periodic';
@@ -747,12 +747,21 @@ export const tilingFromFacelist = spec => {
     );
   }
 
-  const ds = delaney.build(
-    3,
+  const s = pairings.map(p => {
+    const r = [];
+    for (const [D, E] of p) {
+      r[D] = E;
+      r[E] = D;
+    }
+    return r;
+  });
+
+  const ds = buildDSymbol({
+    dim: 3,
     size,
-    (ds, i) => pairings[i],
-    (ds, i) => ds.elements().map(D => [D, 1])
-  );
+    getS: (i, D) => s[i][D],
+    getV: (i, D) => 1
+  });
 
   // TODO include original vertex positions in output
 
