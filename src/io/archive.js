@@ -59,14 +59,11 @@ function* parseEntries(lines, source) {
     const val = fields.slice(1).join(' ');
 
     if (tag == 'end') {
-      const src = { source, lineNr: startLineNr };
-      const entry = makeEntry(src, attributes, errors);
+      yield makeEntry({ source, lineNr: startLineNr }, attributes, errors);
 
       attributes = {};
       errors = [];
       startLineNr = null;
-
-      yield entry;
     }
     else if (attributes[tag])
       errors.push(`extra value for '${tag}' on line ${lineNr}, kept first`);
