@@ -168,88 +168,6 @@ export const orbit2 = (ds, i, j, D) => ds.orbit2(i, j, D);
 export const orbitReps2 = (ds, i, j) => ds.orbitReps2(i, j);
 
 
-const assert = (condition, message) => {
-  if (!condition)
-    throw new Error(message || 'assertion error');
-};
-
-
-const assertIndex = (ds, i) =>
-  assert(ds.isIndex(i), `need integer between 0 and ${ds.dim}, got ${i}`);
-
-const assertElement = (ds, D) =>
-  assert(ds.isElement(D), `need integer between 1 and ${ds.size}, got ${D}`);
-
-
-const assertNonNegative = v =>
-  assert(Number.isInteger(v) && v >= 0, `need non-negative integer, got ${v}`);
-
-
-const withPairings = (ds, i, specs) => {
-  assertIndex(ds, i);
-
-  const sNew = ds._s.slice();
-  const get = D => sNew[i * ds.size + D - 1];
-  const set = (D, x) => { sNew[i * ds.size + D - 1] = x; };
-
-  const dangling = [];
-
-  for (const [D, E] of specs) {
-    assertElement(ds, D);
-    assertElement(ds, E);
-
-    dangling.push(get(D));
-    dangling.push(get(E));
-
-    set(D, E);
-    set(E, D);
-  }
-
-  for (const D of dangling) {
-    if (D && get(get(D)) != D)
-      set(D, 0);
-  }
-
-  return makeDSymbol(ds.dim, sNew, ds._v);
-};
-
-
-const withBranchings = (ds, i, specs) => {
-  assertIndex(ds, i);
-
-  const vNew = ds._v.slice();
-
-  for (const [D, v] of specs) {
-    assertElement(ds, D);
-    assertNonNegative(v);
-
-    for (const E of ds.orbit2(i, i+1, D))
-      vNew[i * ds.size + E - 1] = v;
-  }
-
-  return makeDSymbol(ds.dim, ds._s, vNew);
-};
-
-
-export const build = (dim, size, pairingsFn, branchingsFn) => {
-  let ds = makeDSymbol(
-    dim,
-    new Int32Array((dim+1) * size),
-    new Int32Array(dim * size)
-  );
-
-  const ds0 = ds;
-  for (let i = 0; i <= dim; ++i)
-    ds = withPairings(ds, i, pairingsFn(ds0, i));
-
-  const ds1 = ds;
-  for (let i = 0; i < dim; i++)
-    ds = withBranchings(ds, i, branchingsFn(ds1, i));
-
-  return ds;
-};
-
-
 export const buildDSet = ({ dim, size, getS }) => {
   const offset = (i, D) => i * size + D - 1;
   const s = new Int32Array((dim + 1) * size);
@@ -358,7 +276,4 @@ if (require.main == module) {
   console.log(`${ds}`);
   console.log(`pickled: ${JSON.stringify(pickler.pickle(ds))}`);
   console.log(`unpickled: ${pickler.unpickle(pickler.pickle(ds))}`);
-
-  console.log(`${withPairings(ds, 1, [[2,1]])}`);
-  console.log(`${withBranchings(ds, 0, [[2,3],[1,5]])}`);
 }
