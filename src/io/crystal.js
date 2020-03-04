@@ -14,13 +14,6 @@ import {
 } from '../geometry/types';
 
 
-let _timers = null;
-
-export function useTimers(timers) {
-  _timers = timers;
-};
-
-
 const matrixError = (A, B) => opsF.norm(opsF.minus(A, B)) / opsF.norm(A);
 const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
 
@@ -122,15 +115,9 @@ const pointsAreCloseModZ = (gram, maxDist) => {
   const vecs = dirichletVectors(opsF.identityMatrix(n));
 
   return (p, q) => {
-    _timers && _timers.start("pointsAreCloseModZ");
-
     const d0 = p.coords.map((x, i) => (x - q.coords[i]) % 1);
     const d = shiftIntoDirichletDomain(d0, vecs, dot);
-    const result = dot(d, d) < limit;
-
-    _timers && _timers.stop("pointsAreCloseModZ");
-
-    return result;
+    return dot(d, d) < limit;
   };
 };
 
@@ -265,8 +252,6 @@ const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) =>
 
 
 const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
-  _timers && _timers.start("applyOpsToCorners");
-
   const pos = [];
   const action = [];
   const faces = [];
@@ -304,7 +289,6 @@ const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
     faces.push(face);
   }
 
-  _timers && _timers.stop("applyOpsToCorners");
   return { pos, action, faces };
 };
 
@@ -392,8 +376,6 @@ const _cornerAction = (pos, action) => (op, { index, shift }) => {
 
 
 const applyOpsToFaces = (pos, action, faces, symOps) => {
-  _timers && _timers.start("applyOpsToFaces");
-
   const apply = _cornerAction(pos, action);
   const seen = {};
   const result = [];
@@ -410,15 +392,11 @@ const applyOpsToFaces = (pos, action, faces, symOps) => {
     }
   }
 
-  _timers && _timers.stop("applyOpsToFaces");
-
   return result;
 };
 
 
 const applyOpsToTiles = (pos, action, faces, tiles, symOps) => {
-  _timers && _timers.start("applyOpsToTiles");
-
   const apply = _cornerAction(pos, action);
   const seen = {};
   const result = [];
@@ -437,8 +415,6 @@ const applyOpsToTiles = (pos, action, faces, tiles, symOps) => {
       }
     }
   }
-
-  _timers && _timers.stop("applyOpsToTiles");
 
   return result;
 };
@@ -654,8 +630,6 @@ const withInducedEdges = (nodes, givenEdges, gram) => {
 
 
 export function netFromCrystal(spec) {
-  _timers && _timers.start('netFromCrystal');
-
   const { name, group, cellGram: G0, nodes, edges } = spec;
   const warnings = spec.warnings.slice();
   const errors = spec.errors.slice();
@@ -697,8 +671,6 @@ export function netFromCrystal(spec) {
     : withInducedEdges(allNodes, convertedEdges, primitiveGram);
   const graph = makeGraph(allEdges);
 
-  _timers && _timers.stop('netFromCrystal');
-
   return {
     name,
     group: group.name,
@@ -711,8 +683,6 @@ export function netFromCrystal(spec) {
 
 
 export const tilingFromFacelist = spec => {
-  _timers && _timers.start('tilingFromFacelist');
-
   const { name, group, cellGram: G0, faces, tiles } = spec;
   const warnings = spec.warnings.slice();
   const errors = spec.errors.slice();
@@ -785,8 +755,6 @@ export const tilingFromFacelist = spec => {
   );
 
   // TODO include original vertex positions in output
-
-  _timers && _timers.stop('tilingFromFacelist');
 
   return {
     name,
