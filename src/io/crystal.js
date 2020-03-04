@@ -363,7 +363,7 @@ const normalizedTile = tile => {
 };
 
 
-const _cornerAction = (pos, action) => (op, { index, shift }) => {
+const cornerAction = (pos, action) => (op, { index, shift }) => {
   const oldPos = opsF.plus(pos[index], shift);
   const newPos = applyToPoint(op, oldPos);
   const newIndex = action[index][op];
@@ -376,7 +376,7 @@ const _cornerAction = (pos, action) => (op, { index, shift }) => {
 
 
 const applyOpsToFaces = (pos, action, faces, symOps) => {
-  const apply = _cornerAction(pos, action);
+  const apply = cornerAction(pos, action);
   const seen = {};
   const result = [];
 
@@ -397,7 +397,7 @@ const applyOpsToFaces = (pos, action, faces, symOps) => {
 
 
 const applyOpsToTiles = (pos, action, faces, tiles, symOps) => {
-  const apply = _cornerAction(pos, action);
+  const apply = cornerAction(pos, action);
   const seen = {};
   const result = [];
 
