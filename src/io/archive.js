@@ -104,19 +104,33 @@ export class Archive {
     this._badEntries = [];
   }
 
-  get name() { return this._name; }
+  get name() {
+    return this._name;
+  }
 
-  get length() { return this._entries.length; }
+  get length() {
+    return this._entries.length;
+  }
 
-  get entries() { return this._entries.slice(); }
+  get entries() {
+    return this._entries.slice();
+  }
 
-  get badEntries() { return this._badEntries.slice(); }
+  get badEntries() {
+    return this._badEntries.slice();
+  }
 
-  getByKey(key) { return this._entries[this._keyToIndex[key]]; }
+  getByKey(key) {
+    return this._entries[this._keyToIndex[key]];
+  }
 
-  getById(id) { return this._entries[this._idToIndex[id]]; }
+  getById(id) {
+    return this._entries[this._idToIndex[id]];
+  }
 
-  toString() { return this._entries.map(entryAsString).join('\n'); }
+  toString() {
+    return this._entries.map(entryAsString).join('\n');
+  }
 
   addEntry(e) {
     if (e.id && this.getById(e.id)) {
