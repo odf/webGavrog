@@ -1,20 +1,17 @@
-import * as spacegroups from '../spacegroups/spacegroups';
 import { lattices } from '../spacegroups/lattices';
-import * as sgtable from '../spacegroups/sgtable';
+import * as spacegroups from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
-import * as pg from '../pgraphs/periodic';
+
 import * as delaney from '../dsymbols/delaney';
 import * as derived from '../dsymbols/derived';
 
+import { makeGraph } from '../pgraphs/periodic';
 import fromPointCloud from '../pgraphs/fromPointCloud';
 
 import {
-  coordinateChangesQ,
-  coordinateChangesF
+  coordinateChangesQ as opsQ,
+  coordinateChangesF as opsF
 } from '../geometry/types';
-
-const opsQ = coordinateChangesQ;
-const opsF = coordinateChangesF;
 
 
 let _timers = null;
@@ -698,7 +695,7 @@ export function netFromCrystal(spec) {
   const allEdges = degreesSatisfied(allNodes, convertedEdges)
     ? convertedEdges
     : withInducedEdges(allNodes, convertedEdges, primitiveGram);
-  const graph = pg.makeGraph(allEdges);
+  const graph = makeGraph(allEdges);
 
   _timers && _timers.stop('netFromCrystal');
 
