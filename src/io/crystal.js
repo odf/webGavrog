@@ -14,69 +14,22 @@ import {
 } from '../geometry/types';
 
 
-const matrixError = (A, B) => opsF.norm(opsF.minus(A, B)) / opsF.norm(A);
-const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
-
-
-const applyToPoint = (op, point) => {
-  const [M, t] = [opsQ.linearPart(op), opsQ.shiftPart(op)]
-    .map(x => opsQ.toJS(x));
-
-  return opsF.point(opsF.plus(opsF.times(M, opsF.vector(point)), t));
-};
-
-
 const applyToVector = (op, vector) =>
   opsF.times(opsQ.toJS(opsQ.linearPart(op)), vector);
 
 
-const mapNode = coordinateChange => ({ name, coordination, position }, i) => ({
-  name,
-  index: i,
-  coordination,
-  positionInput: position,
-  positionPrimitive: opsF.modZ(
-    opsF.times(coordinateChange, opsF.point(position)))
-});
-
-
-const findNode = (nodes, name) => {
-  for (const v of nodes)
-    if (v.name == name)
-      return v;
-};
-
-
-const mapEnd = (coordinateChange, nodes) => p => {
-  if (opsF.typeOf(p) == 'Vector') {
-    return {
-      positionInput: p,
-      positionPrimitive: opsF.times(coordinateChange, opsF.point(p))
-    }
-  }
-  else {
-    const { positionInput, positionPrimitive } = findNode(nodes, p) || {};
-    return { nodeGiven: p, positionInput, positionPrimitive };
-  };
-};
-
-
-const mapEdge = (coordinateChange, nodes) => {
-  const emap = mapEnd(coordinateChange, nodes);
-
-  return ([from, to], index) => ({
-    index,
-    from: emap(from),
-    to: emap(to)
-  });
-};
+const applyToPoint = (op, point) => opsF.point(opsF.plus(
+  applyToVector(op, opsF.vector(point)),
+  opsQ.toJS(opsQ.shiftPart(op))
+));
 
 
 const dotProduct = gram => (v, w) => {
   let s = 0;
-  for (const i in v)
+  for (const i in v) {
     for (const j in w)
       s += v[i] * gram[i][j] * w[j];
+  }
   return s;
 };
 
@@ -239,6 +192,9 @@ const edgeImages = (symOps, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
       };
     });
 };
+
+
+const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
 
 
 const applyOpsToNodes = (nodes, symOps, equalFn) =>
@@ -626,6 +582,44 @@ const withInducedEdges = (nodes, givenEdges, gram) => {
   const nodesF = nodes.map(({ id, pos, degree }) =>
                            ({ id, pos: pointAsFloat(pos), degree }));
   return fromPointCloud(nodesF, givenEdges, dotProduct(gram));
+};
+
+
+const matrixError = (A, B) => opsF.norm(opsF.minus(A, B)) / opsF.norm(A);
+
+
+const mapNode = coordChange => (
+  ({ name, coordination, position }, i) => ({
+    name,
+    index: i,
+    coordination,
+    positionInput: position,
+    positionPrimitive: opsF.modZ(opsF.times(coordChange, opsF.point(position)))
+  })
+);
+
+
+const mapEdge = (coordChange, nodes) => {
+  const mapEnd = p => {
+    if (opsF.typeOf(p) == 'Vector') {
+      return {
+        positionInput: p,
+        positionPrimitive: opsF.times(coordChange, opsF.point(p))
+      }
+    }
+    else {
+      const { positionInput, positionPrimitive } = (
+        nodes.find(v => v.name == p) || {}
+      );
+      return { nodeGiven: p, positionInput, positionPrimitive };
+    };
+  };
+
+  return ([from, to], index) => ({
+    index,
+    from: mapEnd(from),
+    to: mapEnd(to)
+  });
 };
 
 
