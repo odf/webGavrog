@@ -34,42 +34,34 @@ const dotProduct = gram => (v, w) => {
 };
 
 
-const shiftIntoDirichletDomain = (pos, dirichletVecs, dot) => {
-  const eps = Math.pow(2, -40);
-  const adjust = (p, v, f) => p.map((x, i) => x - f * v[i]);
-  const vecsWithLengths = dirichletVecs.map(v => [v, dot(v, v)]);
-
-  let p = pos.slice();
-  let changed;
-
-  do {
-    changed = false;
-
-    for (const [v, lv] of vecsWithLengths) {
-      const t = dot(p, v) / lv;
-      if (t < -0.5 || t > 0.5+eps) {
-        p = adjust(p, v, Math.round(t));
-        changed = true;
-      }
-    }
-  } while (changed);
-
-  return p;
-};
-
-
 const pointsAreCloseModZ = (gram, maxDist) => {
-  const n = gram.length;
   const limit = maxDist * maxDist;
   const dot = dotProduct(gram);
   const eps = Math.pow(2, -40);
   const { dirichletVectors } = lattices(opsF, eps, dot);
-
-  const vecs = dirichletVectors(opsF.identityMatrix(n));
+  const vecs = dirichletVectors(opsF.identityMatrix(gram.length));
 
   return (p, q) => {
-    const d0 = p.coords.map((x, i) => (x - q.coords[i]) % 1);
-    const d = shiftIntoDirichletDomain(d0, vecs, dot);
+    const d = opsF.minus(p.coords, q.coords);
+    let changed;
+
+    do {
+      changed = false;
+
+      for (const v of vecs) {
+        const t = dot(d, v) / dot(v, v);
+
+        if (t < -0.5 || t > 0.5+eps) {
+          const f = Math.round(t);
+
+          for (let i = 0; i < d.length; ++i)
+            d[i] -= f * v[i];
+
+          changed = true;
+        }
+      }
+    } while (changed);
+
     return dot(d, d) < limit;
   };
 };
