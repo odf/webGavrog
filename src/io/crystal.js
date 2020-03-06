@@ -1,5 +1,5 @@
 import { lattices } from '../spacegroups/lattices';
-import * as spacegroups from '../spacegroups/spacegroups';
+import { opModZ, primitiveSetting } from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
 
 import { buildDSymbol } from '../dsymbols/delaney';
@@ -44,7 +44,7 @@ const pointsAreCloseModZ = (gram, maxDist) => {
   const vecs = dirichletVectors(opsF.identityMatrix(gram.length));
 
   return (p, q) => {
-    const d = opsF.minus(p.coords, q.coords);
+    const d = opsF.minus(p, q);
     let changed;
 
     do {
@@ -70,7 +70,6 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 
 
 const vectorsAreClose = (gram, maxDist) => {
-  const n = gram.length;
   const limit = maxDist * maxDist;
 
   return (v, w) => {
@@ -81,13 +80,10 @@ const vectorsAreClose = (gram, maxDist) => {
 
 
 const lookupPointModZ = (p, nodes, areEqualFn) => {
-  for (const i in nodes) {
-    const q = nodes[i].pos;
+  for (const { pos: q, id: node } of nodes) {
     if (areEqualFn(p, q)) {
-      return {
-        node: nodes[i].id,
-        shift: opsF.minus(p, q).map(x => opsF.round(x))
-      };
+      const shift = opsF.minus(p, q).map(x => opsF.round(x));
+      return { node, shift };
     }
   }
 
@@ -95,16 +91,16 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
 };
 
 
-const operatorCosets = (symOps, subgroup) => {
+const opCosetReps = (symOps, subgroup) => {
   const seen = {};
   const result = [];
 
   for (const op of symOps) {
-    if (!seen[spacegroups.opModZ(op)]) {
+    if (!seen[opModZ(op)]) {
       result.push(op);
-      for (const t of subgroup) {
-        seen[spacegroups.opModZ(opsQ.times(op, t))] = true;
-      }
+
+      for (const t of subgroup)
+        seen[opModZ(opsQ.times(op, t))] = true;
     }
   }
 
@@ -113,18 +109,17 @@ const operatorCosets = (symOps, subgroup) => {
 
 
 const pointStabilizer = (point, symOps, areEqualFn) => {
-  const stabilizer = symOps.filter(
-    op => areEqualFn(point, applyToPoint(op, point)));
+  const goodOp = op => areEqualFn(point, applyToPoint(op, point));
+  const stabilizer = symOps.filter(goodOp);
 
-  for (const A of stabilizer) {
-    for (const B of stabilizer) {
-      const ABi = opsQ.times(A, opsQ.inverse(B));
-      if (!areEqualFn(point, applyToPoint(ABi, point)))
+  for (const a of stabilizer) {
+    for (const b of stabilizer) {
+      if (!goodOp(opsQ.times(a, b)))
         return null;
     }
   }
 
-  return stabilizer.map(spacegroups.opModZ);
+  return stabilizer.map(opModZ);
 };
 
 
@@ -135,22 +130,21 @@ const edgeStabilizer = (pos, vec, symOps, pointsEqualFn, vectorsEqualFn) => {
 
   const stabilizer = symOps.filter(goodOp);
 
-  for (const A of stabilizer) {
-    for (const B of stabilizer) {
-      if (!goodOp(opsQ.times(A, opsQ.inverse(B)))) {
+  for (const a of stabilizer) {
+    for (const b of stabilizer) {
+      if (!goodOp(opsQ.times(a, b)))
         return null;
-      }
     }
   }
 
-  return stabilizer.map(spacegroups.opModZ);
+  return stabilizer.map(opModZ);
 };
 
 
 const nodeImages = (symOps, equalFn) => (v, index) => {
   const { name, coordination, positionInput, positionPrimitive } = v;
   const stabilizer = pointStabilizer(positionPrimitive, symOps, equalFn);
-  const cosetReps = operatorCosets(symOps, stabilizer);
+  const cosetReps = opCosetReps(symOps, stabilizer);
 
   return cosetReps.map(op => ({
     name,
@@ -170,7 +164,7 @@ const edgeImages = (symOps, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
   const stabilizer = edgeStabilizer(
     src, vec, symOps, pntsEqualFn, vecsEqualFn)
 
-  const cosetReps = operatorCosets(symOps, stabilizer);
+  const cosetReps = opCosetReps(symOps, stabilizer);
 
   return cosetReps
     .map(operator => {
@@ -215,18 +209,18 @@ const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
       if (found < 0) {
         const images = {};
         const stabilizer = pointStabilizer(p, symOps, pointsEqFn);
-        const reps = operatorCosets(symOps, stabilizer);
+        const reps = opCosetReps(symOps, stabilizer);
 
         for (const r of reps) {
           for (const op of stabilizer)
-            images[spacegroups.opModZ(opsQ.times(r, op))] = pos.length;
+            images[opModZ(opsQ.times(r, op))] = pos.length;
           pos.push(opsF.modZ(applyToPoint(r, p)));
         }
 
         for (const r of reps) {
           const m = {};
           for (const op of symOps)
-            m[op] = images[spacegroups.opModZ(opsQ.times(op, r))];
+            m[op] = images[opModZ(opsQ.times(op, r))];
           action.push(m);
         }
       }
@@ -633,7 +627,7 @@ export function netFromCrystal(spec) {
     warnings.push(`Unit cell resymmetrized to ${parms}`);
   }
 
-  const primitive = spacegroups.primitiveSetting(operators);
+  const primitive = primitiveSetting(operators);
   const primitiveCell = opsQ.toJS(primitive.cell);
   const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
   const primitiveGram = unitCells.symmetrizedGramMatrix(
@@ -686,7 +680,7 @@ export const tilingFromFacelist = spec => {
     warnings.push(`Unit cell resymmetrized to ${parms}`);
   }
 
-  const primitive = spacegroups.primitiveSetting(operators);
+  const primitive = primitiveSetting(operators);
   const primitiveCell = opsQ.toJS(primitive.cell);
   const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
   const primitiveGram = unitCells.symmetrizedGramMatrix(
