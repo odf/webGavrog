@@ -24,7 +24,7 @@ const applyToPoint = (op, point) => opsF.point(opsF.plus(
 ));
 
 
-const dotProduct = gram => (v, w) => {
+const dot = (v, w, gram) => {
   let s = 0;
   for (const i in v) {
     for (const j in w)
@@ -34,11 +34,13 @@ const dotProduct = gram => (v, w) => {
 };
 
 
+const dotProduct = gram => (v, w) => dot(v, w, gram);
+
+
 const pointsAreCloseModZ = (gram, maxDist) => {
   const limit = maxDist * maxDist;
-  const dot = dotProduct(gram);
   const eps = Math.pow(2, -40);
-  const { dirichletVectors } = lattices(opsF, eps, dot);
+  const { dirichletVectors } = lattices(opsF, eps, dotProduct(gram));
   const vecs = dirichletVectors(opsF.identityMatrix(gram.length));
 
   return (p, q) => {
@@ -49,7 +51,7 @@ const pointsAreCloseModZ = (gram, maxDist) => {
       changed = false;
 
       for (const v of vecs) {
-        const t = dot(d, v) / dot(v, v);
+        const t = dot(d, v, gram) / dot(v, v, gram);
 
         if (t < -0.5 || t > 0.5+eps) {
           const f = Math.round(t);
@@ -62,7 +64,7 @@ const pointsAreCloseModZ = (gram, maxDist) => {
       }
     } while (changed);
 
-    return dot(d, d) < limit;
+    return dot(d, d, gram) < limit;
   };
 };
 
@@ -70,11 +72,10 @@ const pointsAreCloseModZ = (gram, maxDist) => {
 const vectorsAreClose = (gram, maxDist) => {
   const n = gram.length;
   const limit = maxDist * maxDist;
-  const dot = dotProduct(gram);
 
   return (v, w) => {
     const d = opsF.minus(v, w);
-    return dot(d, d) < limit;
+    return dot(d, d, gram) < limit;
   };
 };
 
