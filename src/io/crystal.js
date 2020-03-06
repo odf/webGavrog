@@ -141,6 +141,9 @@ const edgeStabilizer = (pos, vec, symOps, pointsEqualFn, vectorsEqualFn) => {
 };
 
 
+const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
+
+
 const nodeImages = (symOps, equalFn) => (v, index) => {
   const { name, coordination, positionInput, positionPrimitive } = v;
   const stabilizer = pointStabilizer(positionPrimitive, symOps, equalFn);
@@ -154,6 +157,11 @@ const nodeImages = (symOps, equalFn) => (v, index) => {
     operator: op
   }));
 };
+
+
+const applyOpsToNodes = (nodes, symOps, equalFn) =>
+      flatMap(nodeImages(symOps, equalFn), nodes)
+      .map((obj, id) => Object.assign({ id }, obj));
 
 
 const edgeImages = (symOps, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
@@ -179,14 +187,6 @@ const edgeImages = (symOps, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
       };
     });
 };
-
-
-const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
-
-
-const applyOpsToNodes = (nodes, symOps, equalFn) =>
-      flatMap(nodeImages(symOps, equalFn), nodes)
-      .map((obj, id) => Object.assign({ id }, obj));
 
 
 const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) =>
