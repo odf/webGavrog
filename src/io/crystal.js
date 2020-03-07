@@ -613,30 +613,31 @@ const mapEdge = (coordChange, nodes) => {
 
 
 const commonFromSpec = spec => {
-  const { name, group, cellGram: G0 } = spec;
   const warnings = spec.warnings.slice();
   const errors = spec.errors.slice();
 
-  if (group.error) {
-    errors.push(group.error);
+  if (spec.group.error) {
+    errors.push(spec.group.error);
     return { warnings, errors };
   }
 
-  const { name: groupName, transform, operators } = group;
-  const cellGram = unitCells.symmetrizedGramMatrix(G0, operators);
-  if (matrixError(cellGram, G0) > 0.01) {
+  const { operators } = spec.group;
+  const cellGram = unitCells.symmetrizedGramMatrix(spec.cellGram, operators);
+
+  if (matrixError(cellGram, spec.cellGram) > 0.01) {
     const parms = unitCells.unitCellParameters(cellGram);
     warnings.push(`Unit cell resymmetrized to ${parms}`);
   }
 
   const primitive = primitiveSetting(operators);
   const ops = primitive.ops;
-  const primitiveCell = opsQ.toJS(primitive.cell);
+  const cell = opsQ.toJS(primitive.cell);
   const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
+
   const gram = unitCells.symmetrizedGramMatrix(
-    opsF.times(primitiveCell,
-               opsF.times(cellGram, opsF.transposed(primitiveCell))),
-    ops.map(op => opsQ.transposed(opsQ.linearPart(op))));
+    opsF.times(cell, opsF.times(cellGram, opsF.transposed(cell))),
+    ops.map(op => opsQ.transposed(opsQ.linearPart(op)))
+  );
 
   return { warnings, errors, ops, toPrimitive, gram };
 };
