@@ -551,26 +551,26 @@ const makeDSymbol = (dim, size, pairings) => {
 };
 
 
-const convertEdge = ({ from, to }) =>
-  [from.node, to.node, opsF.minus(to.shift, from.shift)];
+const completeAndConvertEdges = (edgesIn, nodes, gram) => {
+  const edges = edgesIn.map(
+    ({ from, to }) => [from.node, to.node, opsF.minus(to.shift, from.shift)]
+  );
 
-
-const degreesSatisfied = (nodes, edges) => {
   const left = nodes.map(v => v.degree);
   for (const [i, j, _] of edges) {
     --left[i];
     --left[j];
   }
 
-  return left.every(n => n <= 0);
-};
-
-
-const withInducedEdges = (nodes, givenEdges, gram) => {
-  const pointAsFloat = pos => opsF.point(opsF.vector(pos));
-  const nodesF = nodes.map(({ id, pos, degree }) =>
-                           ({ id, pos: pointAsFloat(pos), degree }));
-  return fromPointCloud(nodesF, givenEdges, dotProduct(gram));
+  if (left.some(n => n > 0)) {
+    const pointAsFloat = pos => opsF.point(opsF.vector(pos));
+    const nodesF = nodes.map(
+      ({ id, pos, degree }) => ({ id, pos: pointAsFloat(pos), degree })
+    );
+    return fromPointCloud(nodesF, edges, dotProduct(gram));
+  }
+  else
+    return edges;
 };
 
 
@@ -644,6 +644,7 @@ const commonFromSpec = spec => {
 
 
 export const netFromCrystal = spec => {
+  const { name, group } = spec;
   const { warnings, errors, ops, toPrimitive, gram } = commonFromSpec(spec);
 
   const pointsEq = pointsAreCloseModZ(gram, 0.001);
@@ -652,20 +653,10 @@ export const netFromCrystal = spec => {
   const nodesIn = spec.nodes.map(mapNode(toPrimitive));
   const edgesIn = spec.edges.map(mapEdge(toPrimitive, nodesIn));
   const nodes = applyOpsToNodes(nodesIn, ops, pointsEq);
-  const edgesRaw = applyOpsToEdges(edgesIn, nodes, ops, pointsEq, vectorsEq)
+  const edges = applyOpsToEdges(edgesIn, nodes, ops, pointsEq, vectorsEq)
+  const graph = makeGraph(completeAndConvertEdges(edges, nodes, gram));
 
-  let edges = edgesRaw.map(convertEdge);
-  if (!degreesSatisfied(nodes, edges))
-    edges = withInducedEdges(nodes, edges, gram);
-
-  return {
-    name: spec.name,
-    group: spec.group.name,
-    nodes,
-    graph: makeGraph(edges),
-    warnings,
-    errors
-  };
+  return { name, group: group.name, nodes, graph, warnings, errors };
 };
 
 
