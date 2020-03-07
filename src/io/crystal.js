@@ -532,6 +532,25 @@ const tilingBase = faces => {
 };
 
 
+const makeDSymbol = (dim, size, pairings) => {
+  const s = pairings.map(p => {
+    const r = [];
+    for (const [D, E] of p) {
+      r[D] = E;
+      r[E] = D;
+    }
+    return r;
+  });
+
+  return buildDSymbol({
+    dim,
+    size,
+    getS: (i, D) => s[i][D],
+    getV: (i, D) => 1
+  });
+};
+
+
 const convertEdge = ({ from, to }) =>
   [from.node, to.node, opsF.minus(to.shift, from.shift)];
 
@@ -593,8 +612,8 @@ const mapEdge = (coordChange, nodes) => {
 };
 
 
-export function netFromCrystal(spec) {
-  const { name, group, cellGram: G0, nodes, edges } = spec;
+const commonFromSpec = spec => {
+  const { name, group, cellGram: G0 } = spec;
   const warnings = spec.warnings.slice();
   const errors = spec.errors.slice();
 
@@ -611,35 +630,38 @@ export function netFromCrystal(spec) {
   }
 
   const primitive = primitiveSetting(operators);
+  const ops = primitive.ops;
   const primitiveCell = opsQ.toJS(primitive.cell);
   const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
-  const primitiveGram = unitCells.symmetrizedGramMatrix(
+  const gram = unitCells.symmetrizedGramMatrix(
     opsF.times(primitiveCell,
                opsF.times(cellGram, opsF.transposed(primitiveCell))),
-    primitive.ops.map(op => opsQ.transposed(opsQ.linearPart(op))));
+    ops.map(op => opsQ.transposed(opsQ.linearPart(op))));
 
-  const nodesMapped = nodes.map(mapNode(toPrimitive));
-  const edgesMapped = edges.map(mapEdge(toPrimitive, nodesMapped));
+  return { warnings, errors, ops, toPrimitive, gram };
+};
 
-  const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
-  const vectorsEq = vectorsAreClose(primitiveGram, 0.001);
 
-  const allNodes = applyOpsToNodes(
-    nodesMapped, primitive.ops, pointsEq);
-  const explicitEdges = applyOpsToEdges(
-    edgesMapped, allNodes, primitive.ops, pointsEq, vectorsEq);
+export const netFromCrystal = spec => {
+  const { warnings, errors, ops, toPrimitive, gram } = commonFromSpec(spec);
 
-  const convertedEdges = explicitEdges.map(convertEdge);
-  const allEdges = degreesSatisfied(allNodes, convertedEdges)
-    ? convertedEdges
-    : withInducedEdges(allNodes, convertedEdges, primitiveGram);
-  const graph = makeGraph(allEdges);
+  const pointsEq = pointsAreCloseModZ(gram, 0.001);
+  const vectorsEq = vectorsAreClose(gram, 0.001);
+
+  const nodesIn = spec.nodes.map(mapNode(toPrimitive));
+  const edgesIn = spec.edges.map(mapEdge(toPrimitive, nodesIn));
+  const nodes = applyOpsToNodes(nodesIn, ops, pointsEq);
+  const edgesRaw = applyOpsToEdges(edgesIn, nodes, ops, pointsEq, vectorsEq)
+
+  let edges = edgesRaw.map(convertEdge);
+  if (!degreesSatisfied(nodes, edges))
+    edges = withInducedEdges(nodes, edges, gram);
 
   return {
-    name,
-    group: group.name,
-    nodes: allNodes,
-    graph,
+    name: spec.name,
+    group: spec.group.name,
+    nodes,
+    graph: makeGraph(edges),
     warnings,
     errors
   };
@@ -647,52 +669,28 @@ export function netFromCrystal(spec) {
 
 
 export const tilingFromFacelist = spec => {
-  const { name, group, cellGram: G0, faces, tiles } = spec;
-  const warnings = spec.warnings.slice();
-  const errors = spec.errors.slice();
+  const { warnings, errors, ops, toPrimitive, gram } = commonFromSpec(spec);
 
-  if (group.error) {
-    errors.push(group.error);
-    return { warnings, errors };
-  }
-
-  const { name: groupName, transform, operators } = group;
-  const cellGram = unitCells.symmetrizedGramMatrix(G0, operators);
-  if (matrixError(cellGram, G0) > 0.01) {
-    const parms = unitCells.unitCellParameters(cellGram);
-    warnings.push(`Unit cell resymmetrized to ${parms}`);
-  }
-
-  const primitive = primitiveSetting(operators);
-  const primitiveCell = opsQ.toJS(primitive.cell);
-  const toPrimitive = opsQ.toJS(primitive.fromStd.oldToNew);
-  const primitiveGram = unitCells.symmetrizedGramMatrix(
-    opsF.times(primitiveCell,
-               opsF.times(cellGram, opsF.transposed(primitiveCell))),
-    primitive.ops.map(op => opsQ.transposed(opsQ.linearPart(op))));
-
-  const facesMapped = faces.map(
+  const facesIn = spec.faces.map(
     f => f.map(p => opsF.times(toPrimitive, opsF.point(p))));
 
-  const pointsEq = pointsAreCloseModZ(primitiveGram, 0.001);
+  const pointsEq = pointsAreCloseModZ(gram, 0.001);
   const { pos, action, faces: codedFaces } =
-    applyOpsToCorners(facesMapped, primitive.ops, pointsEq);
+    applyOpsToCorners(facesIn, ops, pointsEq);
 
-  const allFaces = applyOpsToFaces(pos, action, codedFaces, primitive.ops);
-  const { pairings, faceOffsets, size } = tilingBase(allFaces);
+  const faces = applyOpsToFaces(pos, action, codedFaces, ops);
+  const { pairings, faceOffsets, size } = tilingBase(faces);
 
-  if (tiles.length == 0) {
-    pairings[2] = op2PairingsForPlainMode(pos, allFaces, faceOffsets);
+  if (spec.tiles.length == 0) {
+    pairings[2] = op2PairingsForPlainMode(pos, faces, faceOffsets);
   }
   else {
-    const allTiles = applyOpsToTiles(
-      pos, action, codedFaces, tiles, primitive.ops
-    );
+    const tiles = applyOpsToTiles(pos, action, codedFaces, spec.tiles, ops);
 
     const tilesAtFace = {};
 
-    for (let i = 0; i < allTiles.length; ++i) {
-      for (const { face, shift } of allTiles[i]) {
+    for (let i = 0; i < tiles.length; ++i) {
+      for (const { face, shift } of tiles[i]) {
         const key = JSON.stringify(face);
         if (tilesAtFace[key] == null)
           tilesAtFace[key] = [];
@@ -706,32 +704,17 @@ export const tilingFromFacelist = spec => {
         throw new Error(`Face is incident to ${n} tile(s).`);
     }
 
-    pairings[2] = op2PairingsForTileMode(
-      allFaces, faceOffsets, allTiles, tilesAtFace
-    );
+    pairings[2] =
+      op2PairingsForTileMode(faces, faceOffsets, tiles, tilesAtFace);
   }
 
-  const s = pairings.map(p => {
-    const r = [];
-    for (const [D, E] of p) {
-      r[D] = E;
-      r[E] = D;
-    }
-    return r;
-  });
-
-  const ds = buildDSymbol({
-    dim: 3,
-    size,
-    getS: (i, D) => s[i][D],
-    getV: (i, D) => 1
-  });
+  const ds = makeDSymbol(3, size, pairings);
 
   // TODO include original vertex positions in output
 
   return {
-    name,
-    group: group.name,
+    name: spec.name,
+    group: spec.group.name,
     symbol: derived.minimal(ds),
     cover: ds,
     warnings,
