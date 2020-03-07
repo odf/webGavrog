@@ -2,7 +2,8 @@ const ops = require('../geometry/types').coordinateChangesQ;
 
 import * as pg from '../pgraphs/periodic';
 import * as sg from '../spacegroups/sgtable';
-import * as cr from './crystal';
+import { netFromCrystal } from './crystal';
+import { tilingFromFacelist } from './faceList';
 
 import { parseBlocks } from './parseCgd';
 import parseOperator from '../spacegroups/parseOperator';
@@ -276,7 +277,7 @@ const processCrystal = data => {
       state.warnings.push(`Unknown keyword '${key}'`);
   }
 
-  return cr.netFromCrystal({
+  return netFromCrystal({
     name: output.name,
     group: output.group,
     cellGram: output.cell,
@@ -342,7 +343,7 @@ const processFaceListData = data => {
       state.warnings.push(`Unknown keyword '${key}'`);
   }
 
-  return cr.tilingFromFacelist({
+  return tilingFromFacelist({
     type: data.type,
     name: output.name,
     group: output.group,
