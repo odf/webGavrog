@@ -91,7 +91,22 @@ const lookupPointModZ = (p, nodes, areEqualFn) => {
 };
 
 
-const opCosetReps = (symOps, subgroup) => {
+const subgroup = (symOps, inSubgroup) => {
+  const sub = symOps.filter(inSubgroup).map(opModZ);
+
+  for (const a of sub) {
+    for (const b of sub) {
+      if (!inSubgroup(opsQ.times(a, b)))
+        throw new Error('inconsistent subgroup condition');
+    }
+  }
+
+  return sub;
+};
+
+
+const cosetReps = (symOps, inSubgroup) => {
+  const sub = subgroup(symOps, inSubgroup);
   const seen = {};
   const result = [];
 
@@ -99,7 +114,7 @@ const opCosetReps = (symOps, subgroup) => {
     if (!seen[opModZ(op)]) {
       result.push(op);
 
-      for (const t of subgroup)
+      for (const t of sub)
         seen[opModZ(opsQ.times(op, t))] = true;
     }
   }
@@ -108,47 +123,15 @@ const opCosetReps = (symOps, subgroup) => {
 };
 
 
-const pointStabilizer = (point, symOps, areEqualFn) => {
-  const goodOp = op => areEqualFn(point, applyToPoint(op, point));
-  const stabilizer = symOps.filter(goodOp);
-
-  for (const a of stabilizer) {
-    for (const b of stabilizer) {
-      if (!goodOp(opsQ.times(a, b)))
-        return null;
-    }
-  }
-
-  return stabilizer.map(opModZ);
-};
-
-
-const edgeStabilizer = (pos, vec, symOps, pointsEqualFn, vectorsEqualFn) => {
-  const goodOp = op =>
-    pointsEqualFn(pos, applyToPoint(op, pos)) &&
-    vectorsEqualFn(vec, applyToVector(op, vec));
-
-  const stabilizer = symOps.filter(goodOp);
-
-  for (const a of stabilizer) {
-    for (const b of stabilizer) {
-      if (!goodOp(opsQ.times(a, b)))
-        return null;
-    }
-  }
-
-  return stabilizer.map(opModZ);
-};
-
-
 const applyOpsToNodes = (nodes, symOps, equalFn) => {
   const result = [];
 
   for (let repIndex = 0; repIndex < nodes.length; ++repIndex) {
     const v = nodes[repIndex];
-    const stabilizer = pointStabilizer(v.positionPrimitive, symOps, equalFn);
+    const point = v.positionPrimitive;
+    const inStabilizer = op => equalFn(point, applyToPoint(op, point));
 
-    for (const operator of opCosetReps(symOps, stabilizer)) {
+    for (const operator of cosetReps(symOps, inStabilizer)) {
       result.push({
         id: result.length,
         name: v.name,
@@ -173,11 +156,12 @@ const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) => {
     const dst = e.to.positionPrimitive;
     const vec = opsF.minus(dst, src);
 
-    const stabilizer = edgeStabilizer(
-      src, vec, symOps, pointsEqFn, vectorsEqFn
-    )
+    const inStabilizer = op => (
+      pointsEqFn(src, applyToPoint(op, src)) &&
+        vectorsEqFn(vec, applyToVector(op, vec))
+    );
 
-    for (const operator of opCosetReps(symOps, stabilizer)) {
+    for (const operator of cosetReps(symOps, inStabilizer)) {
       const from = opsF.modZ(applyToPoint(operator, src));
       const to = opsF.plus(from, applyToVector(operator, vec));
 
@@ -208,11 +192,11 @@ const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
 
       if (found < 0) {
         const images = {};
-        const stabilizer = pointStabilizer(p, symOps, pointsEqFn);
-        const reps = opCosetReps(symOps, stabilizer);
+        const inStabilizer = op => pointsEqFn(p, applyToPoint(op, p));
+        const reps = cosetReps(symOps, inStabilizer);
 
         for (const r of reps) {
-          for (const op of stabilizer)
+          for (const op of subgroup(symOps, inStabilizer))
             images[opModZ(opsQ.times(r, op))] = pos.length;
           pos.push(opsF.modZ(applyToPoint(r, p)));
         }
