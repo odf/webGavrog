@@ -141,57 +141,57 @@ const edgeStabilizer = (pos, vec, symOps, pointsEqualFn, vectorsEqualFn) => {
 };
 
 
-const flatMap = (fn, xs) => xs.reduce((t, x, i) => t.concat(fn(x, i)), []);
+const applyOpsToNodes = (nodes, symOps, equalFn) => {
+  const result = [];
 
+  for (let repIndex = 0; repIndex < nodes.length; ++repIndex) {
+    const v = nodes[repIndex];
+    const stabilizer = pointStabilizer(v.positionPrimitive, symOps, equalFn);
 
-const nodeImages = (symOps, equalFn) => (v, index) => {
-  const { name, coordination, positionInput, positionPrimitive } = v;
-  const stabilizer = pointStabilizer(positionPrimitive, symOps, equalFn);
-  const cosetReps = opCosetReps(symOps, stabilizer);
+    for (const operator of opCosetReps(symOps, stabilizer)) {
+      result.push({
+        id: result.length,
+        name: v.name,
+        pos: opsF.modZ(applyToPoint(operator, v.positionPrimitive)),
+        degree: v.coordination,
+        repIndex,
+        operator
+      });
+    }
+  }
 
-  return cosetReps.map(op => ({
-    name,
-    pos: opsF.modZ(applyToPoint(op, positionPrimitive)),
-    degree: coordination,
-    repIndex: index,
-    operator: op
-  }));
+  return result;
 };
 
 
-const applyOpsToNodes = (nodes, symOps, equalFn) =>
-      flatMap(nodeImages(symOps, equalFn), nodes)
-      .map((obj, id) => Object.assign({ id }, obj));
+const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) => {
+  const result = [];
 
+  for (let repIndex = 0; repIndex < edges.length; ++repIndex) {
+    const e = edges[repIndex];
+    const src = e.from.positionPrimitive;
+    const dst = e.to.positionPrimitive;
+    const vec = opsF.minus(dst, src);
 
-const edgeImages = (symOps, nodes, pntsEqualFn, vecsEqualFn) => (e, index) => {
-  const { from: { positionPrimitive: src },
-          to: { positionPrimitive: dst } } = e;
-  const vec = opsF.minus(dst, src);
+    const stabilizer = edgeStabilizer(
+      src, vec, symOps, pointsEqFn, vectorsEqFn
+    )
 
-  const stabilizer = edgeStabilizer(
-    src, vec, symOps, pntsEqualFn, vecsEqualFn)
-
-  const cosetReps = opCosetReps(symOps, stabilizer);
-
-  return cosetReps
-    .map(operator => {
+    for (const operator of opCosetReps(symOps, stabilizer)) {
       const from = opsF.modZ(applyToPoint(operator, src));
       const to = opsF.plus(from, applyToVector(operator, vec));
 
-      return {
-        from: lookupPointModZ(from, nodes, pntsEqualFn),
-        to: lookupPointModZ(to, nodes, pntsEqualFn),
-        repIndex: index,
+      result.push({
+        from: lookupPointModZ(from, nodes, pointsEqFn),
+        to: lookupPointModZ(to, nodes, pointsEqFn),
+        repIndex,
         operator
-      };
-    });
+      });
+    }
+  }
+
+  return result;
 };
-
-
-const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) =>
-      flatMap(edgeImages(symOps, nodes, pointsEqFn, vectorsEqFn), edges)
-      .map((obj, id) => Object.assign({ id }, obj));
 
 
 const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
