@@ -135,7 +135,7 @@ const applyOpsToNodes = (nodes, symOps, equalFn) => {
       result.push({
         id: result.length,
         name: v.name,
-        pos: opsF.modZ(applyToPoint(operator, v.positionPrimitive)),
+        pos: opsF.modZ(applyToPoint(operator, point)),
         degree: v.coordination,
         repIndex,
         operator
@@ -153,8 +153,7 @@ const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) => {
   for (let repIndex = 0; repIndex < edges.length; ++repIndex) {
     const e = edges[repIndex];
     const src = e.from.positionPrimitive;
-    const dst = e.to.positionPrimitive;
-    const vec = opsF.minus(dst, src);
+    const vec = opsF.minus(e.to.positionPrimitive, src);
 
     const inStabilizer = op => (
       pointsEqFn(src, applyToPoint(op, src)) &&
