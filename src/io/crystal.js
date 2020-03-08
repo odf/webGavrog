@@ -14,6 +14,41 @@ const vectorsAreClose = (gram, maxDist) => {
 };
 
 
+const mapNode = coordChange => (
+  ({ name, coordination, position }, i) => ({
+    name,
+    index: i,
+    coordination,
+    positionInput: position,
+    positionPrimitive: opsF.modZ(opsF.times(coordChange, opsF.point(position)))
+  })
+);
+
+
+const mapEdge = (coordChange, nodes) => {
+  const mapEnd = p => {
+    if (opsF.typeOf(p) == 'Vector') {
+      return {
+        positionInput: p,
+        positionPrimitive: opsF.times(coordChange, opsF.point(p))
+      }
+    }
+    else {
+      const { positionInput, positionPrimitive } = (
+        nodes.find(v => v.name == p) || {}
+      );
+      return { nodeGiven: p, positionInput, positionPrimitive };
+    };
+  };
+
+  return ([from, to], index) => ({
+    index,
+    from: mapEnd(from),
+    to: mapEnd(to)
+  });
+};
+
+
 const lookupPointModZ = (p, nodes, areEqualFn) => {
   for (const { pos: q, id: node } of nodes) {
     if (areEqualFn(p, q)) {
@@ -100,41 +135,6 @@ const completeAndConvertEdges = (edgesIn, nodes, gram) => {
   }
   else
     return edges;
-};
-
-
-const mapNode = coordChange => (
-  ({ name, coordination, position }, i) => ({
-    name,
-    index: i,
-    coordination,
-    positionInput: position,
-    positionPrimitive: opsF.modZ(opsF.times(coordChange, opsF.point(position)))
-  })
-);
-
-
-const mapEdge = (coordChange, nodes) => {
-  const mapEnd = p => {
-    if (opsF.typeOf(p) == 'Vector') {
-      return {
-        positionInput: p,
-        positionPrimitive: opsF.times(coordChange, opsF.point(p))
-      }
-    }
-    else {
-      const { positionInput, positionPrimitive } = (
-        nodes.find(v => v.name == p) || {}
-      );
-      return { nodeGiven: p, positionInput, positionPrimitive };
-    };
-  };
-
-  return ([from, to], index) => ({
-    index,
-    from: mapEnd(from),
-    to: mapEnd(to)
-  });
 };
 
 
