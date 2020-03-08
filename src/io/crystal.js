@@ -16,8 +16,8 @@ const vectorsAreClose = (gram, maxDist) => {
 
 const mapNode = coordChange => p => ({
   name: p.name,
-  coordination: p.coordination,
-  position: opsF.modZ(opsF.times(coordChange, opsF.point(p.position)))
+  degree: p.coordination,
+  pos: opsF.modZ(opsF.times(coordChange, opsF.point(p.position)))
 });
 
 
@@ -25,39 +25,22 @@ const mapEdge = (coordChange, nodes) => e => e.map(p => {
   if (opsF.typeOf(p) == 'Vector')
     return opsF.times(coordChange, opsF.point(p));
   else
-    return (nodes.find(v => v.name == p) || {}).position;
+    return (nodes.find(v => v.name == p) || {}).pos;
 });
-
-
-const lookupPointModZ = (p, nodes, areEqualFn) => {
-  for (const { pos: q, id: node } of nodes) {
-    if (areEqualFn(p, q)) {
-      const shift = opsF.minus(p, q).map(x => opsF.round(x));
-      return { node, shift };
-    }
-  }
-
-  return { pos: p };
-};
 
 
 const applyOpsToNodes = (nodes, symOps, equalFn) => {
   const result = [];
 
   for (let repIndex = 0; repIndex < nodes.length; ++repIndex) {
-    const v = nodes[repIndex];
-    const point = v.position;
-    const inStabilizer = op => equalFn(point, common.applyToPoint(op, point));
+    const { name, degree, pos: vpos } = nodes[repIndex];
+    const inStabilizer = op => equalFn(vpos, common.applyToPoint(op, vpos));
 
     for (const operator of common.cosetReps(symOps, inStabilizer)) {
-      result.push({
-        id: result.length,
-        name: v.name,
-        pos: opsF.modZ(common.applyToPoint(operator, point)),
-        degree: v.coordination,
-        repIndex,
-        operator
-      });
+      const id = result.length;
+      const pos = opsF.modZ(common.applyToPoint(operator, vpos));
+
+      result.push({ id, name, pos, degree, repIndex, operator });
     }
   }
 
@@ -66,10 +49,18 @@ const applyOpsToNodes = (nodes, symOps, equalFn) => {
 
 
 const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) => {
+  const lookup = p => {
+    for (const v of nodes) {
+      if (pointsEqFn(p, v.pos)) {
+        const shift = opsF.minus(p, v.pos).map(x => opsF.round(x));
+        return [ v.id, shift ];
+      }
+    }
+  };
+
   const result = [];
 
-  for (let repIndex = 0; repIndex < edges.length; ++repIndex) {
-    const [src, dst] = edges[repIndex];
+  for (const [src, dst] of edges) {
     const vec = opsF.minus(dst, src);
 
     const inStabilizer = op => (
@@ -77,16 +68,13 @@ const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) => {
         vectorsEqFn(vec, common.applyToVector(op, vec))
     );
 
-    for (const operator of common.cosetReps(symOps, inStabilizer)) {
-      const from = opsF.modZ(common.applyToPoint(operator, src));
-      const to = opsF.plus(from, common.applyToVector(operator, vec));
+    for (const op of common.cosetReps(symOps, inStabilizer)) {
+      const imgSrc = opsF.modZ(common.applyToPoint(op, src));
+      const imgVec = opsF.plus(imgSrc, common.applyToVector(op, vec));
+      const [ nodeA, shiftA ] = lookup(imgSrc);
+      const [ nodeB, shiftB ] = lookup(imgVec);
 
-      result.push({
-        from: lookupPointModZ(from, nodes, pointsEqFn),
-        to: lookupPointModZ(to, nodes, pointsEqFn),
-        repIndex,
-        operator
-      });
+      result.push([ nodeA, nodeB, opsF.minus(shiftB, shiftA) ]);
     }
   }
 
@@ -94,11 +82,7 @@ const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) => {
 };
 
 
-const completeAndConvertEdges = (edgesIn, nodes, gram) => {
-  const edges = edgesIn.map(
-    ({ from, to }) => [from.node, to.node, opsF.minus(to.shift, from.shift)]
-  );
-
+const completeEdgeList = (edges, nodes, gram) => {
   const left = nodes.map(v => v.degree);
   for (const [i, j, _] of edges) {
     --left[i];
@@ -128,7 +112,7 @@ export const netFromCrystal = spec => {
   const edgesIn = spec.edges.map(mapEdge(toPrimitive, nodesIn));
   const nodes = applyOpsToNodes(nodesIn, ops, pointsEq);
   const edges = applyOpsToEdges(edgesIn, nodes, ops, pointsEq, vectorsEq)
-  const graph = makeGraph(completeAndConvertEdges(edges, nodes, gram));
+  const graph = makeGraph(completeEdgeList(edges, nodes, gram));
 
   return { name, group: group.name, nodes, graph, warnings, errors };
 };
