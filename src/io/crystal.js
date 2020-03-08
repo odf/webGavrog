@@ -89,13 +89,8 @@ const completeEdgeList = (edges, nodes, gram) => {
     --left[j];
   }
 
-  if (left.some(n => n > 0)) {
-    const pointAsFloat = pos => opsF.point(opsF.vector(pos));
-    const nodesF = nodes.map(
-      ({ id, pos, degree }) => ({ id, pos: pointAsFloat(pos), degree })
-    );
-    return fromPointCloud(nodesF, edges, common.dotProduct(gram));
-  }
+  if (left.some(n => n > 0))
+    return fromPointCloud(nodes, edges, common.dotProduct(gram));
   else
     return edges;
 };
