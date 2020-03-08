@@ -14,39 +14,19 @@ const vectorsAreClose = (gram, maxDist) => {
 };
 
 
-const mapNode = coordChange => (
-  ({ name, coordination, position }, i) => ({
-    name,
-    index: i,
-    coordination,
-    positionInput: position,
-    positionPrimitive: opsF.modZ(opsF.times(coordChange, opsF.point(position)))
-  })
-);
+const mapNode = coordChange => p => ({
+  name: p.name,
+  coordination: p.coordination,
+  position: opsF.modZ(opsF.times(coordChange, opsF.point(p.position)))
+});
 
 
-const mapEdge = (coordChange, nodes) => {
-  const mapEnd = p => {
-    if (opsF.typeOf(p) == 'Vector') {
-      return {
-        positionInput: p,
-        positionPrimitive: opsF.times(coordChange, opsF.point(p))
-      }
-    }
-    else {
-      const { positionInput, positionPrimitive } = (
-        nodes.find(v => v.name == p) || {}
-      );
-      return { nodeGiven: p, positionInput, positionPrimitive };
-    };
-  };
-
-  return ([from, to], index) => ({
-    index,
-    from: mapEnd(from),
-    to: mapEnd(to)
-  });
-};
+const mapEdge = (coordChange, nodes) => e => e.map(p => {
+  if (opsF.typeOf(p) == 'Vector')
+    return opsF.times(coordChange, opsF.point(p));
+  else
+    return (nodes.find(v => v.name == p) || {}).position;
+});
 
 
 const lookupPointModZ = (p, nodes, areEqualFn) => {
@@ -66,7 +46,7 @@ const applyOpsToNodes = (nodes, symOps, equalFn) => {
 
   for (let repIndex = 0; repIndex < nodes.length; ++repIndex) {
     const v = nodes[repIndex];
-    const point = v.positionPrimitive;
+    const point = v.position;
     const inStabilizer = op => equalFn(point, common.applyToPoint(op, point));
 
     for (const operator of common.cosetReps(symOps, inStabilizer)) {
@@ -89,9 +69,8 @@ const applyOpsToEdges = (edges, nodes, symOps, pointsEqFn, vectorsEqFn) => {
   const result = [];
 
   for (let repIndex = 0; repIndex < edges.length; ++repIndex) {
-    const e = edges[repIndex];
-    const src = e.from.positionPrimitive;
-    const vec = opsF.minus(e.to.positionPrimitive, src);
+    const [src, dst] = edges[repIndex];
+    const vec = opsF.minus(dst, src);
 
     const inStabilizer = op => (
       pointsEqFn(src, common.applyToPoint(op, src)) &&
