@@ -289,7 +289,7 @@ class Evaluator {
 };
 
 
-const embed = g => {
+const embed = (g, separationFactor=0.5) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
@@ -313,7 +313,7 @@ const embed = g => {
     const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
     const separation = stats.shortestNonEdge(g, positions, dot);
 
-    if (separation < maximum * 0.95) { //TODO this seems too strict in practice
+    if (separation < minimum * separationFactor) {
       console.log(`relaxation failed in pass ${pass}:`);
       console.log(`  min/max edge length: ${minimum}, ${maximum}`);
       console.log(`  vertex separation: ${separation}`);
