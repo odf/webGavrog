@@ -14,14 +14,14 @@ const vectorsAreClose = (gram, maxDist) => {
 };
 
 
-const mapNode = coordChange => p => ({
-  name: p.name,
-  degree: p.coordination,
-  pos: opsF.modZ(opsF.times(coordChange, opsF.point(p.position)))
+const mapNode = (node, coordChange) => ({
+  name: node.name,
+  degree: node.coordination,
+  pos: opsF.modZ(opsF.times(coordChange, opsF.point(node.position)))
 });
 
 
-const mapEdge = (coordChange, nodes) => e => e.map(p => {
+const mapEdge = (edge, coordChange, nodes) => edge.map(p => {
   if (opsF.typeOf(p) == 'Vector')
     return opsF.times(coordChange, opsF.point(p));
   else
@@ -103,8 +103,8 @@ export const netFromCrystal = spec => {
   const pointsEq = common.pointsAreCloseModZ(gram, 0.001);
   const vectorsEq = vectorsAreClose(gram, 0.001);
 
-  const nodesIn = spec.nodes.map(mapNode(toPrimitive));
-  const edgesIn = spec.edges.map(mapEdge(toPrimitive, nodesIn));
+  const nodesIn = spec.nodes.map(node => mapNode(node, toPrimitive));
+  const edgesIn = spec.edges.map(edge => mapEdge(edge, toPrimitive, nodesIn));
   const nodes = applyOpsToNodes(nodesIn, ops, pointsEq);
   const edges = applyOpsToEdges(edgesIn, nodes, ops, pointsEq, vectorsEq)
   const graph = makeGraph(completeEdgeList(edges, nodes, gram));
