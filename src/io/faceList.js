@@ -133,7 +133,7 @@ const cornerAction = (pos, action) => (op, { index, shift }) => {
 };
 
 
-const applyOpsToFaces = (pos, action, faces, symOps) => {
+const applyOpsToFaces = ({ pos, action, faces }, symOps) => {
   const apply = cornerAction(pos, action);
   const seen = {};
   const result = [];
@@ -154,7 +154,7 @@ const applyOpsToFaces = (pos, action, faces, symOps) => {
 };
 
 
-const applyOpsToTiles = (pos, action, faces, tiles, symOps) => {
+const applyOpsToTiles = ({ pos, action, faces }, tiles, symOps) => {
   const apply = cornerAction(pos, action);
   const seen = {};
   const result = [];
@@ -307,7 +307,24 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
 };
 
 
-const op2PairingsForTileMode = (faces, offsets, tiles, tilesAtFace) => {
+const op2PairingsForTileMode = (faces, offsets, tiles) => {
+  const tilesAtFace = {};
+
+  for (let i = 0; i < tiles.length; ++i) {
+    for (const { face, shift } of tiles[i]) {
+      const key = JSON.stringify(face);
+      if (tilesAtFace[key] == null)
+        tilesAtFace[key] = [];
+      tilesAtFace[key].push([i, shift]);
+    }
+  }
+
+  for (const key in tilesAtFace) {
+    const n = tilesAtFace[key].length;
+    if (n != 2)
+      throw new Error(`Face is incident to ${n} tile(s).`);
+  }
+
   for (let tIdx = 0; tIdx < tiles.length; ++tIdx) {
     const tile = tiles[tIdx];
     const facesAtEdge = collectTileEdges(tile);
@@ -384,55 +401,29 @@ const makeDSymbol = (dim, size, pairings) => {
 
 
 export const tilingFromFacelist = spec => {
+  const { name, group } = spec;
   const { warnings, errors, ops, toPrimitive, gram } = common.fromSpec(spec);
 
   const facesIn = spec.faces.map(
     f => f.map(p => opsF.times(toPrimitive, opsF.point(p))));
 
   const pointsEq = common.pointsAreCloseModZ(gram, 0.001);
-  const { pos, action, faces: codedFaces } =
-    applyOpsToCorners(facesIn, ops, pointsEq);
+  const cornerData = applyOpsToCorners(facesIn, ops, pointsEq);
 
-  const faces = applyOpsToFaces(pos, action, codedFaces, ops);
+  const faces = applyOpsToFaces(cornerData, ops);
   const { pairings, faceOffsets, size } = tilingBase(faces);
 
-  if (spec.tiles.length == 0) {
-    pairings[2] = op2PairingsForPlainMode(pos, faces, faceOffsets);
-  }
+  if (spec.tiles.length == 0)
+    pairings[2] = op2PairingsForPlainMode(cornerData.pos, faces, faceOffsets);
   else {
-    const tiles = applyOpsToTiles(pos, action, codedFaces, spec.tiles, ops);
-
-    const tilesAtFace = {};
-
-    for (let i = 0; i < tiles.length; ++i) {
-      for (const { face, shift } of tiles[i]) {
-        const key = JSON.stringify(face);
-        if (tilesAtFace[key] == null)
-          tilesAtFace[key] = [];
-        tilesAtFace[key].push([i, shift]);
-      }
-    }
-
-    for (const key in tilesAtFace) {
-      const n = tilesAtFace[key].length;
-      if (n != 2)
-        throw new Error(`Face is incident to ${n} tile(s).`);
-    }
-
-    pairings[2] =
-      op2PairingsForTileMode(faces, faceOffsets, tiles, tilesAtFace);
+    const tiles = applyOpsToTiles(cornerData, spec.tiles, ops);
+    pairings[2] = op2PairingsForTileMode(faces, faceOffsets, tiles);
   }
 
-  const ds = makeDSymbol(3, size, pairings);
+  const cover = makeDSymbol(3, size, pairings);
+  const symbol = derived.minimal(cover);
 
   // TODO include original vertex positions in output
 
-  return {
-    name: spec.name,
-    group: spec.group.name,
-    symbol: derived.minimal(ds),
-    cover: ds,
-    warnings,
-    errors
-  };
+  return { name, group: group.name, symbol, cover, warnings, errors };
 };
