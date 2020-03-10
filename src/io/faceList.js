@@ -1,12 +1,16 @@
 import { opModZ } from '../spacegroups/spacegroups';
 import { buildDSymbol } from '../dsymbols/delaney';
-import * as derived from '../dsymbols/derived';
+import { minimal } from '../dsymbols/derived';
 import * as common from './common';
 
 import {
   coordinateChangesQ as opsQ,
   coordinateChangesF as opsF
 } from '../geometry/types';
+
+
+const mapFace = (face, toPrimitive) =>
+  face.map(p => opsF.times(toPrimitive, opsF.point(p)));
 
 
 const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
@@ -244,6 +248,34 @@ const collectTileEdges = tile => {
 };
 
 
+const tilingBase = faces => {
+  const pairings = [[], [], [], []];
+  const faceOffsets = [];
+  let offset = 1;
+
+  for (const face of faces) {
+    const n = face.length;
+
+    for (let i = 0; i < 4 * n; i += 2)
+      pairings[0].push([offset + i, offset + i + 1]);
+
+    for (let i = 1; i < 2 * n; i += 2) {
+      const i1 = (i + 1) % (2 * n);
+      pairings[1].push([offset + i, offset + i1]);
+      pairings[1].push([offset + i + 2 * n, offset + i1 + 2 * n]);
+    }
+
+    for (let i = 0; i < 2 * n; ++i)
+      pairings[3].push([offset + i, offset + i + 2 * n]);
+
+    faceOffsets.push(offset);
+    offset += 4 * n;
+  }
+
+  return { pairings, faceOffsets, size: offset - 1 };
+};
+
+
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
   const explicitFaces = faces.map(f => f.map(
     item => opsF.plus(opsF.vector(corners[item.index]), item.shift)));
@@ -353,34 +385,6 @@ const op2PairingsForTileMode = (faces, offsets, tiles) => {
 };
 
 
-const tilingBase = faces => {
-  const pairings = [[], [], [], []];
-  const faceOffsets = [];
-  let offset = 1;
-
-  for (const face of faces) {
-    const n = face.length;
-
-    for (let i = 0; i < 4 * n; i += 2)
-      pairings[0].push([offset + i, offset + i + 1]);
-
-    for (let i = 1; i < 2 * n; i += 2) {
-      const i1 = (i + 1) % (2 * n);
-      pairings[1].push([offset + i, offset + i1]);
-      pairings[1].push([offset + i + 2 * n, offset + i1 + 2 * n]);
-    }
-
-    for (let i = 0; i < 2 * n; ++i)
-      pairings[3].push([offset + i, offset + i + 2 * n]);
-
-    faceOffsets.push(offset);
-    offset += 4 * n;
-  }
-
-  return { pairings, faceOffsets, size: offset - 1 };
-};
-
-
 const makeDSymbol = (dim, size, pairings) => {
   const s = pairings.map(p => {
     const r = [];
@@ -404,13 +408,12 @@ export const tilingFromFacelist = spec => {
   const { name, group } = spec;
   const { warnings, errors, ops, toPrimitive, gram } = common.fromSpec(spec);
 
-  const facesIn = spec.faces.map(
-    f => f.map(p => opsF.times(toPrimitive, opsF.point(p))));
-
   const pointsEq = common.pointsAreCloseModZ(gram, 0.001);
-  const cornerData = applyOpsToCorners(facesIn, ops, pointsEq);
 
+  const facesIn = spec.faces.map(face => mapFace(face, toPrimitive));
+  const cornerData = applyOpsToCorners(facesIn, ops, pointsEq);
   const faces = applyOpsToFaces(cornerData, ops);
+
   const { pairings, faceOffsets, size } = tilingBase(faces);
 
   if (spec.tiles.length == 0)
@@ -421,7 +424,7 @@ export const tilingFromFacelist = spec => {
   }
 
   const cover = makeDSymbol(3, size, pairings);
-  const symbol = derived.minimal(cover);
+  const symbol = minimal(cover);
 
   // TODO include original vertex positions in output
 
