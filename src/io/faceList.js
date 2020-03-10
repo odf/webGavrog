@@ -13,6 +13,33 @@ const mapFace = (face, toPrimitive) =>
   face.map(p => opsF.times(toPrimitive, opsF.point(p)));
 
 
+const applyOpsToPoint = (p, offset, symOps, pointsEqFn) => {
+  const inStabilizer = op => pointsEqFn(p, common.applyToPoint(op, p));
+  const reps = common.cosetReps(symOps, inStabilizer);
+
+  const images = {};
+
+  for (let i = 0; i < reps.length; ++i) {
+    for (const op of common.subgroup(symOps, inStabilizer))
+      images[opModZ(opsQ.times(reps[i], op))] = offset + i;
+  }
+
+  const result = [];
+
+  for (const r of reps) {
+    const point = opsF.modZ(common.applyToPoint(r, p));
+
+    const action = {};
+    for (const op of symOps)
+      action[op] = images[opModZ(opsQ.times(op, r))];
+
+    result.push([ point, action ]);
+  }
+
+  return result;
+};
+
+
 const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
   const pos = [];
   const action = [];
@@ -26,21 +53,9 @@ const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
       const index = found < 0 ? pos.length : found;
 
       if (found < 0) {
-        const images = {};
-        const inStabilizer = op => pointsEqFn(p, common.applyToPoint(op, p));
-        const reps = common.cosetReps(symOps, inStabilizer);
-
-        for (const r of reps) {
-          for (const op of common.subgroup(symOps, inStabilizer))
-            images[opModZ(opsQ.times(r, op))] = pos.length;
-          pos.push(opsF.modZ(common.applyToPoint(r, p)));
-        }
-
-        for (const r of reps) {
-          const m = {};
-          for (const op of symOps)
-            m[op] = images[opModZ(opsQ.times(op, r))];
-          action.push(m);
+        for (const [p, a] of applyOpsToPoint(p, index, symOps, pointsEqFn)) {
+          pos.push(p);
+          action.push(a);
         }
       }
 
