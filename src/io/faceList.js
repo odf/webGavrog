@@ -15,12 +15,13 @@ const mapFace = (face, toPrimitive) =>
 
 const applyOpsToPoint = (p, offset, symOps, pointsEqFn) => {
   const inStabilizer = op => pointsEqFn(p, common.applyToPoint(op, p));
+  const sub = common.subgroup(symOps, inStabilizer);
   const reps = common.cosetReps(symOps, inStabilizer);
 
   const images = {};
 
   for (let i = 0; i < reps.length; ++i) {
-    for (const op of common.subgroup(symOps, inStabilizer))
+    for (const op of sub)
       images[opModZ(opsQ.times(reps[i], op))] = offset + i;
   }
 
@@ -72,17 +73,14 @@ const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
 
 const compareFaces = (f1, f2) => {
   for (const i in f1) {
-    const d = f1[i].index - f2[i].index;
+    const d = (
+      opsF.cmp(f1[i].index, f2[i].index) ||
+        opsF.cmp(f1[i].shift, f2[i].shift)
+    );
     if (d != 0)
       return d;
-
-    for (const j in f1[i].shift) {
-      const d = f1[i].shift[j] - f2[i].shift[j];
-      if (d != 0)
-        return d;
-    }
   }
-  return false;
+  return 0;
 };
 
 
@@ -92,8 +90,11 @@ const normalizedFace = face => {
 
   for (const i in face) {
     const s = face[i].shift;
-    const fa = face.slice(i).concat(face.slice(0, i))
-      .map(({ index, shift }) => ({ index, shift: opsF.minus(shift, s) }));
+    const fs = face.map(
+      ({ index, shift }) => ({ index, shift: opsF.minus(shift, s) })
+    );
+
+    const fa = fs.slice(i).concat(fs.slice(0, i))
     const fb = [fa[0]].concat(fa.slice(1).reverse());
 
     if (best == null || compareFaces(fa, best) < 0) {
@@ -111,9 +112,8 @@ const normalizedFace = face => {
 
 
 const normalizedTile = tile => {
-  const cmpPairs = (p, q) => (
-    compareFaces(p.face, q.face) || opsF.cmp(p.shift, q.shift)
-  );
+  const cmpPairs = (p, q) =>
+    compareFaces(p.face, q.face) || opsF.cmp(p.shift, q.shift);
 
   const cmpTiles = (ps, qs) => {
     for (let i = 0; i < ps.length; ++i) {
@@ -127,11 +127,11 @@ const normalizedTile = tile => {
   let best = null;
 
   for (const { shift: s0 } of tile) {
-    const mapped = (
-      tile
-        .map(({ face, shift }) => ({ face, shift: opsF.minus(shift, s0) }))
-        .sort(cmpPairs)
+    const mapped = tile.map(
+      ({ face, shift }) => ({ face, shift: opsF.minus(shift, s0) })
     );
+    mapped.sort(cmpPairs)
+
     if (best == null || cmpTiles(best, mapped) < 0)
       best = mapped;
   }
@@ -140,15 +140,12 @@ const normalizedTile = tile => {
 };
 
 
-const cornerAction = (pos, action) => (op, { index, shift }) => {
-  const oldPos = opsF.plus(pos[index], shift);
-  const newPos = common.applyToPoint(op, oldPos);
-  const newIndex = action[index][op];
+const cornerAction = (pos, action) => (op, c) => {
+  const newPos = common.applyToPoint(op, opsF.plus(pos[c.index], c.shift));
+  const index = action[c.index][op];
+  const shift = opsF.minus(newPos, pos[index]).map(x => opsF.round(x));
 
-  return {
-    index: newIndex,
-    shift: opsF.minus(newPos, pos[newIndex]).map(x => opsF.round(x))
-  }
+  return { index, shift };
 };
 
 
