@@ -71,13 +71,30 @@ const applyOpsToCorners = (rawFaces, symOps, pointsEqFn) => {
 };
 
 
+const compareCorners = (c1, c2) => (
+  opsF.cmp(c1.index, c2.index) || opsF.cmp(c1.shift, c2.shift)
+);
+
+
 const compareFaces = (f1, f2) => {
   for (const i in f1) {
-    const d = (
-      opsF.cmp(f1[i].index, f2[i].index) ||
-        opsF.cmp(f1[i].shift, f2[i].shift)
-    );
-    if (d != 0)
+    const d = compareCorners(f1[i], f2[i]);
+    if (d)
+      return d;
+  }
+  return 0;
+};
+
+
+const compareShiftedFaces = (p, q) => (
+  compareFaces(p.face, q.face) || opsF.cmp(p.shift, q.shift)
+);
+
+
+const compareTiles = (ps, qs) => {
+  for (const i in ps) {
+    const d = compareShiftedFaces(ps[i], qs[i]);
+    if (d)
       return d;
   }
   return 0;
@@ -85,8 +102,7 @@ const compareFaces = (f1, f2) => {
 
 
 const normalizedFace = face => {
-  let best = null;
-  let bestShift = null;
+  let best, bestShift;
 
   for (const i in face) {
     const s = face[i].shift;
@@ -95,16 +111,12 @@ const normalizedFace = face => {
     );
 
     const fa = fs.slice(i).concat(fs.slice(0, i))
-    const fb = [fa[0]].concat(fa.slice(1).reverse());
+    if (best == null || compareFaces(fa, best) < 0)
+      [ best, bestShift ] = [ fa, s ];
 
-    if (best == null || compareFaces(fa, best) < 0) {
-      best = fa;
-      bestShift = s;
-    }
-    if (compareFaces(fb, best) < 0) {
-      best = fb;
-      bestShift = s;
-    }
+    const fb = [fa[0]].concat(fa.slice(1).reverse());
+    if (compareFaces(fb, best) < 0)
+      [ best, bestShift ] = [ fb, s ];
   }
 
   return { face: best, shift: bestShift };
@@ -112,27 +124,15 @@ const normalizedFace = face => {
 
 
 const normalizedTile = tile => {
-  const cmpPairs = (p, q) =>
-    compareFaces(p.face, q.face) || opsF.cmp(p.shift, q.shift);
-
-  const cmpTiles = (ps, qs) => {
-    for (let i = 0; i < ps.length; ++i) {
-      const d = cmpPairs(ps[i], qs[i]);
-      if (d)
-        return d;
-    }
-    return 0;
-  };
-
   let best = null;
 
-  for (const { shift: s0 } of tile) {
+  for (const { shift: s } of tile) {
     const mapped = tile.map(
-      ({ face, shift }) => ({ face, shift: opsF.minus(shift, s0) })
+      ({ face, shift }) => ({ face, shift: opsF.minus(shift, s) })
     );
-    mapped.sort(cmpPairs)
+    mapped.sort(compareShiftedFaces)
 
-    if (best == null || cmpTiles(best, mapped) < 0)
+    if (best == null || compareTiles(best, mapped) < 0)
       best = mapped;
   }
 
