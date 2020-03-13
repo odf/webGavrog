@@ -14,6 +14,9 @@ import {
 } from '../geometry/types';
 
 
+const normalized = v => opsF.div(v, opsF.norm(v));
+
+
 const mapFace = (face, toPrimitive) =>
   face.map(p => opsF.times(toPrimitive, opsF.point(p)));
 
@@ -201,7 +204,32 @@ const applyOpsToTiles = ({ pos, action, faces }, tiles, symOps) => {
 };
 
 
-const normalized = v => opsF.div(v, opsF.norm(v));
+const tilingBase = faces => {
+  const pairings = [[], [], [], []];
+  const faceOffsets = [];
+  let offset = 1;
+
+  for (const face of faces) {
+    const n = face.length;
+
+    for (let i = 0; i < 4 * n; i += 2)
+      pairings[0].push([offset + i, offset + i + 1]);
+
+    for (let i = 1; i < 2 * n; i += 2) {
+      const i1 = (i + 1) % (2 * n);
+      pairings[1].push([offset + i, offset + i1]);
+      pairings[1].push([offset + i + 2 * n, offset + i1 + 2 * n]);
+    }
+
+    for (let i = 0; i < 2 * n; ++i)
+      pairings[3].push([offset + i, offset + i + 2 * n]);
+
+    faceOffsets.push(offset);
+    offset += 4 * n;
+  }
+
+  return { pairings, faceOffsets, size: offset - 1 };
+};
 
 
 const sectorNormals = vs => {
@@ -236,58 +264,6 @@ const collectEdges = faces => {
   });
 
   return facesAtEdge;
-};
-
-
-const collectTileEdges = tile => {
-  const facesAtEdge = {};
-
-  tile.forEach(({ face, shift }, i) => {
-    const n = face.length;
-    const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
-
-    edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
-      const key = encode([v1, v2, opsF.minus(s2, s1), opsF.plus(shift, s1)]);
-      const keyInv = encode([v2, v1, opsF.minus(s1, s2), opsF.plus(shift, s2)]);
-
-      if (facesAtEdge[key])
-        facesAtEdge[key].push([i, j, false]);
-      else if (facesAtEdge[keyInv])
-        facesAtEdge[keyInv].push([i, j, true]);
-      else
-        facesAtEdge[key] = [[i, j, false]];
-    });
-  });
-
-  return facesAtEdge;
-};
-
-
-const tilingBase = faces => {
-  const pairings = [[], [], [], []];
-  const faceOffsets = [];
-  let offset = 1;
-
-  for (const face of faces) {
-    const n = face.length;
-
-    for (let i = 0; i < 4 * n; i += 2)
-      pairings[0].push([offset + i, offset + i + 1]);
-
-    for (let i = 1; i < 2 * n; i += 2) {
-      const i1 = (i + 1) % (2 * n);
-      pairings[1].push([offset + i, offset + i1]);
-      pairings[1].push([offset + i + 2 * n, offset + i1 + 2 * n]);
-    }
-
-    for (let i = 0; i < 2 * n; ++i)
-      pairings[3].push([offset + i, offset + i + 2 * n]);
-
-    faceOffsets.push(offset);
-    offset += 4 * n;
-  }
-
-  return { pairings, faceOffsets, size: offset - 1 };
 };
 
 
@@ -351,6 +327,30 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
   }
 
   return result;
+};
+
+
+const collectTileEdges = tile => {
+  const facesAtEdge = {};
+
+  tile.forEach(({ face, shift }, i) => {
+    const n = face.length;
+    const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
+
+    edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
+      const key = encode([v1, v2, opsF.minus(s2, s1), opsF.plus(shift, s1)]);
+      const keyInv = encode([v2, v1, opsF.minus(s1, s2), opsF.plus(shift, s2)]);
+
+      if (facesAtEdge[key])
+        facesAtEdge[key].push([i, j, false]);
+      else if (facesAtEdge[keyInv])
+        facesAtEdge[keyInv].push([i, j, true]);
+      else
+        facesAtEdge[key] = [[i, j, false]];
+    });
+  });
+
+  return facesAtEdge;
 };
 
 
