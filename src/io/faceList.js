@@ -4,6 +4,11 @@ import { minimal } from '../dsymbols/derived';
 import * as common from './common';
 
 import {
+  serialize as encode,
+  deserialize as decode
+} from '../common/pickler';
+
+import {
   coordinateChangesQ as opsQ,
   coordinateChangesF as opsF
 } from '../geometry/types';
@@ -162,7 +167,7 @@ const applyOpsToFaces = ({ pos, action, faces }, symOps) => {
   for (const f of faces) {
     for (const op of symOps) {
       const { face: fNew } = mappedFace(op, f, pos, action);
-      const key = JSON.stringify(fNew);
+      const key = encode(fNew);
 
       if (!seen[key]) {
         seen[key] = true;
@@ -183,7 +188,7 @@ const applyOpsToTiles = ({ pos, action, faces }, tiles, symOps) => {
     for (const op of symOps) {
       const mapped = t.map(i => mappedFace(op, faces[i], pos, action));
       const tNew = normalizedTile(mapped);
-      const key = JSON.stringify(tNew);
+      const key = encode(tNew);
 
       if (!seen[key]) {
         seen[key] = true;
@@ -218,8 +223,8 @@ const collectEdges = faces => {
     const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
 
     edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
-      const key = JSON.stringify([v1, v2, opsF.minus(s2, s1)]);
-      const keyInv = JSON.stringify([v2, v1, opsF.minus(s1, s2)]);
+      const key = encode([v1, v2, opsF.minus(s2, s1)]);
+      const keyInv = encode([v2, v1, opsF.minus(s1, s2)]);
 
       if (facesAtEdge[key])
         facesAtEdge[key].push([i, j, false]);
@@ -242,12 +247,8 @@ const collectTileEdges = tile => {
     const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
 
     edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
-      const key = JSON.stringify(
-        [v1, v2, opsF.minus(s2, s1), opsF.plus(shift, s1)]
-      );
-      const keyInv = JSON.stringify(
-        [v2, v1, opsF.minus(s1, s2), opsF.plus(shift, s2)]
-      );
+      const key = encode([v1, v2, opsF.minus(s2, s1), opsF.plus(shift, s1)]);
+      const keyInv = encode([v2, v1, opsF.minus(s1, s2), opsF.plus(shift, s2)]);
 
       if (facesAtEdge[key])
         facesAtEdge[key].push([i, j, false]);
@@ -300,7 +301,7 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
 
   const result = [];
   for (const key of Object.keys(facesAtEdge)) {
-    const [v, w, s] = JSON.parse(key);
+    const [v, w, s] = decode(key);
     const d = normalized(opsF.minus(opsF.plus(corners[w], s), corners[v]));
     const n0 = getNormal(facesAtEdge[key][0]);
 
@@ -358,7 +359,7 @@ const op2PairingsForTileMode = (faces, offsets, tiles) => {
 
   for (let i = 0; i < tiles.length; ++i) {
     for (const { face, shift } of tiles[i]) {
-      const key = JSON.stringify(face);
+      const key = encode(face);
       if (tilesAtFace[key] == null)
         tilesAtFace[key] = [];
       tilesAtFace[key].push([i, shift]);
@@ -382,7 +383,7 @@ const op2PairingsForTileMode = (faces, offsets, tiles) => {
 
       const [[Da, Ea], [Db, Eb]] = flist.map(([fIdx, eIdx, rev]) => {
         const { face, shift } = tile[fIdx];
-        const taf = tilesAtFace[JSON.stringify(face)];
+        const taf = tilesAtFace[encode(face)];
 
         let t;
         if (taf[0][0] == tIdx && opsQ.eq(taf[0][1], shift))
