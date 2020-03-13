@@ -140,23 +140,28 @@ const normalizedTile = tile => {
 };
 
 
-const cornerAction = (pos, action) => (op, c) => {
-  const newPos = common.applyToPoint(op, opsF.plus(pos[c.index], c.shift));
-  const index = action[c.index][op];
-  const shift = opsF.minus(newPos, pos[index]).map(x => opsF.round(x));
+const mappedFace = (op, face, pos, action) => {
+  const mapped = [];
 
-  return { index, shift };
+  for (const { index, shift } of face) {
+    const p = common.applyToPoint(op, opsF.plus(pos[index], shift));
+    const i = action[index][op];
+    const s = opsF.minus(p, pos[i]).map(x => opsF.round(x));
+
+    mapped.push({ index: i, shift: s });
+  }
+
+  return normalizedFace(mapped);
 };
 
 
 const applyOpsToFaces = ({ pos, action, faces }, symOps) => {
-  const apply = cornerAction(pos, action);
   const seen = {};
   const result = [];
 
   for (const f of faces) {
     for (const op of symOps) {
-      const { face: fNew } = normalizedFace(f.map(e => apply(op, e)));
+      const { face: fNew } = mappedFace(op, f, pos, action);
       const key = JSON.stringify(fNew);
 
       if (!seen[key]) {
@@ -171,16 +176,13 @@ const applyOpsToFaces = ({ pos, action, faces }, symOps) => {
 
 
 const applyOpsToTiles = ({ pos, action, faces }, tiles, symOps) => {
-  const apply = cornerAction(pos, action);
   const seen = {};
   const result = [];
 
   for (const t of tiles) {
     for (const op of symOps) {
-      const mappedFaces = t.map(
-        i => normalizedFace(faces[i].map(e => apply(op, e)))
-      );
-      const tNew = normalizedTile(mappedFaces);
+      const mapped = t.map(i => mappedFace(op, faces[i], pos, action));
+      const tNew = normalizedTile(mapped);
       const key = JSON.stringify(tNew);
 
       if (!seen[key]) {
