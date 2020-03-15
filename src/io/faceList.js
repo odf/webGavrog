@@ -228,7 +228,7 @@ const tilingBase = faces => {
     offset += 4 * n;
   }
 
-  return { pairings, faceOffsets, size: offset - 1 };
+  return { pairings, faceOffsets };
 };
 
 
@@ -400,7 +400,7 @@ const op2PairingsForTileMode = (faces, offsets, tiles) => {
 };
 
 
-const makeDSymbol = (dim, size, pairings) => {
+const makeDSymbol = pairings => {
   const s = pairings.map(p => {
     const r = [];
     for (const [D, E] of p) {
@@ -411,8 +411,8 @@ const makeDSymbol = (dim, size, pairings) => {
   });
 
   return buildDSymbol({
-    dim,
-    size,
+    dim: s.length - 1,
+    size: s[0].length - 1,
     getS: (i, D) => s[i][D],
     getV: (i, D) => 1
   });
@@ -429,7 +429,7 @@ export const tilingFromFacelist = spec => {
   const cornerData = applyOpsToCorners(facesIn, ops, pointsEq);
   const faces = applyOpsToFaces(cornerData, ops);
 
-  const { pairings, faceOffsets, size } = tilingBase(faces);
+  const { pairings, faceOffsets } = tilingBase(faces);
 
   if (spec.tiles.length == 0)
     pairings[2] = op2PairingsForPlainMode(cornerData.pos, faces, faceOffsets);
@@ -438,7 +438,7 @@ export const tilingFromFacelist = spec => {
     pairings[2] = op2PairingsForTileMode(faces, faceOffsets, tiles);
   }
 
-  const cover = makeDSymbol(3, size, pairings);
+  const cover = makeDSymbol(pairings);
   const symbol = minimal(cover);
 
   // TODO include original vertex positions in output
