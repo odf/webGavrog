@@ -15,6 +15,7 @@ import {
 
 
 const normalized = v => opsF.div(v, opsF.norm(v));
+const clamp = (val, lo, hi) => Math.max(lo, Math.min(val, hi));
 
 
 const mapFace = (face, toPrimitive) =>
@@ -232,13 +233,15 @@ const tilingBase = faces => {
 };
 
 
-const sectorNormals = vs => {
+const sectorNormals = (face, pos) => {
+  const vs = face.map(v => opsF.plus(opsF.vector(pos[v.index]), v.shift));
   const centroid = opsF.div(vs.reduce((v, w) => opsF.plus(v, w)), vs.length);
 
   return vs.map((v, i) => {
     const w = vs[(i + 1) % vs.length];
     return normalized(
-      opsF.crossProduct(opsF.minus(w, v), opsF.minus(centroid, w)));
+      opsF.crossProduct(opsF.minus(w, v), opsF.minus(centroid, w))
+    );
   });
 };
 
@@ -246,11 +249,13 @@ const sectorNormals = vs => {
 const collectEdges = faces => {
   const facesAtEdge = {};
 
-  faces.forEach((face, i) => {
+  for (let i = 0; i < faces.length; ++i) {
+    const face = faces[i];
     const n = face.length;
-    const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
 
-    edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
+    for (let j = 0; j < n; ++j) {
+      const { index: v1, shift: s1 } = face[j];
+      const { index: v2, shift: s2 } = face[(j + 1) % n];
       const key = encode([v1, v2, opsF.minus(s2, s1)]);
       const keyInv = encode([v2, v1, opsF.minus(s1, s2)]);
 
@@ -260,70 +265,49 @@ const collectEdges = faces => {
         facesAtEdge[keyInv].push([i, j, true]);
       else
         facesAtEdge[key] = [[i, j, false]];
-    });
-  });
+    }
+  }
 
   return facesAtEdge;
 };
 
 
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
-  const explicitFaces = faces.map(f => f.map(
-    item => opsF.plus(opsF.vector(corners[item.index]), item.shift)));
-
-  const normals = explicitFaces.map(sectorNormals)
+  const normals = faces.map(f => sectorNormals(f, corners));
   const facesAtEdge = collectEdges(faces);
-  const getNormal = ([i, j, rev]) => opsF.times(normals[i][j], rev ? -1 : 1);
 
   const result = [];
   for (const key of Object.keys(facesAtEdge)) {
+    const fs = facesAtEdge[key];
+    const ns = fs.map(([i, j, r]) => opsF.times(normals[i][j], r ? -1 : 1));
     const [v, w, s] = decode(key);
     const d = normalized(opsF.minus(opsF.plus(corners[w], s), corners[v]));
-    const n0 = getNormal(facesAtEdge[key][0]);
 
-    const incidences = facesAtEdge[key].map(([i, j, reverse]) => {
-      const n = getNormal([i, j, reverse]);
-      const angle = Math.acos(Math.max(-1, Math.min(1, opsF.times(n0, n))));
+    const incidences = [];
+    for (let k = 0; k < fs.length; ++k) {
+      const [i, j, reverse] = fs[k];
+      const angle = Math.acos(clamp(opsF.times(ns[0], ns[k]), -1, 1));
+      const det = opsF.determinant([d, ns[0], ns[k]]);
 
-      if (opsF.determinant([d, n0, n]) < 0)
-        return [i, j, reverse, 2 * Math.PI - angle];
-      else
-        return [i, j, reverse, angle];
-    });
+      incidences.push([i, j, reverse, det < 0 ? 2 * Math.PI - angle : angle]);
+    }
 
     incidences.sort((a, b) => a[3] - b[3]);
-    const m = incidences.length;
 
-    incidences.forEach(([face1, edge1, rev1, angle1], i) => {
-      const [face2, edge2, rev2, angle2] = incidences[(i + 1) % m];
-      const [offset1, size1] = [offsets[face1], faces[face1].length];
-      const [offset2, size2] = [offsets[face2], faces[face2].length];
+    for (let i = 0; i < incidences.length; ++i) {
+      const [face1, edge1, rev1] = incidences[i];
+      const [face2, edge2, rev2] = incidences[(i + 1) % incidences.length];
+      const sz1 = faces[face1].length;
+      const sz2 = faces[face2].length;
+      const k1 = offsets[face1] + 2 * edge1;
+      const k2 = offsets[face2] + 2 * edge2;
 
-      let a, b, c, d;
-
-      if (rev1) {
-        const k = offset1 + 2 * (size1 + edge1);
-        a = k + 1;
-        b = k;
-      } else {
-        const k = offset1 + 2 * edge1;
-        a = k;
-        b = k + 1;
-      }
-
-      if (rev2) {
-        const k = offset2 + 2 * edge2;
-        c = k + 1;
-        d = k;
-      } else {
-        const k = offset2 + 2 * (size2 + edge2);
-        c = k;
-        d = k + 1;
-      }
+      const [a, b] = rev1 ? [k1 + 2 * sz1 + 1, k1 + 2 * sz1] : [k1, k1 + 1];
+      const [c, d] = rev2 ? [k2 + 1, k2] : [k2 + 2 * sz2, k2 + 2 * sz2 + 1];
 
       result.push([a, c]);
       result.push([b, d]);
-    });
+    }
   }
 
   return result;
