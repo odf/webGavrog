@@ -247,7 +247,7 @@ const sectorNormals = (face, pos) => {
 
 
 const collectEdges = faces => {
-  const facesAtEdge = {};
+  const facesAt = {};
 
   for (let i = 0; i < faces.length; ++i) {
     const face = faces[i];
@@ -259,40 +259,45 @@ const collectEdges = faces => {
       const key = encode([v1, v2, opsF.minus(s2, s1)]);
       const keyInv = encode([v2, v1, opsF.minus(s1, s2)]);
 
-      if (facesAtEdge[key])
-        facesAtEdge[key].push([i, j, false]);
-      else if (facesAtEdge[keyInv])
-        facesAtEdge[keyInv].push([i, j, true]);
+      if (facesAt[key])
+        facesAt[key].push([i, j, false]);
+      else if (facesAt[keyInv])
+        facesAt[keyInv].push([i, j, true]);
       else
-        facesAtEdge[key] = [[i, j, false]];
+        facesAt[key] = [[i, j, false]];
     }
   }
 
-  return facesAtEdge;
+  return Object.keys(facesAt).map(key => [decode(key), facesAt[key]]);
+};
+
+
+const sortedIncidences = (faces, edge, corners, normals) => {
+  const ns = faces.map(([i, j, r]) => opsF.times(normals[i][j], r ? -1 : 1));
+  const [v, w, s] = edge;
+  const d = normalized(opsF.minus(opsF.plus(corners[w], s), corners[v]));
+
+  const incidences = [];
+  for (let k = 0; k < faces.length; ++k) {
+    const [i, j, reverse] = faces[k];
+    const angle = Math.acos(clamp(opsF.times(ns[0], ns[k]), -1, 1));
+    const det = opsF.determinant([d, ns[0], ns[k]]);
+
+    incidences.push([i, j, reverse, det < 0 ? 2 * Math.PI - angle : angle]);
+  }
+
+  incidences.sort((a, b) => a[3] - b[3]);
+
+  return incidences;
 };
 
 
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
   const normals = faces.map(f => sectorNormals(f, corners));
-  const facesAtEdge = collectEdges(faces);
 
   const result = [];
-  for (const key of Object.keys(facesAtEdge)) {
-    const fs = facesAtEdge[key];
-    const ns = fs.map(([i, j, r]) => opsF.times(normals[i][j], r ? -1 : 1));
-    const [v, w, s] = decode(key);
-    const d = normalized(opsF.minus(opsF.plus(corners[w], s), corners[v]));
-
-    const incidences = [];
-    for (let k = 0; k < fs.length; ++k) {
-      const [i, j, reverse] = fs[k];
-      const angle = Math.acos(clamp(opsF.times(ns[0], ns[k]), -1, 1));
-      const det = opsF.determinant([d, ns[0], ns[k]]);
-
-      incidences.push([i, j, reverse, det < 0 ? 2 * Math.PI - angle : angle]);
-    }
-
-    incidences.sort((a, b) => a[3] - b[3]);
+  for (const [edge, facesAt] of collectEdges(faces)) {
+    const incidences = sortedIncidences(facesAt, edge, corners, normals);
 
     for (let i = 0; i < incidences.length; ++i) {
       const [face1, edge1, rev1] = incidences[i];
