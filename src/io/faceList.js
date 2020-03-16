@@ -320,57 +320,65 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
 
 
 const collectTileEdges = tile => {
-  const facesAtEdge = {};
+  const facesAt = {};
 
-  tile.forEach(({ face, shift }, i) => {
+  for (let i = 0; i < tile.length; ++i) {
+    const { face, shift } = tile[i];
     const n = face.length;
-    const edges = face.map((v, i) => [v, face[(i + 1) % n]]);
 
-    edges.forEach(([{index: v1, shift: s1}, {index: v2, shift: s2}], j) => {
+    for (let j = 0; j < n; ++j) {
+      const { index: v1, shift: s1 } = face[j];
+      const { index: v2, shift: s2 } = face[(j + 1) % n];
       const key = encode([v1, v2, opsF.minus(s2, s1), opsF.plus(shift, s1)]);
       const keyInv = encode([v2, v1, opsF.minus(s1, s2), opsF.plus(shift, s2)]);
 
-      if (facesAtEdge[key])
-        facesAtEdge[key].push([i, j, false]);
-      else if (facesAtEdge[keyInv])
-        facesAtEdge[keyInv].push([i, j, true]);
+      if (facesAt[key])
+        facesAt[key].push([i, j, false]);
+      else if (facesAt[keyInv])
+        facesAt[keyInv].push([i, j, true]);
       else
-        facesAtEdge[key] = [[i, j, false]];
-    });
-  });
+        facesAt[key] = [[i, j, false]];
+    }
+  }
 
-  return facesAtEdge;
+  for (const faces of Object.values(facesAt)) {
+    if (faces.length != 2)
+      throw new Error(`Tile edge incident to ${faces.length} != 2 face(s).`);
+  }
+
+  return Object.keys(facesAt).map(key => [decode(key), facesAt[key]]);
 };
 
 
-const op2PairingsForTileMode = (faces, offsets, tiles) => {
-  const tilesAtFace = {};
+const collectFaces = tiles => {
+  const tilesAt = {};
 
   for (let i = 0; i < tiles.length; ++i) {
     for (const { face, shift } of tiles[i]) {
       const key = encode(face);
-      if (tilesAtFace[key] == null)
-        tilesAtFace[key] = [];
-      tilesAtFace[key].push([i, shift]);
+      if (tilesAt[key] == null)
+        tilesAt[key] = [];
+      tilesAt[key].push([i, shift]);
     }
   }
 
-  for (const key in tilesAtFace) {
-    const n = tilesAtFace[key].length;
-    if (n != 2)
-      throw new Error(`Face is incident to ${n} tile(s).`);
+  for (const tiles of Object.values(tilesAt)) {
+    if (tiles.length != 2)
+      throw new Error(`Face incident to ${tiles.length} != 2 tile(s).`);
   }
+
+  return tilesAt;
+};
+
+
+const op2PairingsForTileMode = (tiles, faces, offsets) => {
+  const tilesAtFace = collectFaces(tiles);
 
   for (let tIdx = 0; tIdx < tiles.length; ++tIdx) {
     const tile = tiles[tIdx];
-    const facesAtEdge = collectTileEdges(tile);
 
-    for (const key of Object.keys(facesAtEdge)) {
-      const flist = facesAtEdge[key];
-      if (flist.length != 2)
-        throw new Error(`tile edge incident to ${flist.length} edge(s)`);
-
-      const [[Da, Ea], [Db, Eb]] = flist.map(([fIdx, eIdx, rev]) => {
+    for (const [edge, facesAt] of collectTileEdges(tile)) {
+      const [[Da, Ea], [Db, Eb]] = facesAt.map(([fIdx, eIdx, rev]) => {
         const { face, shift } = tile[fIdx];
         const taf = tilesAtFace[encode(face)];
 
@@ -424,7 +432,7 @@ export const tilingFromFacelist = spec => {
     pairings[2] = op2PairingsForPlainMode(cornerData.pos, faces, faceOffsets);
   else {
     const tiles = applyOpsToTiles(cornerData, spec.tiles, ops);
-    pairings[2] = op2PairingsForTileMode(faces, faceOffsets, tiles);
+    pairings[2] = op2PairingsForTileMode(tiles, faces, faceOffsets);
   }
 
   const cover = makeDSymbol(pairings);
