@@ -292,6 +292,22 @@ const sortedIncidences = (faces, edge, corners, normals) => {
 };
 
 
+const makePairs = (section1, section2, faces, offsets) => {
+  const [face1, edge1, rev1] = section1;
+  const [face2, edge2, rev2] = section2;
+
+  const sz1 = faces[face1].length;
+  const sz2 = faces[face2].length;
+  const k1 = offsets[face1] + 2 * edge1;
+  const k2 = offsets[face2] + 2 * edge2;
+
+  const [a, b] = rev1 ? [k1 + 2 * sz1 + 1, k1 + 2 * sz1] : [k1, k1 + 1];
+  const [c, d] = rev2 ? [k2 + 1, k2] : [k2 + 2 * sz2, k2 + 2 * sz2 + 1];
+
+  return [[a, c], [b, d]];
+};
+
+
 const op2PairingsForPlainMode = (corners, faces, offsets) => {
   const normals = faces.map(f => sectorNormals(f, corners));
 
@@ -300,18 +316,11 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
     const incidences = sortedIncidences(facesAt, edge, corners, normals);
 
     for (let i = 0; i < incidences.length; ++i) {
-      const [face1, edge1, rev1] = incidences[i];
-      const [face2, edge2, rev2] = incidences[(i + 1) % incidences.length];
-      const sz1 = faces[face1].length;
-      const sz2 = faces[face2].length;
-      const k1 = offsets[face1] + 2 * edge1;
-      const k2 = offsets[face2] + 2 * edge2;
+      const section1 = incidences[i];
+      const section2 = incidences[(i + 1) % incidences.length];
 
-      const [a, b] = rev1 ? [k1 + 2 * sz1 + 1, k1 + 2 * sz1] : [k1, k1 + 1];
-      const [c, d] = rev2 ? [k2 + 1, k2] : [k2 + 2 * sz2, k2 + 2 * sz2 + 1];
-
-      result.push([a, c]);
-      result.push([b, d]);
+      for (const pair of makePairs(section1, section2, faces, offsets))
+        result.push(pair);
     }
   }
 
@@ -374,11 +383,12 @@ const collectFaces = tiles => {
 const op2PairingsForTileMode = (tiles, faces, offsets) => {
   const tilesAtFace = collectFaces(tiles);
 
+  const result = [];
   for (let tIdx = 0; tIdx < tiles.length; ++tIdx) {
     const tile = tiles[tIdx];
 
     for (const [edge, facesAt] of collectTileEdges(tile)) {
-      const [[Da, Ea], [Db, Eb]] = facesAt.map(([fIdx, eIdx, rev]) => {
+      for (const [fIdx, eIdx, rev] of facesAt) {
         const { face, shift } = tile[fIdx];
         const taf = tilesAtFace[encode(face)];
 
@@ -389,11 +399,14 @@ const op2PairingsForTileMode = (tiles, faces, offsets) => {
           t = 1;
         else
           throw new Error(`face-tile inconsistency`);
+      }
 
-        return [ null, null ];
-      });
+      for (const pair of makePairs(facesAt[0], facesAt[1], faces, offsets))
+        result.push(pair);
     }
   }
+
+  return result;
 };
 
 
