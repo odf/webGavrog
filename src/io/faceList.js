@@ -381,27 +381,22 @@ const collectFaces = tiles => {
 
 
 const op2PairingsForTileMode = (tiles, faces, offsets) => {
-  const tilesAtFace = collectFaces(tiles);
+  collectFaces(tiles); // TODO only done for consistency check here
+
+  const faceIndex = {};
+  for (let i = 0; i < faces.length; ++i)
+    faceIndex[encode(faces[i])] = i;
 
   const result = [];
   for (let tIdx = 0; tIdx < tiles.length; ++tIdx) {
     const tile = tiles[tIdx];
 
     for (const [edge, facesAt] of collectTileEdges(tile)) {
-      for (const [fIdx, eIdx, rev] of facesAt) {
-        const { face, shift } = tile[fIdx];
-        const taf = tilesAtFace[encode(face)];
+      const items = facesAt.map(
+        ([f, e, r]) => ([faceIndex[encode(tile[f].face)], e, r])
+      );
 
-        let t;
-        if (taf[0][0] == tIdx && opsQ.eq(taf[0][1], shift))
-          t = 0;
-        else if (taf[1][0] == tIdx && opsQ.eq(taf[1][1], shift))
-          t = 1;
-        else
-          throw new Error(`face-tile inconsistency`);
-      }
-
-      for (const pair of makePairs(facesAt[0], facesAt[1], faces, offsets))
+      for (const pair of makePairs(items[0], items[1], faces, offsets))
         result.push(pair);
     }
   }
