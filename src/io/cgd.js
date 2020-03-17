@@ -490,7 +490,7 @@ END
 TILING
   NAME pcu
   CELL 1 1 1 90 90 90
-  TILE
+  TILE 6
   FACE 4
     -0.5 -0.5 -0.5
     -0.5  0.5 -0.5
