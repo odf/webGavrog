@@ -381,23 +381,43 @@ const collectFaces = tiles => {
 
 
 const op2PairingsForTileMode = (tiles, faces, offsets) => {
-  collectFaces(tiles); // TODO only done for consistency check here
+  const tilesAt = collectFaces(tiles);
 
   const faceIndex = {};
   for (let i = 0; i < faces.length; ++i)
     faceIndex[encode(faces[i])] = i;
 
   const result = [];
-  for (let tIdx = 0; tIdx < tiles.length; ++tIdx) {
-    const tile = tiles[tIdx];
+  for (let i = 0; i < tiles.length; ++i) {
+    const tile = tiles[i];
 
-    for (const [edge, facesAt] of collectTileEdges(tile)) {
-      const items = facesAt.map(
-        ([f, e, r]) => ([faceIndex[encode(tile[f].face)], e, r])
-      );
+    for (const [_, facesAt] of collectTileEdges(tile)) {
+	  const D = [null, null];
+      const E = [null, null];
+      let reverse = false;
 
-      for (const pair of makePairs(items[0], items[1], faces, offsets))
-        result.push(pair);
+	  for (let k = 0; k <= 1; ++k) {
+		const [fIdx, eIdx, rev] = facesAt[k];
+        const { face, shift } = tile[fIdx];
+        const f = faceIndex[encode(face)];
+
+        const taf = tilesAt[encode(face)];
+        const t = taf.findIndex(([a, b]) => a == i && b == shift);
+        const x = 2 * (t * face.length + eIdx);
+
+        D[k] = offsets[f] + x;
+        E[k] = offsets[f] + x + 1;
+
+        reverse = rev ? !reverse : reverse;
+      }
+
+      if (reverse) {
+        result.push([D[0], E[1]]);
+        result.push([D[1], E[0]]);
+      } else {
+        result.push([D[0], D[1]]);
+        result.push([E[0], E[1]]);
+      }
     }
   }
 
