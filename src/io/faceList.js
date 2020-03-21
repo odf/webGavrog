@@ -331,31 +331,32 @@ const op2PairingsForPlainMode = (corners, faces, offsets) => {
 const collectTileEdges = tile => {
   const facesAt = {};
 
-  for (let i = 0; i < tile.length; ++i) {
-    const { face, shift } = tile[i];
+  for (const { face, shift } of tile) {
     const n = face.length;
 
-    for (let j = 0; j < n; ++j) {
-      const { index: v1, shift: s1 } = face[j];
-      const { index: v2, shift: s2 } = face[(j + 1) % n];
+    for (let eIdx = 0; eIdx < n; ++eIdx) {
+      const { index: v1, shift: s1 } = face[eIdx];
+      const { index: v2, shift: s2 } = face[(eIdx + 1) % n];
       const key = encode([v1, v2, opsF.minus(s2, s1), opsF.plus(shift, s1)]);
       const keyInv = encode([v2, v1, opsF.minus(s1, s2), opsF.plus(shift, s2)]);
 
       if (facesAt[key])
-        facesAt[key].push([i, j, false]);
+        facesAt[key].push({ face, shift, eIdx, rev: false });
       else if (facesAt[keyInv])
-        facesAt[keyInv].push([i, j, true]);
+        facesAt[keyInv].push({ face, shift, eIdx, rev: true });
       else
-        facesAt[key] = [[i, j, false]];
+        facesAt[key] = [{ face, shift, eIdx, rev: false }];
     }
   }
 
-  for (const faces of Object.values(facesAt)) {
+  const result = Object.values(facesAt);
+
+  for (const faces of result) {
     if (faces.length != 2)
       throw new Error(`Tile edge incident to ${faces.length} != 2 face(s).`);
   }
 
-  return Object.keys(facesAt).map(key => [decode(key), facesAt[key]]);
+  return result;
 };
 
 
@@ -383,40 +384,27 @@ const collectFaces = tiles => {
 const op2PairingsForTileMode = (tiles, faces, offsets) => {
   const tilesAt = collectFaces(tiles);
 
-  const faceIndex = {};
+  const base = {};
   for (let i = 0; i < faces.length; ++i)
-    faceIndex[encode(faces[i])] = i;
+    base[encode(faces[i])] = offsets[i];
 
   const result = [];
   for (let i = 0; i < tiles.length; ++i) {
-    const tile = tiles[i];
+    for (const facesAt of collectTileEdges(tiles[i])) {
+	  const D = [];
 
-    for (const [_, facesAt] of collectTileEdges(tile)) {
-	  const D = [null, null];
-      const E = [null, null];
-      let reverse = false;
-
-	  for (let k = 0; k <= 1; ++k) {
-		const [fIdx, eIdx, rev] = facesAt[k];
-        const { face, shift } = tile[fIdx];
-        const f = faceIndex[encode(face)];
-
-        const taf = tilesAt[encode(face)];
-        const t = taf.findIndex(([a, b]) => a == i && b == shift);
-        const x = 2 * (t * face.length + eIdx);
-
-        D[k] = offsets[f] + x;
-        E[k] = offsets[f] + x + 1;
-
-        reverse = rev ? !reverse : reverse;
+	  for (const { face, shift, eIdx } of facesAt) {
+        const key = encode(face);
+        const side = tilesAt[key].findIndex(([a, b]) => a == i && b == shift);
+        D.push(base[key] + 2 * (side * face.length + eIdx));
       }
 
-      if (reverse) {
-        result.push([D[0], E[1]]);
-        result.push([D[1], E[0]]);
+      if (facesAt[0].rev != facesAt[1].rev) {
+        result.push([D[0], D[1] + 1]);
+        result.push([D[0] + 1, D[1]]);
       } else {
         result.push([D[0], D[1]]);
-        result.push([E[0], E[1]]);
+        result.push([D[0] + 1, D[1] + 1]);
       }
     }
   }
