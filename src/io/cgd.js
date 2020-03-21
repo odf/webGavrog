@@ -1,12 +1,11 @@
-const ops = require('../geometry/types').coordinateChangesQ;
+import { coordinateChangesQ as opsQ } from '../geometry/types';
+import * as periodic from '../pgraphs/periodic';
+import * as sgtable from '../spacegroups/sgtable';
+import parseOperator from '../spacegroups/parseOperator';
 
-import * as pg from '../pgraphs/periodic';
-import * as sg from '../spacegroups/sgtable';
 import { netFromCrystal } from './crystal';
 import { tilingFromFacelist } from './faceList';
-
 import { parseBlocks } from './parseCgd';
-import parseOperator from '../spacegroups/parseOperator';
 
 
 const translation = {
@@ -46,13 +45,13 @@ const unknown = data => {
 const joinArgs = args => args.join(' ');
 const capitalize = s => s[0].toUpperCase() + s.slice(1);
 
-const findGroup = args => sg.settingByName(args.join(''));
+const findGroup = args => sgtable.settingByName(args.join(''));
 
 const eps    = Math.pow(2, -50);
 const trim   = x => Math.abs(x) < eps ? 0 : x;
 const cosdeg = deg => trim(Math.cos(deg * Math.PI / 180.0));
 
-const asFloats = v => v.map(x => ops.typeOf(x) == 'Float' ? x : ops.toJS(x));
+const asFloats = v => v.map(x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x));
 
 
 const makeGramMatrix = args => {
@@ -148,7 +147,7 @@ const processPeriodicGraphData = data => {
 
   return {
     name    : state.output.name,
-    graph   : pg.makeGraph(edges),
+    graph   : periodic.makeGraph(edges),
     warnings: state.warnings,
     errors  : state.errors
   };
@@ -168,7 +167,7 @@ const processSymmetricNet = data => {
     if (key == 'node') {
       const [name, ...rest] = args;
       const pos = parseOperator(rest.join(''));
-      const d = ops.dimension(pos);
+      const d = opsQ.dimension(pos);
 
       if (dim == null)
         dim = d;
@@ -195,7 +194,7 @@ const processSymmetricNet = data => {
         else
           shift = parseOperator(rest.join(''));
 
-        const d = ops.dimension(shift);
+        const d = opsQ.dimension(shift);
 
         if (dim == null)
           dim = d;
@@ -234,7 +233,7 @@ const processCrystal = data => {
   if (output.group == null)
     output.group = findGroup(['P1']);
 
-  dim = ops.dimension(output.group.transform);
+  dim = opsQ.dimension(output.group.transform);
 
   if (output.cell == null)
     output.cell = identity(dim);
@@ -305,7 +304,7 @@ const processFaceListData = data => {
   if (output.group == null)
     output.group = findGroup(['P1']);
 
-  dim = ops.dimension(output.group.transform);
+  dim = opsQ.dimension(output.group.transform);
 
   if (output.cell == null)
     output.cell = identity(dim);
@@ -316,7 +315,7 @@ const processFaceListData = data => {
     if (key == 'face') {
       for (const item of args) {
         if (currentFaceSize == null) {
-          if (ops.typeOf(item) == 'Integer' && item > 0) {
+          if (opsQ.typeOf(item) == 'Integer' && item > 0) {
             currentFaceSize = item;
             currentFaceData = [];
           } else
