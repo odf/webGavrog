@@ -539,6 +539,24 @@ CRYSTAL
 END
 `;
 
-  for (const b of structures(input))
-    console.log(JSON.stringify(b, null, 2));
+  const print = (k, x) => {
+    if (k == 'nodes' || k == 'edges') {
+      console.log(`${capitalize(k)}: [`);
+      for (const i of Object.keys(x))
+        console.log(`  ${i}: ${JSON.stringify(x[i])},`);
+      console.log(`]\n`);
+    }
+    else
+      console.log(`${capitalize(k)}: ${x.toString()}\n`);
+  };
+
+  console.log('=================================================\n\n');
+
+  for (const b of structures(input)) {
+    for (const k of Object.keys(b))
+      print(k, b[k]);
+
+    console.log();
+    console.log('=================================================\n\n');
+  }
 }
