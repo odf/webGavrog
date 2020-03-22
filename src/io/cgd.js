@@ -8,6 +8,12 @@ import { tilingFromFacelist } from './faceList';
 import { parseBlocks } from './parseCgd';
 
 
+const joinArgs = args => args.join(' ');
+const capitalize = s => s[0].toUpperCase() + s.slice(1);
+const asFloats = v => v.map(x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x));
+const findGroup = args => sgtable.settingByName(args.join(''));
+
+
 const translation = {
   id      : "name",
   vertex  : "node",
@@ -16,17 +22,22 @@ const translation = {
   atom    : "node",
   atoms   : "node",
   nodes   : "node",
+
   bond    : "edge",
   bonds   : "edge",
   edges   : "edge",
+
   faces   : "face",
   ring    : "face",
   rings   : "face",
+
   tiles   : "tile",
   body    : "tile",
   bodies  : "tile",
-  spacegroup  : "group",
-  space_group : "group",
+
+  spacegroup : "group",
+  space_group: "group",
+
   coordination_sequences: "coordination_sequence",
   coordinationsequence  : "coordination_sequence",
   coordinationsequences : "coordination_sequence",
@@ -34,27 +45,11 @@ const translation = {
 };
 
 
-const unknown = data => {
-  return {
-    entries: data,
-    errors : ["Unknown type"]
-  }
-};
-
-
-const joinArgs = args => args.join(' ');
-const capitalize = s => s[0].toUpperCase() + s.slice(1);
-
-const findGroup = args => sgtable.settingByName(args.join(''));
-
-const eps    = Math.pow(2, -50);
-const trim   = x => Math.abs(x) < eps ? 0 : x;
-const cosdeg = deg => trim(Math.cos(deg * Math.PI / 180.0));
-
-const asFloats = v => v.map(x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x));
-
-
 const makeGramMatrix = args => {
+  const cosdeg = deg => Math.cos(deg * Math.PI / 180.0);
+  const eps = Math.pow(2, -50);
+  const trim = m => m.map(r => r.map(x => Math.abs(x) < eps ? 0 : x));
+
   if (args.length == 3) {
     const [a, b, angle] = args;
     const x = cosdeg(angle) * a * b;
@@ -70,11 +65,6 @@ const makeGramMatrix = args => {
   else
     return { error: `expected 3 or 6 arguments, got ${args.length}` };
 };
-
-
-const array = n => Array(n).fill(0);
-
-const identity = n => array(n).map((_, i) => array(n).fill(1, i, i+1));
 
 
 const initialState = data => ({
@@ -130,7 +120,7 @@ const processPeriodicGraphData = data => {
       else {
         if (shift.length == 0 && dim != null) {
           state.warnings.push("Missing shift vector");
-          shift = new Array(dim).fill(0);
+          shift = opsQ.vector(dim);
         }
 
         if (dim == null)
@@ -189,7 +179,7 @@ const processSymmetricNet = data => {
 
         if (rest.length == 0 && dim != null) {
           state.warnings.push("Missing shift vector");
-          shift = new Array(dim).fill(0);
+          shift = opsQ.vector(dim);
         }
         else
           shift = parseOperator(rest.join(''));
@@ -236,7 +226,7 @@ const processCrystal = data => {
   dim = opsQ.dimension(output.group.transform);
 
   if (output.cell == null)
-    output.cell = identity(dim);
+    output.cell = opsQ.identityMatrix(dim);
   else if (output.cell.length != dim)
     errors.push("Inconsistent dimensions");
 
@@ -307,7 +297,7 @@ const processFaceListData = data => {
   dim = opsQ.dimension(output.group.transform);
 
   if (output.cell == null)
-    output.cell = identity(dim);
+    output.cell = opsQ.identityMatrix(dim);
   else if (output.cell.length != dim)
     errors.push("Inconsistent dimensions");
 
@@ -388,6 +378,12 @@ export function *blocks(text) {
   for (const s of parseBlocks(text.split('\n'), translation))
     yield Object.assign({}, s, { isRaw: true });
 };
+
+
+const unknown = data => ({
+  entries: data,
+  errors : ["Unknown type"]
+});
 
 
 export const processed = block => {
