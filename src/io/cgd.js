@@ -8,9 +8,10 @@ import { tilingFromFacelist } from './faceList';
 import { parseBlocks } from './parseCgd';
 
 
-const joinArgs = args => args.join(' ');
 const capitalize = s => s[0].toUpperCase() + s.slice(1);
 const asFloats = v => v.map(x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x));
+
+const joinArgs = args => args.join(' ');
 const findGroup = args => sgtable.settingByName(args.join(''));
 
 
@@ -75,30 +76,31 @@ const initialState = data => ({
 });
 
 
-const extractSingleValue = (state, key, options = {}) => {
-  const { input, output, errors, warnings } = state;
-  const good = input.filter(s => s.key == key);
+const extractSingleValue = (state, key, processFn) => {
+  const entries = state.input.filter(e => e.key == key);
+  state.input = state.input.filter(e => e.key != key);
 
-  state.input = input.filter(s => s.key != key);
-
-  if (good.length == 0) {
-    if (!options.silent)
-      (options.mandatory ? errors : warnings).push(`Missing ${key} statement`);
-  }
-  else if (good.length > 1)
-    warnings.push('Multiple ${key} statements');
-  else if (good[0].args.length == 0)
-    (options.mandatory ? errors : warnings).push(`Empty ${key} statement`);
-  else if (options.fn == null)
-    output[key] = good[0].args;
+  if (entries.length == 0)
+    state.warnings.push(`Missing ${key} statement`);
+  else if (entries.length > 1)
+    state.warnings.push('Multiple ${key} statements');
   else {
-    const processed = options.fn(good[0].args);
-    if (processed != null) {
-      for (const s of (processed.warnings || []))
-        warnings.push(s);
-      for (const s of (processed.errors || []))
-        errors.push(s);
-      output[key] = processed;
+    const args = entries[0].args;
+
+    if (args.length == 0)
+      state.warnings.push(`Empty ${key} statement`);
+    else {
+      const processed = processFn ? processFn(args) : args;
+
+      if (processed != null) {
+        for (const s of (processed.warnings || []))
+          state.warnings.push(s);
+
+        for (const s of (processed.errors || []))
+          state.errors.push(s);
+
+        state.output[key] = processed;
+      }
     }
   }
 };
@@ -109,7 +111,7 @@ const processPeriodicGraphData = data => {
   const edges = [];
   let dim = null;
 
-  extractSingleValue(state, 'name', { fn: joinArgs });
+  extractSingleValue(state, 'name', joinArgs);
 
   for (const { key, args } of state.input) {
     if (key == 'edge') {
@@ -150,8 +152,8 @@ const processSymmetricNet = data => {
   const edges = [];
   let dim = null;
 
-  extractSingleValue(state, 'name', { fn: joinArgs });
-  extractSingleValue(state, 'group', { fn: findGroup });
+  extractSingleValue(state, 'name', joinArgs);
+  extractSingleValue(state, 'group', findGroup);
 
   for (const { key, args } of state.input) {
     if (key == 'node') {
@@ -216,9 +218,9 @@ const processCrystal = data => {
   const seen = {};
   let dim = null;
 
-  extractSingleValue(state, 'name' , { fn: joinArgs });
-  extractSingleValue(state, 'group', { fn: findGroup });
-  extractSingleValue(state, 'cell' , { fn: makeGramMatrix });
+  extractSingleValue(state, 'name' , joinArgs);
+  extractSingleValue(state, 'group', findGroup);
+  extractSingleValue(state, 'cell' , makeGramMatrix);
 
   if (output.group == null)
     output.group = findGroup(['P1']);
@@ -287,9 +289,9 @@ const processFaceListData = data => {
   let currentFaceSize = null;
   let currentFaceData = null;
 
-  extractSingleValue(state, 'name' , { fn: joinArgs });
-  extractSingleValue(state, 'group', { fn: findGroup });
-  extractSingleValue(state, 'cell' , { fn: makeGramMatrix });
+  extractSingleValue(state, 'name' , joinArgs);
+  extractSingleValue(state, 'group', findGroup);
+  extractSingleValue(state, 'cell' , makeGramMatrix);
 
   if (output.group == null)
     output.group = findGroup(['P1']);
