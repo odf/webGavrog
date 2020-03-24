@@ -135,55 +135,6 @@ const processPeriodicGraphData = data => {
 };
 
 
-const processSymmetricNet = data => {
-  const { input, output, errors, warnings } = preprocess(
-    data,
-    ['name', joinArgs],
-    ['group', findGroup]
-  );
-
-  const name = output.name;
-  const group = output.group.name;
-
-  const nodes = {};
-  const edges = [];
-
-  for (const { key, args } of input) {
-    if (key == 'node') {
-      const [name, ...rest] = args;
-      const pos = parseOperator(rest.join(''));
-
-      if (nodes[name] != null)
-        errors.push(`Node '${name}' specified twice`);
-      else
-        nodes[name] = pos;
-    }
-    else if (key == 'edge') {
-      let [v, w, ...rest] = args;
-
-      if (w == null)
-        errors.push("Incomplete edge specification");
-      else {
-        let shift;
-
-        if (rest.length == 0 && dim != null) {
-          warnings.push("Missing shift vector");
-          shift = opsQ.vector(dim);
-        }
-        else
-          shift = parseOperator(rest.join(''));
-
-        edges.push([v, w, shift]);
-      }
-    }
-    else
-      warnings.push(`Unknown keyword '${key}'`);
-  }
-
-  return { name, group, nodes, edges, warnings, errors };
-};
-
-
 const processCrystal = data => {
   const state = preprocess(
     data,
@@ -327,7 +278,6 @@ const processFaceListData = data => {
 
 const makeStructure = {
   periodic_graph: processPeriodicGraphData,
-  net           : processSymmetricNet,
   crystal       : processCrystal,
   tiling        : processFaceListData
 };
@@ -388,13 +338,6 @@ EDGES
   1 2 1 0 0
   1 2 0 1 0
   1 2 0 0 1
-END
-
-
-NET # the diamond net
-  Group Fd-3m
-  Node 1 3/8,3/8,3/8
-  Edge 1 1 1-x,1-y,1-z
 END
 
 
