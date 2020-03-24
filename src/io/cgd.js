@@ -108,41 +108,29 @@ const extractSingleValue = (state, key, processFn) => {
 
 const processPeriodicGraphData = data => {
   const state = initialState(data.entries);
-  const edges = [];
-  let dim = null;
 
   extractSingleValue(state, 'name', joinArgs);
+  const { input, output, errors, warnings } = state;
 
-  for (const { key, args } of state.input) {
+  const edges = [];
+  for (const { key, args } of input) {
     if (key == 'edge') {
-      let [v, w, ...shift] = args;
-
-      if (w == null)
-        state.errors.push("Incomplete edge specification");
-      else {
-        if (shift.length == 0 && dim != null) {
-          state.warnings.push("Missing shift vector");
-          shift = opsQ.vector(dim);
-        }
-
-        if (dim == null)
-          dim = shift.length
-        else if (shift.length != dim)
-          state.errors.push("Inconsistent shift dimensions");
-
-        edges.push([v, w, shift]);
-      }
+      const [v, w, ...shift] = args;
+      edges.push([v, w, shift]);
     }
     else
-      state.warnings.push(`Unknown keyword '${key}'`);
+      warnings.push(`Unknown keyword '${key}'`);
   }
 
-  return {
-    name    : state.output.name,
-    graph   : periodic.makeGraph(edges),
-    warnings: state.warnings,
-    errors  : state.errors
-  };
+  let graph = null;
+  try {
+    graph = periodic.makeGraph(edges);
+  }
+  catch (ex) {
+    errors.push(`${ex}`);
+  }
+
+  return { name: output.name, graph, warnings, errors };
 };
 
 
