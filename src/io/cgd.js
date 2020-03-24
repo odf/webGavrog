@@ -68,49 +68,50 @@ const makeGramMatrix = args => {
 };
 
 
-const initialState = data => ({
-  input   : data,
-  output  : {},
-  errors  : [],
-  warnings: []
-});
+const preprocess = (data, ...specs) => {
+  let input = data.entries;
+  const output = {};
+  const errors = [];
+  const warnings = [];
 
+  for (const [key, processFn] of specs) {
+    const entries = input.filter(e => e.key == key);
+    input = input.filter(e => e.key != key);
 
-const extractSingleValue = (state, key, processFn) => {
-  const entries = state.input.filter(e => e.key == key);
-  state.input = state.input.filter(e => e.key != key);
-
-  if (entries.length == 0)
-    state.warnings.push(`Missing ${key} statement`);
-  else if (entries.length > 1)
-    state.warnings.push('Multiple ${key} statements');
-  else {
-    const args = entries[0].args;
-
-    if (args.length == 0)
-      state.warnings.push(`Empty ${key} statement`);
+    if (entries.length == 0)
+      warnings.push(`Missing ${key} statement`);
+    else if (entries.length > 1)
+      warnings.push('Multiple ${key} statements');
     else {
-      const processed = processFn ? processFn(args) : args;
+      const args = entries[0].args;
 
-      if (processed != null) {
-        for (const s of (processed.warnings || []))
-          state.warnings.push(s);
+      if (args.length == 0)
+        warnings.push(`Empty ${key} statement`);
+      else {
+        const processed = processFn ? processFn(args) : args;
 
-        for (const s of (processed.errors || []))
-          state.errors.push(s);
+        if (processed != null) {
+          for (const s of (processed.warnings || []))
+            warnings.push(s);
 
-        state.output[key] = processed;
+          for (const s of (processed.errors || []))
+            errors.push(s);
+
+          output[key] = processed;
+        }
       }
     }
   }
+
+  return { input, output, errors, warnings };
 };
 
 
 const processPeriodicGraphData = data => {
-  const state = initialState(data.entries);
-
-  extractSingleValue(state, 'name', joinArgs);
-  const { input, output, errors, warnings } = state;
+  const { input, output, errors, warnings } = preprocess(
+    data,
+    ['name', joinArgs]
+  );
 
   const edges = [];
   for (const { key, args } of input) {
@@ -135,13 +136,15 @@ const processPeriodicGraphData = data => {
 
 
 const processSymmetricNet = data => {
-  const state = initialState(data.entries);
+  const state = preprocess(
+    data,
+    ['name', joinArgs],
+    ['group', findGroup]
+  );
+
   const nodes = {};
   const edges = [];
   let dim = null;
-
-  extractSingleValue(state, 'name', joinArgs);
-  extractSingleValue(state, 'group', findGroup);
 
   for (const { key, args } of state.input) {
     if (key == 'node') {
@@ -199,16 +202,18 @@ const processSymmetricNet = data => {
 
 
 const processCrystal = data => {
-  const state = initialState(data.entries);
+  const state = preprocess(
+    data,
+    ['name', joinArgs],
+    ['group', findGroup],
+    ['cell', makeGramMatrix]
+  );
+
   const { errors, warnings, output } = state;
   const nodes = [];
   const edges = [];
   const seen = {};
   let dim = null;
-
-  extractSingleValue(state, 'name' , joinArgs);
-  extractSingleValue(state, 'group', findGroup);
-  extractSingleValue(state, 'cell' , makeGramMatrix);
 
   if (output.group == null)
     output.group = findGroup(['P1']);
@@ -269,17 +274,19 @@ const processCrystal = data => {
 
 
 const processFaceListData = data => {
-  const state = initialState(data.entries);
+  const state = preprocess(
+    data,
+    ['name', joinArgs],
+    ['group', findGroup],
+    ['cell', makeGramMatrix]
+  );
+
   const { errors, warnings, output } = state;
   const faces = [];
   const tiles = [];
   let dim = null;
   let currentFaceSize = null;
   let currentFaceData = null;
-
-  extractSingleValue(state, 'name' , joinArgs);
-  extractSingleValue(state, 'group', findGroup);
-  extractSingleValue(state, 'cell' , makeGramMatrix);
 
   if (output.group == null)
     output.group = findGroup(['P1']);
