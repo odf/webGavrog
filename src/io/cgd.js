@@ -136,29 +136,25 @@ const processPeriodicGraphData = data => {
 
 
 const processSymmetricNet = data => {
-  const state = preprocess(
+  const { input, output, errors, warnings } = preprocess(
     data,
     ['name', joinArgs],
     ['group', findGroup]
   );
 
+  const name = output.name;
+  const group = output.group.name;
+
   const nodes = {};
   const edges = [];
-  let dim = null;
 
-  for (const { key, args } of state.input) {
+  for (const { key, args } of input) {
     if (key == 'node') {
       const [name, ...rest] = args;
       const pos = parseOperator(rest.join(''));
-      const d = opsQ.dimension(pos);
-
-      if (dim == null)
-        dim = d;
-      else if (d != dim)
-        state.errors.push("Inconsistent dimensions");
 
       if (nodes[name] != null)
-        state.errors.push(`Node '${name}' specified twice`);
+        errors.push(`Node '${name}' specified twice`);
       else
         nodes[name] = pos;
     }
@@ -166,38 +162,25 @@ const processSymmetricNet = data => {
       let [v, w, ...rest] = args;
 
       if (w == null)
-        state.errors.push("Incomplete edge specification");
+        errors.push("Incomplete edge specification");
       else {
         let shift;
 
         if (rest.length == 0 && dim != null) {
-          state.warnings.push("Missing shift vector");
+          warnings.push("Missing shift vector");
           shift = opsQ.vector(dim);
         }
         else
           shift = parseOperator(rest.join(''));
 
-        const d = opsQ.dimension(shift);
-
-        if (dim == null)
-          dim = d;
-        else if (d != dim)
-          state.errors.push("Inconsistent dimensions");
-
         edges.push([v, w, shift]);
       }
     }
     else
-      state.warnings.push(`Unknown keyword '${key}'`);
+      warnings.push(`Unknown keyword '${key}'`);
   }
 
-  return {
-    group   : state.output.group.name,
-    nodes   : nodes,
-    edges   : edges,
-    warnings: state.warnings,
-    errors  : state.errors
-  };
+  return { name, group, nodes, edges, warnings, errors };
 };
 
 
@@ -539,7 +522,7 @@ END
         console.log(`  ${i}: ${JSON.stringify(x[i])},`);
       console.log(`]\n`);
     }
-    else
+    else if (x != null)
       console.log(`${capitalize(k)}: ${x.toString()}\n`);
   };
 
