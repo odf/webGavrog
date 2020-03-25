@@ -237,12 +237,34 @@ const processFaceListData = data => {
 };
 
 
-const makeStructure = {
-  periodic_graph: processPeriodicGraphData,
-  crystal       : processCrystal,
-  tiling        : processFaceListData
+export function *blocks(text) {
+  for (const s of parseBlocks(text.split('\n'), translation))
+    yield Object.assign({}, s, { isRaw: true });
 };
 
+
+export const processed = entries => {
+  const builder = {
+    periodic_graph: processPeriodicGraphData,
+    crystal: processCrystal,
+    tiling: processFaceListData
+  }[entries.type];
+
+  const output = (
+    builder ? builder(entries) : { entries, errors: ["Unknown type"] }
+  );
+
+  return Object.assign({}, output, { type: entries.type });
+};
+
+
+export function* structures(text) {
+  for (const b of blocks(text))
+    yield processed(b);
+};
+
+
+// TODO use this for something?
 
 const reportError = (text, ex) => {
   if (ex.location) {
@@ -262,31 +284,6 @@ const reportError = (text, ex) => {
   }
   else
     console.error(ex);
-};
-
-
-export function *blocks(text) {
-  for (const s of parseBlocks(text.split('\n'), translation))
-    yield Object.assign({}, s, { isRaw: true });
-};
-
-
-const unknown = data => ({
-  entries: data,
-  errors : ["Unknown type"]
-});
-
-
-export const processed = block => {
-  const output = (makeStructure[block.type] || unknown)(block);
-
-  return Object.assign({}, output, { type: block.type });
-};
-
-
-export function* structures(text) {
-  for (const b of blocks(text))
-    yield processed(b);
 };
 
 
