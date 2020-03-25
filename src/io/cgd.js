@@ -11,9 +11,6 @@ import { parseBlocks } from './parseCgd';
 const capitalize = s => s[0].toUpperCase() + s.slice(1);
 const asFloats = v => v.map(x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x));
 
-const joinArgs = args => args.join(' ');
-const findGroup = args => sgtable.settingByName(args.join(''));
-
 
 const translation = {
   id      : "name",
@@ -46,75 +43,70 @@ const translation = {
 };
 
 
-const makeGramMatrix = args => {
+const joinArgs = args => args.join(' ');
+const findGroup = args => sgtable.settingByName(joinArgs(args));
+
+
+const makeGramMatrix = (args, dim) => {
   const cosdeg = deg => Math.cos(deg * Math.PI / 180.0);
   const eps = Math.pow(2, -50);
   const trim = m => m.map(r => r.map(x => Math.abs(x) < eps ? 0 : x));
 
-  if (args.length == 3) {
+  const m = dim * (dim + 1) / 2;
+
+  if (!args)
+    return { cellGram: opsQ.identityMatrix(dim) };
+  else if (args.length != m) {
+    return {
+      cellGram: opsQ.identityMatrix(dim),
+      error: `expected ${m} unit cell parameters`
+    };
+  }
+  else if (dim == 2) {
     const [a, b, angle] = args;
     const x = cosdeg(angle) * a * b;
-    return trim([[a*a, x], [x, b*b]]);
+    return { cellGram: trim([[a*a, x], [x, b*b]]) };
   }
-  else if (args.length == 6) {
+  else if (dim == 3) {
     const [a, b, c, alpha, beta, gamma] = args;
     const aG = cosdeg(alpha) * b * c;
     const bG = cosdeg(beta ) * a * c;
     const cG = cosdeg(gamma) * a * b;
-    return trim([[a*a, cG, bG], [cG, b*b, aG], [bG, aG, c*c]]);
+    return { cellGram: trim([[a*a, cG, bG], [cG, b*b, aG], [bG, aG, c*c]]) };
   }
-  else
-    return { error: `expected 3 or 6 arguments, got ${args.length}` };
 };
 
 
-const preprocess = (data, ...specs) => {
-  let input = data.entries;
-  const output = {};
-  const errors = [];
+const preprocess = (data, ...singleKeys) => {
+  const vals = {};
   const warnings = [];
+  let rest = data.entries;
 
-  for (const [key, processFn] of specs) {
-    const entries = input.filter(e => e.key == key);
-    input = input.filter(e => e.key != key);
+  for (const key of singleKeys) {
+    const entries = rest.filter(e => e.key == key);
+    rest = rest.filter(e => e.key != key);
 
     if (entries.length == 0)
       warnings.push(`Missing ${key} statement`);
     else if (entries.length > 1)
       warnings.push('Multiple ${key} statements');
-    else {
-      const args = entries[0].args;
-
-      if (args.length == 0)
-        warnings.push(`Empty ${key} statement`);
-      else {
-        const processed = processFn ? processFn(args) : args;
-
-        if (processed != null) {
-          for (const s of (processed.warnings || []))
-            warnings.push(s);
-
-          for (const s of (processed.errors || []))
-            errors.push(s);
-
-          output[key] = processed;
-        }
-      }
-    }
+    else if (entries[0].args.length == 0)
+      warnings.push(`Empty ${key} statement`);
+    else
+      vals[key] = entries[0].args;
   }
 
-  return { input, output, errors, warnings };
+  return { vals, rest, warnings };
 };
 
 
 const processPeriodicGraphData = data => {
-  const { input, output, errors, warnings } = preprocess(
-    data,
-    ['name', joinArgs]
-  );
+  const { vals, rest, warnings } = preprocess(data, 'name');
+  const name = joinArgs(vals.name || []);
+  const errors = [];
 
   const edges = [];
-  for (const { key, args } of input) {
+  for (const { key, args } of rest) {
     if (key == 'edge') {
       const [v, w, ...shift] = args;
       edges.push([v, w, shift]);
@@ -131,35 +123,24 @@ const processPeriodicGraphData = data => {
     errors.push(`${ex}`);
   }
 
-  return { name: output.name, graph, warnings, errors };
+  return { name, graph, warnings, errors };
 };
 
 
 const processCrystal = data => {
-  const state = preprocess(
-    data,
-    ['name', joinArgs],
-    ['group', findGroup],
-    ['cell', makeGramMatrix]
-  );
+  const { vals, rest, warnings } = preprocess(data, 'name', 'group', 'cell');
+  const name = joinArgs(vals.name || []);
+  const group = findGroup(vals.group || ['P1']);
+  const dim = opsQ.dimension(group.transform);
 
-  const { errors, warnings, output } = state;
+  const { cellGram, error } = makeGramMatrix(vals.cell, dim);
+  const errors = error ? [ error ] : [];
+
   const nodes = [];
   const edges = [];
   const seen = {};
-  let dim = null;
 
-  if (output.group == null)
-    output.group = findGroup(['P1']);
-
-  dim = opsQ.dimension(output.group.transform);
-
-  if (output.cell == null)
-    output.cell = opsQ.identityMatrix(dim);
-  else if (output.cell.length != dim)
-    errors.push("Inconsistent dimensions");
-
-  for (const { key, args } of state.input) {
+  for (const { key, args } of rest) {
     if (key == 'node') {
       const location = `${capitalize(key)} '${name}'`;
       const [name, coordination, ...position] = args;
@@ -192,56 +173,42 @@ const processCrystal = data => {
         errors.push(`${location}: expected 2, ${dim+1} or ${2*dim} arguments`);
     }
     else
-      state.warnings.push(`Unknown keyword '${key}'`);
+      warnings.push(`Unknown keyword '${key}'`);
   }
 
   return netFromCrystal({
-    name: output.name,
-    group: output.group,
-    cellGram: output.cell,
-    nodes,
-    edges,
-    warnings,
-    errors
+    name, group, cellGram, nodes, edges, warnings, errors
   });
 };
 
 
 const processFaceListData = data => {
-  const state = preprocess(
-    data,
-    ['name', joinArgs],
-    ['group', findGroup],
-    ['cell', makeGramMatrix]
-  );
+  const { vals, rest, warnings } = preprocess(data, 'name', 'group', 'cell');
+  const name = joinArgs(vals.name || []);
+  const group = findGroup(vals.group || ['P1']);
+  const dim = opsQ.dimension(group.transform);
 
-  const { errors, warnings, output } = state;
+  const { cellGram, error } = makeGramMatrix(vals.cell, dim);
+  const errors = error ? [ error ] : [];
+
   const faces = [];
   const tiles = [];
-  let dim = null;
+
   let currentFaceSize = null;
   let currentFaceData = null;
 
-  if (output.group == null)
-    output.group = findGroup(['P1']);
-
-  dim = opsQ.dimension(output.group.transform);
-
-  if (output.cell == null)
-    output.cell = opsQ.identityMatrix(dim);
-  else if (output.cell.length != dim)
-    errors.push("Inconsistent dimensions");
-
-  for (const { key, args } of state.input) {
+  for (const { key, args } of rest) {
     if (key == 'face') {
       for (const item of args) {
         if (currentFaceSize == null) {
           if (opsQ.typeOf(item) == 'Integer' && item > 0) {
             currentFaceSize = item;
             currentFaceData = [];
-          } else
+          }
+          else
             errors.push("Face size must be a positive integer");
-        } else {
+        }
+        else {
           currentFaceData.push(item);
           if (currentFaceData.length == currentFaceSize * dim) {
             const face = [];
@@ -257,21 +224,15 @@ const processFaceListData = data => {
           }
         }
       }
-    } else if (key == 'tile') {
+    }
+    else if (key == 'tile')
       tiles.push([]);
-    } else
-      state.warnings.push(`Unknown keyword '${key}'`);
+    else
+      warnings.push(`Unknown keyword '${key}'`);
   }
 
   return tilingFromFacelist({
-    type: data.type,
-    name: output.name,
-    group: output.group,
-    cellGram: output.cell,
-    faces,
-    tiles,
-    warnings,
-    errors
+    type: data.type, name, group, cellGram, faces, tiles, warnings, errors
   });
 };
 
