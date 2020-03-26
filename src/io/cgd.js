@@ -123,10 +123,6 @@ const processPeriodicGraphData = data => {
 
 
 const processCrystal = data => {
-  const asFloats = v => v.map(
-    x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x)
-  );
-
   const { vals, rest, warnings } = preprocess(data, 'name', 'group', 'cell');
   const name = (vals.name || []).join(' ');
   const group = settingByName((vals.group || ['P1']).join(' '));
@@ -135,14 +131,17 @@ const processCrystal = data => {
   const { cellGram, error } = makeGramMatrix(vals.cell, dim);
   const errors = error ? [ error ] : [];
 
+  const asFloat = x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x);
+  const asFloats = v => v.map(asFloat);
+
   const nodes = [];
   const edges = [];
   const seen = {};
 
   for (const { key, args } of rest) {
     if (key == 'node') {
-      const location = `${capitalize(key)} '${name}'`;
       const [name, coordination, ...position] = args;
+      const location = `${capitalize(key)} '${name}'`;
 
       if (position.length != dim)
         errors.push("Inconsistent dimensions");
@@ -153,11 +152,7 @@ const processCrystal = data => {
       if (seen[name])
         errors.push(`${location} specified twice`);
       else {
-        nodes.push({
-          name,
-          coordination,
-          position: asFloats(position)
-        });
+        nodes.push({ name, coordination, position: asFloats(position) });
         seen[name] = true;
       }
     }
