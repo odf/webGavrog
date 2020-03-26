@@ -1,6 +1,6 @@
 import { coordinateChangesQ as opsQ } from '../geometry/types';
-import * as periodic from '../pgraphs/periodic';
-import * as sgtable from '../spacegroups/sgtable';
+import { makeGraph } from '../pgraphs/periodic';
+import { settingByName } from '../spacegroups/sgtable';
 import parseOperator from '../spacegroups/parseOperator';
 
 import { netFromCrystal } from './crystal';
@@ -9,7 +9,6 @@ import { parseBlocks } from './parseCgd';
 
 
 const capitalize = s => s[0].toUpperCase() + s.slice(1);
-const asFloats = v => v.map(x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x));
 
 
 const translation = {
@@ -41,10 +40,6 @@ const translation = {
   coordinationsequences : "coordination_sequence",
   cs                    : "coordination_sequence"
 };
-
-
-const joinArgs = args => args.join(' ');
-const findGroup = args => sgtable.settingByName(joinArgs(args));
 
 
 const makeGramMatrix = (args, dim) => {
@@ -102,7 +97,7 @@ const preprocess = (data, ...singleKeys) => {
 
 const processPeriodicGraphData = data => {
   const { vals, rest, warnings } = preprocess(data, 'name');
-  const name = joinArgs(vals.name || []);
+  const name = (vals.name || []).join(' ');
   const errors = [];
 
   const edges = [];
@@ -117,7 +112,7 @@ const processPeriodicGraphData = data => {
 
   let graph = null;
   try {
-    graph = periodic.makeGraph(edges);
+    graph = makeGraph(edges);
   }
   catch (ex) {
     errors.push(`${ex}`);
@@ -128,9 +123,13 @@ const processPeriodicGraphData = data => {
 
 
 const processCrystal = data => {
+  const asFloats = v => v.map(
+    x => opsQ.typeOf(x) == 'Float' ? x : opsQ.toJS(x)
+  );
+
   const { vals, rest, warnings } = preprocess(data, 'name', 'group', 'cell');
-  const name = joinArgs(vals.name || []);
-  const group = findGroup(vals.group || ['P1']);
+  const name = (vals.name || []).join(' ');
+  const group = settingByName((vals.group || ['P1']).join(' '));
   const dim = opsQ.dimension(group.transform);
 
   const { cellGram, error } = makeGramMatrix(vals.cell, dim);
@@ -184,8 +183,8 @@ const processCrystal = data => {
 
 const processFaceListData = data => {
   const { vals, rest, warnings } = preprocess(data, 'name', 'group', 'cell');
-  const name = joinArgs(vals.name || []);
-  const group = findGroup(vals.group || ['P1']);
+  const name = (vals.name || []).join(' ');
+  const group = settingByName((vals.group || ['P1']).join(' '));
   const dim = opsQ.dimension(group.transform);
 
   const { cellGram, error } = makeGramMatrix(vals.cell, dim);
