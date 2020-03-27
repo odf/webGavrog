@@ -151,10 +151,10 @@ const processCrystal = data => {
 
       if (seen[name])
         errors.push(`${location} specified twice`);
-      else {
+      else
         nodes.push({ name, coordination, position: asFloats(position) });
-        seen[name] = true;
-      }
+
+      seen[name] = true;
     }
     else if (key == 'edge') {
       if (args.length == 2 * dim)
@@ -192,7 +192,9 @@ const processFaceListData = data => {
   let currentFaceData = null;
 
   for (const { key, args } of rest) {
-    if (key == 'face') {
+    if (key == 'tile')
+      tiles.push([]);
+    else if (key == 'face') {
       for (const item of args) {
         if (currentFaceSize == null) {
           if (opsQ.typeOf(item) == 'Integer' && item > 0) {
@@ -219,8 +221,6 @@ const processFaceListData = data => {
         }
       }
     }
-    else if (key == 'tile')
-      tiles.push([]);
     else
       warnings.push(`Unknown keyword '${key}'`);
   }
