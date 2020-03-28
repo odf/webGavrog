@@ -1,35 +1,25 @@
-import * as io from '../io/cgd';
-import * as pgr from '../pgraphs/periodic';
-import * as sym from '../pgraphs/symmetries';
-import * as inv from '../pgraphs/invariant';
+import * as fs from 'fs';
 
-
-const fs = require('fs');
-
-Array.prototype.toString = function() {
-  return `${this.map(x => x.toString()).join(' ')}`;
-};
+import { structures } from '../io/cgd';
+import { isConnected, isLocallyStable } from '../pgraphs/periodic';
+import { minimalImage } from '../pgraphs/symmetries';
+import { invariant } from '../pgraphs/invariant';
 
 
 process.argv.slice(2).forEach(file => {
   const text = fs.readFileSync(file, { encoding: 'utf8' });
 
-  for (const b of io.structures(text)) {
-    console.log(b.name);
-
-    const G = b.graph;
+  for (const { name, graph } of structures(text)) {
+    console.log(name);
 
     try {
-      if (!pgr.isConnected(G))
-        console.log(`  Error: net '${b.name}' is not connected`);
-      else if (!pgr.isLocallyStable(G))
-        console.log(`  Error: net '${b.name}' is not locally stable`);
+      if (!isConnected(graph))
+        console.log(`  Error: net '${name}' is not connected`);
+      else if (!isLocallyStable(graph))
+        console.log(`  Error: net '${name}' is not locally stable`);
       else {
-        const key = inv.invariant(sym.minimalImage(G));
-        timers.start('printing results');
-        for (const [head, tail, shift] of key)
-          console.log(`  ${head} ${tail} ${shift}`);
-        timers.stop('printing results');
+        for (const [head, tail, shift] of invariant(minimalImage(graph)))
+          console.log(`  ${head} ${tail} ${shift.join(' ')}`);
       }
     } catch(ex) {
       console.log(ex.stack);
