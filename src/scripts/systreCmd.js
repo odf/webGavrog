@@ -1,25 +1,21 @@
 import * as csp from 'plexus-csp';
 
-import * as sgtable from '../spacegroups/sgtable';
-import { identifySpacegroup } from '../spacegroups/spacegroupFinder';
-import * as periodic from '../pgraphs/periodic';
-import * as symmetries from '../pgraphs/symmetries';
-import { systreKey } from '../pgraphs/invariant';
+import * as tilings from '../dsymbols/tilings';
+import { Archive } from '../io/archive';
+import { structures } from '../io/cgd';
+import parseDSymbols from '../io/ds';
 import embed from '../pgraphs/embedding';
 import { embeddingData } from '../pgraphs/embeddingData';
-import * as tilings from '../dsymbols/tilings';
-import parseDSymbols from '../io/ds';
-import * as cgd from '../io/cgd';
-import { Archive } from '../io/archive';
-
+import { systreKey } from '../pgraphs/invariant';
+import * as periodic from '../pgraphs/periodic';
+import * as symmetries from '../pgraphs/symmetries';
+import { settingByName } from '../spacegroups/sgtable';
+import { identifySpacegroup } from '../spacegroups/spacegroupFinder';
 
 import {
-  coordinateChangesQ,
-  coordinateChangesF
+  coordinateChangesQ as opsQ,
+  coordinateChangesF as opsF
 } from '../geometry/types';
-
-const opsQ = coordinateChangesQ;
-const opsF = coordinateChangesF;
 
 
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
@@ -46,7 +42,7 @@ const nets = function*(data, fileName) {
       yield Object.assign({ warnings: [], errors: [] }, g, t);
     }
   else if (fileName.match(/\.(cgd|pgr)$/))
-    for (const g of cgd.structures(data)) {
+    for (const g of structures(data)) {
       yield g;
     }
 };
@@ -171,7 +167,7 @@ const showSpaceGroup = (sgInfo, givenGroup, writeInfo) => {
 
   writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
 
-  const givenName = sgtable.settingByName(givenGroup).name;
+  const givenName = settingByName(givenGroup).name;
 
   if (sgInfo.fullName != givenName)
     writeInfo('   Ideal group or setting differs from given ' +
