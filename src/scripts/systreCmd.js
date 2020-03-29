@@ -42,9 +42,7 @@ const nets = function*(data, fileName) {
       yield Object.assign({ warnings: [], errors: [] }, g, t);
     }
   else if (fileName.match(/\.(cgd|pgr)$/))
-    for (const g of structures(data)) {
-      yield g;
-    }
+    yield* structures(data);
 };
 
 
@@ -59,35 +57,17 @@ const showGraphBasics = (graph, group, writeInfo) => {
 };
 
 
-const nodeNameMapping = (
-  nodes, nodeNames, translationOrbits, orbits, writeInfo
-) => {
+const nodeNameMapping = (nodes, nodeNames, translationOrbits, orbits) => {
   if (nodeNames == null)
     nodeNames = nodes.map(v => v);
-  else {
-    const nodesSorted = nodes.sort((a, b) => {
-      if (typeof a != typeof b)
-        return (typeof a > typeof b) - (typeof a < typeof b);
-      else
-        return (a > b) - (a < b);
-    });
-
-    const t = {};
-    for (const i in nodesSorted)
-      t[nodesSorted[i]] = nodeNames[i];
-
-    nodeNames = nodes.map(v => t[v]);
-  }
 
   const imageNode2Orbit = {};
-
   for (let i = 0; i < orbits.length; ++i) {
     for (const v of orbits[i])
       imageNode2Orbit[v] = i + 1;
   }
 
   const node2Image = {};
-
   if (translationOrbits) {
     for (let i = 0; i < translationOrbits.length; ++i) {
       for (const v of translationOrbits[i])
@@ -105,21 +85,20 @@ const nodeNameMapping = (
   const mergedNamesSeen = {};
 
   for (const i in nodes) {
-    const v = nodes[i];
+    const w = node2Image[nodes[i]];
     const name = nodeNames[i];
-    const w = node2Image[v];
     const orbit = imageNode2Orbit[w];
     const oldName = orbit2name[orbit];
 
-    if (oldName != null && oldName != name) {
+    if (oldName == null || oldName == name)
+      orbit2name[orbit] = name;
+    else {
       const pair = [name, oldName];
       if (!mergedNamesSeen[pair]) {
         mergedNames.push(pair);
         mergedNamesSeen[pair] = true;
       }
     }
-    else
-      orbit2name[orbit] = name;
 
     node2name[w] = orbit2name[orbit];
   }
@@ -432,9 +411,10 @@ const processGraph = (
   writeInfo();
 
   const nodeNames = originalNodes && originalNodes.map(({ name }) => name);
-  const nodes = periodic.vertices(graph);
+  const nodes = periodic.vertices(graph).sort((a, b) => (a > b) - (a < b));
   const [nodeToName, mergedNames] = nodeNameMapping(
-    nodes, nodeNames, translationOrbits, nodeOrbits, writeInfo);
+    nodes, nodeNames, translationOrbits, nodeOrbits
+  );
 
   if (mergedNames.length) {
     writeInfo("   Equivalences for non-unique nodes:");
