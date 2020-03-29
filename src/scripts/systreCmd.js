@@ -81,26 +81,30 @@ const nodeNameMapping = (nodes, nodeNames, translationOrbits, orbits) => {
 
   const orbit2name = {};
   const node2name = {};
+
+  for (let i = 0; i < nodes.length; ++i) {
+    const w = node2Image[nodes[i]];
+    const orbit = imageNode2Orbit[w];
+
+    if (orbit2name[orbit] == null)
+      orbit2name[orbit] = nodeNames[i];
+    node2name[w] = orbit2name[orbit];
+  }
+
   const mergedNames = [];
   const mergedNamesSeen = {};
 
-  for (const i in nodes) {
-    const w = node2Image[nodes[i]];
-    const name = nodeNames[i];
-    const orbit = imageNode2Orbit[w];
-    const oldName = orbit2name[orbit];
+  for (let i = 0; i < nodes.length; ++i) {
+    const nodeName = nodeNames[i];
+    const orbitName = orbit2name[imageNode2Orbit[node2Image[nodes[i]]]];
 
-    if (oldName == null || oldName == name)
-      orbit2name[orbit] = name;
-    else {
-      const pair = [name, oldName];
+    if (nodeName != orbitName) {
+      const pair = [nodeName, orbitName];
       if (!mergedNamesSeen[pair]) {
         mergedNames.push(pair);
         mergedNamesSeen[pair] = true;
       }
     }
-
-    node2name[w] = orbit2name[orbit];
   }
 
   return [node2name, mergedNames];
