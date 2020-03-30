@@ -60,6 +60,13 @@ const showGraphBasics = (graph, group, writeInfo) => {
 const nodeNameMapping = (nodes, nodeNames, translationOrbits, orbits) => {
   if (nodeNames == null)
     nodeNames = nodes.map(v => v);
+  else {
+    const nodesSorted = nodes.sort((a, b) => (a > b) - (a < b));
+    const t = {};
+    for (const i in nodesSorted)
+      t[nodesSorted[i]] = nodeNames[i];
+    nodeNames = nodes.map(v => t[v]);
+  }
 
   const imageNode2Orbit = {};
   for (let i = 0; i < orbits.length; ++i) {
@@ -81,30 +88,27 @@ const nodeNameMapping = (nodes, nodeNames, translationOrbits, orbits) => {
 
   const orbit2name = {};
   const node2name = {};
-
-  for (let i = 0; i < nodes.length; ++i) {
-    const w = node2Image[nodes[i]];
-    const orbit = imageNode2Orbit[w];
-
-    if (orbit2name[orbit] == null)
-      orbit2name[orbit] = nodeNames[i];
-    node2name[w] = orbit2name[orbit];
-  }
-
   const mergedNames = [];
   const mergedNamesSeen = {};
 
-  for (let i = 0; i < nodes.length; ++i) {
-    const nodeName = nodeNames[i];
-    const orbitName = orbit2name[imageNode2Orbit[node2Image[nodes[i]]]];
+  for (const i in nodes) {
+    const v = nodes[i];
+    const name = nodeNames[i];
+    const w = node2Image[v];
+    const orbit = imageNode2Orbit[w];
+    const oldName = orbit2name[orbit];
 
-    if (nodeName != orbitName) {
-      const pair = [nodeName, orbitName];
+    if (oldName != null && oldName != name) {
+      const pair = [name, oldName];
       if (!mergedNamesSeen[pair]) {
         mergedNames.push(pair);
         mergedNamesSeen[pair] = true;
       }
     }
+    else
+      orbit2name[orbit] = name;
+
+    node2name[w] = orbit2name[orbit];
   }
 
   return [node2name, mergedNames];
@@ -415,7 +419,7 @@ const processGraph = (
   writeInfo();
 
   const nodeNames = originalNodes && originalNodes.map(({ name }) => name);
-  const nodes = periodic.vertices(graph).sort((a, b) => (a > b) - (a < b));
+  const nodes = periodic.vertices(graph);
   const [nodeToName, mergedNames] = nodeNameMapping(
     nodes, nodeNames, translationOrbits, nodeOrbits
   );
