@@ -57,14 +57,16 @@ const showGraphBasics = (graph, group, writeInfo) => {
 };
 
 
-const nodeNameMapping = (nodes, nodeNames, translationOrbits, orbits) => {
-  if (nodeNames == null)
+const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
+  let nodeNames;
+
+  if (originalNodes == null)
     nodeNames = nodes.map(v => v);
   else {
     const nodesSorted = nodes.sort((a, b) => (a > b) - (a < b));
     const t = {};
     for (const i in nodesSorted)
-      t[nodesSorted[i]] = nodeNames[i];
+      t[nodesSorted[i]] = originalNodes[i].name;
     nodeNames = nodes.map(v => t[v]);
   }
 
@@ -418,10 +420,8 @@ const processGraph = (
   writeInfo(`   ${pluralize(nodeOrbits.length, 'kind')} of node.`);
   writeInfo();
 
-  const nodeNames = originalNodes && originalNodes.map(({ name }) => name);
-  const nodes = periodic.vertices(graph);
   const [nodeToName, mergedNames] = nodeNameMapping(
-    nodes, nodeNames, translationOrbits, nodeOrbits
+    periodic.vertices(graph), originalNodes, translationOrbits, nodeOrbits
   );
 
   if (mergedNames.length) {
