@@ -321,8 +321,10 @@ if (require.main == module) {
   };
 
   const test = table => {
+    console.log(JSON.stringify(table));
     const reps = cosetRepresentatives(table);
     console.log(JSON.stringify(reps), Object.keys(reps).length);
+    console.log();
   };
 
   const base = cosetTable(
@@ -334,7 +336,12 @@ if (require.main == module) {
   test(coreTable(base));
 
   console.log(fw.expandedRelators([[1,2,-3]]));
+  console.log();
+
+  test(cosetTable(2, [[1,1],[2,2],[1,2,1,2]], []));
+  test(cosetTable(2, [[1,1],[2,2],[1,2,1,2]], [[1]]));
+  test(cosetTable(2, [[1,1],[2,2],[1,2,1,2]], [[2]]));
 
   for (const x of tables(2, [[1,1],[2,2],[1,2,1,2]], 8))
-    console.log(JSON.stringify(x));
+    test(x);
 }
