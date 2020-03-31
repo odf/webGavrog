@@ -58,16 +58,15 @@ const showGraphBasics = (graph, group, writeInfo) => {
 
 
 const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
-  let nodeNames;
-
-  if (originalNodes == null)
-    nodeNames = nodes.map(v => v);
+  const originalNodeNames = {};
+  if (originalNodes == null) {
+    for (const v of nodes)
+      originalNodeNames[v] = v;
+  }
   else {
     const nodesSorted = nodes.sort((a, b) => (a > b) - (a < b));
-    const t = {};
     for (const i in nodesSorted)
-      t[nodesSorted[i]] = originalNodes[i].name;
-    nodeNames = nodes.map(v => t[v]);
+      originalNodeNames[nodesSorted[i]] = originalNodes[i].name;
   }
 
   const imageNode2Orbit = {};
@@ -90,27 +89,23 @@ const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
 
   const orbit2name = {};
   const node2name = {};
-  const mergedNames = [];
-  const mergedNamesSeen = {};
-
-  for (const i in nodes) {
-    const v = nodes[i];
-    const name = nodeNames[i];
+  for (const v of nodes) {
     const w = node2Image[v];
     const orbit = imageNode2Orbit[w];
-    const oldName = orbit2name[orbit];
 
-    if (oldName != null && oldName != name) {
-      const pair = [name, oldName];
-      if (!mergedNamesSeen[pair]) {
-        mergedNames.push(pair);
-        mergedNamesSeen[pair] = true;
-      }
-    }
-    else
-      orbit2name[orbit] = name;
-
+    if (orbit2name[orbit] == null)
+      orbit2name[orbit] = originalNodeNames[v];
     node2name[w] = orbit2name[orbit];
+  }
+
+  const mergedNames = [];
+  const mergedNamesSeen = {};
+  for (const v of nodes) {
+    const pair = [originalNodeNames[v], node2name[node2Image[v]]];
+    if (pair[0] != pair[1] && !mergedNamesSeen[pair]) {
+      mergedNames.push(pair);
+      mergedNamesSeen[pair] = true;
+    }
   }
 
   return [node2name, mergedNames];
