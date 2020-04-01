@@ -58,21 +58,17 @@ const showGraphBasics = (graph, group, writeInfo) => {
 
 
 const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
+  // TODO simplify once we no longer try to exactly match Java Systre
+
   const originalNodeNames = {};
-  if (originalNodes == null) {
-    for (const v of nodes)
-      originalNodeNames[v] = v;
-  }
-  else {
+  if (originalNodes) {
     const nodesSorted = nodes.sort((a, b) => (a > b) - (a < b));
     for (const i in nodesSorted)
       originalNodeNames[nodesSorted[i]] = originalNodes[i].name;
   }
-
-  const imageNode2Orbit = {};
-  for (let i = 0; i < orbits.length; ++i) {
-    for (const v of orbits[i])
-      imageNode2Orbit[v] = i + 1;
+  else {
+    for (const v of nodes)
+      originalNodeNames[v] = v;
   }
 
   const node2Image = {};
@@ -87,6 +83,12 @@ const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
       node2Image[v] = v;
   }
 
+  const imageNode2Orbit = {};
+  for (let i = 0; i < orbits.length; ++i) {
+    for (const v of orbits[i])
+      imageNode2Orbit[v] = i + 1;
+  }
+
   const orbit2name = {};
   const node2name = {};
   for (const v of nodes) {
@@ -98,17 +100,14 @@ const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
     node2name[w] = orbit2name[orbit];
   }
 
-  const mergedNames = [];
-  const mergedNamesSeen = {};
+  const mergedNames = {};
   for (const v of nodes) {
     const pair = [originalNodeNames[v], node2name[node2Image[v]]];
-    if (pair[0] != pair[1] && !mergedNamesSeen[pair]) {
-      mergedNames.push(pair);
-      mergedNamesSeen[pair] = true;
-    }
+    if (pair[0] != pair[1])
+      mergedNames[pair] = pair;
   }
 
-  return [node2name, mergedNames];
+  return [node2name, Object.values(mergedNames)];
 };
 
 
