@@ -150,9 +150,9 @@ const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
   for (const orbit of nodeOrbits) {
     const v = orbit[0];
     const cs = periodic.coordinationSeq(G, v, 10);
-    let s = 1;
     const out = [`      Node ${nodeToName[v]}:   `];
 
+    let s = 1;
     for (let i = 1; i <= 10; ++i) {
       if (s > 100000) {
         complete = false;
@@ -175,9 +175,8 @@ const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
     const td10 = cum / periodic.vertices(G).length;
     writeInfo(`   TD10 = ${Math.round(td10)}`);
   }
-  else {
+  else
     writeInfo('   TD10 not computed.');
-  }
 
   writeInfo();
 }
