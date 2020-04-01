@@ -46,7 +46,7 @@ const coordinationSequence = graph => {
   const syms = symmetries.symmetries(G).symmetries;
 
   const cs = symmetries.nodeOrbits(G, syms).map(
-    ([v]) => periodic.coordinationSeq(G, v, 10).slice(1)
+    ([v]) => Array.from(periodic.coordinationSeq(G, v, 10)).slice(1)
   );
   cs.sort(cmpLex);
 

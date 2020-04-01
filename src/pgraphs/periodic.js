@@ -150,12 +150,11 @@ export const edgeVector = (e, pos) =>
   ops.plus(e.shift, ops.minus(pos[e.tail], pos[e.head]));
 
 
-export const coordinationSeq = (graph, start, dist) => {
-  const zero = ops.vector(graph.dim);
+export function* coordinationSeq(graph, start, dist) {
+  yield 1;
 
   let oldShell = {};
-  let currentShell = { [encode([start, zero])]: true };
-  const res = [1];
+  let currentShell = { [encode([start, ops.vector(graph.dim)])]: true };
 
   for (let i = 0; i < dist; ++i) {
     const nextShell = {};
@@ -171,12 +170,11 @@ export const coordinationSeq = (graph, start, dist) => {
       }
     }
 
-    res.push(Object.keys(nextShell).length);
+    yield Object.keys(nextShell).length;
+
     oldShell = currentShell;
     currentShell = nextShell;
   }
-
-  return res;
 };
 
 
@@ -436,7 +434,7 @@ if (require.main == module) {
     console.log(`unpickled: ${pickler.unpickle(pickler.pickle(g))}`);
     console.log();
 
-    console.log(`  cs  = ${coordinationSeq(g, 1, 10)}`);
+    console.log(`  cs  = ${Array.from(coordinationSeq(g, 1, 10))}`);
     if (isConnected(g)) {
       const pos = barycentricPlacement(g);
       console.log(`  pos = ${format(pos)}`);

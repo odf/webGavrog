@@ -149,7 +149,7 @@ const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
 
   for (const orbit of nodeOrbits) {
     const v = orbit[0];
-    const cs = periodic.coordinationSeq(G, v, 10);
+    const cs = Array.from(periodic.coordinationSeq(G, v, 10));
     const out = [`      Node ${nodeToName[v]}:   `];
 
     let s = 1;
