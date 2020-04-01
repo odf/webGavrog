@@ -57,6 +57,36 @@ const showGraphBasics = (graph, group, writeInfo) => {
 };
 
 
+const checkGraph = (graph, writeInfo) => {
+  if (!periodic.isLocallyStable(graph)) {
+    const msg = ("Structure has collisions between next-nearest neighbors."
+                 + " Systre does not currently support such structures.");
+    reportSystreError("STRUCTURE", msg, writeInfo);
+    return false;
+  }
+
+  if (symmetries.isLadder(graph)) {
+    const msg = "Structure is non-crystallographic (a 'ladder')";
+    reportSystreError("STRUCTURE", msg, writeInfo);
+    return false;
+  }
+
+  if (periodic.hasSecondOrderCollisions(graph)) {
+    const msg = ("Structure has second-order collisions."
+                 + " Systre does not currently support such structures.");
+    reportSystreError("STRUCTURE", msg, writeInfo);
+    return false;
+  }
+
+  if (!periodic.isStable(graph)) {
+    writeInfo("Structure has collisions.");
+    writeInfo();
+  }
+
+  return true;
+};
+
+
 const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
   // TODO simplify once we no longer try to exactly match Java Systre
 
@@ -111,64 +141,6 @@ const nodeNameMapping = (nodes, originalNodes, translationOrbits, orbits) => {
 };
 
 
-const checkGraph = (graph, writeInfo) => {
-  if (!periodic.isLocallyStable(graph)) {
-    const msg = ("Structure has collisions between next-nearest neighbors."
-                 + " Systre does not currently support such structures.");
-    reportSystreError("STRUCTURE", msg, writeInfo);
-    return false;
-  }
-
-  if (symmetries.isLadder(graph)) {
-    const msg = "Structure is non-crystallographic (a 'ladder')";
-    reportSystreError("STRUCTURE", msg, writeInfo);
-    return false;
-  }
-
-  if (periodic.hasSecondOrderCollisions(graph)) {
-    const msg = ("Structure has second-order collisions."
-                 + " Systre does not currently support such structures.");
-    reportSystreError("STRUCTURE", msg, writeInfo);
-    return false;
-  }
-
-  if (!periodic.isStable(graph)) {
-    writeInfo("Structure has collisions.");
-    writeInfo();
-  }
-
-  return true;
-};
-
-
-const showSpaceGroup = (sgInfo, givenGroup, writeInfo) => {
-  if (sgInfo == null) {
-    const msg = "Space group could not be identified.";
-      reportSystreError("INTERNAL", msg, writeInfo);
-    return;
-  }
-
-  writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
-
-  const givenName = settingByName(givenGroup).name;
-
-  if (sgInfo.fullName != givenName)
-    writeInfo('   Ideal group or setting differs from given ' +
-              `(${sgInfo.fullName} vs ${givenName}).`);
-
-  if (sgInfo.extension == '1')
-    writeInfo('     (using first origin choice)');
-  else if (sgInfo.extension == '2')
-    writeInfo('     (using second origin choice)');
-  else if (sgInfo.extension == 'H')
-    writeInfo('     (using hexagonal setting)');
-  else if (sgInfo.extension == 'R')
-    writeInfo('     (using rhombohedral setting)');
-
-  writeInfo();
-};
-
-
 const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
   writeInfo('   Coordination sequences:');
 
@@ -209,6 +181,34 @@ const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
 
   writeInfo();
 }
+
+
+const showSpaceGroup = (sgInfo, givenGroup, writeInfo) => {
+  if (sgInfo == null) {
+    const msg = "Space group could not be identified.";
+      reportSystreError("INTERNAL", msg, writeInfo);
+    return;
+  }
+
+  writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
+
+  const givenName = settingByName(givenGroup).name;
+
+  if (sgInfo.fullName != givenName)
+    writeInfo('   Ideal group or setting differs from given ' +
+              `(${sgInfo.fullName} vs ${givenName}).`);
+
+  if (sgInfo.extension == '1')
+    writeInfo('     (using first origin choice)');
+  else if (sgInfo.extension == '2')
+    writeInfo('     (using second origin choice)');
+  else if (sgInfo.extension == 'H')
+    writeInfo('     (using hexagonal setting)');
+  else if (sgInfo.extension == 'R')
+    writeInfo('     (using rhombohedral setting)');
+
+  writeInfo();
+};
 
 
 const showAndCountGraphMatches = (key, archives, writeInfo) => {
