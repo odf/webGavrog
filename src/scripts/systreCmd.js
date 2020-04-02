@@ -183,14 +183,12 @@ const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
 const showSpaceGroup = (sgInfo, givenGroup, writeInfo) => {
   if (sgInfo == null) {
     const msg = "Space group could not be identified.";
-      reportSystreError("INTERNAL", msg, writeInfo);
+    reportSystreError("INTERNAL", msg, writeInfo);
     return;
   }
-
   writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
 
   const givenName = settingByName(givenGroup).name;
-
   if (sgInfo.fullName != givenName)
     writeInfo('   Ideal group or setting differs from given ' +
               `(${sgInfo.fullName} vs ${givenName}).`);
@@ -208,28 +206,36 @@ const showSpaceGroup = (sgInfo, givenGroup, writeInfo) => {
 };
 
 
-const showAndCountGraphMatches = (key, archives, writeInfo) => {
-  let count = 0;
+const findAndReportMatches = (graph, name, archives, options, writeInfo) => {
+  const key = systreKey(graph);
+  if (options.outputSystreKey) {
+    writeInfo(`   Systre key: "${key}"`);
+    writeInfo();
+  }
 
+  let count = 0;
   for (const arc of archives) {
-    const name = arc.name;
-    const found = arc.getByKey(key)
+    const found = arc.getByKey(key);
 
     if (found) {
       ++count;
-      if (name == '__rcsr__')
+      if (arc.name == '__rcsr__')
         writeInfo('   Structure was identified with RCSR symbol:');
-      else if (name == '__internal__')
+      else if (arc.name == '__internal__')
         writeInfo('   Structure already seen in this run.');
       else
-        writeInfo(`   Structure was found in archive "${name}":`);
+        writeInfo(`   Structure was found in archive "${arc.name}":`);
 
       writeInfo(`       Name:            ${found.id}`);
       writeInfo();
     }
   }
 
-  return count;
+  if (count == 0) {
+    writeInfo("   Structure is new for this run.");
+    writeInfo();
+    archives.find(arc => arc.name == '__internal__').addNet(graph, name, key);
+  }
 }
 
 
@@ -428,19 +434,7 @@ const processGraph = (
   const sgInfo = identifySpacegroup(symOps);
   showSpaceGroup(sgInfo, group, writeInfo);
 
-  const key = systreKey(G);
-  if (options.outputSystreKey) {
-    writeInfo(`   Systre key: "${key}"`);
-    writeInfo();
-  }
-
-  const countMatches = showAndCountGraphMatches(key, archives, writeInfo);
-
-  if (countMatches == 0) {
-    writeInfo("   Structure is new for this run.");
-    writeInfo();
-    archives.find(arc => arc.name == '__internal__').addNet(G, name, key);
-  }
+  findAndReportMatches(G, name, archives, options, writeInfo);
 
   const eOut = embed(G);
   const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
