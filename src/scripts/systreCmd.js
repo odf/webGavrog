@@ -298,26 +298,19 @@ const showEmbedding = (data, nodeToName, isRelaxed, writeInfo) => {
 };
 
 
-const writeCgd = (
-  name,
-  group,
-  { cellParameters, cellVolume, nodeReps, edgeReps, posType },
-  nodeNames,
-  degrees,
-  writeData
-) => {
+const writeCgd = (name, group, data, nodeNames, degrees, writeData) => {
   writeData('CRYSTAL');
   writeData(`  NAME ${name}`);
   writeData(`  GROUP ${group}`);
-  writeData(`  CELL ${cellParameters.map(x => x.toFixed(5)).join(' ')}`);
+  writeData(`  CELL ${data.cellParameters.map(x => x.toFixed(5)).join(' ')}`);
 
-  for (const [p, node] of nodeReps)
+  for (const [p, node] of data.nodeReps)
     writeData(`  NODE ${nodeNames[node]} ${degrees[node]}  ${formatPoint(p)}`);
 
-  for (const [p, v] of edgeReps)
+  for (const [p, v] of data.edgeReps)
     writeData(`  EDGE  ${formatPoint(p)}   ${formatPoint(opsF.plus(p, v))}`);
 
-  for (const [p, v] of edgeReps) {
+  for (const [p, v] of data.edgeReps) {
     const c = formatPoint(opsF.plus(p, opsF.times(0.5, v)));
     writeData(`# EDGE_CENTER  ${c}`);
   }
