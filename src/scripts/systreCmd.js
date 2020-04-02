@@ -19,6 +19,7 @@ import {
 
 
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
+const formatPoint = p => p.map(x => x.toFixed(5)).join(' ');
 
 
 const prefixedLineWriter = (prefix='') => (s='') => {
@@ -239,32 +240,15 @@ const findAndReportMatches = (graph, name, archives, options, writeInfo) => {
 }
 
 
-const formatPoint = p => p.map(x => x.toFixed(5)).join(' ');
-
-
-const showEmbedding = (
-  {
-    cellParameters,
-    cellVolume,
-    nodeReps,
-    edgeReps,
-    edgeStats,
-    angleStats,
-    posType,
-    shortestSeparation,
-    degreesOfFreedom
-  },
-  nodeToName,
-  writeInfo
-) => {
-  if (cellParameters.length == 3) {
-    const [a, b, gamma] = cellParameters;
+const showEmbedding = (data, nodeToName, isRelaxed, writeInfo) => {
+  if (data.cellParameters.length == 3) {
+    const [a, b, gamma] = data.cellParameters;
     writeInfo(`   Relaxed cell parameters:`);
     writeInfo(`       a = ${a.toFixed(5)}, b = ${b.toFixed(5)}`);
     writeInfo(`       gamma = ${gamma.toFixed(4)}`);
   }
-  else if (cellParameters.length == 6) {
-    const [a, b, c, alpha, beta, gamma] = cellParameters;
+  else if (data.cellParameters.length == 6) {
+    const [a, b, c, alpha, beta, gamma] = data.cellParameters;
     writeInfo(`   Relaxed cell parameters:`);
     writeInfo(`       ` +
               `a = ${a.toFixed(5)}, ` +
@@ -274,41 +258,42 @@ const showEmbedding = (
               `alpha = ${alpha.toFixed(4)}, ` +
               `beta = ${beta.toFixed(4)}, ` +
               `gamma = ${gamma.toFixed(4)}`);
-    writeInfo(`   Cell volume: ${cellVolume.toFixed(5)}`);
+    writeInfo(`   Cell volume: ${data.cellVolume.toFixed(5)}`);
   }
 
+  const posType = isRelaxed ? 'Relaxed' : 'Barycentric';
   writeInfo(`   ${posType} positions:`);
 
-  for (const [p, node] of nodeReps)
+  for (const [p, node] of data.nodeReps)
     writeInfo(`      Node ${nodeToName[node]}:    ${formatPoint(p)}`);
 
   writeInfo('   Edges:');
-  for (const [p, v] of edgeReps)
+  for (const [p, v] of data.edgeReps)
     writeInfo(`      ${formatPoint(p)}  <->  ${formatPoint(opsF.plus(p, v))}`);
 
   writeInfo('   Edge centers:');
-  for (const [p, v] of edgeReps)
+  for (const [p, v] of data.edgeReps)
     writeInfo(`      ${formatPoint(opsF.plus(p, opsF.times(0.5, v)))}`);
 
   writeInfo();
 
-  const { minimum: emin, maximum: emax, average: eavg } = edgeStats;
+  const { minimum: emin, maximum: emax, average: eavg } = data.edgeStats;
   writeInfo('   Edge statistics: ' +
             `minimum = ${emin.toFixed(5)}, ` +
             `maximum = ${emax.toFixed(5)}, ` +
             `average = ${eavg.toFixed(5)}`);
 
-  const { minimum: amin, maximum: amax, average: aavg } = angleStats;
+  const { minimum: amin, maximum: amax, average: aavg } = data.angleStats;
   writeInfo('   Angle statistics: ' +
             `minimum = ${amin.toFixed(5)}, ` +
             `maximum = ${amax.toFixed(5)}, ` +
             `average = ${aavg.toFixed(5)}`);
 
-  const d = shortestSeparation;
+  const d = data.shortestSeparation;
   writeInfo(`   Shortest non-bonded distance = ${d.toFixed(5)}`);
   writeInfo();
 
-  writeInfo(`   Degrees of freedom: ${degreesOfFreedom}`);
+  writeInfo(`   Degrees of freedom: ${data.degreesOfFreedom}`);
   writeInfo();
 };
 
@@ -438,12 +423,10 @@ const processGraph = (
 
   const eOut = embed(G);
   const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
-
   const data = embeddingData(G, sgInfo.toStd, syms, embedding);
-  data.posType = options.relaxPositions ? 'Relaxed' : 'Barycentric';
 
   if (options.outputEmbedding)
-    showEmbedding(data, nodeToName, writeInfo);
+    showEmbedding(data, nodeToName, options.relaxPositions, writeInfo);
 
   if (options.outputCgd) {
     const degrees = {};
