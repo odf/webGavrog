@@ -151,8 +151,6 @@ export const edgeVector = (e, pos) =>
 
 
 export function* coordinationSeq(graph, start, dist) {
-  yield 1;
-
   let oldShell = {};
   let currentShell = { [encode([start, ops.vector(graph.dim)])]: true };
 
