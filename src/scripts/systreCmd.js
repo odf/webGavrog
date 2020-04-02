@@ -22,12 +22,6 @@ const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
 const formatPoint = p => p.map(x => x.toFixed(5)).join(' ');
 
 
-const prefixedLineWriter = (prefix='') => (s='') => {
-  for (const line of s.split('\n'))
-    console.log(`${prefix}${line}`);
-};
-
-
 const reportSystreError = (errorType, message, writeInfo) => {
   writeInfo("==================================================");
   writeInfo(`!!! ERROR (${errorType}) - ${message}`);
@@ -320,11 +314,7 @@ const writeCgd = (name, group, data, nodeNames, degrees, writeData) => {
 
 
 const processDisconnectedGraph = (
-  input,
-  options,
-  archives=[],
-  writeInfo=prefixedLineWriter(),
-  writeData=prefixedLineWriter()
+  input, options, archives, writeInfo, writeData
 ) => csp.go(function*() {
   const { graph, name, nodeNames } = input;
   const group = input.group || (/*graph.dim == 2 ? 'p1' :*/ 'P1');
@@ -346,11 +336,10 @@ const processDisconnectedGraph = (
     else
       writeInfo(`      multiplicity = ${comp.multiplicity}`);
 
-    yield processGraph({ graph: comp.graph, name: `${name}_component_${i}` },
-                       options,
-                       archives=archives,
-                       writeInfo=writeInfo,
-                       writeData=writeData);
+    yield processGraph(
+      { graph: comp.graph, name: `${name}_component_${i}` },
+      options, archives, writeInfo, writeData
+    );
 
     writeInfo();
     writeInfo(`   Finished component ${i}`);
@@ -361,11 +350,7 @@ const processDisconnectedGraph = (
 
 
 const processGraph = (
-  input,
-  options,
-  archives=[],
-  writeInfo=prefixedLineWriter(),
-  writeData=prefixedLineWriter()
+  input, options, archives, writeInfo, writeData
 ) => csp.go(function*() {
   const { graph, name, nodes: originalNodes } = input;
   const group = input.group || (/*graph.dim == 2 ? 'p1' :*/ 'P1');
@@ -432,12 +417,7 @@ const processGraph = (
 
 
 export const processData = (
-  data,
-  fileName,
-  options,
-  archives=[],
-  writeInfo=prefixedLineWriter('## '),
-  writeData=prefixedLineWriter()
+  data, fileName, options, archives, writeInfo, writeData
 ) => csp.go(function*() {
 
   let count = 0;
@@ -473,11 +453,7 @@ export const processData = (
         const process = periodic.isConnected(input.graph) ?
               processGraph : processDisconnectedGraph;
 
-        yield process(input,
-                      options,
-                      archives=archives,
-                      writeInfo=writeInfo,
-                      writeData=writeData)
+        yield process(input, options, archives, writeInfo, writeData)
       } catch(ex) {
         reportSystreError('INTERNAL', ex + '\n' + ex.stack, writeInfo);
       }
@@ -517,10 +493,15 @@ if (require.main == module) {
     skipWarnings: true
   };
 
+  const lineWriter = (s='') => {
+    for (const line of s.split('\n'))
+      console.log(`${line}`);
+  };
+
   csp.top(csp.go(function*() {
     for (const name of inputFiles) {
       const data = fs.readFileSync(name, { encoding: 'utf8' });
-      yield processData(data, name, options, archives, prefixedLineWriter());
+      yield processData(data, name, options, archives, lineWriter, lineWriter);
     }
   }));
 }
