@@ -152,16 +152,16 @@ export const edgeVector = (e, pos) =>
 
 export function* coordinationSeq(graph, start, dist) {
   let oldShell = {};
-  let currentShell = { [encode([start, ops.vector(graph.dim)])]: true };
+  let currentShell = { [[start, ops.vector(graph.dim)]]: true };
 
   for (let i = 0; i < dist; ++i) {
     const nextShell = {};
 
     for (const item of Object.keys(currentShell)) {
-      const [v, s] = decode(item);
+      const [v, ...s] = item.split(',').map(s => parseInt(s));
 
       for (const e of incidences(graph)[v]) {
-        const key = encode([e.tail, ops.plus(s, e.shift)]);
+        const key = ([e.tail, s.map((x, i) => x + e.shift[i])]).toString();
 
         if (!oldShell[key] && !currentShell[key])
           nextShell[key] = true;
