@@ -89,7 +89,7 @@ const adjustedTraversal = function*(traversal) {
       const shift = basis.add(ops.plus(edge.shift, d));
 
       if (v < w || ops.sgn(shift) < 0) {
-        edgeMapping[encode(edge)] = encode(pg.makeEdge(v, w, shift));
+        edgeMapping[encode(edge)] = pg.makeEdge(v, w, shift);
         yield [v, w, shift];
       }
     }
@@ -161,10 +161,9 @@ const transformEdges = (edges, M) => edges.map(([head, tail, shift]) => {
 const transformEdgeMapping = (mapping, M) => {
   const result = {};
 
-  for (const [key, val] of Object.entries(mapping)) {
-    const edge = decode(val);
+  for (const [key, edge] of Object.entries(mapping)) {
     const shift = ops.times(edge.shift, M);
-    result[key] = encode(pg.makeEdge(edge.head, edge.tail, shift));
+    result[key] = pg.makeEdge(edge.head, edge.tail, shift);
   }
 
   return result;
@@ -254,7 +253,7 @@ if (require.main == module) {
     console.log();
 
     for (const k of Object.keys(inv.edgeMapping))
-      console.log(`(${decode(k)}) => (${decode(inv.edgeMapping[k])})`);
+      console.log(`(${decode(k)}) => (${inv.edgeMapping[k]})`);
     console.log();
 
     console.log(inv.basisChange);
@@ -281,5 +280,26 @@ if (require.main == module) {
       [ 2, 3, [ 0, 1 ] ],
       [ 1, 3, [ 0, 0 ] ],
       [ 1, 3, [ 1, 1 ] ] ]
+  ));
+
+  test(pg.makeGraph(
+    [ [ 1, 1, [  1, -1,  0 ] ],
+      [ 1, 1, [  1,  0,  0 ] ],
+      [ 1, 1, [  2, -1, -2 ] ],
+      [ 1, 2, [  0,  1,  1 ] ],
+      [ 1, 3, [  3, -2, -1 ] ],
+      [ 1, 4, [ -3,  1,  3 ] ],
+      [ 1, 5, [  0, -1, -1 ] ],
+      [ 1, 6, [  3, -1, -3 ] ],
+      [ 1, 7, [ -3,  2,  1 ] ],
+      [ 2, 3, [  2, -2, -2 ] ],
+      [ 2, 4, [ -2,  0,  2 ] ],
+      [ 2, 5, [ -1, -1, -1 ] ],
+      [ 3, 4, [ -4,  2,  2 ] ],
+      [ 3, 7, [ -4,  3,  1 ] ],
+      [ 4, 6, [  5, -2, -5 ] ],
+      [ 5, 6, [  2,  0, -2 ] ],
+      [ 5, 7, [ -2,  2,  2 ] ],
+      [ 6, 7, [ -4,  2,  2 ] ] ]
   ));
 }
