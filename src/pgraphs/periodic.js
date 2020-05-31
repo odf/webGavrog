@@ -61,8 +61,10 @@ class Graph {
 
 pickler.register(
   'VectorLabeledEdge',
-  ({ head, tail, shift }) => ({ head, tail, shift }),
-  ({ head, tail, shift }) => new VectorLabeledEdge(head, tail, shift)
+  ({ head, tail, shift }) =>
+    ({ head, tail, shift: pickler.pickle(shift) }),
+  ({ head, tail, shift }) =>
+    new VectorLabeledEdge(head, tail, pickler.unpickle(shift))
 );
 
 
