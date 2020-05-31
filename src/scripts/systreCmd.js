@@ -13,7 +13,6 @@ import { settingByName } from '../spacegroups/sgtable';
 import { identifySpacegroup } from '../spacegroups/spacegroupFinder';
 
 import {
-  coordinateChangesQ as opsQ,
   coordinateChangesF as opsF
 } from '../geometry/types';
 
