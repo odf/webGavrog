@@ -15,7 +15,7 @@ for (const name of process.argv.slice(2)) {
     console.log();
     console.log(`## ${input.name || '-'}`);
 
-    const G = minimalImage(input.graph);
+    const G = input.graph;
 
     let s = 1;
     let k = 0;
