@@ -8,6 +8,7 @@ import { rationalLinearAlgebraModular } from '../arithmetic/types';
 import { coordinateChangesQ as ops } from '../geometry/types';
 import * as part from '../common/unionFind';
 import * as comb from '../common/combinatorics';
+import { structures } from '../io/cgd';
 
 
 const mapObject = (obj, fn) => {
@@ -191,7 +192,7 @@ const uniqueEdgesByVector = graph => {
 };
 
 
-const translationalEquivalences = graph => {
+const rawTranslationalEquivalences = graph => {
   const I = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
   const ebv = uniqueEdgesByVector(graph);
@@ -212,30 +213,6 @@ const translationalEquivalences = graph => {
 };
 
 
-export const isMinimal = graph => {
-  const verts = pg.vertices(graph);
-  const p = translationalEquivalences(graph);
-
-  return verts.every(v => v == verts[0] || p.find(v) != p.find(verts[0]));
-}
-
-
-export const isLadder = graph => {
-  if (pg.isStable(graph) || !pg.isLocallyStable(graph))
-    return false;
-
-  const verts = pg.vertices(graph);
-  const p = translationalEquivalences(graph);
-  const pos = pg.barycentricPlacement(graph);
-
-  return verts.some(v => (
-    v != verts[0] &&
-      p.find(v) == p.find(verts[0]) &&
-      ops.eq(ops.mod(pos[v], 1), ops.mod(pos[verts[0]], 1))
-  ));
-};
-
-
 const extendedTranslationBasis = (graph, equivs) => {
   const pos = pg.barycentricPlacement(graph);
   const verts = pg.vertices(graph);
@@ -251,6 +228,60 @@ const extendedTranslationBasis = (graph, equivs) => {
 
   return basis;
 };
+
+
+const translationalEquivalences = graph => {
+  const equivs = rawTranslationalEquivalences(graph);
+  const orbits = equivalenceClasses(equivs, pg.vertices(graph));
+
+  if (orbits.every(cl => cl.length == 1))
+    return equivs;
+
+  const pos = pg.barycentricPlacement(graph);
+  const orb = orbits[0];
+  const p0 = ops.mod(pos[orb[0]], 1);
+
+  if (orb.slice(1).every(v => ops.ne(ops.mod(pos[v], 1), p0)))
+    return equivs;
+  else {
+    const I = ops.identityMatrix(graph.dim);
+    const ebv = uniqueEdgesByVector(graph);
+    const p = new part.Partition();
+
+    for (const b of extendedTranslationBasis(graph, equivs)) {
+      const v = orb.find(v => ops.eq(ops.mod(ops.plus(b, pos[v]), 1), p0));
+      const iso = automorphism(orb[0], v, I, ebv);
+      for (const w of pg.vertices(graph))
+        p.union(w, iso.src2img[w]);
+    }
+
+    return p;
+  }
+};
+
+
+export const isLadder = graph => {
+  if (pg.isStable(graph) || !pg.isLocallyStable(graph))
+    return false;
+
+  const verts = pg.vertices(graph);
+  const p = rawTranslationalEquivalences(graph);
+  const pos = pg.barycentricPlacement(graph);
+
+  return verts.some(v => (
+    v != verts[0] &&
+      p.find(v) == p.find(verts[0]) &&
+      ops.eq(ops.mod(pos[v], 1), ops.mod(pos[verts[0]], 1))
+  ));
+};
+
+
+export const isMinimal = graph => {
+  const verts = pg.vertices(graph);
+  const p = translationalEquivalences(graph);
+
+  return verts.every(v => v == verts[0] || p.find(v) != p.find(verts[0]));
+}
 
 
 export const minimalImageWithOrbits = graph => {
@@ -583,221 +614,269 @@ const cycles = (perm, verts) => {
 };
 
 
+const test = g => {
+  const verts = pg.vertices(g);
+
+  console.log(`vertices: ${verts}`);
+  console.log('edges:');
+  for (const e of g.edges)
+    console.log(`  ${e}`);
+  console.log();
+
+  if (!pg.isConnected(g)) {
+    console.log(`graph is not connected`);
+  }
+  else {
+    if (pg.isLocallyStable(g)) { // && !pg.hasSecondOrderCollisions(g)) {
+      const charEdgeLists = characteristicEdgeLists(g);
+      console.log(`found ${charEdgeLists.length} characteristic edgeLists`);
+      //for (const el of charEdgeLists)
+      //  console.log(`  ${el.map(e => e.toString())}`);
+      //console.log();
+
+      const syms = symmetries(g);
+      console.log(`found ${syms.symmetries.length} symmetries`);
+      //affineSymmetries(g, syms.symmetries);
+      //  .sort((a, b) => ops.cmp(a, b))
+      //  .forEach(t => console.log(t));
+
+      const edgeLists = syms.representativeEdgeLists;
+      console.log(`found ${edgeLists.length} representative base(s)`);
+      for (const edgeList of edgeLists)
+        console.log(`${edgeList}`);
+      console.log();
+
+      console.log(`ladder = ${isLadder(g)}`);
+      console.log(`minimal = ${isMinimal(g)}`);
+
+      if (!isMinimal(g)) {
+        const p = translationalEquivalences(g);
+        const basis = extendedTranslationBasis(g, p);
+        const cls = equivalenceClasses(p, verts);
+        console.log(`translational equivalences: ${p}`);
+        console.log(`extended translation basis = ${basis}`);
+        console.log(`equivalence classes: ${cls}`);
+        console.log(`minimal image: ${minimalImage(g)}`);
+      }
+      console.log();
+
+      const vOrbits = nodeOrbits(g, syms.symmetries);
+      console.log(`vertex orbits:`);
+      for (let i = 0; i < vOrbits.length; ++i)
+        console.log(`  ${vOrbits[i]}`);
+      console.log();
+
+      const eOrbits = edgeOrbits(g, syms.symmetries);
+      console.log(`edge orbits:`);
+      for (let i = 0; i < eOrbits.length; ++i) {
+        if (i > 0)
+          console.log();
+        for (const e of eOrbits[i])
+          console.log(`  ${e}`);
+      }
+    }
+    else {
+      console.log(`stable deduction graph:`);
+      const sdg = mapObject(uniqueEdgesByVector(g), Object.values);
+      for (const k of Object.keys(sdg)) {
+        for (const e of sdg[k])
+          console.log(`  ${e}`);
+      }
+
+      console.log(
+        `strong components: ${JSON.stringify(strongComponents(verts, sdg))}`
+      );
+
+      const sourceComponents = strongSourceComponents(verts, sdg);
+      console.log(
+        `strong source components: ${JSON.stringify(sourceComponents)}`
+      );
+
+      console.log(`stationary symmetries:`);
+
+      const stationary = stationarySymmetries(g);
+      for (const s of stationary.symmetries) {
+        const cs = cycles(s.src2img, verts);
+        if (cs.length == 0)
+          console.log('()');
+        else
+          console.log(cs.map(c => `(${c.join(',')})`).join(''));
+      }
+      if (!stationary.complete)
+        console.log('...');
+    }
+  }
+
+  console.log();
+  console.log();
+  console.log();
+};
+
+
+const examples = [
+  [
+    [ 1, 2, [ 0, 0, 0 ] ],
+    [ 1, 2, [ 1, 0, 0 ] ],
+    [ 1, 2, [ 0, 1, 0 ] ],
+    [ 1, 2, [ 0, 0, 1 ] ]
+  ],
+
+  [
+    [ 1, 2, [ 0, 0, 0 ] ],
+    [ 2, 1, [ 1, 0, 0 ] ],
+    [ 2, 3, [ 0, 0, 0 ] ],
+    [ 3, 2, [ 0, 1, 0 ] ],
+    [ 3, 1, [ 0, 0, 1 ] ],
+    [ 3, 1, [ 1, 1, -1 ] ]
+  ],
+
+  [
+    [ 1, 2, [ 0, 0, 0 ] ],
+    [ 2, 3, [ 0, 0, 0 ] ],
+    [ 3, 4, [ 0, 0, 0 ] ],
+    [ 4, 5, [ 0, 0, 0 ] ],
+    [ 5, 6, [ 0, 0, 0 ] ],
+    [ 6, 1, [ 0, 0, 0 ] ],
+    [ 1, 2, [ 1, 0, 0 ] ],
+    [ 2, 3, [ 0, 1, 0 ] ],
+    [ 3, 4, [ 0, 0, 1 ] ],
+    [ 4, 5, [ -1, 0, 0 ] ],
+    [ 5, 6, [ 0, -1, 0 ] ],
+    [ 6, 1, [ 0, 0, -1 ] ]
+  ],
+
+  [
+    [ 1, 2, [ 0, 0 ] ],
+    [ 1, 2, [ 1, 0 ] ],
+    [ 2, 3, [ 0, 0 ] ],
+    [ 2, 3, [ 0, 1 ] ],
+    [ 1, 3, [ 0, 0 ] ],
+    [ 1, 3, [ 1, 1 ] ]
+  ],
+
+  [
+    [ 1, 2, [ 0, 0, 0 ] ],
+    [ 1, 2, [ 1, 0, 0 ] ],
+    [ 1, 2, [ 0, 1, 0 ] ],
+    [ 1, 1, [ 0, 0, 1 ] ],
+    [ 2, 2, [ 0, 0, 1 ] ]
+  ],
+
+  [
+    [ 1, 1, [  0,  1 ] ],
+    [ 1, 2, [  0,  0 ] ],
+    [ 1, 2, [ -1,  0 ] ],
+    [ 1, 3, [  0,  0 ] ],
+    [ 1, 3, [ -1,  0 ] ],
+    [ 2, 3, [  0,  0 ] ],
+    [ 1, 4, [  0,  0 ] ],
+    [ 1, 4, [ -1,  0 ] ],
+    [ 1, 5, [  0,  0 ] ],
+    [ 1, 5, [ -1,  0 ] ],
+    [ 4, 5, [  0,  0 ] ]
+  ],
+
+  [
+    [ 1, 1, [  0,  0,  1] ],
+    [ 1, 2, [  0,  0,  0] ],
+    [ 1, 2, [ -1,  0,  0] ],
+    [ 1, 2, [  0, -1,  0] ],
+    [ 1, 2, [ -1, -1,  0] ],
+    [ 1, 3, [  0,  0,  0] ],
+    [ 1, 3, [ -1,  0,  0] ],
+    [ 1, 3, [  0, -1,  0] ],
+    [ 1, 3, [ -1, -1,  0] ]
+  ],
+
+  [
+    [ 1, 1, [ 1, 0 ] ],
+    [ 1, 1, [ 0, 1 ] ],
+    [ 2, 2, [ 1, 0 ] ],
+    [ 2, 2, [ 0, 1 ] ],
+    [ 1, 2, [ 0, 0 ] ]
+  ],
+
+  [
+    [ 1, 1, [ 1, 0 ] ],
+    [ 1, 1, [ 0, 1 ] ],
+    [ 2, 2, [ 1, 0 ] ],
+    [ 2, 2, [ 0, 1 ] ],
+    [ 3, 3, [ 1, 0 ] ],
+    [ 3, 3, [ 0, 1 ] ],
+    [ 1, 2, [ 0, 0 ] ],
+    [ 2, 3, [ 0, 0 ] ]
+  ],
+
+  [
+    [ 1, 1, [ 1, 0 ] ],
+    [ 1, 1, [ 0, 1 ] ],
+    [ 2, 2, [ 1, 0 ] ],
+    [ 2, 2, [ 0, 1 ] ],
+    [ 3, 3, [ 1, 0 ] ],
+    [ 3, 3, [ 0, 1 ] ],
+    [ 4, 4, [ 1, 0 ] ],
+    [ 4, 4, [ 0, 1 ] ],
+    [ 1, 2, [ 0, 0 ] ],
+    [ 2, 3, [ 0, 0 ] ],
+    [ 3, 4, [ 0, 0 ] ],
+    [ 4, 1, [ 0, 0 ] ]
+  ],
+
+  [
+    [ 1, 1, [ 0, 0, 1 ] ],
+    [ 1, 2, [ 0, 0, 0 ] ],
+    [ 1, 2, [ 1, 1, 0 ] ],
+    [ 1, 2, [ 1, 0, 1 ] ],
+    [ 1, 2, [ 0, 1, 1 ] ]
+  ],
+
+  [
+    [ 1, 2, [ 0, 0 ] ],
+    [ 2, 1, [ 1, 0 ] ],
+    [ 3, 4, [ 0, 0 ] ],
+    [ 4, 3, [ 1, 0 ] ],
+    [ 1, 3, [ 0, 0 ] ],
+    [ 3, 1, [ 0, 1 ] ],
+    [ 2, 4, [ 0, 0 ] ],
+    [ 4, 2, [ 0, 1 ] ],
+    [ 5, 6, [ 0, 0 ] ],
+    [ 6, 5, [ 1, 0 ] ],
+    [ 7, 8, [ 0, 0 ] ],
+    [ 8, 7, [ 1, 0 ] ],
+    [ 5, 7, [ 0, 0 ] ],
+    [ 7, 5, [ 0, 1 ] ],
+    [ 6, 8, [ 0, 0 ] ],
+    [ 8, 6, [ 0, 1 ] ],
+    [ 1, 5, [ 0, 0 ] ],
+    [ 2, 6, [ 0, 0 ] ],
+    [ 3, 7, [ 0, 0 ] ],
+    [ 4, 8, [ 0, 0 ] ]
+  ]
+];
+
+
 if (require.main == module) {
   Array.prototype.toString = function() {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
 
-  const test = g => {
-    const verts = pg.vertices(g);
+  const paths = process.argv.slice(2);
 
-    console.log(`vertices: ${verts}`);
-    console.log('edges:');
-    for (const e of g.edges)
-      console.log(`  ${e}`);
-    console.log();
+  if (paths.length) {
+    const fs = require('fs');
 
-    const edgeLists = characteristicEdgeLists(g);
-    console.log(`found ${edgeLists.length} characteristic edgeLists`);
-    for (const el of edgeLists)
-      console.log(`  ${el.map(e => e.toString())}`);
-    console.log();
+    for (const path of process.argv.slice(2)) {
+      const text = fs.readFileSync(path, { encoding: 'utf8' });
 
-    if (!pg.isConnected(g)) {
-      console.log(`graph is not connected`);
-    }
-    else {
-      const ladder = isLadder(g);
-      console.log(`ladder = ${ladder}`);
-
-      if (pg.isLocallyStable(g) && !pg.hasSecondOrderCollisions(g)) {
-        const syms = symmetries(g);
-        const edgeLists = syms.representativeEdgeLists;
-        console.log(`found ${syms.symmetries.length} symmetries`);
-
-        const transforms = affineSymmetries(g, syms.symmetries);
-        transforms
-          .sort((a, b) => ops.cmp(a, b))
-          .forEach(t => console.log(t));
-
-        console.log(`found ${edgeLists.length} representative base(s)`);
-        for (const edgeList of edgeLists)
-          console.log(`${edgeList}`);
+      for (const { graph, name } of structures(text)) {
+        console.log(name);
         console.log();
-
-        const minimal = isMinimal(g);
-        console.log(`minimal = ${minimal}`);
-
-        if (!minimal) {
-          const p = translationalEquivalences(g);
-          const basis = extendedTranslationBasis(g, p);
-          const cls = equivalenceClasses(p, verts);
-          console.log(`translational equivalences: ${p}`);
-          console.log(`extended translation basis = ${basis}`);
-          console.log(`equivalence classes: ${cls}`);
-          console.log(`minimal image: ${minimalImage(g)}`);
-        }
-        console.log();
-
-        const orbits = edgeOrbits(g, syms.symmetries);
-        console.log(`edge orbits:`);
-        for (let i = 0; i < orbits.length; ++i) {
-          if (i > 0)
-            console.log();
-          for (const e of orbits[i])
-            console.log(`  ${e}`);
-        }
-      }
-      else {
-        console.log(`stable deduction graph:`);
-        const sdg = mapObject(uniqueEdgesByVector(g), Object.values);
-        for (const k of Object.keys(sdg)) {
-          for (const e of sdg[k])
-            console.log(`  ${e}`);
-        }
-
-        console.log(
-          `strong components: ${JSON.stringify(strongComponents(verts, sdg))}`
-        );
-
-        const sourceComponents = strongSourceComponents(verts, sdg);
-        console.log(
-          `strong source components: ${JSON.stringify(sourceComponents)}`
-        );
-
-        console.log(`stationary symmetries:`);
-
-        const stationary = stationarySymmetries(g);
-        for (const s of stationary.symmetries) {
-          const cs = cycles(s.src2img, verts);
-          if (cs.length == 0)
-            console.log('()');
-          else
-            console.log(cs.map(c => `(${c.join(',')})`).join(''));
-        }
-        if (!stationary.complete)
-          console.log('...');
+        test(graph)
       }
     }
-
-    console.log();
-    console.log();
-    console.log();
-  };
-
-  test(pg.makeGraph(
-    [ [ 1, 2, [ 0, 0, 0 ] ],
-      [ 1, 2, [ 1, 0, 0 ] ],
-      [ 1, 2, [ 0, 1, 0 ] ],
-      [ 1, 2, [ 0, 0, 1 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 2, [ 0, 0, 0 ] ],
-      [ 2, 1, [ 1, 0, 0 ] ],
-      [ 2, 3, [ 0, 0, 0 ] ],
-      [ 3, 2, [ 0, 1, 0 ] ],
-      [ 3, 1, [ 0, 0, 1 ] ],
-      [ 3, 1, [ 1, 1, -1 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 2, [ 0, 0, 0 ] ],
-      [ 2, 3, [ 0, 0, 0 ] ],
-      [ 3, 4, [ 0, 0, 0 ] ],
-      [ 4, 5, [ 0, 0, 0 ] ],
-      [ 5, 6, [ 0, 0, 0 ] ],
-      [ 6, 1, [ 0, 0, 0 ] ],
-      [ 1, 2, [ 1, 0, 0 ] ],
-      [ 2, 3, [ 0, 1, 0 ] ],
-      [ 3, 4, [ 0, 0, 1 ] ],
-      [ 4, 5, [ -1, 0, 0 ] ],
-      [ 5, 6, [ 0, -1, 0 ] ],
-      [ 6, 1, [ 0, 0, -1 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 2, [ 0, 0 ] ],
-      [ 1, 2, [ 1, 0 ] ],
-      [ 2, 3, [ 0, 0 ] ],
-      [ 2, 3, [ 0, 1 ] ],
-      [ 1, 3, [ 0, 0 ] ],
-      [ 1, 3, [ 1, 1 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 2, [ 0, 0, 0 ] ],
-      [ 1, 2, [ 1, 0, 0 ] ],
-      [ 1, 2, [ 0, 1, 0 ] ],
-      [ 1, 1, [ 0, 0, 1 ] ],
-      [ 2, 2, [ 0, 0, 1 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 1, [  0,  1 ] ],
-      [ 1, 2, [  0,  0 ] ],
-      [ 1, 2, [ -1,  0 ] ],
-      [ 1, 3, [  0,  0 ] ],
-      [ 1, 3, [ -1,  0 ] ],
-      [ 2, 3, [  0,  0 ] ],
-      [ 1, 4, [  0,  0 ] ],
-      [ 1, 4, [ -1,  0 ] ],
-      [ 1, 5, [  0,  0 ] ],
-      [ 1, 5, [ -1,  0 ] ],
-      [ 4, 5, [  0,  0 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 1, [  0,  0,  1] ],
-      [ 1, 2, [  0,  0,  0] ],
-      [ 1, 2, [ -1,  0,  0] ],
-      [ 1, 2, [  0, -1,  0] ],
-      [ 1, 2, [ -1, -1,  0] ],
-      [ 1, 3, [  0,  0,  0] ],
-      [ 1, 3, [ -1,  0,  0] ],
-      [ 1, 3, [  0, -1,  0] ],
-      [ 1, 3, [ -1, -1,  0] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 1, [ 1, 0 ] ],
-      [ 1, 1, [ 0, 1 ] ],
-      [ 2, 2, [ 1, 0 ] ],
-      [ 2, 2, [ 0, 1 ] ],
-      [ 1, 2, [ 0, 0 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 1, [ 1, 0 ] ],
-      [ 1, 1, [ 0, 1 ] ],
-      [ 2, 2, [ 1, 0 ] ],
-      [ 2, 2, [ 0, 1 ] ],
-      [ 3, 3, [ 1, 0 ] ],
-      [ 3, 3, [ 0, 1 ] ],
-      [ 1, 2, [ 0, 0 ] ],
-      [ 2, 3, [ 0, 0 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 1, [ 1, 0 ] ],
-      [ 1, 1, [ 0, 1 ] ],
-      [ 2, 2, [ 1, 0 ] ],
-      [ 2, 2, [ 0, 1 ] ],
-      [ 3, 3, [ 1, 0 ] ],
-      [ 3, 3, [ 0, 1 ] ],
-      [ 4, 4, [ 1, 0 ] ],
-      [ 4, 4, [ 0, 1 ] ],
-      [ 1, 2, [ 0, 0 ] ],
-      [ 2, 3, [ 0, 0 ] ],
-      [ 3, 4, [ 0, 0 ] ],
-      [ 4, 1, [ 0, 0 ] ] ]
-  ));
-
-  test(pg.makeGraph(
-    [ [ 1, 1, [ 0, 0, 1 ] ],
-      [ 1, 2, [ 0, 0, 0 ] ],
-      [ 1, 2, [ 1, 1, 0 ] ],
-      [ 1, 2, [ 1, 0, 1 ] ],
-      [ 1, 2, [ 0, 1, 1 ] ] ]
-  ));
+  }
+  else {
+    for (const edges of examples)
+      test(pg.makeGraph(edges));
+  }
 }
