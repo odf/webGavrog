@@ -1,6 +1,7 @@
 import * as csp from 'plexus-csp';
 
 import * as tilings from '../dsymbols/tilings';
+import { coordinateChangesF as opsF } from '../geometry/types';
 import { Archive } from '../io/archive';
 import { structures } from '../io/cgd';
 import parseDSymbols from '../io/ds';
@@ -11,10 +12,6 @@ import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
 import { settingByName } from '../spacegroups/sgtable';
 import { identifySpacegroup } from '../spacegroups/spacegroupFinder';
-
-import {
-  coordinateChangesF as opsF
-} from '../geometry/types';
 
 
 const pluralize = (n, s) => `${n} ${s}${n > 1 ? 's' : ''}`;
@@ -315,28 +312,25 @@ const writeCgd = (name, group, data, nodeNames, degrees, writeData) => {
 const processDisconnectedGraph = (
   input, options, archives, writeInfo, writeData
 ) => csp.go(function*() {
-  const { graph, name, nodeNames } = input;
-  const group = input.group || (/*graph.dim == 2 ? 'p1' :*/ 'P1');
-
-  showGraphBasics(graph, group, writeInfo);
+  showGraphBasics(input.graph, input.group || 'P1', writeInfo);
 
   writeInfo('   Structure is not connected.');
   writeInfo('   Processing components separately.');
   writeInfo();
   writeInfo('   ==========');
 
-  const components = periodic.connectedComponents(graph);
+  const components = periodic.connectedComponents(input.graph);
   for (let i = 1; i <= components.length; ++i) {
     const comp = components[i - 1];
     writeInfo(`   Processing component ${i}`);
 
-    if (comp.graph.dim < graph.dim)
+    if (comp.graph.dim < input.graph.dim)
       writeInfo(`      dimension = ${comp.graph.dim}`);
     else
       writeInfo(`      multiplicity = ${comp.multiplicity}`);
 
     yield processGraph(
-      { graph: comp.graph, name: `${name}_component_${i}` },
+      { graph: comp.graph, name: `${input.name}_component_${i}` },
       options, archives, writeInfo, writeData
     );
 
@@ -351,20 +345,19 @@ const processDisconnectedGraph = (
 const processGraph = (
   input, options, archives, writeInfo, writeData
 ) => csp.go(function*() {
-  const { graph, name, nodes: originalNodes } = input;
-  const group = input.group || (/*graph.dim == 2 ? 'p1' :*/ 'P1');
+  const group = input.group || 'P1';
 
-  showGraphBasics(graph, group, writeInfo);
+  showGraphBasics(input.graph, group, writeInfo);
 
-  if (!checkGraph(graph, writeInfo))
+  if (!checkGraph(input.graph, writeInfo))
     return;
 
-  const { graph: G, orbits: translationOrbits } =
-        symmetries.minimalImageWithOrbits(graph);
+  const image = symmetries.minimalImageWithOrbits(input.graph);
+  const G = image.graph;
 
-  if (G.edges.length < graph.edges.length) {
+  if (G.edges.length < input.graph.edges.length) {
     const n = G.edges.length;
-    const m = graph.edges.length;
+    const m = input.graph.edges.length;
     writeInfo(`   Ideal repeat unit smaller than given (${n} vs ${m} edges).`);
   }
   else
@@ -380,7 +373,7 @@ const processGraph = (
   writeInfo();
 
   const [nodeToName, mergedNames] = nodeNameMapping(
-    periodic.vertices(graph), originalNodes, translationOrbits, nodeOrbits
+    periodic.vertices(input.graph), input.nodes, image.orbits, nodeOrbits
   );
 
   if (mergedNames.length) {
@@ -396,7 +389,7 @@ const processGraph = (
   const sgInfo = identifySpacegroup(symOps);
   showSpaceGroup(sgInfo, group, writeInfo);
 
-  findAndReportMatches(G, name, archives, options, writeInfo);
+  findAndReportMatches(G, input.name, archives, options, writeInfo);
 
   const eOut = embed(G);
   const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
@@ -410,7 +403,9 @@ const processGraph = (
     for (const v of periodic.vertices(G))
       degrees[v] = periodic.incidences(G)[v].length;
 
-    writeCgd(name, group, data, nodeToName, degrees, writeData);
+    writeCgd(
+      input.name, sgInfo.groupName, data, nodeToName, degrees, writeData
+    );
   }
 });
 
@@ -467,10 +462,6 @@ export const processData = (
 
 
 if (require.main == module) {
-  Array.prototype.toString = function() {
-    return '[ ' + this.map(x => x.toString()).join(', ') + ' ]';
-  };
-
   const fs = require('fs');
   const path = require('path');
 
