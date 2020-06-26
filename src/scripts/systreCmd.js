@@ -57,20 +57,15 @@ const checkGraph = (graph, writeInfo) => {
   }
 
   if (symmetries.isLadder(graph)) {
-    const msg = "Structure is non-crystallographic (a 'ladder')";
-    reportSystreError("STRUCTURE", msg, writeInfo);
-    return false;
+    writeInfo("   Structure is non-crystallographic (a 'ladder')");
+    writeInfo();
   }
-
-  if (periodic.hasSecondOrderCollisions(graph)) {
-    const msg = ("Structure has second-order collisions."
-                 + " Systre does not currently support such structures.");
-    reportSystreError("STRUCTURE", msg, writeInfo);
-    return false;
+  else if (periodic.hasSecondOrderCollisions(graph)) {
+    writeInfo("   Structure has second-order collisions.");
+    writeInfo();
   }
-
-  if (!periodic.isStable(graph)) {
-    writeInfo("Structure has collisions.");
+  else if (!periodic.isStable(graph)) {
+    writeInfo("   Structure has collisions.");
     writeInfo();
   }
 
@@ -385,27 +380,31 @@ const processGraph = (
 
   showCoordinationSequences(G, nodeOrbits, nodeToName, writeInfo);
 
-  const symOps = symmetries.affineSymmetries(G, syms);
-  const sgInfo = identifySpacegroup(symOps);
-  showSpaceGroup(sgInfo, group, writeInfo);
+  if (!symmetries.isLadder(G)) {
+    const symOps = symmetries.affineSymmetries(G, syms);
+    const sgInfo = identifySpacegroup(symOps);
+    showSpaceGroup(sgInfo, group, writeInfo);
+  }
 
   findAndReportMatches(G, input.name, archives, options, writeInfo);
 
-  const eOut = embed(G);
-  const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
-  const data = embeddingData(G, sgInfo.toStd, syms, embedding);
+  if (!symmetries.isLadder(G)) {
+    const eOut = embed(G);
+    const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
+    const data = embeddingData(G, sgInfo.toStd, syms, embedding);
 
-  if (options.outputEmbedding)
-    showEmbedding(data, nodeToName, options.relaxPositions, writeInfo);
+    if (options.outputEmbedding)
+      showEmbedding(data, nodeToName, options.relaxPositions, writeInfo);
 
-  if (options.outputCgd) {
-    const degrees = {};
-    for (const v of periodic.vertices(G))
-      degrees[v] = periodic.incidences(G)[v].length;
+    if (options.outputCgd) {
+      const degrees = {};
+      for (const v of periodic.vertices(G))
+        degrees[v] = periodic.incidences(G)[v].length;
 
-    writeCgd(
-      input.name, sgInfo.groupName, data, nodeToName, degrees, writeData
-    );
+      writeCgd(
+        input.name, sgInfo.groupName, data, nodeToName, degrees, writeData
+      );
+    }
   }
 });
 
