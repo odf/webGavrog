@@ -260,6 +260,24 @@ const translationalEquivalences = graph => {
 };
 
 
+export const ladderSymmetries = graph => {
+  if (!pg.isLocallyStable(graph))
+    throw new Error('graph is not locally stable; cannot compute symmetries');
+
+  const verts = pg.vertices(graph);
+  const p = rawTranslationalEquivalences(graph);
+  const pos = pg.barycentricPlacement(graph);
+
+  const I = ops.identityMatrix(graph.dim);
+  const ebv = uniqueEdgesByVector(graph);
+
+  return verts.filter(v => (
+      p.find(v) == p.find(verts[0]) &&
+      ops.eq(ops.mod(pos[v], 1), ops.mod(pos[verts[0]], 1))
+  )).map(v => automorphism(verts[0], v, I, ebv));
+};
+
+
 export const isLadder = graph => {
   if (pg.isStable(graph) || !pg.isLocallyStable(graph))
     return false;
