@@ -166,18 +166,23 @@ const showCoordinationSequences = (G, nodeOrbits, nodeToName, writeInfo) => {
 }
 
 
-const showSpaceGroup = (sgInfo, givenGroup, writeInfo) => {
+const showSpaceGroup = (sgInfo, givenGroup, isLadder, writeInfo) => {
   if (sgInfo == null) {
     const msg = "Space group could not be identified.";
     reportSystreError("INTERNAL", msg, writeInfo);
     return;
   }
-  writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
 
-  const givenName = settingByName(givenGroup).name;
-  if (sgInfo.fullName != givenName)
-    writeInfo('   Ideal group or setting differs from given ' +
-              `(${sgInfo.fullName} vs ${givenName}).`);
+  if (isLadder)
+    writeInfo(`   Ideal space group image is ${sgInfo.groupName}.`);
+  else {
+    writeInfo(`   Ideal space group is ${sgInfo.groupName}.`);
+
+    const givenName = settingByName(givenGroup).name;
+    if (sgInfo.fullName != givenName)
+      writeInfo('   Ideal group or setting differs from given ' +
+                `(${sgInfo.fullName} vs ${givenName}).`);
+  }
 
   if (sgInfo.extension == '1')
     writeInfo('     (using first origin choice)');
@@ -359,7 +364,12 @@ const processGraph = (
     writeInfo('   Given repeat unit is accurate.');
 
   const syms = symmetries.symmetries(G).symmetries;
-  writeInfo(`   Point group has ${syms.length} elements.`);
+  const lsyms = symmetries.ladderSymmetries(G);
+  const isLadder = lsyms.length > 1;
+
+  writeInfo(`   Point group has ${syms.length / lsyms.length} elements.`);
+  if (isLadder)
+    writeInfo(`   Ladder group has ${lsyms.length} elements.`);
 
   const nodeOrbits = symmetries.nodeOrbits(G, syms);
   nodeOrbits.sort((a, b) => a[0] - b[0]);
@@ -380,15 +390,13 @@ const processGraph = (
 
   showCoordinationSequences(G, nodeOrbits, nodeToName, writeInfo);
 
-  if (!symmetries.isLadder(G)) {
-    const symOps = symmetries.affineSymmetries(G, syms);
-    const sgInfo = identifySpacegroup(symOps);
-    showSpaceGroup(sgInfo, group, writeInfo);
-  }
+  const symOps = symmetries.affineSymmetries(G, syms);
+  const sgInfo = identifySpacegroup(symOps);
+  showSpaceGroup(sgInfo, group, isLadder, writeInfo);
 
   findAndReportMatches(G, input.name, archives, options, writeInfo);
 
-  if (!symmetries.isLadder(G)) {
+  if (!isLadder) {
     const eOut = embed(G);
     const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
     const data = embeddingData(G, sgInfo.toStd, syms, embedding);
