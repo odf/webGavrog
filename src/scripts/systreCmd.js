@@ -373,8 +373,12 @@ const processGraph = (
 
   const nodeOrbits = symmetries.nodeOrbits(G, syms);
   nodeOrbits.sort((a, b) => a[0] - b[0]);
-
   writeInfo(`   ${pluralize(nodeOrbits.length, 'kind')} of node.`);
+
+  if (isLadder) {
+    const edgeOrbits = symmetries.edgeOrbits(G, syms);
+    writeInfo(`   ${pluralize(edgeOrbits.length, 'kind')} of edge.`);
+  }
   writeInfo();
 
   const [nodeToName, mergedNames] = nodeNameMapping(
