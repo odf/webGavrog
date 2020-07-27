@@ -878,23 +878,6 @@ if (require.main == module) {
     return `[ ${this.map(x => x.toString()).join(', ')} ]`;
   };
 
-  const paths = process.argv.slice(2);
-
-  if (paths.length) {
-    const fs = require('fs');
-
-    for (const path of process.argv.slice(2)) {
-      const text = fs.readFileSync(path, { encoding: 'utf8' });
-
-      for (const { graph, name } of structures(text)) {
-        console.log(name);
-        console.log();
-        test(graph)
-      }
-    }
-  }
-  else {
-    for (const edges of examples)
-      test(pg.makeGraph(edges));
-  }
+  for (const edges of examples)
+    test(pg.makeGraph(edges));
 }
