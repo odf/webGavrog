@@ -10,6 +10,26 @@ const centroid = pos => ops.div(sum(pos), pos.length);
 const normalized = v => ops.div(v, ops.norm(v));
 
 
+export const averageRadius = solids => {
+  let sum = 0;
+  let count = 0;
+
+  for (const { pos, faces } of solids) {
+    for (const vs of faces) {
+      const corners = vs.map(v => pos[v]);
+      const center = centroid(corners);
+
+      for (const p of corners) {
+        sum += ops.norm(ops.minus(center, p));
+        count += 1;
+      }
+    }
+  }
+
+  return sum / count;
+};
+
+
 export const tightened = ({ faces, pos, isFixed, faceLabels }) => {
   const n = pos.length;
 
@@ -79,51 +99,6 @@ export const tightened = ({ faces, pos, isFixed, faceLabels }) => {
 };
 
 
-const edgeIndexes = faces => {
-  const edges = [];
-  const edgeIndex = {};
-  const lookup = {};
-
-  for (let f = 0; f < faces.length; ++f) {
-    const ps = pairs(faces[f]);
-    lookup[f] = {};
-
-    for (let i = 0; i < ps.length; ++i) {
-      const [v, w] = ps[i].slice().sort();
-      if (edgeIndex[[v, w]] == null) {
-        edgeIndex[[v, w]] = edges.length;
-        edges.push([v, w]);
-      }
-      lookup[f][i] = edgeIndex[[v, w]];
-    }
-  }
-
-  return { edges, lookup };
-};
-
-
-const adjustedPositions = (faces, pos, isFixed) => {
-  const coord = (face, idx, factor) => ops.times(factor, pos[face[idx]]);
-
-  const facesByVertex = pos.map(_ => []);
-  for (const f of faces)
-    facesByVertex[f[0]].push(f);
-
-  return pos.map((p, i) => {
-    if (isFixed[i] || facesByVertex[i].length == 0)
-      return p;
-
-    const m = facesByVertex[i].length;
-
-    let t = ops.times(0, pos[0]);
-    for (const f of facesByVertex[i])
-      t = ops.plus(t, sum([coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
-
-    return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
-  });
-};
-
-
 export const subD = ({ faces, pos, isFixed, faceLabels }) => {
   const n = pos.length;
   const m = faces.length;
@@ -169,6 +144,51 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
     isFixed: isFixed.concat(ffix, efix),
     faceLabels: newFaceLabels
   };
+};
+
+
+const edgeIndexes = faces => {
+  const edges = [];
+  const edgeIndex = {};
+  const lookup = {};
+
+  for (let f = 0; f < faces.length; ++f) {
+    const ps = pairs(faces[f]);
+    lookup[f] = {};
+
+    for (let i = 0; i < ps.length; ++i) {
+      const [v, w] = ps[i].slice().sort();
+      if (edgeIndex[[v, w]] == null) {
+        edgeIndex[[v, w]] = edges.length;
+        edges.push([v, w]);
+      }
+      lookup[f][i] = edgeIndex[[v, w]];
+    }
+  }
+
+  return { edges, lookup };
+};
+
+
+const adjustedPositions = (faces, pos, isFixed) => {
+  const coord = (face, idx, factor) => ops.times(factor, pos[face[idx]]);
+
+  const facesByVertex = pos.map(_ => []);
+  for (const f of faces)
+    facesByVertex[f[0]].push(f);
+
+  return pos.map((p, i) => {
+    if (isFixed[i] || facesByVertex[i].length == 0)
+      return p;
+
+    const m = facesByVertex[i].length;
+
+    let t = ops.times(0, pos[0]);
+    for (const f of facesByVertex[i])
+      t = ops.plus(t, sum([coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
+
+    return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
+  });
 };
 
 
@@ -447,26 +467,6 @@ export const beveledAt = (surfaceIn, wd, isCorner) => {
     isFixed: isFixed.concat(newPos.map(i => true)),
     faceLabels
   };
-};
-
-
-export const averageRadius = solids => {
-  let sum = 0;
-  let count = 0;
-
-  for (const { pos, faces } of solids) {
-    for (const vs of faces) {
-      const corners = vs.map(v => pos[v]);
-      const center = centroid(corners);
-
-      for (const p of corners) {
-        sum += ops.norm(ops.minus(center, p));
-        count += 1;
-      }
-    }
-  }
-
-  return sum / count;
 };
 
 
