@@ -100,96 +100,81 @@ export const tightened = ({ faces, pos, isFixed, faceLabels }) => {
 
 
 export const subD = ({ faces, pos, isFixed, faceLabels }) => {
-  const n = pos.length;
-  const m = faces.length;
-  const { edges, lookup } = edgeIndexes(faces);
+  const nrVerts = pos.length;
+  const nrFaces = faces.length;
 
-  if (faceLabels == null)
-    faceLabels = [...faces.keys()];
+  const posNew = [...pos].concat(faces.map(corners(pos)).map(centroid));
+  const fixedNew = [...isFixed].concat(faces.map(_ => false));
+  const edgeIndex = {};
+  const significantEdgeNeighbors = [];
 
-  const newFaces = [];
-  const newFaceLabels = [];
   for (let f = 0; f < faces.length; ++f) {
     const vs = faces[f];
-    const edge = i => n + m + lookup[f][i];
-    const prev = i => (i + vs.length - 1) % vs.length;
+    const k = vs.length;
 
-    for (let i = 0; i < vs.length; ++i) {
-      newFaces.push([vs[i], edge(i), n + f, edge(prev(i))]);
-      newFaceLabels.push(faceLabels[f]);
+    for (let i = 0; i < k; ++i) {
+      const v = vs[i];
+      const w = vs[(i + 1) % k];
+      let e = edgeIndex[[v, w]];
+
+      if (e == null) {
+        e = edgeIndex[[v, w]] = edgeIndex[[w, v]] = posNew.length;
+        posNew.push(centroid([pos[v], pos[w]]));
+        fixedNew.push(isFixed[v] && isFixed[w]);
+        significantEdgeNeighbors[e] = [v, w];
+      }
+
+      if (!fixedNew[e])
+        significantEdgeNeighbors[e].push(f + nrVerts);
     }
   }
 
-  const ffix = Array(faces.length).fill(false);
-  const fpos = faces.map(corners(pos)).map(centroid);
+  for (let e = nrVerts + nrFaces; e < posNew.length; ++e)
+    posNew[e] = centroid(significantEdgeNeighbors[e].map(v => posNew[v]));
 
-  const facesByEdge = {};
-  for (const f of Object.keys(lookup)) {
-    for (const e of Object.values(lookup[f])) {
-      if (facesByEdge[e] == null)
-        facesByEdge[e] = [f];
-      else
-        facesByEdge[e].push(f);
-    }
-  }
-
-  const efix = edges.map(([v, w]) => isFixed[v] && isFixed[w]);
-  const epos = edges.map(([v, w], i) => centroid(
-    (efix[i] ? [] : facesByEdge[i].map(v => fpos[v]))
-      .concat([pos[v], pos[w]])));
-
-  return {
-    faces: newFaces,
-    pos: adjustedPositions(newFaces, pos.concat(fpos, epos), isFixed),
-    isFixed: isFixed.concat(ffix, efix),
-    faceLabels: newFaceLabels
-  };
-};
-
-
-const edgeIndexes = faces => {
-  const edges = [];
-  const edgeIndex = {};
-  const lookup = {};
+  const facesNew = [];
+  const fLabelsNew = [];
+  const newFacesAtVertex = posNew.map(_ => []);
 
   for (let f = 0; f < faces.length; ++f) {
-    const ps = pairs(faces[f]);
-    lookup[f] = {};
+    const vs = faces[f];
+    const k = vs.length;
 
-    for (let i = 0; i < ps.length; ++i) {
-      const [v, w] = ps[i].slice().sort();
-      if (edgeIndex[[v, w]] == null) {
-        edgeIndex[[v, w]] = edges.length;
-        edges.push([v, w]);
-      }
-      lookup[f][i] = edgeIndex[[v, w]];
+    for (let i = 0; i < k; ++i) {
+      const v = vs[i];
+      const w = vs[(i + 1) % k];
+      const u = vs[(i + k - 1) % k];
+
+      newFacesAtVertex[v].push(facesNew.length);
+
+      facesNew.push([v, edgeIndex[[v, w]], f + nrVerts, edgeIndex[[u, v]]]);
+      fLabelsNew.push(faceLabels ? faceLabels[f] : f);
     }
   }
 
-  return { edges, lookup };
-};
+  const coord = (face, idx, factor) => ops.times(factor, posNew[face[idx]]);
 
+  for (let v = 0; v < nrVerts; ++v) {
+    if (!isFixed[v]) {
+      const m = newFacesAtVertex[v].length;
 
-const adjustedPositions = (faces, pos, isFixed) => {
-  const coord = (face, idx, factor) => ops.times(factor, pos[face[idx]]);
+      let t = ops.times(0, pos[0]);
+      for (const i of newFacesAtVertex[v]) {
+        const f = facesNew[i];
+        t = ops.plus(t, sum([coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
+      }
 
-  const facesByVertex = pos.map(_ => []);
-  for (const f of faces)
-    facesByVertex[f[0]].push(f);
+      posNew[v] = ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, pos[v]));
+    }
+  }
 
-  return pos.map((p, i) => {
-    if (isFixed[i] || facesByVertex[i].length == 0)
-      return p;
-
-    const m = facesByVertex[i].length;
-
-    let t = ops.times(0, pos[0]);
-    for (const f of facesByVertex[i])
-      t = ops.plus(t, sum([coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
-
-    return ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, p));
-  });
-};
+  return {
+    faces: facesNew,
+    pos: posNew,
+    isFixed: fixedNew,
+    faceLabels: fLabelsNew,
+  };
+}
 
 
 const withCenterFaces = ({ faces, pos, isFixed, faceLabels }, fn) => {
