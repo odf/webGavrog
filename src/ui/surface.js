@@ -3,11 +3,17 @@ const ops = floatMatrices;
 
 
 const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
-const pairs = as => as.map((a, i) => [a, as[(i + 1) % as.length]]);
 const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
 const corners = pos => idcs => idcs.map(i => pos[i]);
 const centroid = pos => ops.div(sum(pos), pos.length);
 const normalized = v => ops.div(v, ops.norm(v));
+
+
+const projection = (normal, origin=ops.times(0, normal)) => p => {
+  const d = ops.minus(p, origin);
+  return ops.plus(origin,
+                  ops.minus(d, ops.times(ops.times(normal, d), normal)));
+};
 
 
 export const averageRadius = solids => {
@@ -169,38 +175,47 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
 }
 
 
-const withCenterFaces = ({ faces, pos, isFixed, faceLabels }, fn) => {
+export const withFlattenedCenterFaces = (
+  { faces, pos, isFixed, faceLabels }
+) => {
   const newFaces = [];
   const newFaceLabels = [];
   const newPos = pos.slice();
   const newIsFixed = isFixed.slice();
 
-  if (faceLabels == null)
-    faceLabels = [...faces.keys()];
-
   for (let f = 0; f < faces.length; ++f) {
-    const is = faces[f];
-    const centerFace = fn(is.map(i => pos[i]));
+    const label = faceLabels ? faceLabels[f] : f;
+    const vs = faces[f];
+    const ps = vs.map(i => pos[i]);
+    const center = centroid(ps);
 
-    if (centerFace == null) {
-      newFaces.push(is);
-      newFaceLabels.push(faceLabels[f]);
+    const normal = normalized(sum(
+      ps.map((p, i) => ops.crossProduct(p, ps[(i + 1) % ps.length]))
+    ));
+
+    const qs = ps.map(projection(normal, center));
+
+    const isFlat = ps.every((p, i) => ops.norm(ops.minus(p, qs[i])) <= 0.01);
+
+    if (isFlat) {
+      newFaces.push(vs);
+      newFaceLabels.push(label);
     }
     else {
       const k = newPos.length;
-      const m = centerFace.length;
+      const m = qs.length;
 
-      for (const v of centerFace) {
-        newPos.push(v);
+      for (const v of qs) {
+        newPos.push(centroid([center, v]));
         newIsFixed.push(false);
       }
 
       newFaces.push(range(k, k + m));
-      newFaceLabels.push(faceLabels[f]);
+      newFaceLabels.push(label);
       for (let i = 0; i < m; ++i) {
         const j = (i + 1) % m;
-        newFaces.push([is[i], is[j], j + k, i + k]);
-        newFaceLabels.push(faceLabels[f]);
+        newFaces.push([vs[i], vs[j], j + k, i + k]);
+        newFaceLabels.push(label);
       }
     }
   }
@@ -212,42 +227,6 @@ const withCenterFaces = ({ faces, pos, isFixed, faceLabels }, fn) => {
     faceLabels: newFaceLabels
   };
 };
-
-
-const faceNormal = vs => normalized(sum(
-  pairs(vs).map(([v, w]) => ops.crossProduct(v, w))));
-
-
-const projection = (normal, origin=ops.times(0, normal)) => p => {
-  const d = ops.minus(p, origin);
-  return ops.plus(origin,
-                  ops.minus(d, ops.times(ops.times(normal, d), normal)));
-};
-
-
-const flattenedOrSuppressedFace = vs => {
-  const ws = vs.map(projection(faceNormal(vs), centroid(vs)));
-
-  for (let i = 0; i < vs.length; ++i) {
-    if (ops.norm(ops.minus(vs[i], ws[i])) > 0.01 * ops.norm(ws[i]))
-      return ws;
-  }
-
-  return null;
-};
-
-
-const scaled = (f, vs) => {
-  if (vs == null)
-    return vs;
-
-  const c = centroid(vs);
-  return vs.map(v => ops.plus(ops.times(f, v), ops.times(1-f, c)));
-};
-
-
-export const withFlattenedCenterFaces = surface =>
-  withCenterFaces(surface, vs => scaled(0.5, flattenedOrSuppressedFace(vs)));
 
 
 const insetPoint = (corner, wd, left, right, center) => {
