@@ -113,10 +113,9 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
     const k = vs.length;
 
     for (let i = 0; i < k; ++i) {
-      const v = vs[i];
-      const w = vs[(i + 1) % k];
-      let e = edgeIndex[[v, w]];
+      const [v, w] = [vs[i], vs[(i + 1) % k]];
 
+      let e = edgeIndex[[v, w]];
       if (e == null) {
         e = edgeIndex[[v, w]] = edgeIndex[[w, v]] = posNew.length;
         posNew.push(centroid([pos[v], pos[w]]));
@@ -134,36 +133,29 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
 
   const facesNew = [];
   const fLabelsNew = [];
-  const newFacesAtVertex = posNew.map(_ => []);
+  const newFacesAtVertex = pos.map(_ => []);
 
   for (let f = 0; f < faces.length; ++f) {
     const vs = faces[f];
     const k = vs.length;
 
     for (let i = 0; i < k; ++i) {
-      const v = vs[i];
-      const w = vs[(i + 1) % k];
-      const u = vs[(i + k - 1) % k];
+      const [u, v, w] = [vs[(i + k - 1) % k], vs[i], vs[(i + 1) % k]];
 
       newFacesAtVertex[v].push(facesNew.length);
-
       facesNew.push([v, edgeIndex[[v, w]], f + nrVerts, edgeIndex[[u, v]]]);
       fLabelsNew.push(faceLabels ? faceLabels[f] : f);
     }
   }
 
-  const coord = (face, idx, factor) => ops.times(factor, posNew[face[idx]]);
-
   for (let v = 0; v < nrVerts; ++v) {
     if (!isFixed[v]) {
-      const m = newFacesAtVertex[v].length;
-
       let t = ops.times(0, pos[0]);
-      for (const i of newFacesAtVertex[v]) {
-        const f = facesNew[i];
-        t = ops.plus(t, sum([coord(f, 1, 2), coord(f, 3, 2), coord(f, 2, -1)]));
+      for (const f of newFacesAtVertex[v]) {
+        const p = facesNew[f].map(v => posNew[v]);
+        t = ops.plus(t, ops.minus(ops.times(2, ops.plus(p[1], p[3])), p[2]));
       }
-
+      const m = newFacesAtVertex[v].length;
       posNew[v] = ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, pos[v]));
     }
   }
