@@ -296,13 +296,23 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
   const nextIndex = (f, i) => (i + 1) % faces[f].length;
   const endIndex = (f, i) => faces[f][nextIndex(f, i)];
   const isSplit = ([f, i]) => isCorner[endIndex(f, i)];
-  const cycle = edgeCycle(faces);
 
-  const newVertexForStretch = (v, hs) => {
-    const ends = hs.map(([f, i]) => pos[endIndex(f, i)]);
-    const c = centroid(
-      ends.length > 2 ? ends.slice(1, -1) : corners(pos)(faces[hs[0][0]]));
-    return insetPoint(pos[v], wd, ends[0], ends[ends.length-1], c);
+  const edgeLoc = {};
+  for (let f = 0; f < faces.length; ++f) {
+    const is = faces[f];
+    for (let k = 0; k < is.length; ++k)
+      edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
+  }
+
+  const cycle = (f0, k0) => {
+    const result = [];
+    let [f, k] = [f0, k0];
+    do {
+      const is = faces[f];
+      result.push([f, k]);
+      [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
+    } while (f != f0 || k != k0);
+    return result;
   };
 
   const stretches = hs => {
@@ -313,6 +323,13 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
       i == 0 ?
         hs.slice(splits[splits.length-1]).concat(hs.slice(0, splits[0]+1)) :
         hs.slice(splits[i-1], splits[i]+1)));
+  };
+
+  const newVertexForStretch = (v, hs) => {
+    const ends = hs.map(([f, i]) => pos[endIndex(f, i)]);
+    const c = centroid(
+      ends.length > 2 ? ends.slice(1, -1) : corners(pos)(faces[hs[0][0]]));
+    return insetPoint(pos[v], wd, ends[0], ends[ends.length-1], c);
   };
 
   const seen = {};
@@ -328,7 +345,7 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
       if (!seen[v] && isCorner[v]) {
         seen[v] = true;
 
-        for (const stretch of stretches(cycle([f, k]))) {
+        for (const stretch of stretches(cycle(f, k))) {
           newPos.push(newVertexForStretch(v, stretch));
           for (let j = 0; j < stretch.length - 1; ++j)
             mods[stretch[j]] = pos.length + newPos.length - 1;
@@ -340,39 +357,6 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
   return {
     pos: newPos,
     faces: faces.map((is, f) => is.map((v, i) => mods[[f, i]] || v))
-  };
-};
-
-
-const edgeCycle = faces => {
-  const edgeLoc = {};
-
-  for (let f = 0; f < faces.length; ++f) {
-    const is = faces[f];
-
-    if (is.length < 3)
-      throw new Error(`Tile face of length ${is.length} found, must be >= 3`);
-    else {
-      const s = is.slice().sort();
-      if (s.some((n, i) => n == s[i + 1]))
-        throw new Error(`Tile face with duplicate vertex found.`);
-    }
-
-    for (let k = 0; k < is.length; ++k)
-      edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
-  }
-
-  return ([f0, k0]) => {
-    const result = [];
-    let [f, k] = [f0, k0];
-
-    do {
-      const is = faces[f];
-      result.push([f, k]);
-      [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
-    } while (f != f0 || k != k0);
-
-    return result;
   };
 };
 
