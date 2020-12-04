@@ -229,12 +229,25 @@ export const withFlattenedCenterFaces = (
 
 
 export const insetAt = ({ faces, pos, isFixed, faceLabels }, wd, isCorner) => {
-  const { pos: newPos, faces: modifiedFaces } = shrunkAt(
+  const { newPos, shrunkFaces } = shrunkAt(
     { faces, pos, isFixed }, wd, isCorner
   );
 
+  const facesNew = [...shrunkFaces];
+
+  for (let i = 0; i < faces.length; ++i) {
+    const vsOld = faces[i];
+    const vsNew = shrunkFaces[i];
+
+    for (let k = 0; k < vsOld.length; ++k) {
+      const k1 = (k + 1) % vsOld.length;
+      if (vsOld[k] != vsNew[k] && vsOld[k1] != vsNew[k1])
+        facesNew.push([vsOld[k], vsOld[k1], vsNew[k1], vsNew[k]]);
+    }
+  }
+
   return {
-    faces: modifiedFaces.concat(connectors(faces, modifiedFaces)),
+    faces: facesNew,
     pos: pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faceLabels: faceLabels || [...faces.keys()]
@@ -245,29 +258,36 @@ export const insetAt = ({ faces, pos, isFixed, faceLabels }, wd, isCorner) => {
 export const beveledAt = (
   { faces, pos, isFixed, faceLabels }, wd, isCorner
 ) => {
-  const { pos: newPos, faces: modifiedFaces } = shrunkAt(
+  const { newPos, shrunkFaces } = shrunkAt(
     { faces, pos, isFixed }, wd, isCorner
   );
 
-  const edgeFaces = [];
+  const facesNew = [...shrunkFaces];
   const opposite = {};
-
-  for (const [a, b, c, d] of connectors(faces, modifiedFaces)) {
-    const [f, e] = opposite[[b, a]] || [];
-    if (e == null)
-      opposite[[a, b]] = [d, c];
-    else
-      edgeFaces.push([c, d, e, f]);
-  }
-
   const m = {};
-  for (const [a, b, c, d] of edgeFaces) {
-    m[c] = b;
-    m[a] = d;
+
+  for (let i = 0; i < faces.length; ++i) {
+    const vsOld = faces[i];
+    const vsNew = shrunkFaces[i];
+
+    for (let k = 0; k < vsOld.length; ++k) {
+      const k1 = (k + 1) % vsOld.length;
+      const [a, b, c, d] = [vsOld[k], vsOld[k1], vsNew[k1], vsNew[k]];
+
+      if (a != d && b != c) {
+        const [f, e] = opposite[[b, a]] || [];
+        if (e == null)
+          opposite[[a, b]] = [d, c];
+        else {
+          facesNew.push([c, d, e, f]);
+          m[e] = d;
+          m[c] = f;
+        }
+      }
+    }
   }
 
   const seen = {};
-  const vertexFaces = [];
 
   for (const k of Object.keys(m)) {
     if (!seen[k]) {
@@ -278,12 +298,12 @@ export const beveledAt = (
         f.push(i);
         i = m[i];
       }
-      vertexFaces.push(f);
+      facesNew.push(f);
     }
   }
 
   return {
-    faces: modifiedFaces.concat(edgeFaces).concat(vertexFaces),
+    faces: facesNew,
     pos: pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
     faceLabels: faceLabels || [...faces.keys()]
@@ -347,8 +367,8 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
   }
 
   return {
-    pos: newPos,
-    faces: faces.map((is, f) => is.map((v, i) => mods[[f, i]] || v))
+    newPos,
+    shrunkFaces: faces.map((is, f) => is.map((v, i) => mods[[f, i]] || v))
   };
 };
 
@@ -373,24 +393,6 @@ const insetPoint = (corner, wd, left, right, center) => {
     const f   = len / ops.norm(t);
     return ops.plus(corner, ops.times(f, t));
   }
-};
-
-
-const connectors = (oldFaces, newFaces) => {
-  const result = [];
-
-  for (let i = 0; i < oldFaces.length; ++i) {
-    const isOld = oldFaces[i];
-    const isNew = newFaces[i];
-
-    for (let k = 0; k < isOld.length; ++k) {
-      const k1 = (k + 1) % isOld.length;
-      if (isOld[k] != isNew[k] && isOld[k1] != isNew[k1])
-        result.push([isOld[k], isOld[k1], isNew[k1], isNew[k]]);
-    }
-  }
-
-  return result;
 };
 
 
