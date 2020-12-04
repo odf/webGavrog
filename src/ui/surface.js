@@ -4,7 +4,6 @@ const ops = floatMatrices;
 
 const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
 const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
-const corners = pos => idcs => idcs.map(i => pos[i]);
 const centroid = pos => ops.div(sum(pos), pos.length);
 const normalized = v => ops.div(v, ops.norm(v));
 
@@ -109,7 +108,7 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
   const nrVerts = pos.length;
   const nrFaces = faces.length;
 
-  const posNew = [...pos].concat(faces.map(corners(pos)).map(centroid));
+  const posNew = [...pos].concat(faces.map(vs => centroid(vs.map(v => pos[v]))));
   const fixedNew = [...isFixed].concat(faces.map(_ => false));
   const edgeIndex = {};
   const significantEdgeNeighbors = [];
@@ -304,18 +303,15 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
       edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
   }
 
-  const cycle = (f0, k0) => {
-    const result = [];
+  const stretches = (f0, k0) => {
+    const hs = [];
     let [f, k] = [f0, k0];
     do {
       const is = faces[f];
-      result.push([f, k]);
+      hs.push([f, k]);
       [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
     } while (f != f0 || k != k0);
-    return result;
-  };
 
-  const stretches = hs => {
     const splits = hs
       .map((e, i) => isSplit(e) ? i : null)
       .filter(i => i != null);
@@ -323,13 +319,6 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
       i == 0 ?
         hs.slice(splits[splits.length-1]).concat(hs.slice(0, splits[0]+1)) :
         hs.slice(splits[i-1], splits[i]+1)));
-  };
-
-  const newVertexForStretch = (v, hs) => {
-    const ends = hs.map(([f, i]) => pos[endIndex(f, i)]);
-    const c = centroid(
-      ends.length > 2 ? ends.slice(1, -1) : corners(pos)(faces[hs[0][0]]));
-    return insetPoint(pos[v], wd, ends[0], ends[ends.length-1], c);
   };
 
   const seen = {};
@@ -345,8 +334,15 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
       if (!seen[v] && isCorner[v]) {
         seen[v] = true;
 
-        for (const stretch of stretches(cycle(f, k))) {
-          newPos.push(newVertexForStretch(v, stretch));
+        for (const stretch of stretches(f, k)) {
+          const ends = stretch.map(([f, i]) => pos[endIndex(f, i)]);
+          const c = centroid(
+            ends.length > 2 ?
+              ends.slice(1, -1) :
+              faces[stretch[0][0]].map(v => pos[v])
+          );
+          newPos.push(insetPoint(pos[v], wd, ends[0], ends[ends.length-1], c));
+
           for (let j = 0; j < stretch.length - 1; ++j)
             mods[stretch[j]] = pos.length + newPos.length - 1;
         }
