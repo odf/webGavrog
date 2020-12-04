@@ -230,36 +230,33 @@ export const withFlattenedCenterFaces = (
 
 
 export const insetAt = ({ faces, pos, isFixed, faceLabels }, wd, isCorner) => {
-  const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
-
-  if (faceLabels == null)
-    faceLabels = [...faces.keys()];
+  const { pos: newPos, faces: modifiedFaces } = shrunkAt(
+    { faces, pos, isFixed }, wd, isCorner
+  );
 
   return {
     faces: modifiedFaces.concat(connectors(faces, modifiedFaces)),
     pos: pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
-    faceLabels
+    faceLabels: faceLabels || [...faces.keys()]
   };
 };
 
 
-export const beveledAt = (surfaceIn, wd, isCorner) => {
-  let { faces, pos, isFixed, faceLabels } = surfaceIn;
-  const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
-
-  if (faceLabels == null)
-    faceLabels = [...faces.keys()];
+export const beveledAt = (
+  { faces, pos, isFixed, faceLabels }, wd, isCorner
+) => {
+  const { pos: newPos, faces: modifiedFaces } = shrunkAt(
+    { faces, pos, isFixed }, wd, isCorner
+  );
 
   const edgeFaces = [];
-  const seen = {};
+  const opposite = {};
 
   for (const [a, b, c, d] of connectors(faces, modifiedFaces)) {
-    const [f, e] = seen[[b, a]] || [];
+    const [f, e] = opposite[[b, a]] || [];
     if (e == null)
-      seen[[a, b]] = [d, c];
+      opposite[[a, b]] = [d, c];
     else
       edgeFaces.push([c, d, e, f]);
   }
@@ -270,11 +267,27 @@ export const beveledAt = (surfaceIn, wd, isCorner) => {
     m[a] = d;
   }
 
+  const seen = {};
+  const vertexFaces = [];
+
+  for (const k of Object.keys(m)) {
+    if (!seen[k]) {
+      let i = parseInt(k);
+      const f = [];
+      while (!seen[i]) {
+        seen[i] = true;
+        f.push(i);
+        i = m[i];
+      }
+      vertexFaces.push(f);
+    }
+  }
+
   return {
-    faces: modifiedFaces.concat(edgeFaces).concat(cycles(m)),
+    faces: modifiedFaces.concat(edgeFaces).concat(vertexFaces),
     pos: pos.concat(newPos),
     isFixed: isFixed.concat(newPos.map(i => true)),
-    faceLabels
+    faceLabels: faceLabels || [...faces.keys()]
   };
 };
 
@@ -402,27 +415,6 @@ const connectors = (oldFaces, newFaces) => {
   }
 
   return result;
-};
-
-
-const cycles = m => {
-  const seen = {};
-  const faces = [];
-
-  for (const k of Object.keys(m)) {
-    if (!seen[k]) {
-      let i = parseInt(k);
-      const f = [];
-      while (!seen[i]) {
-        seen[i] = true;
-        f.push(i);
-        i = m[i];
-      }
-      faces.push(f);
-    }
-  }
-
-  return faces;
 };
 
 
