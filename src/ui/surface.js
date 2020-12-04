@@ -229,58 +229,52 @@ export const withFlattenedCenterFaces = (
 };
 
 
-const insetPoint = (corner, wd, left, right, center) => {
-  const lft = normalized(ops.minus(left, corner));
-  const rgt = normalized(ops.minus(right, corner));
-  const dia = ops.plus(lft, rgt);
+export const insetAt = ({ faces, pos, isFixed, faceLabels }, wd, isCorner) => {
+  const { pos: newPos, faces: modifiedFaces } =
+    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
 
-  if (ops.norm(dia) < 0.01) {
-    const s = normalized(ops.minus(center, corner));
-    const t = projection(lft)(s);
-    return ops.plus(corner, ops.times(wd / ops.norm(t), s));
-  }
-  else if (ops.norm(ops.crossProduct(lft, rgt)) < 0.01) {
-    return ops.plus(corner, ops.times(wd, lft));
-  }
-  else {
-    const len = wd * ops.norm(dia) / ops.norm(projection(lft)(dia));
-    const s   = normalized(ops.crossProduct(dia, ops.crossProduct(lft, rgt)));
-    const t   = projection(s)(ops.minus(center, corner));
-    const f   = len / ops.norm(t);
-    return ops.plus(corner, ops.times(f, t));
-  }
+  if (faceLabels == null)
+    faceLabels = [...faces.keys()];
+
+  return {
+    faces: modifiedFaces.concat(connectors(faces, modifiedFaces)),
+    pos: pos.concat(newPos),
+    isFixed: isFixed.concat(newPos.map(i => true)),
+    faceLabels
+  };
 };
 
 
-const edgeCycle = faces => {
-  const edgeLoc = {};
+export const beveledAt = (surfaceIn, wd, isCorner) => {
+  let { faces, pos, isFixed, faceLabels } = surfaceIn;
+  const { pos: newPos, faces: modifiedFaces } =
+    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
 
-  for (let f = 0; f < faces.length; ++f) {
-    const is = faces[f];
+  if (faceLabels == null)
+    faceLabels = [...faces.keys()];
 
-    if (is.length < 3)
-      throw new Error(`Tile face of length ${is.length} found, must be >= 3`);
-    else {
-      const s = is.slice().sort();
-      if (s.some((n, i) => n == s[i + 1]))
-        throw new Error(`Tile face with duplicate vertex found.`);
-    }
+  const edgeFaces = [];
+  const seen = {};
 
-    for (let k = 0; k < is.length; ++k)
-      edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
+  for (const [a, b, c, d] of connectors(faces, modifiedFaces)) {
+    const [f, e] = seen[[b, a]] || [];
+    if (e == null)
+      seen[[a, b]] = [d, c];
+    else
+      edgeFaces.push([c, d, e, f]);
   }
 
-  return ([f0, k0]) => {
-    const result = [];
-    let [f, k] = [f0, k0];
+  const m = {};
+  for (const [a, b, c, d] of edgeFaces) {
+    m[c] = b;
+    m[a] = d;
+  }
 
-    do {
-      const is = faces[f];
-      result.push([f, k]);
-      [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
-    } while (f != f0 || k != k0);
-
-    return result;
+  return {
+    faces: modifiedFaces.concat(edgeFaces).concat(cycles(m)),
+    pos: pos.concat(newPos),
+    isFixed: isFixed.concat(newPos.map(i => true)),
+    faceLabels
   };
 };
 
@@ -337,6 +331,62 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
 };
 
 
+const edgeCycle = faces => {
+  const edgeLoc = {};
+
+  for (let f = 0; f < faces.length; ++f) {
+    const is = faces[f];
+
+    if (is.length < 3)
+      throw new Error(`Tile face of length ${is.length} found, must be >= 3`);
+    else {
+      const s = is.slice().sort();
+      if (s.some((n, i) => n == s[i + 1]))
+        throw new Error(`Tile face with duplicate vertex found.`);
+    }
+
+    for (let k = 0; k < is.length; ++k)
+      edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
+  }
+
+  return ([f0, k0]) => {
+    const result = [];
+    let [f, k] = [f0, k0];
+
+    do {
+      const is = faces[f];
+      result.push([f, k]);
+      [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
+    } while (f != f0 || k != k0);
+
+    return result;
+  };
+};
+
+
+const insetPoint = (corner, wd, left, right, center) => {
+  const lft = normalized(ops.minus(left, corner));
+  const rgt = normalized(ops.minus(right, corner));
+  const dia = ops.plus(lft, rgt);
+
+  if (ops.norm(dia) < 0.01) {
+    const s = normalized(ops.minus(center, corner));
+    const t = projection(lft)(s);
+    return ops.plus(corner, ops.times(wd / ops.norm(t), s));
+  }
+  else if (ops.norm(ops.crossProduct(lft, rgt)) < 0.01) {
+    return ops.plus(corner, ops.times(wd, lft));
+  }
+  else {
+    const len = wd * ops.norm(dia) / ops.norm(projection(lft)(dia));
+    const s   = normalized(ops.crossProduct(dia, ops.crossProduct(lft, rgt)));
+    const t   = projection(s)(ops.minus(center, corner));
+    const f   = len / ops.norm(t);
+    return ops.plus(corner, ops.times(f, t));
+  }
+};
+
+
 const connectors = (oldFaces, newFaces) => {
   const result = [];
 
@@ -352,22 +402,6 @@ const connectors = (oldFaces, newFaces) => {
   }
 
   return result;
-};
-
-
-export const insetAt = ({ faces, pos, isFixed, faceLabels }, wd, isCorner) => {
-  const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
-
-  if (faceLabels == null)
-    faceLabels = [...faces.keys()];
-
-  return {
-    faces: modifiedFaces.concat(connectors(faces, modifiedFaces)),
-    pos: pos.concat(newPos),
-    isFixed: isFixed.concat(newPos.map(i => true)),
-    faceLabels
-  };
 };
 
 
@@ -389,40 +423,6 @@ const cycles = m => {
   }
 
   return faces;
-};
-
-
-export const beveledAt = (surfaceIn, wd, isCorner) => {
-  let { faces, pos, isFixed, faceLabels } = surfaceIn;
-  const { pos: newPos, faces: modifiedFaces } =
-    shrunkAt({ faces, pos, isFixed }, wd, isCorner);
-
-  if (faceLabels == null)
-    faceLabels = [...faces.keys()];
-
-  const edgeFaces = [];
-  const seen = {};
-
-  for (const [a, b, c, d] of connectors(faces, modifiedFaces)) {
-    const [f, e] = seen[[b, a]] || [];
-    if (e == null)
-      seen[[a, b]] = [d, c];
-    else
-      edgeFaces.push([c, d, e, f]);
-  }
-
-  const m = {};
-  for (const [a, b, c, d] of edgeFaces) {
-    m[c] = b;
-    m[a] = d;
-  }
-
-  return {
-    faces: modifiedFaces.concat(edgeFaces).concat(cycles(m)),
-    pos: pos.concat(newPos),
-    isFixed: isFixed.concat(newPos.map(i => true)),
-    faceLabels
-  };
 };
 
 
