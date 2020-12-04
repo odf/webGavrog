@@ -292,9 +292,7 @@ export const beveledAt = (
 
 
 const shrunkAt = ({ faces, pos }, wd, isCorner) => {
-  const nextIndex = (f, i) => (i + 1) % faces[f].length;
-  const endIndex = (f, i) => faces[f][nextIndex(f, i)];
-  const isSplit = ([f, i]) => isCorner[endIndex(f, i)];
+  const endIndex = (f, i) => faces[f][(i + 1) % faces[f].length];
 
   const edgeLoc = {};
   for (let f = 0; f < faces.length; ++f) {
@@ -303,38 +301,36 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
       edgeLoc[[is[k], is[(k + 1) % is.length]]] = [f, k];
   }
 
-  const stretches = (f0, k0) => {
-    const hs = [];
-    let [f, k] = [f0, k0];
-    do {
-      const is = faces[f];
-      hs.push([f, k]);
-      [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
-    } while (f != f0 || k != k0);
-
-    const splits = hs
-      .map((e, i) => isSplit(e) ? i : null)
-      .filter(i => i != null);
-    return splits.map((k, i) => (
-      i == 0 ?
-        hs.slice(splits[splits.length-1]).concat(hs.slice(0, splits[0]+1)) :
-        hs.slice(splits[i-1], splits[i]+1)));
-  };
-
   const seen = {};
   const mods = {};
   const newPos = [];
 
-  for (let f = 0; f < faces.length; ++f) {
-    const is = faces[f];
+  for (let f0 = 0; f0 < faces.length; ++f0) {
+    const is = faces[f0];
 
-    for (let k = 0; k < is.length; ++k) {
-      const v = is[k];
+    for (let k0 = 0; k0 < is.length; ++k0) {
+      const v = is[k0];
 
       if (!seen[v] && isCorner[v]) {
         seen[v] = true;
 
-        for (const stretch of stretches(f, k)) {
+        const stretches = [];
+
+        let stretch = [];
+        let [f, k] = [f0, k0];
+        do {
+          stretch.push([f, k]);
+          if (isCorner[endIndex(f, k)]) {
+            stretches.push(stretch);
+            stretch = [[f, k]];
+          }
+          const is = faces[f];
+          [f, k] = edgeLoc[[is[k], is[(k + is.length - 1) % is.length]]];
+        } while (f != f0 || k != k0);
+
+        stretches[0] = stretch.concat(stretches[0]);
+
+        for (const stretch of stretches) {
           const ends = stretch.map(([f, i]) => pos[endIndex(f, i)]);
           const c = centroid(
             ends.length > 2 ?
