@@ -79,7 +79,7 @@ export const tightened = ({ faces, pos, isFixed, faceLabels }) => {
         const ny = bz * ax - bx * az;
         const nz = bx * ay - by * ax;
 
-        const nl = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        const nl = Math.max(1e-6, Math.sqrt(nx * nx + ny * ny + nz * nz));
 
         gx[v] += (ny * cz - nz * cy) / nl + 0.1 * (ax + bx);
         gy[v] += (nz * cx - nx * cz) / nl + 0.1 * (ay + by);
