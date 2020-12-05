@@ -148,7 +148,7 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
       const [u, v, w] = [vs[(i + k - 1) % k], vs[i], vs[(i + 1) % k]];
 
       newFacesAtVertex[v].push(facesNew.length);
-      facesNew.push([v, edgeIndex[[v, w]], f + nrVerts, edgeIndex[[u, v]]]);
+      facesNew.push([edgeIndex[[v, w]], f + nrVerts, edgeIndex[[u, v]], v]);
       fLabelsNew.push(faceLabels ? faceLabels[f] : f);
     }
   }
@@ -158,7 +158,7 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
       let t = ops.times(0, pos[0]);
       for (const f of newFacesAtVertex[v]) {
         const p = facesNew[f].map(v => posNew[v]);
-        t = ops.plus(t, ops.minus(ops.times(2, ops.plus(p[1], p[3])), p[2]));
+        t = ops.plus(t, ops.minus(ops.times(2, ops.plus(p[0], p[2])), p[1]));
       }
       const m = newFacesAtVertex[v].length;
       posNew[v] = ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, pos[v]));
