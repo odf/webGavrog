@@ -54,7 +54,12 @@ module.exports = {
       },
       { test: /\.elm$/,
         exclude: [/node_modules/, /elm-stuff/],
-        use: "elm-webpack-loader"
+        use: {
+          loader: "elm-webpack-loader",
+          options: {
+            debug: false
+          }
+        }
       },
       {
         test: /sceneWorker\.js$/,

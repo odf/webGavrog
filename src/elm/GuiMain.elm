@@ -1328,11 +1328,7 @@ handleJSData : Decode.Value -> Model -> Model
 handleJSData value model =
     case Decode.decodeValue decodeInData value of
         Err e ->
-            let
-                dummy =
-                    Debug.log "Error" (Decode.errorToString e)
-            in
-            model
+            { model | status = (Decode.errorToString e) }
 
         Ok data ->
             case data of
