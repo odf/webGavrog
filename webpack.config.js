@@ -8,7 +8,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 var execSync = require('child_process').execSync;
 var execOpts = { encoding: 'utf8' };
 var gitRev = execSync('git rev-parse HEAD', execOpts);
-var gitDate = execSync('git show -s --format=%ci ${GIT_REV}', execOpts);
+var gitDate = execSync('git show -s --format=%ci HEAD', execOpts);
 
 
 fs.writeFileSync(path.resolve(__dirname, 'src', 'version.js'),
