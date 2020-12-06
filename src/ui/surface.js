@@ -377,22 +377,23 @@ const insetPoint = (corner, wd, left, right, center) => {
   if (ops.norm(dia) < 0.01) {
     const s = normalized(ops.minus(center, corner));
     const t = projection(lft)(s);
-    return ops.plus(corner, ops.times(wd / ops.norm(t), s));
+    return ops.plus(corner, ops.times(wd / normx(t), s));
   }
   else if (ops.norm(ops.crossProduct(lft, rgt)) < 0.01) {
     return ops.plus(corner, ops.times(wd, lft));
   }
   else {
-    const len = wd * ops.norm(dia) / ops.norm(projection(lft)(dia));
-    const s   = normalized(ops.crossProduct(dia, ops.crossProduct(lft, rgt)));
-    const t   = projection(s)(ops.minus(center, corner));
-    const f   = len / ops.norm(t);
+    const len = wd * ops.norm(dia) / normx(projection(lft)(dia));
+    const s = normalized(ops.crossProduct(dia, ops.crossProduct(lft, rgt)));
+    const t = projection(s)(ops.minus(center, corner));
+    const f = len / normx(t);
     return ops.plus(corner, ops.times(f, t));
   }
 };
 
 
-const normalized = v => ops.div(v, ops.norm(v));
+const normx = v => Math.max(1e-6, ops.norm(v));
+const normalized = v => ops.div(v, normx(v));
 
 
 const projection = (normal, origin=ops.times(0, normal)) => p => {
