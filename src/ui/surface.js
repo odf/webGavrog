@@ -5,14 +5,6 @@ const ops = floatMatrices;
 const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
 const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
 const centroid = pos => ops.div(sum(pos), pos.length);
-const normalized = v => ops.div(v, ops.norm(v));
-
-
-const projection = (normal, origin=ops.times(0, normal)) => p => {
-  const d = ops.minus(p, origin);
-  return ops.plus(origin,
-                  ops.minus(d, ops.times(ops.times(normal, d), normal)));
-};
 
 
 export const averageRadius = solids => {
@@ -186,14 +178,7 @@ export const withFlattenedCenterFaces = (
     const label = faceLabels ? faceLabels[f] : f;
     const vs = faces[f];
     const ps = vs.map(i => pos[i]);
-    const center = centroid(ps);
-
-    const normal = normalized(sum(
-      ps.map((p, i) => ops.crossProduct(p, ps[(i + 1) % ps.length]))
-    ));
-
-    const qs = ps.map(projection(normal, center));
-
+    const qs = flattened(ps);
     const isFlat = ps.every((p, i) => ops.norm(ops.minus(p, qs[i])) <= 0.01);
 
     if (isFlat) {
@@ -201,6 +186,7 @@ export const withFlattenedCenterFaces = (
       newFaceLabels.push(label);
     }
     else {
+      const center = centroid(ps);
       const k = newPos.length;
       const m = qs.length;
 
@@ -373,6 +359,16 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
 };
 
 
+const flattened = ps => {
+  const center = centroid(ps);
+  const normal = normalized(
+    sum(ps.map((p, i) => ops.crossProduct(p, ps[(i + 1) % ps.length])))
+  );
+
+  return ps.map(projection(normal, center));
+};
+
+
 const insetPoint = (corner, wd, left, right, center) => {
   const lft = normalized(ops.minus(left, corner));
   const rgt = normalized(ops.minus(right, corner));
@@ -393,6 +389,18 @@ const insetPoint = (corner, wd, left, right, center) => {
     const f   = len / ops.norm(t);
     return ops.plus(corner, ops.times(f, t));
   }
+};
+
+
+const normalized = v => ops.div(v, ops.norm(v));
+
+
+const projection = (normal, origin=ops.times(0, normal)) => p => {
+  const d = ops.minus(p, origin);
+  return ops.plus(
+    origin,
+    ops.minus(d, ops.times(ops.times(normal, d), normal))
+  );
 };
 
 
