@@ -365,7 +365,7 @@ const flattened = ps => {
     sum(ps.map((p, i) => ops.crossProduct(p, ps[(i + 1) % ps.length])))
   );
 
-  return ps.map(projection(normal, center));
+  return ps.map(p => projection(p, normal, center));
 };
 
 
@@ -376,16 +376,16 @@ const insetPoint = (corner, wd, left, right, center) => {
 
   if (ops.norm(dia) < 0.01) {
     const s = normalized(ops.minus(center, corner));
-    const t = projection(lft)(s);
+    const t = projection(s, lft);
     return ops.plus(corner, ops.times(wd / normx(t), s));
   }
   else if (ops.norm(ops.crossProduct(lft, rgt)) < 0.01) {
-    return ops.plus(corner, ops.times(wd, lft));
+    return ops.plus(corner, ops.times(wd, normalized(dia)));
   }
   else {
-    const len = wd * ops.norm(dia) / normx(projection(lft)(dia));
+    const len = wd * ops.norm(dia) / normx(projection(dia, lft));
     const s = normalized(ops.crossProduct(dia, ops.crossProduct(lft, rgt)));
-    const t = projection(s)(ops.minus(center, corner));
+    const t = projection(ops.minus(center, corner), s);
     const f = len / normx(t);
     return ops.plus(corner, ops.times(f, t));
   }
@@ -396,12 +396,11 @@ const normx = v => Math.max(1e-6, ops.norm(v));
 const normalized = v => ops.div(v, normx(v));
 
 
-const projection = (normal, origin=ops.times(0, normal)) => p => {
-  const d = ops.minus(p, origin);
-  return ops.plus(
-    origin,
-    ops.minus(d, ops.times(ops.times(normal, d), normal))
-  );
+const projection = (p, normal, origin) => {
+  if (origin)
+    return ops.plus(origin, projection(ops.minus(p, origin), normal));
+  else
+    return ops.minus(p, ops.times(ops.times(normal, p), normal));
 };
 
 
