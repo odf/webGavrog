@@ -435,26 +435,6 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
 );
 
 
-const splitMeshes = (meshes, faceLabelLists) => {
-  const subMeshes = [];
-  const partLists = [];
-
-  for (let i = 0; i < meshes.length; ++i) {
-    const parts = geometries.splitGeometry(meshes[i], faceLabelLists[i]);
-    const keys = Object.keys(parts);
-    partLists[i] = [];
-
-    for (const key of keys) {
-      const index = key == 'undefined' ? (keys.length - 1) : parseInt(key);
-      partLists[i][index] = subMeshes.length;
-      subMeshes.push(parts[key]);
-    }
-  }
-
-  return { subMeshes, partLists };
-};
-
-
 const convertTile = (tile, centers) => {
   const basis = opsQ.transposed(opsQ.linearPart(tile.symmetry));
   const shift = opsQ.shiftPart(tile.symmetry);
@@ -721,7 +701,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
     embedding[key] = dim == 2 ?
       { subMeshes: meshes, partLists: range(meshes.length).map(i => [i]) } :
-      splitMeshes(meshes, faceLabelLists);
+      geometries.splitMeshes(meshes, faceLabelLists);
   }
 
   const { subMeshes, partLists } = embedding[key];

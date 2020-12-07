@@ -32,7 +32,27 @@ export const geometry = (vertsIn, faces) => {
 };
 
 
-export const splitGeometry = ({ vertices, faces }, faceLabels) => {
+export const splitMeshes = (meshes, faceLabelLists) => {
+  const subMeshes = [];
+  const partLists = [];
+
+  for (let i = 0; i < meshes.length; ++i) {
+    const parts = splitGeometry(meshes[i], faceLabelLists[i]);
+    const keys = Object.keys(parts);
+    partLists[i] = [];
+
+    for (const key of keys) {
+      const index = key == 'undefined' ? (keys.length - 1) : parseInt(key);
+      partLists[i][index] = subMeshes.length;
+      subMeshes.push(parts[key]);
+    }
+  }
+
+  return { subMeshes, partLists };
+};
+
+
+const splitGeometry = ({ vertices, faces }, faceLabels) => {
   const facesByLabel = {};
 
   for (let f = 0; f < faces.length; ++f) {
