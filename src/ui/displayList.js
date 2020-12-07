@@ -116,27 +116,23 @@ export const removeTileClasses = tiles => (displayList, selection) => {
 
 
 export const removeElements = (displayList, selection) => {
-  const toBeRemoved = {};
+  const toSkip = displayList.map(item => Object.assign({}, item.skippedParts));
+
   for (const inst of selection) {
-    if (inst.partIndex != null) {
-      if (toBeRemoved[inst.instanceIndex] == null)
-        toBeRemoved[inst.instanceIndex] = {};
-      toBeRemoved[inst.instanceIndex][inst.partIndex] = true;
-    }
+    if (inst.partIndex != null)
+      toSkip[inst.instanceIndex][inst.partIndex] = true;
     else
-      toBeRemoved[inst.instanceIndex] = true;
+      toSkip[inst.instanceIndex] = true;
   }
 
-  return displayList
-    .filter((_, i) => toBeRemoved[i] != true)
-    .map((item, i) => {
-      if (toBeRemoved[i]) {
-        const skippedParts = Object.assign({}, item.skippedParts || {});
-        for (const j of Object.keys(toBeRemoved[i]))
-          skippedParts[j] = true;
-        return Object.assign({}, item, { skippedParts });
-      }
-      else
-        return item;
-    });
+  const result = [];
+
+  for (let i = 0; i < displayList.length; ++i) {
+    const item = displayList[i];
+
+    if (toSkip[i] != true)
+      result.push(Object.assign({}, item, { skippedParts: toSkip[i] }));
+  }
+
+  return result;
 };
