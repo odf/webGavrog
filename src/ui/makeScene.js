@@ -19,10 +19,21 @@ import {
 } from '../geometry/types';
 
 
-const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
+const range = n => [...Array(n).keys()];
+const centeredRange = n => range(n).map(i => i - Math.ceil(n/2) + 1);
+const withDefault = (value, fallback) => value != null ? value : fallback;
+
+const cartesian = (...vs) => (
+  vs.length == 0 ?
+    [[]] :
+    [].concat(
+      ...vs[0].map(v => cartesian(...vs.slice(1)).map(xs => [v].concat(xs)))
+    )
+);
+
+
 const normalized = v => opsF.div(v, opsF.norm(v));
 const asVec3 = v => [v[0], v[1], v[2] || 0];
-
 const applyToPoint = (cc, vec) => opsQ.vector(opsQ.times(cc, opsQ.point(vec)));
 
 
@@ -100,15 +111,15 @@ const makeStick = (radius, segments) => {
   const n = segments;
   const a = Math.PI * 2 / n;
 
-  const bottom = range(0, n).map(i => [
+  const bottom = range(n).map(i => [
     Math.cos(a * i) * radius, Math.sin(a * i) * radius, 0
   ]);
-  const top = range(0, n).map(i => [
+  const top = range(n).map(i => [
     Math.cos(a * i) * radius, Math.sin(a * i) * radius, 1
   ]);
   const vertices = [].concat(bottom, top);
 
-  const faces = range(0, n).map(i => {
+  const faces = range(n).map(i => {
     const j = (i + 1) % n;
     return [i, j, j+n, i+n];
   });
@@ -133,20 +144,6 @@ const stickTransform = (p, q, ballRadius, stickRadius) => {
 
   return { basis: [ u, v, w1 ], shift: p1 };
 };
-
-
-const flatMap   = (fn, xs) => [].concat.apply([], xs.map(fn));
-
-const cartesian = (...vs) => (
-  vs.length == 0 ?
-    [[]] :
-    flatMap(xs => vs[vs.length - 1].map(y => xs.concat(y)),
-            cartesian(...vs.slice(0, -1)))
-);
-
-
-const centeredRange = n =>
-      range(Math.floor(n/2) - n + 1, Math.floor(n/2) + 1);
 
 
 const baseShifts = (dim, options) => dim == 3 ?
@@ -408,7 +405,7 @@ const makeNetDisplayList = (data, options) => {
     for (const sh of shifts) {
       const copies = [opsQ.plus(sh, shift)];
 
-      for (const i of range(0, graph.dim)) {
+      for (const i of range(graph.dim)) {
         if (loc[i] == 0)
           copies = copies.concat(copies.map(t => opsQ.plus(t, basis[i])));
       }
@@ -473,9 +470,6 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(
     };
   }
 );
-
-
-const withDefault = (value, fallback) => value != null ? value : fallback;
 
 
 const makeNetModel = (data, options, runJob, log) => csp.go(
@@ -832,7 +826,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
 
     embedding[key] = dim == 2 ?
-      { subMeshes: meshes, partLists: range(0, meshes.length).map(i => [i]) } :
+      { subMeshes: meshes, partLists: range(meshes.length).map(i => [i]) } :
       splitMeshes(meshes, faceLabelLists);
   }
 
