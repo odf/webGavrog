@@ -6,6 +6,7 @@ import * as derived from '../dsymbols/derived';
 import parseDSymbols from '../io/ds';
 
 import { structures } from './builtinStructures';
+import * as displayList from './displayList';
 import * as makeScene from './makeScene';
 
 import { Elm } from '../elm/GuiMain';
@@ -414,23 +415,23 @@ const render = domNode => {
     ['Next']: () => setStructure(model.index + 1),
     ['Last']: () => setStructure(-1),
     ['Add Tile(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, makeScene.addTiles
+      config, model, selected, displayList.addTiles
     )),
     ['Add Corona(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, makeScene.addCoronas
+      config, model, selected, displayList.addCoronas
     )),
     ['Restore Tile(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, makeScene.restoreTiles
+      config, model, selected, displayList.restoreTiles
     )),
     ['Remove Tile(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, makeScene.removeTiles
+      config, model, selected, displayList.removeTiles
     )),
     ['Remove Tile Class(es)']: (selected) => updateModel(updateDisplayList(
       config, model, selected,
-      makeScene.removeTileClasses(model.data.tiles || [])
+      displayList.removeTileClasses(model.data.tiles || [])
     )),
     ['Remove Element(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, makeScene.removeElements
+      config, model, selected, displayList.removeElements
     )),
     ['Fresh Display List']: (_, options) => updateModel(freshDisplayList(
       config, model, options
