@@ -1,29 +1,22 @@
 import * as csp from 'plexus-csp';
 
-import * as pickler from '../common/pickler';
-import * as timing from '../common/timing';
 import * as delaney from '../dsymbols/delaney';
 import * as derived from '../dsymbols/derived';
-import * as properties from '../dsymbols/properties';
 import * as tilings from '../dsymbols/tilings';
-import * as lattices from '../spacegroups/lattices';
-import * as unitCells from '../spacegroups/unitCells';
-import * as spacegroups from '../spacegroups/spacegroups';
-import * as sgFinder from '../spacegroups/spacegroupFinder';
 import * as periodic from '../pgraphs/periodic';
 import * as netSyms from '../pgraphs/symmetries';
-import {subD} from './surface';
+
+import { serialize as encode } from '../common/pickler';
+import { timer } from '../common/timing';
+import { invariantBasis } from '../spacegroups/unitCells';
+import { centeringLatticePoints } from '../spacegroups/spacegroups';
+import { identifySpacegroup } from '../spacegroups/spacegroupFinder';
+import { subD } from './surface';
 
 import {
-  coordinateChangesQ,
-  coordinateChangesF
+  coordinateChangesQ as opsQ,
+  coordinateChangesF as opsF
 } from '../geometry/types';
-
-const opsQ = coordinateChangesQ;
-const opsF = coordinateChangesF;
-
-const encode = pickler.serialize;
-const decode = pickler.deserialize;
 
 
 const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
@@ -236,7 +229,7 @@ export const addTiles = (displayList, selection) => {
         latticeIndex,
         shift: opsF.plus(extraShiftCryst, shift)
       };
-      const key = pickler.serialize(item);
+      const key = encode(item);
 
       if (!seen[key]) {
         result.push(item);
@@ -246,7 +239,7 @@ export const addTiles = (displayList, selection) => {
   }
 
   for (const item of displayList) {
-    const key = pickler.serialize({
+    const key = encode({
       itemType: item.itemType,
       item: item.item,
       latticeIndex: item.latticeIndex,
@@ -273,7 +266,7 @@ export const addCoronas = (displayList, selection) => {
         const item = Object.assign(
           {}, neighbor, { shift: opsF.plus(extraShiftCryst, neighbor.shift) }
         );
-        const key = pickler.serialize(item);
+        const key = encode(item);
 
         if (!seen[key]) {
           result.push(item);
@@ -284,7 +277,7 @@ export const addCoronas = (displayList, selection) => {
   }
 
   for (const item of displayList) {
-    const key = pickler.serialize({
+    const key = encode({
       itemType: item.itemType,
       item: item.item,
       latticeIndex: item.latticeIndex,
@@ -405,7 +398,7 @@ const makeNetDisplayList = (data, options) => {
   };
 
   const pos= periodic.barycentricPlacement(graph);
-  const centering = spacegroups.centeringLatticePoints(toStd);
+  const centering = centeringLatticePoints(toStd);
   const fromStd = opsQ.inverse(toStd);
   const basis = opsQ.identityMatrix(graph.dim);
 
@@ -447,7 +440,7 @@ const makeNetDisplayList = (data, options) => {
 
 const preprocessNet = (structure, options, runJob, log) => csp.go(
   function*() {
-    const t = timing.timer();
+    const t = timer();
 
     yield log('Normalizing shifts...');
     const graph = periodic.graphWithNormalizedShifts(structure.graph);
@@ -459,7 +452,7 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to compute symmetries`);
 
     yield log('Identifying the spacegroup...');
-    const sgInfo = sgFinder.identifySpacegroup(symOps);
+    const sgInfo = identifySpacegroup(symOps);
     console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
     yield log('Constructing an abstract finite subnet...');
@@ -492,11 +485,11 @@ const makeNetModel = (data, options, runJob, log) => csp.go(
     const embedding =
           options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
     const pos = embedding.positions;
-    const basis = unitCells.invariantBasis(embedding.gram);
+    const basis = invariantBasis(embedding.gram);
     const ballRadius = withDefault(options.netVertexRadius, 0.1);
     const stickRadius = withDefault(options.netEdgeRadius, 0.04);
 
-    const t = timing.timer();
+    const t = timer();
 
     yield log('Making the net geometry...');
     const meshes = [ makeBall(ballRadius), makeStick(stickRadius, 48) ];
@@ -640,7 +633,7 @@ const makeTileDisplayList = (data, options) => {
     }
   };
 
-  const centering = spacegroups.centeringLatticePoints(toStd);
+  const centering = centeringLatticePoints(toStd);
   const fromStd = opsQ.inverse(toStd);
 
   for (const [index, v] of tilesInUnitCell(tiles, toStd, centering)) {
@@ -654,7 +647,7 @@ const makeTileDisplayList = (data, options) => {
 
 const preprocessTiling = (structure, options, runJob, log) => csp.go(
   function*() {
-    const t = timing.timer();
+    const t = timer();
 
     if (options.tilingModifier == 'dual')
       structure = Object.assign(
@@ -693,7 +686,7 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
     console.log(`${Math.round(t())} msec to compute symmetries`);
 
     yield log('Identifying the spacegroup...');
-    const sgInfo = sgFinder.identifySpacegroup(syms);
+    const sgInfo = identifySpacegroup(syms);
     console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
     yield log('Listing translation orbits of tiles...');
@@ -729,7 +722,7 @@ const preprocessTiling = (structure, options, runJob, log) => csp.go(
 const makeMeshes = (
   cov, skel, pos, seeds, basis, subDLevel, tighten, edgeWidth, runJob, log
 ) => csp.go(function*() {
-  const t = timing.timer();
+  const t = timer();
 
   yield log('Making the base tile surfaces...');
   const templates = yield runJob({
@@ -817,8 +810,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const embedding =
         options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
 
-  const rawBasis = unitCells.invariantBasis(embedding.gram);
-  const basis = unitCells.invariantBasis(embedding.gram);
+  const rawBasis = invariantBasis(embedding.gram);
+  const basis = invariantBasis(embedding.gram);
   if (dim == 2) {
     basis[0].push(0);
     basis[1].push(0);
