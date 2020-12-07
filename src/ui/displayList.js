@@ -101,16 +101,12 @@ export const removeTiles = (displayList, selection) => {
 
 
 export const removeTileClasses = tiles => (displayList, selection) => {
-  const latticesRemoved = {};
-  for (const { classIndex } of selection) {
-    for (let i = 0; i < tiles.length; ++i) {
-      if (tiles[i].classIndex == classIndex)
-        latticesRemoved[i] = true;
-    }
-  }
+  const classesRemoved = {};
+  for (const { classIndex } of selection)
+    classesRemoved[classIndex] = true;
 
   return displayList.filter(
-    ({ latticeIndex }, _) => !latticesRemoved[latticeIndex]
+    ({ latticeIndex: i }) => !classesRemoved[tiles[i].classIndex]
   );
 };
 
