@@ -104,41 +104,28 @@ const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
 };
 
 
-const preprocessNet = (structure, options, runJob, log) => csp.go(
-  function*() {
-    const t = timer();
+const preprocessNet = (structure, options, runJob, log) => csp.go(function*() {
+  const t = timer();
 
-    yield log('Normalizing shifts...');
-    const graph = periodic.graphWithNormalizedShifts(structure.graph);
-    console.log(`${Math.round(t())} msec to normalize shifts`);
+  yield log('Normalizing shifts...');
+  const graph = periodic.graphWithNormalizedShifts(structure.graph);
+  console.log(`${Math.round(t())} msec to normalize shifts`);
 
-    yield log('Computing symmetries...');
-    const syms = netSyms.symmetries(graph).symmetries;
-    const symOps = netSyms.affineSymmetries(graph, syms);
-    console.log(`${Math.round(t())} msec to compute symmetries`);
+  yield log('Computing symmetries...');
+  const syms = netSyms.symmetries(graph).symmetries;
+  const symOps = netSyms.affineSymmetries(graph, syms);
+  console.log(`${Math.round(t())} msec to compute symmetries`);
 
-    yield log('Identifying the spacegroup...');
-    const sgInfo = identifySpacegroup(symOps);
-    console.log(`${Math.round(t())} msec to identify the spacegroup`);
+  yield log('Identifying the spacegroup...');
+  const sgInfo = identifySpacegroup(symOps);
+  console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
-    yield log('Constructing an abstract finite subnet...');
-    const displayList = makeNetDisplayList({ graph, sgInfo }, options);
-    console.log(`${Math.round(t())} msec to construct a finite subnet`);
+  yield log('Computing an embedding...');
+  const embeddings = yield runJob({ cmd: 'embedding', val: graph });
+  console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-    yield log('Computing an embedding...');
-    const embeddings = yield runJob({ cmd: 'embedding', val: graph });
-    console.log(`${Math.round(t())} msec to compute the embeddings`);
-
-    return {
-      type: structure.type,
-      dim: graph.dim,
-      graph,
-      sgInfo,
-      embeddings,
-      displayList
-    };
-  }
-);
+  return { type: structure.type, dim: graph.dim, graph, sgInfo, embeddings };
+});
 
 
 const makeNetDisplayList = (data, options) => {
@@ -321,16 +308,12 @@ const preprocessTiling = (
   console.log(`${Math.round(t())} msec to list the tile orbits`);
 
   const tiles = rawTiles.map(tile => convertTile(tile, centers));
-  const displayList = makeTileDisplayList({ tiles, dim, sgInfo }, options);
 
   yield log('Computing an embedding...');
   const embeddings = yield runJob({ cmd: 'embedding', val: skel.graph });
   console.log(`${Math.round(t())} msec to compute the embeddings`);
 
-  return {
-    type, dim, ds, cov, skel, sgInfo, tiles, orbitReps, embeddings,
-    displayList
-  };
+  return { type, dim, ds, cov, skel, sgInfo, tiles, orbitReps, embeddings };
 });
 
 

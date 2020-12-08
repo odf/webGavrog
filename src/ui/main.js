@@ -139,6 +139,9 @@ const toStructure = (config, model, i) => csp.go(function*() {
     const data = yield makeScene.preprocess(
       structures[index], model.options, callWorker, config.log
     );
+    data.displayList = yield makeScene.makeDisplayList(
+      data, model.options, callWorker, config.log
+    );
     const scene = yield makeScene.makeScene(
       data, model.options, callWorker, config.log
     );
