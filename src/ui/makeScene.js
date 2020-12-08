@@ -104,26 +104,7 @@ const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
 };
 
 
-const nodesInUnitCell = (graph, pos, toStd, centeringShifts) => {
-  const result = [];
-
-  for (const v of periodic.vertices(graph)) {
-    const p0 = applyToPoint(toStd, pos[v]);
-    for (const s of centeringShifts) {
-      const p = opsQ.mod(opsQ.plus(p0, s), 1);
-      result.push([v, opsQ.minus(p, p0)]);
-    }
-  }
-
-  return result;
-};
-
-
 const makeNetDisplayList = (data, options) => {
-  const { graph, sgInfo } = data;
-  const { toStd } = sgInfo;
-  const shifts = baseShifts(graph.dim, options);
-
   const itemsSeen = {};
   const result = [];
 
@@ -135,48 +116,48 @@ const makeNetDisplayList = (data, options) => {
     }
   };
 
-  const addNode = (v, shift) => addItem('node', v, shift);
-
-  const addEdge = (e, shift) => {
-    if (e.tail < e.head || (e.tail == e.head && opsQ.sgn(e.shift) < 0))
-      addItem('edge', e.reverse(), opsQ.plus(shift, e.shift));
-    else
-      addItem('edge', e, shift);
-  };
-
-  const pos= periodic.barycentricPlacement(graph);
-  const centering = centeringLatticePoints(toStd);
+  const { graph, sgInfo: { toStd } } = data;
+  const pos = periodic.barycentricPlacement(graph);
   const fromStd = opsQ.inverse(toStd);
   const basis = opsQ.identityMatrix(graph.dim);
 
-  for (const [v, shift] of nodesInUnitCell(graph, pos, toStd, centering)) {
-    const loc = opsQ.plus(shift, applyToPoint(toStd, pos[v]));
+  for (const v of periodic.vertices(graph)) {
+    const p = applyToPoint(toStd, pos[v]);
 
-    for (const sh of shifts) {
-      const copies = [opsQ.plus(sh, shift)];
+    for (const s of centeringLatticePoints(toStd)) {
+      const loc = opsQ.mod(opsQ.plus(p, s), 1);
+      const shift = opsQ.minus(loc, p);
 
-      for (const i of range(graph.dim)) {
-        if (loc[i] == 0)
-          copies = copies.concat(copies.map(t => opsQ.plus(t, basis[i])));
-      }
+      for (const sh of baseShifts(graph.dim, options)) {
+        const copies = [opsQ.plus(sh, shift)];
 
-      for (const t of copies)
-        addNode(v, opsQ.times(fromStd, t));
+        for (const i of range(graph.dim)) {
+          if (loc[i] == 0)
+            copies = copies.concat(copies.map(t => opsQ.plus(t, basis[i])));
+        }
 
-      if (copies.length == 1) {
-        const b = opsQ.times(fromStd, copies[0]);
-        for (const { tail: w, shift: s } of periodic.incidences(graph)[v])
-          addNode(w, opsQ.plus(b, s));
+        for (const t of copies)
+          addItem('node', v, opsQ.times(fromStd, t));
+
+        if (copies.length == 1) {
+          const b = opsQ.times(fromStd, copies[0]);
+          for (const { tail: w, shift: s } of periodic.incidences(graph)[v])
+            addItem('node', w, opsQ.plus(b, s));
+        }
       }
     }
   }
 
   for (const { itemType, item, shift } of result) {
     if (itemType == 'node') {
-      for (const edge of periodic.incidences(graph)[item]) {
-        const key = encode(['node', edge.tail, opsQ.plus(shift, edge.shift)]);
-        if (itemsSeen[key])
-          addEdge(edge, shift);
+      for (const e of periodic.incidences(graph)[item]) {
+        const endShift = opsQ.plus(shift, e.shift);
+        if (itemsSeen[encode(['node', e.tail, endShift])]) {
+          if (e.tail < e.head || (e.tail == e.head && opsQ.sgn(e.shift) < 0))
+            addItem('edge', e.reverse(), endShift);
+          else
+            addItem('edge', e, shift);
+        }
       }
     }
   }
