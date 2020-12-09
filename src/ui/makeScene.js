@@ -261,14 +261,9 @@ const preprocessTiling = (
   const mod = options.tilingModifier;
   if (mod == 'dual' || mod == 't-analog') {
     const fn = mod == 'dual' ? derived.dual : derived.tAnalog;
-    structure = Object.assign(
-      {},
-      structure,
-      {
-        symbol: fn(structure.symbol),
-        cover: structure.cover && fn(structure.cover)
-      }
-    )
+    const symbol = fn(structure.symbol);
+    const cover = structure.cover && fn(structure.cover);
+    structure = Object.assign({}, structure, { symbol, cover });
   }
 
   const type = structure.type;
@@ -407,11 +402,9 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
 
 const convertTile = (tile, centers) => {
-  const basis = opsQ.transposed(opsQ.linearPart(tile.symmetry));
-  const shift = opsQ.shiftPart(tile.symmetry);
-
-  const classIndex = tile.classIndex;
-  const center = opsQ.plus(opsQ.times(centers[classIndex], basis), shift);
+  const basis = opsQ.toJS(opsQ.transposed(opsQ.linearPart(tile.symmetry)));
+  const shift = opsQ.toJS(opsQ.shiftPart(tile.symmetry));
+  const center = opsQ.plus(opsQ.times(centers[tile.classIndex], basis), shift);
 
   if (shift.length == 2) {
     for (const v of basis)
@@ -421,16 +414,10 @@ const convertTile = (tile, centers) => {
     center.push(0);
   }
 
-  const transform = {
-    basis: opsQ.toJS(basis),
-    shift: opsQ.toJS(shift)
-  };
-
-  const neighbors = tile.neighbors.map(({ latticeIndex, shift }) => ({
-    itemType: 'tile',
-    latticeIndex,
-    shift
-  }));
+  const transform = { basis, shift };
+  const classIndex = tile.classIndex;
+  const itemType = 'tile';
+  const neighbors = tile.neighbors.map(n => Object.assign({}, n, { itemType }));
 
   return { classIndex, transform, center, neighbors };
 };
