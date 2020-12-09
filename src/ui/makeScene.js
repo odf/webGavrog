@@ -304,30 +304,30 @@ const preprocessTiling = (
 });
 
 
-const makeTileDisplayList = (data, options) => {
-  const { tiles, dim, sgInfo } = data;
-  const { toStd } = sgInfo;
+const makeTileDisplayList = ({ tiles, dim, sgInfo: { toStd } }, options) => {
   const shifts = baseShifts(dim, options);
+  const centering = centeringLatticePoints(toStd);
+  const fromStd = opsQ.inverse(toStd);
 
   const tilesSeen = {};
   const result = [];
 
-  const addTile = (latticeIndex, shift) => {
-    const key = encode([latticeIndex, shift]);
-    if (!tilesSeen[key]) {
-      if (shift.length == 2)
-        shift.push(0);
-      result.push({ itemType: 'tile', latticeIndex, shift });
-      tilesSeen[key] = true;
+  for (let latticeIndex = 0; latticeIndex < tiles.length; ++latticeIndex) {
+    const c = applyToPoint(toStd, tiles[latticeIndex].center.slice(0, dim));
+
+    for (const s of centering) {
+      const v = opsQ.minus(opsQ.mod(opsQ.plus(c, s), 1), c);
+
+      for (const sh of shifts) {
+        const shift = asVec3(opsQ.times(fromStd, opsQ.plus(sh, v)));
+        const key = encode([latticeIndex, shift]);
+
+        if (!tilesSeen[key]) {
+          result.push({ itemType: 'tile', latticeIndex, shift });
+          tilesSeen[key] = true;
+        }
+      }
     }
-  };
-
-  const centering = centeringLatticePoints(toStd);
-  const fromStd = opsQ.inverse(toStd);
-
-  for (const [index, v] of tilesInUnitCell(tiles, toStd, centering)) {
-    for (const s of shifts)
-      addTile(index, opsQ.times(fromStd, opsQ.plus(s, v)));
   }
 
   return result;
@@ -420,22 +420,6 @@ const convertTile = (tile, centers) => {
   const neighbors = tile.neighbors.map(n => Object.assign({}, n, { itemType }));
 
   return { classIndex, transform, center, neighbors };
-};
-
-
-const tilesInUnitCell = (tiles, toStd, centeringShifts) => {
-  const dim = opsQ.dimension(toStd);
-  const result = [];
-
-  for (let index = 0; index < tiles.length; ++index) {
-    const c0 = applyToPoint(toStd, tiles[index].center.slice(0, dim));
-    for (const s of centeringShifts) {
-      const c = opsQ.mod(opsQ.plus(c0, s), 1);
-      result.push([index, opsQ.minus(c, c0)]);
-    }
-  }
-
-  return result;
 };
 
 
