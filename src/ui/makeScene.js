@@ -402,8 +402,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
 
 const convertTile = (tile, centers) => {
-  const basis = opsQ.toJS(opsQ.transposed(opsQ.linearPart(tile.symmetry)));
-  const shift = opsQ.toJS(opsQ.shiftPart(tile.symmetry));
+  const basis = opsQ.transposed(opsQ.linearPart(tile.symmetry));
+  const shift = opsQ.shiftPart(tile.symmetry);
   const center = opsQ.plus(opsQ.times(centers[tile.classIndex], basis), shift);
 
   if (shift.length == 2) {
@@ -414,7 +414,7 @@ const convertTile = (tile, centers) => {
     center.push(0);
   }
 
-  const transform = { basis, shift };
+  const transform = { basis: opsQ.toJS(basis), shift: opsQ.toJS(shift) };
   const classIndex = tile.classIndex;
   const itemType = 'tile';
   const neighbors = tile.neighbors.map(n => Object.assign({}, n, { itemType }));
