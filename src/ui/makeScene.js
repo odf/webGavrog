@@ -193,71 +193,63 @@ const makeNetDisplayList = (data, options) => {
 const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
   const { graph, sgInfo, embeddings, displayList } = data;
 
-  const embedding =
-        options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
-  const pos = embedding.positions;
-  const basis = invariantBasis(embedding.gram);
+  const { positions: pos, gram } = options.skipRelaxation ?
+        embeddings.barycentric : embeddings.relaxed;
+  const basis = invariantBasis(gram);
   const ballRadius = withDefault(options.netVertexRadius, 0.1);
   const stickRadius = withDefault(options.netEdgeRadius, 0.04);
 
   const t = timer();
 
-  yield log('Making the net geometry...');
   const meshes = [
-    geometries.makeBall(ballRadius), geometries.makeStick(stickRadius, 48)
+    geometries.makeBall(ballRadius),
+    geometries.makeStick(stickRadius, 48)
   ];
   const instances = [];
 
   for (let i = 0; i < displayList.length; ++i) {
     const { itemType, item, shift: shiftRaw } = displayList[i];
+    const instanceIndex = i;
     const shift = opsQ.toJS(shiftRaw);
+    const extraShiftCryst = asVec3(shift);
+    const extraShift = asVec3(opsF.times(shift, basis));
 
+    let meshType, meshIndex, transform;
     if (itemType == 'node') {
-      const p = opsF.times(pos[item], basis);
-
-      instances.push({
-        meshType: 'netVertex',
-        meshIndex: 0,
-        instanceIndex: i,
-        transform: { basis: opsF.identityMatrix(3), shift: asVec3(p) },
-        extraShiftCryst: asVec3(shift),
-        extraShift: asVec3(opsF.times(shift, basis))
-      })
+      const shift = asVec3(opsF.times(pos[item], basis));
+      meshType = 'netVertex';
+      meshIndex = 0;
+      transform = { basis: opsF.identityMatrix(3), shift };
     }
     else {
-      const p = opsF.times(pos[item.head], basis);
-      const q = opsF.times(opsF.plus(pos[item.tail], item.shift), basis);
-      const transform = geometries.stickTransform(
-        asVec3(p), asVec3(q), ballRadius, stickRadius
-      );
-
-      instances.push({
-        meshType: 'netEdge',
-        meshIndex: 1,
-        instanceIndex: i,
-        transform,
-        extraShiftCryst: asVec3(shift),
-        extraShift: asVec3(opsF.times(shift, basis))
-      })
+      const { head, tail, shift } = item;
+      const p = asVec3(opsF.times(pos[head], basis));
+      const q = asVec3(opsF.times(opsF.plus(pos[tail], shift), basis));
+      meshType = 'netEdge';
+      meshIndex = 1;
+      transform = geometries.stickTransform(p, q, ballRadius, stickRadius);
     }
+
+    instances.push({
+      meshType, meshIndex, instanceIndex, transform, extraShiftCryst, extraShift
+    });
   }
+
   console.log(`${Math.round(t())} msec to make the net geometry`);
 
-  yield log('Done making the net model.');
+  if (options.showUnitCell) {
+    const fromStd = opsQ.inverse(sgInfo.toStd);
+    const cellBasis = opsQ.identityMatrix(graph.dim).map(
+      v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), basis)
+    );
+    const origin = opsF.times(
+      opsQ.toJS(applyToPoint(fromStd, opsQ.vector(graph.dim))), basis
+    );
 
-  const fromStd = opsQ.inverse(sgInfo.toStd);
-  const cellBasis = opsQ.identityMatrix(graph.dim).map(
-    v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), basis)
-  );
-  const o = opsQ.vector(graph.dim);
-  const origin = opsF.times(opsQ.toJS(applyToPoint(fromStd, o)), basis);
-
-  const model = { meshes, instances };
-
-  if (options.showUnitCell)
-    return addUnitCell(model, cellBasis, origin, 0.01, 0.01);
+    return addUnitCell({ meshes, instances }, cellBasis, origin, 0.01, 0.01);
+  }
   else
-    return model;
+    return { meshes, instances };
 });
 
 
