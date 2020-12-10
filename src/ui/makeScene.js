@@ -341,10 +341,9 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const dim = delaney.dim(ds);
 
-  const embedding =
-        options.skipRelaxation ? embeddings.barycentric : embeddings.relaxed;
+  const embedding = options.skipRelaxation ?
+        embeddings.barycentric : embeddings.relaxed;
 
-  const rawBasis = invariantBasis(embedding.gram);
   const basis = invariantBasis(embedding.gram);
   if (dim == 2) {
     basis[0].push(0);
@@ -362,40 +361,40 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
       cov, skel, embedding.positions, orbitReps, basis,
       subDLevel, tighten, edgeWidth, runJob, log
     );
-    const meshes = rawMeshes.map(
-      ({ pos, faces }) => geometries.geometry(pos, faces)
-    );
-    const faceLabelLists = rawMeshes.map(({ faceLabels }) => faceLabels);
+    const meshes = rawMeshes.map(m => geometries.geometry(m.pos, m.faces));
+    const faceLabelLists = rawMeshes.map(m => m.faceLabels);
 
-    embedding[key] = dim == 2 ?
-      { subMeshes: meshes, partLists: range(meshes.length).map(i => [i]) } :
-      geometries.splitMeshes(meshes, faceLabelLists);
+    if (dim == 2) {
+      const partLists = range(meshes.length).map(i => [i]);
+      embedding[key] = { subMeshes: meshes, partLists };
+    }
+    else
+      embedding[key] = geometries.splitMeshes(meshes, faceLabelLists);
   }
 
-  const { subMeshes, partLists } = embedding[key];
-
-  const scale = dim == 2 ? options.tileScale2d || 1.00 :
+  const scale = dim == 2 ?
+        options.tileScale2d || 1.00 :
         Math.min(0.999, options.tileScale || 0.85);
 
   const mappedTiles = mapTiles(tiles, basis, scale);
   const instances = makeTileInstances(
-    displayList, mappedTiles, partLists, basis
+    displayList, mappedTiles, embedding[key].partLists, basis
   );
 
-  const model = { meshes: subMeshes, instances };
+  const model = { meshes: embedding[key].subMeshes, instances };
 
-  yield log('Done making the tiling model.');
+  if (options.showUnitCell) {
+    const rawBasis = invariantBasis(embedding.gram);
+    const fromStd = opsQ.inverse(sgInfo.toStd);
+    const cellBasis = opsQ.identityMatrix(dim).map(
+      v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), rawBasis)
+    );
+    const origin = opsF.times(
+      opsQ.toJS(applyToPoint(fromStd, ops.vector(dim))), rawBasis
+    );
 
-  const fromStd = opsQ.inverse(sgInfo.toStd);
-  const cellBasis = opsQ.identityMatrix(dim).map(
-    v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), rawBasis)
-  );
-
-  const o = opsQ.vector(dim);
-  const origin = opsF.times(opsQ.toJS(applyToPoint(fromStd, o)), rawBasis);
-
-  if (options.showUnitCell)
     return addUnitCell(model, cellBasis, origin, 0.01, 0.01);
+  }
   else
     return model;
 });
