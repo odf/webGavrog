@@ -168,59 +168,57 @@ const updateStructure = (config, model) => csp.go(function*() {
 });
 
 
-const updateDisplayList = (config, model, selected, update) => csp.go(
-  function*() {
-    try {
-      const selection = [];
-      for (const { meshIndex, instanceIndex } of selected) {
-        const instances = model.scene.instances.filter(
-          inst => inst.meshIndex == meshIndex
-        );
-        selection.push(instances[instanceIndex]);
-      }
-
-      const displayList = update(model.data.displayList, selection);
-      const data = Object.assign({}, model.data, { displayList });
-
-      const scene = yield makeScene.makeScene(
-        data, model.options, callWorker, config.log
+const updateDisplayList = (
+  config, model, selected, update
+) => csp.go(function*() {
+  try {
+    const selection = [];
+    for (const { meshIndex, instanceIndex } of selected) {
+      const instances = model.scene.instances.filter(
+        inst => inst.meshIndex == meshIndex
       );
-
-      yield config.sendScene(scene, model.data.dim, false);
-
-      return Object.assign({}, model, { data, scene });
-    } catch (ex) {
-      console.error(ex);
-      yield config.log(`ERROR updating scene!!!`);
-      return model;
+      selection.push(instances[instanceIndex]);
     }
+
+    const displayList = update(model.data.displayList, selection);
+    const data = Object.assign({}, model.data, { displayList });
+
+    const scene = yield makeScene.makeScene(
+      data, model.options, callWorker, config.log
+    );
+
+    yield config.sendScene(scene, model.data.dim, false);
+
+    return Object.assign({}, model, { data, scene });
+  } catch (ex) {
+    console.error(ex);
+    yield config.log(`ERROR updating scene!!!`);
+    return model;
   }
-);
+});
 
 
-const freshDisplayList = (config, model, options) => csp.go(
-  function*() {
-    try {
-      const displayList = yield makeScene.makeDisplayList(
-        model.data, options, callWorker, config.log
-      );
+const freshDisplayList = (config, model, options) => csp.go(function*() {
+  try {
+    const displayList = yield makeScene.makeDisplayList(
+      model.data, options, callWorker, config.log
+    );
 
-      const data = Object.assign({}, model.data, { displayList });
-      const scene = yield makeScene.makeScene(
-        data, model.options, callWorker, config.log
-      );
+    const data = Object.assign({}, model.data, { displayList });
+    const scene = yield makeScene.makeScene(
+      data, model.options, callWorker, config.log
+    );
 
-      yield config.sendScene(scene, model.data.dim, false);
+    yield config.sendScene(scene, model.data.dim, false);
 
-      const newOptions = Object.assign({}, model.options, options);
-      return Object.assign({}, model, { data, scene, options: newOptions });
-    } catch (ex) {
-      console.error(ex);
-      yield config.log(`ERROR updating scene!!!`);
-      return model;
-    }
+    const newOptions = Object.assign({}, model.options, options);
+    return Object.assign({}, model, { data, scene, options: newOptions });
+  } catch (ex) {
+    console.error(ex);
+    yield config.log(`ERROR updating scene!!!`);
+    return model;
   }
-);
+});
 
 
 const newFile = (config, model, { file, data }) => csp.go(function*() {
