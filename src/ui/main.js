@@ -1,20 +1,17 @@
 import * as csp from 'plexus-csp';
 
 import * as pickler from '../common/pickler';
-import * as version from '../version';
 import * as derived from '../dsymbols/derived';
-import parseDSymbols from '../io/ds';
-
-import { structures } from './builtinStructures';
+import * as version from '../version';
 import * as displayList from './displayList';
 import * as makeScene from './makeScene';
 
-import { Elm } from '../elm/GuiMain';
-
-import { floatMatrices } from '../arithmetic/types';
-const ops = floatMatrices;
-
+import parseDSymbols from '../io/ds';
 import Worker from './sceneWorker';
+import { Elm } from '../elm/GuiMain';
+import { floatMatrices as opsF } from '../arithmetic/types';
+import { structures } from './builtinStructures';
+
 
 const create = () => {
   let   lastId    = 0;
@@ -341,7 +338,7 @@ const saveSceneOBJ = (config, model) => {
   for (let i = 0; i < instances.length; ++i) {
     const inst = instances[i];
     const basis = inst.transform.basis;
-    const shift = ops.plus(inst.transform.shift, inst.extraShift);
+    const shift = opsF.plus(inst.transform.shift, inst.extraShift);
     const mesh = meshes[inst.meshIndex];
 
     const colorIndex = model.options.colorByTranslations ?
@@ -357,12 +354,12 @@ const saveSceneOBJ = (config, model) => {
       lines.push(`usemtl ${inst.meshType}`);
 
     for (const v of mesh.vertices) {
-      const pos = ops.plus(ops.times(v.pos, basis), shift);
+      const pos = opsF.plus(opsF.times(v.pos, basis), shift);
       lines.push('v ' + pos.join(' '));
     }
 
     for (const v of mesh.vertices) {
-      const normal = ops.times(v.normal, basis);
+      const normal = opsF.times(v.normal, basis);
       lines.push('vn ' + normal.join(' '));
     }
 
