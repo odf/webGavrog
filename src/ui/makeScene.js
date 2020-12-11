@@ -49,8 +49,17 @@ const baseShifts = (dim, options) => dim == 3 ?
       );
 
 
-const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
+const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
   const asVec3 = v => [v[0], v[1], v[2] == null ? 0.1 : v[2]];
+
+  const dim = opsQ.dimension(rawBasis);
+  const fromStd = opsQ.inverse(toStd);
+  const cellBasis = opsQ.identityMatrix(dim).map(
+    v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), rawBasis)
+  );
+  const origin = opsF.times(
+    opsQ.toJS(applyToPoint(fromStd, opsQ.vector(dim))), rawBasis
+  );
 
   stickRadius += 0.001;
 
@@ -61,13 +70,12 @@ const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
   meshes.push(geometries.makeBall(ballRadius));
   meshes.push(geometries.makeStick(stickRadius, 48));
 
-  const dim = basis.length;
   const corners = dim == 3 ?
         cartesian([0, 1], [0, 1], [0, 1]) :
         cartesian([0, 1], [0, 1]);
 
   for (const coeffs of corners) {
-    const p = opsF.plus(origin, opsF.times(coeffs, basis));
+    const p = opsF.plus(origin, opsF.times(coeffs, cellBasis));
 
     instances.push({
       meshType: 'cellEdge',
@@ -79,7 +87,7 @@ const addUnitCell = (model, basis, origin, ballRadius, stickRadius) => {
 
   for (let i = 0; i < dim; ++i) {
     const [u, v, w] = [
-      basis[i % dim], basis[(i + 1) % dim], basis[(i + 2) % dim]
+      cellBasis[i % dim], cellBasis[(i + 1) % dim], cellBasis[(i + 2) % dim]
     ];
     const startPoints = dim == 3 ?
           [[0, 0, 0], v, w, opsF.plus(v, w)] :
@@ -237,19 +245,12 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
 
   console.log(`${Math.round(t())} msec to make the net geometry`);
 
-  if (options.showUnitCell) {
-    const fromStd = opsQ.inverse(sgInfo.toStd);
-    const cellBasis = opsQ.identityMatrix(graph.dim).map(
-      v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), basis)
-    );
-    const origin = opsF.times(
-      opsQ.toJS(applyToPoint(fromStd, opsQ.vector(graph.dim))), basis
-    );
+  const model = { meshes, instances };
 
-    return addUnitCell({ meshes, instances }, cellBasis, origin, 0.01, 0.01);
-  }
+  if (options.showUnitCell)
+    return addUnitCell(model, sgInfo.toStd, basis, 0.01, 0.01);
   else
-    return { meshes, instances };
+    return model;
 });
 
 
@@ -383,18 +384,10 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const model = { meshes: embedding[key].subMeshes, instances };
 
-  if (options.showUnitCell) {
-    const rawBasis = invariantBasis(embedding.gram);
-    const fromStd = opsQ.inverse(sgInfo.toStd);
-    const cellBasis = opsQ.identityMatrix(dim).map(
-      v => opsF.times(opsQ.toJS(opsQ.times(fromStd, v)), rawBasis)
+  if (options.showUnitCell)
+    return addUnitCell(
+      model, sgInfo.toStd, invariantBasis(embedding.gram), 0.01, 0.01
     );
-    const origin = opsF.times(
-      opsQ.toJS(applyToPoint(fromStd, ops.vector(dim))), rawBasis
-    );
-
-    return addUnitCell(model, cellBasis, origin, 0.01, 0.01);
-  }
   else
     return model;
 });
