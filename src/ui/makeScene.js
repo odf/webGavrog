@@ -438,17 +438,18 @@ const mapTiles = (tiles, basis, scale) => {
   const b1 = opsF.times(scale, basis);
   const b2 = opsF.times(1.0 - scale, basis);
 
-  return tiles.map(tile => {
-    const transform = {
-      basis: opsF.times(invBasis, opsF.times(tile.transform.basis, b1)),
-      shift: opsF.plus(
-        opsF.times(tile.transform.shift, b1),
-        opsF.times(opsQ.toJS(tile.center), b2)
-      )
-    };
+  const result = [];
 
-    return Object.assign({}, tile, { transform });
-  });
+  for (const tile of tiles) {
+    const basis = opsF.times(invBasis, opsF.times(tile.transform.basis, b1));
+    const shift = opsF.plus(
+      opsF.times(tile.transform.shift, b1),
+      opsF.times(opsQ.toJS(tile.center), b2)
+    );
+    result.push(Object.assign({}, tile, { transform: { basis, shift } }));
+  }
+
+  return result;
 };
 
 
