@@ -245,12 +245,7 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
 
   console.log(`${Math.round(t())} msec to make the net geometry`);
 
-  const model = { meshes, instances };
-
-  if (options.showUnitCell)
-    return addUnitCell(model, sgInfo.toStd, basis, 0.01, 0.01);
-  else
-    return model;
+  return { meshes, instances };
 });
 
 
@@ -382,14 +377,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     displayList, mappedTiles, embedding[key].partLists, basis
   );
 
-  const model = { meshes: embedding[key].subMeshes, instances };
-
-  if (options.showUnitCell)
-    return addUnitCell(
-      model, sgInfo.toStd, invariantBasis(embedding.gram), 0.01, 0.01
-    );
-  else
-    return model;
+  return { meshes: embedding[key].subMeshes, instances };
 });
 
 
@@ -555,7 +543,15 @@ export const makeScene = (data, options, runJob, log) => csp.go(
     if (builder == null)
       throw new Error(`rendering not implemented for type ${type}`);
 
-    const model = yield builder(data, options, runJob, log);
+    let model = yield builder(data, options, runJob, log);
+
+    if (options.showUnitCell) {
+      const embedding = options.skipRelaxation ?
+            data.embeddings.barycentric :
+            data.embeddings.relaxed;
+      const basis = invariantBasis(embedding.gram);
+      model = addUnitCell(model, data.sgInfo.toStd, basis, 0.01, 0.01);
+    }
 
     yield log('');
     return model;
