@@ -168,37 +168,20 @@ const updateStructure = (config, model) => csp.go(function*() {
 });
 
 
-const convertSelection = (scene, selected) => {
-  const inSelection = scene.meshes.map(_ => ({}));
-  for (const { meshIndex, instanceIndex } of selected)
-    inSelection[meshIndex][instanceIndex] = true;
-
-  const indexedInstances = scene.instances.map((inst, i) => [inst, i]);
-  const globalIndices = [];
-
-  for (let i = 0; i < scene.meshes.length; ++i) {
-    const instancesForMesh = indexedInstances.filter(
-      ([{ meshIndex }, k]) => meshIndex == i);
-
-    for (let j = 0; j < instancesForMesh.length; ++j) {
-      if (inSelection[i][j])
-        globalIndices.push(instancesForMesh[j][1]);
-    }
-  }
-
-  return globalIndices;
-};
-
-
 const updateDisplayList = (config, model, selected, update) => csp.go(
   function*() {
     try {
-      const currentDisplayList = model.data.displayList.slice();
-      const selection = convertSelection(model.scene, selected)
-            .map(k => model.scene.instances[k])
-      const displayList = update(currentDisplayList, selection);
+      const selection = [];
+      for (const { meshIndex, instanceIndex } of selected) {
+        const instances = model.scene.instances.filter(
+          inst => inst.meshIndex == meshIndex
+        );
+        selection.push(instances[instanceIndex]);
+      }
 
+      const displayList = update(model.data.displayList, selection);
       const data = Object.assign({}, model.data, { displayList });
+
       const scene = yield makeScene.makeScene(
         data, model.options, callWorker, config.log
       );
