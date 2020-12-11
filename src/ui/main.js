@@ -110,7 +110,7 @@ const title = model => {
 };
 
 
-const toStructure = (config, model, i) => csp.go(function*() {
+const gotoStructure = (config, model, i) => csp.go(function*() {
   const structures = model.structures;
   const n = structures.length;
   const index = i < 0 ? n + i % n : i % n;
@@ -258,7 +258,7 @@ const newFile = (config, model, { file, data }) => csp.go(function*() {
           Object.assign({}, model, { filename, structures, index: null });
 
     yield config.sendTitle(title(newModel));
-    return yield toStructure(config, newModel, 0);
+    return yield gotoStructure(config, newModel, 0);
   } catch (ex) {
     console.error(ex);
     yield config.log(`ERROR loading from file "${file.name}"!!!`);
@@ -395,7 +395,7 @@ const render = domNode => {
   const openFile = () => config.loadFile(
     ({ file, data }) => updateModel(newFile(config, model, { file, data })));
 
-  const setStructure = i => updateModel(toStructure(config, model, i));
+  const setStructure = i => updateModel(gotoStructure(config, model, i));
 
   const action = {
     ['Open...']: openFile,
