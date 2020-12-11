@@ -13,33 +13,26 @@ import { floatMatrices as opsF } from '../arithmetic/types';
 import { structures } from './builtinStructures';
 
 
-const create = () => {
-  let   lastId    = 0;
+const createWorker = () => {
+  let lastId = 0;
   const callbacks = {};
-  const worker    = new Worker();
+  const worker = new Worker();
 
   worker.onmessage = event => {
     const { id, output, ok } = pickler.unpickle(event.data);
-    const cb = callbacks[id];
 
-    if (cb) {
-      if (ok)
-        cb(null, output);
-      else
-        cb(output);
-    }
-
+    ok ? callbacks[id](null, output) : callbacks[id](output);
     delete callbacks[id];
   };
 
   return (input, cb) => {
     const id = ++lastId;
-    callbacks[id] = cb || null;
+    callbacks[id] = cb;
     worker.postMessage(pickler.pickle({ id, input }));
   };
 };
 
-const callWorker = csp.nbind(create(), null);
+const callWorker = csp.nbind(createWorker(), null);
 
 
 const fileLoader = (accept, multiple=false, binary=false) => {
