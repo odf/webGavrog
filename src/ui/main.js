@@ -35,27 +35,16 @@ const createWorker = () => {
 const callWorker = csp.nbind(createWorker(), null);
 
 
-const structureName = model => {
-  const s = model.structures[model.index];
-
-  let ext = '';
-  if (s.type == 'tiling') {
-    if (model.options.tilingModifier == 'dual')
-      ext = '-d';
-    else if (model.options.tilingModifier == 't-analog')
-      ext = '-t';
-  }
-
-  return (s.name || 'unnamed') + ext;
-};
-
-
 const title = model => {
   if (model.structures && model.index != null) {
+    const s = model.structures[model.index];
+    const mod = (s.type == 'tiling') && model.options.tilingModifier;
+    const ext = mod == 'dual' ? '-d' : mod == 't-analog' ? '-t' : '';
+    const name = (s.name || 'unnamed') + ext;
+
     const fname = model.filename;
     const index = model.index + 1;
     const len = model.structures.length;
-    const name = structureName(model);
     const collection = fname ? `"${fname}"` : 'builtin';
     const groupName = model.data.sgInfo.groupName;
     return `#${index}/${len} - ${name} (${collection}) ${groupName}`;
