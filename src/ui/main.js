@@ -96,14 +96,25 @@ const gotoStructure = (config, model, i) => csp.go(function*() {
 });
 
 
-const updateStructure = (config, model) => csp.go(function*() {
+const updateStructure = (config, model, options) => csp.go(function*() {
   try {
-    const scene = yield makeScene.makeScene(
-      model.data, model.options, callWorker, config.log
+    const changedMod = (
+      model.data.type == 'tiling' &&
+        options.tilingModifier &&
+        options.tilingModifier != model.options.tilingModifier
     );
+    options = Object.assign({}, model.options, options);
+    model = Object.assign({}, model, { options });
 
-    yield config.sendScene(scene, model.data.dim, false);
-    return Object.assign({}, model, { scene } );
+    if (changedMod)
+      return yield gotoStructure(config, model, model.index);
+    else {
+      const scene = yield makeScene.makeScene(
+        model.data, model.options, callWorker, config.log
+      );
+      yield config.sendScene(scene, model.data.dim, false);
+      return Object.assign({}, model, { scene } );
+    }
   } catch (ex) {
     console.error(ex);
     yield config.log(`ERROR updating structure!!!`);
@@ -191,7 +202,13 @@ const newFile = (config, model, { file, data }) => csp.go(function*() {
 });
 
 
-const dispatcher = (config, model, updateModel, setStructure) => {
+const dispatcher = (config, model) => {
+  const updateModel = deferred => csp.go(function*() {
+    Object.assign(model, yield deferred);
+  });
+
+  const setStructure = i => updateModel(gotoStructure(config, model, i));
+
   const action = {
     ['Open...']: () => config.loadFile(
       ({ file, data }) => updateModel(newFile(config, model, { file, data }))
@@ -225,7 +242,11 @@ const dispatcher = (config, model, updateModel, setStructure) => {
     )),
     ['Fresh Display List']: (_, options) => updateModel(freshDisplayList(
       config, model, options
-    ))
+    )),
+    ['Jump']: (s, o, number) => setStructure(number),
+    ['Set Options']: (_, options) => updateModel(updateStructure(
+      config, model, options
+    )),
   };
 
   return (text, ...args) => (action[text] || (() => {}))(...args);
@@ -249,49 +270,30 @@ const render = domNode => {
   };
 
   const model = { options: {}, structures };
-
-  const updateModel = deferred => csp.go(function*() {
-    Object.assign(model, yield deferred);
-  });
-
-  const setStructure = i => updateModel(gotoStructure(config, model, i));
-  const dispatch = dispatcher(config, model, updateModel, setStructure);
+  const dispatch = dispatcher(config, model);
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
-    if (mode == "jump") {
+    if (mode == "action")
+      dispatch(text, selected, options);
+    else if (mode == "options")
+      dispatch('Set Options', selected, options);
+    else if (mode == "jump") {
       const number = parseInt(text);
       if (!Number.isNaN(number))
-        setStructure(number - (number > 0));
+        dispatch('Jump', selected, options, number - (number > 0));
     }
     else if (mode == "search" && text) {
       const pattern = new RegExp(`^${text}$`, 'i');
       const i = model.structures.findIndex(s => !!pattern.exec(s.name));
 
       if (i >= 0)
-        setStructure(i);
+        dispatch('Jump', selected, options, i);
       else
         config.log(`Name "${text}" not found.`);
     }
-    else if (mode == "action")
-      dispatch(text, selected, options);
-    else if (mode == "options") {
-      const changedMod = (
-        model.data.type == 'tiling' &&
-          options.tilingModifier &&
-          options.tilingModifier != model.options.tilingModifier
-      );
-
-      for (const key in options)
-        model.options[key] = options[key];
-
-      if (changedMod)
-        setStructure(model.index);
-      else
-        updateModel(updateStructure(config, model));
-    }
   });
 
-  setStructure(0);
+  dispatch('First');
 };
 
 
