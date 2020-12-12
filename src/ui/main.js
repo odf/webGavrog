@@ -209,47 +209,76 @@ const dispatcher = (config, model) => {
 
   const setStructure = i => updateModel(gotoStructure(config, model, i));
 
-  const action = {
-    ['Open...']: () => config.loadFile(
-      ({ file, data }) => updateModel(newFile(config, model, { file, data }))
-    ),
-    ['Save Structure...']: () => fileIO.saveStructure(config, model),
-    ['Save Screenshot...']: (selected, options) =>
-      fileIO.saveScreenshot(config, options),
-    ['Save Scene As OBJ...']: () => fileIO.saveSceneOBJ(config, model),
-    ['First']: () => setStructure(0),
-    ['Prev']: () => setStructure(model.index - 1),
-    ['Next']: () => setStructure(model.index + 1),
-    ['Last']: () => setStructure(-1),
-    ['Add Tile(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, displayList.addTiles
-    )),
-    ['Add Corona(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, displayList.addCoronas
-    )),
-    ['Restore Tile(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, displayList.restoreTiles
-    )),
-    ['Remove Tile(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, displayList.removeTiles
-    )),
-    ['Remove Tile Class(es)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected,
-      displayList.removeTileClasses(model.data.tiles || [])
-    )),
-    ['Remove Element(s)']: (selected) => updateModel(updateDisplayList(
-      config, model, selected, displayList.removeElements
-    )),
-    ['Fresh Display List']: (_, options) => updateModel(freshDisplayList(
-      config, model, options
-    )),
-    ['Jump']: (s, o, number) => setStructure(number),
-    ['Set Options']: (_, options) => updateModel(updateStructure(
-      config, model, options
-    )),
+  return (action, selected, options, arg) => {
+    switch (action) {
+    case 'Open...':
+      config.loadFile(
+        ({ file, data }) => updateModel(newFile(config, model, { file, data }))
+      );
+      break;
+    case 'Save Structure...':
+      fileIO.saveStructure(config, model);
+      break;
+    case 'Save Screenshot...':
+      fileIO.saveScreenshot(config, options);
+      break;
+    case 'Save Scene As OBJ...':
+      fileIO.saveSceneOBJ(config, model);
+      break;
+    case 'First':
+      setStructure(0);
+      break;
+    case 'Prev':
+      setStructure(model.index - 1);
+      break;
+    case 'Next':
+      setStructure(model.index + 1);
+      break;
+    case 'Last':
+      setStructure(-1);
+      break;
+    case 'Add Tile(s)':
+      updateModel(updateDisplayList(
+        config, model, selected, displayList.addTiles
+      ));
+      break;
+    case 'Add Corona(s)':
+      updateModel(updateDisplayList(
+        config, model, selected, displayList.addCoronas
+      ));
+      break;
+    case 'Restore Tile(s)':
+      updateModel(updateDisplayList(
+        config, model, selected, displayList.restoreTiles
+      ));
+      break;
+    case 'Remove Tile(s)':
+      updateModel(updateDisplayList(
+        config, model, selected, displayList.removeTiles
+      ));
+      break;
+    case 'Remove Tile Class(es)':
+      updateModel(updateDisplayList(
+        config, model, selected,
+        displayList.removeTileClasses(model.data.tiles || [])
+      ));
+      break;
+    case 'Remove Element(s)':
+      updateModel(updateDisplayList(
+        config, model, selected, displayList.removeElements
+      ));
+      break;
+    case 'Fresh Display List':
+      updateModel(freshDisplayList(config, model, options));
+      break;
+    case 'Jump':
+      setStructure(arg);
+      break;
+    case 'Set Options':
+      updateModel(updateStructure(config, model, options));
+      break;
+    }
   };
-
-  return (text, ...args) => (action[text] || (() => {}))(...args);
 };
 
 
