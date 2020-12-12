@@ -191,36 +191,11 @@ const newFile = (config, model, { file, data }) => csp.go(function*() {
 });
 
 
-const render = domNode => {
-  const model = { options: {}, structures };
-
-  const app = Elm.GuiMain.init({
-    node: domNode,
-    flags: {
-      revision: version.gitRev,
-      timestamp: version.gitDate
-    }});
-
-  const config = {
-    loadFile: fileIO.fileLoader(),
-    saveFile: fileIO.fileSaver(),
-    log: text => app.ports.fromJS.send({ log: text }),
-    sendTitle: text => app.ports.fromJS.send({ title: text }),
-    sendScene: (scene, dim, reset) =>
-      app.ports.fromJS.send({ scene, dim, reset })
-  };
-
-  const updateModel = deferred => csp.go(function*() {
-    Object.assign(model, yield deferred);
-  });
-
-  const openFile = () => config.loadFile(
-    ({ file, data }) => updateModel(newFile(config, model, { file, data })));
-
-  const setStructure = i => updateModel(gotoStructure(config, model, i));
-
+const dispatcher = (config, model, updateModel, setStructure) => {
   const action = {
-    ['Open...']: openFile,
+    ['Open...']: () => config.loadFile(
+      ({ file, data }) => updateModel(newFile(config, model, { file, data }))
+    ),
     ['Save Structure...']: () => fileIO.saveStructure(config, model),
     ['Save Screenshot...']: (selected, options) =>
       fileIO.saveScreenshot(config, options),
@@ -253,6 +228,35 @@ const render = domNode => {
     ))
   };
 
+  return (text, ...args) => (action[text] || (() => {}))(...args);
+};
+
+
+const render = domNode => {
+  const app = Elm.GuiMain.init({
+    node: domNode,
+    flags: { revision: version.gitRev, timestamp: version.gitDate }
+  });
+
+  const config = {
+    loadFile: fileIO.fileLoader(),
+    saveFile: fileIO.fileSaver(),
+    log: text => app.ports.fromJS.send({ log: text }),
+    sendTitle: text => app.ports.fromJS.send({ title: text }),
+    sendScene: (scene, dim, reset) => {
+      app.ports.fromJS.send({ scene, dim, reset })
+    }
+  };
+
+  const model = { options: {}, structures };
+
+  const updateModel = deferred => csp.go(function*() {
+    Object.assign(model, yield deferred);
+  });
+
+  const setStructure = i => updateModel(gotoStructure(config, model, i));
+  const dispatch = dispatcher(config, model, updateModel, setStructure);
+
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
     if (mode == "jump") {
       const number = parseInt(text);
@@ -268,10 +272,8 @@ const render = domNode => {
       else
         config.log(`Name "${text}" not found.`);
     }
-    else if (mode == "action") {
-      if (action[text])
-        action[text](selected, options);
-    }
+    else if (mode == "action")
+      dispatch(text, selected, options);
     else if (mode == "options") {
       const changedMod = (
         model.data.type == 'tiling' &&
