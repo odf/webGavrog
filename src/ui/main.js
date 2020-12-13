@@ -209,12 +209,14 @@ const dispatcher = (config, model) => {
 
   const setStructure = i => updateModel(gotoStructure(config, model, i));
 
+  const modifyScene = (selected, fn) => updateModel(updateDisplayList(
+    config, model, selected, fn
+  ));
+
   return (action, selected, options, arg) => {
     switch (action) {
     case 'Open...':
-      config.loadFile(
-        ({ file, data }) => updateModel(newFile(config, model, { file, data }))
-      );
+      config.loadFile(item => updateModel(newFile(config, model, item)));
       break;
     case 'Save Structure...':
       fileIO.saveStructure(config, model);
@@ -238,35 +240,23 @@ const dispatcher = (config, model) => {
       setStructure(-1);
       break;
     case 'Add Tile(s)':
-      updateModel(updateDisplayList(
-        config, model, selected, displayList.addTiles
-      ));
+      modifyScene(selected, displayList.addTiles);
       break;
     case 'Add Corona(s)':
-      updateModel(updateDisplayList(
-        config, model, selected, displayList.addCoronas
-      ));
+      modifyScene(selected, displayList.addCoronas);
       break;
     case 'Restore Tile(s)':
-      updateModel(updateDisplayList(
-        config, model, selected, displayList.restoreTiles
-      ));
+      modifyScene(selected, displayList.restoreTiles);
       break;
     case 'Remove Tile(s)':
-      updateModel(updateDisplayList(
-        config, model, selected, displayList.removeTiles
-      ));
+      modifyScene(selected, displayList.removeTiles);
       break;
     case 'Remove Tile Class(es)':
-      updateModel(updateDisplayList(
-        config, model, selected,
-        displayList.removeTileClasses(model.data.tiles || [])
-      ));
+      const tiles = model.data.tiles || [];
+      modifyScene(selected, displayList.removeTileClasses(tiles));
       break;
     case 'Remove Element(s)':
-      updateModel(updateDisplayList(
-        config, model, selected, displayList.removeElements
-      ));
+      modifyScene(selected, displayList.removeElements);
       break;
     case 'Fresh Display List':
       updateModel(freshDisplayList(config, model, options));
