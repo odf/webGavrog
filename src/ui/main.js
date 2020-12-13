@@ -292,23 +292,29 @@ const render = domNode => {
   const dispatch = dispatcher(config, model);
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
-    if (mode == "action")
+    switch (mode) {
+    case 'action':
       dispatch(text, selected, options);
-    else if (mode == "options")
+      break;
+    case 'options':
       dispatch('Set Options', selected, options);
-    else if (mode == "jump") {
+      break;
+    case 'jump':
       const number = parseInt(text);
       if (!Number.isNaN(number))
         dispatch('Jump', selected, options, number - (number > 0));
-    }
-    else if (mode == "search" && text) {
-      const pattern = new RegExp(`^${text}$`, 'i');
-      const i = model.structures.findIndex(s => !!pattern.exec(s.name));
+      break;
+    case 'search':
+      if (text) {
+        const pattern = new RegExp(`^${text}$`, 'i');
+        const i = model.structures.findIndex(s => !!pattern.exec(s.name));
 
-      if (i >= 0)
-        dispatch('Jump', selected, options, i);
-      else
-        config.log(`Name "${text}" not found.`);
+        if (i >= 0)
+          dispatch('Jump', selected, options, i);
+        else
+          config.log(`Name "${text}" not found.`);
+      }
+      break;
     }
   });
 
