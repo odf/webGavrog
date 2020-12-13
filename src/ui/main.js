@@ -123,9 +123,7 @@ const updateStructure = (config, model, options) => csp.go(function*() {
 });
 
 
-const updateDisplayList = (
-  config, model, selected, update
-) => csp.go(function*() {
+const tweakScene = (config, model, selected, tweakFn) => csp.go(function*() {
   try {
     const selection = [];
     for (const { meshIndex, instanceIndex } of selected) {
@@ -135,7 +133,7 @@ const updateDisplayList = (
       selection.push(instances[instanceIndex]);
     }
 
-    const displayList = update(model.data.displayList, selection);
+    const displayList = tweakFn(model.data.displayList, selection);
     const data = Object.assign({}, model.data, { displayList });
 
     const scene = yield makeScene.makeScene(
@@ -203,19 +201,13 @@ const newFile = (config, model, { file, data }) => csp.go(function*() {
 
 
 const dispatch = (config, model, action, selected, options, arg) => {
-  const updateModel = deferred => csp.go(function*() {
-    Object.assign(model, yield deferred);
-  });
-
-  const setStructure = i => updateModel(gotoStructure(config, model, i));
-
-  const modifyScene = (selected, fn) => updateModel(updateDisplayList(
-    config, model, selected, fn
-  ));
+  const update = m => csp.go(function*() { Object.assign(model, yield m); });
+  const setStructure = i => update(gotoStructure(config, model, i));
+  const modifyScene = fn => update(tweakScene(config, model, selected, fn));
 
   switch (action) {
   case 'Open...':
-    config.loadFile(item => updateModel(newFile(config, model, item)));
+    config.loadFile(item => update(newFile(config, model, item)));
     break;
   case 'Save Structure...':
     fileIO.saveStructure(config, model);
@@ -239,32 +231,31 @@ const dispatch = (config, model, action, selected, options, arg) => {
     setStructure(-1);
     break;
   case 'Add Tile(s)':
-    modifyScene(selected, displayList.addTiles);
+    modifyScene(displayList.addTiles);
     break;
   case 'Add Corona(s)':
-    modifyScene(selected, displayList.addCoronas);
+    modifyScene(displayList.addCoronas);
     break;
   case 'Restore Tile(s)':
-    modifyScene(selected, displayList.restoreTiles);
+    modifyScene(displayList.restoreTiles);
     break;
   case 'Remove Tile(s)':
-    modifyScene(selected, displayList.removeTiles);
+    modifyScene(displayList.removeTiles);
     break;
   case 'Remove Tile Class(es)':
-    const tiles = model.data.tiles || [];
-    modifyScene(selected, displayList.removeTileClasses(tiles));
+    modifyScene(displayList.removeTileClasses(model.data.tiles || []));
     break;
   case 'Remove Element(s)':
-    modifyScene(selected, displayList.removeElements);
+    modifyScene(displayList.removeElements);
     break;
   case 'Fresh Display List':
-    updateModel(freshDisplayList(config, model, options));
+    update(freshDisplayList(config, model, options));
     break;
   case 'Jump':
     setStructure(arg);
     break;
   case 'Set Options':
-    updateModel(updateStructure(config, model, options));
+    update(updateStructure(config, model, options));
     break;
   }
 };
