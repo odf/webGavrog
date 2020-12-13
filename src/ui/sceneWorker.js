@@ -1,23 +1,50 @@
 import '@babel/polyfill';
 
-import * as pickler  from '../common/pickler';
-import * as delaney  from '../dsymbols/delaney';
-import * as tilings  from '../dsymbols/tilings';
+import * as pickler from '../common/pickler';
+import * as delaney from '../dsymbols/delaney';
+import * as tilings from '../dsymbols/tilings';
+import * as cgd from '../io/cgd';
 import * as periodic from '../pgraphs/periodic';
-import * as cgd      from '../io/cgd';
-import * as surface  from './surface';
+import * as surface from './surface';
 
-import embed         from '../pgraphs/embedding';
+import { coordinateChangesF as opsF } from '../geometry/types';
+
+import embed from '../pgraphs/embedding';
 
 
 const handlers = {
-  processSolids(solidsIn) {
-    const scale = 2.0 * surface.averageRadius(solidsIn);
+  embedding(graph) {
+    return embed(graph);
+  },
 
-    return solidsIn.map(({
-      pos, faces, isFixed, subDLevel, tighten, edgeWidth
-    }) => {
-      let t = { pos, faces, isFixed };
+  dsCover(ds) {
+    return tilings.makeCover(ds);
+  },
+
+  skeleton(cov) {
+    return tilings.skeleton(cov);
+  },
+
+  tilesByTranslations({ ds, cov, skel }) {
+    return tilings.tilesByTranslations(ds, cov, skel);
+  },
+
+  makeTileMeshes({
+    cov, skel, pos, seeds, basis, subDLevel, tighten, edgeWidth
+  }) {
+    const templates = [];
+    for (const surf of tilings.tileSurfaces(cov, skel, pos, seeds))
+      templates.push({
+        pos: surf.pos.map(v => opsF.times(v, basis)),
+        faces: surf.faces,
+        isFixed: surf.pos.map(_ => true)
+      });
+
+    const scale = 2.0 * surface.averageRadius(templates);
+
+    const result = [];
+    for (const template of templates) {
+      let t = template;
 
       t = surface.withFlattenedCenterFaces(t);
       for (let i = 1; i < subDLevel; ++i)
@@ -33,28 +60,10 @@ const handlers = {
       if (subDLevel > 0)
         t = surface.subD(t);
 
-      return t;
-    });
-  },
+      result.push(t);
+    }
 
-  dsCover(ds) {
-    return tilings.makeCover(ds);
-  },
-
-  embedding(graph) {
-    return embed(graph);
-  },
-
-  skeleton(cov) {
-    return tilings.skeleton(cov);
-  },
-
-  tilesByTranslations({ ds, cov, skel }) {
-    return tilings.tilesByTranslations(ds, cov, skel);
-  },
-
-  tileSurfaces({ cov, skel, pos, seeds }) {
-    return tilings.tileSurfaces(cov, skel, pos, seeds);
+    return result;
   },
 
   parseCGD(data) {

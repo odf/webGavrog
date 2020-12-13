@@ -275,6 +275,13 @@ const preprocessTiling = (
   const skel = yield runJob({ cmd: 'skeleton', val: cov });
   console.log(`${Math.round(t())} msec to extract the skeleton`);
 
+  yield log('Listing translation orbits of tiles...');
+  const { orbitReps, centers, tiles: rawTiles } = yield runJob({
+    cmd: 'tilesByTranslations',
+    val: { ds, cov, skel }
+  });
+  console.log(`${Math.round(t())} msec to list the tile orbits`);
+
   yield log('Computing symmetries...');
   const syms = tilings.affineSymmetries(ds, cov, skel);
   console.log(`${Math.round(t())} msec to compute symmetries`);
@@ -282,13 +289,6 @@ const preprocessTiling = (
   yield log('Identifying the spacegroup...');
   const sgInfo = identifySpacegroup(syms);
   console.log(`${Math.round(t())} msec to identify the spacegroup`);
-
-  yield log('Listing translation orbits of tiles...');
-  const { orbitReps, centers, tiles: rawTiles } = yield runJob({
-    cmd: 'tilesByTranslations',
-    val: { ds, cov, skel }
-  });
-  console.log(`${Math.round(t())} msec to list the tile orbits`);
 
   const tiles = rawTiles.map(tile => convertTile(tile, centers));
 
@@ -298,6 +298,28 @@ const preprocessTiling = (
 
   return { type, dim, ds, cov, skel, sgInfo, tiles, orbitReps, embeddings };
 });
+
+
+const convertTile = (tile, centers) => {
+  const basis = opsQ.transposed(opsQ.linearPart(tile.symmetry));
+  const shift = opsQ.shiftPart(tile.symmetry);
+  const center = opsQ.plus(opsQ.times(centers[tile.classIndex], basis), shift);
+
+  if (shift.length == 2) {
+    for (const v of basis)
+      v.push(0);
+    basis.push([0, 0, 1]);
+    shift.push(0);
+    center.push(0);
+  }
+
+  const transform = { basis: opsQ.toJS(basis), shift: opsQ.toJS(shift) };
+  const classIndex = tile.classIndex;
+  const itemType = 'tile';
+  const neighbors = tile.neighbors.map(n => Object.assign({}, n, { itemType }));
+
+  return { classIndex, transform, center, neighbors };
+};
 
 
 const makeTileDisplayList = ({ tiles, dim, sgInfo: { toStd } }, options) => {
@@ -353,10 +375,13 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   const key = `subd-${subDLevel} tighten-${tighten} edgeWidth-${edgeWidth}`;
 
   if (embedding[key] == null) {
-    const rawMeshes = yield makeMeshes(
-      cov, skel, embedding.positions, orbitReps, basis,
-      subDLevel, tighten, edgeWidth, runJob, log
-    );
+    const pos = embedding.positions;
+    const seeds = orbitReps;
+    const rawMeshes = yield runJob({
+      cmd: 'makeTileMeshes',
+      val: { cov, skel, pos, seeds, basis, subDLevel, tighten, edgeWidth }
+    });
+
     const meshes = rawMeshes.map(m => geometries.geometry(m.pos, m.faces));
     const faceLabelLists = rawMeshes.map(m => m.faceLabels);
 
@@ -378,58 +403,6 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   );
 
   return { meshes: embedding[key].subMeshes, instances };
-});
-
-
-const convertTile = (tile, centers) => {
-  const basis = opsQ.transposed(opsQ.linearPart(tile.symmetry));
-  const shift = opsQ.shiftPart(tile.symmetry);
-  const center = opsQ.plus(opsQ.times(centers[tile.classIndex], basis), shift);
-
-  if (shift.length == 2) {
-    for (const v of basis)
-      v.push(0);
-    basis.push([0, 0, 1]);
-    shift.push(0);
-    center.push(0);
-  }
-
-  const transform = { basis: opsQ.toJS(basis), shift: opsQ.toJS(shift) };
-  const classIndex = tile.classIndex;
-  const itemType = 'tile';
-  const neighbors = tile.neighbors.map(n => Object.assign({}, n, { itemType }));
-
-  return { classIndex, transform, center, neighbors };
-};
-
-
-const makeMeshes = (
-  cov, skel, pos, seeds, basis, subDLevel, tighten, edgeWidth, runJob, log
-) => csp.go(function*() {
-  const t = timer();
-
-  yield log('Making the base tile surfaces...');
-  const templates = yield runJob({
-    cmd: 'tileSurfaces',
-    val: { cov, skel, pos, seeds }
-  });
-  console.log(`${Math.round(t())} msec to make the base surfaces`);
-
-  yield log('Refining the tile surfaces...');
-  const rawMeshes = yield runJob({
-    cmd: 'processSolids',
-    val: templates.map(({ pos, faces }) => ({
-      pos: pos.map(v => opsF.times(v, basis)),
-      faces,
-      isFixed: pos.map(_ => true),
-      subDLevel,
-      tighten,
-      edgeWidth
-    }))
-  });
-  console.log(`${Math.round(t())} msec to refine the surfaces`);
-
-  return rawMeshes;
 });
 
 
