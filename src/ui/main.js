@@ -202,7 +202,7 @@ const newFile = (config, model, { file, data }) => csp.go(function*() {
 });
 
 
-const dispatcher = (config, model) => {
+const dispatch = (config, model, action, selected, options, arg) => {
   const updateModel = deferred => csp.go(function*() {
     Object.assign(model, yield deferred);
   });
@@ -213,62 +213,60 @@ const dispatcher = (config, model) => {
     config, model, selected, fn
   ));
 
-  return (action, selected, options, arg) => {
-    switch (action) {
-    case 'Open...':
-      config.loadFile(item => updateModel(newFile(config, model, item)));
-      break;
-    case 'Save Structure...':
-      fileIO.saveStructure(config, model);
-      break;
-    case 'Save Screenshot...':
-      fileIO.saveScreenshot(config, options);
-      break;
-    case 'Save Scene As OBJ...':
-      fileIO.saveSceneOBJ(config, model);
-      break;
-    case 'First':
-      setStructure(0);
-      break;
-    case 'Prev':
-      setStructure(model.index - 1);
-      break;
-    case 'Next':
-      setStructure(model.index + 1);
-      break;
-    case 'Last':
-      setStructure(-1);
-      break;
-    case 'Add Tile(s)':
-      modifyScene(selected, displayList.addTiles);
-      break;
-    case 'Add Corona(s)':
-      modifyScene(selected, displayList.addCoronas);
-      break;
-    case 'Restore Tile(s)':
-      modifyScene(selected, displayList.restoreTiles);
-      break;
-    case 'Remove Tile(s)':
-      modifyScene(selected, displayList.removeTiles);
-      break;
-    case 'Remove Tile Class(es)':
-      const tiles = model.data.tiles || [];
-      modifyScene(selected, displayList.removeTileClasses(tiles));
-      break;
-    case 'Remove Element(s)':
-      modifyScene(selected, displayList.removeElements);
-      break;
-    case 'Fresh Display List':
-      updateModel(freshDisplayList(config, model, options));
-      break;
-    case 'Jump':
-      setStructure(arg);
-      break;
-    case 'Set Options':
-      updateModel(updateStructure(config, model, options));
-      break;
-    }
-  };
+  switch (action) {
+  case 'Open...':
+    config.loadFile(item => updateModel(newFile(config, model, item)));
+    break;
+  case 'Save Structure...':
+    fileIO.saveStructure(config, model);
+    break;
+  case 'Save Screenshot...':
+    fileIO.saveScreenshot(config, options);
+    break;
+  case 'Save Scene As OBJ...':
+    fileIO.saveSceneOBJ(config, model);
+    break;
+  case 'First':
+    setStructure(0);
+    break;
+  case 'Prev':
+    setStructure(model.index - 1);
+    break;
+  case 'Next':
+    setStructure(model.index + 1);
+    break;
+  case 'Last':
+    setStructure(-1);
+    break;
+  case 'Add Tile(s)':
+    modifyScene(selected, displayList.addTiles);
+    break;
+  case 'Add Corona(s)':
+    modifyScene(selected, displayList.addCoronas);
+    break;
+  case 'Restore Tile(s)':
+    modifyScene(selected, displayList.restoreTiles);
+    break;
+  case 'Remove Tile(s)':
+    modifyScene(selected, displayList.removeTiles);
+    break;
+  case 'Remove Tile Class(es)':
+    const tiles = model.data.tiles || [];
+    modifyScene(selected, displayList.removeTileClasses(tiles));
+    break;
+  case 'Remove Element(s)':
+    modifyScene(selected, displayList.removeElements);
+    break;
+  case 'Fresh Display List':
+    updateModel(freshDisplayList(config, model, options));
+    break;
+  case 'Jump':
+    setStructure(arg);
+    break;
+  case 'Set Options':
+    updateModel(updateStructure(config, model, options));
+    break;
+  }
 };
 
 
@@ -289,20 +287,21 @@ const render = domNode => {
   };
 
   const model = { options: {}, structures };
-  const dispatch = dispatcher(config, model);
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
     switch (mode) {
     case 'action':
-      dispatch(text, selected, options);
+      dispatch(config, model, text, selected, options);
       break;
     case 'options':
-      dispatch('Set Options', selected, options);
+      dispatch(config, model, 'Set Options', selected, options);
       break;
     case 'jump':
       const number = parseInt(text);
-      if (!Number.isNaN(number))
-        dispatch('Jump', selected, options, number - (number > 0));
+      if (!Number.isNaN(number)) {
+        const i = number - (number > 0);
+        dispatch(config, model, 'Jump', selected, options, i);
+      }
       break;
     case 'search':
       if (text) {
@@ -310,7 +309,7 @@ const render = domNode => {
         const i = model.structures.findIndex(s => !!pattern.exec(s.name));
 
         if (i >= 0)
-          dispatch('Jump', selected, options, i);
+          dispatch(config, model, 'Jump', selected, options, i);
         else
           config.log(`Name "${text}" not found.`);
       }
@@ -318,7 +317,7 @@ const render = domNode => {
     }
   });
 
-  dispatch('First');
+  dispatch(config, model, 'First');
 };
 
 
