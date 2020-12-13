@@ -3,14 +3,14 @@ import * as csp from 'plexus-csp';
 import * as pickler from '../common/pickler';
 import * as derived from '../dsymbols/derived';
 import * as version from '../version';
+import * as builtin from './builtinStructures';
 import * as displayList from './displayList';
-import * as makeScene from './makeScene';
 import * as fileIO from './fileIO';
+import * as makeScene from './makeScene';
 
 import parseDSymbols from '../io/ds';
 import Worker from './sceneWorker';
 import { Elm } from '../elm/GuiMain';
-import { structures } from './builtinStructures';
 
 
 const createWorker = () => {
@@ -277,7 +277,7 @@ const render = domNode => {
     }
   };
 
-  const model = { options: {}, structures };
+  const model = { options: {}, structures: builtin.structures };
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
     switch (mode) {
