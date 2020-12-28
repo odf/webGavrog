@@ -1,7 +1,7 @@
 import * as freeWords from '../fpgroups/freeWords';
 import * as periodic from '../pgraphs/periodic';
 import * as symmetries from '../pgraphs/symmetries';
-import embed from '../pgraphs/embedding';
+import { embed } from '../pgraphs/embedding';
 
 import * as props from './properties';
 import * as delaney2d from './delaney2d';

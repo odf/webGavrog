@@ -5,7 +5,7 @@ import { coordinateChangesF as opsF } from '../geometry/types';
 import { Archive } from '../io/archive';
 import { structures } from '../io/cgd';
 import parseDSymbols from '../io/ds';
-import embed from '../pgraphs/embedding';
+import { embed } from '../pgraphs/embedding';
 import { embeddingData } from '../pgraphs/embeddingData';
 import { systreKey } from '../pgraphs/invariant';
 import * as periodic from '../pgraphs/periodic';

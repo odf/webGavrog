@@ -289,7 +289,7 @@ class Evaluator {
 };
 
 
-const embed = (g, separationFactor=0.5) => {
+export const embed = (g, separationFactor=0.5) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
@@ -332,9 +332,6 @@ const embed = (g, separationFactor=0.5) => {
     relaxed: evaluator.geometry(params)
   };
 };
-
-
-export default embed;
 
 
 if (require.main == module) {

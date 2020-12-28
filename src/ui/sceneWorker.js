@@ -8,8 +8,7 @@ import * as periodic from '../pgraphs/periodic';
 import * as surface from './surface';
 
 import { coordinateChangesF as opsF } from '../geometry/types';
-
-import embed from '../pgraphs/embedding';
+import { embed } from '../pgraphs/embedding';
 
 
 const handlers = {
