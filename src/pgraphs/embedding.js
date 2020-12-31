@@ -329,8 +329,9 @@ export const embed = (g, separationFactor=0.5) => {
   const shiftSpace = sg.shiftSpace(syms.map(s => s.transform)) || [];
   const degreesOfFreedom = startParams.length - shiftSpace.length;
 
-  const barycentric = evaluator.geometry(startParams);
   const relaxed = evaluator.geometry(params);
+  const barycentric = evaluator.geometry(startParams);
+  barycentric.gram = relaxed.gram;
 
   return { degreesOfFreedom, barycentric, relaxed };
 };
