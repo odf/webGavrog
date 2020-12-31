@@ -337,6 +337,88 @@ export const embed = (g, separationFactor=0.5) => {
 };
 
 
+const secondaryIncidences = g => {
+  const nearest = pg.incidences(g);
+  const nextNearest = {};
+
+  for (const v of pg.vertices(g)) {
+    for (const e1 of nearest[v]) {
+      nextNearest[v] = [];
+
+      for (const e2 of nearest[e1.tail]) {
+        if (e2.tail != v || e2.shift.some(x => x != 0)) {
+          nextNearest[v].push(
+            pg.makeEdge(v, e2.tail, opsQ.plus(e1.shift, e2.shift))
+          );
+        }
+      }
+    }
+  }
+
+  return nextNearest;
+};
+
+
+export const embedAlt = g => {
+  const syms = symmetries.symmetries(g).symmetries;
+  const symOps = syms.map(a => a.transform);
+  const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
+  const dot = dotProduct(gram);
+  const nearest = pg.incidences(g);
+  const nextNearest = secondaryIncidences(g);
+  const nrSteps = 2 * pg.vertices(g).length;
+
+  const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
+  const posNew = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
+
+  const p = g.dim == 2 ? [0.0, 0.0] : [0.0, 0.0, 0.0];
+  const d = g.dim == 2 ? [0.0, 0.0] : [0.0, 0.0, 0.0];
+
+  for (let step = 0; step < nrSteps; ++step) {
+    const temperature = 0.04 * Math.pow(1.0 - step / nrSteps, 3);
+
+    for (const v of pg.vertices(g)) {
+      let sum = 0.0;
+      for (let i = 0; i < g.dim; ++i)
+        p[i] = 0.0;
+
+      for (const e of nearest[v]) {
+        sum += 1.0;
+        for (let i = 0; i < g.dim; ++i)
+          p[i] += positions[e.tail][i] + e.shift[i];
+      }
+
+      for (const e of nextNearest[v]) {
+        for (let i = 0; i < g.dim; ++i)
+          d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
+        const f = -1.0 / (dot(d, d) * nextNearest[v].length);
+
+        sum += f;
+        for (let i = 0; i < g.dim; ++i)
+          p[i] += f * (positions[e.tail][i] + e.shift[i]);
+      }
+
+      for (let i = 0; i < g.dim; ++i)
+        p[i] /= sum;
+
+      for (let i = 0; i < g.dim; ++i)
+        d[i] = p[i] - positions[v][i];
+      const f = Math.min(temperature / dot(d, d), 1.0);
+
+      for (let i = 0; i < g.dim; ++i)
+        posNew[v][i] = positions[v][i] + f * p[i];
+    }
+
+    for (const v of pg.vertices(g)) {
+      for (let i = 0; i < g.dim; ++i)
+        positions[v][i] = posNew[v][i];
+    }
+  }
+
+  return { gram, positions };
+};
+
+
 if (require.main == module) {
   const cgd = require('../io/cgd');
   const crystal = require('../io/crystal');
