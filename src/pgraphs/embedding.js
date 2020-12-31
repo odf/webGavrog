@@ -263,7 +263,6 @@ class Evaluator {
       positions[v] = Array.from(this.position(v));
 
     return {
-      params: params.slice(),
       gram: opsF.div(this.gram, Math.pow(this.avgEdgeLength, 2)),
       positions
     };
@@ -327,10 +326,13 @@ export const embed = (g, separationFactor=0.5) => {
     }
   }
 
-  return {
-    barycentric: evaluator.geometry(startParams),
-    relaxed: evaluator.geometry(params)
-  };
+  const shiftSpace = sg.shiftSpace(syms.map(s => s.transform)) || [];
+  const degreesOfFreedom = startParams.length - shiftSpace.length;
+
+  const barycentric = evaluator.geometry(startParams);
+  const relaxed = evaluator.geometry(params);
+
+  return { degreesOfFreedom, barycentric, relaxed };
 };
 
 

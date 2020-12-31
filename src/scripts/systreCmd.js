@@ -282,9 +282,6 @@ const showEmbedding = (data, nodeToName, isRelaxed, writeInfo) => {
   const d = data.shortestSeparation;
   writeInfo(`   Shortest non-bonded distance = ${d.toFixed(5)}`);
   writeInfo();
-
-  writeInfo(`   Degrees of freedom: ${data.degreesOfFreedom}`);
-  writeInfo();
 };
 
 
@@ -404,6 +401,9 @@ const processGraph = (
     const eOut = embed(G);
     const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
     const data = embeddingData(G, sgInfo.toStd, syms, embedding);
+
+    writeInfo(`   Degrees of freedom: ${eOut.degreesOfFreedom}`);
+    writeInfo();
 
     if (options.outputEmbedding)
       showEmbedding(data, nodeToName, options.relaxPositions, writeInfo);

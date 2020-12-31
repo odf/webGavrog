@@ -142,9 +142,6 @@ export const embeddingData = (graph, toStdRaw, syms, embedding) => {
   const angleStats = stats.angleStatistics(graph, pos, dot);
   const shortestSeparation = stats.shortestNonEdge(graph, pos, dot);
 
-  const shiftSpace = spacegroups.shiftSpace(syms.map(s => s.transform)) || [];
-  const degreesOfFreedom = embedding.params.length - shiftSpace.length;
-
   return {
     cellGram,
     cellBasis,
@@ -154,7 +151,6 @@ export const embeddingData = (graph, toStdRaw, syms, embedding) => {
     edgeReps,
     edgeStats,
     angleStats,
-    shortestSeparation,
-    degreesOfFreedom
+    shortestSeparation
   };
 };
