@@ -201,8 +201,7 @@ const makeNetDisplayList = (data, options) => {
 const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
   const { graph, sgInfo, embeddings, displayList } = data;
 
-  const { positions: pos, gram } = options.skipRelaxation ?
-        embeddings.barycentric : embeddings.relaxed;
+  const { positions: pos, gram } = pickEmbedding(embeddings, options);
   const basis = invariantBasis(gram);
   const ballRadius = withDefault(options.netVertexRadius, 0.1);
   const stickRadius = withDefault(options.netEdgeRadius, 0.04);
@@ -247,6 +246,16 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
 
   return { meshes, instances };
 });
+
+
+const pickEmbedding = (embeddings, options) => {
+  if (options.skipRelaxation)
+    return embeddings.barycentric;
+  else if (options.useSprings)
+    return embeddings.spring;
+  else
+    return embeddings.relaxed;
+};
 
 
 const preprocessTiling = (
@@ -359,8 +368,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
 
   const dim = delaney.dim(ds);
 
-  const embedding = options.skipRelaxation ?
-        embeddings.barycentric : embeddings.relaxed;
+  const embedding = pickEmbedding(embeddings, options);
 
   const basis = invariantBasis(embedding.gram);
   if (dim == 2) {
@@ -520,9 +528,7 @@ export const makeScene = (data, options, runJob, log) => csp.go(
     let model = yield builder(data, options, runJob, log);
 
     if (options.showUnitCell) {
-      const embedding = options.skipRelaxation ?
-            data.embeddings.barycentric :
-            data.embeddings.relaxed;
+      const embedding = pickEmbedding(data.embeddings, options);
       const basis = invariantBasis(embedding.gram);
       model = addUnitCell(model, data.sgInfo.toStd, basis, 0.01, 0.01);
     }
