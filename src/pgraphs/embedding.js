@@ -330,10 +330,12 @@ export const embed = (g, separationFactor=0.5) => {
   const degreesOfFreedom = startParams.length - shiftSpace.length;
 
   const relaxed = evaluator.geometry(params);
+  const spring = embedSpring(g, relaxed.gram);
+
   const barycentric = evaluator.geometry(startParams);
   barycentric.gram = relaxed.gram;
 
-  return { degreesOfFreedom, barycentric, relaxed };
+  return { degreesOfFreedom, barycentric, relaxed, spring };
 };
 
 
@@ -342,15 +344,15 @@ const secondaryIncidences = g => {
   const nextNearest = {};
 
   for (const v of pg.vertices(g)) {
-    for (const e1 of nearest[v]) {
-      nextNearest[v] = [];
+    nextNearest[v] = [];
 
+    for (const e1 of nearest[v]) {
       for (const e2 of nearest[e1.tail]) {
-        if (e2.tail != v || e2.shift.some(x => x != 0)) {
-          nextNearest[v].push(
-            pg.makeEdge(v, e2.tail, opsQ.plus(e1.shift, e2.shift))
-          );
-        }
+        const w = e2.tail;
+        const s = opsQ.plus(e1.shift, e2.shift);
+
+        if (w != v || s.some(x => x != 0))
+          nextNearest[v].push(pg.makeEdge(v, w, s));
       }
     }
   }
@@ -359,10 +361,7 @@ const secondaryIncidences = g => {
 };
 
 
-export const embedAlt = g => {
-  const syms = symmetries.symmetries(g).symmetries;
-  const symOps = syms.map(a => a.transform);
-  const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
+export const embedSpring = (g, gram) => {
   const dot = dotProduct(gram);
   const nearest = pg.incidences(g);
   const nextNearest = secondaryIncidences(g);
@@ -391,7 +390,7 @@ export const embedAlt = g => {
       for (const e of nextNearest[v]) {
         for (let i = 0; i < g.dim; ++i)
           d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-        const f = -1.0 / (dot(d, d) * nextNearest[v].length);
+        const f = -0.5 / dot(d, d);
 
         sum += f;
         for (let i = 0; i < g.dim; ++i)
@@ -403,10 +402,10 @@ export const embedAlt = g => {
 
       for (let i = 0; i < g.dim; ++i)
         d[i] = p[i] - positions[v][i];
-      const f = Math.min(temperature / dot(d, d), 1.0);
+      const f = Math.min(temperature / Math.sqrt(dot(d, d)), 1.0);
 
       for (let i = 0; i < g.dim; ++i)
-        posNew[v][i] = positions[v][i] + f * p[i];
+        posNew[v][i] = positions[v][i] + f * d[i];
     }
 
     for (const v of pg.vertices(g)) {
