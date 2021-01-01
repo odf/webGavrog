@@ -344,6 +344,7 @@ const secondaryIncidences = g => {
   const nextNearest = {};
 
   for (const v of pg.vertices(g)) {
+    const seen = { [[v, opsF.vector(g.dim)]]: true };
     nextNearest[v] = [];
 
     for (const e1 of nearest[v]) {
@@ -351,8 +352,10 @@ const secondaryIncidences = g => {
         const w = e2.tail;
         const s = opsQ.plus(e1.shift, e2.shift);
 
-        if (w != v || s.some(x => x != 0))
+        if (!seen[[w, s]]) {
+          seen[[w, s]] = true;
           nextNearest[v].push(pg.makeEdge(v, w, s));
+        }
       }
     }
   }
@@ -364,53 +367,37 @@ const secondaryIncidences = g => {
 export const embedSpring = (g, gram) => {
   const dot = dotProduct(gram);
   const nearest = pg.incidences(g);
-  const nextNearest = secondaryIncidences(g);
-  const nrSteps = 2 * pg.vertices(g).length;
+  const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
 
   const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const posNew = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
 
-  const p = g.dim == 2 ? [0.0, 0.0] : [0.0, 0.0, 0.0];
-  const d = g.dim == 2 ? [0.0, 0.0] : [0.0, 0.0, 0.0];
+  const d = opsF.vector(g.dim);
 
   for (let step = 0; step < nrSteps; ++step) {
-    const temperature = 0.04 * Math.pow(1.0 - step / nrSteps, 3);
+    const temperature = 0.1 * (1.0 - step / nrSteps);
 
     for (const v of pg.vertices(g)) {
-      let sum = 0.0;
       for (let i = 0; i < g.dim; ++i)
-        p[i] = 0.0;
+        posNew[v][i] = positions[v][i];
 
       for (const e of nearest[v]) {
-        sum += 1.0;
-        for (let i = 0; i < g.dim; ++i)
-          p[i] += positions[e.tail][i] + e.shift[i];
-      }
-
-      for (const e of nextNearest[v]) {
         for (let i = 0; i < g.dim; ++i)
           d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-        const f = -0.5 / dot(d, d);
+        const f = dot(d, d) - 1.0;
 
-        sum += f;
         for (let i = 0; i < g.dim; ++i)
-          p[i] += f * (positions[e.tail][i] + e.shift[i]);
+          posNew[v][i] += f * d[i];
       }
-
-      for (let i = 0; i < g.dim; ++i)
-        p[i] /= sum;
-
-      for (let i = 0; i < g.dim; ++i)
-        d[i] = p[i] - positions[v][i];
-      const f = Math.min(temperature / Math.sqrt(dot(d, d)), 1.0);
-
-      for (let i = 0; i < g.dim; ++i)
-        posNew[v][i] = positions[v][i] + f * d[i];
     }
 
     for (const v of pg.vertices(g)) {
       for (let i = 0; i < g.dim; ++i)
-        positions[v][i] = posNew[v][i];
+        d[i] = posNew[v][i] - positions[v][i];
+      const f = Math.min(temperature / Math.sqrt(dot(d, d)), 1.0);
+
+      for (let i = 0; i < g.dim; ++i)
+        positions[v][i] += f * d[i];
     }
   }
 
