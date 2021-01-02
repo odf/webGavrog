@@ -330,7 +330,7 @@ export const embed = (g, separationFactor=0.5) => {
   const degreesOfFreedom = startParams.length - shiftSpace.length;
 
   const relaxed = evaluator.geometry(params);
-  const spring = embedSpring(g, relaxed.gram);
+  const spring = embedSpring(g, opsF.times(1.0, relaxed.gram));
 
   const barycentric = evaluator.geometry(startParams);
   barycentric.gram = relaxed.gram;
@@ -364,9 +364,27 @@ const secondaryIncidences = g => {
 };
 
 
+const averageSquaredEdgeLength = (g, pos, dot) => {
+  let sumSqLen = 0;
+  let count = 0;
+
+  const d = opsF.vector(g.dim);
+
+  for (const v of pg.vertices(g)) {
+    for (const e of pg.incidences(g)[v]) {
+      for (let i = 0; i < g.dim; ++i)
+        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+      sumSqLen += dot(d, d);
+      count += 1;
+    }
+  }
+
+  return sumSqLen / count;
+};
+
+
 export const embedSpring = (g, gram) => {
   const dot = dotProduct(gram);
-  const nearest = pg.incidences(g);
   const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
 
   const posQ = pg.barycentricPlacement(g);
@@ -382,15 +400,16 @@ export const embedSpring = (g, gram) => {
 
   for (let step = 0; step < nrSteps; ++step) {
     const temperature = 0.1 * (1.0 - step / nrSteps);
+    const avgSqLen = averageSquaredEdgeLength(g, positions, dot);
 
     for (const v of pg.vertices(g)) {
       for (let i = 0; i < g.dim; ++i)
         posNew[v][i] = positions[v][i];
 
-      for (const e of nearest[v]) {
+      for (const e of pg.incidences(g)[v]) {
         for (let i = 0; i < g.dim; ++i)
           d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-        const f = dot(d, d) - 1.0;
+        const f = dot(d, d) / avgSqLen - 1.0;
 
         for (let i = 0; i < g.dim; ++i)
           posNew[v][i] += f * d[i];
@@ -400,7 +419,7 @@ export const embedSpring = (g, gram) => {
     for (const v of pg.vertices(g)) {
       for (let i = 0; i < g.dim; ++i)
         d[i] = posNew[v][i] - positions[v][i];
-      const f = Math.min(temperature / Math.sqrt(dot(d, d)), 1.0);
+      const f = Math.min(temperature / Math.sqrt(dot(d, d) / avgSqLen), 1.0);
 
       for (let i = 0; i < g.dim; ++i)
         posNew[v][i] = positions[v][i] + f * d[i];
@@ -415,7 +434,9 @@ export const embedSpring = (g, gram) => {
     }
   }
 
-  return { gram, positions };
+  const avgSqLen = averageSquaredEdgeLength(g, positions, dot);
+
+  return { gram: opsF.times(1.0 / avgSqLen, gram), positions };
 };
 
 
