@@ -369,8 +369,14 @@ export const embedSpring = (g, gram) => {
   const nearest = pg.incidences(g);
   const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
 
-  const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
-  const posNew = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
+  const posQ = pg.barycentricPlacement(g);
+  const positions = mapObject(posQ, p => opsQ.toJS(p));
+  const posNew = mapObject(posQ, p => opsQ.toJS(p));
+
+  const syms = symmetries.symmetries(g).symmetries;
+  const symmetrizers = {};
+  for (const v of pg.vertices(g))
+    symmetrizers[v] = opsQ.toJS(nodeSymmetrizer(v, syms, posQ[v]));
 
   const d = opsF.vector(g.dim);
 
@@ -397,7 +403,15 @@ export const embedSpring = (g, gram) => {
       const f = Math.min(temperature / Math.sqrt(dot(d, d)), 1.0);
 
       for (let i = 0; i < g.dim; ++i)
-        positions[v][i] += f * d[i];
+        posNew[v][i] = positions[v][i] + f * d[i];
+
+      const s = symmetrizers[v];
+
+      for (let i = 0; i < g.dim; ++i) {
+        positions[v][i] = s[g.dim][i];
+        for (let j = 0; j < g.dim; ++j)
+          positions[v][i] += posNew[v][j] * s[j][i];
+      }
     }
   }
 
