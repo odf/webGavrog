@@ -391,6 +391,7 @@ export const embedSpring = (g, gram) => {
   const positions = mapObject(posQ, p => opsQ.toJS(p));
   const posNew = mapObject(posQ, p => opsQ.toJS(p));
 
+  const nextNearest = secondaryIncidences(g);
   const syms = symmetries.symmetries(g).symmetries;
   const symmetrizers = {};
   for (const v of pg.vertices(g))
@@ -413,6 +414,18 @@ export const embedSpring = (g, gram) => {
 
         for (let i = 0; i < g.dim; ++i)
           posNew[v][i] += f * d[i];
+      }
+
+      for (const e of nextNearest[v]) {
+        for (let i = 0; i < g.dim; ++i)
+          d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
+        const len = Math.sqrt(dot(d, d) / avgSqLen);
+
+        if (len < 1.0) {
+          const f = -8 * Math.pow(len - 1.0, 4);
+          for (let i = 0; i < g.dim; ++i)
+            posNew[v][i] += f * d[i];
+        }
       }
     }
 
