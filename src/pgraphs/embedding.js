@@ -5,6 +5,8 @@ import * as sg from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
 import amoeba from '../common/amoeba';
 
+import { timer } from '../common/timing';
+
 import {
   rationalLinearAlgebra as opsQ,
   numericalLinearAlgebra as opsF
@@ -289,6 +291,8 @@ class Evaluator {
 
 
 export const embed = (g, separationFactor=0.5) => {
+  const t = timer();
+
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
@@ -300,6 +304,8 @@ export const embed = (g, separationFactor=0.5) => {
   const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const startParams = parametersForGramMatrix(gram, gramSpace, symOps)
     .concat(parametersForPositions(positions, posSpace));
+
+  console.log(`${Math.round(t())} msec to prepare for embedding`);
 
   let params = startParams;
 
@@ -330,7 +336,12 @@ export const embed = (g, separationFactor=0.5) => {
   const degreesOfFreedom = startParams.length - shiftSpace.length;
 
   const relaxed = evaluator.geometry(params);
+
+  console.log(`${Math.round(t())} msec to run amoeba embedder`);
+
   const spring = embedSpring(g, opsF.times(1.0, relaxed.gram));
+
+  console.log(`${Math.round(t())} msec to run spring embedder`);
 
   const barycentric = evaluator.geometry(startParams);
   barycentric.gram = relaxed.gram;
