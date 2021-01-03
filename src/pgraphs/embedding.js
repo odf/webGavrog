@@ -375,6 +375,18 @@ const secondaryIncidences = g => {
 };
 
 
+const nodeSymmetrizers = g => {
+  const pos = pg.barycentricPlacement(g);
+  const syms = symmetries.symmetries(g).symmetries;
+
+  const symmetrizers = {};
+  for (const v of pg.vertices(g))
+    symmetrizers[v] = opsQ.toJS(nodeSymmetrizer(v, syms, pos[v]));
+
+  return symmetrizers;
+};
+
+
 const averageSquaredEdgeLength = (g, pos, dot) => {
   let sumSqLen = 0;
   let count = 0;
@@ -395,19 +407,13 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
 
 
 export const embedSpring = (g, gram) => {
-  const dot = dotProduct(gram);
-  const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
-
-  const posQ = pg.barycentricPlacement(g);
-  const positions = mapObject(posQ, p => opsQ.toJS(p));
-  const posNew = mapObject(posQ, p => opsQ.toJS(p));
-
   const nextNearest = secondaryIncidences(g);
-  const syms = symmetries.symmetries(g).symmetries;
-  const symmetrizers = {};
-  for (const v of pg.vertices(g))
-    symmetrizers[v] = opsQ.toJS(nodeSymmetrizer(v, syms, posQ[v]));
+  const symmetrizers = nodeSymmetrizers(g);
+  const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
+  const dot = dotProduct(gram);
 
+  const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
+  const posNew = mapObject(positions, p => opsF.vector(g.dim));
   const d = opsF.vector(g.dim);
 
   for (let step = 0; step < nrSteps; ++step) {
