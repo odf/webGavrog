@@ -366,6 +366,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
     ds, cov, skel, tiles, orbitReps, sgInfo, embeddings, displayList
   } = data;
 
+  yield log('Making the tiling model...');
+
   const dim = delaney.dim(ds);
 
   const embedding = pickEmbedding(embeddings, options);
