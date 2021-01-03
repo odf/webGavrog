@@ -336,15 +336,11 @@ export const embed = (g, separationFactor=0.5) => {
   const degreesOfFreedom = startParams.length - shiftSpace.length;
 
   const relaxed = evaluator.geometry(params);
-
+  const barycentric = evaluator.geometry(startParams);
   console.log(`${Math.round(t())} msec to run amoeba embedder`);
 
-  const spring = embedSpring(g, opsF.times(1.0, relaxed.gram));
-
+  const spring = embedSpring(g, opsF.times(1.0, barycentric.gram));
   console.log(`${Math.round(t())} msec to run spring embedder`);
-
-  const barycentric = evaluator.geometry(startParams);
-  barycentric.gram = relaxed.gram;
 
   return { degreesOfFreedom, barycentric, relaxed, spring };
 };
@@ -410,6 +406,7 @@ export const embedSpring = (g, gram) => {
   const nextNearest = secondaryIncidences(g);
   const symmetrizers = nodeSymmetrizers(g);
   const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
+  const nrSafeSteps = Math.floor(nrSteps / 2);
   const dot = dotProduct(gram);
 
   const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
@@ -429,19 +426,23 @@ export const embedSpring = (g, gram) => {
           d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
         const f = dot(d, d) / avgSqLen - 1.0;
 
-        for (let i = 0; i < g.dim; ++i)
-          posNew[v][i] += f * d[i];
-      }
-
-      for (const e of nextNearest[v]) {
-        for (let i = 0; i < g.dim; ++i)
-          d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-        const len = Math.sqrt(dot(d, d) / avgSqLen);
-
-        if (len < 1.0) {
-          const f = -8 * Math.pow(len - 1.0, 4);
+        if (f > 0 || step > nrSafeSteps) {
           for (let i = 0; i < g.dim; ++i)
             posNew[v][i] += f * d[i];
+        }
+      }
+
+      if (step > nrSafeSteps) {
+        for (const e of nextNearest[v]) {
+          for (let i = 0; i < g.dim; ++i)
+            d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
+          const len = Math.sqrt(dot(d, d) / avgSqLen);
+
+          if (len < 1.0) {
+            const f = -8 * Math.pow(len - 1.0, 4);
+            for (let i = 0; i < g.dim; ++i)
+              posNew[v][i] += f * d[i];
+          }
         }
       }
     }
