@@ -371,15 +371,38 @@ const secondaryIncidences = g => {
 };
 
 
-const nodeSymmetrizers = g => {
+const nodeOrbits = g => {
   const pos = pg.barycentricPlacement(g);
   const syms = symmetries.symmetries(g).symmetries;
 
-  const symmetrizers = {};
-  for (const v of pg.vertices(g))
-    symmetrizers[v] = opsQ.toJS(nodeSymmetrizer(v, syms, pos[v]));
+  const orbits = [];
+  const seen = {};
 
-  return symmetrizers;
+  for (const v of pg.vertices(g)) {
+    if (!seen[v]) {
+      seen[v] = true;
+
+      const symmetrizer = opsQ.toJS(nodeSymmetrizer(v, syms, pos[v]));
+      const images = [];
+
+      for (const { src2img, transform: m } of syms) {
+        const w = src2img[v];
+
+        if (!seen[w]) {
+          seen[w] = true
+
+          const t = opsQ.minus(pos[w], opsQ.times(pos[v], m));
+          const transform = opsQ.toJS(projectiveMatrix(m, t));
+
+          images.push({ node: w, transform });
+        }
+      }
+
+      orbits.push({ node: v, images, symmetrizer });
+    }
+  }
+
+  return orbits;
 };
 
 
@@ -404,7 +427,7 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
 
 export const embedSpring = (g, gram) => {
   const nextNearest = secondaryIncidences(g);
-  const symmetrizers = nodeSymmetrizers(g);
+  const orbits = nodeOrbits(g);
   const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
   const nrSafeSteps = Math.floor(nrSteps / 2);
   const dot = dotProduct(gram);
@@ -417,7 +440,7 @@ export const embedSpring = (g, gram) => {
     const temperature = 0.1 * (1.0 - step / nrSteps);
     const avgSqLen = averageSquaredEdgeLength(g, positions, dot);
 
-    for (const v of pg.vertices(g)) {
+    for (const { node: v } of orbits) {
       for (let i = 0; i < g.dim; ++i)
         posNew[v][i] = positions[v][i];
 
@@ -447,7 +470,7 @@ export const embedSpring = (g, gram) => {
       }
     }
 
-    for (const v of pg.vertices(g)) {
+    for (const { node: v, images, symmetrizer } of orbits) {
       for (let i = 0; i < g.dim; ++i)
         d[i] = posNew[v][i] - positions[v][i];
       const f = Math.min(temperature / Math.sqrt(dot(d, d) / avgSqLen), 1.0);
@@ -455,12 +478,18 @@ export const embedSpring = (g, gram) => {
       for (let i = 0; i < g.dim; ++i)
         posNew[v][i] = positions[v][i] + f * d[i];
 
-      const s = symmetrizers[v];
-
       for (let i = 0; i < g.dim; ++i) {
-        positions[v][i] = s[g.dim][i];
+        positions[v][i] = symmetrizer[g.dim][i];
         for (let j = 0; j < g.dim; ++j)
-          positions[v][i] += posNew[v][j] * s[j][i];
+          positions[v][i] += posNew[v][j] * symmetrizer[j][i];
+      }
+
+      for (const { node: w, transform } of images) {
+        for (let i = 0; i < g.dim; ++i) {
+          positions[w][i] = transform[g.dim][i];
+          for (let j = 0; j < g.dim; ++j)
+            positions[w][i] += positions[v][j] * transform[j][i];
+        }
       }
     }
   }
