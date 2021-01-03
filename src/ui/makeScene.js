@@ -201,6 +201,8 @@ const makeNetDisplayList = (data, options) => {
 const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
   const { graph, sgInfo, embeddings, displayList } = data;
 
+  yield log('Making the net model...');
+
   const { positions: pos, gram } = pickEmbedding(embeddings, options);
   const basis = invariantBasis(gram);
   const ballRadius = withDefault(options.netVertexRadius, 0.1);
