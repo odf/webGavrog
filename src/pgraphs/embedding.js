@@ -439,6 +439,7 @@ export const embedSpring = (g, gram) => {
   for (let step = 0; step < nrSteps; ++step) {
     const temperature = 0.1 * (1.0 - step / nrSteps);
     const avgSqLen = averageSquaredEdgeLength(g, positions, dot);
+    const scale = (1.0 + temperature) / avgSqLen;
 
     for (const { node: v } of orbits) {
       for (let i = 0; i < g.dim; ++i)
@@ -447,7 +448,7 @@ export const embedSpring = (g, gram) => {
       for (const e of pg.incidences(g)[v]) {
         for (let i = 0; i < g.dim; ++i)
           d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-        const f = dot(d, d) / avgSqLen - 1.0;
+        const f = dot(d, d) * scale - 1.0;
 
         if (f > 0 || step > nrSafeSteps) {
           for (let i = 0; i < g.dim; ++i)
@@ -459,7 +460,7 @@ export const embedSpring = (g, gram) => {
         for (const e of nextNearest[v]) {
           for (let i = 0; i < g.dim; ++i)
             d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-          const len = Math.sqrt(dot(d, d) / avgSqLen);
+          const len = Math.sqrt(dot(d, d) * scale);
 
           if (len < 1.0) {
             const f = -8 * Math.pow(len - 1.0, 4);
@@ -473,7 +474,7 @@ export const embedSpring = (g, gram) => {
     for (const { node: v, images, symmetrizer } of orbits) {
       for (let i = 0; i < g.dim; ++i)
         d[i] = posNew[v][i] - positions[v][i];
-      const f = Math.min(temperature / Math.sqrt(dot(d, d) / avgSqLen), 1.0);
+      const f = Math.min(temperature / Math.sqrt(dot(d, d) * scale), 1.0);
 
       for (let i = 0; i < g.dim; ++i)
         posNew[v][i] = positions[v][i] + f * d[i];
@@ -494,9 +495,9 @@ export const embedSpring = (g, gram) => {
     }
   }
 
-  const avgSqLen = averageSquaredEdgeLength(g, positions, dot);
+  const scale = 1.0 / averageSquaredEdgeLength(g, positions, dot);
 
-  return { gram: opsF.times(1.0 / avgSqLen, gram), positions };
+  return { gram: opsF.times(scale, gram), positions };
 };
 
 
