@@ -446,7 +446,7 @@ export const embedSpring = (g, gram) => {
   const d = opsF.vector(g.dim);
 
   for (let step = 0; step < nrSteps; ++step) {
-    const temperature = 0.1 * (1.0 - step / nrSteps);
+    const temperature = 1.0 - step / nrSteps;
     const avgSqLen = averageSquaredEdgeLength(g, positions, dot);
     const scale = (1.0 + temperature) / avgSqLen;
 
