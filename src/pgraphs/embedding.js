@@ -425,6 +425,15 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
 };
 
 
+const applyTransformation = (dst, src, transform) => {
+  for (let i = 0; i < dst.length; ++i) {
+    dst[i] = transform[src.length][i];
+    for (let j = 0; j < src.length; ++j)
+      dst[i] += src[j] * transform[j][i];
+  }
+};
+
+
 export const embedSpring = (g, gram) => {
   const nextNearest = secondaryIncidences(g);
   const orbits = nodeOrbits(g);
@@ -460,10 +469,10 @@ export const embedSpring = (g, gram) => {
         for (const e of nextNearest[v]) {
           for (let i = 0; i < g.dim; ++i)
             d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-          const len = Math.sqrt(dot(d, d) * scale);
+          const t = Math.sqrt(dot(d, d) * scale) - 1.0;
 
-          if (len < 1.0) {
-            const f = -8 * Math.pow(len - 1.0, 4);
+          if (t < 0) {
+            const f = -8 * Math.pow(t, 4);
             for (let i = 0; i < g.dim; ++i)
               posNew[v][i] += f * d[i];
           }
@@ -479,19 +488,10 @@ export const embedSpring = (g, gram) => {
       for (let i = 0; i < g.dim; ++i)
         posNew[v][i] = positions[v][i] + f * d[i];
 
-      for (let i = 0; i < g.dim; ++i) {
-        positions[v][i] = symmetrizer[g.dim][i];
-        for (let j = 0; j < g.dim; ++j)
-          positions[v][i] += posNew[v][j] * symmetrizer[j][i];
-      }
+      applyTransformation(positions[v], posNew[v], symmetrizer);
 
-      for (const { node: w, transform } of images) {
-        for (let i = 0; i < g.dim; ++i) {
-          positions[w][i] = transform[g.dim][i];
-          for (let j = 0; j < g.dim; ++j)
-            positions[w][i] += positions[v][j] * transform[j][i];
-        }
-      }
+      for (const { node: w, transform } of images)
+        applyTransformation(positions[w], positions[v], transform);
     }
   }
 
