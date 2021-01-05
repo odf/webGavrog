@@ -437,67 +437,68 @@ const applyTransformation = (dst, src, transform) => {
 export const embedSpring = (g, gram) => {
   const nextNearest = secondaryIncidences(g);
   const orbits = nodeOrbits(g);
-  const nrSteps = Math.max(200, 2 * pg.vertices(g).length);
+  const nrSteps = Math.pow(Math.max(100, orbits.length), 2);
   const nrSafeSteps = Math.floor(nrSteps / 2);
   const dot = dotProduct(gram);
 
   const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
-  const posNew = mapObject(positions, p => opsF.vector(g.dim));
+  const p = opsF.vector(g.dim);
   const d = opsF.vector(g.dim);
 
+  let avgSqLen;
+
   for (let step = 0; step < nrSteps; ++step) {
+    if (step % 100 == 0 || step == nrSteps - 1)
+      avgSqLen = averageSquaredEdgeLength(g, positions, dot);
+
     const temperature = 1.0 - step / nrSteps;
-    const avgSqLen = averageSquaredEdgeLength(g, positions, dot);
     const scale = (1.0 + temperature) / avgSqLen;
 
-    for (const { node: v } of orbits) {
-      for (let i = 0; i < g.dim; ++i)
-        posNew[v][i] = positions[v][i];
+    const k = Math.floor(Math.random() * orbits.length);
+    const { node: v, images, symmetrizer } = orbits[k];
 
-      for (const e of pg.incidences(g)[v]) {
+    for (let i = 0; i < g.dim; ++i)
+      p[i] = positions[v][i];
+
+    for (const e of pg.incidences(g)[v]) {
+      for (let i = 0; i < g.dim; ++i)
+        d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
+      const f = dot(d, d) * scale - 1.0;
+
+      if (f > 0 || step > nrSafeSteps) {
+        for (let i = 0; i < g.dim; ++i)
+          p[i] += f * d[i];
+      }
+    }
+
+    if (step > nrSafeSteps) {
+      for (const e of nextNearest[v]) {
         for (let i = 0; i < g.dim; ++i)
           d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-        const f = dot(d, d) * scale - 1.0;
+        const t = Math.sqrt(dot(d, d) * scale) - 1.0;
 
-        if (f > 0 || step > nrSafeSteps) {
+        if (t < 0) {
+          const f = -8 * Math.pow(t, 4);
           for (let i = 0; i < g.dim; ++i)
-            posNew[v][i] += f * d[i];
-        }
-      }
-
-      if (step > nrSafeSteps) {
-        for (const e of nextNearest[v]) {
-          for (let i = 0; i < g.dim; ++i)
-            d[i] = positions[e.tail][i] + e.shift[i] - positions[v][i];
-          const t = Math.sqrt(dot(d, d) * scale) - 1.0;
-
-          if (t < 0) {
-            const f = -8 * Math.pow(t, 4);
-            for (let i = 0; i < g.dim; ++i)
-              posNew[v][i] += f * d[i];
-          }
+            p[i] += f * d[i];
         }
       }
     }
 
-    for (const { node: v, images, symmetrizer } of orbits) {
-      for (let i = 0; i < g.dim; ++i)
-        d[i] = posNew[v][i] - positions[v][i];
-      const f = Math.min(temperature / Math.sqrt(dot(d, d) * scale), 1.0);
+    for (let i = 0; i < g.dim; ++i)
+      d[i] = p[i] - positions[v][i];
+    const f = Math.min(temperature / Math.sqrt(dot(d, d) * scale), 1.0);
 
-      for (let i = 0; i < g.dim; ++i)
-        posNew[v][i] = positions[v][i] + f * d[i];
+    for (let i = 0; i < g.dim; ++i)
+      p[i] = positions[v][i] + f * d[i];
 
-      applyTransformation(positions[v], posNew[v], symmetrizer);
+    applyTransformation(positions[v], p, symmetrizer);
 
-      for (const { node: w, transform } of images)
-        applyTransformation(positions[w], positions[v], transform);
-    }
+    for (const { node: w, transform } of images)
+      applyTransformation(positions[w], positions[v], transform);
   }
 
-  const scale = 1.0 / averageSquaredEdgeLength(g, positions, dot);
-
-  return { gram: opsF.times(scale, gram), positions };
+  return { gram: opsF.times(1.0 / avgSqLen, gram), positions };
 };
 
 
