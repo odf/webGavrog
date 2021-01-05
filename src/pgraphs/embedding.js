@@ -145,10 +145,11 @@ const parametersForPositions = (positions, positionSpace) => {
 
 
 class Evaluator {
-  constructor(posSpace, gramSpace, edgeOrbits) {
+  constructor(posSpace, gramSpace, edgeOrbits, fixedPositions=null) {
     this.posSpace = posSpace;
     this.gramSpace = gramSpace;
     this.posOffset = gramSpace.length;
+    this.fixedPositions = fixedPositions;
 
     this.vertices = Object.keys(posSpace);
     this.nrVertices = this.vertices.length;
@@ -208,22 +209,26 @@ class Evaluator {
   }
 
   position(v) {
-    if (!this.positionsValid[v]) {
-      const offset = this.posOffset + this.posSpace[v].index;
-      const cfg = this.posSpace[v].configSpace;
-      const n = cfg.length - 1;
-      const p = this.positions[v];
+    if (this.fixedPositions)
+      return this.fixedPositions[v];
+    else {
+      if (!this.positionsValid[v]) {
+        const offset = this.posOffset + this.posSpace[v].index;
+        const cfg = this.posSpace[v].configSpace;
+        const n = cfg.length - 1;
+        const p = this.positions[v];
 
-      for (let i = 0; i < this.dim; ++i) {
-        p[i] = cfg[n][i];
-        for (let k = 0; k < n; ++k)
-          p[i] += this.params[offset + k] * cfg[k][i];
+        for (let i = 0; i < this.dim; ++i) {
+          p[i] = cfg[n][i];
+          for (let k = 0; k < n; ++k)
+            p[i] += this.params[offset + k] * cfg[k][i];
+        }
+
+        this.positionsValid[v] = true;
       }
 
-      this.positionsValid[v] = true;
+      return this.positions[v];
     }
-
-    return this.positions[v];
   }
 
   computeEdgeLengths() {
@@ -299,50 +304,56 @@ export const embed = (g, separationFactor=0.5) => {
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
-  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits);
   const gram = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
   const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
-  const startParams = parametersForGramMatrix(gram, gramSpace, symOps)
-    .concat(parametersForPositions(positions, posSpace));
+  const gramParams = parametersForGramMatrix(gram, gramSpace, symOps);
+  const posParams = parametersForPositions(positions, posSpace);
+  const shiftSpace = sg.shiftSpace(syms.map(s => s.transform)) || [];
+  const result = {
+    degreesOfFreedom: gramParams.length + posParams.length - shiftSpace.length
+  };
 
   console.log(`${Math.round(t())} msec to prepare for embedding`);
 
-  let params = startParams;
+  for (const kind of [ 'barycentric', 'relaxed' ]) {
+    const nrSteps = kind == 'relaxed' ? 10000 : 500;
+    const fixedPos = kind == 'relaxed' ? null : positions;
+    const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, fixedPos);
 
-  for (let pass = 0; pass < 5; ++pass) {
-    const energy = params => evaluator.energy(params, Math.pow(10, -pass));
-    const newParams = amoeba(energy, params, 10000, 1e-6, 0.1).position;
-    const { positions, gram } = evaluator.geometry(newParams);
+    let params = kind == 'relaxed' ? gramParams.concat(posParams) : gramParams;
 
-    const dot = dotProduct(gram);
-    const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
-    const separation = stats.shortestNonEdge(g, positions, dot);
+    for (let pass = 0; pass < 5; ++pass) {
+      const wgt = Math.pow(10, -pass);
+      const energy = params => evaluator.energy(params, wgt);
+      const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
+      const { positions, gram } = evaluator.geometry(newParams);
 
-    if (separation < minimum * separationFactor) {
-      console.log(`relaxation failed in pass ${pass}:`);
-      console.log(`  min/max edge length: ${minimum}, ${maximum}`);
-      console.log(`  vertex separation: ${separation}`);
-      break;
-    }
-    else {
-      params = newParams;
+      const dot = dotProduct(gram);
+      const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
+      const separation = stats.shortestNonEdge(g, positions, dot);
 
-      if ((maximum - minimum) < 1.0e-5)
+      if (separation < minimum * separationFactor) {
+        console.log(`relaxation failed in pass ${pass}:`);
+        console.log(`  min/max edge length: ${minimum}, ${maximum}`);
+        console.log(`  vertex separation: ${separation}`);
         break;
+      }
+      else {
+        params = newParams;
+
+        if ((maximum - minimum) < 1.0e-5)
+          break;
+      }
     }
+
+    result[kind] = evaluator.geometry(params);
+    console.log(`${Math.round(t())} msec for ${kind} embedding`);
   }
 
-  const shiftSpace = sg.shiftSpace(syms.map(s => s.transform)) || [];
-  const degreesOfFreedom = startParams.length - shiftSpace.length;
+  result.spring = embedSpring(g, opsF.times(1.0, result.barycentric.gram));
+  console.log(`${Math.round(t())} msec for spring embedding`);
 
-  const relaxed = evaluator.geometry(params);
-  const barycentric = evaluator.geometry(startParams);
-  console.log(`${Math.round(t())} msec to run amoeba embedder`);
-
-  const spring = embedSpring(g, opsF.times(1.0, barycentric.gram));
-  console.log(`${Math.round(t())} msec to run spring embedder`);
-
-  return { degreesOfFreedom, barycentric, relaxed, spring };
+  return result;
 };
 
 
