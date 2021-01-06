@@ -436,6 +436,58 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
 };
 
 
+const computeForcePhase1 = (g, nearest, nextNearest) => {
+  const d = opsF.vector(g.dim);
+
+  return (s, v, pos, dot, scale) => {
+    for (let i = 0; i < g.dim; ++i)
+      s[i] = 0;
+
+    for (const e of nearest[v]) {
+      for (let i = 0; i < g.dim; ++i)
+        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+      const f = dot(d, d) * scale - 1.0;
+
+      if (f > 0) {
+        for (let i = 0; i < g.dim; ++i)
+          s[i] += f * d[i];
+      }
+    }
+  };
+};
+
+
+const computeForcePhase2 = (g, nearest, nextNearest) => {
+  const d = opsF.vector(g.dim);
+
+  return (s, v, pos, dot, scale) => {
+    for (let i = 0; i < g.dim; ++i)
+      s[i] = 0;
+
+    for (const e of nearest[v]) {
+      for (let i = 0; i < g.dim; ++i)
+        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+      const f = dot(d, d) * scale - 1.0;
+
+      for (let i = 0; i < g.dim; ++i)
+        s[i] += f * d[i];
+    }
+
+    for (const e of nextNearest[v]) {
+      for (let i = 0; i < g.dim; ++i)
+        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+      const t = Math.sqrt(dot(d, d) * scale) - 1.0;
+
+      if (t < 0) {
+        const f = -8 * Math.pow(t, 4);
+        for (let i = 0; i < g.dim; ++i)
+          s[i] += f * d[i];
+      }
+    }
+  };
+};
+
+
 const applyTransformation = (dst, src, transform) => {
   for (let i = 0; i < dst.length; ++i) {
     dst[i] = transform[src.length][i];
@@ -450,11 +502,12 @@ export const embedSpring = (g, gram) => {
   const orbits = nodeOrbits(g);
   const nrSteps = Math.pow(Math.max(100, orbits.length), 2);
   const nrSafeSteps = Math.floor(nrSteps / 2);
-  const dot = dotProduct(gram);
+  const setForce1 = computeForcePhase1(g, pg.incidences(g), nextNearest);
+  const setForce2 = computeForcePhase2(g, pg.incidences(g), nextNearest);
 
+  const dot = dotProduct(gram);
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const s = opsF.vector(g.dim);
-  const d = opsF.vector(g.dim);
 
   let avgSqLen;
 
@@ -468,33 +521,10 @@ export const embedSpring = (g, gram) => {
     const k = Math.floor(Math.random() * orbits.length);
     const { node: v, images, symmetrizer } = orbits[k];
 
-    for (let i = 0; i < g.dim; ++i)
-      s[i] = 0;
-
-    for (const e of pg.incidences(g)[v]) {
-      for (let i = 0; i < g.dim; ++i)
-        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
-      const f = dot(d, d) * scale - 1.0;
-
-      if (f > 0 || step > nrSafeSteps) {
-        for (let i = 0; i < g.dim; ++i)
-          s[i] += f * d[i];
-      }
-    }
-
-    if (step > nrSafeSteps) {
-      for (const e of nextNearest[v]) {
-        for (let i = 0; i < g.dim; ++i)
-          d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
-        const t = Math.sqrt(dot(d, d) * scale) - 1.0;
-
-        if (t < 0) {
-          const f = -8 * Math.pow(t, 4);
-          for (let i = 0; i < g.dim; ++i)
-            s[i] += f * d[i];
-        }
-      }
-    }
+    if (step <= nrSafeSteps)
+      setForce1(s, v, pos, dot, scale);
+    else
+      setForce2(s, v, pos, dot, scale);
 
     const f = Math.min(temperature / Math.sqrt(dot(s, s) * scale), 1.0);
     for (let i = 0; i < g.dim; ++i)
