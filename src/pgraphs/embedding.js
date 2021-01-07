@@ -500,10 +500,22 @@ const applyTransformation = (dst, src, transform) => {
 export const embedSpring = (g, gram) => {
   const nextNearest = secondaryIncidences(g);
   const orbits = nodeOrbits(g);
-  const nrSteps = Math.pow(Math.max(100, orbits.length), 2);
-  const nrSafeSteps = Math.floor(nrSteps / 2);
-  const setForce1 = computeForcePhase1(g, pg.incidences(g), nextNearest);
-  const setForce2 = computeForcePhase2(g, pg.incidences(g), nextNearest);
+  const totalSteps = Math.pow(Math.max(100, orbits.length), 2);
+
+  const nrSteps = [
+    Math.floor(totalSteps / 2),
+    Math.floor(totalSteps / 2)
+  ];
+
+  const setForce = [
+    computeForcePhase1(g, pg.incidences(g), nextNearest),
+    computeForcePhase2(g, pg.incidences(g), nextNearest)
+  ];
+
+  const temperature = [
+    step => 1.0 - step / nrSteps[0],
+    step => 1.0 - (step + nrSteps[0]) / (nrSteps[1] + nrSteps[0]),
+  ];
 
   const dot = dotProduct(gram);
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
@@ -511,29 +523,28 @@ export const embedSpring = (g, gram) => {
 
   let avgSqLen;
 
-  for (let step = 0; step < nrSteps; ++step) {
-    if (step % 100 == 0 || step == nrSteps - 1)
-      avgSqLen = averageSquaredEdgeLength(g, pos, dot);
+  for (const phase of [0, 1]) {
+    for (let step = 0; step < nrSteps[phase]; ++step) {
+      if (step % 100 == 0 || step == nrSteps[phase] - 1)
+        avgSqLen = averageSquaredEdgeLength(g, pos, dot);
 
-    const temperature = 1.0 - step / nrSteps;
-    const scale = (1.0 + temperature) / avgSqLen;
+      const temp = temperature[phase](step);
+      const scale = (1.0 + temp) / avgSqLen;
 
-    const k = Math.floor(Math.random() * orbits.length);
-    const { node: v, images, symmetrizer } = orbits[k];
+      const k = Math.floor(Math.random() * orbits.length);
+      const { node: v, images, symmetrizer } = orbits[k];
 
-    if (step <= nrSafeSteps)
-      setForce1(s, v, pos, dot, scale);
-    else
-      setForce2(s, v, pos, dot, scale);
+      setForce[phase](s, v, pos, dot, scale);
 
-    const f = Math.min(temperature / Math.sqrt(dot(s, s) * scale), 1.0);
-    for (let i = 0; i < g.dim; ++i)
-      s[i] = pos[v][i] + f * s[i];
+      const f = Math.min(temp / Math.sqrt(dot(s, s) * scale), 1.0);
+      for (let i = 0; i < g.dim; ++i)
+        s[i] = pos[v][i] + f * s[i];
 
-    applyTransformation(pos[v], s, symmetrizer);
+      applyTransformation(pos[v], s, symmetrizer);
 
-    for (const { node: w, transform } of images)
-      applyTransformation(pos[w], pos[v], transform);
+      for (const { node: w, transform } of images)
+        applyTransformation(pos[w], pos[v], transform);
+    }
   }
 
   return { gram: opsF.times(1.0 / avgSqLen, gram), positions: pos };
