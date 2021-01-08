@@ -399,9 +399,8 @@ const secondaryIncidences = g => {
 };
 
 
-const nodeOrbits = g => {
+const nodeOrbits = (g, syms) => {
   const pos = pg.barycentricPlacement(g);
-  const syms = symmetries.symmetries(g).symmetries;
 
   const orbits = [];
   const seen = {};
@@ -520,8 +519,9 @@ const applyTransformation = (dst, src, transform) => {
 
 
 export const embedSpring = (g, gram) => {
+  const syms = symmetries.symmetries(g).symmetries;
+  const orbits = nodeOrbits(g, syms);
   const nextNearest = secondaryIncidences(g);
-  const orbits = nodeOrbits(g);
   const totalSteps = Math.pow(Math.max(100, orbits.length), 2);
 
   const nrSteps = [
