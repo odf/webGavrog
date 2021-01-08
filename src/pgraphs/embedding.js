@@ -433,6 +433,72 @@ const nodeOrbits = (g, syms) => {
 };
 
 
+const decodeGramMatrix= (G, params, gramSpace) => {
+  const dim = G.length;
+  let k = 0;
+
+  for (let i = 0; i < dim; ++i) {
+    for (let j = i; j < dim; ++j) {
+      let x = 0;
+      for (let mu = 0; mu < gramSpace.length; ++mu)
+        x += params[mu] * gramSpace[mu][k];
+
+      G[i][j] = G[j][i] = x;
+      ++k;
+    }
+  }
+
+  for (let i = 0; i < dim; ++i)
+    G[i][i] = Math.max(G[i][i], 0);
+
+  for (let i = 0; i < dim; ++i) {
+    for (let j = i + 1; j < dim; ++j)
+      G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
+  }
+}
+
+
+const cellVolumeEnergy = (g, gramSpace, pos, G, d) => params => {
+  decodeGramMatrix(G, params, gramSpace);
+
+  const squaredCellVolume = det(G);
+
+  if (squaredCellVolume < 1e-12)
+    return 1e12;
+
+  const dim = d.length;
+  let edgeSum = 0;
+
+  for (const v of pg.vertices(g)) {
+    for (const e of pg.incidences(g)[v]) {
+      for (let i = 0; i < dim; ++i)
+        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+
+      for (let i = 0; i < dim; ++i) {
+        for (let j = 0; j < dim; ++j)
+          edgeSum += d[i] * G[i][j] * d[j];
+      }
+    }
+  }
+
+  return Math.pow(edgeSum, dim) / squaredCellVolume;
+};
+
+
+const volumeMaximizedGramMatrix = (gramIn, g, gramSpace, pos, symOps) => {
+  const dim = g.dim;
+  const gram = opsF.matrix(dim, dim);
+  const tmp = opsF.vector(dim);
+  const energy = cellVolumeEnergy(g, gramSpace, pos, gram, tmp);
+
+  const paramsIn = parametersForGramMatrix(gramIn, gramSpace, symOps);
+  const paramsOut = amoeba(energy, paramsIn, 500, 1e-6, 0.1).position;
+
+  decodeGramMatrix(gram, paramsOut, gramSpace);
+  return gram;
+};
+
+
 const averageSquaredEdgeLength = (g, pos, dot) => {
   let sumSqLen = 0;
   let count = 0;
@@ -521,6 +587,9 @@ const applyTransformation = (dst, src, transform) => {
 export const embedSpring = (g, gram) => {
   const syms = symmetries.symmetries(g).symmetries;
   const orbits = nodeOrbits(g, syms);
+  const symOps = syms.map(a => a.transform);
+  const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
+
   const nextNearest = secondaryIncidences(g);
   const totalSteps = Math.pow(Math.max(100, orbits.length), 2);
 
