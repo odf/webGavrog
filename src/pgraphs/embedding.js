@@ -335,29 +335,31 @@ export const embed = (g, separationFactor=0.5) => {
 
     let params = kind == 'relaxed' ? gramParams.concat(posParams) : gramParams;
 
-    for (let pass = 0; pass < 5; ++pass) {
-      const energy = kind == 'barycentric' ?
-        params => evaluator.cellVolumeEnergy(params) :
-        params => evaluator.energy(params, Math.pow(10, -pass));
+    if (params.length > 1) {
+      for (let pass = 0; pass < 5; ++pass) {
+        const energy = kind == 'barycentric' ?
+          params => evaluator.cellVolumeEnergy(params) :
+          params => evaluator.energy(params, Math.pow(10, -pass));
 
-      const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
-      const { positions, gram } = evaluator.geometry(newParams);
+        const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
+        const { positions, gram } = evaluator.geometry(newParams);
 
-      const dot = dotProduct(gram);
-      const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
-      const separation = stats.shortestNonEdge(g, positions, dot);
+        const dot = dotProduct(gram);
+        const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
+        const separation = stats.shortestNonEdge(g, positions, dot);
 
-      if (separation < minimum * separationFactor) {
-        console.log(`relaxation failed in pass ${pass}:`);
-        console.log(`  min/max edge length: ${minimum}, ${maximum}`);
-        console.log(`  vertex separation: ${separation}`);
-        break;
-      }
-      else {
-        params = newParams;
-
-        if ((maximum - minimum) < 1.0e-5)
+        if (separation < minimum * separationFactor) {
+          console.log(`relaxation failed in pass ${pass}:`);
+          console.log(`  min/max edge length: ${minimum}, ${maximum}`);
+          console.log(`  vertex separation: ${separation}`);
           break;
+        }
+        else {
+          params = newParams;
+
+          if ((maximum - minimum) < 1.0e-5)
+            break;
+        }
       }
     }
 
