@@ -292,6 +292,19 @@ class Evaluator {
 
     return edgePenalty + volumeWeight * volumePenalty;
   }
+
+  cellVolumeEnergy(params) {
+    this.update(params);
+
+    if (det(this.gram) < 1e-12)
+      return 1e12;
+
+    let edgeSum = 0;
+    for (let i = 0; i < this.edgeLengths.length; ++i)
+      edgeSum += Math.pow(this.edgeLengths[i], 2) * this.edgeWeights[i];
+
+    return Math.pow(edgeSum, this.dim) / det(this.gram);
+  }
 };
 
 
@@ -323,8 +336,10 @@ export const embed = (g, separationFactor=0.5) => {
     let params = kind == 'relaxed' ? gramParams.concat(posParams) : gramParams;
 
     for (let pass = 0; pass < 5; ++pass) {
-      const wgt = Math.pow(10, -pass);
-      const energy = params => evaluator.energy(params, wgt);
+      const energy = kind == 'barycentric' ?
+        params => evaluator.cellVolumeEnergy(params) :
+        params => evaluator.energy(params, Math.pow(10, -pass));
+
       const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
       const { positions, gram } = evaluator.geometry(newParams);
 
