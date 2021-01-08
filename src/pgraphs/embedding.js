@@ -446,7 +446,9 @@ const computeForcePhase1 = (g, nearest, nextNearest) => {
     for (const e of nearest[v]) {
       for (let i = 0; i < g.dim; ++i)
         d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
-      const f = dot(d, d) * scale - 1.0;
+
+      const len = Math.sqrt(dot(d, d) * scale);
+      const f = (len - 1.0) / len;
 
       if (f > 0) {
         for (let i = 0; i < g.dim; ++i)
@@ -467,7 +469,9 @@ const computeForcePhase2 = (g, nearest, nextNearest) => {
     for (const e of nearest[v]) {
       for (let i = 0; i < g.dim; ++i)
         d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
-      const f = dot(d, d) * scale - 1.0;
+
+      const len = Math.sqrt(dot(d, d) * scale);
+      const f = (len - 1.0) / len;
 
       for (let i = 0; i < g.dim; ++i)
         s[i] += f * d[i];
@@ -476,10 +480,11 @@ const computeForcePhase2 = (g, nearest, nextNearest) => {
     for (const e of nextNearest[v]) {
       for (let i = 0; i < g.dim; ++i)
         d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
-      const t = Math.sqrt(dot(d, d) * scale) - 1.0;
 
-      if (t < 0) {
-        const f = -8 * Math.pow(t, 4);
+      const len = Math.sqrt(dot(d, d) * scale);
+
+      if (len < 1) {
+        const f = -8 * Math.pow(1.0 - len, 4) / len;
         for (let i = 0; i < g.dim; ++i)
           s[i] += f * d[i];
       }
