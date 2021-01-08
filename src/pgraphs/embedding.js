@@ -436,57 +436,57 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
 };
 
 
-const computeForcePhase1 = (g, nearest, nextNearest) => {
-  const d = opsF.vector(g.dim);
+const springForcePullOnly = (dim, nearest) => {
+  const d = opsF.vector(dim);
 
-  return (s, v, pos, dot, scale) => {
-    for (let i = 0; i < g.dim; ++i)
-      s[i] = 0;
+  return (out, v, pos, dot, scale) => {
+    for (let i = 0; i < dim; ++i)
+      out[i] = 0;
 
     for (const e of nearest[v]) {
-      for (let i = 0; i < g.dim; ++i)
+      for (let i = 0; i < dim; ++i)
         d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
       const len = Math.sqrt(dot(d, d) * scale);
       const f = (len - 1.0) / len;
 
       if (f > 0) {
-        for (let i = 0; i < g.dim; ++i)
-          s[i] += f * d[i];
+        for (let i = 0; i < dim; ++i)
+          out[i] += f * d[i];
       }
     }
   };
 };
 
 
-const computeForcePhase2 = (g, nearest, nextNearest) => {
-  const d = opsF.vector(g.dim);
+const springAndAngleForce = (dim, nearest, nextNearest) => {
+  const d = opsF.vector(dim);
 
-  return (s, v, pos, dot, scale) => {
-    for (let i = 0; i < g.dim; ++i)
-      s[i] = 0;
+  return (out, v, pos, dot, scale) => {
+    for (let i = 0; i < dim; ++i)
+      out[i] = 0;
 
     for (const e of nearest[v]) {
-      for (let i = 0; i < g.dim; ++i)
+      for (let i = 0; i < dim; ++i)
         d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
       const len = Math.sqrt(dot(d, d) * scale);
       const f = (len - 1.0) / len;
 
-      for (let i = 0; i < g.dim; ++i)
-        s[i] += f * d[i];
+      for (let i = 0; i < dim; ++i)
+        out[i] += f * d[i];
     }
 
     for (const e of nextNearest[v]) {
-      for (let i = 0; i < g.dim; ++i)
+      for (let i = 0; i < dim; ++i)
         d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
       const len = Math.sqrt(dot(d, d) * scale);
 
       if (len < 1) {
         const f = -8 * Math.pow(1.0 - len, 4) / len;
-        for (let i = 0; i < g.dim; ++i)
-          s[i] += f * d[i];
+        for (let i = 0; i < dim; ++i)
+          out[i] += f * d[i];
       }
     }
   };
@@ -513,13 +513,13 @@ export const embedSpring = (g, gram) => {
   ];
 
   const setForce = [
-    computeForcePhase1(g, pg.incidences(g), nextNearest),
-    computeForcePhase2(g, pg.incidences(g), nextNearest)
+    springForcePullOnly(g.dim, pg.incidences(g)),
+    springAndAngleForce(g.dim, pg.incidences(g), nextNearest)
   ];
 
   const temperature = [
     step => 1.0 - step / nrSteps[0],
-    step => 1.0 - (step + nrSteps[0]) / (nrSteps[1] + nrSteps[0]),
+    step => 1.0 - (step + nrSteps[0]) / (nrSteps[1] + nrSteps[0])
   ];
 
   const dot = dotProduct(gram);
