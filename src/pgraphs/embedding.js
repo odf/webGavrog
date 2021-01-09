@@ -605,8 +605,8 @@ export const embedSpring = (g, gramIn) => {
   ];
 
   const temperature = [
-    step => 1.0 - step / nrSteps[0],
-    step => 1.0 - (step + nrSteps[0]) / (nrSteps[1] + nrSteps[0])
+    completion => 1.0 - completion,
+    completion => 0.1 * Math.pow(1.0 - completion, 3)
   ];
 
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
@@ -620,7 +620,7 @@ export const embedSpring = (g, gramIn) => {
 
   for (const phase of [0, 1]) {
     for (let step = 0; step < nrSteps[phase]; ++step) {
-      const temp = temperature[phase](step);
+      const temp = temperature[phase](step / nrSteps[phase]);
       const scale = (1.0 + temp) / avgSqLen;
 
       const k = Math.floor(Math.random() * orbits.length);
