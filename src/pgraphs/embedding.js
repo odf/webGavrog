@@ -326,7 +326,7 @@ export const embed = (g, separationFactor=0.5) => {
     degreesOfFreedom: gramParams.length + posParams.length - shiftSpace.length
   };
 
-  console.log(`${Math.round(t())} msec to prepare for embedding`);
+  console.log(`${Math.round(t())} msec to prepare amoeba embedder`);
 
   for (const kind of [ 'barycentric', 'relaxed' ]) {
     const nrSteps = kind == 'relaxed' ? 10000 : 500;
@@ -367,8 +367,7 @@ export const embed = (g, separationFactor=0.5) => {
     console.log(`${Math.round(t())} msec for ${kind} embedding`);
   }
 
-  result.spring = embedSpring(g, opsF.times(1.0, result.barycentric.gram));
-  console.log(`${Math.round(t())} msec for spring embedding`);
+  result.spring = embedSpring(g, gram);
 
   return result;
 };
@@ -492,7 +491,7 @@ const volumeMaximizedGramMatrix = (gramIn, g, gramSpace, pos, symOps) => {
   const energy = cellVolumeEnergy(g, gramSpace, pos, gram, tmp);
 
   const paramsIn = parametersForGramMatrix(gramIn, gramSpace, symOps);
-  const paramsOut = amoeba(energy, paramsIn, 500, 1e-6, 0.1).position;
+  const paramsOut = amoeba(energy, paramsIn, 100, 1e-6, 0.1).position;
 
   decodeGramMatrix(gram, paramsOut, gramSpace);
   return gram;
@@ -584,7 +583,9 @@ const applyTransformation = (dst, src, transform) => {
 };
 
 
-export const embedSpring = (g, gram) => {
+export const embedSpring = (g, gramIn) => {
+  const t = timer();
+
   const syms = symmetries.symmetries(g).symmetries;
   const orbits = nodeOrbits(g, syms);
   const symOps = syms.map(a => a.transform);
@@ -608,17 +609,17 @@ export const embedSpring = (g, gram) => {
     step => 1.0 - (step + nrSteps[0]) / (nrSteps[1] + nrSteps[0])
   ];
 
-  const dot = dotProduct(gram);
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const s = opsF.vector(g.dim);
 
-  let avgSqLen;
+  console.log(`${Math.round(t())} msec to prepare spring embedder`);
+
+  let gram = volumeMaximizedGramMatrix(gramIn, g, gramSpace, pos, symOps);
+  let dot = dotProduct(gram);
+  let avgSqLen = averageSquaredEdgeLength(g, pos, dot);
 
   for (const phase of [0, 1]) {
     for (let step = 0; step < nrSteps[phase]; ++step) {
-      if (step % 100 == 0 || step == nrSteps[phase] - 1)
-        avgSqLen = averageSquaredEdgeLength(g, pos, dot);
-
       const temp = temperature[phase](step);
       const scale = (1.0 + temp) / avgSqLen;
 
@@ -635,8 +636,16 @@ export const embedSpring = (g, gram) => {
 
       for (const { node: w, transform } of images)
         applyTransformation(pos[w], pos[v], transform);
+
+      if (step % 100 == 99 || step == nrSteps[phase] - 1) {
+        gram = volumeMaximizedGramMatrix(gram, g, gramSpace, pos, symOps);
+        dot = dotProduct(gram);
+        avgSqLen = averageSquaredEdgeLength(g, pos, dot);
+      }
     }
   }
+
+  console.log(`${Math.round(t())} msec to compute spring embedding`);
 
   return { gram: opsF.times(1.0 / avgSqLen, gram), positions: pos };
 };
