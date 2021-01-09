@@ -592,12 +592,9 @@ export const embedSpring = (g, gramIn) => {
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
   const nextNearest = secondaryIncidences(g);
-  const totalSteps = Math.pow(Math.max(100, orbits.length), 2);
+  const N = Math.max(100, orbits.length);
 
-  const nrSteps = [
-    Math.floor(totalSteps / 2),
-    Math.floor(totalSteps / 2)
-  ];
+  const nrSteps = [ N * N, N * N ];
 
   const setForce = [
     springForcePullOnly(g.dim, pg.incidences(g)),
@@ -605,7 +602,7 @@ export const embedSpring = (g, gramIn) => {
   ];
 
   const temperature = [
-    completion => 1.0 - completion,
+    completion => 1.01 - completion,
     completion => 0.1 * Math.pow(1.0 - completion, 3)
   ];
 
