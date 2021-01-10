@@ -336,6 +336,9 @@ export const minimalImage = graph => minimalImageWithOrbits(graph).graph;
 
 
 export const symmetries = graph => {
+  if (graph._$syms != undefined)
+    return graph._$syms;
+
   if (!pg.isLocallyStable(graph))
     throw new Error('graph is not locally stable; cannot compute symmetries');
 
@@ -378,7 +381,8 @@ export const symmetries = graph => {
   const identity = automorphism(v0, v0, ops.identityMatrix(graph.dim), ebv);
   const syms = groupOfAutomorphisms(identity, gens);
 
-  return { representativeEdgeLists, symmetries: syms };
+  graph._$syms = { representativeEdgeLists, symmetries: syms };
+  return graph._$syms;
 };
 
 
