@@ -457,16 +457,10 @@ const decodeGramMatrix= (G, params, gramSpace) => {
 }
 
 
-const cellVolumeEnergy = (g, gramSpace, pos, G, d) => params => {
-  decodeGramMatrix(G, params, gramSpace);
-
-  const squaredCellVolume = det(G);
-
-  if (squaredCellVolume < 1e-12)
-    return 1e12;
-
-  const dim = d.length;
-  let edgeSum = 0;
+const cellVolumeEnergy = (g, gramSpace, pos, G) => {
+  const dim = g.dim;
+  const d = opsF.vector(dim);
+  const coeff = opsF.matrix(dim, dim);
 
   for (const v of pg.vertices(g)) {
     for (const e of pg.incidences(g)[v]) {
@@ -475,23 +469,37 @@ const cellVolumeEnergy = (g, gramSpace, pos, G, d) => params => {
 
       for (let i = 0; i < dim; ++i) {
         for (let j = 0; j < dim; ++j)
-          edgeSum += d[i] * G[i][j] * d[j];
+          coeff[i][j] += d[i] * d[j];
       }
     }
   }
 
-  return Math.pow(edgeSum, dim) / squaredCellVolume;
+  return params => {
+    decodeGramMatrix(G, params, gramSpace);
+
+    const squaredCellVolume = det(G);
+
+    if (squaredCellVolume < 1e-12)
+      return 1e12;
+
+    let edgeSum = 0;
+
+    for (let i = 0; i < dim; ++i) {
+      for (let j = 0; j < dim; ++j)
+        edgeSum += coeff[i][j] * G[i][j];
+    }
+
+    return Math.pow(edgeSum, dim) / squaredCellVolume;
+  };
 };
 
 
 const volumeMaximizedGramMatrix = (gramIn, g, gramSpace, pos, symOps) => {
-  const dim = g.dim;
-  const gram = opsF.matrix(dim, dim);
-  const tmp = opsF.vector(dim);
-  const energy = cellVolumeEnergy(g, gramSpace, pos, gram, tmp);
+  const gram = opsF.matrix(g.dim, g.dim);
+  const energy = cellVolumeEnergy(g, gramSpace, pos, gram);
 
   const paramsIn = parametersForGramMatrix(gramIn, gramSpace, symOps);
-  const paramsOut = amoeba(energy, paramsIn, 100, 1e-6, 0.1).position;
+  const paramsOut = amoeba(energy, paramsIn, 1000, 1e-6, 0.1).position;
 
   decodeGramMatrix(gram, paramsOut, gramSpace);
   return gram;
