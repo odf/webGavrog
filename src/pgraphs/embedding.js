@@ -643,8 +643,10 @@ export const embedSpring = (g, gramIn) => {
         applyTransformation(pos[w], pos[v], transform);
 
       if (step % 100 == 99 || step == nrSteps[phase] - 1) {
-        gram = volumeMaximizedGramMatrix(gram, g, gramSpace, pos, symOps);
-        dot = dotProduct(gram);
+        if (gramSpace.length > 1) {
+          gram = volumeMaximizedGramMatrix(gram, g, gramSpace, pos, symOps);
+          dot = dotProduct(gram);
+        }
         avgSqLen = averageSquaredEdgeLength(g, pos, dot);
       }
     }
