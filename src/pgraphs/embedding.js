@@ -308,7 +308,7 @@ class Evaluator {
 };
 
 
-export const embed = (g, separationFactor=0.5) => {
+export const embedAmoeba = (g, separationFactor=0.5) => {
   const t = timer();
 
   const syms = symmetries.symmetries(g).symmetries;
@@ -321,55 +321,41 @@ export const embed = (g, separationFactor=0.5) => {
   const positions = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const gramParams = parametersForGramMatrix(gram, gramSpace, symOps);
   const posParams = parametersForPositions(positions, posSpace);
-  const shiftSpace = sg.shiftSpace(syms.map(s => s.transform)) || [];
-  const result = {
-    degreesOfFreedom: gramParams.length + posParams.length - shiftSpace.length
-  };
 
   console.log(`${Math.round(t())} msec to prepare amoeba embedder`);
 
-  for (const kind of [ 'barycentric', 'relaxed' ]) {
-    const nrSteps = kind == 'relaxed' ? 10000 : 500;
-    const fixedPos = kind == 'relaxed' ? null : positions;
-    const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, fixedPos);
+  const nrSteps = 10000;
+  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits);
 
-    let params = kind == 'relaxed' ? gramParams.concat(posParams) : gramParams;
+  let params = gramParams.concat(posParams);
 
-    if (params.length > 1) {
-      for (let pass = 0; pass < 5; ++pass) {
-        const energy = kind == 'barycentric' ?
-          params => evaluator.cellVolumeEnergy(params) :
-          params => evaluator.energy(params, Math.pow(10, -pass));
+  for (let pass = 0; pass < 5; ++pass) {
+    const energy = params => evaluator.energy(params, Math.pow(10, -pass));
 
-        const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
-        const { positions, gram } = evaluator.geometry(newParams);
+    const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
+    const { positions, gram } = evaluator.geometry(newParams);
 
-        const dot = dotProduct(gram);
-        const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
-        const separation = stats.shortestNonEdge(g, positions, dot);
+    const dot = dotProduct(gram);
+    const { minimum, maximum } = stats.edgeStatistics(g, positions, dot);
+    const separation = stats.shortestNonEdge(g, positions, dot);
 
-        if (separation < minimum * separationFactor) {
-          console.log(`relaxation failed in pass ${pass}:`);
-          console.log(`  min/max edge length: ${minimum}, ${maximum}`);
-          console.log(`  vertex separation: ${separation}`);
-          break;
-        }
-        else {
-          params = newParams;
-
-          if ((maximum - minimum) < 1.0e-5)
-            break;
-        }
-      }
+    if (separation < minimum * separationFactor) {
+      console.log(`relaxation failed in pass ${pass}:`);
+      console.log(`  min/max edge length: ${minimum}, ${maximum}`);
+      console.log(`  vertex separation: ${separation}`);
+      break;
     }
+    else {
+      params = newParams;
 
-    result[kind] = evaluator.geometry(params);
-    console.log(`${Math.round(t())} msec for ${kind} embedding`);
+      if ((maximum - minimum) < 1.0e-5)
+        break;
+    }
   }
 
-  result.spring = embedSpring(g, gram);
+  console.log(`${Math.round(t())} msec to compute amoeba embedding`);
 
-  return result;
+  return evaluator.geometry(params);
 };
 
 
@@ -591,15 +577,19 @@ const applyTransformation = (dst, src, transform) => {
 };
 
 
-export const embedSpring = (g, gramIn) => {
+export const embed = g => {
   const t = timer();
 
   const syms = symmetries.symmetries(g).symmetries;
-  const orbits = nodeOrbits(g, syms);
   const symOps = syms.map(a => a.transform);
+  const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
+  const shiftSpace = sg.shiftSpace(symOps) || [];
 
+  const orbits = nodeOrbits(g, syms);
+  const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
   const nextNearest = secondaryIncidences(g);
+
   const N = Math.max(100, orbits.length);
 
   const nrSteps = [ N * N, N * N ];
@@ -615,13 +605,22 @@ export const embedSpring = (g, gramIn) => {
   ];
 
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
+  const posParams = parametersForPositions(pos, posSpace);
   const s = opsF.vector(g.dim);
 
   console.log(`${Math.round(t())} msec to prepare spring embedder`);
 
-  let gram = volumeMaximizedGramMatrix(gramIn, g, gramSpace, pos, symOps);
+  let gram = volumeMaximizedGramMatrix(gramRaw, g, gramSpace, pos, symOps);
   let dot = dotProduct(gram);
   let avgSqLen = averageSquaredEdgeLength(g, pos, dot);
+
+  const result = {
+    degreesOfFreedom: gramSpace.length + posParams.length - shiftSpace.length,
+    barycentric: { 
+      gram: opsF.div(gram, avgSqLen),
+      positions: mapObject(pos, p => p.slice())
+    }
+  };
 
   for (const phase of [0, 1]) {
     for (let step = 0; step < nrSteps[phase]; ++step) {
@@ -654,7 +653,10 @@ export const embedSpring = (g, gramIn) => {
 
   console.log(`${Math.round(t())} msec to compute spring embedding`);
 
-  return { gram: opsF.times(1.0 / avgSqLen, gram), positions: pos };
+  result.spring = { gram: opsF.times(1.0 / avgSqLen, gram), positions: pos };
+  result.relaxed = embedAmoeba(g);
+
+  return result;
 };
 
 
