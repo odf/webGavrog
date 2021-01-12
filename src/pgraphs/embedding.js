@@ -625,7 +625,7 @@ export const embed = g => {
   for (const phase of [0, 1]) {
     for (let step = 0; step < nrSteps[phase]; ++step) {
       const temp = temperature[phase](step / nrSteps[phase]);
-      const scale = (1.0 + temp) / avgSqLen;
+      const scale = Math.pow(1.0 + temp, 2) / avgSqLen;
 
       const k = Math.floor(Math.random() * orbits.length);
       const { node: v, images, symmetrizer } = orbits[k];
