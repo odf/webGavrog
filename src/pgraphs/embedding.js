@@ -330,10 +330,7 @@ export const embedAmoeba = (g, separationFactor=0.5) => {
 
   for (let pass = 0; pass < 5; ++pass) {
     const volWeight = Math.pow(10, -pass);
-    const energy =
-      //params => evaluator.energy(params, volWeight);
-      params => evaluator.springEnergy(params, volWeight);
-
+    const energy = params => evaluator.energy(params, volWeight);
     const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
     const { positions, gram } = evaluator.geometry(newParams);
 
@@ -358,6 +355,32 @@ export const embedAmoeba = (g, separationFactor=0.5) => {
   console.log(`${Math.round(t())} msec to compute amoeba embedding`);
 
   return evaluator.geometry(params);
+};
+
+
+const refineEmbedding = (g, positions, gram) => {
+  const t = timer();
+
+  const syms = symmetries.symmetries(g).symmetries;
+  const symOps = syms.map(a => a.transform);
+  const edgeOrbits = symmetries.edgeOrbits(g, syms);
+  const posSpace = coordinateParametrization(g, syms);
+  const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
+
+  const gramParams = parametersForGramMatrix(gram, gramSpace, symOps);
+  const posParams = parametersForPositions(positions, posSpace);
+
+  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits);
+  const energy = params => evaluator.springEnergy(params, 1e-4);
+
+  console.log(`${Math.round(t())} msec to prepare refined embedding`);
+
+  const paramsIn = gramParams.concat(posParams);
+  const paramsOut = amoeba(energy, paramsIn, 1000, 1e-6, 0.1).position;
+
+  console.log(`${Math.round(t())} msec to compute refined embedding`);
+
+  return evaluator.geometry(paramsOut);
 };
 
 
@@ -655,7 +678,8 @@ export const embed = g => {
 
   console.log(`${Math.round(t())} msec to compute spring embedding`);
 
-  result.spring = { gram: opsF.times(1.0 / avgSqLen, gram), positions: pos };
+  //result.spring = refineEmbedding(g, pos, opsF.div(gram, avgSqLen));
+  result.spring = { gram: opsF.div(gram, avgSqLen), positions: pos };
   result.relaxed = embedAmoeba(g);
 
   return result;
