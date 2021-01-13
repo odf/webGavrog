@@ -54,6 +54,32 @@ const projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
 
+const distance2Graph = g => {
+  const edges = [];
+
+  for (const v of pg.vertices(g)) {
+    const seen = { [[v, opsF.vector(g.dim)]]: true };
+
+    for (const e1 of pg.incidences(g)[v])
+      seen[[e1.tail, e1.shift]] = true;
+
+    for (const e1 of pg.incidences(g)[v]) {
+      for (const e2 of pg.incidences(g)[e1.tail]) {
+        const w = e2.tail;
+        const s = opsQ.plus(e1.shift, e2.shift);
+
+        if (!seen[[w, s]]) {
+          seen[[w, s]] = true;
+          edges.push(pg.makeEdge(v, w, s));
+        }
+      }
+    }
+  }
+
+  return pg.makeGraph(edges);
+}
+
+
 const nodeSymmetrizer = (v, syms, pos) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const m = opsQ.div(stab.reduce((a, b) => opsQ.plus(a, b)), stab.length);
@@ -384,31 +410,6 @@ const refineEmbedding = (g, positions, gram) => {
 };
 
 
-const secondaryIncidences = g => {
-  const nearest = pg.incidences(g);
-  const nextNearest = {};
-
-  for (const v of pg.vertices(g)) {
-    const seen = { [[v, opsF.vector(g.dim)]]: true };
-    nextNearest[v] = [];
-
-    for (const e1 of nearest[v]) {
-      for (const e2 of nearest[e1.tail]) {
-        const w = e2.tail;
-        const s = opsQ.plus(e1.shift, e2.shift);
-
-        if (!seen[[w, s]]) {
-          seen[[w, s]] = true;
-          nextNearest[v].push(pg.makeEdge(v, w, s));
-        }
-      }
-    }
-  }
-
-  return nextNearest;
-};
-
-
 const nodeOrbits = (g, syms) => {
   const pos = pg.barycentricPlacement(g);
 
@@ -613,7 +614,7 @@ export const embed = g => {
 
   const orbits = nodeOrbits(g, syms);
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
-  const nextNearest = secondaryIncidences(g);
+  const nextNearest = pg.incidences(distance2Graph(g));
 
   const N = Math.max(100, orbits.length);
 
