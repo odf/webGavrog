@@ -4,8 +4,14 @@ import * as stats from './statistics';
 import * as sg from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
 import amoeba from '../common/amoeba';
+import * as part from '../common/unionFind';
 
 import { timer } from '../common/timing';
+
+import {
+  serialize as encode,
+  deserialize as decode
+} from '../common/pickler';
 
 import {
   rationalLinearAlgebra as opsQ,
@@ -58,7 +64,7 @@ const distance2Graph = g => {
   const edges = [];
 
   for (const v of pg.vertices(g)) {
-    const seen = { [[v, opsF.vector(g.dim)]]: true };
+    const seen = { [[v, opsQ.vector(g.dim)]]: true };
 
     for (const e1 of pg.incidences(g)[v])
       seen[[e1.tail, e1.shift]] = true;
@@ -70,7 +76,7 @@ const distance2Graph = g => {
 
         if (!seen[[w, s]]) {
           seen[[w, s]] = true;
-          edges.push(pg.makeEdge(v, w, s));
+          edges.push([v, w, s]);
         }
       }
     }
@@ -78,6 +84,44 @@ const distance2Graph = g => {
 
   return pg.makeGraph(edges);
 }
+
+
+const equivalenceClasses = (equivs, elements) => {
+  const repToClass = {};
+  const classes = [];
+
+  for (const v of elements) {
+    const rep = equivs.find(v);
+    if (repToClass[rep] == null) {
+      repToClass[rep] = classes.length;
+      classes.push([v]);
+    }
+    else
+      classes[repToClass[rep]].push(v);
+  }
+
+  return classes;
+};
+
+
+const antiEdgeOrbits = (g, syms) => {
+  const g2 = distance2Graph(g);
+  const edges = g2.edges;
+  const p = new part.Partition();
+
+  for (const { src2img, transform } of syms) {
+    for (const eSrc of edges) {
+      const eImg = pg.makeEdge(
+        src2img[eSrc.head],
+        src2img[eSrc.tail],
+        opsQ.times(eSrc.shift, transform)
+      );
+      p.union(encode(eSrc), encode(eImg));
+    }
+  }
+
+  return equivalenceClasses(p, edges.map(encode)).map(cl => cl.map(decode));
+};
 
 
 const nodeSymmetrizer = (v, syms, pos) => {
@@ -171,7 +215,7 @@ const parametersForPositions = (positions, positionSpace) => {
 
 
 class Evaluator {
-  constructor(posSpace, gramSpace, edgeOrbits) {
+  constructor(posSpace, gramSpace, edgeOrbits, antiEdgeOrbits=null) {
     this.posSpace = posSpace;
     this.gramSpace = gramSpace;
     this.posOffset = gramSpace.length;
@@ -193,9 +237,15 @@ class Evaluator {
     const weightSum = sumBy(edgeOrbits, orb => orb.length);
     this.edgeWeights = edgeOrbits.map(orb => orb.length / weightSum);
     this.edgeReps = edgeOrbits.map(([e]) => e);
-
     this.edgeLengths = edgeOrbits.map(_ => 0);
     this.avgEdgeLength = 0;
+
+    if (antiEdgeOrbits) {
+      const weightSum = sumBy(antiEdgeOrbits, orb => orb.length);
+      this.antiEdgeWeights = antiEdgeOrbits.map(orb => orb.length / weightSum);
+      this.antiEdgeReps = antiEdgeOrbits.map(([e]) => e);
+      this.antiEdgeLengths = antiEdgeOrbits.map(_ => 0);
+    }
   }
 
   setParameters(params) {
@@ -277,10 +327,32 @@ class Evaluator {
     this.avgEdgeLength = avg;
   }
 
+  computeAntiEdgeLengths() {
+    for (let i = 0; i < this.antiEdgeReps.length; ++i) {
+      const edge = this.antiEdgeReps[i];
+
+      const pv = this.position(edge.head);
+      const pw = this.position(edge.tail);
+      const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
+
+      let s = 0;
+      for (let i = 0; i < diff.length; ++i) {
+        s += this.gram[i][i] * diff[i] * diff[i];
+        for (let j = i + 1; j < diff.length; ++j)
+          s += 2 * this.gram[i][j] * diff[i] * diff[j];
+      }
+
+      this.antiEdgeLengths[i] = Math.sqrt(Math.max(0, s));
+    }
+  }
+
   update(params) {
     this.setParameters(params);
     this.computeGramMatrix();
     this.computeEdgeLengths();
+
+    if (this.antiEdgeReps)
+      this.computeAntiEdgeLengths();
   }
 
   geometry(params) {
@@ -317,18 +389,24 @@ class Evaluator {
   springEnergy(params, volumeWeight) {
     this.update(params);
 
-    const scale = 1.01 / Math.max(this.avgEdgeLength, 0.001);
+    const scale = 1.0 / Math.max(this.avgEdgeLength, 0.001);
 
     const edgeEnergy = sumBy(this.edgeLengths, (length, i) => {
       return this.edgeWeights[i] * Math.pow(length * scale - 1, 2) / 2;
     });
 
-    //TODO add next-nearest neighbor repulsion
+    const antiEdgeEnergy = sumBy(this.antiEdgeLengths, (length, i) => {
+      const len = length * scale;
+      if (len < 1)
+        return this.antiEdgeWeights[i] * Math.pow(1.0 - len, 5);
+      else
+        return 0;
+    });
 
     const cellVolume = Math.sqrt(det(this.gram)) * Math.pow(scale, this.dim)
     const volumeEnergy = Math.pow(Math.max(1e-9, cellVolume), -1 / this.dim);
 
-    return edgeEnergy + volumeWeight * volumeEnergy;
+    return edgeEnergy + antiEdgeEnergy + volumeWeight * volumeEnergy;
   }
 };
 
@@ -390,13 +468,14 @@ const refineEmbedding = (g, positions, gram) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
+  const antiOrbits = antiEdgeOrbits(g, syms);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
   const gramParams = parametersForGramMatrix(gram, gramSpace, symOps);
   const posParams = parametersForPositions(positions, posSpace);
 
-  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits);
+  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, antiOrbits);
   const energy = params => evaluator.springEnergy(params, 1e-4);
 
   console.log(`${Math.round(t())} msec to prepare refined embedding`);
