@@ -145,11 +145,10 @@ const parametersForPositions = (positions, positionSpace) => {
 
 
 class Evaluator {
-  constructor(posSpace, gramSpace, edgeOrbits, fixedPositions=null) {
+  constructor(posSpace, gramSpace, edgeOrbits) {
     this.posSpace = posSpace;
     this.gramSpace = gramSpace;
     this.posOffset = gramSpace.length;
-    this.fixedPositions = fixedPositions;
 
     this.vertices = Object.keys(posSpace);
     this.nrVertices = this.vertices.length;
@@ -209,26 +208,22 @@ class Evaluator {
   }
 
   position(v) {
-    if (this.fixedPositions)
-      return this.fixedPositions[v];
-    else {
-      if (!this.positionsValid[v]) {
-        const offset = this.posOffset + this.posSpace[v].index;
-        const cfg = this.posSpace[v].configSpace;
-        const n = cfg.length - 1;
-        const p = this.positions[v];
+    if (!this.positionsValid[v]) {
+      const offset = this.posOffset + this.posSpace[v].index;
+      const cfg = this.posSpace[v].configSpace;
+      const n = cfg.length - 1;
+      const p = this.positions[v];
 
-        for (let i = 0; i < this.dim; ++i) {
-          p[i] = cfg[n][i];
-          for (let k = 0; k < n; ++k)
-            p[i] += this.params[offset + k] * cfg[k][i];
-        }
-
-        this.positionsValid[v] = true;
+      for (let i = 0; i < this.dim; ++i) {
+        p[i] = cfg[n][i];
+        for (let k = 0; k < n; ++k)
+          p[i] += this.params[offset + k] * cfg[k][i];
       }
 
-      return this.positions[v];
+      this.positionsValid[v] = true;
     }
+
+    return this.positions[v];
   }
 
   computeEdgeLengths() {
@@ -293,17 +288,21 @@ class Evaluator {
     return edgePenalty + volumeWeight * volumePenalty;
   }
 
-  cellVolumeEnergy(params) {
+  springEnergy(params, volumeWeight) {
     this.update(params);
 
-    if (det(this.gram) < 1e-12)
-      return 1e12;
+    const scale = 1.01 / Math.max(this.avgEdgeLength, 0.001);
 
-    let edgeSum = 0;
-    for (let i = 0; i < this.edgeLengths.length; ++i)
-      edgeSum += Math.pow(this.edgeLengths[i], 2) * this.edgeWeights[i];
+    const edgeEnergy = sumBy(this.edgeLengths, (length, i) => {
+      return this.edgeWeights[i] * Math.pow(length * scale - 1, 2) / 2;
+    });
 
-    return Math.pow(edgeSum, this.dim) / det(this.gram);
+    //TODO add next-nearest neighbor repulsion
+
+    const cellVolume = Math.sqrt(det(this.gram)) * Math.pow(scale, this.dim)
+    const volumeEnergy = Math.pow(Math.max(1e-9, cellVolume), -1 / this.dim);
+
+    return edgeEnergy + volumeWeight * volumeEnergy;
   }
 };
 
@@ -330,7 +329,10 @@ export const embedAmoeba = (g, separationFactor=0.5) => {
   let params = gramParams.concat(posParams);
 
   for (let pass = 0; pass < 5; ++pass) {
-    const energy = params => evaluator.energy(params, Math.pow(10, -pass));
+    const volWeight = Math.pow(10, -pass);
+    const energy =
+      //params => evaluator.energy(params, volWeight);
+      params => evaluator.springEnergy(params, volWeight);
 
     const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
     const { positions, gram } = evaluator.geometry(newParams);
