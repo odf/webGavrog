@@ -386,7 +386,7 @@ class Evaluator {
     const cellVolume = Math.sqrt(det(this.gram)) * Math.pow(scale, this.dim)
     const volumeEnergy = Math.pow(Math.max(1e-9, cellVolume), -1 / this.dim);
 
-    return edgeEnergy + antiEdgeEnergy + volumeWeight * volumeEnergy;
+    return edgeEnergy + 8 / 5 * antiEdgeEnergy + volumeWeight * volumeEnergy;
   }
 };
 
