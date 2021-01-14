@@ -104,26 +104,6 @@ const equivalenceClasses = (equivs, elements) => {
 };
 
 
-const antiEdgeOrbits = (g, syms) => {
-  const g2 = distance2Graph(g);
-  const edges = g2.edges;
-  const p = new part.Partition();
-
-  for (const { src2img, transform } of syms) {
-    for (const eSrc of edges) {
-      const eImg = pg.makeEdge(
-        src2img[eSrc.head],
-        src2img[eSrc.tail],
-        opsQ.times(eSrc.shift, transform)
-      );
-      p.union(encode(eSrc), encode(eImg));
-    }
-  }
-
-  return equivalenceClasses(p, edges.map(encode)).map(cl => cl.map(decode));
-};
-
-
 const nodeSymmetrizer = (v, syms, pos) => {
   const stab = syms.filter(a => a.src2img[v] == v).map(phi => phi.transform);
   const m = opsQ.div(stab.reduce((a, b) => opsQ.plus(a, b)), stab.length);
@@ -468,7 +448,7 @@ const refineEmbedding = (g, positions, gram) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  const antiOrbits = antiEdgeOrbits(g, syms);
+  const antiOrbits = distance2Graph(g).edges.map(e => [e]);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
@@ -758,8 +738,8 @@ export const embed = g => {
 
   console.log(`${Math.round(t())} msec to compute spring embedding`);
 
-  //result.spring = refineEmbedding(g, pos, opsF.div(gram, avgSqLen));
-  result.spring = { gram: opsF.div(gram, avgSqLen), positions: pos };
+  result.spring = refineEmbedding(g, pos, opsF.div(gram, avgSqLen));
+  //result.spring = { gram: opsF.div(gram, avgSqLen), positions: pos };
   result.relaxed = embedAmoeba(g);
 
   return result;
