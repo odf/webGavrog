@@ -727,7 +727,7 @@ export const embed = g => {
         applyTransformation(pos[w], pos[v], transform);
 
       if (step % 100 == 99 || step == nrSteps[phase] - 1) {
-        if (gramSpace.length > 1) {
+        if (phase == 0 && gramSpace.length > 1) {
           gram = volumeMaximizedGramMatrix(gram, g, gramSpace, pos, symOps);
           dot = dotProduct(gram);
         }
