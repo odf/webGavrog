@@ -4,14 +4,8 @@ import * as stats from './statistics';
 import * as sg from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
 import amoeba from '../common/amoeba';
-import * as part from '../common/unionFind';
 
 import { timer } from '../common/timing';
-
-import {
-  serialize as encode,
-  deserialize as decode
-} from '../common/pickler';
 
 import {
   rationalLinearAlgebra as opsQ,
@@ -84,24 +78,6 @@ const distance2Graph = g => {
 
   return pg.makeGraph(edges);
 }
-
-
-const equivalenceClasses = (equivs, elements) => {
-  const repToClass = {};
-  const classes = [];
-
-  for (const v of elements) {
-    const rep = equivs.find(v);
-    if (repToClass[rep] == null) {
-      repToClass[rep] = classes.length;
-      classes.push([v]);
-    }
-    else
-      classes[repToClass[rep]].push(v);
-  }
-
-  return classes;
-};
 
 
 const nodeSymmetrizer = (v, syms, pos) => {
