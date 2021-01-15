@@ -397,6 +397,7 @@ export const embedAmoeba = (g, separationFactor=0.5) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
+  const antiOrbits = distance2Graph(g).edges.map(e => [e]);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
@@ -408,13 +409,13 @@ export const embedAmoeba = (g, separationFactor=0.5) => {
   console.log(`${Math.round(t())} msec to prepare amoeba embedder`);
 
   const nrSteps = 10000;
-  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits);
+  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, antiOrbits);
 
   let params = gramParams.concat(posParams);
 
   for (let pass = 0; pass < 5; ++pass) {
     const volWeight = Math.pow(10, -pass);
-    const energy = params => evaluator.energy(params, volWeight);
+    const energy = params => evaluator.springEnergy(params, volWeight);
     const newParams = amoeba(energy, params, nrSteps, 1e-6, 0.1).position;
     const { positions, gram } = evaluator.geometry(newParams);
 
