@@ -54,30 +54,34 @@ const projectiveMatrix = (linear, shift) =>
   linear.map(row => row.concat(0)).concat([shift.concat(1)]);
 
 
-const distance2Graph = g => {
+const localComplementGraph = (g, dist) => {
   const edges = [];
+  const zero = opsQ.vector(g.dim);
 
   for (const v of pg.vertices(g)) {
-    const seen = { [[v, opsQ.vector(g.dim)]]: true };
+    const seen = { [[v, zero]]: true };
+    const queue = [[v, zero, 0]];
 
-    for (const e1 of pg.incidences(g)[v])
-      seen[[e1.tail, e1.shift]] = true;
+    while (queue.length) {
+      const [u, s, d] = queue.shift();
+      if (d < dist) {
+        for (const e of pg.incidences(g)[u]) {
+          const w = e.tail;
+          const t = opsQ.plus(s, e.shift);
 
-    for (const e1 of pg.incidences(g)[v]) {
-      for (const e2 of pg.incidences(g)[e1.tail]) {
-        const w = e2.tail;
-        const s = opsQ.plus(e1.shift, e2.shift);
-
-        if (!seen[[w, s]]) {
-          seen[[w, s]] = true;
-          edges.push([v, w, s]);
+          if (!seen[[w, t]]) {
+            seen[[w, t]] = true;
+            queue.push([w, t, d + 1]);
+            if (d > 0)
+              edges.push(pg.makeEdge(v, w, t));
+          }
         }
       }
     }
   }
 
   return pg.makeGraph(edges);
-}
+};
 
 
 const nodeSymmetrizer = (v, syms, pos) => {
@@ -373,7 +377,7 @@ export const embedAmoeba = (g, separationFactor=0.5) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  const antiOrbits = distance2Graph(g).edges.map(e => [e]);
+  const antiOrbits = localComplementGraph(g, 2).edges.map(e => [e]);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
@@ -425,7 +429,7 @@ const refineEmbedding = (g, positions, gram) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  const antiOrbits = distance2Graph(g).edges.map(e => [e]);
+  const antiOrbits = localComplementGraph(g, 2).edges.map(e => [e]);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
@@ -650,7 +654,7 @@ export const embed = g => {
 
   const orbits = nodeOrbits(g, syms);
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
-  const nextNearest = pg.incidences(distance2Graph(g));
+  const nextNearest = pg.incidences(localComplementGraph(g, 2));
 
   const N = Math.max(100, orbits.length);
 
