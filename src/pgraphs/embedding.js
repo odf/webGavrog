@@ -377,7 +377,7 @@ export const embedAmoeba = (g, separationFactor=0.5) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  const antiOrbits = localComplementGraph(g, 2).edges.map(e => [e]);
+  const antiOrbits = localComplementGraph(g, g.dim).edges.map(e => [e]);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
@@ -429,7 +429,7 @@ const refineEmbedding = (g, positions, gram) => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
   const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  const antiOrbits = localComplementGraph(g, 2).edges.map(e => [e]);
+  const antiOrbits = localComplementGraph(g, g.dim).edges.map(e => [e]);
   const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
 
@@ -654,7 +654,7 @@ export const embed = g => {
 
   const orbits = nodeOrbits(g, syms);
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
-  const nextNearest = pg.incidences(localComplementGraph(g, 2));
+  const nextNearest = pg.incidences(localComplementGraph(g, g.dim));
 
   const N = Math.max(100, orbits.length);
 
