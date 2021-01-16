@@ -399,7 +399,7 @@ const processGraph = (
 
   if (!isLadder) {
     const eOut = embed(G);
-    const embedding = options.relaxPositions ? eOut.relaxed : eOut.barycentric;
+    const embedding = options.relaxPositions ? eOut.spring : eOut.barycentric;
     const data = embeddingData(G, sgInfo.toStd, syms, embedding);
 
     writeInfo(`   Degrees of freedom: ${eOut.degreesOfFreedom}`);
