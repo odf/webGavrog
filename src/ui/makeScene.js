@@ -253,10 +253,8 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
 const pickEmbedding = (embeddings, options) => {
   if (options.skipRelaxation)
     return embeddings.barycentric;
-  else if (options.useSprings)
-    return embeddings.spring;
   else
-    return embeddings.relaxed;
+    return embeddings.spring;
 };
 
 

@@ -723,7 +723,7 @@ export const embed = g => {
 
   result.spring = refineEmbedding(g, pos, opsF.div(gram, avgSqLen));
   //result.spring = { gram: opsF.div(gram, avgSqLen), positions: pos };
-  result.relaxed = embedAmoeba(g);
+  //result.relaxed = embedAmoeba(g);
 
   return result;
 };
@@ -760,7 +760,7 @@ if (require.main == module) {
         console.log(`    ${v} -> ${embeddings.positions[v]}`);
       console.log();
 
-      embeddings = embedResult.relaxed;
+      embeddings = embedResult.spring;
 
       console.log(`  relaxed gram: ${embeddings.gram}`);
       console.log(`  relaxed positions:`);

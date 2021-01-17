@@ -286,7 +286,6 @@ type alias ModifierSettings =
 
 type alias EmbeddingSettings =
     { skipRelaxation : Bool
-    , useSprings : Bool
     }
 
 
@@ -397,7 +396,6 @@ init flags =
             }
       , embeddingSettings =
             { skipRelaxation = False
-            , useSprings = False
             }
       }
     , Task.perform
@@ -963,9 +961,6 @@ update msg model =
                         [ ( "skipRelaxation"
                           , Encode.bool settings.skipRelaxation
                           )
-                        , ( "useSprings"
-                          , Encode.bool settings.useSprings
-                          )
                         ]
                 in
                 ( { model | embeddingSettings = settings }
@@ -1333,7 +1328,7 @@ handleJSData : Decode.Value -> Model -> Model
 handleJSData value model =
     case Decode.decodeValue decodeInData value of
         Err e ->
-            { model | status = Decode.errorToString e }
+            { model | status = (Decode.errorToString e) }
 
         Ok data ->
             case data of
@@ -2218,15 +2213,7 @@ viewEmbeddingSettings toMsg settings =
             , icon = Input.defaultCheckbox
             , checked = settings.skipRelaxation
             , label =
-                Input.labelRight [] <| Element.text "Skip Relaxation"
-            }
-        , Input.checkbox []
-            { onChange =
-                \onOff -> toMsg { settings | useSprings = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.useSprings
-            , label =
-                Input.labelRight [] <| Element.text "Use Springs"
+                Input.labelRight [] <| Element.text "SkipRelaxation"
             }
         ]
 
