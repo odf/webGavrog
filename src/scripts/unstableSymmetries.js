@@ -6,9 +6,11 @@ import {
 } from '../common/pickler';
 
 import { structures } from '../io/cgd';
+import parseDSymbols from '../io/ds';
 import { vertices, barycentricPlacement } from '../pgraphs/periodic';
 import { stationarySymmetries } from '../pgraphs/symmetries';
 import { coordinateChangesQ as ops } from '../geometry/types';
+import * as tilings from '../dsymbols/tilings';
 
 
 Array.prototype.toString = function() {
@@ -17,6 +19,17 @@ Array.prototype.toString = function() {
 
 const modZ = v => v.map(x => ops.mod(x, 1));
 const idivZ = v => v.map(x => ops.idiv(x, 1));
+
+
+const nets = function*(data, fileName) {
+  if (fileName.match(/\.(ds|tgs)$/))
+    for (const t of parseDSymbols(data)) {
+      const g = tilings.skeleton(tilings.makeCover(t.symbol));
+      yield Object.assign({ warnings: [], errors: [] }, g, t);
+    }
+  else if (fileName.match(/\.(cgd|pgr)$/))
+    yield* structures(data);
+};
 
 
 const cycles = (perm, verts) => {
@@ -47,7 +60,7 @@ const cycles = (perm, verts) => {
 for (const path of process.argv.slice(2)) {
   const text = fs.readFileSync(path, { encoding: 'utf8' });
 
-  for (const { graph, name } of structures(text)) {
+  for (const { graph, name } of nets(text, path)) {
     console.log(name);
     console.log();
 
