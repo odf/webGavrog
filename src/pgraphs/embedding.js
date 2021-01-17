@@ -439,10 +439,12 @@ const refineEmbedding = (g, positions, gram) => {
   const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, antiOrbits);
   const energy = params => evaluator.springEnergy(params, 1e-4);
 
+  const nrSteps = 100 * (gramParams.length + posParams.length);
+
   console.log(`${Math.round(t())} msec to prepare refined embedding`);
 
   const paramsIn = gramParams.concat(posParams);
-  const paramsOut = amoeba(energy, paramsIn, 1000, 1e-6, 0.1).position;
+  const paramsOut = amoeba(energy, paramsIn, nrSteps, 1e-6, 0.1).position;
 
   console.log(`${Math.round(t())} msec to compute refined embedding`);
 
