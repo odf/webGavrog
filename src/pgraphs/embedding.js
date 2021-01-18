@@ -555,6 +555,10 @@ const applyTransformation = (dst, src, transform) => {
 };
 
 
+const hot = completion => 1.01 - completion;
+const cool = completion => 0.1 * Math.pow(1.0 - completion, 3);
+
+
 export const embed = g => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
@@ -566,16 +570,6 @@ export const embed = g => {
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
   const edges = pg.incidences(g);
   const antiEdges = pg.incidences(localComplementGraph(g, g.dim));
-
-  const N = Math.max(100, orbits.length);
-
-  const nrSteps = [ N * N, N * N ];
-  const setForce = [ springForcePullOnly, springAndAngleForce ];
-
-  const temperature = [
-    completion => 1.01 - completion,
-    completion => 0.1 * Math.pow(1.0 - completion, 3)
-  ];
 
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const posParams = parametersForPositions(pos, posSpace);
@@ -594,15 +588,22 @@ export const embed = g => {
     }
   };
 
-  for (const phase of [0, 1]) {
-    for (let step = 0; step < nrSteps[phase]; ++step) {
-      const temp = temperature[phase](step / nrSteps[phase]);
+  const N = Math.max(100, orbits.length);
+
+  const phases = [
+    { nrSteps: N * N, setForce: springForcePullOnly, temperature: hot },
+    { nrSteps: N * N, setForce: springAndAngleForce, temperature: cool }
+  ];
+
+  for (const { nrSteps, setForce, temperature } of phases) {
+    for (let step = 0; step < nrSteps; ++step) {
+      const temp = temperature(step / nrSteps);
       const scale = Math.pow(1.0 + temp, 2) / avgSqLen;
 
       const k = Math.floor(Math.random() * orbits.length);
       const { node: v, images, symmetrizer } = orbits[k];
 
-      setForce[phase](s, v, pos, dot, scale, d, edges[v], antiEdges[v]);
+      setForce(s, v, pos, dot, scale, d, edges[v], antiEdges[v]);
 
       const f = Math.min(temp / Math.sqrt(dot(s, s) * scale), 1.0);
       for (let i = 0; i < g.dim; ++i)
@@ -613,8 +614,8 @@ export const embed = g => {
       for (const { node: w, transform } of images)
         applyTransformation(pos[w], pos[v], transform);
 
-      if (step % 100 == 99 || step == nrSteps[phase] - 1) {
-        if (phase == 0 && gramSpace.length > 1) {
+      if (step % 100 == 99 || step == nrSteps - 1) {
+        if (setForce == springForcePullOnly && gramSpace.length > 1) {
           gram = volumeMaximizedGramMatrix(gram, g, gramSpace, pos, symOps);
           dot = dotProduct(gram);
         }
