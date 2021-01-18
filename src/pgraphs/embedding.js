@@ -497,60 +497,52 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
 };
 
 
-const springForcePullOnly = (dim, nearest) => {
-  const d = opsF.vector(dim);
+const springForcePullOnly = (out, v, pos, dot, scale, d, edges) => {
+  for (let i = 0; i < out.length; ++i)
+    out[i] = 0;
 
-  return (out, v, pos, dot, scale) => {
-    for (let i = 0; i < dim; ++i)
-      out[i] = 0;
+  for (const e of edges) {
+    for (let i = 0; i < out.length; ++i)
+      d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
-    for (const e of nearest[v]) {
-      for (let i = 0; i < dim; ++i)
-        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+    const len = Math.sqrt(dot(d, d) * scale);
+    const f = (len - 1.0) / len;
 
-      const len = Math.sqrt(dot(d, d) * scale);
-      const f = (len - 1.0) / len;
-
-      if (f > 0) {
-        for (let i = 0; i < dim; ++i)
-          out[i] += f * d[i];
-      }
+    if (f > 0) {
+      for (let i = 0; i < out.length; ++i)
+        out[i] += f * d[i];
     }
-  };
+  }
 };
 
 
-const springAndAngleForce = (dim, nearest, nextNearest) => {
-  const d = opsF.vector(dim);
+const springAndAngleForce = (out, v, pos, dot, scale, d, edges, antiEdges) => {
+  for (let i = 0; i < out.length; ++i)
+    out[i] = 0;
 
-  return (out, v, pos, dot, scale) => {
-    for (let i = 0; i < dim; ++i)
-      out[i] = 0;
+  for (const e of edges) {
+    for (let i = 0; i < out.length; ++i)
+      d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
-    for (const e of nearest[v]) {
-      for (let i = 0; i < dim; ++i)
-        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+    const len = Math.sqrt(dot(d, d) * scale);
+    const f = (len - 1.0) / len;
 
-      const len = Math.sqrt(dot(d, d) * scale);
-      const f = (len - 1.0) / len;
+    for (let i = 0; i < out.length; ++i)
+      out[i] += f * d[i];
+  }
 
-      for (let i = 0; i < dim; ++i)
+  for (const e of antiEdges) {
+    for (let i = 0; i < out.length; ++i)
+      d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
+
+    const len = Math.sqrt(dot(d, d) * scale);
+
+    if (len < 1) {
+      const f = -8 * Math.pow(1.0 - len, 4) / len;
+      for (let i = 0; i < out.length; ++i)
         out[i] += f * d[i];
     }
-
-    for (const e of nextNearest[v]) {
-      for (let i = 0; i < dim; ++i)
-        d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
-
-      const len = Math.sqrt(dot(d, d) * scale);
-
-      if (len < 1) {
-        const f = -8 * Math.pow(1.0 - len, 4) / len;
-        for (let i = 0; i < dim; ++i)
-          out[i] += f * d[i];
-      }
-    }
-  };
+  }
 };
 
 
@@ -572,16 +564,13 @@ export const embed = g => {
 
   const orbits = nodeOrbits(g, syms);
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
-  const nextNearest = pg.incidences(localComplementGraph(g, g.dim));
+  const edges = pg.incidences(g);
+  const antiEdges = pg.incidences(localComplementGraph(g, g.dim));
 
   const N = Math.max(100, orbits.length);
 
   const nrSteps = [ N * N, N * N ];
-
-  const setForce = [
-    springForcePullOnly(g.dim, pg.incidences(g)),
-    springAndAngleForce(g.dim, pg.incidences(g), nextNearest)
-  ];
+  const setForce = [ springForcePullOnly, springAndAngleForce ];
 
   const temperature = [
     completion => 1.01 - completion,
@@ -591,6 +580,7 @@ export const embed = g => {
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   const posParams = parametersForPositions(pos, posSpace);
   const s = opsF.vector(g.dim);
+  const d = opsF.vector(g.dim);
 
   let gram = volumeMaximizedGramMatrix(gramRaw, g, gramSpace, pos, symOps);
   let dot = dotProduct(gram);
@@ -612,7 +602,7 @@ export const embed = g => {
       const k = Math.floor(Math.random() * orbits.length);
       const { node: v, images, symmetrizer } = orbits[k];
 
-      setForce[phase](s, v, pos, dot, scale);
+      setForce[phase](s, v, pos, dot, scale, d, edges[v], antiEdges[v]);
 
       const f = Math.min(temp / Math.sqrt(dot(s, s) * scale), 1.0);
       for (let i = 0; i < g.dim; ++i)
