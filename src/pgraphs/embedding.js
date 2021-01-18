@@ -25,7 +25,7 @@ const mapObject = (obj, fn) => {
 };
 
 
-const dotProduct = gram => (v, w) => {
+const dot = (v, w, gram) => {
   let s = 0;
   for (const i in v)
     for (const j in w)
@@ -478,7 +478,7 @@ const volumeMaximizedGramMatrix = (gramIn, g, gramSpace, pos, symOps) => {
 };
 
 
-const averageSquaredEdgeLength = (g, pos, dot) => {
+const averageSquaredEdgeLength = (g, pos, gram) => {
   let sumSqLen = 0;
   let count = 0;
 
@@ -488,7 +488,7 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
     for (const e of pg.incidences(g)[v]) {
       for (let i = 0; i < g.dim; ++i)
         d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
-      sumSqLen += dot(d, d);
+      sumSqLen += dot(d, d, gram);
       count += 1;
     }
   }
@@ -497,7 +497,7 @@ const averageSquaredEdgeLength = (g, pos, dot) => {
 };
 
 
-const springForcePullOnly = (out, v, pos, dot, scale, d, edges) => {
+const springForcePullOnly = (out, v, pos, gram, scale, d, edges) => {
   for (let i = 0; i < out.length; ++i)
     out[i] = 0;
 
@@ -505,7 +505,7 @@ const springForcePullOnly = (out, v, pos, dot, scale, d, edges) => {
     for (let i = 0; i < out.length; ++i)
       d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
-    const len = Math.sqrt(dot(d, d) * scale);
+    const len = Math.sqrt(dot(d, d, gram) * scale);
     const f = (len - 1.0) / len;
 
     if (f > 0) {
@@ -516,7 +516,9 @@ const springForcePullOnly = (out, v, pos, dot, scale, d, edges) => {
 };
 
 
-const springAndAngleForce = (out, v, pos, dot, scale, d, edges, antiEdges) => {
+const springAndAngleForce = (
+  out, v, pos, gram, scale, d, edges, antiEdges
+) => {
   for (let i = 0; i < out.length; ++i)
     out[i] = 0;
 
@@ -524,7 +526,7 @@ const springAndAngleForce = (out, v, pos, dot, scale, d, edges, antiEdges) => {
     for (let i = 0; i < out.length; ++i)
       d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
-    const len = Math.sqrt(dot(d, d) * scale);
+    const len = Math.sqrt(dot(d, d, gram) * scale);
     const f = (len - 1.0) / len;
 
     for (let i = 0; i < out.length; ++i)
@@ -535,7 +537,7 @@ const springAndAngleForce = (out, v, pos, dot, scale, d, edges, antiEdges) => {
     for (let i = 0; i < out.length; ++i)
       d[i] = pos[e.tail][i] + e.shift[i] - pos[v][i];
 
-    const len = Math.sqrt(dot(d, d) * scale);
+    const len = Math.sqrt(dot(d, d, gram) * scale);
 
     if (len < 1) {
       const f = -8 * Math.pow(1.0 - len, 4) / len;
@@ -577,8 +579,7 @@ export const embed = g => {
   const d = opsF.vector(g.dim);
 
   let gram = volumeMaximizedGramMatrix(gramRaw, g, gramSpace, pos, symOps);
-  let dot = dotProduct(gram);
-  let avgSqLen = averageSquaredEdgeLength(g, pos, dot);
+  let avgSqLen = averageSquaredEdgeLength(g, pos, gram);
 
   const result = {
     degreesOfFreedom: gramSpace.length + posParams.length - shiftSpace.length,
@@ -603,9 +604,9 @@ export const embed = g => {
       const k = Math.floor(Math.random() * orbits.length);
       const { node: v, images, symmetrizer } = orbits[k];
 
-      setForce(s, v, pos, dot, scale, d, edges[v], antiEdges[v]);
+      setForce(s, v, pos, gram, scale, d, edges[v], antiEdges[v]);
 
-      const f = Math.min(temp / Math.sqrt(dot(s, s) * scale), 1.0);
+      const f = Math.min(temp / Math.sqrt(dot(s, s, gram) * scale), 1.0);
       for (let i = 0; i < g.dim; ++i)
         s[i] = pos[v][i] + f * s[i];
 
@@ -615,11 +616,9 @@ export const embed = g => {
         applyTransformation(pos[w], pos[v], transform);
 
       if (step % 100 == 99 || step == nrSteps - 1) {
-        if (setForce == springForcePullOnly && gramSpace.length > 1) {
+        if (setForce == springForcePullOnly && gramSpace.length > 1)
           gram = volumeMaximizedGramMatrix(gram, g, gramSpace, pos, symOps);
-          dot = dotProduct(gram);
-        }
-        avgSqLen = averageSquaredEdgeLength(g, pos, dot);
+        avgSqLen = averageSquaredEdgeLength(g, pos, gram);
       }
     }
   }
