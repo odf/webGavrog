@@ -139,6 +139,31 @@ const coordinateParametrization = (graph, syms) => {
 };
 
 
+const decodeGramMatrix= (G, params, gramSpace) => {
+  const dim = G.length;
+  let k = 0;
+
+  for (let i = 0; i < dim; ++i) {
+    for (let j = i; j < dim; ++j) {
+      let x = 0;
+      for (let mu = 0; mu < gramSpace.length; ++mu)
+        x += params[mu] * gramSpace[mu][k];
+
+      G[i][j] = G[j][i] = x;
+      ++k;
+    }
+  }
+
+  for (let i = 0; i < dim; ++i)
+    G[i][i] = Math.max(G[i][i], 0);
+
+  for (let i = 0; i < dim; ++i) {
+    for (let j = i + 1; j < dim; ++j)
+      G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
+  }
+}
+
+
 const parametersForGramMatrix = (gram, gramSpace, syms) => {
   const proj = opsF.solve(gramSpace, id(gramSpace.length));
   const G = unitCells.symmetrizedGramMatrix(gram, syms);
@@ -174,74 +199,46 @@ const parametersForPositions = (positions, positionSpace) => {
 
 
 class Evaluator {
-  constructor(posSpace, gramSpace, edgeOrbits, antiEdgeOrbits=[]) {
+  constructor(posSpace, gramSpace, edges, antiEdges) {
     this.posSpace = posSpace;
     this.gramSpace = gramSpace;
+    this.edges = edges;
+    this.antiEdges = antiEdges;
+
     this.posOffset = gramSpace.length;
-
-    this.vertices = Object.keys(posSpace);
-    this.nrVertices = this.vertices.length;
-
     this.dim = Math.sqrt(2 * gramSpace[0].length + 0.25) - 0.5;
     this.gram = opsF.matrix(this.dim, this.dim);
+    this.diff = opsF.vector(this.dim);
 
-    const m = Math.max(...this.vertices) + 1;
-    this.positions = [];
-    for (let i = 0; i < m; ++i)
-      this.positions.push(new Float64Array(this.dim));
-
-    this.gramValid = false;
-    this.positionsValid = new Int8Array(m).fill(false);
-
-    let weightSum = sumBy(edgeOrbits, orb => orb.length);
-    this.edgeWeights = edgeOrbits.map(orb => orb.length / weightSum);
-    this.edgeReps = edgeOrbits.map(([e]) => e);
-    this.edgeLengths = edgeOrbits.map(_ => 0);
-    this.avgEdgeLength = 0;
-
-    weightSum = sumBy(antiEdgeOrbits, orb => orb.length);
-    this.antiEdgeWeights = antiEdgeOrbits.map(orb => orb.length / weightSum);
-    this.antiEdgeReps = antiEdgeOrbits.map(([e]) => e);
-    this.antiEdgeLengths = antiEdgeOrbits.map(_ => 0);
+    this.positions = {};
+    for (const v in this.posSpace)
+      this.positions[v] = opsF.vector(this.dim);
   }
 
-  setParameters(params) {
-    this.params = params;
-    this.gramValid = false;
-    this.positionsValid.fill(false);
-  }
-
-  computeGramMatrix() {
-    if (this.gramValid)
-      return;
-
-    const G = this.gram;
-    let k = 0;
-
-    for (let i = 0; i < this.dim; ++i) {
-      for (let j = i; j < this.dim; ++j) {
-        let x = 0;
-        for (let mu = 0; mu < this.gramSpace.length; ++mu)
-          x += this.params[mu] * this.gramSpace[mu][k];
-
-        G[i][j] = G[j][i] = x;
-        ++k;
-      }
-    }
+  edgeLength(edge) {
+    const pv = this.positions[edge.head];
+    const pw = this.positions[edge.tail];
 
     for (let i = 0; i < this.dim; ++i)
-      G[i][i] = Math.max(G[i][i], 0);
+      this.diff[i] = pw[i] + edge.shift[i] - pv[i];
 
-    for (let i = 0; i < this.dim; ++i) {
-      for (let j = i + 1; j < this.dim; ++j)
-        G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
-    }
-
-    this.gramValid = true;
+    return Math.sqrt(Math.max(0, dot(this.diff, this.diff, this.gram)));
   }
 
-  position(v) {
-    if (!this.positionsValid[v]) {
+  averageEdgeLength() {
+    let sum = 0.0;
+
+    for (const e of this.edges)
+      sum += this.edgeLength(e);
+
+    return sum / this.edges.length;
+  }
+
+  update(params) {
+    this.params = params;
+    decodeGramMatrix(this.gram, this.params, this.gramSpace);
+
+    for (const v in this.posSpace) {
       const offset = this.posOffset + this.posSpace[v].index;
       const cfg = this.posSpace[v].configSpace;
       const n = cfg.length - 1;
@@ -252,93 +249,37 @@ class Evaluator {
         for (let k = 0; k < n; ++k)
           p[i] += this.params[offset + k] * cfg[k][i];
       }
-
-      this.positionsValid[v] = true;
     }
-
-    return this.positions[v];
-  }
-
-  computeEdgeLengths() {
-    let avg = 0.0;
-
-    for (let i = 0; i < this.edgeReps.length; ++i) {
-      const edge = this.edgeReps[i];
-
-      const pv = this.position(edge.head);
-      const pw = this.position(edge.tail);
-      const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
-
-      let s = 0;
-      for (let i = 0; i < diff.length; ++i) {
-        s += this.gram[i][i] * diff[i] * diff[i];
-        for (let j = i + 1; j < diff.length; ++j)
-          s += 2 * this.gram[i][j] * diff[i] * diff[j];
-      }
-
-      const t = Math.sqrt(Math.max(0, s));
-      this.edgeLengths[i] = t;
-      avg += t * this.edgeWeights[i];
-    }
-
-    this.avgEdgeLength = avg;
-  }
-
-  computeAntiEdgeLengths() {
-    for (let i = 0; i < this.antiEdgeReps.length; ++i) {
-      const edge = this.antiEdgeReps[i];
-
-      const pv = this.position(edge.head);
-      const pw = this.position(edge.tail);
-      const diff = pv.map((_, i) => pw[i] + edge.shift[i] - pv[i]);
-
-      let s = 0;
-      for (let i = 0; i < diff.length; ++i) {
-        s += this.gram[i][i] * diff[i] * diff[i];
-        for (let j = i + 1; j < diff.length; ++j)
-          s += 2 * this.gram[i][j] * diff[i] * diff[j];
-      }
-
-      this.antiEdgeLengths[i] = Math.sqrt(Math.max(0, s));
-    }
-  }
-
-  update(params) {
-    this.setParameters(params);
-    this.computeGramMatrix();
-    this.computeEdgeLengths();
-    this.computeAntiEdgeLengths();
   }
 
   geometry(params) {
     this.update(params);
 
-    const positions = {};
-    for (const v of this.vertices)
-      positions[v] = Array.from(this.position(v));
-
     return {
-      gram: opsF.div(this.gram, Math.pow(this.avgEdgeLength, 2)),
-      positions
+      gram: opsF.div(this.gram, Math.pow(this.averageEdgeLength(), 2)),
+      positions: mapObject(this.positions, p => p.slice())
     };
   }
 
   energy(params, volumeWeight) {
     this.update(params);
 
-    const scale = 1.0 / Math.max(this.avgEdgeLength, 0.001);
+    const scale = 1.0 / Math.max(this.averageEdgeLength(), 0.001);
 
-    const edgeEnergy = sumBy(this.edgeLengths, (length, i) => {
-      return this.edgeWeights[i] * Math.pow(length * scale - 1, 2) / 2;
-    });
+    let edgeEnergy = 0.0;
+    for (const e of this.edges)
+      edgeEnergy += Math.pow(this.edgeLength(e) * scale - 1, 2) / 2;
 
-    const antiEdgeEnergy = sumBy(this.antiEdgeLengths, (length, i) => {
-      const len = length * scale;
+    edgeEnergy /= this.edges.length;
+
+    let antiEdgeEnergy = 0.0;
+    for (const e of this.antiEdges) {
+      const len = this.edgeLength(e) * scale;
       if (len < 1)
-        return this.antiEdgeWeights[i] * Math.pow(1.0 - len, 5);
-      else
-        return 0;
-    });
+        antiEdgeEnergy += Math.pow(1.0 - len, 5);
+    }
+
+    antiEdgeEnergy /= this.antiEdges.length;
 
     const cellVolume = Math.sqrt(det(this.gram)) * Math.pow(scale, this.dim)
     const volumeEnergy = Math.pow(Math.max(1e-9, cellVolume), -1 / this.dim);
@@ -380,31 +321,6 @@ const nodeOrbits = (g, syms) => {
 
   return orbits;
 };
-
-
-const decodeGramMatrix= (G, params, gramSpace) => {
-  const dim = G.length;
-  let k = 0;
-
-  for (let i = 0; i < dim; ++i) {
-    for (let j = i; j < dim; ++j) {
-      let x = 0;
-      for (let mu = 0; mu < gramSpace.length; ++mu)
-        x += params[mu] * gramSpace[mu][k];
-
-      G[i][j] = G[j][i] = x;
-      ++k;
-    }
-  }
-
-  for (let i = 0; i < dim; ++i)
-    G[i][i] = Math.max(G[i][i], 0);
-
-  for (let i = 0; i < dim; ++i) {
-    for (let j = i + 1; j < dim; ++j)
-      G[i][j] = G[j][i] = Math.min(G[i][j], Math.sqrt(G[i][i] * G[j][j]));
-  }
-}
 
 
 const cellVolumeEnergy = (g, gramSpace, pos, G) => {
@@ -545,8 +461,9 @@ export const embed = g => {
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
   const orbits = nodeOrbits(g, syms);
+  const antiG = localComplementGraph(g, g.dim);
   const edges = pg.incidences(g);
-  const antiEdges = pg.incidences(localComplementGraph(g, g.dim));
+  const antiEdges = pg.incidences(antiG);
 
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
   let gram = volumeMaximizedGramMatrix(gramRaw, g, gramSpace, pos, symOps);
@@ -597,10 +514,8 @@ export const embed = g => {
   const shiftSpace = sg.shiftSpace(symOps) || [];
   const gramParams = parametersForGramMatrix(gram, gramSpace, symOps);
   const posParams = parametersForPositions(pos, posSpace);
-  const edgeOrbits = g.edges.map(e => [e]);
-  const antiOrbits = localComplementGraph(g, g.dim).edges.map(e => [e]);
 
-  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, antiOrbits);
+  const evaluator = new Evaluator(posSpace, gramSpace, g.edges, antiG.edges);
   const energy = params => evaluator.energy(params, 1e-4);
   const nrSteps = 100 * (gramParams.length + posParams.length);
 
