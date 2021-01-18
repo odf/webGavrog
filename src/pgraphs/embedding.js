@@ -348,28 +348,6 @@ class Evaluator {
 };
 
 
-const refineEmbedding = (g, positions, gram) => {
-  const syms = symmetries.symmetries(g).symmetries;
-  const symOps = syms.map(a => a.transform);
-  const edgeOrbits = symmetries.edgeOrbits(g, syms);
-  const antiOrbits = localComplementGraph(g, g.dim).edges.map(e => [e]);
-  const posSpace = coordinateParametrization(g, syms);
-  const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
-
-  const gramParams = parametersForGramMatrix(gram, gramSpace, symOps);
-  const posParams = parametersForPositions(positions, posSpace);
-
-  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, antiOrbits);
-  const energy = params => evaluator.energy(params, 1e-4);
-  const nrSteps = 100 * (gramParams.length + posParams.length);
-
-  const paramsIn = gramParams.concat(posParams);
-  const paramsOut = amoeba(energy, paramsIn, nrSteps, 1e-6, 0.1).position;
-
-  return evaluator.geometry(paramsOut);
-};
-
-
 const nodeOrbits = (g, syms) => {
   const pos = pg.barycentricPlacement(g);
 
@@ -564,32 +542,24 @@ const cool = completion => 0.1 * Math.pow(1.0 - completion, 3);
 export const embed = g => {
   const syms = symmetries.symmetries(g).symmetries;
   const symOps = syms.map(a => a.transform);
-  const posSpace = coordinateParametrization(g, syms);
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
-  const shiftSpace = sg.shiftSpace(symOps) || [];
-
-  const orbits = nodeOrbits(g, syms);
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
+  const orbits = nodeOrbits(g, syms);
   const edges = pg.incidences(g);
   const antiEdges = pg.incidences(localComplementGraph(g, g.dim));
 
   const pos = mapObject(pg.barycentricPlacement(g), p => opsQ.toJS(p));
-  const posParams = parametersForPositions(pos, posSpace);
-  const s = opsF.vector(g.dim);
-  const d = opsF.vector(g.dim);
-
   let gram = volumeMaximizedGramMatrix(gramRaw, g, gramSpace, pos, symOps);
   let avgSqLen = averageSquaredEdgeLength(g, pos, gram);
 
-  const result = {
-    degreesOfFreedom: gramSpace.length + posParams.length - shiftSpace.length,
-    barycentric: { 
-      gram: opsF.div(gram, avgSqLen),
-      positions: mapObject(pos, p => p.slice())
-    }
+  const barycentric = {
+    gram: opsF.div(gram, avgSqLen),
+    positions: mapObject(pos, p => p.slice())
   };
 
   const N = Math.max(100, orbits.length);
+  const s = opsF.vector(g.dim);
+  const d = opsF.vector(g.dim);
 
   const phases = [
     { nrSteps: N * N, setForce: springForcePullOnly, temperature: hot },
@@ -623,8 +593,25 @@ export const embed = g => {
     }
   }
 
-  result.spring = refineEmbedding(g, pos, opsF.div(gram, avgSqLen));
-  return result;
+  const posSpace = coordinateParametrization(g, syms);
+  const shiftSpace = sg.shiftSpace(symOps) || [];
+  const gramParams = parametersForGramMatrix(gram, gramSpace, symOps);
+  const posParams = parametersForPositions(pos, posSpace);
+  const edgeOrbits = g.edges.map(e => [e]);
+  const antiOrbits = localComplementGraph(g, g.dim).edges.map(e => [e]);
+
+  const evaluator = new Evaluator(posSpace, gramSpace, edgeOrbits, antiOrbits);
+  const energy = params => evaluator.energy(params, 1e-4);
+  const nrSteps = 100 * (gramParams.length + posParams.length);
+
+  const paramsIn = gramParams.concat(posParams);
+  const paramsOut = amoeba(energy, paramsIn, nrSteps, 1e-6, 0.1).position;
+
+  return {
+    degreesOfFreedom: gramSpace.length + posParams.length - shiftSpace.length,
+    spring: evaluator.geometry(paramsOut),
+    barycentric
+  };
 };
 
 
