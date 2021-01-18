@@ -461,7 +461,7 @@ export const embed = g => {
   const gramSpace = opsQ.toJS(sg.gramMatrixConfigurationSpace(symOps));
   const gramRaw = unitCells.symmetrizedGramMatrix(id(g.dim), symOps);
   const orbits = nodeOrbits(g, syms);
-  const antiG = localComplementGraph(g, g.dim);
+  const antiG = localComplementGraph(g, Math.max(2, g.dim));
   const edges = pg.incidences(g);
   const antiEdges = pg.incidences(antiG);
 
