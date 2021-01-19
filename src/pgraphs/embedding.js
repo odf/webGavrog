@@ -4,8 +4,6 @@ import * as sg from '../spacegroups/spacegroups';
 import * as unitCells from '../spacegroups/unitCells';
 import amoeba from '../common/amoeba';
 
-import { timer } from '../common/timing';
-
 import {
   rationalLinearAlgebra as opsQ,
   numericalLinearAlgebra as opsF
@@ -14,7 +12,6 @@ import {
 
 const last = a => a[a.length - 1];
 const id = dim => opsQ.identityMatrix(dim);
-const sumBy = (xs, fn) => xs.reduce((a, x, i) => a + fn(x, i), 0);
 
 
 const mapObject = (obj, fn) => {
