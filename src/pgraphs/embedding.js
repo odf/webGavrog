@@ -225,11 +225,11 @@ class Evaluator {
     return Math.sqrt(Math.max(0, dot(this.diff, this.diff, this.gram)));
   }
 
-  averageEdgeLength() {
+  averageSquaredEdgeLength() {
     let sum = 0.0;
 
     for (const e of this.edges)
-      sum += this.edgeLength(e);
+      sum += Math.pow(this.edgeLength(e), 2);
 
     return sum / this.edges.length;
   }
@@ -256,7 +256,7 @@ class Evaluator {
     this.update(params);
 
     return {
-      gram: opsF.div(this.gram, Math.pow(this.averageEdgeLength(), 2)),
+      gram: opsF.div(this.gram, this.averageSquaredEdgeLength()),
       positions: mapObject(this.positions, p => p.slice())
     };
   }
@@ -264,7 +264,8 @@ class Evaluator {
   energy(params, volumeWeight) {
     this.update(params);
 
-    const scale = 1.0 / Math.max(this.averageEdgeLength(), 0.001);
+    const avgEdgeLen = Math.sqrt(this.averageSquaredEdgeLength());
+    const scale = 1.0 / Math.max(avgEdgeLen, 0.001);
 
     let edgeEnergy = 0.0;
     for (const e of this.edges)
