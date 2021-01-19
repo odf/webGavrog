@@ -44,7 +44,10 @@ export const unitCellParameters = gram => {
   const trim = x => Math.abs(x) < eps ? 0 : x;
   const acosdeg = x => Math.acos(x) / Math.PI * 180.0;
 
-  if (gram.length == 2) {
+  if (gram.length == 1) {
+    return [trim(Math.sqrt(gram[0][0]))];
+  }
+  else if (gram.length == 2) {
     const a = Math.sqrt(gram[0][0]);
     const b = Math.sqrt(gram[1][1]);
     return [a, b, acosdeg(gram[0][1] / a / b)].map(trim);

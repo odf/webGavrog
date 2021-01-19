@@ -709,7 +709,7 @@ export const identifySpacegroup = ops => {
       crystalSystem: CS_1D,
       fullName: name,
       groupName: name,
-      toStd: opsQ.identityMatrix(1)
+      toStd: opsQ.coordinateChange(opsQ.identityMatrix(1))
     };
   }
   else if (dim > 3) {

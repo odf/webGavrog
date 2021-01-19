@@ -231,7 +231,12 @@ const findAndReportMatches = (graph, name, archives, options, writeInfo) => {
 
 
 const showEmbedding = (data, nodeToName, isRelaxed, writeInfo) => {
-  if (data.cellParameters.length == 3) {
+  if (data.cellParameters.length == 1) {
+    const [a] = data.cellParameters;
+    writeInfo(`   Relaxed cell parameters:`);
+    writeInfo(`       a = ${a.toFixed(5)}`);
+  }
+  else if (data.cellParameters.length == 3) {
     const [a, b, gamma] = data.cellParameters;
     writeInfo(`   Relaxed cell parameters:`);
     writeInfo(`       a = ${a.toFixed(5)}, b = ${b.toFixed(5)}`);
