@@ -4,7 +4,6 @@ import Bitwise
 import Browser
 import Browser.Dom as Dom
 import Browser.Events
-import Char
 import Color
 import ColorDialog
 import DecodeScene exposing (MeshType(..), decodeScene)
@@ -19,9 +18,9 @@ import Html.Events
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Materials exposing (netMaterial, paletteColor, tilingMaterial)
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import Menu
-import Set exposing (Set)
+import Set
 import Styling
 import Task
 import ValueSlider
@@ -29,6 +28,7 @@ import View3d.Main as View3d exposing (Scene)
 import View3d.Renderer exposing (Material)
 
 
+main : Program Flags Model Msg
 main =
     Browser.document
         { init = init
@@ -407,7 +407,7 @@ init flags =
 actionLabel : Action -> String
 actionLabel action =
     case action of
-        EnterSubMenu label config ->
+        EnterSubMenu label _ ->
             label
 
         LeaveSubMenu ->
@@ -727,16 +727,6 @@ searchDialogConfig =
 -- UPDATE
 
 
-encodeColor : ColorDialog.Color -> Encode.Value
-encodeColor { hue, saturation, lightness, alpha } =
-    Encode.object
-        [ ( "hue", Encode.float hue )
-        , ( "saturation", Encode.float saturation )
-        , ( "lightness", Encode.float lightness )
-        , ( "alpha", Encode.float alpha )
-        ]
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -805,7 +795,7 @@ update msg model =
             ( { model | dialogStack = [] }
             , if ok then
                 case model.dialogStack of
-                    (TextDialog _ text) :: rest ->
+                    (TextDialog _ text) :: _ ->
                         toJS <|
                             Encode.object
                                 [ ( "mode", Encode.string label )
@@ -997,7 +987,7 @@ update msg model =
             in
             ( contextMenuOnOff model maybePos, Cmd.none )
 
-        MouseDown pos buttons ->
+        MouseDown _ buttons ->
             if not buttons.right && contextMenuOpen model then
                 ( contextMenuOnOff model Nothing, Cmd.none )
 
@@ -1239,11 +1229,6 @@ executeAction action model =
                     , ( "selected", Encode.list Encode.object selected )
                     ]
             )
-
-
-handleMenuSelection : Action -> Model -> ( Model, Cmd Msg )
-handleMenuSelection action model =
-    executeAction action { model | dialogStack = [] }
 
 
 contextMenuOnOff : Model -> Maybe Position -> Model

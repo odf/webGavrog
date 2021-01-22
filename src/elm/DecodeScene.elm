@@ -2,7 +2,7 @@ module DecodeScene exposing (Instance, MeshType(..), Scene, decodeScene)
 
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.Renderer exposing (Vertex)
 

@@ -158,9 +158,6 @@ entities scene center radius options selected camDist viewing perspective =
                     , ks = material.ks
                     , shininess = material.shininess
                 }
-
-        wireUniforms transform material highlight =
-            { baseUniforms | transform = transform, fadeToBackground = 0 }
     in
     List.concatMap
         (\{ mesh, wireframe, material, transform, idxMesh, idxInstance } ->
@@ -172,7 +169,7 @@ entities scene center radius options selected camDist viewing perspective =
                 |> WebGL.entity vertexShader fragmentShader mesh
                 |> Just
             , if options.drawWires then
-                wireUniforms transform material highlight
+                { baseUniforms | transform = transform, fadeToBackground = 0 }
                     |> WebGL.entity vertexShader fragmentShader wireframe
                     |> Just
 
