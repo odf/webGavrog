@@ -535,8 +535,12 @@ actionLabel action =
 actionHotKey : Action -> Maybe String
 actionHotKey action =
     case action of
-        EnterSubMenu _ _ ->
-            Just ">"
+        EnterSubMenu _ config ->
+            if config == contextMenuConfig then
+                Just "S >"
+
+            else
+                Just ">"
 
         PreviousInFile ->
             Just "P"
@@ -616,6 +620,8 @@ hotKeyActions =
         , ( "C", ViewAlong DiagXY )
         , ( "d", ViewAlong DiagXYZ )
         , ( "D", ViewAlong DiagXYZ )
+        , ( "s", EnterSubMenu "Selection" contextMenuConfig )
+        , ( "S", EnterSubMenu "Selection" contextMenuConfig )
         , ( "ArrowUp", RotateView Up rotationAngle )
         , ( "ArrowDown", RotateView Down rotationAngle )
         , ( "ArrowLeft", RotateView Left rotationAngle )
@@ -1328,7 +1334,7 @@ handleJSData : Decode.Value -> Model -> Model
 handleJSData value model =
     case Decode.decodeValue decodeInData value of
         Err e ->
-            { model | status = (Decode.errorToString e) }
+            { model | status = Decode.errorToString e }
 
         Ok data ->
             case data of
@@ -2253,7 +2259,7 @@ onContextMenu toMsg =
     let
         toResult pos buttons =
             { message = toMsg pos buttons
-            , stopPropagation = True
+            , stopPropagation = False
             , preventDefault = True
             }
     in
