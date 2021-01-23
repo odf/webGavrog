@@ -28,12 +28,17 @@ lines =
     WebGL.lines
 
 
-triangles : List ( attributes, attributes, attributes ) -> WebGL.Mesh attributes
+triangles :
+    List ( attributes, attributes, attributes )
+    -> WebGL.Mesh attributes
 triangles =
     WebGL.triangles
 
 
-indexedTriangles : List attributes -> List ( Int, Int, Int ) -> WebGL.Mesh attributes
+indexedTriangles :
+    List attributes
+    -> List ( Int, Int, Int )
+    -> WebGL.Mesh attributes
 indexedTriangles =
     WebGL.indexedTriangles
 
@@ -137,32 +142,7 @@ view :
     -> Mat4
     -> Mat4
     -> Html msg
-view attributes scene center radius options selected camDist viewing perspective =
-    WebGL.toHtml
-        attributes
-        (entities
-            scene
-            center
-            radius
-            options
-            selected
-            camDist
-            viewing
-            perspective
-        )
-
-
-entities :
-    Scene a
-    -> Vec3
-    -> Float
-    -> Options
-    -> Set ( Int, Int )
-    -> Float
-    -> Mat4
-    -> Mat4
-    -> List WebGL.Entity
-entities scene center radius options selected camDist viewing perspective =
+view attr scene center radius options selected camDist viewing perspective =
     let
         baseUniforms =
             { sceneCenter = Mat4.transform viewing center
@@ -214,40 +194,52 @@ entities scene center radius options selected camDist viewing perspective =
                     , ks = material.ks
                     , shininess = material.shininess
                 }
-    in
-    List.concatMap
-        (\{ mesh, wireframe, material, transform, idxMesh, idxInstance } ->
+
+        convert { mesh, wireframe, material, transform, idxMesh, idxInstance } =
             let
                 highlight =
                     Set.member ( idxMesh, idxInstance ) selected
+
+                uniforms =
+                    meshUniforms transform material highlight
+
+                baseMesh =
+                    WebGL.entity vertexShader fragmentShader mesh uniforms
+                        |> Just
+
+                maybeWires =
+                    if options.drawWires then
+                        WebGL.entity
+                            vertexShader
+                            fragmentShader
+                            wireframe
+                            { baseUniforms
+                                | transform = transform
+                                , fadeToBackground = 0
+                            }
+                            |> Just
+
+                    else
+                        Nothing
+
+                maybeOutlines =
+                    if options.addOutlines then
+                        WebGL.entityWith
+                            [ DepthTest.default
+                            , Settings.cullFace Settings.front
+                            ]
+                            vertexShaderOutline
+                            fragmentShaderOutline
+                            mesh
+                            uniforms
+                            |> Just
+
+                    else
+                        Nothing
             in
-            [ meshUniforms transform material highlight
-                |> WebGL.entity vertexShader fragmentShader mesh
-                |> Just
-            , if options.drawWires then
-                { baseUniforms | transform = transform, fadeToBackground = 0 }
-                    |> WebGL.entity vertexShader fragmentShader wireframe
-                    |> Just
-
-              else
-                Nothing
-            , if options.addOutlines then
-                meshUniforms transform material highlight
-                    |> WebGL.entityWith
-                        [ DepthTest.default
-                        , Settings.cullFace Settings.front
-                        ]
-                        vertexShaderOutline
-                        fragmentShaderOutline
-                        mesh
-                    |> Just
-
-              else
-                Nothing
-            ]
-                |> List.filterMap identity
-        )
-        scene
+            [ baseMesh, maybeWires, maybeOutlines ] |> List.filterMap identity
+    in
+    WebGL.toHtml attr (List.concatMap convert scene)
 
 
 vertexShader : WebGL.Shader Vertex Uniforms Varyings
