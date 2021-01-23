@@ -30,7 +30,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.RendererWebGL as RendererWebGL
+import View3d.RendererWebGL as Renderer
 import WebGL
 
 
@@ -56,10 +56,10 @@ type alias PickingInfo =
 
 type alias Scene =
     List
-        { mesh : Mesh RendererWebGL.Vertex
+        { mesh : Mesh Renderer.Vertex
         , instances :
             List
-                { material : RendererWebGL.Material
+                { material : Renderer.Material
                 , transform : Mat4
                 }
         }
@@ -69,7 +69,7 @@ type alias Model =
     { size : FrameSize
     , requestRedraw : Bool
     , cameraState : Camera.State
-    , scene : RendererWebGL.Scene PickingInfo
+    , scene : Renderer.Scene PickingInfo
     , selected : Set ( Int, Int )
     , touchStart : Position
     , center : Vec3
@@ -96,20 +96,20 @@ init =
     }
 
 
-meshForRenderer : Mesh RendererWebGL.Vertex -> WebGL.Mesh RendererWebGL.Vertex
+meshForRenderer : Mesh Renderer.Vertex -> Renderer.Mesh Renderer.Vertex
 meshForRenderer mesh =
     case mesh of
         Mesh.Lines lines ->
-            WebGL.lines lines
+            Renderer.lines lines
 
         Mesh.Triangles triangles ->
-            WebGL.triangles triangles
+            Renderer.triangles triangles
 
         Mesh.IndexedTriangles vertices triangles ->
-            WebGL.indexedTriangles vertices triangles
+            Renderer.indexedTriangles vertices triangles
 
 
-wireframeForRenderer : Mesh RendererWebGL.Vertex -> WebGL.Mesh RendererWebGL.Vertex
+wireframeForRenderer : Mesh Renderer.Vertex -> Renderer.Mesh Renderer.Vertex
 wireframeForRenderer mesh =
     let
         out { pos, normal } =
@@ -119,7 +119,7 @@ wireframeForRenderer mesh =
     in
     case mesh of
         Mesh.Lines lines ->
-            WebGL.lines lines
+            Renderer.lines lines
 
         Mesh.Triangles triangles ->
             triangles
@@ -127,7 +127,7 @@ wireframeForRenderer mesh =
                     (\( u, v, w ) -> ( out u, out v, out w ))
                 |> List.concatMap
                     (\( u, v, w ) -> [ ( u, v ), ( v, w ), ( w, u ) ])
-                |> WebGL.lines
+                |> Renderer.lines
 
         Mesh.IndexedTriangles vertices triangles ->
             Mesh.resolvedSurface
@@ -136,7 +136,7 @@ wireframeForRenderer mesh =
                 |> wireframeForRenderer
 
 
-meshForPicking : Mesh RendererWebGL.Vertex -> Maybe (Mesh Vec3)
+meshForPicking : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
         Mesh.Lines _ ->
@@ -155,7 +155,7 @@ meshForPicking mesh =
                 )
 
 
-processedScene : Scene -> RendererWebGL.Scene PickingInfo
+processedScene : Scene -> Renderer.Scene PickingInfo
 processedScene scene =
     scene
         |> List.indexedMap
@@ -207,7 +207,7 @@ processedScene scene =
             )
 
 
-pick : Camera.Ray -> RendererWebGL.Scene PickingInfo -> Maybe ( Int, Int )
+pick : Camera.Ray -> Renderer.Scene PickingInfo -> Maybe ( Int, Int )
 pick ray pscene =
     let
         intersect =
@@ -564,7 +564,7 @@ requestRedraw model =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> RendererWebGL.Options -> Color -> Html msg
+view : (Msg -> msg) -> Model -> Renderer.Options -> Color -> Html msg
 view toMsg model options bgColor =
     let
         perspective =
@@ -595,7 +595,7 @@ view toMsg model options bgColor =
         , onTouchCancel
             (toMsg TouchEndMsg)
         ]
-        (RendererWebGL.entities
+        (Renderer.entities
             model.scene
             model.center
             model.radius

@@ -1,4 +1,14 @@
-module View3d.RendererWebGL exposing (Material, Options, Scene, Vertex, entities)
+module View3d.RendererWebGL exposing
+    ( Material
+    , Mesh
+    , Options
+    , Scene
+    , Vertex
+    , entities
+    , indexedTriangles
+    , lines
+    , triangles
+    )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -6,6 +16,25 @@ import Set exposing (Set)
 import WebGL
 import WebGL.Settings as Settings
 import WebGL.Settings.DepthTest as DepthTest
+
+
+type alias Mesh attributes =
+    WebGL.Mesh attributes
+
+
+lines : List ( attributes, attributes ) -> WebGL.Mesh attributes
+lines =
+    WebGL.lines
+
+
+triangles : List ( attributes, attributes, attributes ) -> WebGL.Mesh attributes
+triangles =
+    WebGL.triangles
+
+
+indexedTriangles : List attributes -> List ( Int, Int, Int ) -> WebGL.Mesh attributes
+indexedTriangles =
+    WebGL.indexedTriangles
 
 
 type alias Vertex =
@@ -28,8 +57,8 @@ type alias Material =
 type alias Scene a =
     List
         { a
-            | mesh : WebGL.Mesh Vertex
-            , wireframe : WebGL.Mesh Vertex
+            | mesh : Mesh Vertex
+            , wireframe : Mesh Vertex
             , material : Material
             , transform : Mat4
             , idxMesh : Int
