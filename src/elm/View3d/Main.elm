@@ -31,7 +31,6 @@ import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererWebGL as Renderer
-import WebGL
 
 
 
@@ -573,38 +572,39 @@ view toMsg model options bgColor =
 
             else
                 Camera.perspectiveMatrix model.cameraState
+
+        attributes =
+            [ Html.Attributes.style "display" "block"
+            , Html.Attributes.style "background" (Color.toCssString bgColor)
+            , Html.Attributes.id "main-3d-canvas"
+            , Html.Attributes.width (floor model.size.width)
+            , Html.Attributes.height (floor model.size.height)
+            , onMouseDown
+                (\pos offset mods buttons ->
+                    toMsg (MouseDownMsg pos offset mods buttons)
+                )
+            , onMouseWheel
+                (\dy mods -> toMsg (WheelMsg dy mods))
+            , onTouchStart
+                (\posList offset -> toMsg (TouchStartMsg posList offset))
+            , onTouchMove
+                (toMsg << TouchMoveMsg)
+            , onTouchEnd
+                (toMsg TouchEndMsg)
+            , onTouchCancel
+                (toMsg TouchEndMsg)
+            ]
     in
-    WebGL.toHtml
-        [ Html.Attributes.style "display" "block"
-        , Html.Attributes.style "background" (Color.toCssString bgColor)
-        , Html.Attributes.id "main-3d-canvas"
-        , Html.Attributes.width (floor model.size.width)
-        , Html.Attributes.height (floor model.size.height)
-        , onMouseDown
-            (\pos offset mods buttons ->
-                toMsg (MouseDownMsg pos offset mods buttons)
-            )
-        , onMouseWheel
-            (\dy mods -> toMsg (WheelMsg dy mods))
-        , onTouchStart
-            (\posList offset -> toMsg (TouchStartMsg posList offset))
-        , onTouchMove
-            (toMsg << TouchMoveMsg)
-        , onTouchEnd
-            (toMsg TouchEndMsg)
-        , onTouchCancel
-            (toMsg TouchEndMsg)
-        ]
-        (Renderer.entities
-            model.scene
-            model.center
-            model.radius
-            options
-            model.selected
-            (Camera.cameraDistance model.cameraState)
-            (Camera.viewingMatrix model.cameraState)
-            perspective
-        )
+    Renderer.view
+        attributes
+        model.scene
+        model.center
+        model.radius
+        options
+        model.selected
+        (Camera.cameraDistance model.cameraState)
+        (Camera.viewingMatrix model.cameraState)
+        perspective
 
 
 onMouseDown :

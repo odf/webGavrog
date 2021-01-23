@@ -4,12 +4,13 @@ module View3d.RendererWebGL exposing
     , Options
     , Scene
     , Vertex
-    , entities
     , indexedTriangles
     , lines
     , triangles
+    , view
     )
 
+import Html exposing (Html)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
@@ -123,6 +124,32 @@ white =
 red : Vec3
 red =
     vec3 1 0 0
+
+
+view :
+    List (Html.Attribute msg)
+    -> Scene a
+    -> Vec3
+    -> Float
+    -> Options
+    -> Set ( Int, Int )
+    -> Float
+    -> Mat4
+    -> Mat4
+    -> Html msg
+view attributes scene center radius options selected camDist viewing perspective =
+    WebGL.toHtml
+        attributes
+        (entities
+            scene
+            center
+            radius
+            options
+            selected
+            camDist
+            viewing
+            perspective
+        )
 
 
 entities :
