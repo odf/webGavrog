@@ -1,4 +1,4 @@
-module View3d.Renderer exposing (Material, Options, Scene, Vertex, entities)
+module View3d.RendererWebGL exposing (Material, Options, Scene, Vertex, entities)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)

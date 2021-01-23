@@ -25,7 +25,7 @@ import Styling
 import Task
 import ValueSlider
 import View3d.Main as View3d exposing (Scene)
-import View3d.Renderer exposing (Material)
+import View3d.RendererWebGL exposing (Material)
 
 
 main : Program Flags Model Msg

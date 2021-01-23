@@ -3,7 +3,7 @@ module Materials exposing (netMaterial, paletteColor, tilingMaterial)
 import Color
 import ColorDialog
 import Math.Vector3 exposing (Vec3, vec3)
-import View3d.Renderer exposing (Material)
+import View3d.RendererWebGL exposing (Material)
 
 
 black : Vec3

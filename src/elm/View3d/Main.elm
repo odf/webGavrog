@@ -30,7 +30,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.Renderer as Renderer
+import View3d.RendererWebGL as RendererWebGL
 import WebGL
 
 
@@ -56,10 +56,10 @@ type alias PickingInfo =
 
 type alias Scene =
     List
-        { mesh : Mesh Renderer.Vertex
+        { mesh : Mesh RendererWebGL.Vertex
         , instances :
             List
-                { material : Renderer.Material
+                { material : RendererWebGL.Material
                 , transform : Mat4
                 }
         }
@@ -69,7 +69,7 @@ type alias Model =
     { size : FrameSize
     , requestRedraw : Bool
     , cameraState : Camera.State
-    , scene : Renderer.Scene PickingInfo
+    , scene : RendererWebGL.Scene PickingInfo
     , selected : Set ( Int, Int )
     , touchStart : Position
     , center : Vec3
@@ -96,7 +96,7 @@ init =
     }
 
 
-meshForRenderer : Mesh Renderer.Vertex -> WebGL.Mesh Renderer.Vertex
+meshForRenderer : Mesh RendererWebGL.Vertex -> WebGL.Mesh RendererWebGL.Vertex
 meshForRenderer mesh =
     case mesh of
         Mesh.Lines lines ->
@@ -109,7 +109,7 @@ meshForRenderer mesh =
             WebGL.indexedTriangles vertices triangles
 
 
-wireframeForRenderer : Mesh Renderer.Vertex -> WebGL.Mesh Renderer.Vertex
+wireframeForRenderer : Mesh RendererWebGL.Vertex -> WebGL.Mesh RendererWebGL.Vertex
 wireframeForRenderer mesh =
     let
         out { pos, normal } =
@@ -136,7 +136,7 @@ wireframeForRenderer mesh =
                 |> wireframeForRenderer
 
 
-meshForPicking : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
+meshForPicking : Mesh RendererWebGL.Vertex -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
         Mesh.Lines _ ->
@@ -155,7 +155,7 @@ meshForPicking mesh =
                 )
 
 
-processedScene : Scene -> Renderer.Scene PickingInfo
+processedScene : Scene -> RendererWebGL.Scene PickingInfo
 processedScene scene =
     scene
         |> List.indexedMap
@@ -207,7 +207,7 @@ processedScene scene =
             )
 
 
-pick : Camera.Ray -> Renderer.Scene PickingInfo -> Maybe ( Int, Int )
+pick : Camera.Ray -> RendererWebGL.Scene PickingInfo -> Maybe ( Int, Int )
 pick ray pscene =
     let
         intersect =
@@ -564,7 +564,7 @@ requestRedraw model =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> Renderer.Options -> Color -> Html msg
+view : (Msg -> msg) -> Model -> RendererWebGL.Options -> Color -> Html msg
 view toMsg model options bgColor =
     let
         perspective =
@@ -595,7 +595,7 @@ view toMsg model options bgColor =
         , onTouchCancel
             (toMsg TouchEndMsg)
         ]
-        (Renderer.entities
+        (RendererWebGL.entities
             model.scene
             model.center
             model.radius
