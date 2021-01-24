@@ -3,7 +3,7 @@ module Materials exposing (netMaterial, paletteColor, tilingMaterial)
 import Color
 import ColorDialog
 import Math.Vector3 exposing (Vec3, vec3)
-import View3d.RendererWebGL exposing (Material)
+import View3d.RendererWebGL exposing (MaterialSpec)
 
 
 black : Vec3
@@ -25,7 +25,7 @@ colorAsVector { hue, saturation, lightness, alpha } =
     vec3 red green blue
 
 
-baseMaterial : Material
+baseMaterial : MaterialSpec
 baseMaterial =
     { ambientColor = black
     , diffuseColor = black
@@ -37,12 +37,12 @@ baseMaterial =
     }
 
 
-netMaterial : ColorDialog.Color -> Material
+netMaterial : ColorDialog.Color -> MaterialSpec
 netMaterial color =
     { baseMaterial | diffuseColor = colorAsVector color, shininess = 50.0 }
 
 
-tilingMaterial : ColorDialog.Color -> Material
+tilingMaterial : ColorDialog.Color -> MaterialSpec
 tilingMaterial color =
     { baseMaterial | diffuseColor = colorAsVector color, shininess = 15.0 }
 

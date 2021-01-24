@@ -1,9 +1,9 @@
 module View3d.RendererWebGL exposing
-    ( Material
+    ( MaterialSpec
     , Mesh
     , Options
     , Scene
-    , Vertex
+    , VertexSpec
     , indexedTriangles
     , lines
     , triangles
@@ -43,13 +43,13 @@ indexedTriangles =
     WebGL.indexedTriangles
 
 
-type alias Vertex =
+type alias VertexSpec =
     { pos : Vec3
     , normal : Vec3
     }
 
 
-type alias Material =
+type alias MaterialSpec =
     { ambientColor : Vec3
     , diffuseColor : Vec3
     , specularColor : Vec3
@@ -63,9 +63,9 @@ type alias Material =
 type alias Scene a =
     List
         { a
-            | mesh : Mesh Vertex
-            , wireframe : Mesh Vertex
-            , material : Material
+            | mesh : Mesh VertexSpec
+            , wireframe : Mesh VertexSpec
+            , material : MaterialSpec
             , transform : Mat4
             , idxMesh : Int
             , idxInstance : Int
@@ -242,7 +242,7 @@ view attr scene center radius options selected camDist viewing perspective =
     WebGL.toHtml attr (List.concatMap convert scene)
 
 
-vertexShader : WebGL.Shader Vertex Uniforms Varyings
+vertexShader : WebGL.Shader VertexSpec Uniforms Varyings
 vertexShader =
     [glsl|
 
@@ -263,7 +263,7 @@ vertexShader =
     |]
 
 
-vertexShaderOutline : WebGL.Shader Vertex Uniforms Varyings
+vertexShaderOutline : WebGL.Shader VertexSpec Uniforms Varyings
 vertexShaderOutline =
     [glsl|
 

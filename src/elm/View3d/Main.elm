@@ -55,10 +55,10 @@ type alias PickingInfo =
 
 type alias Scene =
     List
-        { mesh : Mesh Renderer.Vertex
+        { mesh : Mesh Renderer.VertexSpec
         , instances :
             List
-                { material : Renderer.Material
+                { material : Renderer.MaterialSpec
                 , transform : Mat4
                 }
         }
@@ -95,7 +95,7 @@ init =
     }
 
 
-meshForRenderer : Mesh Renderer.Vertex -> Renderer.Mesh Renderer.Vertex
+meshForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh Renderer.VertexSpec
 meshForRenderer mesh =
     case mesh of
         Mesh.Lines lines ->
@@ -108,7 +108,7 @@ meshForRenderer mesh =
             Renderer.indexedTriangles vertices triangles
 
 
-wireframeForRenderer : Mesh Renderer.Vertex -> Renderer.Mesh Renderer.Vertex
+wireframeForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh Renderer.VertexSpec
 wireframeForRenderer mesh =
     let
         out { pos, normal } =
@@ -135,7 +135,7 @@ wireframeForRenderer mesh =
                 |> wireframeForRenderer
 
 
-meshForPicking : Mesh Renderer.Vertex -> Maybe (Mesh Vec3)
+meshForPicking : Mesh Renderer.VertexSpec -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
         Mesh.Lines _ ->
