@@ -67,6 +67,16 @@ type alias Scene a =
         }
 
 
+type alias Model a b =
+    { a
+        | size : { width : Float, height : Float }
+        , scene : Scene b
+        , selected : Set ( Int, Int )
+        , center : Vec3
+        , radius : Float
+    }
+
+
 type alias Options =
     { orthogonalView : Bool
     , drawWires : Bool
@@ -128,20 +138,17 @@ red =
 
 view :
     List (Html.Attribute msg)
-    -> Scene a
-    -> Vec3
-    -> Float
+    -> Model a b
     -> Options
-    -> Set ( Int, Int )
     -> Float
     -> Mat4
     -> Mat4
     -> Html msg
-view attr scene center radius options selected camDist viewing perspective =
+view attr model options camDist viewing perspective =
     let
         baseUniforms =
-            { sceneCenter = Mat4.transform viewing center
-            , sceneRadius = radius
+            { sceneCenter = Mat4.transform viewing model.center
+            , sceneRadius = model.radius
             , backgroundColor = options.backgroundColor
             , outlineColor = options.outlineColor
             , fadeToBackground = options.fadeToBackground
@@ -193,7 +200,7 @@ view attr scene center radius options selected camDist viewing perspective =
         convert { mesh, wireframe, material, transform, idxMesh, idxInstance } =
             let
                 highlight =
-                    Set.member ( idxMesh, idxInstance ) selected
+                    Set.member ( idxMesh, idxInstance ) model.selected
 
                 uniforms =
                     meshUniforms transform material highlight
@@ -234,7 +241,7 @@ view attr scene center radius options selected camDist viewing perspective =
             in
             [ baseMesh, maybeWires, maybeOutlines ] |> List.filterMap identity
     in
-    WebGL.toHtml attr (List.concatMap convert scene)
+    WebGL.toHtml attr (List.concatMap convert model.scene)
 
 
 vertexShader : WebGL.Shader VertexSpec Uniforms Varyings

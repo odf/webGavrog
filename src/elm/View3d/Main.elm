@@ -30,6 +30,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
+-- import View3d.RendererWebGL as Renderer
 import View3d.RendererScene3d as Renderer
 
 
@@ -597,11 +598,8 @@ view toMsg model options bgColor =
     in
     Renderer.view
         attributes
-        model.scene
-        model.center
-        model.radius
+        model
         options
-        model.selected
         (Camera.cameraDistance model.cameraState)
         (Camera.viewingMatrix model.cameraState)
         perspective

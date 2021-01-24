@@ -11,28 +11,44 @@ module View3d.RendererScene3d exposing
     )
 
 import Angle
+import Array
 import Camera3d
 import Color
 import Direction3d
 import Html exposing (Html)
 import Length
+import Math.Matrix4 exposing (Mat4)
+import Math.Vector3 exposing (Vec3)
 import Pixels
 import Point3d
 import Scene3d
 import Scene3d.Material as Material
-import Viewpoint3d
-import Html exposing (Html)
-import Math.Matrix4 exposing (Mat4)
-import Math.Vector3 exposing (Vec3)
+import Scene3d.Mesh as Mesh
 import Set exposing (Set)
+import TriangularMesh
+import Viewpoint3d
 
 
 
 -- The mesh type and mesh generating functions are placeholders for now
 
 
+type WorldCoordinates
+    = WorldCoordinates
+
+
 type alias Mesh attributes =
     List attributes
+
+
+type alias Model a b =
+    { a
+        | size : { width : Float, height : Float }
+        , scene : Scene b
+        , selected : Set ( Int, Int )
+        , center : Vec3
+        , radius : Float
+    }
 
 
 lines : List ( attributes, attributes ) -> Mesh attributes
@@ -90,37 +106,83 @@ type alias Options =
     }
 
 
+pyramidMesh : Mesh.Uniform WorldCoordinates
+pyramidMesh =
+    let
+        -- Define the vertices of our pyramid
+        frontLeft =
+            Point3d.centimeters 10 10 0
+
+        frontRight =
+            Point3d.centimeters 10 -10 0
+
+        backLeft =
+            Point3d.centimeters -10 10 0
+
+        backRight =
+            Point3d.centimeters -10 -10 0
+
+        tip =
+            Point3d.centimeters 0 0 10
+
+        triangularMesh =
+            TriangularMesh.indexed
+                (Array.fromList
+                    [ frontLeft -- 0
+                    , frontRight -- 1
+                    , backLeft -- 2
+                    , backRight -- 3
+                    , tip -- 4
+                    ]
+                )
+                [ ( 1, 0, 4 ) -- front
+                , ( 0, 2, 4 ) -- left
+                , ( 2, 3, 4 ) -- back
+                , ( 3, 1, 4 ) -- right
+                , ( 1, 3, 0 ) -- bottom
+                , ( 0, 3, 2 ) -- bottom
+                ]
+    in
+    Mesh.indexedFacets triangularMesh
+
+
 view :
     List (Html.Attribute msg)
-    -> Scene a
-    -> Vec3
-    -> Float
+    -> Model a b
     -> Options
-    -> Set ( Int, Int )
     -> Float
     -> Mat4
     -> Mat4
     -> Html msg
-view attr scene center radius options selected camDist viewing perspective =
-    Scene3d.unlit
-        { entities =
-            [ Scene3d.quad (Material.color Color.blue)
-                (Point3d.meters -1 -1 0)
-                (Point3d.meters 1 -1 0)
-                (Point3d.meters 1 1 0)
-                (Point3d.meters -1 1 0)
-            ]
-        , camera =
+view attr model options camDist viewing perspective =
+    let
+        -- Create an entity from a mesh. This is a cheap operation, so you can
+        -- do things like dynamically change the material applied to mesh from
+        -- frame to frame.
+        pyramidEntity =
+            Scene3d.mesh (Material.matte Color.blue) pyramidMesh
+
+        camera =
             Camera3d.perspective
                 { viewpoint =
                     Viewpoint3d.lookAt
                         { focalPoint = Point3d.origin
-                        , eyePoint = Point3d.meters 5 2 3
-                        , upDirection = Direction3d.positiveZ
+                        , eyePoint = Point3d.centimeters 40 20 30
+                        , upDirection = Direction3d.z
                         }
                 , verticalFieldOfView = Angle.degrees 30
                 }
-        , clipDepth = Length.meters 1
+    in
+    Scene3d.sunny
+        { entities = [ pyramidEntity ]
+        , camera = camera
+        , upDirection = Direction3d.z
+        , sunlightDirection = Direction3d.yz (Angle.degrees -120)
         , background = Scene3d.transparentBackground
-        , dimensions = ( Pixels.pixels 800, Pixels.pixels 600 )
+        , clipDepth = Length.centimeters 1
+        , shadows = False
+        , dimensions =
+            ( Pixels.int (floor model.size.width)
+            , Pixels.int (floor model.size.height)
+            )
         }
