@@ -30,11 +30,11 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
--- import View3d.RendererWebGL as Renderer
-import View3d.RendererScene3d as Renderer
+import View3d.RendererWebGL as Renderer
 
 
 
+-- import View3d.RendererScene3d as Renderer
 -- MODEL
 
 
@@ -567,13 +567,6 @@ requestRedraw model =
 view : (Msg -> msg) -> Model -> Renderer.Options -> Color -> Html msg
 view toMsg model options bgColor =
     let
-        perspective =
-            if options.orthogonalView then
-                Camera.orthogonalMatrix model.cameraState
-
-            else
-                Camera.perspectiveMatrix model.cameraState
-
         attributes =
             [ Html.Attributes.style "display" "block"
             , Html.Attributes.style "background" (Color.toCssString bgColor)
@@ -596,13 +589,7 @@ view toMsg model options bgColor =
                 (toMsg TouchEndMsg)
             ]
     in
-    Renderer.view
-        attributes
-        model
-        options
-        (Camera.cameraDistance model.cameraState)
-        (Camera.viewingMatrix model.cameraState)
-        perspective
+    Renderer.view attributes model options
 
 
 onMouseDown :

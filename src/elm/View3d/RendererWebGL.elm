@@ -14,6 +14,7 @@ import Html exposing (Html)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
+import View3d.Camera as Camera
 import WebGL
 import WebGL.Settings as Settings
 import WebGL.Settings.DepthTest as DepthTest
@@ -74,6 +75,7 @@ type alias Model a b =
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
+        , cameraState : Camera.State
     }
 
 
@@ -136,16 +138,22 @@ red =
     vec3 1 0 0
 
 
-view :
-    List (Html.Attribute msg)
-    -> Model a b
-    -> Options
-    -> Float
-    -> Mat4
-    -> Mat4
-    -> Html msg
-view attr model options camDist viewing perspective =
+view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
+view attr model options =
     let
+        perspective =
+            if options.orthogonalView then
+                Camera.orthogonalMatrix model.cameraState
+
+            else
+                Camera.perspectiveMatrix model.cameraState
+
+        viewing =
+            Camera.viewingMatrix model.cameraState
+
+        camDist =
+            Camera.cameraDistance model.cameraState
+
         baseUniforms =
             { sceneCenter = Mat4.transform viewing model.center
             , sceneRadius = model.radius

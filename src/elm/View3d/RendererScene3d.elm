@@ -26,6 +26,7 @@ import Scene3d.Material as Material
 import Scene3d.Mesh as Mesh
 import Set exposing (Set)
 import TriangularMesh
+import View3d.Camera as Camera
 import Viewpoint3d
 
 
@@ -48,6 +49,7 @@ type alias Model a b =
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
+        , cameraState : Camera.State
     }
 
 
@@ -146,15 +148,8 @@ pyramidMesh =
     Mesh.indexedFacets triangularMesh
 
 
-view :
-    List (Html.Attribute msg)
-    -> Model a b
-    -> Options
-    -> Float
-    -> Mat4
-    -> Mat4
-    -> Html msg
-view attr model options camDist viewing perspective =
+view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
+view attr model options =
     let
         -- Create an entity from a mesh. This is a cheap operation, so you can
         -- do things like dynamically change the material applied to mesh from
