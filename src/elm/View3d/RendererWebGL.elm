@@ -23,22 +23,17 @@ type alias Mesh attributes =
     WebGL.Mesh attributes
 
 
-lines : List ( attributes, attributes ) -> WebGL.Mesh attributes
+lines : List ( attributes, attributes ) -> Mesh attributes
 lines =
     WebGL.lines
 
 
-triangles :
-    List ( attributes, attributes, attributes )
-    -> WebGL.Mesh attributes
+triangles : List ( attributes, attributes, attributes ) -> Mesh attributes
 triangles =
     WebGL.triangles
 
 
-indexedTriangles :
-    List attributes
-    -> List ( Int, Int, Int )
-    -> WebGL.Mesh attributes
+indexedTriangles : List attributes -> List ( Int, Int, Int ) -> Mesh attributes
 indexedTriangles =
     WebGL.indexedTriangles
 
