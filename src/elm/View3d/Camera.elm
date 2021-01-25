@@ -4,7 +4,9 @@ module View3d.Camera exposing
     , cameraDistance
     , dragTo
     , encompass
+    , eyePoint
     , finishDragging
+    , focalPoint
     , initialState
     , lookAlong
     , needsFrameEvents
@@ -18,7 +20,9 @@ module View3d.Camera exposing
     , setFrameSize
     , startDragging
     , startPinching
+    , upDirection
     , updateZoom
+    , verticalFieldOfView
     , viewingMatrix
     , wasDragged
     )
@@ -143,15 +147,15 @@ updateZoom : Float -> Bool -> State -> State
 updateZoom factor alter (State state) =
     if alter then
         let
-            fieldOfView =
+            fov =
                 clamp 2 90 <| state.fieldOfView * factor
 
             clampedFactor =
-                fieldOfView / state.fieldOfView
+                fov / state.fieldOfView
         in
         State
             { state
-                | fieldOfView = fieldOfView
+                | fieldOfView = fov
                 , cameraDistance = state.cameraDistance / clampedFactor
             }
 
@@ -405,21 +409,19 @@ viewingMatrix (State state) =
     Mat4.mul camMatrix <| Mat4.mul state.rotation shift
 
 
+inverseViewingMatrix : State -> Mat4
+inverseViewingMatrix =
+    viewingMatrix >> Mat4.inverse >> Maybe.withDefault Mat4.identity
+
+
 perspectiveMatrix : State -> Mat4
 perspectiveMatrix (State state) =
     let
         aspectRatio =
             state.size.width / state.size.height
 
-        fov =
-            state.fieldOfView
-
         fovy =
-            if aspectRatio >= 1 then
-                fov
-
-            else
-                atan (tan (degrees (fov / 2)) / aspectRatio) * 360 / pi
+            verticalFieldOfView (State state)
     in
     Mat4.makePerspective fovy aspectRatio 1 10000
 
@@ -430,11 +432,11 @@ orthogonalMatrix (State state) =
         aspectRatio =
             state.size.width / state.size.height
 
-        fov =
-            state.fieldOfView
+        fovy =
+            verticalFieldOfView (State state)
 
         delta =
-            tan (degrees (fov / 2)) * state.cameraDistance
+            tan (degrees (fovy / 2)) * state.cameraDistance
 
         dx =
             delta * max aspectRatio 1
@@ -448,6 +450,47 @@ orthogonalMatrix (State state) =
 cameraDistance : State -> Float
 cameraDistance (State state) =
     state.cameraDistance
+
+
+verticalFieldOfView : State -> Float
+verticalFieldOfView (State state) =
+    let
+        aspectRatio =
+            state.size.width / state.size.height
+
+        fov =
+            state.fieldOfView
+    in
+    if aspectRatio >= 1 then
+        fov
+
+    else
+        atan (tan (degrees (fov / 2)) / aspectRatio) * 360 / pi
+
+
+focalPoint : State -> Vec3
+focalPoint (State state) =
+    Mat4.transform
+        (inverseViewingMatrix (State state))
+        (vec3 0 0 0)
+
+
+eyePoint : State -> Vec3
+eyePoint (State state) =
+    Mat4.transform
+        (inverseViewingMatrix (State state))
+        (vec3 0 0 state.cameraDistance)
+
+
+upDirection : State -> Vec3
+upDirection (State state) =
+    let
+        inv =
+            inverseViewingMatrix (State state)
+    in
+    Vec3.sub
+        (Mat4.transform inv (vec3 0 1 0))
+        (Mat4.transform inv (vec3 0 0 0))
 
 
 needsMouseEvents : State -> Bool

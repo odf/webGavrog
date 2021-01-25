@@ -18,7 +18,7 @@ import Direction3d
 import Html exposing (Html)
 import Length
 import Math.Matrix4 exposing (Mat4)
-import Math.Vector3 exposing (Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3)
 import Pixels
 import Point3d
 import Scene3d
@@ -148,6 +148,43 @@ pyramidMesh =
     Mesh.indexedFacets triangularMesh
 
 
+asPointInInches : Vec3 -> Point3d.Point3d Length.Meters coordinates
+asPointInInches p =
+    Point3d.inches (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
+
+
+convertCamera : Camera.State -> Camera3d.Camera3d Length.Meters coordinates
+convertCamera camState =
+    let
+        fowy =
+            Camera.verticalFieldOfView camState
+                |> Angle.degrees
+
+        focalPoint =
+            Camera.focalPoint camState
+                |> asPointInInches
+
+        eyePoint =
+            Camera.eyePoint camState
+                |> asPointInInches
+
+        upDirection =
+            Camera.upDirection camState
+                |> asPointInInches
+                |> Direction3d.from Point3d.origin
+                |> Maybe.withDefault Direction3d.positiveY
+    in
+    Camera3d.perspective
+        { viewpoint =
+            Viewpoint3d.lookAt
+                { focalPoint = focalPoint
+                , eyePoint = eyePoint
+                , upDirection = upDirection
+                }
+        , verticalFieldOfView = fowy
+        }
+
+
 view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
 view attr model options =
     let
@@ -156,21 +193,10 @@ view attr model options =
         -- frame to frame.
         pyramidEntity =
             Scene3d.mesh (Material.matte Color.blue) pyramidMesh
-
-        camera =
-            Camera3d.perspective
-                { viewpoint =
-                    Viewpoint3d.lookAt
-                        { focalPoint = Point3d.origin
-                        , eyePoint = Point3d.centimeters 40 20 30
-                        , upDirection = Direction3d.z
-                        }
-                , verticalFieldOfView = Angle.degrees 30
-                }
     in
     Scene3d.sunny
         { entities = [ pyramidEntity ]
-        , camera = camera
+        , camera = convertCamera model.cameraState
         , upDirection = Direction3d.z
         , sunlightDirection = Direction3d.yz (Angle.degrees -120)
         , background = Scene3d.transparentBackground
