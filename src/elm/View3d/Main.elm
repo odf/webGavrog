@@ -30,7 +30,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.RendererWebGL as Renderer
+import View3d.RendererScene3d as Renderer
 
 
 
@@ -95,7 +95,7 @@ init =
     }
 
 
-meshForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh Renderer.VertexSpec
+meshForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh
 meshForRenderer mesh =
     case mesh of
         Mesh.Lines lines ->
@@ -108,7 +108,7 @@ meshForRenderer mesh =
             Renderer.indexedTriangles vertices triangles
 
 
-wireframeForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh Renderer.VertexSpec
+wireframeForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh
 wireframeForRenderer mesh =
     let
         out { position, normal } =

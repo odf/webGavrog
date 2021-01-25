@@ -16,18 +16,20 @@ import Camera3d
 import Color
 import Direction3d
 import Html exposing (Html)
-import Length
+import Length exposing (Meters)
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Pixels
-import Point3d
+import Point3d exposing (Point3d)
+import Quantity exposing (Unitless)
 import Scene3d
 import Scene3d.Material as Material
 import Scene3d.Mesh
 import Set exposing (Set)
+import Triangle3d
 import TriangularMesh
+import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
-import View3d.Mesh
 import Viewpoint3d
 
 
@@ -39,8 +41,8 @@ type WorldCoordinates
     = WorldCoordinates
 
 
-type alias Mesh attributes =
-    View3d.Mesh.Mesh attributes
+type alias Mesh =
+    Scene3d.Mesh.Uniform WorldCoordinates
 
 
 type alias Model a b =
@@ -54,25 +56,63 @@ type alias Model a b =
     }
 
 
-lines : List ( attributes, attributes ) -> Mesh attributes
-lines vertexPairs =
-    View3d.Mesh.Lines vertexPairs
-
-
-triangles : List ( attributes, attributes, attributes ) -> Mesh attributes
-triangles faces =
-    View3d.Mesh.Triangles faces
-
-
-indexedTriangles : List attributes -> List ( Int, Int, Int ) -> Mesh attributes
-indexedTriangles vertices faces =
-    View3d.Mesh.IndexedTriangles vertices faces
-
-
 type alias VertexSpec =
     { position : Vec3
     , normal : Vec3
     }
+
+
+asPointInInches : Vec3 -> Point3d Meters coordinates
+asPointInInches p =
+    Point3d.inches (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
+
+
+asUnitlessDirection : Vec3 -> Vector3d Unitless coordinates
+asUnitlessDirection p =
+    Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
+
+
+lines : List ( VertexSpec, VertexSpec ) -> Mesh
+lines pairs =
+    pairs
+        |> List.map
+            (\( p, q ) ->
+                Triangle3d.from
+                    (asPointInInches p.position)
+                    (asPointInInches q.position)
+                    (asPointInInches p.position)
+            )
+        |> Scene3d.Mesh.facets
+
+
+triangles : List ( VertexSpec, VertexSpec, VertexSpec ) -> Mesh
+triangles triplets =
+    triplets
+        |> List.map
+            (\( p, q, r ) ->
+                Triangle3d.from
+                    (asPointInInches p.position)
+                    (asPointInInches q.position)
+                    (asPointInInches r.position)
+            )
+        |> Scene3d.Mesh.facets
+
+
+indexedTriangles : List VertexSpec -> List ( Int, Int, Int ) -> Mesh
+indexedTriangles vertices faces =
+    let
+        verts =
+            vertices
+                |> List.map
+                    (\v ->
+                        { position = asPointInInches v.position
+                        , normal = asUnitlessDirection v.normal
+                        }
+                    )
+                |> Array.fromList
+    in
+    TriangularMesh.indexed verts faces
+        |> Scene3d.Mesh.indexedFaces
 
 
 type alias MaterialSpec =
@@ -89,8 +129,8 @@ type alias MaterialSpec =
 type alias Scene a =
     List
         { a
-            | mesh : Mesh VertexSpec
-            , wireframe : Mesh VertexSpec
+            | mesh : Mesh
+            , wireframe : Mesh
             , material : MaterialSpec
             , transform : Mat4
             , idxMesh : Int
@@ -147,11 +187,6 @@ pyramidMesh =
                 ]
     in
     Scene3d.Mesh.indexedFacets triangularMesh
-
-
-asPointInInches : Vec3 -> Point3d.Point3d Length.Meters coordinates
-asPointInInches p =
-    Point3d.inches (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
 convertCamera : Camera.State -> Camera3d.Camera3d Length.Meters coordinates
