@@ -23,10 +23,11 @@ import Pixels
 import Point3d
 import Scene3d
 import Scene3d.Material as Material
-import Scene3d.Mesh as Mesh
+import Scene3d.Mesh
 import Set exposing (Set)
 import TriangularMesh
 import View3d.Camera as Camera
+import View3d.Mesh
 import Viewpoint3d
 
 
@@ -39,7 +40,7 @@ type WorldCoordinates
 
 
 type alias Mesh attributes =
-    List attributes
+    View3d.Mesh.Mesh attributes
 
 
 type alias Model a b =
@@ -54,22 +55,22 @@ type alias Model a b =
 
 
 lines : List ( attributes, attributes ) -> Mesh attributes
-lines xs =
-    []
+lines vertexPairs =
+    View3d.Mesh.Lines vertexPairs
 
 
 triangles : List ( attributes, attributes, attributes ) -> Mesh attributes
-triangles xs =
-    []
+triangles faces =
+    View3d.Mesh.Triangles faces
 
 
 indexedTriangles : List attributes -> List ( Int, Int, Int ) -> Mesh attributes
-indexedTriangles xs ys =
-    []
+indexedTriangles vertices faces =
+    View3d.Mesh.IndexedTriangles vertices faces
 
 
 type alias VertexSpec =
-    { pos : Vec3
+    { position : Vec3
     , normal : Vec3
     }
 
@@ -108,7 +109,7 @@ type alias Options =
     }
 
 
-pyramidMesh : Mesh.Uniform WorldCoordinates
+pyramidMesh : Scene3d.Mesh.Uniform WorldCoordinates
 pyramidMesh =
     let
         -- Define the vertices of our pyramid
@@ -145,7 +146,7 @@ pyramidMesh =
                 , ( 0, 3, 2 ) -- bottom
                 ]
     in
-    Mesh.indexedFacets triangularMesh
+    Scene3d.Mesh.indexedFacets triangularMesh
 
 
 asPointInInches : Vec3 -> Point3d.Point3d Length.Meters coordinates

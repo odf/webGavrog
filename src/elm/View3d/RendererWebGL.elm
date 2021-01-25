@@ -40,7 +40,7 @@ indexedTriangles =
 
 
 type alias VertexSpec =
-    { pos : Vec3
+    { position : Vec3
     , normal : Vec3
     }
 
@@ -256,7 +256,7 @@ vertexShader : WebGL.Shader VertexSpec Uniforms Varyings
 vertexShader =
     [glsl|
 
-    attribute vec3 pos;
+    attribute vec3 position;
     attribute vec3 normal;
     uniform mat4 transform;
     uniform mat4 viewing;
@@ -266,7 +266,7 @@ vertexShader =
 
     void main () {
         vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
-        vpos = (viewing * transform * vec4(pos, 1.0)).xyz;
+        vpos = (viewing * transform * vec4(position, 1.0)).xyz;
         gl_Position = perspective * vec4(vpos, 1.0);
     }
 
@@ -277,7 +277,7 @@ vertexShaderOutline : WebGL.Shader VertexSpec Uniforms Varyings
 vertexShaderOutline =
     [glsl|
 
-    attribute vec3 pos;
+    attribute vec3 position;
     attribute vec3 normal;
     uniform mat4 transform;
     uniform mat4 viewing;
@@ -287,7 +287,7 @@ vertexShaderOutline =
 
     void main () {
         vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
-        vpos = (viewing * transform * vec4(pos, 1.0)).xyz + 0.02 * vnormal;
+        vpos = (viewing * transform * vec4(position, 1.0)).xyz + 0.02 * vnormal;
         gl_Position = perspective * vec4(vpos, 1.0);
     }
 

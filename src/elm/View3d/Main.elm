@@ -30,8 +30,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.RendererScene3d as Renderer
--- import View3d.RendererWebGL as Renderer
+import View3d.RendererWebGL as Renderer
 
 
 
@@ -112,8 +111,8 @@ meshForRenderer mesh =
 wireframeForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh Renderer.VertexSpec
 wireframeForRenderer mesh =
     let
-        out { pos, normal } =
-            { pos = Vec3.add pos (Vec3.scale 0.001 normal)
+        out { position, normal } =
+            { position = Vec3.add position (Vec3.scale 0.001 normal)
             , normal = normal
             }
     in
@@ -143,14 +142,16 @@ meshForPicking mesh =
             Nothing
 
         Mesh.Triangles triangles ->
-            List.map (\( u, v, w ) -> ( u.pos, v.pos, w.pos )) triangles
+            triangles
+                |> List.map
+                    (\( u, v, w ) -> ( u.position, v.position, w.position ))
                 |> Mesh.Triangles
                 |> Just
 
         Mesh.IndexedTriangles vertices triangles ->
             Just
                 (Mesh.resolvedSurface
-                    (List.map (\v -> v.pos) vertices)
+                    (List.map (\v -> v.position) vertices)
                     (List.map (\( i, j, k ) -> [ i, j, k ]) triangles)
                 )
 
@@ -173,7 +174,7 @@ processedScene scene =
                         meshForPicking rawMesh
 
                     vertices =
-                        List.map .pos (Mesh.getVertices rawMesh)
+                        List.map .position (Mesh.getVertices rawMesh)
 
                     n =
                         List.length vertices

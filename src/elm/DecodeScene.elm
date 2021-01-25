@@ -45,7 +45,7 @@ decodeVec3 =
 
 decodeVertex : Decode.Decoder VertexSpec
 decodeVertex =
-    Decode.map2 (\pos normal -> { pos = pos, normal = normal })
+    Decode.map2 (\pos normal -> { position = pos, normal = normal })
         (Decode.field "pos" decodeVec3)
         (Decode.field "normal" decodeVec3)
 
