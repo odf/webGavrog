@@ -12,15 +12,17 @@ module View3d.RendererScene3d exposing
 
 import Angle
 import Array
+import Axis3d
 import Camera3d
 import Color
 import Direction3d
 import Html exposing (Html)
 import Length exposing (Meters)
 import LineSegment3d
-import Math.Matrix4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Pixels
+import Plane3d
 import Point3d exposing (Point3d)
 import Quantity exposing (Unitless)
 import Scene3d
@@ -32,6 +34,8 @@ import TriangularMesh
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
 import Viewpoint3d
+import WebGL exposing (entity)
+import Point3d exposing (coordinates)
 
 
 
@@ -183,6 +187,114 @@ convertCamera camState =
         }
 
 
+determinant3d : Mat4 -> Float
+determinant3d mat =
+    let
+        r =
+            Mat4.toRecord mat
+    in
+    0
+        + (r.m11 * (r.m22 * r.m33 - r.m23 * r.m32))
+        + (r.m12 * (r.m23 * r.m31 - r.m21 * r.m33))
+        + (r.m13 * (r.m21 * r.m32 - r.m22 * r.m31))
+
+
+rotationAngle : Mat4 -> Vec3 -> Angle.Angle
+rotationAngle mat v =
+    Mat4.transform mat v
+        |> Vec3.dot v
+        |> Angle.acos
+
+
+rotationAxis : Mat4 -> Vec3 -> Axis3d.Axis3d Meters coordinates
+rotationAxis mat v =
+    Mat4.transform mat v
+        |> Vec3.cross v
+        |> Vec3.normalize
+        |> asPointInInches
+        |> Axis3d.throughPoints Point3d.origin
+        |> Maybe.withDefault Axis3d.x
+
+
+analyzeRotation :
+    Mat4
+    -> { axis : Axis3d.Axis3d Meters coordinatesF, angle : Angle.Angle }
+analyzeRotation mat =
+    let
+        v =
+            if Angle.inDegrees (rotationAngle mat (vec3 1 0 0)) > 1 then
+                vec3 1 0 0
+
+            else
+                vec3 0 1 0
+    in
+    { axis = rotationAxis mat v, angle = rotationAngle mat v }
+
+
+analyzeMatrix :
+    Mat4
+    ->
+        { shift : Vector3d Meters coordinates
+        , mirrorZ : Bool
+        , axis : Axis3d.Axis3d Meters coordinates
+        , angle : Angle.Angle
+        }
+analyzeMatrix mat0 =
+    let
+        shift =
+            vec3 0 0 0
+                |> Mat4.transform mat0
+
+        mat1 =
+            Mat4.translate (Vec3.negate shift) mat0
+
+        shiftVector =
+            shift
+                |> asPointInInches
+                |> Vector3d.from Point3d.origin
+
+        mirrorZ =
+            determinant3d mat1 < 0
+
+        mat2 =
+            if mirrorZ then
+                Mat4.mul mat1 <| Mat4.makeScale3 1 1 -1
+
+            else
+                mat1
+
+        { axis, angle } =
+            analyzeRotation mat2
+    in
+    { shift = shiftVector, mirrorZ = mirrorZ, axis = axis, angle = angle }
+
+
+applyTransform :
+    Mat4
+    -> Scene3d.Entity coordinates
+    -> Scene3d.Entity coordinates
+applyTransform mat entity =
+    let
+        spec =
+            analyzeMatrix mat
+
+        e0 =
+            if spec.mirrorZ then
+                Scene3d.mirrorAcross Plane3d.xy entity
+
+            else
+                entity
+
+        e1 =
+            if Angle.inDegrees spec.angle > 0.01 then
+                Scene3d.rotateAround spec.axis spec.angle e0
+
+            else
+                e0
+    in
+    Scene3d.translateBy spec.shift e1
+
+
 convertMesh mesh material transform highlight =
     let
         entity =
@@ -193,7 +305,7 @@ convertMesh mesh material transform highlight =
                 Triangles m ->
                     Scene3d.mesh (Material.matte Color.green) m
     in
-    entity
+    applyTransform transform entity
 
 
 view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
