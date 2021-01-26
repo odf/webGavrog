@@ -47,17 +47,6 @@ type Mesh
     | Triangles (Scene3d.Mesh.Uniform WorldCoordinates)
 
 
-type alias Model a b =
-    { a
-        | size : { width : Float, height : Float }
-        , scene : Scene b
-        , selected : Set ( Int, Int )
-        , center : Vec3
-        , radius : Float
-        , cameraState : Camera.State
-    }
-
-
 type alias VertexSpec =
     { position : Vec3
     , normal : Vec3
@@ -140,6 +129,17 @@ type alias Scene a =
         }
 
 
+type alias Model a b =
+    { a
+        | size : { width : Float, height : Float }
+        , scene : Scene b
+        , selected : Set ( Int, Int )
+        , center : Vec3
+        , radius : Float
+        , cameraState : Camera.State
+    }
+
+
 type alias Options =
     { orthogonalView : Bool
     , drawWires : Bool
@@ -149,46 +149,6 @@ type alias Options =
     , addOutlines : Bool
     , outlineColor : Vec3
     }
-
-
-pyramidMesh : Scene3d.Mesh.Uniform WorldCoordinates
-pyramidMesh =
-    let
-        -- Define the vertices of our pyramid
-        frontLeft =
-            Point3d.centimeters 10 10 0
-
-        frontRight =
-            Point3d.centimeters 10 -10 0
-
-        backLeft =
-            Point3d.centimeters -10 10 0
-
-        backRight =
-            Point3d.centimeters -10 -10 0
-
-        tip =
-            Point3d.centimeters 0 0 10
-
-        triangularMesh =
-            TriangularMesh.indexed
-                (Array.fromList
-                    [ frontLeft -- 0
-                    , frontRight -- 1
-                    , backLeft -- 2
-                    , backRight -- 3
-                    , tip -- 4
-                    ]
-                )
-                [ ( 1, 0, 4 ) -- front
-                , ( 0, 2, 4 ) -- left
-                , ( 2, 3, 4 ) -- back
-                , ( 3, 1, 4 ) -- right
-                , ( 1, 3, 0 ) -- bottom
-                , ( 0, 3, 2 ) -- bottom
-                ]
-    in
-    Scene3d.Mesh.indexedFacets triangularMesh
 
 
 convertCamera : Camera.State -> Camera3d.Camera3d Length.Meters coordinates
@@ -223,17 +183,46 @@ convertCamera camState =
         }
 
 
+convertMesh mesh material transform highlight =
+    let
+        entity =
+            case mesh of
+                Lines m ->
+                    Scene3d.mesh (Material.color Color.black) m
+
+                Triangles m ->
+                    Scene3d.mesh (Material.matte Color.green) m
+    in
+    entity
+
+
 view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
 view attr model options =
     let
-        -- Create an entity from a mesh. This is a cheap operation, so you can
-        -- do things like dynamically change the material applied to mesh from
-        -- frame to frame.
-        pyramidEntity =
-            Scene3d.mesh (Material.matte Color.blue) pyramidMesh
+        convert { mesh, wireframe, material, transform, idxMesh, idxInstance } =
+            let
+                highlight =
+                    Set.member ( idxMesh, idxInstance ) model.selected
+
+                baseMesh =
+                    convertMesh mesh material transform highlight
+                        |> Just
+
+                maybeWires =
+                    if options.drawWires then
+                        convertMesh wireframe material transform highlight
+                            |> Just
+
+                    else
+                        Nothing
+            in
+            [ baseMesh, maybeWires ] |> List.filterMap identity
+
+        entities =
+            List.concatMap convert model.scene
     in
     Scene3d.sunny
-        { entities = [ pyramidEntity ]
+        { entities = entities
         , camera = convertCamera model.cameraState
         , upDirection = Direction3d.z
         , sunlightDirection = Direction3d.yz (Angle.degrees -120)
