@@ -20,21 +20,21 @@ import WebGL.Settings as Settings
 import WebGL.Settings.DepthTest as DepthTest
 
 
-type alias Mesh attributes =
-    WebGL.Mesh attributes
+type alias Mesh =
+    WebGL.Mesh VertexSpec
 
 
-lines : List ( attributes, attributes ) -> Mesh attributes
+lines : List ( VertexSpec, VertexSpec ) -> Mesh
 lines =
     WebGL.lines
 
 
-triangles : List ( attributes, attributes, attributes ) -> Mesh attributes
+triangles : List ( VertexSpec, VertexSpec, VertexSpec ) -> Mesh
 triangles =
     WebGL.triangles
 
 
-indexedTriangles : List attributes -> List ( Int, Int, Int ) -> Mesh attributes
+indexedTriangles : List VertexSpec -> List ( Int, Int, Int ) -> Mesh
 indexedTriangles =
     WebGL.indexedTriangles
 
@@ -59,8 +59,8 @@ type alias MaterialSpec =
 type alias Scene a =
     List
         { a
-            | mesh : Mesh VertexSpec
-            , wireframe : Mesh VertexSpec
+            | mesh : Mesh
+            , wireframe : Mesh
             , material : MaterialSpec
             , transform : Mat4
             , idxMesh : Int
