@@ -17,6 +17,7 @@ import Color
 import Direction3d
 import Html exposing (Html)
 import Length exposing (Meters)
+import LineSegment3d
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Pixels
@@ -41,8 +42,9 @@ type WorldCoordinates
     = WorldCoordinates
 
 
-type alias Mesh =
-    Scene3d.Mesh.Uniform WorldCoordinates
+type Mesh
+    = Lines (Scene3d.Mesh.Plain WorldCoordinates)
+    | Triangles (Scene3d.Mesh.Uniform WorldCoordinates)
 
 
 type alias Model a b =
@@ -73,29 +75,28 @@ asUnitlessDirection p =
 
 
 lines : List ( VertexSpec, VertexSpec ) -> Mesh
-lines pairs =
-    pairs
-        |> List.map
-            (\( p, q ) ->
-                Triangle3d.from
-                    (asPointInInches p.position)
-                    (asPointInInches q.position)
-                    (asPointInInches p.position)
-            )
-        |> Scene3d.Mesh.facets
+lines =
+    List.map
+        (\( p, q ) ->
+            LineSegment3d.from
+                (asPointInInches p.position)
+                (asPointInInches q.position)
+        )
+        >> Scene3d.Mesh.lineSegments
+        >> Lines
 
 
 triangles : List ( VertexSpec, VertexSpec, VertexSpec ) -> Mesh
-triangles triplets =
-    triplets
-        |> List.map
-            (\( p, q, r ) ->
-                Triangle3d.from
-                    (asPointInInches p.position)
-                    (asPointInInches q.position)
-                    (asPointInInches r.position)
-            )
-        |> Scene3d.Mesh.facets
+triangles =
+    List.map
+        (\( p, q, r ) ->
+            Triangle3d.from
+                (asPointInInches p.position)
+                (asPointInInches q.position)
+                (asPointInInches r.position)
+        )
+        >> Scene3d.Mesh.facets
+        >> Triangles
 
 
 indexedTriangles : List VertexSpec -> List ( Int, Int, Int ) -> Mesh
@@ -113,6 +114,7 @@ indexedTriangles vertices faces =
     in
     TriangularMesh.indexed verts faces
         |> Scene3d.Mesh.indexedFaces
+        |> Triangles
 
 
 type alias MaterialSpec =
