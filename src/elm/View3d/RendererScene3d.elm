@@ -187,6 +187,34 @@ convertCamera camState =
         }
 
 
+orthonormalized : Mat4 -> Mat4
+orthonormalized mat =
+    let
+        project a b =
+            Vec3.scale (Vec3.dot a b) b
+
+        u =
+            vec3 1 0 0 |> Mat4.transform mat |> Vec3.normalize
+
+        v0 =
+            vec3 0 1 0 |> Mat4.transform mat
+
+        v =
+            project v0 u
+                |> Vec3.sub v0
+                |> Vec3.normalize
+
+        w0 =
+            vec3 0 0 1 |> Mat4.transform mat
+
+        w =
+            Vec3.add (project w0 u) (project w0 v)
+                |> Vec3.sub w0
+                |> Vec3.normalize
+    in
+    Mat4.makeBasis u v w
+
+
 determinant3d : Mat4 -> Float
 determinant3d mat =
     Vec3.dot
@@ -253,20 +281,22 @@ analyzeRotation mat =
             a =
                 Vec3.normalize v
 
-            c =
+            b =
                 Mat4.transform mat a
                     |> Vec3.normalize
-                    |> Vec3.cross a
+
+            c =
+                Vec3.cross a b
 
             angle =
                 if Vec3.length c < 1.0e-3 then
                     Angle.radians pi
 
                 else if Vec3.dot c n < 0 then
-                    Angle.asin -(Vec3.length c)
+                    Angle.acos -(Vec3.dot a b)
 
                 else
-                    Angle.asin (Vec3.length c)
+                    Angle.acos (Vec3.dot a b)
         in
         { axis = axis, angle = angle }
 
@@ -312,6 +342,7 @@ analyzeMatrix mat0 =
 
         mat3 =
             Mat4.scale3 s s s mat2
+                |> orthonormalized
 
         { axis, angle } =
             analyzeRotation mat3
