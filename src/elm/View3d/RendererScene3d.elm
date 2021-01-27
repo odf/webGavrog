@@ -21,6 +21,7 @@ import Length exposing (Meters)
 import LineSegment3d
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Maybe
 import Pixels
 import Plane3d
 import Point3d exposing (Point3d)
@@ -35,7 +36,6 @@ import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
 import Viewpoint3d
 import WebGL exposing (entity)
-import Point3d exposing (coordinates)
 
 
 
@@ -199,21 +199,28 @@ determinant3d mat =
         + (r.m13 * (r.m21 * r.m32 - r.m22 * r.m31))
 
 
-rotationAngle : Mat4 -> Vec3 -> Angle.Angle
-rotationAngle mat v =
-    Mat4.transform mat v
-        |> Vec3.dot v
-        |> Angle.acos
+longestTwo : Vec3 -> Vec3 -> Vec3 -> ( Vec3, Vec3 )
+longestTwo u v w =
+    let
+        ( a, b ) =
+            if Vec3.length u >= Vec3.length v then
+                if Vec3.length v >= Vec3.length w then
+                    ( u, v )
 
+                else
+                    ( u, w )
 
-rotationAxis : Mat4 -> Vec3 -> Axis3d.Axis3d Meters coordinates
-rotationAxis mat v =
-    Mat4.transform mat v
-        |> Vec3.cross v
-        |> Vec3.normalize
-        |> asPointInInches
-        |> Axis3d.throughPoints Point3d.origin
-        |> Maybe.withDefault Axis3d.x
+            else if Vec3.length u >= Vec3.length w then
+                ( u, v )
+
+            else
+                ( v, w )
+    in
+    if Vec3.length a >= Vec3.length b then
+        ( a, b )
+
+    else
+        ( b, a )
 
 
 analyzeRotation :
@@ -221,14 +228,44 @@ analyzeRotation :
     -> { axis : Axis3d.Axis3d Meters coordinatesF, angle : Angle.Angle }
 analyzeRotation mat =
     let
-        v =
-            if Angle.inDegrees (rotationAngle mat (vec3 1 0 0)) > 1 then
-                vec3 1 0 0
+        movement vec =
+            Mat4.transform mat vec |> Vec3.sub vec
 
-            else
-                vec3 0 1 0
+        ( v, w ) =
+            longestTwo
+                (vec3 1 0 0 |> movement)
+                (vec3 0 1 0 |> movement)
+                (vec3 0 0 1 |> movement)
     in
-    { axis = rotationAxis mat v, angle = rotationAngle mat v }
+    if Vec3.length v < 1.0e-3 then
+        { axis = Axis3d.x, angle = Angle.degrees 0 }
+
+    else
+        let
+            n =
+                Vec3.cross v w
+                    |> Vec3.normalize
+
+            axis =
+                n
+                    |> asPointInInches
+                    |> Axis3d.throughPoints Point3d.origin
+                    |> Maybe.withDefault Axis3d.x
+
+            a =
+                Vec3.normalize v
+
+            c =
+                Vec3.cross a (Mat4.transform mat a)
+
+            angle =
+                if Vec3.dot c n < 0 then
+                    Angle.asin -(Vec3.length c)
+
+                else
+                    Angle.asin (Vec3.length c)
+        in
+        { axis = axis, angle = angle }
 
 
 analyzeMatrix :
