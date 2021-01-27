@@ -189,14 +189,12 @@ convertCamera camState =
 
 determinant3d : Mat4 -> Float
 determinant3d mat =
-    let
-        r =
-            Mat4.toRecord mat
-    in
-    0
-        + (r.m11 * (r.m22 * r.m33 - r.m23 * r.m32))
-        + (r.m12 * (r.m23 * r.m31 - r.m21 * r.m33))
-        + (r.m13 * (r.m21 * r.m32 - r.m22 * r.m31))
+    Vec3.dot
+        (Mat4.transform mat <| vec3 1 0 0)
+        (Vec3.cross
+            (Mat4.transform mat <| vec3 0 1 0)
+            (Mat4.transform mat <| vec3 0 0 1)
+        )
 
 
 longestTwo : Vec3 -> Vec3 -> Vec3 -> ( Vec3, Vec3 )
@@ -256,10 +254,15 @@ analyzeRotation mat =
                 Vec3.normalize v
 
             c =
-                Vec3.cross a (Mat4.transform mat a)
+                Mat4.transform mat a
+                    |> Vec3.normalize
+                    |> Vec3.cross a
 
             angle =
-                if Vec3.dot c n < 0 then
+                if Vec3.length c < 1.0e-3 then
+                    Angle.radians pi
+
+                else if Vec3.dot c n < 0 then
                     Angle.asin -(Vec3.length c)
 
                 else
@@ -271,10 +274,11 @@ analyzeRotation mat =
 analyzeMatrix :
     Mat4
     ->
-        { shift : Vector3d Meters coordinates
+        { scale : Float
         , mirrorZ : Bool
         , axis : Axis3d.Axis3d Meters coordinates
         , angle : Angle.Angle
+        , shift : Vector3d Meters coordinates
         }
 analyzeMatrix mat0 =
     let
@@ -283,7 +287,7 @@ analyzeMatrix mat0 =
                 |> Mat4.transform mat0
 
         mat1 =
-            Mat4.translate (Vec3.negate shift) mat0
+            Mat4.mul (Mat4.makeTranslate (Vec3.negate shift)) mat0
 
         shiftVector =
             shift
@@ -300,10 +304,24 @@ analyzeMatrix mat0 =
             else
                 mat1
 
+        scale =
+            determinant3d mat2 ^ (1 / 3)
+
+        s =
+            1 / scale
+
+        mat3 =
+            Mat4.scale3 s s s mat2
+
         { axis, angle } =
-            analyzeRotation mat2
+            analyzeRotation mat3
     in
-    { shift = shiftVector, mirrorZ = mirrorZ, axis = axis, angle = angle }
+    { scale = scale
+    , mirrorZ = mirrorZ
+    , axis = axis
+    , angle = angle
+    , shift = shiftVector
+    }
 
 
 applyTransform :
@@ -323,13 +341,16 @@ applyTransform mat entity =
                 entity
 
         e1 =
+            Scene3d.scaleAbout Point3d.origin spec.scale e0
+
+        e2 =
             if Angle.inDegrees spec.angle > 0.01 then
-                Scene3d.rotateAround spec.axis spec.angle e0
+                Scene3d.rotateAround spec.axis spec.angle e1
 
             else
-                e0
+                e1
     in
-    Scene3d.translateBy spec.shift e1
+    Scene3d.translateBy spec.shift e2
 
 
 convertMesh mesh material transform highlight =
