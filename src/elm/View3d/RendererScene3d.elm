@@ -299,6 +299,15 @@ analyzeRotation mat =
             { axis = axis, angle = angle }
 
 
+sign : number -> number
+sign n =
+    if n < 0 then
+        -1
+
+    else
+        1
+
+
 applySimilarityMatrix :
     Mat4
     -> Scene3d.Entity coordinates
@@ -317,8 +326,11 @@ applySimilarityMatrix matrix entity =
         mat1 =
             Mat4.mul (Mat4.makeTranslate (Vec3.negate shift)) matrix
 
+        det =
+            determinant3d mat1
+
         scale =
-            determinant3d mat1 ^ (1 / 3)
+            sign det * (abs det ^ (1 / 3))
 
         { axis, angle } =
             Mat4.scale3 (1 / scale) (1 / scale) (1 / scale) mat1
