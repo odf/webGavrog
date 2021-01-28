@@ -23,7 +23,6 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Maybe
 import Pixels
-import Plane3d
 import Point3d exposing (Point3d)
 import Quantity exposing (Unitless)
 import Scene3d
@@ -301,87 +300,36 @@ analyzeRotation mat =
         { axis = axis, angle = angle }
 
 
-analyzeMatrix :
+applySimilarityMatrix :
     Mat4
-    ->
-        { scale : Float
-        , mirrorZ : Bool
-        , axis : Axis3d.Axis3d Meters coordinates
-        , angle : Angle.Angle
-        , shift : Vector3d Meters coordinates
-        }
-analyzeMatrix mat0 =
+    -> Scene3d.Entity coordinates
+    -> Scene3d.Entity coordinates
+applySimilarityMatrix matrix entity =
     let
         shift =
             vec3 0 0 0
-                |> Mat4.transform mat0
-
-        mat1 =
-            Mat4.mul (Mat4.makeTranslate (Vec3.negate shift)) mat0
+                |> Mat4.transform matrix
 
         shiftVector =
             shift
                 |> asPointInInches
                 |> Vector3d.from Point3d.origin
 
-        mirrorZ =
-            determinant3d mat1 < 0
-
-        mat2 =
-            if mirrorZ then
-                Mat4.mul mat1 <| Mat4.makeScale3 1 1 -1
-
-            else
-                mat1
+        mat1 =
+            Mat4.mul (Mat4.makeTranslate (Vec3.negate shift)) matrix
 
         scale =
-            determinant3d mat2 ^ (1 / 3)
-
-        s =
-            1 / scale
-
-        mat3 =
-            Mat4.scale3 s s s mat2
-                |> orthonormalized
+            determinant3d mat1 ^ (1 / 3)
 
         { axis, angle } =
-            analyzeRotation mat3
+            Mat4.scale3 (1 / scale) (1 / scale) (1 / scale) mat1
+                |> orthonormalized
+                |> analyzeRotation
     in
-    { scale = scale
-    , mirrorZ = mirrorZ
-    , axis = axis
-    , angle = angle
-    , shift = shiftVector
-    }
-
-
-applyTransform :
-    Mat4
-    -> Scene3d.Entity coordinates
-    -> Scene3d.Entity coordinates
-applyTransform mat entity =
-    let
-        spec =
-            analyzeMatrix mat
-
-        e0 =
-            if spec.mirrorZ then
-                Scene3d.mirrorAcross Plane3d.xy entity
-
-            else
-                entity
-
-        e1 =
-            Scene3d.scaleAbout Point3d.origin spec.scale e0
-
-        e2 =
-            if Angle.inDegrees spec.angle > 0.01 then
-                Scene3d.rotateAround spec.axis spec.angle e1
-
-            else
-                e1
-    in
-    Scene3d.translateBy spec.shift e2
+    entity
+        |> Scene3d.scaleAbout Point3d.origin scale
+        |> Scene3d.rotateAround axis angle
+        |> Scene3d.translateBy shiftVector
 
 
 convertMesh mesh material transform highlight =
@@ -394,7 +342,7 @@ convertMesh mesh material transform highlight =
                 Triangles m ->
                     Scene3d.mesh (Material.matte Color.green) m
     in
-    applyTransform transform entity
+    applySimilarityMatrix transform entity
 
 
 view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
