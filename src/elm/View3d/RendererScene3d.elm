@@ -289,13 +289,14 @@ analyzeRotation mat =
                 if Vec3.length c < 1.0e-3 then
                     Angle.radians pi
 
-                else if Vec3.dot c n < 0 then
-                    Angle.acos -(Vec3.dot a b)
-
                 else
                     Angle.acos (Vec3.dot a b)
         in
-        { axis = axis, angle = angle }
+        if Vec3.dot c n < 0 then
+            { axis = Axis3d.reverse axis, angle = angle }
+
+        else
+            { axis = axis, angle = angle }
 
 
 applySimilarityMatrix :
