@@ -248,19 +248,25 @@ longestTwo u v w =
         ( b, a )
 
 
+sign : number -> number
+sign n =
+    if n < 0 then
+        -1
+
+    else
+        1
+
+
 analyzeRotation :
     Mat4
     -> { axis : Axis3d.Axis3d Meters coordinatesF, angle : Angle.Angle }
 analyzeRotation mat =
     let
-        movement vec =
+        moved vec =
             Mat4.transform mat vec |> Vec3.sub vec
 
         ( v, w ) =
-            longestTwo
-                (vec3 1 0 0 |> movement)
-                (vec3 0 1 0 |> movement)
-                (vec3 0 0 1 |> movement)
+            longestTwo (moved Vec3.i) (moved Vec3.j) (moved Vec3.k)
     in
     if Vec3.length v < 1.0e-3 then
         { axis = Axis3d.x, angle = Angle.degrees 0 }
@@ -287,25 +293,12 @@ analyzeRotation mat =
 
             angle =
                 if Vec3.length c < 1.0e-3 then
-                    Angle.radians pi
+                    pi
 
                 else
-                    Angle.acos (Vec3.dot a b)
+                    sign (Vec3.dot c n) * acos (Vec3.dot a b)
         in
-        if Vec3.dot c n < 0 then
-            { axis = Axis3d.reverse axis, angle = angle }
-
-        else
-            { axis = axis, angle = angle }
-
-
-sign : number -> number
-sign n =
-    if n < 0 then
-        -1
-
-    else
-        1
+        { axis = axis, angle = Angle.radians angle }
 
 
 applySimilarityMatrix :
