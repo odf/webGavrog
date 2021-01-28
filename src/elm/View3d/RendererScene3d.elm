@@ -268,8 +268,7 @@ analyzeRotation mat =
     else
         let
             n =
-                Vec3.cross v w
-                    |> Vec3.normalize
+                Vec3.cross v w |> Vec3.normalize
 
             axis =
                 n
@@ -281,8 +280,7 @@ analyzeRotation mat =
                 Vec3.normalize v
 
             b =
-                Mat4.transform mat a
-                    |> Vec3.normalize
+                Mat4.transform mat a |> Vec3.normalize
 
             c =
                 Vec3.cross a b
