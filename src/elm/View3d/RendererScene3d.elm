@@ -341,7 +341,18 @@ convertMesh mesh material transform highlight =
                     Scene3d.mesh (Material.color Color.black) m
 
                 Triangles m ->
-                    Scene3d.mesh (Material.matte Color.green) m
+                    let
+                        c =
+                            Vec3.toRecord material.diffuseColor
+
+                        pbrMat =
+                            Material.pbr
+                                { baseColor = Color.rgb c.x c.y c.z
+                                , roughness = 0.5
+                                , metallic = 0.5
+                                }
+                    in
+                    Scene3d.mesh pbrMat m
     in
     applySimilarityMatrix transform entity
 
