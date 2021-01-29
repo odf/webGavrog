@@ -1,9 +1,5 @@
 module View3d.RendererScene3d exposing
-    ( MaterialSpec
-    , Mesh
-    , Options
-    , Scene
-    , VertexSpec
+    ( Mesh
     , indexedTriangles
     , lines
     , triangles
@@ -33,6 +29,7 @@ import Triangle3d
 import TriangularMesh
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
+import View3d.RendererCommon exposing (..)
 import Viewpoint3d
 import WebGL exposing (entity)
 
@@ -48,12 +45,6 @@ type WorldCoordinates
 type Mesh
     = Lines (Scene3d.Mesh.Plain WorldCoordinates)
     | Triangles (Scene3d.Mesh.Uniform WorldCoordinates)
-
-
-type alias VertexSpec =
-    { position : Vec3
-    , normal : Vec3
-    }
 
 
 asPointInInches : Vec3 -> Point3d Meters coords
@@ -109,48 +100,14 @@ indexedTriangles vertices faces =
         |> Triangles
 
 
-type alias MaterialSpec =
-    { ambientColor : Vec3
-    , diffuseColor : Vec3
-    , specularColor : Vec3
-    , ka : Float
-    , kd : Float
-    , ks : Float
-    , shininess : Float
-    }
-
-
-type alias Scene a =
-    List
-        { a
-            | mesh : Mesh
-            , wireframe : Mesh
-            , material : MaterialSpec
-            , transform : Mat4
-            , idxMesh : Int
-            , idxInstance : Int
-        }
-
-
 type alias Model a b =
     { a
         | size : { width : Float, height : Float }
-        , scene : Scene b
+        , scene : Scene b Mesh
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
         , cameraState : Camera.State
-    }
-
-
-type alias Options =
-    { orthogonalView : Bool
-    , drawWires : Bool
-    , fadeToBackground : Float
-    , fadeToBlue : Float
-    , backgroundColor : Vec3
-    , addOutlines : Bool
-    , outlineColor : Vec3
     }
 
 

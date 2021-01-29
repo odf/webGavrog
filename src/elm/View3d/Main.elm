@@ -30,6 +30,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
+import View3d.RendererCommon as RendererCommon
 import View3d.RendererScene3d as Renderer
 
 
@@ -55,10 +56,10 @@ type alias PickingInfo =
 
 type alias Scene =
     List
-        { mesh : Mesh Renderer.VertexSpec
+        { mesh : Mesh RendererCommon.VertexSpec
         , instances :
             List
-                { material : Renderer.MaterialSpec
+                { material : RendererCommon.MaterialSpec
                 , transform : Mat4
                 }
         }
@@ -68,7 +69,7 @@ type alias Model =
     { size : FrameSize
     , requestRedraw : Bool
     , cameraState : Camera.State
-    , scene : Renderer.Scene PickingInfo
+    , scene : RendererCommon.Scene PickingInfo Renderer.Mesh
     , selected : Set ( Int, Int )
     , touchStart : Position
     , center : Vec3
@@ -95,7 +96,7 @@ init =
     }
 
 
-meshForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh
+meshForRenderer : Mesh RendererCommon.VertexSpec -> Renderer.Mesh
 meshForRenderer mesh =
     case mesh of
         Mesh.Lines lines ->
@@ -108,7 +109,7 @@ meshForRenderer mesh =
             Renderer.indexedTriangles vertices triangles
 
 
-wireframeForRenderer : Mesh Renderer.VertexSpec -> Renderer.Mesh
+wireframeForRenderer : Mesh RendererCommon.VertexSpec -> Renderer.Mesh
 wireframeForRenderer mesh =
     let
         out { position, normal } =
@@ -135,7 +136,7 @@ wireframeForRenderer mesh =
                 |> wireframeForRenderer
 
 
-meshForPicking : Mesh Renderer.VertexSpec -> Maybe (Mesh Vec3)
+meshForPicking : Mesh RendererCommon.VertexSpec -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
         Mesh.Lines _ ->
@@ -156,7 +157,7 @@ meshForPicking mesh =
                 )
 
 
-processedScene : Scene -> Renderer.Scene PickingInfo
+processedScene : Scene -> RendererCommon.Scene PickingInfo Renderer.Mesh
 processedScene scene =
     scene
         |> List.indexedMap
@@ -208,7 +209,10 @@ processedScene scene =
             )
 
 
-pick : Camera.Ray -> Renderer.Scene PickingInfo -> Maybe ( Int, Int )
+pick :
+    Camera.Ray
+    -> RendererCommon.Scene PickingInfo Renderer.Mesh
+    -> Maybe ( Int, Int )
 pick ray pscene =
     let
         intersect =
@@ -565,7 +569,7 @@ requestRedraw model =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> Renderer.Options -> Color -> Html msg
+view : (Msg -> msg) -> Model -> RendererCommon.Options -> Color -> Html msg
 view toMsg model options bgColor =
     let
         attributes =

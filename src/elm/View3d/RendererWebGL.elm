@@ -1,9 +1,5 @@
 module View3d.RendererWebGL exposing
-    ( MaterialSpec
-    , Mesh
-    , Options
-    , Scene
-    , VertexSpec
+    ( Mesh
     , indexedTriangles
     , lines
     , triangles
@@ -15,6 +11,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
+import View3d.RendererCommon exposing (..)
 import WebGL
 import WebGL.Settings as Settings
 import WebGL.Settings.DepthTest as DepthTest
@@ -39,54 +36,14 @@ indexedTriangles =
     WebGL.indexedTriangles
 
 
-type alias VertexSpec =
-    { position : Vec3
-    , normal : Vec3
-    }
-
-
-type alias MaterialSpec =
-    { ambientColor : Vec3
-    , diffuseColor : Vec3
-    , specularColor : Vec3
-    , ka : Float
-    , kd : Float
-    , ks : Float
-    , shininess : Float
-    }
-
-
-type alias Scene a =
-    List
-        { a
-            | mesh : Mesh
-            , wireframe : Mesh
-            , material : MaterialSpec
-            , transform : Mat4
-            , idxMesh : Int
-            , idxInstance : Int
-        }
-
-
 type alias Model a b =
     { a
         | size : { width : Float, height : Float }
-        , scene : Scene b
+        , scene : Scene b Mesh
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
         , cameraState : Camera.State
-    }
-
-
-type alias Options =
-    { orthogonalView : Bool
-    , drawWires : Bool
-    , fadeToBackground : Float
-    , fadeToBlue : Float
-    , backgroundColor : Vec3
-    , addOutlines : Bool
-    , outlineColor : Vec3
     }
 
 
