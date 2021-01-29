@@ -333,7 +333,22 @@ applySimilarityMatrix matrix entity =
         |> Scene3d.translateBy shiftVector
 
 
-convertMesh mesh material transform highlight =
+convertColor : Vec3 -> Color.Color
+convertColor vec =
+    let
+        c =
+            Vec3.toRecord vec
+    in
+    Color.rgb c.x c.y c.z
+
+
+convertMesh :
+    Mesh
+    -> MaterialSpec
+    -> Mat4
+    -> Bool
+    -> Scene3d.Entity WorldCoordinates
+convertMesh mesh { diffuseColor } transform highlight =
     let
         entity =
             case mesh of
@@ -342,17 +357,18 @@ convertMesh mesh material transform highlight =
 
                 Triangles m ->
                     let
-                        c =
-                            Vec3.toRecord material.diffuseColor
+                        material =
+                            if highlight then
+                                Material.matte Color.red
 
-                        pbrMat =
-                            Material.pbr
-                                { baseColor = Color.rgb c.x c.y c.z
-                                , roughness = 0.5
-                                , metallic = 0.5
-                                }
+                            else
+                                Material.pbr
+                                    { baseColor = convertColor diffuseColor
+                                    , roughness = 0.5
+                                    , metallic = 0.5
+                                    }
                     in
-                    Scene3d.mesh pbrMat m
+                    Scene3d.mesh material m
     in
     applySimilarityMatrix transform entity
 
@@ -387,7 +403,9 @@ view attr model options =
         , camera = convertCamera model.cameraState
         , upDirection = Direction3d.z
         , sunlightDirection = Direction3d.yz (Angle.degrees -120)
-        , background = Scene3d.transparentBackground
+        , background =
+            convertColor options.backgroundColor
+                |> Scene3d.backgroundColor
         , clipDepth = Length.centimeters 1
         , shadows = False
         , dimensions =
