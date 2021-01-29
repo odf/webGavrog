@@ -56,12 +56,12 @@ type alias VertexSpec =
     }
 
 
-asPointInInches : Vec3 -> Point3d Meters coordinates
+asPointInInches : Vec3 -> Point3d Meters coords
 asPointInInches p =
     Point3d.inches (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
-asUnitlessDirection : Vec3 -> Vector3d Unitless coordinates
+asUnitlessDirection : Vec3 -> Vector3d Unitless coords
 asUnitlessDirection p =
     Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
@@ -154,7 +154,7 @@ type alias Options =
     }
 
 
-convertCamera : Camera.State -> Camera3d.Camera3d Length.Meters coordinates
+convertCamera : Camera.State -> Camera3d.Camera3d Length.Meters coords
 convertCamera camState =
     let
         fowy =
@@ -259,7 +259,7 @@ sign n =
 
 analyzeRotation :
     Mat4
-    -> { axis : Axis3d.Axis3d Meters coordinatesF, angle : Angle.Angle }
+    -> { axis : Axis3d.Axis3d Meters coords, angle : Angle.Angle }
 analyzeRotation mat =
     let
         moved vec =
@@ -301,10 +301,7 @@ analyzeRotation mat =
         { axis = axis, angle = Angle.radians angle }
 
 
-applySimilarityMatrix :
-    Mat4
-    -> Scene3d.Entity coordinates
-    -> Scene3d.Entity coordinates
+applySimilarityMatrix : Mat4 -> Scene3d.Entity coords -> Scene3d.Entity coords
 applySimilarityMatrix matrix entity =
     let
         shift =
