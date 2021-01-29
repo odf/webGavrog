@@ -1,8 +1,6 @@
 module View3d.RendererScene3d exposing
     ( Mesh
-    , indexedTriangles
-    , lines
-    , triangles
+    , convertMeshForRenderer
     , view
     )
 
@@ -29,6 +27,7 @@ import Triangle3d
 import TriangularMesh
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
+import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
 import WebGL exposing (entity)
@@ -57,47 +56,47 @@ asUnitlessDirection p =
     Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
-lines : List ( VertexSpec, VertexSpec ) -> Mesh
-lines =
-    List.map
-        (\( p, q ) ->
-            LineSegment3d.from
-                (asPointInInches p.position)
-                (asPointInInches q.position)
-        )
-        >> Scene3d.Mesh.lineSegments
-        >> Lines
-
-
-triangles : List ( VertexSpec, VertexSpec, VertexSpec ) -> Mesh
-triangles =
-    List.map
-        (\( p, q, r ) ->
-            Triangle3d.from
-                (asPointInInches p.position)
-                (asPointInInches q.position)
-                (asPointInInches r.position)
-        )
-        >> Scene3d.Mesh.facets
-        >> Triangles
-
-
-indexedTriangles : List VertexSpec -> List ( Int, Int, Int ) -> Mesh
-indexedTriangles vertices faces =
-    let
-        verts =
-            vertices
+convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
+convertMeshForRenderer mesh =
+    case mesh of
+        Mesh.Lines lines ->
+            lines
                 |> List.map
-                    (\v ->
-                        { position = asPointInInches v.position
-                        , normal = asUnitlessDirection v.normal
-                        }
+                    (\( p, q ) ->
+                        LineSegment3d.from
+                            (asPointInInches p.position)
+                            (asPointInInches q.position)
                     )
-                |> Array.fromList
-    in
-    TriangularMesh.indexed verts faces
-        |> Scene3d.Mesh.indexedFaces
-        |> Triangles
+                >> Scene3d.Mesh.lineSegments
+                >> Lines
+
+        Mesh.Triangles triangles ->
+            triangles
+                |> List.map
+                    (\( p, q, r ) ->
+                        Triangle3d.from
+                            (asPointInInches p.position)
+                            (asPointInInches q.position)
+                            (asPointInInches r.position)
+                    )
+                >> Scene3d.Mesh.facets
+                >> Triangles
+
+        Mesh.IndexedTriangles vertices triangles ->
+            let
+                verts =
+                    vertices
+                        |> List.map
+                            (\v ->
+                                { position = asPointInInches v.position
+                                , normal = asUnitlessDirection v.normal
+                                }
+                            )
+                        |> Array.fromList
+            in
+            TriangularMesh.indexed verts triangles
+                |> Scene3d.Mesh.indexedFaces
+                |> Triangles
 
 
 type alias Model a b =

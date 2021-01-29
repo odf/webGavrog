@@ -1,8 +1,6 @@
 module View3d.RendererWebGL exposing
     ( Mesh
-    , indexedTriangles
-    , lines
-    , triangles
+    , convertMeshForRenderer
     , view
     )
 
@@ -11,6 +9,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
+import View3d.Mesh as Mesh
 import View3d.RendererCommon exposing (..)
 import WebGL
 import WebGL.Settings as Settings
@@ -21,19 +20,17 @@ type alias Mesh =
     WebGL.Mesh VertexSpec
 
 
-lines : List ( VertexSpec, VertexSpec ) -> Mesh
-lines =
-    WebGL.lines
+convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
+convertMeshForRenderer mesh =
+    case mesh of
+        Mesh.Lines lines ->
+            WebGL.lines lines
 
+        Mesh.Triangles triangles ->
+            WebGL.triangles triangles
 
-triangles : List ( VertexSpec, VertexSpec, VertexSpec ) -> Mesh
-triangles =
-    WebGL.triangles
-
-
-indexedTriangles : List VertexSpec -> List ( Int, Int, Int ) -> Mesh
-indexedTriangles =
-    WebGL.indexedTriangles
+        Mesh.IndexedTriangles vertices triangles ->
+            WebGL.indexedTriangles vertices triangles
 
 
 type alias Model a b =

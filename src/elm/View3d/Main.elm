@@ -96,21 +96,8 @@ init =
     }
 
 
-meshForRenderer : Mesh RendererCommon.VertexSpec -> Renderer.Mesh
-meshForRenderer mesh =
-    case mesh of
-        Mesh.Lines lines ->
-            Renderer.lines lines
-
-        Mesh.Triangles triangles ->
-            Renderer.triangles triangles
-
-        Mesh.IndexedTriangles vertices triangles ->
-            Renderer.indexedTriangles vertices triangles
-
-
-wireframeForRenderer : Mesh RendererCommon.VertexSpec -> Renderer.Mesh
-wireframeForRenderer mesh =
+wireframe : Mesh RendererCommon.VertexSpec -> Mesh RendererCommon.VertexSpec
+wireframe mesh =
     let
         out { position, normal } =
             { position = Vec3.add position (Vec3.scale 0.001 normal)
@@ -118,8 +105,8 @@ wireframeForRenderer mesh =
             }
     in
     case mesh of
-        Mesh.Lines lines ->
-            Renderer.lines lines
+        Mesh.Lines _ ->
+            mesh
 
         Mesh.Triangles triangles ->
             triangles
@@ -127,13 +114,13 @@ wireframeForRenderer mesh =
                     (\( u, v, w ) -> ( out u, out v, out w ))
                 |> List.concatMap
                     (\( u, v, w ) -> [ ( u, v ), ( v, w ), ( w, u ) ])
-                |> Renderer.lines
+                |> Mesh.Lines
 
         Mesh.IndexedTriangles vertices triangles ->
             Mesh.resolvedSurface
                 vertices
                 (List.map (\( i, j, k ) -> [ i, j, k ]) triangles)
-                |> wireframeForRenderer
+                |> wireframe
 
 
 meshForPicking : Mesh RendererCommon.VertexSpec -> Maybe (Mesh Vec3)
@@ -166,10 +153,10 @@ processedScene scene =
             (\( rawMesh, instances, idxMesh ) ->
                 let
                     mesh =
-                        meshForRenderer rawMesh
+                        Renderer.convertMeshForRenderer rawMesh
 
-                    wireframe =
-                        wireframeForRenderer rawMesh
+                    wires =
+                        wireframe rawMesh |> Renderer.convertMeshForRenderer
 
                     pickingMesh =
                         meshForPicking rawMesh
@@ -194,7 +181,7 @@ processedScene scene =
                 List.indexedMap
                     (\idxInstance { material, transform } ->
                         { mesh = mesh
-                        , wireframe = wireframe
+                        , wireframe = wires
                         , pickingMesh = pickingMesh
                         , centroid = centroid
                         , radius = radius
