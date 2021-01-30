@@ -354,18 +354,20 @@ view attr model options =
         entities =
             List.concatMap convert model.scene
     in
-    Scene3d.sunny
-        { entities = entities
-        , camera = convertCamera model.cameraState
-        , upDirection = Direction3d.z
-        , sunlightDirection = Direction3d.yz (Angle.degrees -120)
-        , background =
-            convertColor options.backgroundColor
-                |> Scene3d.backgroundColor
-        , clipDepth = Length.centimeters 1
-        , shadows = False
-        , dimensions =
-            ( Pixels.int (floor model.size.width)
-            , Pixels.int (floor model.size.height)
-            )
-        }
+    Html.div attr
+        [ Scene3d.sunny
+            { entities = entities
+            , camera = convertCamera model.cameraState
+            , upDirection = Direction3d.z
+            , sunlightDirection = Direction3d.yz (Angle.degrees -120)
+            , background =
+                convertColor options.backgroundColor
+                    |> Scene3d.backgroundColor
+            , clipDepth = Length.centimeters 1
+            , shadows = False
+            , dimensions =
+                ( Pixels.int (floor model.size.width)
+                , Pixels.int (floor model.size.height)
+                )
+            }
+        ]
