@@ -198,7 +198,7 @@ processedScene scene =
 
 pick :
     Camera.Ray
-    -> RendererCommon.Scene PickingInfo Renderer.Mesh
+    -> RendererCommon.Scene PickingInfo a
     -> Maybe ( Int, Int )
 pick ray pscene =
     let
