@@ -67,7 +67,9 @@ export const saveStructure = (config, model) => {
 
 
 export const saveScreenshot = (config, options) => {
-  const srcCanvas = document.getElementById('main-3d-canvas');
+  const srcCanvas =
+     document.querySelector('#main-3d-canvas canvas') ||
+     document.querySelector('canvas#main-3d-canvas')
 
   if (srcCanvas) {
     window.requestAnimationFrame(() => {
