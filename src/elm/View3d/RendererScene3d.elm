@@ -298,13 +298,13 @@ convertColor vec =
     Color.rgb c.x c.y c.z
 
 
-convertMesh :
+entityFromMesh :
     Mesh
     -> MaterialSpec
     -> Mat4
     -> Bool
     -> Scene3d.Entity WorldCoordinates
-convertMesh mesh { diffuseColor } transform highlight =
+entityFromMesh mesh { diffuseColor } transform highlight =
     let
         entity =
             case mesh of
@@ -338,12 +338,12 @@ view attr model options =
                     Set.member ( idxMesh, idxInstance ) model.selected
 
                 baseMesh =
-                    convertMesh mesh material transform highlight
+                    entityFromMesh mesh material transform highlight
                         |> Just
 
                 maybeWires =
                     if options.drawWires then
-                        convertMesh wireframe material transform highlight
+                        entityFromMesh wireframe material transform highlight
                             |> Just
 
                     else
