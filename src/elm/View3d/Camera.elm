@@ -472,14 +472,14 @@ focalPoint : State -> Vec3
 focalPoint (State state) =
     Mat4.transform
         (inverseViewingMatrix (State state))
-        (vec3 0 0 0)
+        (vec3 0 0 -state.cameraDistance)
 
 
 eyePoint : State -> Vec3
 eyePoint (State state) =
     Mat4.transform
         (inverseViewingMatrix (State state))
-        (vec3 0 0 state.cameraDistance)
+        (vec3 0 0 0)
 
 
 upDirection : State -> Vec3
