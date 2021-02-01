@@ -13,7 +13,7 @@ import Direction3d
 import Html exposing (Html)
 import Length exposing (Meters)
 import LineSegment3d
-import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Matrix4 as Mat4 exposing (Mat4, transform)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Maybe
 import Pixels
@@ -27,7 +27,7 @@ import Triangle3d
 import TriangularMesh
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh exposing (Mesh)
+import View3d.Mesh as Mesh exposing (Mesh, surface, wireframe)
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
 import WebGL exposing (entity)
@@ -41,9 +41,21 @@ type WorldCoordinates
     = WorldCoordinates
 
 
-type Mesh
-    = Lines (Scene3d.Mesh.Plain WorldCoordinates)
-    | Triangles (Scene3d.Mesh.Uniform WorldCoordinates)
+type alias Mesh =
+    { wireframe : Scene3d.Mesh.Plain WorldCoordinates
+    , surface : Scene3d.Mesh.Uniform WorldCoordinates
+    }
+
+
+type alias Model a b =
+    { a
+        | size : { width : Float, height : Float }
+        , scene : Scene b Mesh
+        , selected : Set ( Int, Int )
+        , center : Vec3
+        , radius : Float
+        , cameraState : Camera.State
+    }
 
 
 asPointInInches : Vec3 -> Point3d Meters coords
@@ -56,19 +68,11 @@ asUnitlessDirection p =
     Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
-convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
-convertMeshForRenderer mesh =
+convertSurface : Mesh.Mesh VertexSpec -> Scene3d.Mesh.Uniform WorldCoordinates
+convertSurface mesh =
     case mesh of
-        Mesh.Lines lines ->
-            lines
-                |> List.map
-                    (\( p, q ) ->
-                        LineSegment3d.from
-                            (asPointInInches p.position)
-                            (asPointInInches q.position)
-                    )
-                >> Scene3d.Mesh.lineSegments
-                >> Lines
+        Mesh.Lines _ ->
+            Scene3d.Mesh.facets []
 
         Mesh.Triangles triangles ->
             triangles
@@ -79,8 +83,7 @@ convertMeshForRenderer mesh =
                             (asPointInInches q.position)
                             (asPointInInches r.position)
                     )
-                >> Scene3d.Mesh.facets
-                >> Triangles
+                |> Scene3d.Mesh.facets
 
         Mesh.IndexedTriangles vertices triangles ->
             let
@@ -96,17 +99,46 @@ convertMeshForRenderer mesh =
             in
             TriangularMesh.indexed verts triangles
                 |> Scene3d.Mesh.indexedFaces
-                |> Triangles
 
 
-type alias Model a b =
-    { a
-        | size : { width : Float, height : Float }
-        , scene : Scene b Mesh
-        , selected : Set ( Int, Int )
-        , center : Vec3
-        , radius : Float
-        , cameraState : Camera.State
+convertWireframe : Mesh.Mesh VertexSpec -> Scene3d.Mesh.Plain WorldCoordinates
+convertWireframe mesh =
+    case mesh of
+        Mesh.Lines lines ->
+            lines
+                |> List.map
+                    (\( p, q ) ->
+                        LineSegment3d.from
+                            (asPointInInches p.position)
+                            (asPointInInches q.position)
+                    )
+                |> Scene3d.Mesh.lineSegments
+
+        Mesh.Triangles _ ->
+            Scene3d.Mesh.lineSegments []
+
+        Mesh.IndexedTriangles _ _ ->
+            Scene3d.Mesh.lineSegments []
+
+
+pushOut :
+    Float
+    -> { a | position : Vec3, normal : Vec3 }
+    -> { position : Vec3, normal : Vec3 }
+pushOut amount { position, normal } =
+    { position = Vec3.add position (Vec3.scale amount normal)
+    , normal = normal
+    }
+
+
+convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
+convertMeshForRenderer mesh =
+    let
+        wires =
+            mesh |> Mesh.wireframe |> Mesh.mapVertices (pushOut 0.0001)
+    in
+    { wireframe = convertWireframe wires
+    , surface = convertSurface mesh
     }
 
 
@@ -298,58 +330,52 @@ convertColor vec =
     Color.rgb c.x c.y c.z
 
 
-entityFromMesh :
+entitiesFromMesh :
     Mesh
     -> MaterialSpec
     -> Mat4
     -> Bool
-    -> Scene3d.Entity WorldCoordinates
-entityFromMesh mesh { diffuseColor } transform highlight =
+    -> ( Scene3d.Entity WorldCoordinates, Scene3d.Entity WorldCoordinates )
+entitiesFromMesh mesh { diffuseColor } transform highlight =
     let
-        entity =
-            case mesh of
-                Lines m ->
-                    Scene3d.mesh (Material.color Color.black) m
+        material =
+            if highlight then
+                Material.matte Color.red
 
-                Triangles m ->
-                    let
-                        material =
-                            if highlight then
-                                Material.matte Color.red
+            else
+                Material.pbr
+                    { baseColor = convertColor diffuseColor
+                    , roughness = 0.5
+                    , metallic = 0.5
+                    }
 
-                            else
-                                Material.pbr
-                                    { baseColor = convertColor diffuseColor
-                                    , roughness = 0.5
-                                    , metallic = 0.5
-                                    }
-                    in
-                    Scene3d.mesh material m
+        surface =
+            Scene3d.mesh material mesh.surface
+
+        wireframe =
+            Scene3d.mesh (Material.color Color.black) mesh.wireframe
     in
-    applySimilarityMatrix transform entity
+    ( applySimilarityMatrix transform surface
+    , applySimilarityMatrix transform wireframe
+    )
 
 
 view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
 view attr model options =
     let
-        convert { mesh, wireframe, material, transform, idxMesh, idxInstance } =
+        convert { mesh, material, transform, idxMesh, idxInstance } =
             let
                 highlight =
                     Set.member ( idxMesh, idxInstance ) model.selected
 
-                baseMesh =
-                    entityFromMesh mesh material transform highlight
-                        |> Just
-
-                maybeWires =
-                    if options.drawWires then
-                        entityFromMesh wireframe material transform highlight
-                            |> Just
-
-                    else
-                        Nothing
+                ( surface, wires ) =
+                    entitiesFromMesh mesh material transform highlight
             in
-            [ baseMesh, maybeWires ] |> List.filterMap identity
+            if options.drawWires then
+                [ surface, wires ]
+
+            else
+                [ surface ]
 
         entities =
             List.concatMap convert model.scene

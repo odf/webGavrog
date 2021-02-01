@@ -17,20 +17,9 @@ import WebGL.Settings.DepthTest as DepthTest
 
 
 type alias Mesh =
-    WebGL.Mesh VertexSpec
-
-
-convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
-convertMeshForRenderer mesh =
-    case mesh of
-        Mesh.Lines lines ->
-            WebGL.lines lines
-
-        Mesh.Triangles triangles ->
-            WebGL.triangles triangles
-
-        Mesh.IndexedTriangles vertices triangles ->
-            WebGL.indexedTriangles vertices triangles
+    { wireframe : WebGL.Mesh VertexSpec
+    , surface : WebGL.Mesh VertexSpec
+    }
 
 
 type alias Model a b =
@@ -74,6 +63,40 @@ type alias Uniforms =
 type alias Varyings =
     { vpos : Vec3
     , vnormal : Vec3
+    }
+
+
+asWebGLMesh : Mesh.Mesh VertexSpec -> WebGL.Mesh VertexSpec
+asWebGLMesh mesh =
+    case mesh of
+        Mesh.Lines lines ->
+            WebGL.lines lines
+
+        Mesh.Triangles triangles ->
+            WebGL.triangles triangles
+
+        Mesh.IndexedTriangles vertices triangles ->
+            WebGL.indexedTriangles vertices triangles
+
+
+pushOut :
+    Float
+    -> { a | position : Vec3, normal : Vec3 }
+    -> { position : Vec3, normal : Vec3 }
+pushOut amount { position, normal } =
+    { position = Vec3.add position (Vec3.scale amount normal)
+    , normal = normal
+    }
+
+
+convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
+convertMeshForRenderer mesh =
+    let
+        wires =
+            mesh |> Mesh.wireframe |> Mesh.mapVertices (pushOut 0.0001)
+    in
+    { wireframe = asWebGLMesh wires
+    , surface = asWebGLMesh mesh
     }
 
 
@@ -159,7 +182,7 @@ view attr model options =
                     , shininess = material.shininess
                 }
 
-        convert { mesh, wireframe, material, transform, idxMesh, idxInstance } =
+        convert { mesh, material, transform, idxMesh, idxInstance } =
             let
                 highlight =
                     Set.member ( idxMesh, idxInstance ) model.selected
@@ -168,7 +191,11 @@ view attr model options =
                     meshUniforms transform material highlight
 
                 baseMesh =
-                    WebGL.entity vertexShader fragmentShader mesh uniforms
+                    WebGL.entity
+                        vertexShader
+                        fragmentShader
+                        mesh.surface
+                        uniforms
                         |> Just
 
                 maybeWires =
@@ -176,7 +203,7 @@ view attr model options =
                         WebGL.entity
                             vertexShader
                             fragmentShader
-                            wireframe
+                            mesh.wireframe
                             { baseUniforms
                                 | transform = transform
                                 , fadeToBackground = 0
@@ -194,7 +221,7 @@ view attr model options =
                             ]
                             vertexShaderOutline
                             fragmentShaderOutline
-                            mesh
+                            mesh.surface
                             uniforms
                             |> Just
 

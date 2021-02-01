@@ -30,7 +30,6 @@ type alias Scene a mesh =
     List
         { a
             | mesh : mesh
-            , wireframe : mesh
             , material : MaterialSpec
             , transform : Mat4
             , idxMesh : Int

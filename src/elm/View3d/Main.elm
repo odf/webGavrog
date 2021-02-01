@@ -29,9 +29,9 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh exposing (Mesh, mapVertices, wireframe)
+import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon as RendererCommon
-import View3d.RendererScene3d as Renderer
+import View3d.RendererWebGL as Renderer
 
 
 
@@ -117,16 +117,6 @@ meshForPicking mesh =
                 )
 
 
-pushOut :
-    Float
-    -> { a | position : Vec3, normal : Vec3 }
-    -> { position : Vec3, normal : Vec3 }
-pushOut amount { position, normal } =
-    { position = Vec3.add position (Vec3.scale amount normal)
-    , normal = normal
-    }
-
-
 processedScene : Scene -> RendererCommon.Scene PickingInfo Renderer.Mesh
 processedScene scene =
     scene
@@ -137,11 +127,6 @@ processedScene scene =
                 let
                     mesh =
                         Renderer.convertMeshForRenderer rawMesh
-
-                    wires =
-                        wireframe rawMesh
-                            |> mapVertices (pushOut 0.0001)
-                            |> Renderer.convertMeshForRenderer
 
                     pickingMesh =
                         meshForPicking rawMesh
@@ -166,7 +151,6 @@ processedScene scene =
                 List.indexedMap
                     (\idxInstance { material, transform } ->
                         { mesh = mesh
-                        , wireframe = wires
                         , pickingMesh = pickingMesh
                         , centroid = centroid
                         , radius = radius
