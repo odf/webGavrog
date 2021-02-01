@@ -31,7 +31,7 @@ import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon as RendererCommon
-import View3d.RendererWebGL as Renderer
+import View3d.RendererScene3d as Renderer
 
 
 
@@ -50,7 +50,6 @@ type alias PickingInfo =
     { centroid : Vec3
     , radius : Float
     , pickingMesh : Maybe (Mesh Vec3)
-    , inverseTransform : Maybe Mat4
     }
 
 
@@ -156,7 +155,6 @@ processedScene scene =
                         , radius = radius
                         , material = material
                         , transform = transform
-                        , inverseTransform = Mat4.inverse transform
                         , idxMesh = idxMesh
                         , idxInstance = idxInstance
                         }
@@ -177,7 +175,7 @@ pick ray pscene =
         step item bestSoFar =
             let
                 mat =
-                    item.inverseTransform
+                    Mat4.inverse item.transform
 
                 mesh =
                     item.pickingMesh
