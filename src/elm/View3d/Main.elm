@@ -16,6 +16,7 @@ module View3d.Main exposing
     , view
     )
 
+import Array exposing (Array)
 import Bitwise
 import Browser.Events as Events
 import Color exposing (Color)
@@ -53,6 +54,12 @@ type alias PickingInfo =
     }
 
 
+type alias BoundingInfo =
+    { centroid : Vec3
+    , radius : Float
+    }
+
+
 type alias Scene =
     List
         { mesh : Mesh RendererCommon.VertexSpec
@@ -68,7 +75,8 @@ type alias Model =
     { size : FrameSize
     , requestRedraw : Bool
     , cameraState : Camera.State
-    , scene : RendererCommon.Scene PickingInfo Renderer.Mesh
+    , pickingData : Array PickingInfo
+    , scene : RendererCommon.Scene BoundingInfo Renderer.Mesh
     , selected : Set ( Int, Int )
     , touchStart : Position
     , center : Vec3
@@ -87,6 +95,7 @@ init =
     { size = { width = 0, height = 0 }
     , requestRedraw = False
     , cameraState = Camera.initialState
+    , pickingData = Array.empty
     , scene = []
     , selected = Set.empty
     , touchStart = { x = 0, y = 0 }
@@ -116,58 +125,95 @@ meshForPicking mesh =
                 )
 
 
-processedScene : Scene -> RendererCommon.Scene PickingInfo Renderer.Mesh
+processedScene :
+    Scene
+    ->
+        ( List PickingInfo
+        , RendererCommon.Scene BoundingInfo Renderer.Mesh
+        )
 processedScene scene =
-    scene
-        |> List.indexedMap
-            (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
-        |> List.concatMap
-            (\( rawMesh, instances, idxMesh ) ->
-                let
-                    mesh =
-                        Renderer.convertMeshForRenderer rawMesh
+    let
+        pickingData =
+            scene
+                |> List.map
+                    (\{ mesh } ->
+                        let
+                            pickingMesh =
+                                meshForPicking mesh
 
-                    pickingMesh =
-                        meshForPicking rawMesh
+                            vertices =
+                                List.map .position (Mesh.getVertices mesh)
 
-                    vertices =
-                        List.map .position (Mesh.getVertices rawMesh)
+                            n =
+                                List.length vertices
 
-                    n =
-                        List.length vertices
+                            centroid =
+                                vertices
+                                    |> List.foldl Vec3.add (vec3 0 0 0)
+                                    |> Vec3.scale (1 / toFloat n)
 
-                    centroid =
-                        vertices
-                            |> List.foldl Vec3.add (vec3 0 0 0)
-                            |> Vec3.scale (1 / toFloat n)
-
-                    radius =
-                        vertices
-                            |> List.map (\v -> Vec3.distance v centroid)
-                            |> List.maximum
-                            |> Maybe.withDefault 0.0
-                in
-                List.indexedMap
-                    (\idxInstance { material, transform } ->
-                        { mesh = mesh
-                        , pickingMesh = pickingMesh
+                            radius =
+                                vertices
+                                    |> List.map (\v -> Vec3.distance v centroid)
+                                    |> List.maximum
+                                    |> Maybe.withDefault 0.0
+                        in
+                        { pickingMesh = pickingMesh
                         , centroid = centroid
                         , radius = radius
-                        , material = material
-                        , transform = transform
-                        , idxMesh = idxMesh
-                        , idxInstance = idxInstance
                         }
                     )
-                    instances
-            )
+
+        allInstances =
+            scene
+                |> List.indexedMap
+                    (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
+                |> List.concatMap
+                    (\( rawMesh, instances, idxMesh ) ->
+                        let
+                            mesh =
+                                Renderer.convertMeshForRenderer rawMesh
+
+                            vertices =
+                                List.map .position (Mesh.getVertices rawMesh)
+
+                            n =
+                                List.length vertices
+
+                            centroid =
+                                vertices
+                                    |> List.foldl Vec3.add (vec3 0 0 0)
+                                    |> Vec3.scale (1 / toFloat n)
+
+                            radius =
+                                vertices
+                                    |> List.map (\v -> Vec3.distance v centroid)
+                                    |> List.maximum
+                                    |> Maybe.withDefault 0.0
+                        in
+                        List.indexedMap
+                            (\idxInstance { material, transform } ->
+                                { mesh = mesh
+                                , centroid = centroid
+                                , radius = radius
+                                , material = material
+                                , transform = transform
+                                , idxMesh = idxMesh
+                                , idxInstance = idxInstance
+                                }
+                            )
+                            instances
+                    )
+    in
+    ( pickingData, allInstances )
 
 
 pick :
     Camera.Ray
-    -> RendererCommon.Scene PickingInfo a
+    -> Array PickingInfo
+    -> RendererCommon.Scene BoundingInfo a
     -> Maybe ( Int, Int )
-pick ray pscene =
+pick ray pdata scene =
     let
         intersect =
             Mesh.mappedRayMeshIntersection ray.origin ray.direction
@@ -177,18 +223,19 @@ pick ray pscene =
                 mat =
                     Mat4.inverse item.transform
 
+                pinfo =
+                    Array.get item.idxMesh pdata
+
                 mesh =
-                    item.pickingMesh
-
-                c =
-                    item.centroid
-
-                r =
-                    item.radius
+                    Maybe.andThen (\p -> p.pickingMesh) pinfo
 
                 intersection =
-                    Maybe.map2 Tuple.pair mat mesh
-                        |> Maybe.andThen (\( t, m ) -> intersect t m c r)
+                    Maybe.map3
+                        (\t p m -> intersect t m p.centroid p.radius)
+                        mat
+                        pinfo
+                        mesh
+                        |> Maybe.andThen identity
             in
             case intersection of
                 Nothing ->
@@ -206,7 +253,7 @@ pick ray pscene =
                             else
                                 bestSoFar
     in
-    pscene
+    scene
         |> List.foldl step Nothing
         |> Maybe.map (\( _, idxMesh, idxInstance ) -> ( idxMesh, idxInstance ))
 
@@ -378,7 +425,7 @@ pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
 pickingOutcome pos mods model =
     Camera.pickingRay pos model.cameraState
         |> Maybe.andThen
-            (\r -> pick r model.scene)
+            (\r -> pick r model.pickingData model.scene)
         |> Maybe.map
             (\( m, i ) -> Pick mods { meshIndex = m, instanceIndex = i })
         |> Maybe.withDefault
@@ -474,7 +521,7 @@ setSize size model =
 setScene : Scene -> Model -> Model
 setScene rawScene model =
     let
-        scene =
+        ( pdata, scene ) =
             processedScene rawScene
 
         n =
@@ -503,6 +550,7 @@ setScene rawScene model =
     in
     { model
         | scene = scene
+        , pickingData = Array.fromList pdata
         , selected = Set.empty
         , center = sceneCenter
         , radius = sceneRadius
