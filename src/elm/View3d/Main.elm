@@ -29,7 +29,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh exposing (Mesh)
+import View3d.Mesh as Mesh exposing (Mesh, mapVertices, wireframe)
 import View3d.RendererCommon as RendererCommon
 import View3d.RendererScene3d as Renderer
 
@@ -96,33 +96,6 @@ init =
     }
 
 
-wireframe : Mesh RendererCommon.VertexSpec -> Mesh RendererCommon.VertexSpec
-wireframe mesh =
-    let
-        out { position, normal } =
-            { position = Vec3.add position (Vec3.scale 0.001 normal)
-            , normal = normal
-            }
-    in
-    case mesh of
-        Mesh.Lines _ ->
-            mesh
-
-        Mesh.Triangles triangles ->
-            triangles
-                |> List.map
-                    (\( u, v, w ) -> ( out u, out v, out w ))
-                |> List.concatMap
-                    (\( u, v, w ) -> [ ( u, v ), ( v, w ), ( w, u ) ])
-                |> Mesh.Lines
-
-        Mesh.IndexedTriangles vertices triangles ->
-            Mesh.resolvedSurface
-                vertices
-                (List.map (\( i, j, k ) -> [ i, j, k ]) triangles)
-                |> wireframe
-
-
 meshForPicking : Mesh RendererCommon.VertexSpec -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
@@ -144,6 +117,16 @@ meshForPicking mesh =
                 )
 
 
+pushOut :
+    Float
+    -> { a | position : Vec3, normal : Vec3 }
+    -> { position : Vec3, normal : Vec3 }
+pushOut amount { position, normal } =
+    { position = Vec3.add position (Vec3.scale amount normal)
+    , normal = normal
+    }
+
+
 processedScene : Scene -> RendererCommon.Scene PickingInfo Renderer.Mesh
 processedScene scene =
     scene
@@ -156,7 +139,9 @@ processedScene scene =
                         Renderer.convertMeshForRenderer rawMesh
 
                     wires =
-                        wireframe rawMesh |> Renderer.convertMeshForRenderer
+                        wireframe rawMesh
+                            |> mapVertices (pushOut 0.0001)
+                            |> Renderer.convertMeshForRenderer
 
                     pickingMesh =
                         meshForPicking rawMesh

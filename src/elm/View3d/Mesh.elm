@@ -1,6 +1,7 @@
 module View3d.Mesh exposing
     ( Mesh(..)
     , getVertices
+    , mapVertices
     , mappedRayMeshIntersection
     , resolvedSurface
     , surface
@@ -40,12 +41,6 @@ makeTriangles corners =
                 (List.drop 2 corners)
 
 
-makeEdges : List vertex -> List ( vertex, vertex )
-makeEdges corners =
-    (List.drop 1 corners ++ List.take 1 corners)
-        |> List.map2 Tuple.pair corners
-
-
 surface : List vertex -> List FaceSpec -> Mesh vertex
 surface vertices faces =
     List.concatMap makeTriangles faces
@@ -62,16 +57,6 @@ resolvedSurface vertices faces =
         |> Triangles
 
 
-wireframe : List vertex -> List FaceSpec -> Mesh vertex
-wireframe vertices faces =
-    let
-        averts =
-            Array.fromList vertices
-    in
-    List.concatMap (makeEdges << pullCorners averts) faces
-        |> Lines
-
-
 getVertices : Mesh vertex -> List vertex
 getVertices mesh =
     case mesh of
@@ -85,6 +70,42 @@ getVertices mesh =
 
         IndexedTriangles vertices _ ->
             vertices
+
+
+wireframe : Mesh a -> Mesh a
+wireframe mesh =
+    case mesh of
+        Lines _ ->
+            mesh
+
+        Triangles triangles ->
+            triangles
+                |> List.concatMap
+                    (\( u, v, w ) -> [ ( u, v ), ( v, w ), ( w, u ) ])
+                |> Lines
+
+        IndexedTriangles vertices triangles ->
+            triangles
+                |> List.map (\( i, j, k ) -> [ i, j, k ])
+                |> resolvedSurface vertices
+                |> wireframe
+
+
+mapVertices : (a -> b) -> Mesh a -> Mesh b
+mapVertices fn mesh =
+    case mesh of
+        Lines lines ->
+            lines
+                |> List.map (\( p, q ) -> ( fn p, fn q ))
+                |> Lines
+
+        Triangles triangles ->
+            triangles
+                |> List.map (\( p, q, r ) -> ( fn p, fn q, fn r ))
+                |> Triangles
+
+        IndexedTriangles vertices triangles ->
+            IndexedTriangles (List.map fn vertices) triangles
 
 
 
