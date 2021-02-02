@@ -611,7 +611,7 @@ view toMsg model options bgColor =
                 (toMsg TouchEndMsg)
             ]
     in
-    Renderer.view attributes model options
+    Renderer.view attributes model.meshes model options
 
 
 onMouseDown :

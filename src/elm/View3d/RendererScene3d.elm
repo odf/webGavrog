@@ -22,7 +22,7 @@ import Quantity exposing (Unitless)
 import Scene3d
 import Scene3d.Material as Material
 import Scene3d.Mesh
-import Set exposing (Set)
+import Set
 import Triangle3d
 import TriangularMesh
 import Vector3d exposing (Vector3d)
@@ -30,7 +30,6 @@ import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh, surface, wireframe)
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
-import WebGL exposing (entity)
 
 
 
@@ -44,18 +43,6 @@ type WorldCoordinates
 type alias Mesh =
     { wireframe : Scene3d.Mesh.Plain WorldCoordinates
     , surface : Scene3d.Mesh.Uniform WorldCoordinates
-    }
-
-
-type alias Model a =
-    { a
-        | size : { width : Float, height : Float }
-        , meshes : Array Mesh
-        , scene : List Instance
-        , selected : Set ( Int, Int )
-        , center : Vec3
-        , radius : Float
-        , cameraState : Camera.State
     }
 
 
@@ -361,8 +348,8 @@ entitiesFromMesh mesh { diffuseColor } transform highlight =
     )
 
 
-view : List (Html.Attribute msg) -> Model a -> Options -> Html msg
-view attr model options =
+view : List (Html.Attribute msg) -> Array Mesh -> Model a -> Options -> Html msg
+view attr meshes model options =
     let
         convert { material, transform, idxMesh, idxInstance } mesh =
             let
@@ -382,7 +369,7 @@ view attr model options =
             model.scene
                 |> List.concatMap
                     (\item ->
-                        Array.get item.idxMesh model.meshes
+                        Array.get item.idxMesh meshes
                             |> Maybe.map (convert item)
                             |> Maybe.withDefault []
                     )

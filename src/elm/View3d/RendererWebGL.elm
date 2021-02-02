@@ -8,7 +8,7 @@ import Array exposing (Array)
 import Html exposing (Html)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Set exposing (Set)
+import Set
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh
 import View3d.RendererCommon exposing (..)
@@ -20,18 +20,6 @@ import WebGL.Settings.DepthTest as DepthTest
 type alias Mesh =
     { wireframe : WebGL.Mesh Vertex
     , surface : WebGL.Mesh Vertex
-    }
-
-
-type alias Model a =
-    { a
-        | size : { width : Float, height : Float }
-        , meshes : Array Mesh
-        , scene : List Instance
-        , selected : Set ( Int, Int )
-        , center : Vec3
-        , radius : Float
-        , cameraState : Camera.State
     }
 
 
@@ -117,8 +105,8 @@ red =
     vec3 1 0 0
 
 
-view : List (Html.Attribute msg) -> Model a -> Options -> Html msg
-view attr model options =
+view : List (Html.Attribute msg) -> Array Mesh -> Model a -> Options -> Html msg
+view attr meshes model options =
     let
         perspective =
             if options.orthogonalView then
@@ -236,7 +224,7 @@ view attr model options =
             model.scene
                 |> List.concatMap
                     (\item ->
-                        Array.get item.idxMesh model.meshes
+                        Array.get item.idxMesh meshes
                             |> Maybe.map (convert item)
                             |> Maybe.withDefault []
                     )
