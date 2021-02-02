@@ -75,8 +75,9 @@ type alias Model =
     { size : FrameSize
     , requestRedraw : Bool
     , cameraState : Camera.State
+    , meshes : Array Renderer.Mesh
     , pickingData : Array PickingInfo
-    , scene : RendererCommon.Scene BoundingInfo Renderer.Mesh
+    , scene : RendererCommon.Scene BoundingInfo
     , selected : Set ( Int, Int )
     , touchStart : Position
     , center : Vec3
@@ -95,6 +96,7 @@ init =
     { size = { width = 0, height = 0 }
     , requestRedraw = False
     , cameraState = Camera.initialState
+    , meshes = Array.empty
     , pickingData = Array.empty
     , scene = []
     , selected = Set.empty
@@ -128,11 +130,16 @@ meshForPicking mesh =
 processedScene :
     Scene
     ->
-        ( List PickingInfo
-        , RendererCommon.Scene BoundingInfo Renderer.Mesh
+        ( List Renderer.Mesh
+        , List PickingInfo
+        , RendererCommon.Scene BoundingInfo
         )
 processedScene scene =
     let
+        meshes =
+            scene
+                |> List.map (\{ mesh } -> Renderer.convertMeshForRenderer mesh)
+
         pickingData =
             scene
                 |> List.map
@@ -171,9 +178,6 @@ processedScene scene =
                 |> List.concatMap
                     (\( rawMesh, instances, idxMesh ) ->
                         let
-                            mesh =
-                                Renderer.convertMeshForRenderer rawMesh
-
                             vertices =
                                 List.map .position (Mesh.getVertices rawMesh)
 
@@ -193,8 +197,7 @@ processedScene scene =
                         in
                         List.indexedMap
                             (\idxInstance { material, transform } ->
-                                { mesh = mesh
-                                , centroid = centroid
+                                { centroid = centroid
                                 , radius = radius
                                 , material = material
                                 , transform = transform
@@ -205,13 +208,13 @@ processedScene scene =
                             instances
                     )
     in
-    ( pickingData, allInstances )
+    ( meshes, pickingData, allInstances )
 
 
 pick :
     Camera.Ray
     -> Array PickingInfo
-    -> RendererCommon.Scene BoundingInfo a
+    -> RendererCommon.Scene BoundingInfo
     -> Maybe ( Int, Int )
 pick ray pdata scene =
     let
@@ -521,7 +524,7 @@ setSize size model =
 setScene : Scene -> Model -> Model
 setScene rawScene model =
     let
-        ( pdata, scene ) =
+        ( meshes, pdata, scene ) =
             processedScene rawScene
 
         n =
@@ -550,6 +553,7 @@ setScene rawScene model =
     in
     { model
         | scene = scene
+        , meshes = Array.fromList meshes
         , pickingData = Array.fromList pdata
         , selected = Set.empty
         , center = sceneCenter

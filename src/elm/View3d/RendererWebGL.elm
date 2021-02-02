@@ -4,6 +4,7 @@ module View3d.RendererWebGL exposing
     , view
     )
 
+import Array exposing (Array)
 import Html exposing (Html)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -25,7 +26,8 @@ type alias Mesh =
 type alias Model a b =
     { a
         | size : { width : Float, height : Float }
-        , scene : Scene b Mesh
+        , meshes : Array Mesh
+        , scene : Scene b
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
@@ -182,7 +184,7 @@ view attr model options =
                     , shininess = material.shininess
                 }
 
-        convert { mesh, material, transform, idxMesh, idxInstance } =
+        convert { material, transform, idxMesh, idxInstance } mesh =
             let
                 highlight =
                     Set.member ( idxMesh, idxInstance ) model.selected
@@ -229,8 +231,17 @@ view attr model options =
                         Nothing
             in
             [ baseMesh, maybeWires, maybeOutlines ] |> List.filterMap identity
+
+        entities =
+            model.scene
+                |> List.concatMap
+                    (\item ->
+                        Array.get item.idxMesh model.meshes
+                            |> Maybe.map (convert item)
+                            |> Maybe.withDefault []
+                    )
     in
-    WebGL.toHtml attr (List.concatMap convert model.scene)
+    WebGL.toHtml attr entities
 
 
 vertexShader : WebGL.Shader VertexSpec Uniforms Varyings

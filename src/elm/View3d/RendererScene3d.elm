@@ -5,7 +5,7 @@ module View3d.RendererScene3d exposing
     )
 
 import Angle
-import Array
+import Array exposing (Array)
 import Axis3d
 import Camera3d
 import Color
@@ -50,7 +50,8 @@ type alias Mesh =
 type alias Model a b =
     { a
         | size : { width : Float, height : Float }
-        , scene : Scene b Mesh
+        , meshes : Array Mesh
+        , scene : Scene b
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
@@ -363,7 +364,7 @@ entitiesFromMesh mesh { diffuseColor } transform highlight =
 view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
 view attr model options =
     let
-        convert { mesh, material, transform, idxMesh, idxInstance } =
+        convert { material, transform, idxMesh, idxInstance } mesh =
             let
                 highlight =
                     Set.member ( idxMesh, idxInstance ) model.selected
@@ -378,7 +379,13 @@ view attr model options =
                 [ surface ]
 
         entities =
-            List.concatMap convert model.scene
+            model.scene
+                |> List.concatMap
+                    (\item ->
+                        Array.get item.idxMesh model.meshes
+                            |> Maybe.map (convert item)
+                            |> Maybe.withDefault []
+                    )
     in
     Html.div attr
         [ Scene3d.sunny
