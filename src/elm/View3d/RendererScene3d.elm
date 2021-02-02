@@ -51,7 +51,7 @@ type alias Model a =
     { a
         | size : { width : Float, height : Float }
         , meshes : Array Mesh
-        , scene : Scene
+        , scene : List Instance
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
@@ -69,7 +69,7 @@ asUnitlessDirection p =
     Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
-convertSurface : Mesh.Mesh VertexSpec -> Scene3d.Mesh.Uniform WorldCoordinates
+convertSurface : Mesh.Mesh Vertex -> Scene3d.Mesh.Uniform WorldCoordinates
 convertSurface mesh =
     case mesh of
         Mesh.Lines _ ->
@@ -102,7 +102,7 @@ convertSurface mesh =
                 |> Scene3d.Mesh.indexedFaces
 
 
-convertWireframe : Mesh.Mesh VertexSpec -> Scene3d.Mesh.Plain WorldCoordinates
+convertWireframe : Mesh.Mesh Vertex -> Scene3d.Mesh.Plain WorldCoordinates
 convertWireframe mesh =
     case mesh of
         Mesh.Lines lines ->
@@ -132,7 +132,7 @@ pushOut amount { position, normal } =
     }
 
 
-convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
+convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
 convertMeshForRenderer mesh =
     let
         wires =
@@ -333,7 +333,7 @@ convertColor vec =
 
 entitiesFromMesh :
     Mesh
-    -> MaterialSpec
+    -> Material
     -> Mat4
     -> Bool
     -> ( Scene3d.Entity WorldCoordinates, Scene3d.Entity WorldCoordinates )

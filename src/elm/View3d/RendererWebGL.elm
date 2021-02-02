@@ -18,16 +18,16 @@ import WebGL.Settings.DepthTest as DepthTest
 
 
 type alias Mesh =
-    { wireframe : WebGL.Mesh VertexSpec
-    , surface : WebGL.Mesh VertexSpec
+    { wireframe : WebGL.Mesh Vertex
+    , surface : WebGL.Mesh Vertex
     }
 
 
-type alias Model a b =
+type alias Model a =
     { a
         | size : { width : Float, height : Float }
         , meshes : Array Mesh
-        , scene : Scene
+        , scene : List Instance
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
@@ -68,7 +68,7 @@ type alias Varyings =
     }
 
 
-asWebGLMesh : Mesh.Mesh VertexSpec -> WebGL.Mesh VertexSpec
+asWebGLMesh : Mesh.Mesh Vertex -> WebGL.Mesh Vertex
 asWebGLMesh mesh =
     case mesh of
         Mesh.Lines lines ->
@@ -91,7 +91,7 @@ pushOut amount { position, normal } =
     }
 
 
-convertMeshForRenderer : Mesh.Mesh VertexSpec -> Mesh
+convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
 convertMeshForRenderer mesh =
     let
         wires =
@@ -117,7 +117,7 @@ red =
     vec3 1 0 0
 
 
-view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
+view : List (Html.Attribute msg) -> Model a -> Options -> Html msg
 view attr model options =
     let
         perspective =
@@ -244,7 +244,7 @@ view attr model options =
     WebGL.toHtml attr entities
 
 
-vertexShader : WebGL.Shader VertexSpec Uniforms Varyings
+vertexShader : WebGL.Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
 
@@ -265,7 +265,7 @@ vertexShader =
     |]
 
 
-vertexShaderOutline : WebGL.Shader VertexSpec Uniforms Varyings
+vertexShaderOutline : WebGL.Shader Vertex Uniforms Varyings
 vertexShaderOutline =
     [glsl|
 

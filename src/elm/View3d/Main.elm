@@ -62,10 +62,10 @@ type alias BoundingInfo =
 
 type alias Scene =
     List
-        { mesh : Mesh RendererCommon.VertexSpec
+        { mesh : Mesh RendererCommon.Vertex
         , instances :
             List
-                { material : RendererCommon.MaterialSpec
+                { material : RendererCommon.Material
                 , transform : Mat4
                 }
         }
@@ -77,7 +77,7 @@ type alias Model =
     , cameraState : Camera.State
     , meshes : Array Renderer.Mesh
     , pickingData : Array PickingInfo
-    , scene : RendererCommon.Scene
+    , scene : List RendererCommon.Instance
     , selected : Set ( Int, Int )
     , touchStart : Position
     , center : Vec3
@@ -106,7 +106,7 @@ init =
     }
 
 
-meshForPicking : Mesh RendererCommon.VertexSpec -> Maybe (Mesh Vec3)
+meshForPicking : Mesh RendererCommon.Vertex -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
         Mesh.Lines _ ->
@@ -133,7 +133,7 @@ processedScene :
         { meshes : List Renderer.Mesh
         , pickingData : List PickingInfo
         , boundingData : List BoundingInfo
-        , instances : RendererCommon.Scene
+        , instances : List RendererCommon.Instance
         }
 processedScene scene =
     let
@@ -230,7 +230,7 @@ processedScene scene =
 pick :
     Camera.Ray
     -> Array PickingInfo
-    -> RendererCommon.Scene
+    -> List RendererCommon.Instance
     -> Maybe ( Int, Int )
 pick ray pdata scene =
     let

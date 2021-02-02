@@ -1,21 +1,21 @@
 module View3d.RendererCommon exposing
-    ( MaterialSpec
+    ( Material
     , Options
-    , Scene
-    , VertexSpec
+    , Instance
+    , Vertex
     )
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
 
 
-type alias VertexSpec =
+type alias Vertex =
     { position : Vec3
     , normal : Vec3
     }
 
 
-type alias MaterialSpec =
+type alias Material =
     { ambientColor : Vec3
     , diffuseColor : Vec3
     , specularColor : Vec3
@@ -26,13 +26,12 @@ type alias MaterialSpec =
     }
 
 
-type alias Scene =
-    List
-        { material : MaterialSpec
-        , transform : Mat4
-        , idxMesh : Int
-        , idxInstance : Int
-        }
+type alias Instance =
+    { material : Material
+    , transform : Mat4
+    , idxMesh : Int
+    , idxInstance : Int
+    }
 
 
 type alias Options =

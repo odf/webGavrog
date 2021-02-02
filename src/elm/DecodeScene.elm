@@ -4,7 +4,7 @@ import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
 import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.RendererCommon exposing (VertexSpec)
+import View3d.RendererCommon exposing (Vertex)
 
 
 type alias Instance =
@@ -26,7 +26,7 @@ type MeshType
 
 
 type alias MeshWithInstances =
-    { mesh : Mesh VertexSpec
+    { mesh : Mesh Vertex
     , instances : List Instance
     }
 
@@ -43,14 +43,14 @@ decodeVec3 =
         (Decode.index 2 Decode.float)
 
 
-decodeVertex : Decode.Decoder VertexSpec
+decodeVertex : Decode.Decoder Vertex
 decodeVertex =
     Decode.map2 (\pos normal -> { position = pos, normal = normal })
         (Decode.field "pos" decodeVec3)
         (Decode.field "normal" decodeVec3)
 
 
-decodeMesh : Decode.Decoder (Mesh VertexSpec)
+decodeMesh : Decode.Decoder (Mesh Vertex)
 decodeMesh =
     Decode.map2 Mesh.surface
         (Decode.field "vertices" (Decode.list decodeVertex))
@@ -116,7 +116,7 @@ decodeInstance =
         (Decode.field "extraShift" decodeVec3)
 
 
-meshWithInstances : List Instance -> Int -> Mesh VertexSpec -> MeshWithInstances
+meshWithInstances : List Instance -> Int -> Mesh Vertex -> MeshWithInstances
 meshWithInstances instances index mesh =
     { mesh = mesh
     , instances =

@@ -25,7 +25,7 @@ import Styling
 import Task
 import ValueSlider
 import View3d.Main as View3d exposing (Scene)
-import View3d.RendererCommon exposing (MaterialSpec)
+import View3d.RendererCommon exposing (Material)
 
 
 main : Program Flags Model Msg
@@ -1243,7 +1243,7 @@ contextMenuOnOff model maybePos =
             }
 
 
-makeMaterial : DecodeScene.Instance -> Int -> Model -> MaterialSpec
+makeMaterial : DecodeScene.Instance -> Int -> Model -> Material
 makeMaterial { meshType, classIndex, latticeIndex } dim model =
     let
         tilingSettings =
