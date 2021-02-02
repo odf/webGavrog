@@ -1,5 +1,6 @@
 module View3d.RendererCommon exposing
-    ( Instance
+    ( FrameSize
+    , Instance
     , Material
     , Model
     , Options
@@ -10,6 +11,10 @@ import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
+
+
+type alias FrameSize =
+    { width : Float, height : Float }
 
 
 type alias Vertex =
@@ -37,6 +42,17 @@ type alias Instance =
     }
 
 
+type alias Model a =
+    { a
+        | size : FrameSize
+        , scene : List Instance
+        , selected : Set ( Int, Int )
+        , center : Vec3
+        , radius : Float
+        , cameraState : Camera.State
+    }
+
+
 type alias Options =
     { orthogonalView : Bool
     , drawWires : Bool
@@ -45,15 +61,4 @@ type alias Options =
     , backgroundColor : Vec3
     , addOutlines : Bool
     , outlineColor : Vec3
-    }
-
-
-type alias Model a =
-    { a
-        | size : { width : Float, height : Float }
-        , scene : List Instance
-        , selected : Set ( Int, Int )
-        , center : Vec3
-        , radius : Float
-        , cameraState : Camera.State
     }

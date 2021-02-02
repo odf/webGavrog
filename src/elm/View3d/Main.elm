@@ -39,10 +39,6 @@ import View3d.RendererScene3d as Renderer
 -- MODEL
 
 
-type alias FrameSize =
-    { width : Float, height : Float }
-
-
 type alias Position =
     { x : Float, y : Float }
 
@@ -72,17 +68,12 @@ type alias Scene =
 
 
 type alias Model =
-    { size : FrameSize
-    , requestRedraw : Bool
-    , cameraState : Camera.State
-    , meshes : Array Renderer.Mesh
-    , pickingData : Array PickingInfo
-    , scene : List RendererCommon.Instance
-    , selected : Set ( Int, Int )
-    , touchStart : Position
-    , center : Vec3
-    , radius : Float
-    }
+    RendererCommon.Model
+        { requestRedraw : Bool
+        , touchStart : Position
+        , meshes : Array Renderer.Mesh
+        , pickingData : Array PickingInfo
+        }
 
 
 type Outcome
@@ -532,7 +523,7 @@ encompass model =
     updateCamera (Camera.encompass model.center model.radius) model
 
 
-setSize : FrameSize -> Model -> Model
+setSize : RendererCommon.FrameSize -> Model -> Model
 setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
