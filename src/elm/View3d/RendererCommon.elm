@@ -26,13 +26,12 @@ type alias MaterialSpec =
     }
 
 
-type alias Scene a =
+type alias Scene =
     List
-        { a
-            | material : MaterialSpec
-            , transform : Mat4
-            , idxMesh : Int
-            , idxInstance : Int
+        { material : MaterialSpec
+        , transform : Mat4
+        , idxMesh : Int
+        , idxInstance : Int
         }
 
 

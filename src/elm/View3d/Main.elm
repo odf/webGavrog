@@ -77,7 +77,7 @@ type alias Model =
     , cameraState : Camera.State
     , meshes : Array Renderer.Mesh
     , pickingData : Array PickingInfo
-    , scene : RendererCommon.Scene BoundingInfo
+    , scene : RendererCommon.Scene
     , selected : Set ( Int, Int )
     , touchStart : Position
     , center : Vec3
@@ -130,10 +130,11 @@ meshForPicking mesh =
 processedScene :
     Scene
     ->
-        ( List Renderer.Mesh
-        , List PickingInfo
-        , RendererCommon.Scene BoundingInfo
-        )
+        { meshes : List Renderer.Mesh
+        , pickingData : List PickingInfo
+        , boundingData : List BoundingInfo
+        , instances : RendererCommon.Scene
+        }
 processedScene scene =
     let
         meshes =
@@ -171,15 +172,13 @@ processedScene scene =
                         }
                     )
 
-        allInstances =
+        boundingSpheres =
             scene
-                |> List.indexedMap
-                    (\idxMesh { mesh, instances } -> ( mesh, instances, idxMesh ))
                 |> List.concatMap
-                    (\( rawMesh, instances, idxMesh ) ->
+                    (\{ mesh, instances } ->
                         let
                             vertices =
-                                List.map .position (Mesh.getVertices rawMesh)
+                                List.map .position (Mesh.getVertices mesh)
 
                             n =
                                 List.length vertices
@@ -195,11 +194,24 @@ processedScene scene =
                                     |> List.maximum
                                     |> Maybe.withDefault 0.0
                         in
+                        List.map
+                            (\{ transform } ->
+                                { centroid = Mat4.transform transform centroid
+                                , radius = radius
+                                }
+                            )
+                            instances
+                    )
+
+        allInstances =
+            scene
+                |> List.indexedMap
+                    (\idxMesh { instances } -> ( instances, idxMesh ))
+                |> List.concatMap
+                    (\( instances, idxMesh ) ->
                         List.indexedMap
                             (\idxInstance { material, transform } ->
-                                { centroid = centroid
-                                , radius = radius
-                                , material = material
+                                { material = material
                                 , transform = transform
                                 , idxMesh = idxMesh
                                 , idxInstance = idxInstance
@@ -208,13 +220,17 @@ processedScene scene =
                             instances
                     )
     in
-    ( meshes, pickingData, allInstances )
+    { meshes = meshes
+    , pickingData = pickingData
+    , boundingData = boundingSpheres
+    , instances = allInstances
+    }
 
 
 pick :
     Camera.Ray
     -> Array PickingInfo
-    -> RendererCommon.Scene BoundingInfo
+    -> RendererCommon.Scene
     -> Maybe ( Int, Int )
 pick ray pdata scene =
     let
@@ -524,37 +540,32 @@ setSize size model =
 setScene : Scene -> Model -> Model
 setScene rawScene model =
     let
-        ( meshes, pdata, scene ) =
+        { meshes, pickingData, boundingData, instances } =
             processedScene rawScene
 
         n =
-            List.length scene
+            List.length boundingData
 
         sceneCenter =
-            scene
+            boundingData
                 |> List.foldl
-                    (\{ centroid, transform } sum ->
-                        Vec3.add sum (Mat4.transform transform centroid)
-                    )
+                    (\{ centroid } sum -> Vec3.add sum centroid)
                     (vec3 0 0 0)
                 |> Vec3.scale (1 / toFloat n)
 
         sceneRadius =
-            scene
+            boundingData
                 |> List.map
-                    (\{ centroid, radius, transform } ->
-                        radius
-                            + Vec3.distance
-                                sceneCenter
-                                (Mat4.transform transform centroid)
+                    (\{ centroid, radius } ->
+                        radius + Vec3.distance sceneCenter centroid
                     )
                 |> List.maximum
                 |> Maybe.withDefault 0.0
     in
     { model
-        | scene = scene
+        | scene = instances
         , meshes = Array.fromList meshes
-        , pickingData = Array.fromList pdata
+        , pickingData = Array.fromList pickingData
         , selected = Set.empty
         , center = sceneCenter
         , radius = sceneRadius

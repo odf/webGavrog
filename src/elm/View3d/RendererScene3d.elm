@@ -47,11 +47,11 @@ type alias Mesh =
     }
 
 
-type alias Model a b =
+type alias Model a =
     { a
         | size : { width : Float, height : Float }
         , meshes : Array Mesh
-        , scene : Scene b
+        , scene : Scene
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
@@ -361,7 +361,7 @@ entitiesFromMesh mesh { diffuseColor } transform highlight =
     )
 
 
-view : List (Html.Attribute msg) -> Model a b -> Options -> Html msg
+view : List (Html.Attribute msg) -> Model a -> Options -> Html msg
 view attr model options =
     let
         convert { material, transform, idxMesh, idxInstance } mesh =

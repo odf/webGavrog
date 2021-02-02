@@ -27,7 +27,7 @@ type alias Model a b =
     { a
         | size : { width : Float, height : Float }
         , meshes : Array Mesh
-        , scene : Scene b
+        , scene : Scene
         , selected : Set ( Int, Int )
         , center : Vec3
         , radius : Float
