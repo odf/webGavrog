@@ -26,7 +26,7 @@ import Html.Attributes
 import Html.Events
 import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
-import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import View3d.Camera as Camera
@@ -59,11 +59,7 @@ type alias BoundingInfo =
 type alias Scene =
     List
         { mesh : Mesh RendererCommon.Vertex
-        , instances :
-            List
-                { material : RendererCommon.Material
-                , transform : Mat4
-                }
+        , instances : List RendererCommon.Instance
         }
 
 
@@ -194,27 +190,11 @@ processedScene scene =
                             instances
                     )
 
-        allInstances =
-            scene
-                |> List.indexedMap
-                    (\idxMesh { instances } -> ( instances, idxMesh ))
-                |> List.concatMap
-                    (\( instances, idxMesh ) ->
-                        List.indexedMap
-                            (\idxInstance { material, transform } ->
-                                { material = material
-                                , transform = transform
-                                , idxMesh = idxMesh
-                                , idxInstance = idxInstance
-                                }
-                            )
-                            instances
-                    )
     in
     { meshes = meshes
     , pickingData = pickingData
     , boundingData = boundingSpheres
-    , instances = allInstances
+    , instances = List.concatMap .instances scene
     }
 
 

@@ -1301,15 +1301,17 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
 convertScene : DecodeScene.Scene -> Int -> Model -> Scene
 convertScene scene dim model =
     let
-        convertInstance instance =
+        convertInstance index instance =
             { material = makeMaterial instance dim model
             , transform = instance.transform
+            , idxMesh = instance.meshIndex
+            , idxInstance = index
             }
     in
     List.map
         (\{ mesh, instances } ->
             { mesh = mesh
-            , instances = List.map convertInstance instances
+            , instances = List.indexedMap convertInstance instances
             }
         )
         scene
