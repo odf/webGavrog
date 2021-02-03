@@ -2,12 +2,14 @@ module View3d.Main exposing
     ( Model
     , Msg
     , Outcome(..)
+    , Renderer(..)
     , Scene
     , encompass
     , init
     , lookAlong
     , requestRedraw
     , rotateBy
+    , setRenderer
     , setScene
     , setSelection
     , setSize
@@ -32,7 +34,8 @@ import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon as RendererCommon
-import View3d.RendererScene3d as Renderer
+import View3d.RendererScene3d as RendererScene3d
+import View3d.RendererWebGL as RendererWebGL
 
 
 
@@ -57,12 +60,19 @@ type alias Scene =
         }
 
 
+type Renderer
+    = Scene3d
+    | WebGL
+
+
 type alias Model =
     RendererCommon.Model
         { requestRedraw : Bool
         , touchStart : Position
-        , meshes : Array Renderer.Mesh
+        , meshesScene3d : Array RendererScene3d.Mesh
+        , meshesWebGL : Array RendererWebGL.Mesh
         , pickingData : Array PickingInfo
+        , renderer : Renderer
         }
 
 
@@ -77,8 +87,10 @@ init =
     { size = { width = 0, height = 0 }
     , requestRedraw = False
     , cameraState = Camera.initialState
-    , meshes = Array.empty
+    , meshesScene3d = Array.empty
+    , meshesWebGL = Array.empty
     , pickingData = Array.empty
+    , renderer = WebGL
     , scene = []
     , selected = Set.empty
     , touchStart = { x = 0, y = 0 }
@@ -450,9 +462,19 @@ setSize size model =
 setScene : Scene -> Model -> Model
 setScene scene model =
     let
-        meshes =
+        meshesScene3d =
             scene
-                |> List.map (\{ mesh } -> Renderer.convertMeshForRenderer mesh)
+                |> List.map
+                    (\{ mesh } ->
+                        RendererScene3d.convertMeshForRenderer mesh
+                    )
+
+        meshesWebGL =
+            scene
+                |> List.map
+                    (\{ mesh } ->
+                        RendererWebGL.convertMeshForRenderer mesh
+                    )
 
         pickingData =
             scene
@@ -490,7 +512,8 @@ setScene scene model =
     in
     { model
         | scene = List.concatMap .instances scene
-        , meshes = Array.fromList meshes
+        , meshesScene3d = Array.fromList meshesScene3d
+        , meshesWebGL = Array.fromList meshesWebGL
         , pickingData = Array.fromList pickingData
         , selected = Set.empty
         , center = sceneCenter
@@ -501,6 +524,11 @@ setScene scene model =
 setSelection : Set ( Int, Int ) -> Model -> Model
 setSelection selected model =
     { model | selected = selected }
+
+
+setRenderer : Renderer -> Model -> Model
+setRenderer renderer model =
+    { model | renderer = renderer }
 
 
 requestRedraw : Model -> Model
@@ -537,7 +565,12 @@ view toMsg model options bgColor =
                 (toMsg TouchEndMsg)
             ]
     in
-    Renderer.view attributes model.meshes model options
+    case model.renderer of
+        WebGL ->
+            RendererWebGL.view attributes model.meshesWebGL model options
+
+        Scene3d ->
+            RendererScene3d.view attributes model.meshesScene3d model options
 
 
 onMouseDown :

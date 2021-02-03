@@ -24,7 +24,7 @@ import Set
 import Styling
 import Task
 import ValueSlider
-import View3d.Main as View3d exposing (Scene)
+import View3d.Main as View3d exposing (Renderer(..), Scene)
 import View3d.RendererCommon exposing (Material)
 
 
@@ -233,6 +233,7 @@ type alias DisplaySettings =
     , editOutlineColor : Bool
     , outlineColor : ColorDialog.Color
     , showSurfaceMesh : Bool
+    , renderer : View3d.Renderer
     }
 
 
@@ -330,6 +331,7 @@ init flags =
             , useSeparateOutlineColor = False
             , editOutlineColor = False
             , outlineColor = Color.toHsla Color.white
+            , renderer = WebGL
             }
       , sceneSettings =
             { showUnitCell = False
@@ -810,7 +812,13 @@ update msg model =
             )
 
         UpdateDisplaySettings settings ->
-            ( { model | displaySettings = settings }, Cmd.none )
+            ( { model
+                | displaySettings = settings
+                , viewState =
+                    View3d.setRenderer settings.renderer model.viewState
+              }
+            , Cmd.none
+            )
 
         UpdateSceneSettings settings ->
             let
@@ -1805,6 +1813,20 @@ viewDisplaySettings toMsg settings =
                 ]
                 (Styling.makeIcon "►")
             ]
+        , viewSeparator
+        , Input.radio [ Element.width Element.fill, Element.spacing 6 ]
+            { onChange =
+                \option -> toMsg { settings | renderer = option }
+            , selected = Just settings.renderer
+            , label =
+                Input.labelAbove
+                    [ Element.padding 12, Font.bold, Element.centerX ]
+                    (Element.text "Renderer")
+            , options =
+                [ Input.option Scene3d (Element.text "Scene3d")
+                , Input.option WebGL (Element.text "WebGL")
+                ]
+            }
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | backgroundColor = color })
