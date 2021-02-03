@@ -50,12 +50,6 @@ type alias PickingInfo =
     }
 
 
-type alias BoundingInfo =
-    { centroid : Vec3
-    , radius : Float
-    }
-
-
 type alias Scene =
     List
         { mesh : Mesh RendererCommon.Vertex
@@ -141,51 +135,6 @@ radius mesh =
         |> List.map (\v -> Vec3.distance v c)
         |> List.maximum
         |> Maybe.withDefault 0.0
-
-
-processedScene :
-    Scene
-    ->
-        { meshes : List Renderer.Mesh
-        , pickingData : List PickingInfo
-        , boundingData : List BoundingInfo
-        , instances : List RendererCommon.Instance
-        }
-processedScene scene =
-    let
-        meshes =
-            scene
-                |> List.map (\{ mesh } -> Renderer.convertMeshForRenderer mesh)
-
-        pickingData =
-            scene
-                |> List.map
-                    (\{ mesh } ->
-                        { pickingMesh = meshForPicking mesh
-                        , centroid = centroid mesh
-                        , radius = radius mesh
-                        }
-                    )
-
-        boundingSpheres =
-            scene
-                |> List.concatMap
-                    (\{ mesh, instances } ->
-                        List.map
-                            (\{ transform } ->
-                                { centroid =
-                                    Mat4.transform transform (centroid mesh)
-                                , radius = radius mesh
-                                }
-                            )
-                            instances
-                    )
-    in
-    { meshes = meshes
-    , pickingData = pickingData
-    , boundingData = boundingSpheres
-    , instances = List.concatMap .instances scene
-    }
 
 
 pick :
@@ -499,32 +448,48 @@ setSize size model =
 
 
 setScene : Scene -> Model -> Model
-setScene rawScene model =
+setScene scene model =
     let
-        { meshes, pickingData, boundingData, instances } =
-            processedScene rawScene
+        meshes =
+            scene
+                |> List.map (\{ mesh } -> Renderer.convertMeshForRenderer mesh)
 
-        n =
-            List.length boundingData
+        pickingData =
+            scene
+                |> List.map
+                    (\{ mesh } ->
+                        { pickingMesh = meshForPicking mesh
+                        , centroid = centroid mesh
+                        , radius = radius mesh
+                        }
+                    )
+
+        boundingData =
+            scene
+                |> List.concatMap
+                    (\{ mesh, instances } ->
+                        List.map
+                            (\{ transform } ->
+                                ( Mat4.transform transform (centroid mesh)
+                                , radius mesh
+                                )
+                            )
+                            instances
+                    )
 
         sceneCenter =
             boundingData
-                |> List.foldl
-                    (\item sum -> Vec3.add sum item.centroid)
-                    (vec3 0 0 0)
-                |> Vec3.scale (1 / toFloat n)
+                |> List.foldl (\( c, _ ) sum -> Vec3.add sum c) (vec3 0 0 0)
+                |> Vec3.scale (1 / toFloat (List.length boundingData))
 
         sceneRadius =
             boundingData
-                |> List.map
-                    (\item ->
-                        item.radius + Vec3.distance sceneCenter item.centroid
-                    )
+                |> List.map (\( c, r ) -> r + Vec3.distance sceneCenter c)
                 |> List.maximum
                 |> Maybe.withDefault 0.0
     in
     { model
-        | scene = instances
+        | scene = List.concatMap .instances scene
         , meshes = Array.fromList meshes
         , pickingData = Array.fromList pickingData
         , selected = Set.empty
