@@ -27,7 +27,7 @@ import Triangle3d
 import TriangularMesh
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh exposing (Mesh, surface, wireframe)
+import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
 
@@ -43,6 +43,7 @@ type WorldCoordinates
 type alias Mesh =
     { wireframe : Scene3d.Mesh.Plain WorldCoordinates
     , surface : Scene3d.Mesh.Uniform WorldCoordinates
+    , outline : Scene3d.Mesh.Uniform WorldCoordinates
     }
 
 
@@ -112,10 +113,11 @@ convertWireframe mesh =
 pushOut :
     Float
     -> { a | position : Vec3, normal : Vec3 }
-    -> { position : Vec3, normal : Vec3 }
-pushOut amount { position, normal } =
-    { position = Vec3.add position (Vec3.scale amount normal)
-    , normal = normal
+    -> { a | position : Vec3, normal : Vec3 }
+pushOut amount vertex =
+    { vertex
+        | position = Vec3.add vertex.position (Vec3.scale amount vertex.normal)
+        , normal = vertex.normal
     }
 
 
@@ -124,9 +126,15 @@ convertMeshForRenderer mesh =
     let
         wires =
             mesh |> Mesh.wireframe |> Mesh.mapVertices (pushOut 0.0001)
+
+        outline =
+            mesh
+                |> Mesh.mapVertices (pushOut 0.02)
+                |> Mesh.invertMesh
     in
     { wireframe = convertWireframe wires
     , surface = convertSurface mesh
+    , outline = convertSurface outline |> Scene3d.Mesh.cullBackFaces
     }
 
 
@@ -318,36 +326,6 @@ convertColor vec =
     Color.rgb c.x c.y c.z
 
 
-entitiesFromMesh :
-    Mesh
-    -> Material
-    -> Mat4
-    -> Bool
-    -> ( Scene3d.Entity WorldCoordinates, Scene3d.Entity WorldCoordinates )
-entitiesFromMesh mesh { diffuseColor } transform highlight =
-    let
-        material =
-            if highlight then
-                Material.matte Color.red
-
-            else
-                Material.pbr
-                    { baseColor = convertColor diffuseColor
-                    , roughness = 0.5
-                    , metallic = 0.5
-                    }
-
-        surface =
-            Scene3d.mesh material mesh.surface
-
-        wireframe =
-            Scene3d.mesh (Material.color Color.black) mesh.wireframe
-    in
-    ( applySimilarityMatrix transform surface
-    , applySimilarityMatrix transform wireframe
-    )
-
-
 view : List (Html.Attribute msg) -> Array Mesh -> Model a -> Options -> Html msg
 view attr meshes model options =
     let
@@ -356,14 +334,45 @@ view attr meshes model options =
                 highlight =
                     Set.member ( idxMesh, idxInstance ) model.selected
 
-                ( surface, wires ) =
-                    entitiesFromMesh mesh material transform highlight
-            in
-            if options.drawWires then
-                [ surface, wires ]
+                materialOut =
+                    if highlight then
+                        Material.matte Color.red
 
-            else
-                [ surface ]
+                    else
+                        Material.pbr
+                            { baseColor = convertColor material.diffuseColor
+                            , roughness = 0.5
+                            , metallic = 0.5
+                            }
+
+                surface =
+                    Scene3d.mesh materialOut mesh.surface
+                        |> applySimilarityMatrix transform
+                        |> Just
+
+                maybeWires =
+                    if options.drawWires then
+                        Scene3d.mesh (Material.color Color.black) mesh.wireframe
+                            |> applySimilarityMatrix transform
+                            |> Just
+
+                    else
+                        Nothing
+
+                maybeOutlines =
+                    if options.addOutlines then
+                        let
+                            color =
+                                convertColor options.outlineColor
+                        in
+                        Scene3d.mesh (Material.color color) mesh.outline
+                            |> applySimilarityMatrix transform
+                            |> Just
+
+                    else
+                        Nothing
+            in
+            [ surface, maybeWires, maybeOutlines ] |> List.filterMap identity
 
         entities =
             model.scene

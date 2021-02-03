@@ -1,6 +1,7 @@
 module View3d.Mesh exposing
     ( Mesh(..)
     , getVertices
+    , invertMesh
     , mapVertices
     , mappedRayMeshIntersection
     , resolvedSurface
@@ -106,6 +107,23 @@ mapVertices fn mesh =
 
         IndexedTriangles vertices triangles ->
             IndexedTriangles (List.map fn vertices) triangles
+
+
+invertMesh : Mesh a -> Mesh a
+invertMesh mesh =
+    case mesh of
+        Lines lines ->
+            Lines lines
+
+        Triangles triangles ->
+            triangles
+                |> List.map (\( p, q, r ) -> ( r, q, p ))
+                |> Triangles
+
+        IndexedTriangles vertices triangles ->
+            triangles
+                |> List.map (\( p, q, r ) -> ( r, q, p ))
+                |> IndexedTriangles vertices
 
 
 
