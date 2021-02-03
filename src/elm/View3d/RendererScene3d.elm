@@ -30,6 +30,7 @@ import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
+import Point3d
 
 
 
@@ -138,36 +139,50 @@ convertMeshForRenderer mesh =
     }
 
 
-convertCamera : Camera.State -> Camera3d.Camera3d Length.Meters coords
-convertCamera camState =
+convertCamera :
+    Camera.State
+    -> Options
+    -> Camera3d.Camera3d Length.Meters coords
+convertCamera camState options =
     let
-        fowy =
-            Camera.verticalFieldOfView camState
-                |> Angle.degrees
-
         focalPoint =
-            Camera.focalPoint camState
-                |> asPointInInches
+            Camera.focalPoint camState |> asPointInInches
 
         eyePoint =
-            Camera.eyePoint camState
-                |> asPointInInches
+            Camera.eyePoint camState |> asPointInInches
 
         upDirection =
             Camera.upDirection camState
                 |> asPointInInches
                 |> Direction3d.from Point3d.origin
                 |> Maybe.withDefault Direction3d.positiveY
+
+        fovy =
+            Camera.verticalFieldOfView camState |> Angle.degrees
+
+        height =
+            Camera.viewPortHeight camState |> Length.inches
     in
-    Camera3d.perspective
-        { viewpoint =
-            Viewpoint3d.lookAt
-                { focalPoint = focalPoint
-                , eyePoint = eyePoint
-                , upDirection = upDirection
-                }
-        , verticalFieldOfView = fowy
-        }
+    if options.orthogonalView then
+        Camera3d.orthographic
+            { viewpoint =
+                Viewpoint3d.lookAt
+                    { focalPoint = focalPoint
+                    , eyePoint = eyePoint
+                    , upDirection = upDirection
+                    }
+            , viewportHeight = height
+            }
+    else
+        Camera3d.perspective
+            { viewpoint =
+                Viewpoint3d.lookAt
+                    { focalPoint = focalPoint
+                    , eyePoint = eyePoint
+                    , upDirection = upDirection
+                    }
+            , verticalFieldOfView = fovy
+            }
 
 
 orthonormalized : Mat4 -> Mat4
@@ -386,7 +401,7 @@ view attr meshes model options =
     Html.div attr
         [ Scene3d.sunny
             { entities = entities
-            , camera = convertCamera model.cameraState
+            , camera = convertCamera model.cameraState options
             , upDirection = Direction3d.z
             , sunlightDirection = Direction3d.yz (Angle.degrees -120)
             , background =

@@ -23,6 +23,7 @@ module View3d.Camera exposing
     , upDirection
     , updateZoom
     , verticalFieldOfView
+    , viewPortHeight
     , viewingMatrix
     , wasDragged
     )
@@ -426,8 +427,8 @@ perspectiveMatrix (State state) =
     Mat4.makePerspective fovy aspectRatio 1 10000
 
 
-orthogonalMatrix : State -> Mat4
-orthogonalMatrix (State state) =
+viewPortHeight : State -> Float
+viewPortHeight (State state) =
     let
         aspectRatio =
             state.size.width / state.size.height
@@ -437,12 +438,18 @@ orthogonalMatrix (State state) =
 
         delta =
             tan (degrees (fovy / 2)) * state.cameraDistance
+    in
+    2 * delta * min aspectRatio 1
+
+
+orthogonalMatrix : State -> Mat4
+orthogonalMatrix (State state) =
+    let
+        dy =
+            viewPortHeight (State state) / 2
 
         dx =
-            delta * max aspectRatio 1
-
-        dy =
-            delta * min aspectRatio 1
+            dy / state.size.height * state.size.width
     in
     Mat4.makeOrtho -dx dx -dy dy 1 10000
 
