@@ -114,6 +114,35 @@ meshForPicking mesh =
                 )
 
 
+centroid : Mesh { a | position : Vec3 } -> Vec3
+centroid mesh =
+    let
+        vertices =
+            List.map .position (Mesh.getVertices mesh)
+
+        n =
+            List.length vertices
+    in
+    vertices
+        |> List.foldl Vec3.add (vec3 0 0 0)
+        |> Vec3.scale (1 / toFloat n)
+
+
+radius : Mesh { a | position : Vec3 } -> Float
+radius mesh =
+    let
+        vertices =
+            List.map .position (Mesh.getVertices mesh)
+
+        c =
+            centroid mesh
+    in
+    vertices
+        |> List.map (\v -> Vec3.distance v c)
+        |> List.maximum
+        |> Maybe.withDefault 0.0
+
+
 processedScene :
     Scene
     ->
@@ -132,30 +161,9 @@ processedScene scene =
             scene
                 |> List.map
                     (\{ mesh } ->
-                        let
-                            pickingMesh =
-                                meshForPicking mesh
-
-                            vertices =
-                                List.map .position (Mesh.getVertices mesh)
-
-                            n =
-                                List.length vertices
-
-                            centroid =
-                                vertices
-                                    |> List.foldl Vec3.add (vec3 0 0 0)
-                                    |> Vec3.scale (1 / toFloat n)
-
-                            radius =
-                                vertices
-                                    |> List.map (\v -> Vec3.distance v centroid)
-                                    |> List.maximum
-                                    |> Maybe.withDefault 0.0
-                        in
-                        { pickingMesh = pickingMesh
-                        , centroid = centroid
-                        , radius = radius
+                        { pickingMesh = meshForPicking mesh
+                        , centroid = centroid mesh
+                        , radius = radius mesh
                         }
                     )
 
@@ -163,33 +171,15 @@ processedScene scene =
             scene
                 |> List.concatMap
                     (\{ mesh, instances } ->
-                        let
-                            vertices =
-                                List.map .position (Mesh.getVertices mesh)
-
-                            n =
-                                List.length vertices
-
-                            centroid =
-                                vertices
-                                    |> List.foldl Vec3.add (vec3 0 0 0)
-                                    |> Vec3.scale (1 / toFloat n)
-
-                            radius =
-                                vertices
-                                    |> List.map (\v -> Vec3.distance v centroid)
-                                    |> List.maximum
-                                    |> Maybe.withDefault 0.0
-                        in
                         List.map
                             (\{ transform } ->
-                                { centroid = Mat4.transform transform centroid
-                                , radius = radius
+                                { centroid =
+                                    Mat4.transform transform (centroid mesh)
+                                , radius = radius mesh
                                 }
                             )
                             instances
                     )
-
     in
     { meshes = meshes
     , pickingData = pickingData
@@ -520,15 +510,15 @@ setScene rawScene model =
         sceneCenter =
             boundingData
                 |> List.foldl
-                    (\{ centroid } sum -> Vec3.add sum centroid)
+                    (\item sum -> Vec3.add sum item.centroid)
                     (vec3 0 0 0)
                 |> Vec3.scale (1 / toFloat n)
 
         sceneRadius =
             boundingData
                 |> List.map
-                    (\{ centroid, radius } ->
-                        radius + Vec3.distance sceneCenter centroid
+                    (\item ->
+                        item.radius + Vec3.distance sceneCenter item.centroid
                     )
                 |> List.maximum
                 |> Maybe.withDefault 0.0
