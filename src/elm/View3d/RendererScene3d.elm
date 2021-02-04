@@ -30,7 +30,6 @@ import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
-import Point3d
 
 
 
@@ -173,6 +172,7 @@ convertCamera camState options =
                     }
             , viewportHeight = height
             }
+
     else
         Camera3d.perspective
             { viewpoint =
@@ -362,13 +362,11 @@ view attr meshes model options =
 
                 surface =
                     Scene3d.mesh materialOut mesh.surface
-                        |> applySimilarityMatrix transform
                         |> Just
 
                 maybeWires =
                     if options.drawWires then
                         Scene3d.mesh (Material.color Color.black) mesh.wireframe
-                            |> applySimilarityMatrix transform
                             |> Just
 
                     else
@@ -381,22 +379,24 @@ view attr meshes model options =
                                 convertColor options.outlineColor
                         in
                         Scene3d.mesh (Material.color color) mesh.outline
-                            |> applySimilarityMatrix transform
                             |> Just
 
                     else
                         Nothing
             in
-            [ surface, maybeWires, maybeOutlines ] |> List.filterMap identity
+            [ surface, maybeWires, maybeOutlines ]
+                |> List.filterMap identity
+                |> Scene3d.group
+                |> applySimilarityMatrix transform
 
         entities =
-            model.scene
-                |> List.concatMap
-                    (\item ->
-                        Array.get item.idxMesh meshes
-                            |> Maybe.map (convert item)
-                            |> Maybe.withDefault []
-                    )
+            List.map
+                (\item ->
+                    Array.get item.idxMesh meshes
+                        |> Maybe.map (convert item)
+                        |> Maybe.withDefault Scene3d.nothing
+                )
+                model.scene
     in
     Html.div attr
         [ Scene3d.sunny
