@@ -145,16 +145,14 @@ convertCamera :
 convertCamera camState options =
     let
         focalPoint =
-            Camera.focalPoint camState |> asPointInInches
+            Point3d.inches 0 0 -(Camera.cameraDistance camState)
 
-        eyePoint =
-            Camera.eyePoint camState |> asPointInInches
-
-        upDirection =
-            Camera.upDirection camState
-                |> asPointInInches
-                |> Direction3d.from Point3d.origin
-                |> Maybe.withDefault Direction3d.positiveY
+        viewpoint =
+            Viewpoint3d.lookAt
+                { focalPoint = focalPoint
+                , eyePoint = Point3d.origin
+                , upDirection = Direction3d.positiveY
+                }
 
         fovy =
             Camera.verticalFieldOfView camState |> Angle.degrees
@@ -164,25 +162,11 @@ convertCamera camState options =
     in
     if options.orthogonalView then
         Camera3d.orthographic
-            { viewpoint =
-                Viewpoint3d.lookAt
-                    { focalPoint = focalPoint
-                    , eyePoint = eyePoint
-                    , upDirection = upDirection
-                    }
-            , viewportHeight = height
-            }
+            { viewpoint = viewpoint, viewportHeight = height }
 
     else
         Camera3d.perspective
-            { viewpoint =
-                Viewpoint3d.lookAt
-                    { focalPoint = focalPoint
-                    , eyePoint = eyePoint
-                    , upDirection = upDirection
-                    }
-            , verticalFieldOfView = fovy
-            }
+            { viewpoint = viewpoint, verticalFieldOfView = fovy }
 
 
 orthonormalized : Mat4 -> Mat4
@@ -390,13 +374,17 @@ view attr meshes model options =
                 |> applySimilarityMatrix transform
 
         entities =
-            List.map
-                (\item ->
-                    Array.get item.idxMesh meshes
-                        |> Maybe.map (convert item)
-                        |> Maybe.withDefault Scene3d.nothing
-                )
-                model.scene
+            model.scene
+                |> List.map
+                    (\item ->
+                        Array.get item.idxMesh meshes
+                            |> Maybe.map (convert item)
+                            |> Maybe.withDefault Scene3d.nothing
+                    )
+                |> Scene3d.group
+                |> applySimilarityMatrix
+                    (Camera.viewingMatrix model.cameraState)
+                |> List.singleton
     in
     Html.div attr
         [ Scene3d.sunny
