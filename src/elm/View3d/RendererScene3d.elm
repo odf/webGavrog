@@ -11,6 +11,7 @@ import Camera3d
 import Color
 import Direction3d
 import Html exposing (Html)
+import Illuminance
 import Length exposing (Meters)
 import LineSegment3d
 import Math.Matrix4 as Mat4 exposing (Mat4, transform)
@@ -20,6 +21,7 @@ import Pixels
 import Point3d exposing (Point3d)
 import Quantity exposing (Unitless)
 import Scene3d
+import Scene3d.Light as Light
 import Scene3d.Material as Material
 import Scene3d.Mesh
 import Set
@@ -340,8 +342,8 @@ view attr meshes model options =
                     else
                         Material.pbr
                             { baseColor = convertColor material.diffuseColor
-                            , roughness = 0.5
-                            , metallic = 0.5
+                            , roughness = 0.4
+                            , metallic = 0.2
                             }
 
                 surface =
@@ -385,21 +387,47 @@ view attr meshes model options =
                 |> applySimilarityMatrix
                     (Camera.viewingMatrix model.cameraState)
                 |> List.singleton
+
+        sun =
+            Light.directional (Light.castsShadows False)
+                { direction = Direction3d.yz (Angle.degrees -120)
+                , intensity = Illuminance.lux 80000
+                , chromaticity = Light.sunlight
+                }
+
+        sky =
+            Light.overhead
+                { upDirection = Direction3d.z
+                , chromaticity = Light.skylight
+                , intensity = Illuminance.lux 30000
+                }
+
+        environment =
+            Light.overhead
+                { upDirection = Direction3d.reverse Direction3d.z
+                , chromaticity = Light.daylight
+                , intensity = Illuminance.lux 5000
+                }
+
+        lights =
+            Scene3d.threeLights sun sky environment
     in
     Html.div attr
-        [ Scene3d.sunny
-            { entities = entities
+        [ Scene3d.custom
+            { lights = lights
             , camera = convertCamera model.cameraState options
-            , upDirection = Direction3d.z
-            , sunlightDirection = Direction3d.yz (Angle.degrees -120)
-            , background =
-                convertColor options.backgroundColor
-                    |> Scene3d.backgroundColor
             , clipDepth = Length.centimeters 1
-            , shadows = False
+            , exposure = Scene3d.exposureValue 15
+            , toneMapping = Scene3d.noToneMapping
+            , whiteBalance = Light.daylight
+            , antialiasing = Scene3d.multisampling
             , dimensions =
                 ( Pixels.int (floor model.size.width)
                 , Pixels.int (floor model.size.height)
                 )
+            , background =
+                convertColor options.backgroundColor
+                    |> Scene3d.backgroundColor
+            , entities = entities
             }
         ]

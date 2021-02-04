@@ -331,7 +331,7 @@ init flags =
             , useSeparateOutlineColor = False
             , editOutlineColor = False
             , outlineColor = Color.toHsla Color.white
-            , renderer = WebGL
+            , renderer = Scene3d
             }
       , sceneSettings =
             { showUnitCell = False

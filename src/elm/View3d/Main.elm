@@ -90,7 +90,7 @@ init =
     , meshesScene3d = Array.empty
     , meshesWebGL = Array.empty
     , pickingData = Array.empty
-    , renderer = WebGL
+    , renderer = Scene3d
     , scene = []
     , selected = Set.empty
     , touchStart = { x = 0, y = 0 }
