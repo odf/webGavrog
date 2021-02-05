@@ -113,6 +113,9 @@ export const makeStick = (radius, segments) => {
     return [i, j, j+n, i+n];
   });
 
+  faces.push(range(n).reverse());
+  faces.push(range(n).map(i => i + n));
+
   return geometry(vertices, faces);
 };
 
