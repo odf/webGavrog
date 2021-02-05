@@ -348,7 +348,7 @@ view attr meshes model options =
                 highlight =
                     Set.member ( idxMesh, idxInstance ) model.selected
 
-                materialOut =
+                mOut =
                     if highlight then
                         Material.matte Color.red
 
@@ -361,22 +361,17 @@ view attr meshes model options =
 
                 surface =
                     if options.drawShadows then
-                        Scene3d.meshWithShadow
-                            materialOut
-                            mesh.surface
-                            mesh.shadow
-                            |> Just
+                        Scene3d.meshWithShadow mOut mesh.surface mesh.shadow
 
                     else
-                        Scene3d.mesh materialOut mesh.surface |> Just
+                        Scene3d.mesh mOut mesh.surface
 
                 maybeWires =
                     if options.drawWires then
                         Scene3d.mesh (Material.color Color.black) mesh.wireframe
-                            |> Just
 
                     else
-                        Nothing
+                        Scene3d.nothing
 
                 maybeOutlines =
                     if options.addOutlines then
@@ -385,13 +380,11 @@ view attr meshes model options =
                                 convertColor options.outlineColor
                         in
                         Scene3d.mesh (Material.color color) mesh.outline
-                            |> Just
 
                     else
-                        Nothing
+                        Scene3d.nothing
             in
             [ surface, maybeWires, maybeOutlines ]
-                |> List.filterMap identity
                 |> Scene3d.group
                 |> applySimilarityMatrix transform
 
