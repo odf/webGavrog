@@ -14,7 +14,7 @@ import Html exposing (Html)
 import Illuminance
 import Length exposing (Meters)
 import LineSegment3d
-import Math.Matrix4 as Mat4 exposing (Mat4, transform)
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Maybe
 import Pixels
@@ -46,6 +46,7 @@ type alias Mesh =
     { wireframe : Scene3d.Mesh.Plain WorldCoordinates
     , surface : Scene3d.Mesh.Uniform WorldCoordinates
     , outline : Scene3d.Mesh.Uniform WorldCoordinates
+    , shadow : Scene3d.Mesh.Shadow WorldCoordinates
     }
 
 
@@ -126,17 +127,29 @@ pushOut amount vertex =
 convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
 convertMeshForRenderer mesh =
     let
-        wires =
-            mesh |> Mesh.wireframe |> Mesh.mapVertices (pushOut 0.0001)
+        surface =
+            convertSurface mesh
+
+        shadow =
+            Scene3d.Mesh.shadow surface
+
+        wireframe =
+            mesh
+                |> Mesh.wireframe
+                |> Mesh.mapVertices (pushOut 0.0001)
+                |> convertWireframe
 
         outline =
             mesh
                 |> Mesh.mapVertices (pushOut 0.02)
                 |> Mesh.invertMesh
+                |> convertSurface
+                |> Scene3d.Mesh.cullBackFaces
     in
-    { wireframe = convertWireframe wires
-    , surface = convertSurface mesh
-    , outline = convertSurface outline |> Scene3d.Mesh.cullBackFaces
+    { surface = surface
+    , shadow = shadow
+    , wireframe = wireframe
+    , outline = outline
     }
 
 
@@ -347,8 +360,15 @@ view attr meshes model options =
                             }
 
                 surface =
-                    Scene3d.mesh materialOut mesh.surface
-                        |> Just
+                    if options.drawShadows then
+                        Scene3d.meshWithShadow
+                            materialOut
+                            mesh.surface
+                            mesh.shadow
+                            |> Just
+
+                    else
+                        Scene3d.mesh materialOut mesh.surface |> Just
 
                 maybeWires =
                     if options.drawWires then
@@ -389,7 +409,7 @@ view attr meshes model options =
                 |> List.singleton
 
         sun =
-            Light.directional (Light.castsShadows False)
+            Light.directional (Light.castsShadows options.drawShadows)
                 { direction = Direction3d.yz (Angle.degrees -120)
                 , intensity = Illuminance.lux 80000
                 , chromaticity = Light.sunlight

@@ -61,4 +61,5 @@ type alias Options =
     , backgroundColor : Vec3
     , addOutlines : Bool
     , outlineColor : Vec3
+    , drawShadows : Bool
     }

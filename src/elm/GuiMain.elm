@@ -228,6 +228,7 @@ type alias DisplaySettings =
     , backgroundColor : ColorDialog.Color
     , fadeToBackground : Float
     , fadeToBlue : Float
+    , drawShadows : Bool
     , addOutlines : Bool
     , useSeparateOutlineColor : Bool
     , editOutlineColor : Bool
@@ -327,6 +328,7 @@ init flags =
             , showSurfaceMesh = False
             , fadeToBlue = 0.0
             , fadeToBackground = 0.0
+            , drawShadows = False
             , addOutlines = False
             , useSeparateOutlineColor = False
             , editOutlineColor = False
@@ -1428,6 +1430,7 @@ view model =
             , drawWires = settings.showSurfaceMesh
             , fadeToBackground = settings.fadeToBackground
             , fadeToBlue = settings.fadeToBlue
+            , drawShadows = settings.drawShadows
             , addOutlines = settings.addOutlines
             , outlineColor = convertColor outlineColor
             , backgroundColor = convertColor settings.backgroundColor
@@ -1766,6 +1769,14 @@ viewDisplaySettings :
     -> Element.Element Msg
 viewDisplaySettings toMsg settings =
     let
+        shadowCheckbox =
+            Input.checkbox []
+                { onChange = \onOff -> toMsg { settings | drawShadows = onOff }
+                , icon = Input.defaultCheckbox
+                , checked = settings.drawShadows
+                , label = Input.labelRight [] <| Element.text "Draw Shadows"
+                }
+
         outlineCheckbox =
             Input.checkbox []
                 { onChange = \onOff -> toMsg { settings | addOutlines = onOff }
@@ -1828,6 +1839,7 @@ viewDisplaySettings toMsg settings =
                 ]
             }
         , viewSeparator
+        , shadowCheckbox
         , viewColorInput
             (\color -> toMsg { settings | backgroundColor = color })
             (\onOff -> toMsg { settings | editBackgroundColor = onOff })
