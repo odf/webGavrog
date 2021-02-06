@@ -284,7 +284,8 @@ export const beveledAt = (
         f.push(i);
         i = m[i];
       }
-      facesNew.push(f);
+      if (f.length > 2)
+        facesNew.push(f);
     }
   }
 
