@@ -46,8 +46,11 @@ const handlers = {
       let t = template;
 
       t = surface.withFlattenedCenterFaces(t);
-      for (let i = 1; i < subDLevel; ++i)
+      for (let i = 0; i < subDLevel; ++i)
         t = surface.subD(t);
+
+      if (tighten)
+        t = surface.tightened(t);
 
       const t1 = t;
       t = surface.insetAt(t, 0.05 * edgeWidth * scale, t1.isFixed);
@@ -55,9 +58,6 @@ const handlers = {
 
       if (tighten)
         t = surface.tightened(t);
-
-      if (subDLevel > 0)
-        t = surface.subD(t);
 
       result.push(t);
     }
