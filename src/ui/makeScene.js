@@ -68,7 +68,6 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
 
   const n = meshes.length;
   meshes.push(geometries.makeBall(ballRadius));
-  meshes.push(geometries.makeStick(stickRadius, 48));
 
   const corners = dim == 3 ?
         cartesian([0, 1], [0, 1], [0, 1]) :
@@ -85,6 +84,8 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
     });
   }
 
+  const stick = geometries.makeStick(stickRadius, 48);
+
   for (let i = 0; i < dim; ++i) {
     const [u, v, w] = [
       cellBasis[i % dim], cellBasis[(i + 1) % dim], cellBasis[(i + 2) % dim]
@@ -95,14 +96,17 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
 
     for (const p0 of startPoints) {
       const p = opsF.plus(origin, p0);
+
+      const n = meshes.length;
       const transform = geometries.stickTransform(
         asVec3(p), asVec3(opsF.plus(p, u)), ballRadius, stickRadius
       );
+      meshes.push(geometries.transformMesh(stick, transform));
 
       instances.push({
         meshType: 'cellEdge',
-        meshIndex: n + 1,
-        transform,
+        meshIndex: n,
+        transform: { basis: opsF.identityMatrix(3), shift: [0, 0, 0] },
         extraShift: [ 0, 0, 0 ]
       });
     }

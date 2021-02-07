@@ -85,9 +85,14 @@ const splitGeometry = ({ vertices, faces }, faceLabels) => {
 
 export const makeBall = radius => {
   const t0 = {
-    pos: [[1,0,0], [0,1,0], [0,0,1], [-1,0,0], [0,-1,0], [0,0,-1]],
-    faces : [[0,1,2], [1,0,5], [2,1,3], [0,2,4],
-             [3,5,4], [5,3,1], [4,5,0], [3,4,2]],
+    pos: [
+      [1, 0, 0], [0, 1, 0], [0, 0, 1],
+      [-1, 0, 0], [0, -1, 0], [0, 0, -1]
+    ],
+    faces: [
+      [0, 1, 2], [1, 0, 5], [2, 1, 3], [0, 2, 4],
+      [3, 5, 4], [5, 3, 1], [4, 5, 0], [3, 4, 2]
+    ],
     isFixed: [false, false, false, false, false, false]
   };
   const t = subD(subD(subD(t0)));
@@ -110,7 +115,7 @@ export const makeStick = (radius, segments) => {
 
   const faces = range(n).map(i => {
     const j = (i + 1) % n;
-    return [i, j, j+n, i+n];
+    return [i, j, j + n, i + n];
   });
 
   faces.push(range(n).reverse());
@@ -123,8 +128,8 @@ export const makeStick = (radius, segments) => {
 export const stickTransform = (p, q, ballRadius, stickRadius) => {
   const w = opsF.minus(q, p);
   const d = normalized(w);
-  const ex = [1,0,0];
-  const ey = [0,1,0];
+  const ex = [1, 0, 0];
+  const ey = [0, 1, 0];
   const t = Math.abs(opsF.times(d, ex)) > 0.9 ? ey : ex;
   const u = normalized(opsF.crossProduct(d, t));
   const v = normalized(opsF.crossProduct(d, u));
@@ -134,5 +139,16 @@ export const stickTransform = (p, q, ballRadius, stickRadius) => {
   const p1 = opsF.plus(p, opsF.times(s, d));
   const w1 = opsF.minus(w, opsF.times(2 * s, d));
 
-  return { basis: [ u, v, w1 ], shift: p1 };
+  return { basis: [u, v, w1], shift: p1 };
 };
+
+
+export const transformMesh = ({ vertices, faces }, { basis, shift }) => ({
+  vertices: vertices.map(
+    ({ pos, normal }) => ({
+      pos: opsF.plus(shift, opsF.times(pos, basis)),
+      normal: normalized(opsF.times(normal, basis))
+    })
+  ),
+  faces: faces
+});
