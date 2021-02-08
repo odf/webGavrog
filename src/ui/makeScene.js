@@ -214,10 +214,10 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
 
   const t = timer();
 
-  const meshes = [
-    geometries.makeBall(ballRadius),
-    geometries.makeStick(stickRadius, 48)
-  ];
+  const meshes = [geometries.makeBall(ballRadius)];
+  const stick = geometries.makeStick(stickRadius, 48);
+
+  const protoSticks = {};
   const instances = [];
 
   for (let i = 0; i < displayList.length; ++i) {
@@ -238,9 +238,26 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
       const { head, tail, shift } = item;
       const p = asVec3(opsF.times(pos[head], basis));
       const q = asVec3(opsF.times(opsF.plus(pos[tail], shift), basis));
+
+      const d = opsF.norm(opsF.minus(q, p));
+      const key = Math.round(d * 100);
+      if (protoSticks[key] == null) {
+        const t = geometries.stickTransform(
+          [0, 0, 0], [0, 0, key / 100], ballRadius, stickRadius
+        );
+        protoSticks[key] = { transform: t, index: meshes.length };
+        meshes.push(geometries.transformMesh(stick, t));
+      }
+      const proto = protoSticks[key];
+
       meshType = 'netEdge';
-      meshIndex = 1;
-      transform = geometries.stickTransform(p, q, ballRadius, stickRadius);
+      meshIndex = proto.index;
+      const t0 = geometries.stickTransform(p, q, ballRadius, stickRadius);
+      const b = opsF.times(opsF.inverse(proto.transform.basis), t0.basis);
+      transform = {
+        basis: b,
+        shift: opsF.minus(t0.shift, opsF.times(proto.transform.shift, b))
+      };
     }
 
     instances.push({
