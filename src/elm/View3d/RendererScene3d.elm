@@ -17,7 +17,6 @@ import LineSegment3d
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Maybe
-import Pixels
 import Point3d exposing (Point3d)
 import Quantity exposing (Unitless)
 import Scene3d
@@ -32,6 +31,7 @@ import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
+import WebGL
 
 
 
@@ -424,23 +424,26 @@ view attr meshes model options =
 
         lights =
             Scene3d.threeLights sun sky environment
+
+        webGlEntities =
+            Scene3d.toWebGLEntities
+                { lights = lights
+                , camera = convertCamera model.cameraState options
+                , clipDepth = Length.centimeters 1
+                , exposure = Scene3d.exposureValue 15
+                , toneMapping = Scene3d.noToneMapping
+                , whiteBalance = Light.daylight
+                , aspectRatio = model.size.width / model.size.height
+                , supersampling = 1
+                , entities = entities
+                }
+
+        webGLOptions =
+            [ WebGL.depth 1
+            , WebGL.stencil 0
+            , WebGL.alpha True
+            , WebGL.clearColor 0 0 0 0
+            , WebGL.antialias
+            ]
     in
-    Html.div attr
-        [ Scene3d.custom
-            { lights = lights
-            , camera = convertCamera model.cameraState options
-            , clipDepth = Length.centimeters 1
-            , exposure = Scene3d.exposureValue 15
-            , toneMapping = Scene3d.noToneMapping
-            , whiteBalance = Light.daylight
-            , antialiasing = Scene3d.multisampling
-            , dimensions =
-                ( Pixels.int (floor model.size.width)
-                , Pixels.int (floor model.size.height)
-                )
-            , background =
-                convertColor options.backgroundColor
-                    |> Scene3d.backgroundColor
-            , entities = entities
-            }
-        ]
+    WebGL.toHtmlWith webGLOptions attr webGlEntities
