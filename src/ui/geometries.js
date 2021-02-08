@@ -143,12 +143,16 @@ export const stickTransform = (p, q, ballRadius, stickRadius) => {
 };
 
 
-export const transformMesh = ({ vertices, faces }, { basis, shift }) => ({
-  vertices: vertices.map(
-    ({ pos, normal }) => ({
-      pos: opsF.plus(shift, opsF.times(pos, basis)),
-      normal: normalized(opsF.times(normal, basis))
-    })
-  ),
-  faces: faces
-});
+export const transformMesh = ({ vertices, faces }, { basis, shift }) => {
+  const b = opsF.transposed(opsF.inverse(basis));
+
+  return {
+    vertices: vertices.map(
+      ({ pos, normal }) => ({
+        pos: opsF.plus(shift, opsF.times(pos, basis)),
+        normal: normalized(opsF.times(normal, b))
+      })
+    ),
+    faces: faces
+  };
+};
