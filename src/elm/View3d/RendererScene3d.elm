@@ -1,7 +1,7 @@
 module View3d.RendererScene3d exposing
     ( Mesh
     , convertMeshForRenderer
-    , view
+    , entities
     )
 
 import Angle
@@ -10,7 +10,6 @@ import Axis3d
 import Camera3d
 import Color
 import Direction3d
-import Html exposing (Html)
 import Illuminance
 import Length exposing (Meters)
 import LineSegment3d
@@ -340,8 +339,8 @@ convertColor vec =
     Color.rgb c.x c.y c.z
 
 
-view : List (Html.Attribute msg) -> Array Mesh -> Model a -> Options -> Html msg
-view attr meshes model options =
+entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
+entities meshes model options =
     let
         convert { material, transform, idxMesh, idxInstance } mesh =
             let
@@ -388,7 +387,7 @@ view attr meshes model options =
                 |> Scene3d.group
                 |> applySimilarityMatrix transform
 
-        entities =
+        scene3dEntities =
             model.scene
                 |> List.map
                     (\item ->
@@ -424,26 +423,15 @@ view attr meshes model options =
 
         lights =
             Scene3d.threeLights sun sky environment
-
-        webGlEntities =
-            Scene3d.toWebGLEntities
-                { lights = lights
-                , camera = convertCamera model.cameraState options
-                , clipDepth = Length.centimeters 1
-                , exposure = Scene3d.exposureValue 15
-                , toneMapping = Scene3d.noToneMapping
-                , whiteBalance = Light.daylight
-                , aspectRatio = model.size.width / model.size.height
-                , supersampling = 1
-                , entities = entities
-                }
-
-        webGLOptions =
-            [ WebGL.depth 1
-            , WebGL.stencil 0
-            , WebGL.alpha True
-            , WebGL.clearColor 0 0 0 0
-            , WebGL.antialias
-            ]
     in
-    WebGL.toHtmlWith webGLOptions attr webGlEntities
+    Scene3d.toWebGLEntities
+        { lights = lights
+        , camera = convertCamera model.cameraState options
+        , clipDepth = Length.centimeters 1
+        , exposure = Scene3d.exposureValue 15
+        , toneMapping = Scene3d.noToneMapping
+        , whiteBalance = Light.daylight
+        , aspectRatio = model.size.width / model.size.height
+        , supersampling = 1
+        , entities = scene3dEntities
+        }

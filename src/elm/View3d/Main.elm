@@ -36,6 +36,8 @@ import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon as RendererCommon
 import View3d.RendererScene3d as RendererScene3d
 import View3d.RendererWebGL as RendererWebGL
+import View3d.WebGlFogRenderer as WebGlFogRenderer
+import WebGL
 
 
 
@@ -71,6 +73,7 @@ type alias Model =
         , touchStart : Position
         , meshesScene3d : Array RendererScene3d.Mesh
         , meshesWebGL : Array RendererWebGL.Mesh
+        , meshesWebGLFog : Array WebGlFogRenderer.Mesh
         , pickingData : Array PickingInfo
         , renderer : Renderer
         }
@@ -89,6 +92,7 @@ init =
     , cameraState = Camera.initialState
     , meshesScene3d = Array.empty
     , meshesWebGL = Array.empty
+    , meshesWebGLFog = Array.empty
     , pickingData = Array.empty
     , renderer = Scene3d
     , scene = []
@@ -476,6 +480,13 @@ setScene scene model =
                         RendererWebGL.convertMeshForRenderer mesh
                     )
 
+        meshesWebGLFog =
+            scene
+                |> List.map
+                    (\{ mesh } ->
+                        WebGlFogRenderer.convertMeshForRenderer mesh
+                    )
+
         pickingData =
             scene
                 |> List.map
@@ -514,6 +525,7 @@ setScene scene model =
         | scene = List.concatMap .instances scene
         , meshesScene3d = Array.fromList meshesScene3d
         , meshesWebGL = Array.fromList meshesWebGL
+        , meshesWebGLFog = Array.fromList meshesWebGLFog
         , pickingData = Array.fromList pickingData
         , selected = Set.empty
         , center = sceneCenter
@@ -564,13 +576,53 @@ view toMsg model options bgColor =
             , onTouchCancel
                 (toMsg TouchEndMsg)
             ]
-    in
-    case model.renderer of
-        WebGL ->
-            RendererWebGL.view attributes model.meshesWebGL model options
 
-        Scene3d ->
-            RendererScene3d.view attributes model.meshesScene3d model options
+        entities =
+            case model.renderer of
+                WebGL ->
+                    let
+                        sceneEntities =
+                            RendererWebGL.entities
+                                model.meshesWebGL
+                                model
+                                { options
+                                    | fadeToBackground = 0.0
+                                    , fadeToBlue = 0.0
+                                }
+
+                        fogEntities =
+                            WebGlFogRenderer.entities
+                                model.meshesWebGLFog
+                                model
+                                options
+                    in
+                    sceneEntities ++ fogEntities
+
+                Scene3d ->
+                    let
+                        sceneEntities =
+                            RendererScene3d.entities
+                                model.meshesScene3d
+                                model
+                                options
+
+                        fogEntities =
+                            WebGlFogRenderer.entities
+                                model.meshesWebGLFog
+                                model
+                                options
+                    in
+                    sceneEntities ++ fogEntities
+
+        webGLOptions =
+            [ WebGL.depth 1
+            , WebGL.stencil 0
+            , WebGL.alpha True
+            , WebGL.clearColor 0 0 0 0
+            , WebGL.antialias
+            ]
+    in
+    WebGL.toHtmlWith webGLOptions attributes entities
 
 
 onMouseDown :

@@ -1,7 +1,7 @@
 module View3d.RendererWebGL exposing
     ( Mesh
     , convertMeshForRenderer
-    , view
+    , entities
     )
 
 import Array exposing (Array)
@@ -105,8 +105,8 @@ red =
     vec3 1 0 0
 
 
-view : List (Html.Attribute msg) -> Array Mesh -> Model a -> Options -> Html msg
-view attr meshes model options =
+entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
+entities meshes model options =
     let
         perspective =
             if options.orthogonalView then
@@ -219,17 +219,14 @@ view attr meshes model options =
                         Nothing
             in
             [ baseMesh, maybeWires, maybeOutlines ] |> List.filterMap identity
-
-        entities =
-            model.scene
-                |> List.concatMap
-                    (\item ->
-                        Array.get item.idxMesh meshes
-                            |> Maybe.map (convert item)
-                            |> Maybe.withDefault []
-                    )
     in
-    WebGL.toHtml attr entities
+    model.scene
+        |> List.concatMap
+            (\item ->
+                Array.get item.idxMesh meshes
+                    |> Maybe.map (convert item)
+                    |> Maybe.withDefault []
+            )
 
 
 vertexShader : WebGL.Shader Vertex Uniforms Varyings
