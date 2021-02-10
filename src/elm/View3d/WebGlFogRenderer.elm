@@ -15,7 +15,6 @@ import WebGL
 import WebGL.Settings
 import WebGL.Settings.Blend as Blend
 import WebGL.Settings.DepthTest as DepthTest
-import WebGL.Settings.StencilTest as StencilTest
 
 
 type alias Mesh =
@@ -27,7 +26,6 @@ type alias Uniforms =
     , sceneRadius : Float
     , fadeColor : Vec3
     , fadeStrength : Float
-    , pushOut : Float
     , transform : Mat4
     , viewing : Mat4
     , perspective : Mat4
@@ -35,9 +33,7 @@ type alias Uniforms =
 
 
 type alias Varyings =
-    { vpos : Vec3
-    , vnormal : Vec3
-    }
+    { vpos : Vec3 }
 
 
 convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
@@ -72,22 +68,22 @@ entities meshes model options =
         viewing =
             Camera.viewingMatrix model.cameraState
 
-        uniforms transform pushOut fadeColor fadeStrength =
+        uniforms transform fadeColor fadeStrength =
             { sceneCenter = Mat4.transform viewing model.center
             , sceneRadius = model.radius
             , fadeColor = fadeColor
             , fadeStrength = fadeStrength
-            , pushOut = pushOut
             , transform = transform
             , viewing = viewing
             , perspective = perspective
             }
 
-        entity transform pushOut fadeColor fadeStrength mesh =
-            uniforms transform pushOut fadeColor fadeStrength
+        entity transform offset fadeColor fadeStrength mesh =
+            uniforms transform fadeColor fadeStrength
                 |> WebGL.entityWith
                     [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
                     , DepthTest.default
+                    , WebGL.Settings.polygonOffset offset 0
                     ]
                     vertexShader
                     fragmentShader
@@ -96,13 +92,13 @@ entities meshes model options =
         convert { transform } mesh =
             [ entity
                 transform
-                0.001
+                -1
                 (vec3 0 0 1)
                 options.fadeToBlue
                 mesh
             , entity
                 transform
-                0.002
+                -2
                 options.backgroundColor
                 (0.5 * options.fadeToBackground)
                 mesh
@@ -122,18 +118,13 @@ vertexShader =
     [glsl|
 
     attribute vec3 position;
-    attribute vec3 normal;
     uniform mat4 transform;
     uniform mat4 viewing;
     uniform mat4 perspective;
-    uniform float pushOut;
     varying vec3 vpos;
-    varying vec3 vnormal;
 
     void main () {
-        vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
-        vpos = (viewing * transform * vec4(position, 1.0)).xyz +
-            pushOut * vnormal;
+        vpos = (viewing * transform * vec4(position, 1.0)).xyz;
         gl_Position = perspective * vec4(vpos, 1.0);
     }
 
@@ -150,7 +141,6 @@ fragmentShader =
     uniform vec3 fadeColor;
     uniform float fadeStrength;
     varying vec3 vpos;
-    varying vec3 vnormal;
 
     void main () {
         float depth = (sceneCenter - vpos).z;
