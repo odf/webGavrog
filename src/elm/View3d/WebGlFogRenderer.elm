@@ -86,17 +86,8 @@ entities meshes model options =
         entity transform pushOut fadeColor fadeStrength mesh =
             uniforms transform pushOut fadeColor fadeStrength
                 |> WebGL.entityWith
-                    [ StencilTest.test
-                        { ref = 0
-                        , mask = 0xFF
-                        , test = StencilTest.always
-                        , fail = StencilTest.keep
-                        , zfail = StencilTest.keep
-                        , zpass = StencilTest.replace
-                        , writeMask = 0xFF
-                        }
-                    , Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-                    , DepthTest.less { write = True, near = 0, far = 1 }
+                    [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                    , DepthTest.default
                     ]
                     vertexShader
                     fragmentShader
