@@ -121,8 +121,8 @@ positionToNdc { x, y } (State { size }) =
     }
 
 
-pickingRay : Position -> State -> Maybe Ray
-pickingRay pos state =
+pickingRay : Position -> State -> Vec3 -> Float -> Maybe Ray
+pickingRay pos state sceneCenter sceneRadius =
     let
         makeRay mat =
             let
@@ -139,7 +139,9 @@ pickingRay pos state =
             , direction = Vec3.sub center eye |> Vec3.normalize
             }
     in
-    Mat4.mul (perspectiveMatrix state) (viewingMatrix state)
+    Mat4.mul
+        (perspectiveMatrix state sceneCenter sceneRadius)
+        (viewingMatrix state)
         |> Mat4.inverse
         |> Maybe.map makeRay
 
@@ -415,16 +417,37 @@ inverseViewingMatrix =
     viewingMatrix >> Mat4.inverse >> Maybe.withDefault Mat4.identity
 
 
-perspectiveMatrix : State -> Mat4
-perspectiveMatrix (State state) =
+clippingPlanes : State -> Vec3 -> Float -> { near : Float, far : Float }
+clippingPlanes (State state) center radius =
     let
+        d =
+            center
+                |> Mat4.transform (viewingMatrix (State state))
+                |> Vec3.negate
+                |> Vec3.getZ
+
+        near =
+            max 0.5 (d - radius) * 0.99
+
+        far =
+            (d + radius + 2 * sqrt 3 * radius) * 1.01
+    in
+    { near = near, far = far }
+
+
+perspectiveMatrix : State -> Vec3 -> Float -> Mat4
+perspectiveMatrix (State state) center radius =
+    let
+        { near, far } =
+            clippingPlanes (State state) center radius
+
         aspectRatio =
             state.size.width / state.size.height
 
         fovy =
             verticalFieldOfView (State state)
     in
-    Mat4.makePerspective fovy aspectRatio 1 10000
+    Mat4.makePerspective fovy aspectRatio near far
 
 
 viewPortHeight : State -> Float
@@ -442,16 +465,19 @@ viewPortHeight (State state) =
     2 * delta * min aspectRatio 1
 
 
-orthogonalMatrix : State -> Mat4
-orthogonalMatrix (State state) =
+orthogonalMatrix : State -> Vec3 -> Float -> Mat4
+orthogonalMatrix (State state) center radius =
     let
+        { near, far } =
+            clippingPlanes (State state) center radius
+
         dy =
             viewPortHeight (State state) / 2
 
         dx =
             dy / state.size.height * state.size.width
     in
-    Mat4.makeOrtho -dx dx -dy dy 1 10000
+    Mat4.makeOrtho -dx dx -dy dy near far
 
 
 cameraDistance : State -> Float

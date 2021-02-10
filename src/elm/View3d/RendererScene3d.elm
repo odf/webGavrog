@@ -339,6 +339,47 @@ convertColor vec =
     Color.rgb c.x c.y c.z
 
 
+wireframeBox :
+    Vec3
+    -> Float
+    -> Float
+    -> Float
+    -> Scene3d.Mesh.Plain WorldCoordinates
+wireframeBox center dimX dimY dimZ =
+    let
+        segment xa ya za xb yb zb =
+            LineSegment3d.from
+                (Point3d.inches xa ya za)
+                (Point3d.inches xb yb zb)
+
+        { x, y, z } =
+            Vec3.toRecord center
+
+        rx =
+            dimX / 2
+
+        ry =
+            dimY / 2
+
+        rz =
+            dimZ / 2
+    in
+    Scene3d.Mesh.lineSegments
+        [ segment (x - rx) (y - ry) (z - rz) (x + rx) (y - ry) (z - rz)
+        , segment (x - rx) (y - ry) (z + rz) (x + rx) (y - ry) (z + rz)
+        , segment (x - rx) (y + ry) (z - rz) (x + rx) (y + ry) (z - rz)
+        , segment (x - rx) (y + ry) (z + rz) (x + rx) (y + ry) (z + rz)
+        , segment (x - rx) (y - ry) (z - rz) (x - rx) (y + ry) (z - rz)
+        , segment (x - rx) (y - ry) (z + rz) (x - rx) (y + ry) (z + rz)
+        , segment (x + rx) (y - ry) (z - rz) (x + rx) (y + ry) (z - rz)
+        , segment (x + rx) (y - ry) (z + rz) (x + rx) (y + ry) (z + rz)
+        , segment (x - rx) (y - ry) (z - rz) (x - rx) (y - ry) (z + rz)
+        , segment (x - rx) (y + ry) (z - rz) (x - rx) (y + ry) (z + rz)
+        , segment (x + rx) (y - ry) (z - rz) (x + rx) (y - ry) (z + rz)
+        , segment (x + rx) (y + ry) (z - rz) (x + rx) (y + ry) (z + rz)
+        ]
+
+
 entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
 entities meshes model options =
     let
@@ -387,7 +428,10 @@ entities meshes model options =
                 |> Scene3d.group
                 |> applySimilarityMatrix transform
 
-        scene3dEntities =
+        viewing =
+            Camera.viewingMatrix model.cameraState
+
+        sceneGroup =
             model.scene
                 |> List.map
                     (\item ->
@@ -396,9 +440,24 @@ entities meshes model options =
                             |> Maybe.withDefault Scene3d.nothing
                     )
                 |> Scene3d.group
-                |> applySimilarityMatrix
-                    (Camera.viewingMatrix model.cameraState)
-                |> List.singleton
+                |> applySimilarityMatrix viewing
+
+        sceneCenter =
+            Mat4.transform viewing model.center
+
+        boxWidth =
+            6 * model.radius
+
+        boxColor =
+            let
+                { x, y, z } =
+                    Vec3.toRecord options.backgroundColor
+            in
+            Color.rgb x y z
+
+        dummyBox =
+            wireframeBox sceneCenter boxWidth boxWidth boxWidth
+                |> Scene3d.mesh (Material.color boxColor)
 
         sun =
             Light.directional (Light.castsShadows options.drawShadows)
@@ -427,11 +486,11 @@ entities meshes model options =
     Scene3d.toWebGLEntities
         { lights = lights
         , camera = convertCamera model.cameraState options
-        , clipDepth = Length.centimeters 1
+        , clipDepth = Length.inches 0.5
         , exposure = Scene3d.exposureValue 15
         , toneMapping = Scene3d.noToneMapping
         , whiteBalance = Light.daylight
         , aspectRatio = model.size.width / model.size.height
         , supersampling = 1
-        , entities = scene3dEntities
+        , entities = [ sceneGroup, dummyBox ]
         }

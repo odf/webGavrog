@@ -5,7 +5,6 @@ module View3d.RendererWebGL exposing
     )
 
 import Array exposing (Array)
-import Html exposing (Html)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set
@@ -110,10 +109,16 @@ entities meshes model options =
     let
         perspective =
             if options.orthogonalView then
-                Camera.orthogonalMatrix model.cameraState
+                Camera.orthogonalMatrix
+                    model.cameraState
+                    model.center
+                    (3 * model.radius)
 
             else
-                Camera.perspectiveMatrix model.cameraState
+                Camera.perspectiveMatrix
+                    model.cameraState
+                    model.center
+                    (3 * model.radius)
 
         viewing =
             Camera.viewingMatrix model.cameraState

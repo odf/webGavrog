@@ -58,10 +58,16 @@ entities meshes model options =
     let
         perspective =
             if options.orthogonalView then
-                Camera.orthogonalMatrix model.cameraState
+                Camera.orthogonalMatrix
+                    model.cameraState
+                    model.center
+                    (3 * model.radius)
 
             else
-                Camera.perspectiveMatrix model.cameraState
+                Camera.perspectiveMatrix
+                    model.cameraState
+                    model.center
+                    (3 * model.radius)
 
         viewing =
             Camera.viewingMatrix model.cameraState
@@ -90,7 +96,7 @@ entities meshes model options =
                         , writeMask = 0xFF
                         }
                     , Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-                    , DepthTest.less{ write = True, near = 0, far = 1 }
+                    , DepthTest.less { write = True, near = 0, far = 1 }
                     ]
                     vertexShader
                     fragmentShader

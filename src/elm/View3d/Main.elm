@@ -88,18 +88,18 @@ type Outcome
 init : Model
 init =
     { size = { width = 0, height = 0 }
-    , requestRedraw = False
+    , scene = []
+    , selected = Set.empty
+    , center = vec3 0 0 0
+    , radius = 0
     , cameraState = Camera.initialState
+    , requestRedraw = False
+    , touchStart = { x = 0, y = 0 }
     , meshesScene3d = Array.empty
     , meshesWebGL = Array.empty
     , meshesWebGLFog = Array.empty
     , pickingData = Array.empty
     , renderer = Scene3d
-    , scene = []
-    , selected = Set.empty
-    , touchStart = { x = 0, y = 0 }
-    , center = vec3 0 0 0
-    , radius = 0
     }
 
 
@@ -368,7 +368,7 @@ update msg model =
 
 pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
 pickingOutcome pos mods model =
-    Camera.pickingRay pos model.cameraState
+    Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
         |> Maybe.andThen
             (\r -> pick r model.pickingData model.scene)
         |> Maybe.map
