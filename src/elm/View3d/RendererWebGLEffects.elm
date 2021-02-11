@@ -89,13 +89,17 @@ entities meshes model options =
                     mesh
 
         convert { transform } mesh =
-            [ entity
-                transform
-                options.backgroundColor
-                (0.5 * options.fadeToBackground)
-                options.fadeToBlue
-                mesh
-            ]
+            if options.fadeToBackground > 0 || options.fadeToBlue > 0 then
+                [ entity
+                    transform
+                    options.backgroundColor
+                    (0.5 * options.fadeToBackground)
+                    options.fadeToBlue
+                    mesh
+                ]
+
+            else
+                []
     in
     model.scene
         |> List.concatMap
