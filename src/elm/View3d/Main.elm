@@ -36,7 +36,7 @@ import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon as RendererCommon
 import View3d.RendererScene3d as RendererScene3d
 import View3d.RendererWebGL as RendererWebGL
-import View3d.WebGlFogRenderer as WebGlFogRenderer
+import View3d.RendererWebGLEffects as RendererEffects
 import WebGL
 
 
@@ -73,7 +73,7 @@ type alias Model =
         , touchStart : Position
         , meshesScene3d : Array RendererScene3d.Mesh
         , meshesWebGL : Array RendererWebGL.Mesh
-        , meshesWebGLFog : Array WebGlFogRenderer.Mesh
+        , meshesWebGLFog : Array RendererEffects.Mesh
         , pickingData : Array PickingInfo
         , renderer : Renderer
         }
@@ -484,7 +484,7 @@ setScene scene model =
             scene
                 |> List.map
                     (\{ mesh } ->
-                        WebGlFogRenderer.convertMeshForRenderer mesh
+                        RendererEffects.convertMeshForRenderer mesh
                     )
 
         pickingData =
@@ -591,7 +591,7 @@ view toMsg model options bgColor =
                                 }
 
                         fogEntities =
-                            WebGlFogRenderer.entities
+                            RendererEffects.entities
                                 model.meshesWebGLFog
                                 model
                                 options
@@ -607,7 +607,7 @@ view toMsg model options bgColor =
                                 options
 
                         fogEntities =
-                            WebGlFogRenderer.entities
+                            RendererEffects.entities
                                 model.meshesWebGLFog
                                 model
                                 options

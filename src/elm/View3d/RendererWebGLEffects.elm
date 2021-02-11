@@ -1,4 +1,4 @@
-module View3d.WebGlFogRenderer exposing
+module View3d.RendererWebGLEffects exposing
     ( Mesh
     , convertMeshForRenderer
     , entities
