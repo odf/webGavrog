@@ -66,20 +66,20 @@ entities meshes model options =
         viewing =
             Camera.viewingMatrix model.cameraState
 
-        uniforms transform fadeColor fadeStrength blueShift =
+        uniforms =
             { sceneCenter = Mat4.transform viewing model.center
             , sceneRadius = model.radius
-            , fadeColor = fadeColor
-            , fadeStrength = fadeStrength
-            , blueShift = blueShift
-            , transform = transform
+            , fadeColor = options.backgroundColor
+            , fadeStrength = 0.5 * options.fadeToBackground
+            , blueShift = options.fadeToBlue
+            , transform = Mat4.identity
             , viewing = viewing
             , perspective = perspective
             }
 
-        entity transform fadeColor fadeStrength blueShift mesh =
-            uniforms transform fadeColor fadeStrength blueShift
-                |> WebGL.entityWith
+        convert { transform } mesh =
+            if options.fadeToBackground > 0 || options.fadeToBlue > 0 then
+                [ WebGL.entityWith
                     [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
                     , DepthTest.default
                     , WebGL.Settings.polygonOffset -1 0
@@ -87,15 +87,7 @@ entities meshes model options =
                     vertexShader
                     fragmentShader
                     mesh
-
-        convert { transform } mesh =
-            if options.fadeToBackground > 0 || options.fadeToBlue > 0 then
-                [ entity
-                    transform
-                    options.backgroundColor
-                    (0.5 * options.fadeToBackground)
-                    options.fadeToBlue
-                    mesh
+                    { uniforms | transform = transform }
                 ]
 
             else
@@ -148,8 +140,8 @@ fragmentShader =
 
         float alpha = s + t - s * t;
         float beta = alpha > 0.0 ? s / alpha : 0.0;
-        vec3 blue = vec3(0, 0, 1);
-        vec3 color = blue + beta * (fadeColor - blue);
+        vec3 blue = vec3(0.0, 0.0, 1.0);
+        vec3 color = beta * fadeColor + (1.0 - beta) * blue;
 
         gl_FragColor = vec4(color, alpha);
     }
