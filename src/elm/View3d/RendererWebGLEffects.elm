@@ -6,7 +6,7 @@ module View3d.RendererWebGLEffects exposing
 
 import Array exposing (Array)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3)
 import Maybe
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh
@@ -26,6 +26,7 @@ type alias Uniforms =
     , sceneRadius : Float
     , fadeColor : Vec3
     , fadeStrength : Float
+    , blueShift : Float
     , transform : Mat4
     , viewing : Mat4
     , perspective : Mat4
@@ -52,38 +53,36 @@ convertMeshForRenderer mesh =
 entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
 entities meshes model options =
     let
+        radius =
+            3 * model.radius
+
         perspective =
             if options.orthogonalView then
-                Camera.orthogonalMatrix
-                    model.cameraState
-                    model.center
-                    (3 * model.radius)
+                Camera.orthogonalMatrix model.cameraState model.center radius
 
             else
-                Camera.perspectiveMatrix
-                    model.cameraState
-                    model.center
-                    (3 * model.radius)
+                Camera.perspectiveMatrix model.cameraState model.center radius
 
         viewing =
             Camera.viewingMatrix model.cameraState
 
-        uniforms transform fadeColor fadeStrength =
+        uniforms transform fadeColor fadeStrength blueShift =
             { sceneCenter = Mat4.transform viewing model.center
             , sceneRadius = model.radius
             , fadeColor = fadeColor
             , fadeStrength = fadeStrength
+            , blueShift = blueShift
             , transform = transform
             , viewing = viewing
             , perspective = perspective
             }
 
-        entity transform offset fadeColor fadeStrength mesh =
-            uniforms transform fadeColor fadeStrength
+        entity transform fadeColor fadeStrength blueShift mesh =
+            uniforms transform fadeColor fadeStrength blueShift
                 |> WebGL.entityWith
                     [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
                     , DepthTest.default
-                    , WebGL.Settings.polygonOffset offset 0
+                    , WebGL.Settings.polygonOffset -1 0
                     ]
                     vertexShader
                     fragmentShader
@@ -92,15 +91,9 @@ entities meshes model options =
         convert { transform } mesh =
             [ entity
                 transform
-                -1
-                (vec3 0 0 1)
-                options.fadeToBlue
-                mesh
-            , entity
-                transform
-                -2
                 options.backgroundColor
                 (0.5 * options.fadeToBackground)
+                options.fadeToBlue
                 mesh
             ]
     in
@@ -140,19 +133,21 @@ fragmentShader =
     uniform float sceneRadius;
     uniform vec3 fadeColor;
     uniform float fadeStrength;
+    uniform float blueShift;
     varying vec3 vpos;
 
     void main () {
         float depth = (sceneCenter - vpos).z;
         float coeff = smoothstep(-0.9 * sceneRadius, 1.1 * sceneRadius, depth);
-        float alpha;
+        float s = fadeStrength > 0.0 ? pow(coeff, 1.0 / fadeStrength) : 0.0;
+        float t = blueShift > 0.0 ? pow(coeff, 1.0 / blueShift) : 0.0;
 
-        if (fadeStrength > 0.0)
-            alpha = pow(coeff, 1.0 / fadeStrength);
-        else
-            alpha = 0.0;
+        float alpha = s + t - s * t;
+        float beta = alpha > 0.0 ? s / alpha : 0.0;
+        vec3 blue = vec3(0, 0, 1);
+        vec3 color = blue + beta * (fadeColor - blue);
 
-        gl_FragColor = vec4(fadeColor, alpha);
+        gl_FragColor = vec4(color, alpha);
     }
 
     |]
