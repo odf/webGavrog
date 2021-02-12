@@ -7,6 +7,7 @@ module View3d.RendererCommon exposing
     , Vertex
     )
 
+import Color exposing (Color)
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
 import Set exposing (Set)
@@ -24,13 +25,9 @@ type alias Vertex =
 
 
 type alias Material =
-    { ambientColor : Vec3
-    , diffuseColor : Vec3
-    , specularColor : Vec3
-    , ka : Float
-    , kd : Float
-    , ks : Float
-    , shininess : Float
+    { color : Color
+    , roughness : Float
+    , metallic : Float
     }
 
 

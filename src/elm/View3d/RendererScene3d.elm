@@ -321,15 +321,6 @@ applySimilarityMatrix matrix entity =
         |> Scene3d.translateBy shiftVector
 
 
-convertColor : Vec3 -> Color.Color
-convertColor vec =
-    let
-        c =
-            Vec3.toRecord vec
-    in
-    Color.rgb c.x c.y c.z
-
-
 wireframeBox :
     Vec3
     -> Float
@@ -385,9 +376,9 @@ entities meshes model options =
 
                     else
                         Material.pbr
-                            { baseColor = convertColor material.diffuseColor
-                            , roughness = 0.4
-                            , metallic = 0.2
+                            { baseColor = material.color
+                            , roughness = material.roughness
+                            , metallic = material.metallic
                             }
 
                 surface =
