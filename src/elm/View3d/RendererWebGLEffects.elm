@@ -26,10 +26,10 @@ type alias Mesh =
 type alias Uniforms =
     { sceneCenter : Vec3
     , sceneRadius : Float
-    , fadeColor : Vec3
+    , color : Vec3
+    , alpha : Float
     , fadeStrength : Float
     , blueShift : Float
-    , fragmentColor : Vec3
     , pushOut : Float
     , transform : Mat4
     , viewing : Mat4
@@ -95,10 +95,10 @@ entities meshes model options =
         baseUniforms =
             { sceneCenter = Mat4.transform viewing model.center
             , sceneRadius = model.radius
-            , fadeColor = options.backgroundColor
+            , color = vec3 0 0 0
+            , alpha = 1.0
             , fadeStrength = 0.5 * options.fadeToBackground
             , blueShift = options.fadeToBlue
-            , fragmentColor = vec3 0 0 0
             , pushOut = 0.0
             , transform = Mat4.identity
             , viewing = viewing
@@ -123,7 +123,9 @@ entities meshes model options =
                             vertexShader
                             fragmentShaderFog
                             mesh.surface
-                            uniforms
+                            { uniforms
+                                | color = options.backgroundColor
+                            }
                         ]
 
                     else
@@ -139,7 +141,7 @@ entities meshes model options =
                             fragmentShaderConstant
                             mesh.surface
                             { uniforms
-                                | fragmentColor = options.outlineColor
+                                | color = options.outlineColor
                                 , pushOut = 0.02
                             }
                         ]
@@ -149,11 +151,17 @@ entities meshes model options =
 
                 wireframes =
                     if options.drawWires then
-                        [ WebGL.entity
+                        [ WebGL.entityWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                            , DepthTest.default
+                            ]
                             vertexShader
                             fragmentShaderConstant
                             mesh.wireframe
-                            { uniforms | pushOut = 0.001 }
+                            { uniforms
+                                | alpha = 0.8
+                                , pushOut = 0.001
+                            }
                         ]
 
                     else
@@ -200,7 +208,7 @@ fragmentShaderFog =
     precision mediump float;
     uniform vec3 sceneCenter;
     uniform float sceneRadius;
-    uniform vec3 fadeColor;
+    uniform vec3 color;
     uniform float fadeStrength;
     uniform float blueShift;
     varying vec3 vpos;
@@ -215,7 +223,7 @@ fragmentShaderFog =
         float alpha = s + t - s * t;
         float beta = alpha > 0.0 ? s / alpha : 0.0;
         vec3 blue = vec3(0.0, 0.0, 1.0);
-        vec3 color = beta * fadeColor + (1.0 - beta) * blue;
+        vec3 color = beta * color + (1.0 - beta) * blue;
 
         gl_FragColor = vec4(color, alpha);
     }
@@ -228,12 +236,13 @@ fragmentShaderConstant =
     [glsl|
 
     precision mediump float;
-    uniform vec3 fragmentColor;
+    uniform vec3 color;
+    uniform float alpha;
     varying vec3 vpos;
     varying vec3 vnormal;
 
     void main () {
-        gl_FragColor = vec4(fragmentColor, 1.0);
+        gl_FragColor = vec4(color, alpha);
     }
 
     |]
