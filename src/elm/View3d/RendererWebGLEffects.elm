@@ -82,7 +82,7 @@ entities meshes model options =
                 [ WebGL.entityWith
                     [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
                     , DepthTest.default
-                    , WebGL.Settings.polygonOffset -0.1 0
+                    , WebGL.Settings.polygonOffset -0.5 -1.0
                     ]
                     vertexShader
                     fragmentShader
