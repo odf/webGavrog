@@ -42,8 +42,7 @@ type WorldCoordinates
 
 
 type alias Mesh =
-    { wireframe : Scene3d.Mesh.Plain WorldCoordinates
-    , surface : Scene3d.Mesh.Uniform WorldCoordinates
+    { surface : Scene3d.Mesh.Uniform WorldCoordinates
     , shadow : Scene3d.Mesh.Shadow WorldCoordinates
     }
 
@@ -91,37 +90,6 @@ convertSurface mesh =
                 |> Scene3d.Mesh.indexedFaces
 
 
-convertWireframe : Mesh.Mesh Vertex -> Scene3d.Mesh.Plain WorldCoordinates
-convertWireframe mesh =
-    case mesh of
-        Mesh.Lines lines ->
-            lines
-                |> List.map
-                    (\( p, q ) ->
-                        LineSegment3d.from
-                            (asPointInInches p.position)
-                            (asPointInInches q.position)
-                    )
-                |> Scene3d.Mesh.lineSegments
-
-        Mesh.Triangles _ ->
-            Scene3d.Mesh.lineSegments []
-
-        Mesh.IndexedTriangles _ _ ->
-            Scene3d.Mesh.lineSegments []
-
-
-pushOut :
-    Float
-    -> { a | position : Vec3, normal : Vec3 }
-    -> { a | position : Vec3, normal : Vec3 }
-pushOut amount vertex =
-    { vertex
-        | position = Vec3.add vertex.position (Vec3.scale amount vertex.normal)
-        , normal = vertex.normal
-    }
-
-
 convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
 convertMeshForRenderer mesh =
     let
@@ -130,16 +98,9 @@ convertMeshForRenderer mesh =
 
         shadow =
             Scene3d.Mesh.shadow surface
-
-        wireframe =
-            mesh
-                |> Mesh.wireframe
-                |> Mesh.mapVertices (pushOut 0.0001)
-                |> convertWireframe
     in
     { surface = surface
     , shadow = shadow
-    , wireframe = wireframe
     }
 
 
@@ -387,16 +348,8 @@ entities meshes model options =
 
                     else
                         Scene3d.mesh mOut mesh.surface
-
-                maybeWires =
-                    if options.drawWires then
-                        Scene3d.mesh (Material.color Color.black) mesh.wireframe
-
-                    else
-                        Scene3d.nothing
             in
-            [ surface, maybeWires ]
-                |> Scene3d.group
+            surface
                 |> applySimilarityMatrix transform
 
         viewing =

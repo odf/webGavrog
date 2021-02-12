@@ -6,7 +6,7 @@ module View3d.RendererWebGLEffects exposing
 
 import Array exposing (Array)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 exposing (Vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import Maybe
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh
@@ -18,7 +18,9 @@ import WebGL.Settings.DepthTest as DepthTest
 
 
 type alias Mesh =
-    WebGL.Mesh Vertex
+    { surface : WebGL.Mesh Vertex
+    , wireframe : WebGL.Mesh Vertex
+    }
 
 
 type alias Uniforms =
@@ -27,7 +29,8 @@ type alias Uniforms =
     , fadeColor : Vec3
     , fadeStrength : Float
     , blueShift : Float
-    , outlineColor : Vec3
+    , fragmentColor : Vec3
+    , pushOut : Float
     , transform : Mat4
     , viewing : Mat4
     , perspective : Mat4
@@ -40,17 +43,37 @@ type alias Varyings =
     }
 
 
-convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
-convertMeshForRenderer mesh =
+convertSurface : Mesh.Mesh Vertex -> WebGL.Mesh Vertex
+convertSurface mesh =
     case mesh of
-        Mesh.Lines lines ->
-            WebGL.lines lines
+        Mesh.Lines _ ->
+            WebGL.triangles []
 
         Mesh.Triangles triangles ->
             WebGL.triangles triangles
 
         Mesh.IndexedTriangles vertices triangles ->
             WebGL.indexedTriangles vertices triangles
+
+
+convertWireframe : Mesh.Mesh Vertex -> WebGL.Mesh Vertex
+convertWireframe mesh =
+    case mesh of
+        Mesh.Lines lines ->
+            WebGL.lines lines
+
+        Mesh.Triangles _ ->
+            WebGL.lines []
+
+        Mesh.IndexedTriangles _ _ ->
+            WebGL.lines []
+
+
+convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
+convertMeshForRenderer mesh =
+    { surface = convertSurface mesh
+    , wireframe = convertWireframe (Mesh.wireframe mesh)
+    }
 
 
 entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
@@ -75,7 +98,8 @@ entities meshes model options =
             , fadeColor = options.backgroundColor
             , fadeStrength = 0.5 * options.fadeToBackground
             , blueShift = options.fadeToBlue
-            , outlineColor = options.outlineColor
+            , fragmentColor = vec3 0 0 0
+            , pushOut = 0.0
             , transform = Mat4.identity
             , viewing = viewing
             , perspective = perspective
@@ -97,8 +121,8 @@ entities meshes model options =
                             , WebGL.Settings.polygonOffset -0.5 -1.0
                             ]
                             vertexShader
-                            fragmentShader
-                            mesh
+                            fragmentShaderFog
+                            mesh.surface
                             uniforms
                         ]
 
@@ -111,16 +135,31 @@ entities meshes model options =
                             [ DepthTest.default
                             , WebGL.Settings.cullFace WebGL.Settings.front
                             ]
-                            vertexShaderOutline
-                            fragmentShaderOutline
-                            mesh
-                            uniforms
+                            vertexShader
+                            fragmentShaderConstant
+                            mesh.surface
+                            { uniforms
+                                | fragmentColor = options.outlineColor
+                                , pushOut = 0.02
+                            }
+                        ]
+
+                    else
+                        []
+
+                wireframes =
+                    if options.drawWires then
+                        [ WebGL.entity
+                            vertexShader
+                            fragmentShaderConstant
+                            mesh.wireframe
+                            { uniforms | pushOut = 0.001 }
                         ]
 
                     else
                         []
             in
-            fog ++ outlines
+            fog ++ outlines ++ wireframes
     in
     model.scene
         |> List.concatMap
@@ -136,43 +175,26 @@ vertexShader =
     [glsl|
 
     attribute vec3 position;
-    uniform mat4 transform;
-    uniform mat4 viewing;
-    uniform mat4 perspective;
-    varying vec3 vpos;
-    varying vec3 vnormal;
-
-    void main () {
-        vpos = (viewing * transform * vec4(position, 1.0)).xyz;
-        gl_Position = perspective * vec4(vpos, 1.0);
-    }
-
-    |]
-
-
-vertexShaderOutline : WebGL.Shader Vertex Uniforms Varyings
-vertexShaderOutline =
-    [glsl|
-
-    attribute vec3 position;
     attribute vec3 normal;
     uniform mat4 transform;
     uniform mat4 viewing;
     uniform mat4 perspective;
+    uniform float pushOut;
     varying vec3 vpos;
     varying vec3 vnormal;
 
     void main () {
         vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
-        vpos = (viewing * transform * vec4(position, 1.0)).xyz + 0.02 * vnormal;
+        vpos = (viewing * transform * vec4(position, 1.0)).xyz
+            + pushOut * vnormal;
         gl_Position = perspective * vec4(vpos, 1.0);
     }
 
     |]
 
 
-fragmentShader : WebGL.Shader {} Uniforms Varyings
-fragmentShader =
+fragmentShaderFog : WebGL.Shader {} Uniforms Varyings
+fragmentShaderFog =
     [glsl|
 
     precision mediump float;
@@ -201,17 +223,17 @@ fragmentShader =
     |]
 
 
-fragmentShaderOutline : WebGL.Shader {} Uniforms Varyings
-fragmentShaderOutline =
+fragmentShaderConstant : WebGL.Shader {} Uniforms Varyings
+fragmentShaderConstant =
     [glsl|
 
     precision mediump float;
-    uniform vec3 outlineColor;
+    uniform vec3 fragmentColor;
     varying vec3 vpos;
     varying vec3 vnormal;
 
     void main () {
-        gl_FragColor = vec4(outlineColor, 1.0);
+        gl_FragColor = vec4(fragmentColor, 1.0);
     }
 
     |]
