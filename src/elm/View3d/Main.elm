@@ -9,7 +9,6 @@ module View3d.Main exposing
     , lookAlong
     , requestRedraw
     , rotateBy
-    , setRenderer
     , setScene
     , setSelection
     , setSize
@@ -35,7 +34,6 @@ import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
 import View3d.RendererCommon as RendererCommon
 import View3d.RendererScene3d as RendererScene3d
-import View3d.RendererWebGL as RendererWebGL
 import View3d.RendererWebGLEffects as RendererEffects
 import WebGL
 
@@ -72,10 +70,8 @@ type alias Model =
         { requestRedraw : Bool
         , touchStart : Position
         , meshesScene3d : Array RendererScene3d.Mesh
-        , meshesWebGL : Array RendererWebGL.Mesh
         , meshesWebGLFog : Array RendererEffects.Mesh
         , pickingData : Array PickingInfo
-        , renderer : Renderer
         }
 
 
@@ -96,10 +92,8 @@ init =
     , requestRedraw = False
     , touchStart = { x = 0, y = 0 }
     , meshesScene3d = Array.empty
-    , meshesWebGL = Array.empty
     , meshesWebGLFog = Array.empty
     , pickingData = Array.empty
-    , renderer = Scene3d
     }
 
 
@@ -473,13 +467,6 @@ setScene scene model =
                         RendererScene3d.convertMeshForRenderer mesh
                     )
 
-        meshesWebGL =
-            scene
-                |> List.map
-                    (\{ mesh } ->
-                        RendererWebGL.convertMeshForRenderer mesh
-                    )
-
         meshesWebGLFog =
             scene
                 |> List.map
@@ -524,7 +511,6 @@ setScene scene model =
     { model
         | scene = List.concatMap .instances scene
         , meshesScene3d = Array.fromList meshesScene3d
-        , meshesWebGL = Array.fromList meshesWebGL
         , meshesWebGLFog = Array.fromList meshesWebGLFog
         , pickingData = Array.fromList pickingData
         , selected = Set.empty
@@ -536,11 +522,6 @@ setScene scene model =
 setSelection : Set ( Int, Int ) -> Model -> Model
 setSelection selected model =
     { model | selected = selected }
-
-
-setRenderer : Renderer -> Model -> Model
-setRenderer renderer model =
-    { model | renderer = renderer }
 
 
 requestRedraw : Model -> Model
@@ -577,42 +558,14 @@ view toMsg model options bgColor =
                 (toMsg TouchEndMsg)
             ]
 
+        sceneEntities =
+            RendererScene3d.entities model.meshesScene3d model options
+
+        fogEntities =
+            RendererEffects.entities model.meshesWebGLFog model options
+
         entities =
-            case model.renderer of
-                WebGL ->
-                    let
-                        sceneEntities =
-                            RendererWebGL.entities
-                                model.meshesWebGL
-                                model
-                                { options
-                                    | fadeToBackground = 0.0
-                                    , fadeToBlue = 0.0
-                                }
-
-                        fogEntities =
-                            RendererEffects.entities
-                                model.meshesWebGLFog
-                                model
-                                options
-                    in
-                    sceneEntities ++ fogEntities
-
-                Scene3d ->
-                    let
-                        sceneEntities =
-                            RendererScene3d.entities
-                                model.meshesScene3d
-                                model
-                                options
-
-                        fogEntities =
-                            RendererEffects.entities
-                                model.meshesWebGLFog
-                                model
-                                options
-                    in
-                    sceneEntities ++ fogEntities
+            sceneEntities ++ fogEntities
 
         webGLOptions =
             [ WebGL.depth 1
