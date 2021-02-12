@@ -267,7 +267,6 @@ type alias TilingSettings =
     , drawEdges : Bool
     , colorByTranslationClass : Bool
     , extraSmooth : Bool
-    , tighten : Bool
     , edgeWidth : Float
     }
 
@@ -380,7 +379,6 @@ init flags =
             , drawEdges = False
             , colorByTranslationClass = False
             , extraSmooth = False
-            , tighten = False
             , edgeWidth = 0.5
             }
       , tiling2dSettings =
@@ -894,7 +892,6 @@ update msg model =
                 let
                     options =
                         [ ( "extraSmooth", Encode.bool settings.extraSmooth )
-                        , ( "tightenSurfaces", Encode.bool settings.tighten )
                         , ( "tileScale", Encode.float settings.tileScale )
                         , ( "edgeWidth", Encode.float settings.edgeWidth )
                         , ( "colorByTranslations"
@@ -2099,15 +2096,6 @@ viewTilingSettings toMsg settings =
             , label =
                 Input.labelRight [] <|
                     Element.text "Extra Smooth Faces"
-            }
-        , Input.checkbox []
-            { onChange =
-                \onOff -> toMsg { settings | tighten = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.tighten
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Tighten Faces (experimental)"
             }
         ]
 

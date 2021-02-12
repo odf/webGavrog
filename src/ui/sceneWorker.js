@@ -29,7 +29,7 @@ const handlers = {
   },
 
   makeTileMeshes({
-    cov, skel, pos, seeds, basis, subDLevel, tighten, edgeWidth
+    cov, skel, pos, seeds, basis, subDLevel, edgeWidth
   }) {
     const templates = [];
     for (const surf of tilings.tileSurfaces(cov, skel, pos, seeds))
@@ -49,15 +49,13 @@ const handlers = {
       for (let i = 0; i < subDLevel; ++i)
         t = surface.subD(t);
 
-      if (tighten)
-        t = surface.tightened(t);
+      t = surface.tightened(t);
 
       const t1 = t;
       t = surface.insetAt(t, 0.05 * edgeWidth * scale, t1.isFixed);
       t = surface.beveledAt(t, 0.02 * edgeWidth * scale, t1.isFixed);
 
-      if (tighten)
-        t = surface.tightened(t);
+      t = surface.tightened(t);
 
       result.push(t);
     }
