@@ -44,7 +44,6 @@ type WorldCoordinates
 type alias Mesh =
     { wireframe : Scene3d.Mesh.Plain WorldCoordinates
     , surface : Scene3d.Mesh.Uniform WorldCoordinates
-    , outline : Scene3d.Mesh.Uniform WorldCoordinates
     , shadow : Scene3d.Mesh.Shadow WorldCoordinates
     }
 
@@ -137,18 +136,10 @@ convertMeshForRenderer mesh =
                 |> Mesh.wireframe
                 |> Mesh.mapVertices (pushOut 0.0001)
                 |> convertWireframe
-
-        outline =
-            mesh
-                |> Mesh.mapVertices (pushOut 0.02)
-                |> Mesh.invertMesh
-                |> convertSurface
-                |> Scene3d.Mesh.cullBackFaces
     in
     { surface = surface
     , shadow = shadow
     , wireframe = wireframe
-    , outline = outline
     }
 
 
@@ -412,19 +403,8 @@ entities meshes model options =
 
                     else
                         Scene3d.nothing
-
-                maybeOutlines =
-                    if options.addOutlines then
-                        let
-                            color =
-                                convertColor options.outlineColor
-                        in
-                        Scene3d.mesh (Material.color color) mesh.outline
-
-                    else
-                        Scene3d.nothing
             in
-            [ surface, maybeWires, maybeOutlines ]
+            [ surface, maybeWires ]
                 |> Scene3d.group
                 |> applySimilarityMatrix transform
 

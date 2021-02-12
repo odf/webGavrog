@@ -27,6 +27,7 @@ type alias Uniforms =
     , fadeColor : Vec3
     , fadeStrength : Float
     , blueShift : Float
+    , outlineColor : Vec3
     , transform : Mat4
     , viewing : Mat4
     , perspective : Mat4
@@ -34,7 +35,9 @@ type alias Uniforms =
 
 
 type alias Varyings =
-    { vpos : Vec3 }
+    { vpos : Vec3
+    , vnormal : Vec3
+    }
 
 
 convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
@@ -66,32 +69,58 @@ entities meshes model options =
         viewing =
             Camera.viewingMatrix model.cameraState
 
-        uniforms =
+        baseUniforms =
             { sceneCenter = Mat4.transform viewing model.center
             , sceneRadius = model.radius
             , fadeColor = options.backgroundColor
             , fadeStrength = 0.5 * options.fadeToBackground
             , blueShift = options.fadeToBlue
+            , outlineColor = options.outlineColor
             , transform = Mat4.identity
             , viewing = viewing
             , perspective = perspective
             }
 
         convert { transform } mesh =
-            if options.fadeToBackground > 0 || options.fadeToBlue > 0 then
-                [ WebGL.entityWith
-                    [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-                    , DepthTest.default
-                    , WebGL.Settings.polygonOffset -0.5 -1.0
-                    ]
-                    vertexShader
-                    fragmentShader
-                    mesh
-                    { uniforms | transform = transform }
-                ]
+            let
+                uniforms =
+                    { baseUniforms | transform = transform }
 
-            else
-                []
+                drawFog =
+                    options.fadeToBackground > 0 || options.fadeToBlue > 0
+
+                fog =
+                    if drawFog then
+                        [ WebGL.entityWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                            , DepthTest.default
+                            , WebGL.Settings.polygonOffset -0.5 -1.0
+                            ]
+                            vertexShader
+                            fragmentShader
+                            mesh
+                            uniforms
+                        ]
+
+                    else
+                        []
+
+                outlines =
+                    if options.addOutlines then
+                        [ WebGL.entityWith
+                            [ DepthTest.default
+                            , WebGL.Settings.cullFace WebGL.Settings.front
+                            ]
+                            vertexShaderOutline
+                            fragmentShaderOutline
+                            mesh
+                            uniforms
+                        ]
+
+                    else
+                        []
+            in
+            fog ++ outlines
     in
     model.scene
         |> List.concatMap
@@ -111,9 +140,31 @@ vertexShader =
     uniform mat4 viewing;
     uniform mat4 perspective;
     varying vec3 vpos;
+    varying vec3 vnormal;
 
     void main () {
         vpos = (viewing * transform * vec4(position, 1.0)).xyz;
+        gl_Position = perspective * vec4(vpos, 1.0);
+    }
+
+    |]
+
+
+vertexShaderOutline : WebGL.Shader Vertex Uniforms Varyings
+vertexShaderOutline =
+    [glsl|
+
+    attribute vec3 position;
+    attribute vec3 normal;
+    uniform mat4 transform;
+    uniform mat4 viewing;
+    uniform mat4 perspective;
+    varying vec3 vpos;
+    varying vec3 vnormal;
+
+    void main () {
+        vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
+        vpos = (viewing * transform * vec4(position, 1.0)).xyz + 0.02 * vnormal;
         gl_Position = perspective * vec4(vpos, 1.0);
     }
 
@@ -131,6 +182,7 @@ fragmentShader =
     uniform float fadeStrength;
     uniform float blueShift;
     varying vec3 vpos;
+    varying vec3 vnormal;
 
     void main () {
         float depth = (sceneCenter - vpos).z;
@@ -144,6 +196,22 @@ fragmentShader =
         vec3 color = beta * fadeColor + (1.0 - beta) * blue;
 
         gl_FragColor = vec4(color, alpha);
+    }
+
+    |]
+
+
+fragmentShaderOutline : WebGL.Shader {} Uniforms Varyings
+fragmentShaderOutline =
+    [glsl|
+
+    precision mediump float;
+    uniform vec3 outlineColor;
+    varying vec3 vpos;
+    varying vec3 vnormal;
+
+    void main () {
+        gl_FragColor = vec4(outlineColor, 1.0);
     }
 
     |]
