@@ -234,7 +234,7 @@ fragmentShaderFog =
         // add wireframes
 
         vec3 delta = abs(dFdx(vbary)) + abs(dFdy(vbary));
-        vec3 bary = smoothstep(0.5 * delta, delta, vbary);
+        vec3 bary = smoothstep(0.5 * delta, 1.5 * delta, vbary);
 
         t = wireStrength * (1.0 - min(bary.x, min(bary.y, bary.z)));
         alpha = t + alpha - t * alpha;
