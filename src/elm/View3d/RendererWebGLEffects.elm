@@ -95,14 +95,26 @@ entities meshes model options =
         viewing =
             Camera.viewingMatrix model.cameraState
 
-        baseUniforms =
+        drawFog =
+            (options.fadeToBackground > 0)
+                || (options.fadeToBlue > 0)
+                || options.drawWires
+
+        wireStrength =
+            if options.drawWires then
+                0.8
+
+            else
+                0.0
+
+        uniforms =
             { sceneCenter = Mat4.transform viewing model.center
             , sceneRadius = model.radius
             , color = vec3 0 0 0
             , alpha = 1.0
             , fadeStrength = 0.5 * options.fadeToBackground
             , blueShift = options.fadeToBlue
-            , wireStrength = 0.0
+            , wireStrength = wireStrength
             , pushOut = 0.0
             , transform = Mat4.identity
             , viewing = viewing
@@ -111,14 +123,6 @@ entities meshes model options =
 
         convert { transform } mesh =
             let
-                uniforms =
-                    { baseUniforms | transform = transform }
-
-                drawFog =
-                    (options.fadeToBackground > 0)
-                        || (options.fadeToBlue > 0)
-                        || options.drawWires
-
                 fog =
                     if drawFog then
                         [ WebGL.entityWith
@@ -130,13 +134,8 @@ entities meshes model options =
                             fragmentShaderFog
                             mesh
                             { uniforms
-                                | color = options.backgroundColor
-                                , wireStrength =
-                                    if options.drawWires then
-                                        0.8
-
-                                    else
-                                        0.0
+                                | transform = transform
+                                , color = options.backgroundColor
                             }
                         ]
 
@@ -153,7 +152,8 @@ entities meshes model options =
                             fragmentShaderConstant
                             mesh
                             { uniforms
-                                | color = options.outlineColor
+                                | transform = transform
+                                , color = options.outlineColor
                                 , pushOut = 0.02
                             }
                         ]
