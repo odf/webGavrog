@@ -49,7 +49,7 @@ type alias Position =
 type alias PickingInfo =
     { centroid : Vec3
     , radius : Float
-    , pickingMesh : Maybe (Mesh Vec3)
+    , pickingMesh : Mesh Vec3
     }
 
 
@@ -97,22 +97,11 @@ init =
     }
 
 
-meshForPicking : Mesh RendererCommon.Vertex -> Maybe (Mesh Vec3)
+meshForPicking : Mesh RendererCommon.Vertex -> Mesh Vec3
 meshForPicking mesh =
-    case mesh of
-        Mesh.Triangles triangles ->
-            triangles
-                |> List.map
-                    (\( u, v, w ) -> ( u.position, v.position, w.position ))
-                |> Mesh.Triangles
-                |> Just
-
-        Mesh.IndexedTriangles vertices triangles ->
-            Just
-                (Mesh.resolvedSurface
-                    (List.map (\v -> v.position) vertices)
-                    (List.map (\( i, j, k ) -> [ i, j, k ]) triangles)
-                )
+    mesh
+        |> Mesh.mapVertices (\v -> v.position)
+        |> Mesh.resolved
 
 
 centroid : Mesh { a | position : Vec3 } -> Vec3
@@ -163,7 +152,7 @@ pick ray pdata scene =
                     Array.get item.idxMesh pdata
 
                 mesh =
-                    Maybe.andThen (\p -> p.pickingMesh) pinfo
+                    Maybe.map (\p -> p.pickingMesh) pinfo
 
                 intersection =
                     Maybe.map3

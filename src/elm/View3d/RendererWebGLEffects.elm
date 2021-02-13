@@ -60,7 +60,7 @@ extend v x y z =
 
 convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
 convertMeshForRenderer mesh =
-    case mesh of
+    case Mesh.resolved mesh of
         Mesh.Triangles triangles ->
             triangles
                 |> List.map
@@ -69,11 +69,9 @@ convertMeshForRenderer mesh =
                     )
                 |> WebGL.triangles
 
-        Mesh.IndexedTriangles vertices triangles ->
-            triangles
-                |> List.map (\( i, j, k ) -> [ i, j, k ])
-                |> Mesh.resolvedSurface vertices
-                |> convertMeshForRenderer
+        -- resolved produces Triangles, so this can't happen
+        Mesh.IndexedTriangles _ _ ->
+            WebGL.triangles []
 
 
 entities : Array Mesh -> Model a -> Options -> List WebGL.Entity

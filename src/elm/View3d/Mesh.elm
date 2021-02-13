@@ -1,14 +1,13 @@
 module View3d.Mesh exposing
     ( Mesh(..)
     , getVertices
-    , invertMesh
     , mapVertices
     , mappedRayMeshIntersection
-    , resolvedSurface
+    , resolved
     , surface
     )
 
-import Array exposing (Array)
+import Array
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
 
@@ -20,11 +19,6 @@ type Mesh vertex
 
 type alias FaceSpec =
     List Int
-
-
-pullCorners : Array vertex -> FaceSpec -> List vertex
-pullCorners vertices face =
-    List.filterMap (\i -> Array.get i vertices) face
 
 
 makeTriangles : List vertex -> List ( vertex, vertex, vertex )
@@ -46,14 +40,22 @@ surface vertices faces =
         |> IndexedTriangles vertices
 
 
-resolvedSurface : List vertex -> List FaceSpec -> Mesh vertex
-resolvedSurface vertices faces =
-    let
-        averts =
-            Array.fromList vertices
-    in
-    List.concatMap (makeTriangles << pullCorners averts) faces
-        |> Triangles
+resolved : Mesh vertex -> Mesh vertex
+resolved mesh =
+    case mesh of
+        Triangles _ ->
+            mesh
+
+        IndexedTriangles vertices triangles ->
+            let
+                verts =
+                    Array.fromList vertices
+            in
+            triangles
+                |> List.map (\( i, j, k ) -> [ i, j, k ])
+                |> List.map (List.filterMap (\i -> Array.get i verts))
+                |> List.concatMap makeTriangles
+                |> Triangles
 
 
 getVertices : Mesh vertex -> List vertex
@@ -77,20 +79,6 @@ mapVertices fn mesh =
 
         IndexedTriangles vertices triangles ->
             IndexedTriangles (List.map fn vertices) triangles
-
-
-invertMesh : Mesh a -> Mesh a
-invertMesh mesh =
-    case mesh of
-        Triangles triangles ->
-            triangles
-                |> List.map (\( p, q, r ) -> ( r, q, p ))
-                |> Triangles
-
-        IndexedTriangles vertices triangles ->
-            triangles
-                |> List.map (\( p, q, r ) -> ( r, q, p ))
-                |> IndexedTriangles vertices
 
 
 
@@ -192,15 +180,8 @@ rayMeshIntersection orig dir mesh center radius =
             Triangles triangles ->
                 intersect triangles
 
-            IndexedTriangles vertices triplets ->
-                let
-                    averts =
-                        Array.fromList vertices
-                in
-                triplets
-                    |> List.map (\( i, j, k ) -> [ i, j, k ])
-                    |> List.concatMap (makeTriangles << pullCorners averts)
-                    |> intersect
+            IndexedTriangles _ _ ->
+                rayMeshIntersection orig dir (resolved mesh) center radius
 
     else
         Nothing
