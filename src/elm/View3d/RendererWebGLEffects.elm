@@ -17,10 +17,15 @@ import WebGL.Settings.Blend as Blend
 import WebGL.Settings.DepthTest as DepthTest
 
 
-type alias Mesh =
-    { surface : WebGL.Mesh Vertex
-    , wireframe : WebGL.Mesh Vertex
+type alias VertexExtended =
+    { position : Vec3
+    , normal : Vec3
+    , barycentric : Vec3
     }
+
+
+type alias Mesh =
+    WebGL.Mesh VertexExtended
 
 
 type alias Uniforms =
@@ -30,6 +35,7 @@ type alias Uniforms =
     , alpha : Float
     , fadeStrength : Float
     , blueShift : Float
+    , wireStrength : Float
     , pushOut : Float
     , transform : Mat4
     , viewing : Mat4
@@ -40,40 +46,37 @@ type alias Uniforms =
 type alias Varyings =
     { vpos : Vec3
     , vnormal : Vec3
+    , vbary : Vec3
     }
 
 
-convertSurface : Mesh.Mesh Vertex -> WebGL.Mesh Vertex
-convertSurface mesh =
+extend : Vertex -> Float -> Float -> Float -> VertexExtended
+extend v x y z =
+    { position = v.position
+    , normal = v.normal
+    , barycentric = vec3 x y z
+    }
+
+
+convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
+convertMeshForRenderer mesh =
     case mesh of
         Mesh.Lines _ ->
             WebGL.triangles []
 
         Mesh.Triangles triangles ->
-            WebGL.triangles triangles
+            triangles
+                |> List.map
+                    (\( u, v, w ) ->
+                        ( extend u 1 0 0, extend v 0 1 0, extend w 0 0 1 )
+                    )
+                |> WebGL.triangles
 
         Mesh.IndexedTriangles vertices triangles ->
-            WebGL.indexedTriangles vertices triangles
-
-
-convertWireframe : Mesh.Mesh Vertex -> WebGL.Mesh Vertex
-convertWireframe mesh =
-    case mesh of
-        Mesh.Lines lines ->
-            WebGL.lines lines
-
-        Mesh.Triangles _ ->
-            WebGL.lines []
-
-        Mesh.IndexedTriangles _ _ ->
-            WebGL.lines []
-
-
-convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
-convertMeshForRenderer mesh =
-    { surface = convertSurface mesh
-    , wireframe = convertWireframe (Mesh.wireframe mesh)
-    }
+            triangles
+                |> List.map (\( i, j, k ) -> [ i, j, k ])
+                |> Mesh.resolvedSurface vertices
+                |> convertMeshForRenderer
 
 
 entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
@@ -99,6 +102,7 @@ entities meshes model options =
             , alpha = 1.0
             , fadeStrength = 0.5 * options.fadeToBackground
             , blueShift = options.fadeToBlue
+            , wireStrength = 0.0
             , pushOut = 0.0
             , transform = Mat4.identity
             , viewing = viewing
@@ -111,7 +115,9 @@ entities meshes model options =
                     { baseUniforms | transform = transform }
 
                 drawFog =
-                    options.fadeToBackground > 0 || options.fadeToBlue > 0
+                    (options.fadeToBackground > 0)
+                        || (options.fadeToBlue > 0)
+                        || options.drawWires
 
                 fog =
                     if drawFog then
@@ -122,9 +128,15 @@ entities meshes model options =
                             ]
                             vertexShader
                             fragmentShaderFog
-                            mesh.surface
+                            mesh
                             { uniforms
                                 | color = options.backgroundColor
+                                , wireStrength =
+                                    if options.drawWires then
+                                        0.8
+
+                                    else
+                                        0.0
                             }
                         ]
 
@@ -139,7 +151,7 @@ entities meshes model options =
                             ]
                             vertexShader
                             fragmentShaderConstant
-                            mesh.surface
+                            mesh
                             { uniforms
                                 | color = options.outlineColor
                                 , pushOut = 0.02
@@ -148,26 +160,8 @@ entities meshes model options =
 
                     else
                         []
-
-                wireframes =
-                    if options.drawWires then
-                        [ WebGL.entityWith
-                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-                            , DepthTest.default
-                            ]
-                            vertexShader
-                            fragmentShaderConstant
-                            mesh.wireframe
-                            { uniforms
-                                | alpha = 0.8
-                                , pushOut = 0.001
-                            }
-                        ]
-
-                    else
-                        []
             in
-            fog ++ outlines ++ wireframes
+            fog ++ outlines
     in
     model.scene
         |> List.concatMap
@@ -178,20 +172,23 @@ entities meshes model options =
             )
 
 
-vertexShader : WebGL.Shader Vertex Uniforms Varyings
+vertexShader : WebGL.Shader VertexExtended Uniforms Varyings
 vertexShader =
     [glsl|
 
     attribute vec3 position;
     attribute vec3 normal;
+    attribute vec3 barycentric;
     uniform mat4 transform;
     uniform mat4 viewing;
     uniform mat4 perspective;
     uniform float pushOut;
     varying vec3 vpos;
     varying vec3 vnormal;
+    varying vec3 vbary;
 
     void main () {
+        vbary = barycentric;
         vnormal = normalize((viewing * transform * vec4(normal, 0.0)).xyz);
         vpos = (viewing * transform * vec4(position, 1.0)).xyz
             + pushOut * vnormal;
@@ -211,21 +208,42 @@ fragmentShaderFog =
     uniform vec3 color;
     uniform float fadeStrength;
     uniform float blueShift;
+    uniform float wireStrength;
     varying vec3 vpos;
     varying vec3 vnormal;
+    varying vec3 vbary;
 
     void main () {
         float depth = (sceneCenter - vpos).z;
         float coeff = smoothstep(-0.9 * sceneRadius, 1.1 * sceneRadius, depth);
-        float s = fadeStrength > 0.0 ? pow(coeff, 1.0 / fadeStrength) : 0.0;
-        float t = blueShift > 0.0 ? pow(coeff, 1.0 / blueShift) : 0.0;
 
-        float alpha = s + t - s * t;
-        float beta = alpha > 0.0 ? s / alpha : 0.0;
-        vec3 blue = vec3(0.0, 0.0, 1.0);
-        vec3 color = beta * color + (1.0 - beta) * blue;
+        // fade to blue
 
-        gl_FragColor = vec4(color, alpha);
+        float t = 0.0;
+        float alpha = blueShift > 0.0 ? pow(coeff, 1.0 / blueShift) : 0.0;
+        float beta = 0.0;
+        vec3 colorOut = vec3(0.0, 0.0, 1.0);
+
+        // fade to background
+
+        t = fadeStrength > 0.0 ? pow(coeff, 1.0 / fadeStrength) : 0.0;
+        alpha = t + alpha - t * alpha;
+        beta = alpha > 0.0 ? t / alpha : 0.0;
+        colorOut = beta * color + (1.0 - beta) * colorOut;
+
+        // add wireframes
+
+        vec3 delta = abs(dFdx(vbary)) + abs(dFdy(vbary));
+        vec3 bary = smoothstep(0.5 * delta, delta, vbary);
+
+        t = wireStrength * (1.0 - min(bary.x, min(bary.y, bary.z)));
+        alpha = t + alpha - t * alpha;
+        beta = alpha > 0.0 ? t / alpha : 0.0;
+        colorOut = beta * vec3(0.0, 0.0, 0.0) + (1.0 - beta) * colorOut;
+
+        // output
+
+        gl_FragColor = vec4(colorOut, alpha);
     }
 
     |]
@@ -240,6 +258,7 @@ fragmentShaderConstant =
     uniform float alpha;
     varying vec3 vpos;
     varying vec3 vnormal;
+    varying vec3 vbary;
 
     void main () {
         gl_FragColor = vec4(color, alpha);
