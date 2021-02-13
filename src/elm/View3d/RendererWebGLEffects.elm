@@ -61,9 +61,6 @@ extend v x y z =
 convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
 convertMeshForRenderer mesh =
     case mesh of
-        Mesh.Lines _ ->
-            WebGL.triangles []
-
         Mesh.Triangles triangles ->
             triangles
                 |> List.map

@@ -60,9 +60,6 @@ asUnitlessDirection p =
 convertSurface : Mesh.Mesh Vertex -> Scene3d.Mesh.Uniform WorldCoordinates
 convertSurface mesh =
     case mesh of
-        Mesh.Lines _ ->
-            Scene3d.Mesh.facets []
-
         Mesh.Triangles triangles ->
             triangles
                 |> List.map

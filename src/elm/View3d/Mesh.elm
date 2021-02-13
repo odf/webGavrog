@@ -6,7 +6,6 @@ module View3d.Mesh exposing
     , mappedRayMeshIntersection
     , resolvedSurface
     , surface
-    , wireframe
     )
 
 import Array exposing (Array)
@@ -15,8 +14,7 @@ import Math.Vector3 as Vec3 exposing (Vec3)
 
 
 type Mesh vertex
-    = Lines (List ( vertex, vertex ))
-    | Triangles (List ( vertex, vertex, vertex ))
+    = Triangles (List ( vertex, vertex, vertex ))
     | IndexedTriangles (List vertex) (List ( Int, Int, Int ))
 
 
@@ -61,10 +59,6 @@ resolvedSurface vertices faces =
 getVertices : Mesh vertex -> List vertex
 getVertices mesh =
     case mesh of
-        Lines lines ->
-            lines
-                |> List.concatMap (\( u, v ) -> [ u, v ])
-
         Triangles triangles ->
             triangles
                 |> List.concatMap (\( u, v, w ) -> [ u, v, w ])
@@ -73,33 +67,9 @@ getVertices mesh =
             vertices
 
 
-wireframe : Mesh a -> Mesh a
-wireframe mesh =
-    case mesh of
-        Lines _ ->
-            mesh
-
-        Triangles triangles ->
-            triangles
-                |> List.concatMap
-                    (\( u, v, w ) -> [ ( u, v ), ( v, w ), ( w, u ) ])
-                |> Lines
-
-        IndexedTriangles vertices triangles ->
-            triangles
-                |> List.map (\( i, j, k ) -> [ i, j, k ])
-                |> resolvedSurface vertices
-                |> wireframe
-
-
 mapVertices : (a -> b) -> Mesh a -> Mesh b
 mapVertices fn mesh =
     case mesh of
-        Lines lines ->
-            lines
-                |> List.map (\( p, q ) -> ( fn p, fn q ))
-                |> Lines
-
         Triangles triangles ->
             triangles
                 |> List.map (\( p, q, r ) -> ( fn p, fn q, fn r ))
@@ -112,9 +82,6 @@ mapVertices fn mesh =
 invertMesh : Mesh a -> Mesh a
 invertMesh mesh =
     case mesh of
-        Lines lines ->
-            Lines lines
-
         Triangles triangles ->
             triangles
                 |> List.map (\( p, q, r ) -> ( r, q, p ))
@@ -222,9 +189,6 @@ rayMeshIntersection orig dir mesh center radius =
                 List.foldl step Nothing
         in
         case mesh of
-            Lines _ ->
-                Nothing
-
             Triangles triangles ->
                 intersect triangles
 

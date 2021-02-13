@@ -100,9 +100,6 @@ init =
 meshForPicking : Mesh RendererCommon.Vertex -> Maybe (Mesh Vec3)
 meshForPicking mesh =
     case mesh of
-        Mesh.Lines _ ->
-            Nothing
-
         Mesh.Triangles triangles ->
             triangles
                 |> List.map
