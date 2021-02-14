@@ -106,20 +106,24 @@ export const makeStick = (radius, segments) => {
   const a = Math.PI * 2 / n;
 
   const bottom = range(n).map(i => [
-    Math.cos(a * i) * radius, Math.sin(a * i) * radius, 0
+    Math.cos(a * i) * radius, Math.sin(a * i) * radius, 0.0
   ]);
-  const top = range(n).map(i => [
-    Math.cos(a * i) * radius, Math.sin(a * i) * radius, 1
-  ]);
-  const vertices = [].concat(bottom, top);
+  const top = bottom.map(([x, y, z]) => [x, y, 1.0 - z]);
+  const bottomInset = bottom.map(([x, y]) => [0.9 * x, 0.9 * y, 0.0]);
+  const topInset = top.map(([x, y]) => [0.9 * x, 0.9 * y, 1.0]);
 
-  const faces = range(n).map(i => {
+  const vertices = [].concat(bottomInset, bottom, top, topInset);
+
+  const faces = [];
+
+  for (let i = 0; i < n; ++i) {
     const j = (i + 1) % n;
-    return [i, j, j + n, i + n];
-  });
+    for (const k of [0, n, n + n])
+      faces.push([i + k, j + k, j + k + n, i + k + n]);
+  }
 
   faces.push(range(n).reverse());
-  faces.push(range(n).map(i => i + n));
+  faces.push(range(n).map(i => i + 3 * n));
 
   return geometry(vertices, faces);
 };
