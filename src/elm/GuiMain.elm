@@ -1815,14 +1815,6 @@ viewDisplaySettings toMsg settings =
             ]
         , viewSeparator
         , shadowCheckbox
-        , viewColorInput
-            (\color -> toMsg { settings | backgroundColor = color })
-            (\onOff -> toMsg { settings | editBackgroundColor = onOff })
-            settings.backgroundColor
-            settings.editBackgroundColor
-            "Background Color"
-            True
-        , viewSeparator
         , Element.column
             [ Element.spacing 12 ]
             (if settings.addOutlines then
@@ -1841,6 +1833,13 @@ viewDisplaySettings toMsg settings =
                 [ outlineCheckbox ]
             )
         , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | backgroundColor = color })
+            (\onOff -> toMsg { settings | editBackgroundColor = onOff })
+            settings.backgroundColor
+            settings.editBackgroundColor
+            "Background Color"
+            True
         , Element.el []
             (Element.text "Fade To Background (Haze)")
         , ValueSlider.view
@@ -2012,12 +2011,30 @@ viewTilingSettings toMsg settings =
                 (Styling.makeIcon "►")
             ]
         , viewSeparator
+        , viewColorInput
+            (\color -> toMsg { settings | tileBaseColor = color })
+            (\onOff -> toMsg { settings | editTileBaseColor = onOff })
+            settings.tileBaseColor
+            settings.editTileBaseColor
+            "Tile base Color"
+            False
+        , Input.checkbox []
+            { onChange =
+                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
+            , icon = Input.defaultCheckbox
+            , checked = settings.colorByTranslationClass
+            , label =
+                Input.labelRight [] <|
+                    Element.text "Color By Translation"
+            }
         , Element.column [ Element.spacing 12 ]
             (Input.checkbox []
                 { onChange = \onOff -> toMsg { settings | drawEdges = onOff }
                 , icon = Input.defaultCheckbox
                 , checked = settings.drawEdges
-                , label = Input.labelRight [] <| Element.text "Draw Edges"
+                , label =
+                    Input.labelRight [] <|
+                        Element.text "Separate Edge Color"
                 }
                 :: (if settings.drawEdges then
                         [ viewColorInput
@@ -2035,36 +2052,19 @@ viewTilingSettings toMsg settings =
                         []
                    )
             )
+        , viewSeparator
         , Element.el []
             (Element.text "Edge/Bevel Width")
         , ValueSlider.view
             (\value -> toMsg { settings | edgeWidth = value })
             defaultValueSliderConfig
             settings.edgeWidth
-        , viewSeparator
         , Element.el []
             (Element.text "Tile Scale")
         , ValueSlider.view
             (\value -> toMsg { settings | tileScale = value })
             defaultValueSliderConfig
             settings.tileScale
-        , viewSeparator
-        , viewColorInput
-            (\color -> toMsg { settings | tileBaseColor = color })
-            (\onOff -> toMsg { settings | editTileBaseColor = onOff })
-            settings.tileBaseColor
-            settings.editTileBaseColor
-            "Tile base Color"
-            False
-        , Input.checkbox []
-            { onChange =
-                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
-            , icon = Input.defaultCheckbox
-            , checked = settings.colorByTranslationClass
-            , label =
-                Input.labelRight [] <|
-                    Element.text "Color By Translation"
-            }
         , viewSeparator
         , Input.checkbox []
             { onChange =
@@ -2102,20 +2102,6 @@ viewTiling2dSettings toMsg settings =
                 (Styling.makeIcon "►")
             ]
         , viewSeparator
-        , Element.el []
-            (Element.text "Edge/Bevel Width")
-        , ValueSlider.view
-            (\value -> toMsg { settings | edgeWidth = value })
-            defaultValueSliderConfig
-            settings.edgeWidth
-        , viewSeparator
-        , Element.el []
-            (Element.text "Tile Scale")
-        , ValueSlider.view
-            (\value -> toMsg { settings | tileScale = value })
-            defaultValueSliderConfig
-            settings.tileScale
-        , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | tileBaseColor = color })
             (\onOff -> toMsg { settings | editTileBaseColor = onOff })
@@ -2132,6 +2118,19 @@ viewTiling2dSettings toMsg settings =
                 Input.labelRight [] <|
                     Element.text "Color By Translation"
             }
+        , viewSeparator
+        , Element.el []
+            (Element.text "Edge/Bevel Width")
+        , ValueSlider.view
+            (\value -> toMsg { settings | edgeWidth = value })
+            defaultValueSliderConfig
+            settings.edgeWidth
+        , Element.el []
+            (Element.text "Tile Scale")
+        , ValueSlider.view
+            (\value -> toMsg { settings | tileScale = value })
+            defaultValueSliderConfig
+            settings.tileScale
         ]
 
 
