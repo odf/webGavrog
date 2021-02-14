@@ -227,6 +227,7 @@ type alias DisplaySettings =
     , fadeToBlue : Float
     , drawShadows : Bool
     , addOutlines : Bool
+    , outlineWidth : Float
     , useSeparateOutlineColor : Bool
     , editOutlineColor : Bool
     , outlineColor : ColorDialog.Color
@@ -320,6 +321,7 @@ init flags =
             , fadeToBackground = 0.0
             , drawShadows = False
             , addOutlines = False
+            , outlineWidth = 0.5
             , useSeparateOutlineColor = False
             , editOutlineColor = False
             , outlineColor = Color.toHsla Color.white
@@ -1386,6 +1388,7 @@ view model =
             , fadeToBlue = settings.fadeToBlue
             , drawShadows = settings.drawShadows
             , addOutlines = settings.addOutlines
+            , outlineWidth = settings.outlineWidth
             , outlineColor = convertColor outlineColor
             , backgroundColor = convertColor settings.backgroundColor
             }
@@ -1733,6 +1736,16 @@ viewDisplaySettings toMsg settings =
                 , label = Input.labelRight [] <| Element.text "Add Outlines"
                 }
 
+        outlineWidthSlider =
+            Element.column [ Element.spacing 12 ]
+                [ Element.el []
+                    (Element.text "Outline Width")
+                , ValueSlider.view
+                    (\value -> toMsg { settings | outlineWidth = value })
+                    defaultValueSliderConfig
+                    settings.outlineWidth
+                ]
+
         outlineColorCheckbox =
             Input.checkbox []
                 { onChange =
@@ -1779,12 +1792,14 @@ viewDisplaySettings toMsg settings =
             (if settings.addOutlines then
                 if settings.useSeparateOutlineColor then
                     [ outlineCheckbox
+                    , outlineWidthSlider
                     , outlineColorCheckbox
                     , outlineColorPicker
                     ]
 
                 else
                     [ outlineCheckbox
+                    , outlineWidthSlider
                     , outlineColorCheckbox
                     ]
 

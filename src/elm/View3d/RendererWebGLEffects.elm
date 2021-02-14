@@ -150,7 +150,7 @@ entities meshes model options =
                             { uniforms
                                 | transform = transform
                                 , color = options.outlineColor
-                                , pushOut = 0.02
+                                , pushOut = 0.1 * options.outlineWidth
                             }
                         ]
 
