@@ -83,8 +83,7 @@ type Action
     | OpenNetDialog
     | OpenTilingDialog
     | OpenTiling2dDialog
-    | OpenModifierDialog
-    | OpenEmbeddingDialog
+    | OpenAdvancedDialog
     | AboutDialog
     | AddTile
     | AddCorona
@@ -107,8 +106,7 @@ type Msg
     | UpdateNetSettings NetSettings
     | UpdateTilingSettings TilingSettings
     | UpdateTiling2dSettings Tiling2dSettings
-    | UpdateModifierSettings ModifierSettings
-    | UpdateEmbeddingSettings EmbeddingSettings
+    | UpdateAdvancedSettings AdvancedSettings
     | JSData Decode.Value
     | HideAbout
     | KeyUp String
@@ -218,8 +216,7 @@ type Dialog
     | NetSettingsDialog
     | TilingSettingsDialog
     | Tiling2dSettingsDialog
-    | ModifierSettingsDialog
-    | EmbeddingSettingsDialog
+    | AdvancedSettingsDialog
 
 
 type alias DisplaySettings =
@@ -279,13 +276,9 @@ type alias Tiling2dSettings =
     }
 
 
-type alias ModifierSettings =
+type alias AdvancedSettings =
     { tilingModifier : TilingModifier
-    }
-
-
-type alias EmbeddingSettings =
-    { skipRelaxation : Bool
+    , skipRelaxation : Bool
     }
 
 
@@ -299,8 +292,7 @@ type alias Model =
     , netSettings : NetSettings
     , tilingSettings : TilingSettings
     , tiling2dSettings : Tiling2dSettings
-    , modifierSettings : ModifierSettings
-    , embeddingSettings : EmbeddingSettings
+    , advancedSettings : AdvancedSettings
     , title : String
     , status : String
     }
@@ -391,11 +383,9 @@ init flags =
             , colorByTranslationClass = False
             , edgeWidth = 0.5
             }
-      , modifierSettings =
+      , advancedSettings =
             { tilingModifier = None
-            }
-      , embeddingSettings =
-            { skipRelaxation = False
+            , skipRelaxation = False
             }
       }
     , Task.perform
@@ -484,11 +474,8 @@ actionLabel action =
         OpenTiling2dDialog ->
             "2D Tiling Settings..."
 
-        OpenModifierDialog ->
-            "Modifier Settings..."
-
-        OpenEmbeddingDialog ->
-            "Embedding Settings..."
+        OpenAdvancedDialog ->
+            "Advanced Settings..."
 
         AboutDialog ->
             "About Gavrog..."
@@ -662,8 +649,7 @@ mainMenuConfig =
     , makeMenuEntry OpenNetDialog
     , makeMenuEntry OpenTilingDialog
     , makeMenuEntry OpenTiling2dDialog
-    , makeMenuEntry OpenModifierDialog
-    , makeMenuEntry OpenEmbeddingDialog
+    , makeMenuEntry OpenAdvancedDialog
     , Menu.Separator
     , makeMenuEntry AboutDialog
     ]
@@ -921,8 +907,8 @@ update msg model =
             else
                 ( { model | tiling2dSettings = settings }, Cmd.none )
 
-        UpdateModifierSettings settings ->
-            if settings /= model.modifierSettings then
+        UpdateAdvancedSettings settings ->
+            if settings /= model.advancedSettings then
                 let
                     value =
                         case settings.tilingModifier of
@@ -936,29 +922,13 @@ update msg model =
                                 "t-analog"
 
                     options =
-                        [ ( "tilingModifier", Encode.string value ) ]
-                in
-                ( { model | modifierSettings = settings }
-                , toJS <|
-                    Encode.object
-                        [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.object options )
-                        ]
-                )
-
-            else
-                ( { model | modifierSettings = settings }, Cmd.none )
-
-        UpdateEmbeddingSettings settings ->
-            if settings /= model.embeddingSettings then
-                let
-                    options =
-                        [ ( "skipRelaxation"
+                        [ ( "tilingModifier", Encode.string value )
+                        , ( "skipRelaxation"
                           , Encode.bool settings.skipRelaxation
                           )
                         ]
                 in
-                ( { model | embeddingSettings = settings }
+                ( { model | advancedSettings = settings }
                 , toJS <|
                     Encode.object
                         [ ( "mode", Encode.string "options" )
@@ -967,7 +937,7 @@ update msg model =
                 )
 
             else
-                ( { model | embeddingSettings = settings }, Cmd.none )
+                ( { model | advancedSettings = settings }, Cmd.none )
 
         KeyUp code ->
             handleKeyPress code model
@@ -1130,13 +1100,8 @@ executeAction action model =
             , Cmd.none
             )
 
-        OpenModifierDialog ->
-            ( { model | dialogStack = [ ModifierSettingsDialog ] }
-            , Cmd.none
-            )
-
-        OpenEmbeddingDialog ->
-            ( { model | dialogStack = [ EmbeddingSettingsDialog ] }
+        OpenAdvancedDialog ->
+            ( { model | dialogStack = [ AdvancedSettingsDialog ] }
             , Cmd.none
             )
 
@@ -1621,17 +1586,11 @@ viewCurrentDialog model =
                     UpdateTiling2dSettings
                     model.tiling2dSettings
 
-        ModifierSettingsDialog :: _ ->
+        AdvancedSettingsDialog :: _ ->
             wrap <|
-                viewModifierSettings
-                    UpdateModifierSettings
-                    model.modifierSettings
-
-        EmbeddingSettingsDialog :: _ ->
-            wrap <|
-                viewEmbeddingSettings
-                    UpdateEmbeddingSettings
-                    model.embeddingSettings
+                viewAdvancedSettings
+                    UpdateAdvancedSettings
+                    model.advancedSettings
 
 
 viewAbout : Model -> Element.Element Msg
@@ -1800,7 +1759,7 @@ viewDisplaySettings toMsg settings =
         [ Element.row [ Element.width Element.fill ]
             [ Element.el
                 [ Element.alignLeft
-                , Element.Events.onClick (RunAction OpenEmbeddingDialog)
+                , Element.Events.onClick (RunAction OpenAdvancedDialog)
                 , Element.pointer
                 ]
                 (Styling.makeIcon "◄")
@@ -2096,7 +2055,7 @@ viewTiling2dSettings toMsg settings =
                 (Element.text "2D Tiling Settings")
             , Element.el
                 [ Element.alignRight
-                , Element.Events.onClick (RunAction OpenModifierDialog)
+                , Element.Events.onClick (RunAction OpenAdvancedDialog)
                 , Element.pointer
                 ]
                 (Styling.makeIcon "►")
@@ -2134,11 +2093,11 @@ viewTiling2dSettings toMsg settings =
         ]
 
 
-viewModifierSettings :
-    (ModifierSettings -> Msg)
-    -> ModifierSettings
+viewAdvancedSettings :
+    (AdvancedSettings -> Msg)
+    -> AdvancedSettings
     -> Element.Element Msg
-viewModifierSettings toMsg settings =
+viewAdvancedSettings toMsg settings =
     Element.column
         [ Element.spacing 12 ]
         [ Element.row [ Element.width Element.fill ]
@@ -2149,48 +2108,7 @@ viewModifierSettings toMsg settings =
                 ]
                 (Styling.makeIcon "◄")
             , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
-                (Element.text "Modifier Settings")
-            , Element.el
-                [ Element.alignRight
-                , Element.Events.onClick (RunAction OpenEmbeddingDialog)
-                , Element.pointer
-                ]
-                (Styling.makeIcon "►")
-            ]
-        , viewSeparator
-        , Input.radio [ Element.width Element.fill, Element.spacing 6 ]
-            { onChange =
-                \option -> toMsg { settings | tilingModifier = option }
-            , selected = Just settings.tilingModifier
-            , label =
-                Input.labelAbove
-                    [ Element.padding 12, Font.bold, Element.centerX ]
-                    (Element.text "Tiling Modifiers")
-            , options =
-                [ Input.option None (Element.text "None")
-                , Input.option Dual (Element.text "Dual")
-                , Input.option TAnalog (Element.text "T-Analog")
-                ]
-            }
-        ]
-
-
-viewEmbeddingSettings :
-    (EmbeddingSettings -> Msg)
-    -> EmbeddingSettings
-    -> Element.Element Msg
-viewEmbeddingSettings toMsg settings =
-    Element.column
-        [ Element.spacing 12 ]
-        [ Element.row [ Element.width Element.fill ]
-            [ Element.el
-                [ Element.alignLeft
-                , Element.Events.onClick (RunAction OpenModifierDialog)
-                , Element.pointer
-                ]
-                (Styling.makeIcon "◄")
-            , Element.el [ Element.centerX, Font.bold, Element.paddingXY 16 0 ]
-                (Element.text "Embedding Settings")
+                (Element.text "Advanced Settings")
             , Element.el
                 [ Element.alignRight
                 , Element.Events.onClick (RunAction OpenDisplayDialog)
@@ -2206,6 +2124,21 @@ viewEmbeddingSettings toMsg settings =
             , checked = settings.skipRelaxation
             , label =
                 Input.labelRight [] <| Element.text "SkipRelaxation"
+            }
+        , viewSeparator
+        , Input.radio [ Element.width Element.fill, Element.spacing 6 ]
+            { onChange =
+                \option -> toMsg { settings | tilingModifier = option }
+            , selected = Just settings.tilingModifier
+            , label =
+                Input.labelAbove
+                    [ Element.padding 12, Font.bold, Element.centerX ]
+                    (Element.text "Tiling Modifiers")
+            , options =
+                [ Input.option None (Element.text "None")
+                , Input.option Dual (Element.text "Dual")
+                , Input.option TAnalog (Element.text "T-Analog")
+                ]
             }
         ]
 
