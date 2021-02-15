@@ -102,10 +102,10 @@ type Msg
     | TextDialogInput String
     | TextDialogSubmit String Bool
     | UpdateDisplaySettings DisplaySettings
-    | UpdateSceneSettings SceneSettings
-    | UpdateNetSettings NetSettings
-    | UpdateTilingSettings TilingSettings
-    | UpdateTiling2dSettings Tiling2dSettings
+    | UpdateSceneSettings SceneSettings Bool
+    | UpdateNetSettings NetSettings Bool
+    | UpdateTilingSettings TilingSettings Bool
+    | UpdateTiling2dSettings Tiling2dSettings Bool
     | UpdateAdvancedSettings AdvancedSettings
     | JSData Decode.Value
     | HideAbout
@@ -800,12 +800,12 @@ update msg model =
         UpdateDisplaySettings settings ->
             ( { model | displaySettings = settings }, Cmd.none )
 
-        UpdateSceneSettings settings ->
+        UpdateSceneSettings settings redraw ->
             let
                 oldSettings =
                     model.sceneSettings
             in
-            if settings /= oldSettings then
+            if redraw then
                 if settings.showUnitCell /= oldSettings.showUnitCell then
                     let
                         options =
@@ -844,8 +844,8 @@ update msg model =
             else
                 ( { model | sceneSettings = settings }, Cmd.none )
 
-        UpdateNetSettings settings ->
-            if settings /= model.netSettings then
+        UpdateNetSettings settings redraw ->
+            if redraw then
                 let
                     options =
                         [ ( "netVertexRadius"
@@ -867,8 +867,8 @@ update msg model =
             else
                 ( { model | netSettings = settings }, Cmd.none )
 
-        UpdateTilingSettings settings ->
-            if settings /= model.tilingSettings then
+        UpdateTilingSettings settings redraw ->
+            if redraw then
                 let
                     options =
                         [ ( "extraSmooth", Encode.bool settings.extraSmooth )
@@ -890,8 +890,8 @@ update msg model =
             else
                 ( { model | tilingSettings = settings }, Cmd.none )
 
-        UpdateTiling2dSettings settings ->
-            if settings /= model.tiling2dSettings then
+        UpdateTiling2dSettings settings redraw ->
+            if redraw then
                 let
                     options =
                         [ ( "tileScale2d", Encode.float settings.tileScale )
@@ -1655,7 +1655,7 @@ viewTextBox config text =
 
 
 viewColorInput :
-    (ColorDialog.Color -> Msg)
+    (ColorDialog.Color -> Bool -> Msg)
     -> (Bool -> Msg)
     -> ColorDialog.Color
     -> Bool
@@ -1741,7 +1741,7 @@ viewDisplaySettings toMsg settings =
                 [ Element.el []
                     (Element.text "Outline Width")
                 , ValueSlider.view
-                    (\value -> toMsg { settings | outlineWidth = value })
+                    (\value _ -> toMsg { settings | outlineWidth = value })
                     defaultValueSliderConfig
                     settings.outlineWidth
                 ]
@@ -1760,7 +1760,7 @@ viewDisplaySettings toMsg settings =
 
         outlineColorPicker =
             viewColorInput
-                (\color -> toMsg { settings | outlineColor = color })
+                (\color _ -> toMsg { settings | outlineColor = color })
                 (\onOff -> toMsg { settings | editOutlineColor = onOff })
                 settings.outlineColor
                 settings.editOutlineColor
@@ -1808,7 +1808,7 @@ viewDisplaySettings toMsg settings =
             )
         , viewSeparator
         , viewColorInput
-            (\color -> toMsg { settings | backgroundColor = color })
+            (\color _ -> toMsg { settings | backgroundColor = color })
             (\onOff -> toMsg { settings | editBackgroundColor = onOff })
             settings.backgroundColor
             settings.editBackgroundColor
@@ -1817,13 +1817,13 @@ viewDisplaySettings toMsg settings =
         , Element.el []
             (Element.text "Fade To Background (Haze)")
         , ValueSlider.view
-            (\value -> toMsg { settings | fadeToBackground = value })
+            (\value _ -> toMsg { settings | fadeToBackground = value })
             defaultValueSliderConfig
             settings.fadeToBackground
         , Element.el []
             (Element.text "Fade To Blue (Color Perspective)")
         , ValueSlider.view
-            (\value -> toMsg { settings | fadeToBlue = value })
+            (\value _ -> toMsg { settings | fadeToBlue = value })
             defaultValueSliderConfig
             settings.fadeToBlue
         , viewSeparator
@@ -1843,7 +1843,7 @@ viewDisplaySettings toMsg settings =
 
 
 viewSceneSettings :
-    (SceneSettings -> Msg)
+    (SceneSettings -> Bool -> Msg)
     -> SceneSettings
     -> Element.Element Msg
 viewSceneSettings toMsg settings =
@@ -1876,7 +1876,8 @@ viewSceneSettings toMsg settings =
             ]
         , viewSeparator
         , Input.checkbox []
-            { onChange = \onOff -> toMsg { settings | showUnitCell = onOff }
+            { onChange =
+                \onOff -> toMsg { settings | showUnitCell = onOff } True
             , icon = Input.defaultCheckbox
             , checked = settings.showUnitCell
             , label = Input.labelRight [] <| Element.text "Show Unit Cell"
@@ -1910,7 +1911,10 @@ viewSceneSettings toMsg settings =
         ]
 
 
-viewNetSettings : (NetSettings -> Msg) -> NetSettings -> Element.Element Msg
+viewNetSettings :
+    (NetSettings -> Bool -> Msg)
+    -> NetSettings
+    -> Element.Element Msg
 viewNetSettings toMsg settings =
     Element.column
         [ Element.spacing 12 ]
@@ -1933,14 +1937,14 @@ viewNetSettings toMsg settings =
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | vertexColor = color })
-            (\onOff -> toMsg { settings | editVertexColor = onOff })
+            (\onOff -> toMsg { settings | editVertexColor = onOff } True)
             settings.vertexColor
             settings.editVertexColor
             "Vertex Color"
             False
         , viewColorInput
             (\color -> toMsg { settings | edgeColor = color })
-            (\onOff -> toMsg { settings | editEdgeColor = onOff })
+            (\onOff -> toMsg { settings | editEdgeColor = onOff } True)
             settings.edgeColor
             settings.editEdgeColor
             "Edge Color"
@@ -1962,7 +1966,7 @@ viewNetSettings toMsg settings =
 
 
 viewTilingSettings :
-    (TilingSettings -> Msg)
+    (TilingSettings -> Bool -> Msg)
     -> TilingSettings
     -> Element.Element Msg
 viewTilingSettings toMsg settings =
@@ -1987,14 +1991,15 @@ viewTilingSettings toMsg settings =
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | tileBaseColor = color })
-            (\onOff -> toMsg { settings | editTileBaseColor = onOff })
+            (\onOff -> toMsg { settings | editTileBaseColor = onOff } True)
             settings.tileBaseColor
             settings.editTileBaseColor
             "Tile base Color"
             False
         , Input.checkbox []
             { onChange =
-                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
+                \onOff ->
+                    toMsg { settings | colorByTranslationClass = onOff } True
             , icon = Input.defaultCheckbox
             , checked = settings.colorByTranslationClass
             , label =
@@ -2003,7 +2008,8 @@ viewTilingSettings toMsg settings =
             }
         , Element.column [ Element.spacing 12 ]
             (Input.checkbox []
-                { onChange = \onOff -> toMsg { settings | drawEdges = onOff }
+                { onChange =
+                    \onOff -> toMsg { settings | drawEdges = onOff } True
                 , icon = Input.defaultCheckbox
                 , checked = settings.drawEdges
                 , label =
@@ -2014,7 +2020,7 @@ viewTilingSettings toMsg settings =
                         [ viewColorInput
                             (\color -> toMsg { settings | edgeColor = color })
                             (\onOff ->
-                                toMsg { settings | editEdgeColor = onOff }
+                                toMsg { settings | editEdgeColor = onOff } True
                             )
                             settings.edgeColor
                             settings.editEdgeColor
@@ -2042,7 +2048,7 @@ viewTilingSettings toMsg settings =
         , viewSeparator
         , Input.checkbox []
             { onChange =
-                \onOff -> toMsg { settings | extraSmooth = onOff }
+                \onOff -> toMsg { settings | extraSmooth = onOff } True
             , icon = Input.defaultCheckbox
             , checked = settings.extraSmooth
             , label =
@@ -2053,7 +2059,7 @@ viewTilingSettings toMsg settings =
 
 
 viewTiling2dSettings :
-    (Tiling2dSettings -> Msg)
+    (Tiling2dSettings -> Bool -> Msg)
     -> Tiling2dSettings
     -> Element.Element Msg
 viewTiling2dSettings toMsg settings =
@@ -2078,14 +2084,15 @@ viewTiling2dSettings toMsg settings =
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | tileBaseColor = color })
-            (\onOff -> toMsg { settings | editTileBaseColor = onOff })
+            (\onOff -> toMsg { settings | editTileBaseColor = onOff } False)
             settings.tileBaseColor
             settings.editTileBaseColor
             "Tile base Color"
             False
         , Input.checkbox []
             { onChange =
-                \onOff -> toMsg { settings | colorByTranslationClass = onOff }
+                \onOff ->
+                    toMsg { settings | colorByTranslationClass = onOff } False
             , icon = Input.defaultCheckbox
             , checked = settings.colorByTranslationClass
             , label =

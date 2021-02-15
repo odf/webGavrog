@@ -76,7 +76,7 @@ colorField colors =
         Element.none
 
 
-view : (Color -> msg) -> Color -> Bool -> Element.Element msg
+view : (Color -> Bool -> msg) -> Color -> Bool -> Element.Element msg
 view toMsg color includeAlpha =
     let
         { hue, saturation, lightness, alpha } =

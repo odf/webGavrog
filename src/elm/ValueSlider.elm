@@ -5,6 +5,7 @@ import DOM
 import Element
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Html
 import Html.Attributes
 import Html.Events
@@ -158,7 +159,7 @@ roundTo step val =
             val
 
 
-view : (Float -> msg) -> Config msg -> Float -> Element.Element msg
+view : (Float -> Bool -> msg) -> Config msg -> Float -> Element.Element msg
 view toMsg config value =
     let
         { widthPx, heightPx, minimum, maximum, step } =
@@ -176,25 +177,26 @@ view toMsg config value =
                 |> clamp 0.0 1.0
                 |> (*) (toFloat widthPx)
 
-        handleMouse { x } { left } =
+        handleMouse done { x } { left } =
             if left then
-                toMsg <| positionToValue (x - 16)
+                toMsg (positionToValue (x - 16)) False
 
             else
-                toMsg value
+                toMsg value done
 
-        handleTouch posList =
+        handleTouch done posList =
             case posList of
                 pos :: _ ->
-                    toMsg <| positionToValue (pos.x - 16)
+                    toMsg (positionToValue (pos.x - 16)) False
 
                 _ ->
-                    toMsg value
+                    toMsg value done
     in
     Element.row []
         [ Element.el
             [ Element.width <| Element.px (widthPx + 32)
             , Element.height <| Element.px heightPx
+            , Events.onMouseLeave (toMsg value True)
             , Element.inFront <|
                 viewCanvas handleMouse handleTouch (widthPx + 32) heightPx
             ]
@@ -214,8 +216,8 @@ view toMsg config value =
 
 
 viewCanvas :
-    (Position -> Buttons -> msg)
-    -> (List Position -> msg)
+    (Bool -> Position -> Buttons -> msg)
+    -> (Bool -> List Position -> msg)
     -> Int
     -> Int
     -> Element.Element msg
@@ -224,10 +226,12 @@ viewCanvas toMsgMouse toMsgTouch widthPx heightPx =
         Html.canvas
             [ Html.Attributes.style "width" (String.fromInt widthPx ++ "px")
             , Html.Attributes.style "height" (String.fromInt heightPx ++ "px")
-            , onMouseEvent "mousedown" toMsgMouse
-            , onMouseEvent "mousemove" toMsgMouse
-            , onTouchEvent "touchstart" toMsgTouch
-            , onTouchEvent "touchmove" toMsgTouch
+            , onMouseEvent "mousedown" (toMsgMouse False)
+            , onMouseEvent "mousemove" (toMsgMouse False)
+            , onMouseEvent "mouseup" (toMsgMouse True)
+            , onTouchEvent "touchstart" (toMsgTouch False)
+            , onTouchEvent "touchmove" (toMsgTouch False)
+            , onTouchEvent "touchend" (toMsgTouch True)
             ]
             []
 
