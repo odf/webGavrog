@@ -1607,7 +1607,7 @@ viewAbout model =
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Element.column [ Element.spacing 4 ]
                 [ Styling.logoText "Web-Gavrog"
-                , Element.text "by Olaf Delgado-Friedrichs 2019"
+                , Element.text "by Olaf Delgado-Friedrichs 2021"
                 , Element.text "The Australian National University"
                 ]
             ]
