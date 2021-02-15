@@ -20,7 +20,7 @@ import {
 
 
 const range = n => [...Array(n).keys()];
-const centeredRange = n => range(n).map(i => i - Math.ceil(n/2) + 1);
+const centeredRange = n => range(n).map(i => i - Math.ceil(n / 2) + 1);
 const withDefault = (value, fallback) => value != null ? value : fallback;
 
 const asVec3 = v => [v[0], v[1], v[2] || 0];
@@ -37,16 +37,16 @@ const cartesian = (...vs) => (
 
 
 const baseShifts = (dim, options) => dim == 3 ?
-      cartesian(
-        centeredRange(options.xExtent3d || 2),
-        centeredRange(options.yExtent3d || 2),
-        centeredRange(options.zExtent3d || 2)
-      )
-      :
-      cartesian(
-        centeredRange(options.xExtent2d || 5),
-        centeredRange(options.yExtent2d || 5)
-      );
+  cartesian(
+    centeredRange(options.xExtent3d || 2),
+    centeredRange(options.yExtent3d || 2),
+    centeredRange(options.zExtent3d || 2)
+  )
+  :
+  cartesian(
+    centeredRange(options.xExtent2d || 5),
+    centeredRange(options.yExtent2d || 5)
+  );
 
 
 const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
@@ -70,8 +70,8 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
   meshes.push(geometries.makeBall(ballRadius));
 
   const corners = dim == 3 ?
-        cartesian([0, 1], [0, 1], [0, 1]) :
-        cartesian([0, 1], [0, 1]);
+    cartesian([0, 1], [0, 1], [0, 1]) :
+    cartesian([0, 1], [0, 1]);
 
   for (const coeffs of corners) {
     const p = opsF.plus(origin, opsF.times(coeffs, cellBasis));
@@ -80,7 +80,7 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
       meshType: 'cellEdge',
       meshIndex: n,
       transform: { basis: opsF.identityMatrix(3), shift: asVec3(p) },
-      extraShift: [ 0, 0, 0 ]
+      extraShift: [0, 0, 0]
     });
   }
 
@@ -91,8 +91,8 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
       cellBasis[i % dim], cellBasis[(i + 1) % dim], cellBasis[(i + 2) % dim]
     ];
     const startPoints = dim == 3 ?
-          [[0, 0, 0], v, w, opsF.plus(v, w)] :
-          [[0, 0], v];
+      [[0, 0, 0], v, w, opsF.plus(v, w)] :
+      [[0, 0], v];
 
     for (const p0 of startPoints) {
       const p = opsF.plus(origin, p0);
@@ -107,7 +107,7 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
         meshType: 'cellEdge',
         meshIndex: n,
         transform: { basis: opsF.identityMatrix(3), shift: [0, 0, 0] },
-        extraShift: [ 0, 0, 0 ]
+        extraShift: [0, 0, 0]
       });
     }
   }
@@ -116,7 +116,7 @@ const addUnitCell = (model, toStd, rawBasis, ballRadius, stickRadius) => {
 };
 
 
-const preprocessNet = (structure, options, runJob, log) => csp.go(function*() {
+const preprocessNet = (structure, options, runJob, log) => csp.go(function* () {
   const t = timer();
 
   yield log('Normalizing shifts...');
@@ -202,7 +202,7 @@ const makeNetDisplayList = (data, options) => {
 };
 
 
-const makeNetModel = (data, options, runJob, log) => csp.go(function*() {
+const makeNetModel = (data, options, runJob, log) => csp.go(function* () {
   const { graph, sgInfo, embeddings, displayList } = data;
 
   yield log('Making the net model...');
@@ -281,7 +281,7 @@ const pickEmbedding = (embeddings, options) => {
 
 const preprocessTiling = (
   structure, options, runJob, log
-) => csp.go(function*() {
+) => csp.go(function* () {
   const t = timer();
 
   const mod = options.tilingModifier;
@@ -298,7 +298,7 @@ const preprocessTiling = (
 
   yield log('Finding the pseudo-toroidal cover...');
   const cov = yield structure.cover ||
-        (yield runJob({ cmd: 'dsCover', val: ds }));
+    (yield runJob({ cmd: 'dsCover', val: ds }));
   console.log(`${Math.round(t())} msec to compute the cover`);
 
   yield log('Extracting the skeleton...');
@@ -382,7 +382,7 @@ const makeTileDisplayList = ({ tiles, dim, sgInfo: { toStd } }, options) => {
 };
 
 
-const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
+const makeTilingModel = (data, options, runJob, log) => csp.go(function* () {
   const {
     ds, cov, skel, tiles, orbitReps, sgInfo, embeddings, displayList
   } = data;
@@ -401,7 +401,9 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   }
 
   const subDLevel = (dim == 3 && options.extraSmooth) ? 3 : 2;
-  const edgeWidth = options[dim == 2 ? 'edgeWidth2d' : 'edgeWidth'] || 0.5;
+  const edgeWidth = withDefault(
+    options[dim == 2 ? 'edgeWidth2d' : 'edgeWidth'], 0.5
+    );
   const key = `subd-${subDLevel} edgeWidth-${edgeWidth}`;
 
   if (embedding[key] == null) {
@@ -424,8 +426,8 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function*() {
   }
 
   const scale = dim == 2 ?
-        options.tileScale2d || 1.00 :
-        Math.min(0.999, options.tileScale || 0.85);
+    withDefault(options.tileScale2d, 1.00) :
+    Math.min(0.999, withDefault(options.tileScale, 0.85));
 
   const mappedTiles = mapTiles(tiles, basis, scale);
   const instances = makeTileInstances(
@@ -489,31 +491,31 @@ const makeTileInstances = (displayList, tiles, partLists, basis) => {
 
 
 const preprocessors = {
-  tiling        : preprocessTiling,
+  tiling: preprocessTiling,
   periodic_graph: preprocessNet,
-  net           : preprocessNet,
-  crystal       : preprocessNet
+  net: preprocessNet,
+  crystal: preprocessNet
 };
 
 
 const displayListBuilders = {
-  tiling        : makeTileDisplayList,
+  tiling: makeTileDisplayList,
   periodic_graph: makeNetDisplayList,
-  net           : makeNetDisplayList,
-  crystal       : makeNetDisplayList
+  net: makeNetDisplayList,
+  crystal: makeNetDisplayList
 };
 
 
 const sceneBuilders = {
-  tiling        : makeTilingModel,
+  tiling: makeTilingModel,
   periodic_graph: makeNetModel,
-  net           : makeNetModel,
-  crystal       : makeNetModel
+  net: makeNetModel,
+  crystal: makeNetModel
 };
 
 
 export const preprocess = (structure, options, runJob, log) => csp.go(
-  function*() {
+  function* () {
     const type = structure.type;
     const preprocessor = preprocessors[type];
 
@@ -529,7 +531,7 @@ export const preprocess = (structure, options, runJob, log) => csp.go(
 
 
 export const makeDisplayList = (data, options, runJob, log) => csp.go(
-  function*() {
+  function* () {
     yield log('building fresh display list');
     const result = displayListBuilders[data.type](data, options);
 
@@ -540,7 +542,7 @@ export const makeDisplayList = (data, options, runJob, log) => csp.go(
 
 
 export const makeScene = (data, options, runJob, log) => csp.go(
-  function*() {
+  function* () {
     const type = data.type;
     const builder = sceneBuilders[type];
 
