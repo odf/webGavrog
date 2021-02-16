@@ -2,7 +2,6 @@ import { floatMatrices } from '../arithmetic/types';
 const ops = floatMatrices;
 
 
-const range = (n, m) => [...Array(m - n).keys()].map(i => i + n);
 const sum = vs => vs.reduce((v, w) => ops.plus(v, w));
 const centroid = pos => ops.div(sum(pos), pos.length);
 
@@ -153,7 +152,7 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
         t = ops.plus(t, ops.minus(ops.times(2, ops.plus(p[0], p[2])), p[1]));
       }
       const m = newFacesAtVertex[v].length;
-      posNew[v] = ops.plus(ops.times(1/(m*m), t), ops.times((m-3)/m, pos[v]));
+      posNew[v] = ops.plus(ops.times(1 / (m * m), t), ops.times((m - 3) / m, pos[v]));
     }
   }
 
@@ -164,54 +163,6 @@ export const subD = ({ faces, pos, isFixed, faceLabels }) => {
     faceLabels: fLabelsNew,
   };
 }
-
-
-export const withFlattenedCenterFaces = (
-  { faces, pos, isFixed, faceLabels }
-) => {
-  const newFaces = [];
-  const newFaceLabels = [];
-  const newPos = pos.slice();
-  const newIsFixed = isFixed.slice();
-
-  for (let f = 0; f < faces.length; ++f) {
-    const label = faceLabels ? faceLabels[f] : f;
-    const vs = faces[f];
-    const ps = vs.map(i => pos[i]);
-    const qs = flattened(ps);
-    const isFlat = ps.every((p, i) => ops.norm(ops.minus(p, qs[i])) <= 0.01);
-
-    if (isFlat) {
-      newFaces.push(vs);
-      newFaceLabels.push(label);
-    }
-    else {
-      const center = centroid(ps);
-      const k = newPos.length;
-      const m = qs.length;
-
-      for (const v of qs) {
-        newPos.push(centroid([center, v]));
-        newIsFixed.push(false);
-      }
-
-      newFaces.push(range(k, k + m));
-      newFaceLabels.push(label);
-      for (let i = 0; i < m; ++i) {
-        const j = (i + 1) % m;
-        newFaces.push([vs[i], vs[j], j + k, i + k]);
-        newFaceLabels.push(label);
-      }
-    }
-  }
-
-  return {
-    faces: newFaces,
-    pos: newPos,
-    isFixed: newIsFixed,
-    faceLabels: newFaceLabels
-  };
-};
 
 
 export const insetAt = ({ faces, pos, isFixed, faceLabels }, wd, isCorner) => {
@@ -344,7 +295,7 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
               ends.slice(1, -1) :
               faces[stretch[0][0]].map(v => pos[v])
           );
-          newPos.push(insetPoint(pos[v], wd, ends[0], ends[ends.length-1], c));
+          newPos.push(insetPoint(pos[v], wd, ends[0], ends[ends.length - 1], c));
 
           for (let j = 0; j < stretch.length - 1; ++j)
             mods[stretch[j]] = pos.length + newPos.length - 1;
@@ -357,16 +308,6 @@ const shrunkAt = ({ faces, pos }, wd, isCorner) => {
     newPos,
     shrunkFaces: faces.map((is, f) => is.map((v, i) => mods[[f, i]] || v))
   };
-};
-
-
-const flattened = ps => {
-  const center = centroid(ps);
-  const normal = normalized(
-    sum(ps.map((p, i) => ops.crossProduct(p, ps[(i + 1) % ps.length])))
-  );
-
-  return ps.map(p => projection(p, normal, center));
 };
 
 
@@ -406,20 +347,23 @@ const projection = (p, normal, origin) => {
 
 
 if (require.main == module) {
-  Array.prototype.toString = function() {
+  Array.prototype.toString = function () {
     return 'List [ ' + this.map(x => x.toString()).join(', ') + ' ]';
   };
 
   const cube = {
-    pos: [[0,0,0], [0,0,1], [0,1,0], [0,1,1],
-          [1,0,0], [1,0,1], [1,1,0], [1,1,1]],
-    faces: [[0,1,3,2],[5,4,6,7],
-            [1,0,4,5],[2,3,7,6],
-            [0,2,6,4],[3,1,5,7]],
+    pos: [
+      [0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
+      [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]
+    ],
+    faces: [
+      [0, 1, 3, 2], [5, 4, 6, 7], [1, 0, 4, 5],
+      [2, 3, 7, 6], [0, 2, 6, 4], [3, 1, 5, 7]
+    ],
     isFixed: Array(8).fill(0).map((_, i) => i < 4)
   };
 
-  const t = withFlattenedCenterFaces(cube);
+  const t = cube;
 
   console.log(insetAt(t, 0.1, Array(8).fill(true)));
   console.log();

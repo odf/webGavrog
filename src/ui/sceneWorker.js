@@ -45,7 +45,6 @@ const handlers = {
     for (const template of templates) {
       let t = template;
 
-      t = surface.withFlattenedCenterFaces(t);
       for (let i = 0; i < subDLevel; ++i)
         t = surface.subD(t);
 

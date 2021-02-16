@@ -400,7 +400,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function* () {
     basis.push([0, 0, 1]);
   }
 
-  const subDLevel = (dim == 3 && options.extraSmooth) ? 3 : 2;
+  const subDLevel = dim == 3 ? options.extraSmooth ? 4 : 3 : 1;
   const edgeWidth = withDefault(
     options[dim == 2 ? 'edgeWidth2d' : 'edgeWidth'], 0.5
     );
