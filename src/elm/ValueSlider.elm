@@ -184,13 +184,13 @@ view toMsg config value =
             else
                 toMsg value done
 
-        handleTouch done posList =
+        handleTouch posList =
             case posList of
                 pos :: _ ->
-                    toMsg (positionToValue (pos.x - 16)) False
+                    toMsg (positionToValue (pos.x - 16)) True
 
                 _ ->
-                    toMsg value done
+                    toMsg value True
     in
     Element.row []
         [ Element.el
@@ -217,7 +217,7 @@ view toMsg config value =
 
 viewCanvas :
     (Bool -> Position -> Buttons -> msg)
-    -> (Bool -> List Position -> msg)
+    -> (List Position -> msg)
     -> Int
     -> Int
     -> Element.Element msg
@@ -229,9 +229,8 @@ viewCanvas toMsgMouse toMsgTouch widthPx heightPx =
             , onMouseEvent "mousedown" (toMsgMouse False)
             , onMouseEvent "mousemove" (toMsgMouse False)
             , onMouseEvent "mouseup" (toMsgMouse True)
-            , onTouchEvent "touchstart" (toMsgTouch False)
-            , onTouchEvent "touchmove" (toMsgTouch False)
-            , onTouchEvent "touchend" (toMsgTouch True)
+            , onTouchEvent "touchstart" toMsgTouch
+            , onTouchEvent "touchmove" toMsgTouch
             ]
             []
 
