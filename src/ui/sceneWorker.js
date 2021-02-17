@@ -61,10 +61,10 @@ const handlers = {
     for (const template of templates) {
       let t = template;
 
-      for (let i = 0; i < subDLevel; ++i)
+      for (let i = 0; i < subDLevel; ++i) {
         t = surface.subD(t);
-
-      t = surface.tightened(t);
+        t = surface.tightened(t);
+      }
 
       const t1 = t;
       t = surface.insetAt(t, 0.05 * edgeWidth * scale, t1.isFixed);
