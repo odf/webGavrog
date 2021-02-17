@@ -2,14 +2,27 @@ import '@babel/polyfill';
 
 import * as pickler from '../common/pickler';
 import * as tilings from '../dsymbols/tilings';
+import * as netSyms from '../pgraphs/symmetries';
 import * as cgd from '../io/cgd';
 import * as surface from './surface';
 
 import { coordinateChangesF as opsF } from '../geometry/types';
 import { embed } from '../pgraphs/embedding';
+import { identifySpacegroup } from '../spacegroups/spacegroupFinder';
 
 
 const handlers = {
+  identifyGroupForNet(graph) {
+    const syms = netSyms.symmetries(graph).symmetries;
+    const symOps = netSyms.affineSymmetries(graph, syms);
+    return identifySpacegroup(symOps);
+  },
+
+  identifyGroupForTiling({ ds, cov, skel }) {
+    const symOps = tilings.affineSymmetries(ds, cov, skel);
+    return identifySpacegroup(symOps);
+  },
+
   embedding(graph) {
     return embed(graph);
   },

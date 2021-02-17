@@ -123,13 +123,8 @@ const preprocessNet = (structure, options, runJob, log) => csp.go(function* () {
   const graph = periodic.graphWithNormalizedShifts(structure.graph);
   console.log(`${Math.round(t())} msec to normalize shifts`);
 
-  yield log('Computing symmetries...');
-  const syms = netSyms.symmetries(graph).symmetries;
-  const symOps = netSyms.affineSymmetries(graph, syms);
-  console.log(`${Math.round(t())} msec to compute symmetries`);
-
   yield log('Identifying the spacegroup...');
-  const sgInfo = identifySpacegroup(symOps);
+  const sgInfo = yield runJob({ cmd: 'identifyGroupForNet', val: graph });
   console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
   yield log('Computing an embedding...');
@@ -312,12 +307,11 @@ const preprocessTiling = (
   });
   console.log(`${Math.round(t())} msec to list the tile orbits`);
 
-  yield log('Computing symmetries...');
-  const syms = tilings.affineSymmetries(ds, cov, skel);
-  console.log(`${Math.round(t())} msec to compute symmetries`);
-
   yield log('Identifying the spacegroup...');
-  const sgInfo = identifySpacegroup(syms);
+  const sgInfo = yield runJob({
+    cmd: 'identifyGroupForTiling',
+    val: { ds, cov, skel }
+  });
   console.log(`${Math.round(t())} msec to identify the spacegroup`);
 
   const tiles = rawTiles.map(tile => convertTile(tile, centers));
@@ -403,7 +397,7 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function* () {
   const subDLevel = dim == 3 ? options.extraSmooth ? 4 : 3 : 1;
   const edgeWidth = withDefault(
     options[dim == 2 ? 'edgeWidth2d' : 'edgeWidth'], 0.5
-    );
+  );
   const key = `subd-${subDLevel} edgeWidth-${edgeWidth}`;
 
   if (embedding[key] == null) {

@@ -1,3 +1,5 @@
+import * as pickler from '../common/pickler';
+
 export const extend = transformationOps => {
 
   const V = transformationOps;
@@ -15,6 +17,19 @@ export const extend = transformationOps => {
 
     get __typeName() { return 'CoordinateChange'; }
   };
+
+
+  pickler.register(
+    'CoordinateChange',
+    ({ oldToNew, newToOld }) => ({
+      oldToNew: pickler.pickle(oldToNew),
+      newToOld: pickler.pickle(newToOld)
+    }),
+    ({ oldToNew, newToOld }) => new CoordinateChange(
+      pickler.unpickle(oldToNew),
+      pickler.unpickle(newToOld)
+    )
+  );
 
 
   const applyToOp = (chg, op) =>
@@ -39,7 +54,7 @@ export const extend = transformationOps => {
 
     times: {
       CoordinateChange: {
-        Point : (C, p) => V.times(C.oldToNew, p),
+        Point: (C, p) => V.times(C.oldToNew, p),
         Vector: (C, v) => V.times(C.oldToNew, v),
         Matrix: applyToOp,
         AffineTransformation: applyToOp,
