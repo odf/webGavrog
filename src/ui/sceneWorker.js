@@ -1,10 +1,8 @@
 import '@babel/polyfill';
 
 import * as pickler from '../common/pickler';
-import * as delaney from '../dsymbols/delaney';
 import * as tilings from '../dsymbols/tilings';
 import * as cgd from '../io/cgd';
-import * as periodic from '../pgraphs/periodic';
 import * as surface from './surface';
 
 import { coordinateChangesF as opsF } from '../geometry/types';
@@ -28,9 +26,12 @@ const handlers = {
     return tilings.tilesByTranslations(ds, cov, skel);
   },
 
-  makeTileMeshes({
-    cov, skel, pos, seeds, basis, subDLevel, edgeWidth
-  }) {
+  makeTileMeshes(
+    { cov, skel, pos, seeds, basis, subDLevel, edgeWidth },
+    log
+  ) {
+    log('Making tile surfaces...');
+
     const templates = [];
     for (const surf of tilings.tileSurfaces(cov, skel, pos, seeds))
       templates.push({
@@ -38,6 +39,8 @@ const handlers = {
         faces: surf.faces,
         isFixed: surf.pos.map(_ => true)
       });
+
+    log('Refining tile surfaces...');
 
     const scale = 2.0 * surface.averageRadius(templates);
 
@@ -59,6 +62,8 @@ const handlers = {
       result.push(t);
     }
 
+    log();
+
     return result;
   },
 
@@ -79,16 +84,19 @@ const handlers = {
 
 onmessage = event => {
   const { id, input: { cmd, val } } = pickler.unpickle(event.data);
+  const log = text => postMessage(pickler.pickle({
+    id, output: text, status: 'log'
+  }));
 
-  let output = null, ok = false;
+  let output, status;
 
   try {
-    output = handlers[cmd](val);
-    ok = true;
+    output = handlers[cmd](val, log);
+    status = 'success';
   } catch (ex) {
     output = `${ex}\n${ex.stack}`;
-    ok = false;
+    status = 'error';
   }
 
-  postMessage(pickler.pickle({ id, output, ok }));
+  postMessage(pickler.pickle({ id, output, status }));
 };
