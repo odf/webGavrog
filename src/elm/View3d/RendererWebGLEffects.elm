@@ -65,7 +65,7 @@ convertMeshForRenderer mesh =
             triangles
                 |> List.map
                     (\( u, v, w ) ->
-                        ( extend u 1 0 0, extend v 0 1 0, extend w 0 0 1 )
+                        ( extend u 1 0 0, extend v 1 1 0, extend w 1 0 1 )
                     )
                 |> WebGL.triangles
 

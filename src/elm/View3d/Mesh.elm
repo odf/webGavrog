@@ -21,22 +21,19 @@ type alias FaceSpec =
     List Int
 
 
-makeTriangles : List vertex -> List ( vertex, vertex, vertex )
-makeTriangles corners =
-    case List.head corners of
-        Nothing ->
-            []
+triangulate : List vertex -> List ( vertex, vertex, vertex )
+triangulate corners =
+    case corners of
+        u :: v :: w :: rest ->
+            ( w, u, v) :: List.map2 (\r s -> ( u, r, s )) (w :: rest) rest
 
-        Just u ->
-            List.map2
-                (\v w -> ( u, v, w ))
-                (List.drop 1 corners)
-                (List.drop 2 corners)
+        _ ->
+            []
 
 
 surface : List vertex -> List FaceSpec -> Mesh vertex
 surface vertices faces =
-    List.concatMap makeTriangles faces
+    List.concatMap triangulate faces
         |> IndexedTriangles vertices
 
 
@@ -54,7 +51,7 @@ resolved mesh =
             triangles
                 |> List.map (\( i, j, k ) -> [ i, j, k ])
                 |> List.map (List.filterMap (\i -> Array.get i verts))
-                |> List.concatMap makeTriangles
+                |> List.concatMap triangulate
                 |> Triangles
 
 
