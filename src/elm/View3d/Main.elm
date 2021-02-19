@@ -2,7 +2,6 @@ module View3d.Main exposing
     ( Model
     , Msg
     , Outcome(..)
-    , Scene
     , encompass
     , init
     , lookAlong
@@ -28,10 +27,11 @@ import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Scene3d exposing (mesh)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.RendererCommon as RendererCommon
+import View3d.RendererCommon as RendererCommon exposing (Instance, Vertex)
 import View3d.RendererScene3d as RendererScene3d
 import View3d.RendererWebGLEffects as RendererEffects
 import WebGL
@@ -50,13 +50,6 @@ type alias PickingInfo =
     , radius : Float
     , pickingMesh : Mesh Vec3
     }
-
-
-type alias Scene =
-    List
-        { mesh : Mesh RendererCommon.Vertex
-        , instances : List RendererCommon.Instance
-        }
 
 
 type alias Model =
@@ -437,27 +430,27 @@ setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
 
-setScene : Scene -> Model -> Model
-setScene scene model =
+setScene : List (Mesh Vertex) -> List Instance -> Model -> Model
+setScene meshes instances model =
     let
         meshesScene3d =
-            scene
+            meshes
                 |> List.map
-                    (\{ mesh } ->
+                    (\mesh ->
                         RendererScene3d.convertMeshForRenderer mesh
                     )
 
         meshesWebGLFog =
-            scene
+            meshes
                 |> List.map
-                    (\{ mesh } ->
+                    (\mesh ->
                         RendererEffects.convertMeshForRenderer mesh
                     )
 
         pickingData =
-            scene
+            meshes
                 |> List.map
-                    (\{ mesh } ->
+                    (\mesh ->
                         { pickingMesh = meshForPicking mesh
                         , centroid = centroid mesh
                         , radius = radius mesh
@@ -465,17 +458,19 @@ setScene scene model =
                     )
 
         boundingData =
-            scene
-                |> List.concatMap
-                    (\{ mesh, instances } ->
-                        List.map
-                            (\{ transform } ->
-                                ( Mat4.transform transform (centroid mesh)
-                                , radius mesh
+            pickingData
+                |> List.indexedMap
+                    (\index p ->
+                        instances
+                            |> List.filter (\inst -> inst.idxMesh == index)
+                            |> List.map
+                                (\{ transform } ->
+                                    ( Mat4.transform transform p.centroid
+                                    , p.radius
+                                    )
                                 )
-                            )
-                            instances
                     )
+                |> List.concat
 
         sceneCenter =
             boundingData
@@ -489,7 +484,7 @@ setScene scene model =
                 |> Maybe.withDefault 0.0
     in
     { model
-        | scene = List.concatMap .instances scene
+        | scene = instances
         , meshesScene3d = Array.fromList meshesScene3d
         , meshesWebGLFog = Array.fromList meshesWebGLFog
         , pickingData = Array.fromList pickingData

@@ -24,9 +24,9 @@ import Set
 import Styling
 import Task
 import ValueSlider
-import View3d.Main as View3d exposing (Scene)
+import View3d.Main as View3d
 import View3d.Mesh exposing (Mesh)
-import View3d.RendererCommon exposing (Material, Vertex)
+import View3d.RendererCommon exposing (Instance, Material, Vertex)
 
 
 main : Program Flags Model Msg
@@ -1274,13 +1274,8 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             tilingMaterial tilingSettings.tileBaseColor
 
 
-convertScene :
-    List (Mesh Vertex)
-    -> List DecodeScene.Instance
-    -> Int
-    -> Model
-    -> Scene
-convertScene meshes instances dim model =
+convertInstances : List DecodeScene.Instance -> Int -> Model -> List Instance
+convertInstances instances dim model =
     let
         convertInstance index instance =
             { material = makeMaterial instance dim model
@@ -1289,16 +1284,7 @@ convertScene meshes instances dim model =
             , idxInstance = index
             }
     in
-    List.indexedMap
-        (\index mesh ->
-            { mesh = mesh
-            , instances =
-                instances
-                    |> List.filter (\instance -> instance.meshIndex == index)
-                    |> List.indexedMap convertInstance
-            }
-        )
-        meshes
+    List.indexedMap convertInstance instances
 
 
 handleJSData : Decode.Value -> Model -> Model
@@ -1317,15 +1303,15 @@ handleJSData value model =
 
                 Scene meshes instances dim False ->
                     updateView3d
-                        (View3d.setScene
-                            (convertScene meshes instances dim model)
+                        (View3d.setScene meshes
+                            (convertInstances instances dim model)
                         )
                         model
 
                 Scene meshes instances dim True ->
                     updateView3d
-                        (View3d.setScene
-                            (convertScene meshes instances dim model)
+                        (View3d.setScene meshes
+                            (convertInstances instances dim model)
                             >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
                             >> View3d.encompass
                         )
