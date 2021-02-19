@@ -2,7 +2,6 @@ module View3d.Main exposing
     ( Model
     , Msg
     , Outcome(..)
-    , Renderer(..)
     , Scene
     , encompass
     , init
@@ -58,11 +57,6 @@ type alias Scene =
         { mesh : Mesh RendererCommon.Vertex
         , instances : List RendererCommon.Instance
         }
-
-
-type Renderer
-    = Scene3d
-    | WebGL
 
 
 type alias Model =
