@@ -1274,8 +1274,13 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             tilingMaterial tilingSettings.tileBaseColor
 
 
-convertInstances : List DecodeScene.Instance -> Int -> Model -> List Instance
-convertInstances instances dim model =
+convertInstances :
+    Int
+    -> List DecodeScene.Instance
+    -> Int
+    -> Model
+    -> List Instance
+convertInstances n instances dim model =
     let
         convertInstance index instance =
             { material = makeMaterial instance dim model
@@ -1284,7 +1289,14 @@ convertInstances instances dim model =
             , idxInstance = index
             }
     in
-    List.indexedMap convertInstance instances
+    List.range 0 (n - 1)
+        |> List.map
+            (\index ->
+                instances
+                    |> List.filter (\instance -> instance.meshIndex == index)
+                    |> List.indexedMap convertInstance
+            )
+        |> List.concat
 
 
 handleJSData : Decode.Value -> Model -> Model
@@ -1301,21 +1313,26 @@ handleJSData value model =
                 Log text ->
                     { model | status = text }
 
-                Scene meshes instances dim False ->
-                    updateView3d
-                        (View3d.setScene meshes
-                            (convertInstances instances dim model)
-                        )
-                        model
+                Scene meshes instances dim reset ->
+                    let
+                        n =
+                            List.length meshes
 
-                Scene meshes instances dim True ->
-                    updateView3d
-                        (View3d.setScene meshes
-                            (convertInstances instances dim model)
-                            >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
-                            >> View3d.encompass
-                        )
-                        model
+                        setScene =
+                            View3d.setScene
+                                meshes
+                                (convertInstances n instances dim model)
+                    in
+                    if reset then
+                        updateView3d
+                            (setScene
+                                >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+                                >> View3d.encompass
+                            )
+                            model
+
+                    else
+                        updateView3d setScene model
 
 
 isHotKey : String -> Bool
