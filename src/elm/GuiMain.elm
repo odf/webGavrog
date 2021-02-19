@@ -147,24 +147,15 @@ decodeButtons =
         (Decode.at [ "buttons" ] Decode.int)
 
 
-decodeScene : Decode.Decoder ( List (Mesh Vertex), List DecodeScene.Instance )
-decodeScene =
-    Decode.map2
-        (\meshes instances -> ( meshes, instances ))
-        (Decode.field "meshes" (Decode.list DecodeScene.decodeMesh))
-        (Decode.field "instances" (Decode.list DecodeScene.decodeInstance))
-
-
 decodeInData : Decode.Decoder InData
 decodeInData =
     Decode.oneOf
-        [ Decode.map (\s -> Title s)
-            (Decode.field "title" Decode.string)
-        , Decode.map (\s -> Log s)
-            (Decode.field "log" Decode.string)
-        , Decode.map3
-            (\( meshes, instances ) d r -> Scene meshes instances d r)
-            (Decode.field "scene" decodeScene)
+        [ Decode.map Title (Decode.field "title" Decode.string)
+        , Decode.map Log (Decode.field "log" Decode.string)
+        , Decode.map4
+            Scene
+            (Decode.field "meshes" (Decode.list DecodeScene.decodeMesh))
+            (Decode.field "instances" (Decode.list DecodeScene.decodeInstance))
             (Decode.field "dim" Decode.int)
             (Decode.field "reset" Decode.bool)
         ]

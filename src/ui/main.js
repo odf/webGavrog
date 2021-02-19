@@ -281,8 +281,8 @@ const render = domNode => {
     log,
     worker: csp.nbind(createWorker(log), null),
     sendTitle: text => app.ports.fromJS.send({ title: text }),
-    sendScene: (scene, dim, reset) => {
-      app.ports.fromJS.send({ scene, dim, reset })
+    sendScene: ({ meshes, instances }, dim, reset) => {
+      app.ports.fromJS.send({ meshes, instances, dim, reset })
     }
   };
 
