@@ -39,10 +39,14 @@ main =
         }
 
 
+type alias Instances =
+    List DecodeScene.Instance
+
+
 type InData
     = Title String
     | Log String
-    | Scene (List (Mesh Vertex)) (List DecodeScene.Instance) Int Bool
+    | Scene (List (Mesh Vertex)) Instances Int Bool
 
 
 type ViewAxis
@@ -1265,13 +1269,8 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             tilingMaterial tilingSettings.tileBaseColor
 
 
-convertInstances :
-    Int
-    -> List DecodeScene.Instance
-    -> Int
-    -> Model
-    -> List Instance
-convertInstances n instances dim model =
+convertInstances : Instances -> Int -> Model -> List Instance
+convertInstances instances dim model =
     let
         convertInstance index instance =
             { material = makeMaterial instance dim model
@@ -1279,8 +1278,14 @@ convertInstances n instances dim model =
             , idxMesh = instance.meshIndex
             , idxInstance = index
             }
+
+        n =
+            instances
+                |> List.map .meshIndex
+                |> List.maximum
+                |> Maybe.withDefault 0
     in
-    List.range 0 (n - 1)
+    List.range 0 n
         |> List.map
             (\index ->
                 instances
@@ -1306,13 +1311,10 @@ handleJSData value model =
 
                 Scene meshes instances dim reset ->
                     let
-                        n =
-                            List.length meshes
-
                         setScene =
                             View3d.setScene
                                 meshes
-                                (convertInstances n instances dim model)
+                                (convertInstances instances dim model)
                     in
                     if reset then
                         updateView3d
