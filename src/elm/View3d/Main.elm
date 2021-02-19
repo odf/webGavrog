@@ -430,53 +430,49 @@ setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
 
+setMeshes : List (Mesh Vertex) -> Model -> Model
+setMeshes meshes model =
+    let
+        meshesScene3d =
+            List.map
+                (\mesh -> RendererScene3d.convertMeshForRenderer mesh)
+                meshes
+
+        meshesWebGLFog =
+            List.map
+                (\mesh -> RendererEffects.convertMeshForRenderer mesh)
+                meshes
+
+        pickingData =
+            List.map
+                (\mesh ->
+                    { pickingMesh = meshForPicking mesh
+                    , centroid = centroid mesh
+                    , radius = radius mesh
+                    }
+                )
+                meshes
+    in
+    { model
+        | meshesScene3d = Array.fromList meshesScene3d
+        , meshesWebGLFog = Array.fromList meshesWebGLFog
+        , pickingData = Array.fromList pickingData
+    }
+
+
 setScene : Maybe (List (Mesh Vertex)) -> List Instance -> Model -> Model
 setScene maybeMeshes instances model =
     let
-        meshesScene3d =
+        modelWithMeshes =
             case maybeMeshes of
                 Nothing ->
-                    model.meshesScene3d
+                    model
 
                 Just meshes ->
-                    meshes
-                        |> List.map
-                            (\mesh ->
-                                RendererScene3d.convertMeshForRenderer mesh
-                            )
-                        |> Array.fromList
-
-        meshesWebGLFog =
-            case maybeMeshes of
-                Nothing ->
-                    model.meshesWebGLFog
-
-                Just meshes ->
-                    meshes
-                        |> List.map
-                            (\mesh ->
-                                RendererEffects.convertMeshForRenderer mesh
-                            )
-                        |> Array.fromList
-
-        pickingData =
-            case maybeMeshes of
-                Nothing ->
-                    model.pickingData
-
-                Just meshes ->
-                    meshes
-                        |> List.map
-                            (\mesh ->
-                                { pickingMesh = meshForPicking mesh
-                                , centroid = centroid mesh
-                                , radius = radius mesh
-                                }
-                            )
-                        |> Array.fromList
+                    setMeshes meshes model
 
         boundingData =
-            pickingData
+            modelWithMeshes.pickingData
                 |> Array.toList
                 |> List.indexedMap
                     (\index p ->
@@ -502,11 +498,8 @@ setScene maybeMeshes instances model =
                 |> List.maximum
                 |> Maybe.withDefault 0.0
     in
-    { model
+    { modelWithMeshes
         | scene = instances
-        , meshesScene3d = meshesScene3d
-        , meshesWebGLFog = meshesWebGLFog
-        , pickingData = pickingData
         , selected = Set.empty
         , center = sceneCenter
         , radius = sceneRadius
