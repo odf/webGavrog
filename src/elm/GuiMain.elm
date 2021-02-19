@@ -39,6 +39,10 @@ main =
         }
 
 
+type alias Meshes =
+    List (Mesh Vertex)
+
+
 type alias Instances =
     List DecodeScene.Instance
 
@@ -46,7 +50,7 @@ type alias Instances =
 type InData
     = Title String
     | Log String
-    | Scene (List (Mesh Vertex)) Instances Int Bool
+    | Scene (Maybe Meshes) Instances Int Bool
 
 
 type ViewAxis
@@ -158,7 +162,9 @@ decodeInData =
         , Decode.map Log (Decode.field "log" Decode.string)
         , Decode.map4
             Scene
-            (Decode.field "meshes" (Decode.list DecodeScene.decodeMesh))
+            (Decode.maybe
+                (Decode.field "meshes" (Decode.list DecodeScene.decodeMesh))
+            )
             (Decode.field "instances" (Decode.list DecodeScene.decodeInstance))
             (Decode.field "dim" Decode.int)
             (Decode.field "reset" Decode.bool)
@@ -1309,11 +1315,11 @@ handleJSData value model =
                 Log text ->
                     { model | status = text }
 
-                Scene meshes instances dim reset ->
+                Scene maybeMeshes instances dim reset ->
                     let
                         setScene =
                             View3d.setScene
-                                meshes
+                                maybeMeshes
                                 (convertInstances instances dim model)
                     in
                     if reset then
