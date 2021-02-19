@@ -6,7 +6,7 @@ import Browser.Dom as Dom
 import Browser.Events
 import Color
 import ColorDialog
-import DecodeScene exposing (MeshType(..), decodeScene)
+import DecodeScene exposing (MeshType(..))
 import Dict exposing (Dict)
 import Element
 import Element.Background as Background
@@ -25,7 +25,8 @@ import Styling
 import Task
 import ValueSlider
 import View3d.Main as View3d exposing (Scene)
-import View3d.RendererCommon exposing (Material)
+import View3d.Mesh exposing (Mesh)
+import View3d.RendererCommon exposing (Material, Vertex)
 
 
 main : Program Flags Model Msg
@@ -38,10 +39,16 @@ main =
         }
 
 
+type alias MeshWithInstances =
+    { mesh : Mesh Vertex
+    , instances : List DecodeScene.Instance
+    }
+
+
 type InData
     = Title String
     | Log String
-    | Scene DecodeScene.Scene Int Bool
+    | Scene (List MeshWithInstances) Int Bool
 
 
 type ViewAxis
@@ -144,6 +151,29 @@ decodeButtons =
             }
         )
         (Decode.at [ "buttons" ] Decode.int)
+
+
+meshWithInstances :
+    List DecodeScene.Instance
+    -> Int
+    -> Mesh Vertex
+    -> MeshWithInstances
+meshWithInstances instances index mesh =
+    { mesh = mesh
+    , instances =
+        instances
+            |> List.filter (\instance -> instance.meshIndex == index)
+    }
+
+
+decodeScene : Decode.Decoder (List MeshWithInstances)
+decodeScene =
+    Decode.map2
+        (\meshes instances ->
+            List.indexedMap (meshWithInstances instances) meshes
+        )
+        (Decode.field "meshes" (Decode.list DecodeScene.decodeMesh))
+        (Decode.field "instances" (Decode.list DecodeScene.decodeInstance))
 
 
 decodeInData : Decode.Decoder InData
@@ -1264,7 +1294,7 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             tilingMaterial tilingSettings.tileBaseColor
 
 
-convertScene : DecodeScene.Scene -> Int -> Model -> Scene
+convertScene : List MeshWithInstances -> Int -> Model -> Scene
 convertScene scene dim model =
     let
         convertInstance index instance =

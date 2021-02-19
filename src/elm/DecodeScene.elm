@@ -1,4 +1,9 @@
-module DecodeScene exposing (Instance, MeshType(..), Scene, decodeScene)
+module DecodeScene exposing
+    ( Instance
+    , MeshType(..)
+    , decodeInstance
+    , decodeMesh
+    )
 
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -23,16 +28,6 @@ type MeshType
     | NetEdge
     | CellEdge
     | Unknown
-
-
-type alias MeshWithInstances =
-    { mesh : Mesh Vertex
-    , instances : List Instance
-    }
-
-
-type alias Scene =
-    List MeshWithInstances
 
 
 decodeVec3 : Decode.Decoder Vec3
@@ -114,22 +109,3 @@ decodeInstance =
         (Decode.field "meshIndex" Decode.int)
         (Decode.field "transform" decodeTransform)
         (Decode.field "extraShift" decodeVec3)
-
-
-meshWithInstances : List Instance -> Int -> Mesh Vertex -> MeshWithInstances
-meshWithInstances instances index mesh =
-    { mesh = mesh
-    , instances =
-        instances
-            |> List.filter (\instance -> instance.meshIndex == index)
-    }
-
-
-decodeScene : Decode.Decoder Scene
-decodeScene =
-    Decode.map2
-        (\meshes instances ->
-            List.indexedMap (meshWithInstances instances) meshes
-        )
-        (Decode.field "meshes" (Decode.list decodeMesh))
-        (Decode.field "instances" (Decode.list decodeInstance))
