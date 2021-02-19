@@ -39,16 +39,10 @@ main =
         }
 
 
-type alias MeshWithInstances =
-    { mesh : Mesh Vertex
-    , instances : List DecodeScene.Instance
-    }
-
-
 type InData
     = Title String
     | Log String
-    | Scene (List MeshWithInstances) Int Bool
+    | Scene (List (Mesh Vertex)) (List DecodeScene.Instance) Int Bool
 
 
 type ViewAxis
@@ -153,25 +147,10 @@ decodeButtons =
         (Decode.at [ "buttons" ] Decode.int)
 
 
-meshWithInstances :
-    List DecodeScene.Instance
-    -> Int
-    -> Mesh Vertex
-    -> MeshWithInstances
-meshWithInstances instances index mesh =
-    { mesh = mesh
-    , instances =
-        instances
-            |> List.filter (\instance -> instance.meshIndex == index)
-    }
-
-
-decodeScene : Decode.Decoder (List MeshWithInstances)
+decodeScene : Decode.Decoder ( List (Mesh Vertex), List DecodeScene.Instance )
 decodeScene =
     Decode.map2
-        (\meshes instances ->
-            List.indexedMap (meshWithInstances instances) meshes
-        )
+        (\meshes instances -> ( meshes, instances ))
         (Decode.field "meshes" (Decode.list DecodeScene.decodeMesh))
         (Decode.field "instances" (Decode.list DecodeScene.decodeInstance))
 
@@ -183,7 +162,8 @@ decodeInData =
             (Decode.field "title" Decode.string)
         , Decode.map (\s -> Log s)
             (Decode.field "log" Decode.string)
-        , Decode.map3 (\s d r -> Scene s d r)
+        , Decode.map3
+            (\( meshes, instances ) d r -> Scene meshes instances d r)
             (Decode.field "scene" decodeScene)
             (Decode.field "dim" Decode.int)
             (Decode.field "reset" Decode.bool)
@@ -1294,8 +1274,13 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             tilingMaterial tilingSettings.tileBaseColor
 
 
-convertScene : List MeshWithInstances -> Int -> Model -> Scene
-convertScene scene dim model =
+convertScene :
+    List (Mesh Vertex)
+    -> List DecodeScene.Instance
+    -> Int
+    -> Model
+    -> Scene
+convertScene meshes instances dim model =
     let
         convertInstance index instance =
             { material = makeMaterial instance dim model
@@ -1304,13 +1289,16 @@ convertScene scene dim model =
             , idxInstance = index
             }
     in
-    List.map
-        (\{ mesh, instances } ->
+    List.indexedMap
+        (\index mesh ->
             { mesh = mesh
-            , instances = List.indexedMap convertInstance instances
+            , instances =
+                instances
+                    |> List.filter (\instance -> instance.meshIndex == index)
+                    |> List.indexedMap convertInstance
             }
         )
-        scene
+        meshes
 
 
 handleJSData : Decode.Value -> Model -> Model
@@ -1327,14 +1315,17 @@ handleJSData value model =
                 Log text ->
                     { model | status = text }
 
-                Scene scene dim False ->
+                Scene meshes instances dim False ->
                     updateView3d
-                        (View3d.setScene (convertScene scene dim model))
+                        (View3d.setScene
+                            (convertScene meshes instances dim model)
+                        )
                         model
 
-                Scene scene dim True ->
+                Scene meshes instances dim True ->
                     updateView3d
-                        (View3d.setScene (convertScene scene dim model)
+                        (View3d.setScene
+                            (convertScene meshes instances dim model)
                             >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
                             >> View3d.encompass
                         )
