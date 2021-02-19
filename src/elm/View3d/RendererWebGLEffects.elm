@@ -124,7 +124,9 @@ entities meshes model options =
                             [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
                             , DepthTest.default
                             , WebGL.Settings.polygonOffset -1.0 -4.0
-                            , WebGL.Settings.cullFace WebGL.Settings.back
+
+                            -- TODO eliminate mirror transformations first
+                            -- , WebGL.Settings.cullFace WebGL.Settings.back
                             ]
                             vertexShader
                             fragmentShaderFog
