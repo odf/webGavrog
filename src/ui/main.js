@@ -102,13 +102,27 @@ const gotoStructure = (config, model, i) => csp.go(function* () {
 });
 
 
+const fieldChanged = (key, newObj, oldObj) =>
+  newObj[key] != null && newObj[key] != oldObj[key];
+
+
 const updateStructure = (config, model, options) => csp.go(function* () {
   try {
-    const changedMod = (
+    const dim = model.data.dim;
+
+    const changedMod =
       model.data.type == 'tiling' &&
-      options.tilingModifier &&
-      options.tilingModifier != model.options.tilingModifier
-    );
+      fieldChanged('tilingModifier', options, model.options);
+
+    const changedMeshes =
+      fieldChanged('showUnitCell', options, model.options) ||
+      fieldChanged('netVertexRadius', options, model.options) ||
+      fieldChanged('netEdgeRadius', options, model.options) ||
+      fieldChanged('edgeWidth2d', options, model.options) ||
+      fieldChanged('edgeWidth', options, model.options) ||
+      fieldChanged('extraSmooth', options, model.options) ||
+      fieldChanged('skipRelaxation', options, model.options);
+
     options = Object.assign({}, model.options, options);
     model = Object.assign({}, model, { options });
 
@@ -118,7 +132,12 @@ const updateStructure = (config, model, options) => csp.go(function* () {
       const scene = yield makeScene.makeScene(
         model.data, model.options, config.worker, config.log
       );
-      yield config.sendScene(scene, model.data.dim, false);
+
+      if (changedMeshes)
+        yield config.sendScene(scene, model.data.dim, false);
+      else
+        yield config.sendInstances(scene, model.data.dim, false);
+
       return Object.assign({}, model, { scene });
     }
   } catch (ex) {
@@ -146,7 +165,7 @@ const tweakScene = (config, model, selected, tweakFn) => csp.go(function* () {
       data, model.options, config.worker, config.log
     );
 
-    yield config.sendScene(scene, model.data.dim, false);
+    yield config.sendInstances(scene, model.data.dim, false);
 
     return Object.assign({}, model, { data, scene });
   } catch (ex) {
@@ -168,7 +187,7 @@ const freshDisplayList = (config, model, options) => csp.go(function* () {
       data, model.options, config.worker, config.log
     );
 
-    yield config.sendScene(scene, model.data.dim, false);
+    yield config.sendInstances(scene, model.data.dim, false);
 
     const newOptions = Object.assign({}, model.options, options);
     return Object.assign({}, model, { data, scene, options: newOptions });
@@ -283,6 +302,9 @@ const render = domNode => {
     sendTitle: text => app.ports.fromJS.send({ title: text }),
     sendScene: ({ meshes, instances }, dim, reset) => {
       app.ports.fromJS.send({ meshes, instances, dim, reset })
+    },
+    sendInstances: ({ instances }, dim, reset) => {
+      app.ports.fromJS.send({ instances, dim, reset })
     }
   };
 

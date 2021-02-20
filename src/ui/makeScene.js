@@ -377,9 +377,7 @@ const makeTileDisplayList = ({ tiles, dim, sgInfo: { toStd } }, options) => {
 
 
 const makeTilingModel = (data, options, runJob, log) => csp.go(function* () {
-  const {
-    ds, cov, skel, tiles, orbitReps, sgInfo, embeddings, displayList
-  } = data;
+  const { ds, cov, skel, tiles, orbitReps, embeddings, displayList } = data;
 
   yield log('Making the tiling model...');
 
