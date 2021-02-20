@@ -812,148 +812,19 @@ update msg model =
             ( { model | displaySettings = settings }, Cmd.none )
 
         UpdateSceneSettings settings redraw ->
-            let
-                oldSettings =
-                    model.sceneSettings
-            in
-            if redraw then
-                if settings.showUnitCell /= oldSettings.showUnitCell then
-                    let
-                        options =
-                            [ ( "showUnitCell"
-                              , Encode.bool settings.showUnitCell
-                              )
-                            ]
-                    in
-                    ( { model | sceneSettings = settings }
-                    , toJS <|
-                        Encode.object
-                            [ ( "mode", Encode.string "options" )
-                            , ( "options", Encode.object options )
-                            ]
-                    )
-
-                else
-                    let
-                        options =
-                            [ ( "xExtent2d", Encode.int settings.xExtent2d )
-                            , ( "yExtent2d", Encode.int settings.yExtent2d )
-                            , ( "xExtent3d", Encode.int settings.xExtent3d )
-                            , ( "yExtent3d", Encode.int settings.yExtent3d )
-                            , ( "zExtent3d", Encode.int settings.zExtent3d )
-                            ]
-                    in
-                    ( { model | sceneSettings = settings }
-                    , toJS <|
-                        Encode.object
-                            [ ( "mode", Encode.string "action" )
-                            , ( "text", Encode.string "Fresh Display List" )
-                            , ( "options", Encode.object options )
-                            ]
-                    )
-
-            else
-                ( { model | sceneSettings = settings }, Cmd.none )
+            updateSceneSettings settings redraw model
 
         UpdateNetSettings settings redraw ->
-            if redraw then
-                let
-                    options =
-                        [ ( "netVertexRadius"
-                          , Encode.float settings.vertexRadius
-                          )
-                        , ( "netEdgeRadius"
-                          , Encode.float settings.edgeRadius
-                          )
-                        ]
-                in
-                ( { model | netSettings = settings }
-                , toJS <|
-                    Encode.object
-                        [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.object options )
-                        ]
-                )
-
-            else
-                ( { model | netSettings = settings }, Cmd.none )
+            updateNetSettings settings redraw model
 
         UpdateTilingSettings settings redraw ->
-            if redraw then
-                let
-                    options =
-                        [ ( "extraSmooth", Encode.bool settings.extraSmooth )
-                        , ( "tileScale", Encode.float settings.tileScale )
-                        , ( "edgeWidth", Encode.float settings.edgeWidth )
-                        , ( "colorByTranslations"
-                          , Encode.bool settings.colorByTranslationClass
-                          )
-                        ]
-                in
-                ( { model | tilingSettings = settings }
-                , toJS <|
-                    Encode.object
-                        [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.object options )
-                        ]
-                )
-
-            else
-                ( { model | tilingSettings = settings }, Cmd.none )
+            updateTilingSettings settings redraw model
 
         UpdateTiling2dSettings settings redraw ->
-            if redraw then
-                let
-                    options =
-                        [ ( "tileScale2d", Encode.float settings.tileScale )
-                        , ( "edgeWidth2d", Encode.float settings.edgeWidth )
-                        , ( "colorByTranslations"
-                          , Encode.bool settings.colorByTranslationClass
-                          )
-                        ]
-                in
-                ( { model | tiling2dSettings = settings }
-                , toJS <|
-                    Encode.object
-                        [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.object options )
-                        ]
-                )
-
-            else
-                ( { model | tiling2dSettings = settings }, Cmd.none )
+            updateTiling2dSettings settings redraw model
 
         UpdateAdvancedSettings settings ->
-            if settings /= model.advancedSettings then
-                let
-                    value =
-                        case settings.tilingModifier of
-                            None ->
-                                "none"
-
-                            Dual ->
-                                "dual"
-
-                            TAnalog ->
-                                "t-analog"
-
-                    options =
-                        [ ( "tilingModifier", Encode.string value )
-                        , ( "skipRelaxation"
-                          , Encode.bool settings.skipRelaxation
-                          )
-                        ]
-                in
-                ( { model | advancedSettings = settings }
-                , toJS <|
-                    Encode.object
-                        [ ( "mode", Encode.string "options" )
-                        , ( "options", Encode.object options )
-                        ]
-                )
-
-            else
-                ( { model | advancedSettings = settings }, Cmd.none )
+            updateAdvancedSettings settings model
 
         KeyUp code ->
             handleKeyPress code model
@@ -1013,6 +884,155 @@ updateMenu state model =
 updateView3d : (View3d.Model -> View3d.Model) -> Model -> Model
 updateView3d fn model =
     { model | viewState = fn model.viewState }
+
+
+updateSceneSettings : SceneSettings -> Bool -> Model -> ( Model, Cmd Msg )
+updateSceneSettings settings redraw model =
+    let
+        oldSettings =
+            model.sceneSettings
+    in
+    if redraw then
+        if settings.showUnitCell /= oldSettings.showUnitCell then
+            let
+                options =
+                    [ ( "showUnitCell", Encode.bool settings.showUnitCell ) ]
+            in
+            ( { model | sceneSettings = settings }
+            , toJS <|
+                Encode.object
+                    [ ( "mode", Encode.string "options" )
+                    , ( "options", Encode.object options )
+                    ]
+            )
+
+        else
+            let
+                options =
+                    [ ( "xExtent2d", Encode.int settings.xExtent2d )
+                    , ( "yExtent2d", Encode.int settings.yExtent2d )
+                    , ( "xExtent3d", Encode.int settings.xExtent3d )
+                    , ( "yExtent3d", Encode.int settings.yExtent3d )
+                    , ( "zExtent3d", Encode.int settings.zExtent3d )
+                    ]
+            in
+            ( { model | sceneSettings = settings }
+            , toJS <|
+                Encode.object
+                    [ ( "mode", Encode.string "action" )
+                    , ( "text", Encode.string "Fresh Display List" )
+                    , ( "options", Encode.object options )
+                    ]
+            )
+
+    else
+        ( { model | sceneSettings = settings }, Cmd.none )
+
+
+updateNetSettings : NetSettings -> Bool -> Model -> ( Model, Cmd Msg )
+updateNetSettings settings redraw model =
+    if redraw then
+        let
+            options =
+                [ ( "netVertexRadius", Encode.float settings.vertexRadius )
+                , ( "netEdgeRadius", Encode.float settings.edgeRadius )
+                ]
+        in
+        ( { model | netSettings = settings }
+        , toJS <|
+            Encode.object
+                [ ( "mode", Encode.string "options" )
+                , ( "options", Encode.object options )
+                ]
+        )
+
+    else
+        ( { model | netSettings = settings }, Cmd.none )
+
+
+updateTilingSettings : TilingSettings -> Bool -> Model -> ( Model, Cmd Msg )
+updateTilingSettings settings redraw model =
+    if redraw then
+        let
+            options =
+                [ ( "extraSmooth", Encode.bool settings.extraSmooth )
+                , ( "tileScale", Encode.float settings.tileScale )
+                , ( "edgeWidth", Encode.float settings.edgeWidth )
+                , ( "colorByTranslations"
+                  , Encode.bool settings.colorByTranslationClass
+                  )
+                ]
+        in
+        ( { model | tilingSettings = settings }
+        , toJS <|
+            Encode.object
+                [ ( "mode", Encode.string "options" )
+                , ( "options", Encode.object options )
+                ]
+        )
+
+    else
+        ( { model | tilingSettings = settings }, Cmd.none )
+
+
+updateTiling2dSettings :
+    Tiling2dSettings
+    -> Bool
+    -> Model
+    -> ( Model, Cmd Msg )
+updateTiling2dSettings settings redraw model =
+    if redraw then
+        let
+            options =
+                [ ( "tileScale2d", Encode.float settings.tileScale )
+                , ( "edgeWidth2d", Encode.float settings.edgeWidth )
+                , ( "colorByTranslations"
+                  , Encode.bool settings.colorByTranslationClass
+                  )
+                ]
+        in
+        ( { model | tiling2dSettings = settings }
+        , toJS <|
+            Encode.object
+                [ ( "mode", Encode.string "options" )
+                , ( "options", Encode.object options )
+                ]
+        )
+
+    else
+        ( { model | tiling2dSettings = settings }, Cmd.none )
+
+
+updateAdvancedSettings : AdvancedSettings -> Model -> ( Model, Cmd Msg )
+updateAdvancedSettings settings model =
+    if settings /= model.advancedSettings then
+        let
+            value =
+                case settings.tilingModifier of
+                    None ->
+                        "none"
+
+                    Dual ->
+                        "dual"
+
+                    TAnalog ->
+                        "t-analog"
+
+            options =
+                [ ( "tilingModifier", Encode.string value )
+                , ( "skipRelaxation", Encode.bool settings.skipRelaxation )
+                ]
+        in
+        ( { model | advancedSettings = settings }
+        , toJS <|
+            Encode.object
+                [ ( "mode", Encode.string "options" )
+                , ( "options", Encode.object options )
+                ]
+        )
+
+    else
+        ( { model | advancedSettings = settings }, Cmd.none )
 
 
 handleView3dOutcome : View3d.Outcome -> Model -> Model
