@@ -907,6 +907,9 @@ update msg model =
                     options =
                         [ ( "tileScale2d", Encode.float settings.tileScale )
                         , ( "edgeWidth2d", Encode.float settings.edgeWidth )
+                        , ( "colorByTranslations"
+                          , Encode.bool settings.colorByTranslationClass
+                          )
                         ]
                 in
                 ( { model | tiling2dSettings = settings }
@@ -1960,14 +1963,14 @@ viewNetSettings toMsg settings =
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | vertexColor = color })
-            (\onOff -> toMsg { settings | editVertexColor = onOff } True)
+            (\onOff -> toMsg { settings | editVertexColor = onOff } False)
             settings.vertexColor
             settings.editVertexColor
             "Vertex Color"
             False
         , viewColorInput
             (\color -> toMsg { settings | edgeColor = color })
-            (\onOff -> toMsg { settings | editEdgeColor = onOff } True)
+            (\onOff -> toMsg { settings | editEdgeColor = onOff } False)
             settings.edgeColor
             settings.editEdgeColor
             "Edge Color"
@@ -2014,7 +2017,7 @@ viewTilingSettings toMsg settings =
         , viewSeparator
         , viewColorInput
             (\color -> toMsg { settings | tileBaseColor = color })
-            (\onOff -> toMsg { settings | editTileBaseColor = onOff } True)
+            (\onOff -> toMsg { settings | editTileBaseColor = onOff } False)
             settings.tileBaseColor
             settings.editTileBaseColor
             "Tile base Color"
@@ -2043,7 +2046,7 @@ viewTilingSettings toMsg settings =
                         [ viewColorInput
                             (\color -> toMsg { settings | edgeColor = color })
                             (\onOff ->
-                                toMsg { settings | editEdgeColor = onOff } True
+                                toMsg { settings | editEdgeColor = onOff } False
                             )
                             settings.edgeColor
                             settings.editEdgeColor
@@ -2115,7 +2118,7 @@ viewTiling2dSettings toMsg settings =
         , Input.checkbox []
             { onChange =
                 \onOff ->
-                    toMsg { settings | colorByTranslationClass = onOff } False
+                    toMsg { settings | colorByTranslationClass = onOff } True
             , icon = Input.defaultCheckbox
             , checked = settings.colorByTranslationClass
             , label =
