@@ -305,6 +305,7 @@ type alias Model =
     , tilingSettings : TilingSettings
     , tiling2dSettings : Tiling2dSettings
     , advancedSettings : AdvancedSettings
+    , pendingJSOptions : Dict String Encode.Value
     , title : String
     , status : String
     }
@@ -400,6 +401,7 @@ init flags =
             { tilingModifier = None
             , skipRelaxation = False
             }
+      , pendingJSOptions = Dict.empty
       }
     , Task.perform
         (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
@@ -886,93 +888,145 @@ updateView3d fn model =
     { model | viewState = fn model.viewState }
 
 
+updateDict :
+    comparable
+    -> a
+    -> a
+    -> (a -> val)
+    -> Dict comparable val
+    -> Dict comparable val
+updateDict key newVal oldVal encode dict =
+    if newVal /= oldVal then
+        Dict.insert key (encode newVal) dict
+
+    else
+        dict
+
+
+sendOptions : Dict String Encode.Value -> Cmd Msg
+sendOptions options =
+    let
+        ( displayListOptions, otherOptions ) =
+            Dict.partition (\key _ -> String.contains "Extent" key) options
+
+        optionsCmd =
+            [ ( "mode", Encode.string "options" )
+            , ( "options", Encode.dict identity identity otherOptions )
+            ]
+                |> Encode.object
+                |> toJS
+
+        displayListCmd =
+            [ ( "mode", Encode.string "action" )
+            , ( "text", Encode.string "Fresh Display List" )
+            , ( "options", Encode.dict identity identity displayListOptions )
+            ]
+                |> Encode.object
+                |> toJS
+    in
+    if Dict.isEmpty displayListOptions then
+        optionsCmd
+
+    else if Dict.isEmpty otherOptions then
+        displayListCmd
+
+    else
+        Cmd.batch [ optionsCmd, displayListCmd ]
+
+
 updateSceneSettings : SceneSettings -> Bool -> Model -> ( Model, Cmd Msg )
 updateSceneSettings settings redraw model =
     let
-        oldSettings =
-            model.sceneSettings
+        newOptions =
+            model.pendingJSOptions
+                |> updateDict "showUnitCell"
+                    settings.showUnitCell
+                    model.sceneSettings.showUnitCell
+                    Encode.bool
+                |> updateDict "xExtent2d"
+                    settings.xExtent2d
+                    model.sceneSettings.xExtent2d
+                    Encode.int
+                |> updateDict "yExtent2d"
+                    settings.yExtent2d
+                    model.sceneSettings.yExtent2d
+                    Encode.int
+                |> updateDict "xExtent3d"
+                    settings.xExtent3d
+                    model.sceneSettings.xExtent3d
+                    Encode.int
+                |> updateDict "yExtent3d"
+                    settings.yExtent3d
+                    model.sceneSettings.yExtent3d
+                    Encode.int
+                |> updateDict "zExtent3d"
+                    settings.zExtent3d
+                    model.sceneSettings.zExtent3d
+                    Encode.int
     in
     if redraw then
-        if settings.showUnitCell /= oldSettings.showUnitCell then
-            let
-                options =
-                    [ ( "showUnitCell", Encode.bool settings.showUnitCell ) ]
-            in
-            ( { model | sceneSettings = settings }
-            , toJS <|
-                Encode.object
-                    [ ( "mode", Encode.string "options" )
-                    , ( "options", Encode.object options )
-                    ]
-            )
-
-        else
-            let
-                options =
-                    [ ( "xExtent2d", Encode.int settings.xExtent2d )
-                    , ( "yExtent2d", Encode.int settings.yExtent2d )
-                    , ( "xExtent3d", Encode.int settings.xExtent3d )
-                    , ( "yExtent3d", Encode.int settings.yExtent3d )
-                    , ( "zExtent3d", Encode.int settings.zExtent3d )
-                    ]
-            in
-            ( { model | sceneSettings = settings }
-            , toJS <|
-                Encode.object
-                    [ ( "mode", Encode.string "action" )
-                    , ( "text", Encode.string "Fresh Display List" )
-                    , ( "options", Encode.object options )
-                    ]
-            )
+        ( { model | sceneSettings = settings, pendingJSOptions = Dict.empty }
+        , sendOptions newOptions
+        )
 
     else
-        ( { model | sceneSettings = settings }, Cmd.none )
+        ( { model | sceneSettings = settings, pendingJSOptions = newOptions }
+        , Cmd.none
+        )
 
 
 updateNetSettings : NetSettings -> Bool -> Model -> ( Model, Cmd Msg )
 updateNetSettings settings redraw model =
+    let
+        newOptions =
+            model.pendingJSOptions
+                |> updateDict "netVertexRadius"
+                    settings.vertexRadius
+                    model.netSettings.vertexRadius
+                    Encode.float
+                |> updateDict "netEdgeRadius"
+                    settings.edgeRadius
+                    model.netSettings.edgeRadius
+                    Encode.float
+    in
     if redraw then
-        let
-            options =
-                [ ( "netVertexRadius", Encode.float settings.vertexRadius )
-                , ( "netEdgeRadius", Encode.float settings.edgeRadius )
-                ]
-        in
-        ( { model | netSettings = settings }
-        , toJS <|
-            Encode.object
-                [ ( "mode", Encode.string "options" )
-                , ( "options", Encode.object options )
-                ]
+        ( { model | netSettings = settings, pendingJSOptions = Dict.empty }
+        , sendOptions newOptions
         )
 
     else
-        ( { model | netSettings = settings }, Cmd.none )
+        ( { model | netSettings = settings, pendingJSOptions = newOptions }
+        , Cmd.none
+        )
 
 
 updateTilingSettings : TilingSettings -> Bool -> Model -> ( Model, Cmd Msg )
 updateTilingSettings settings redraw model =
+    let
+        newOptions =
+            model.pendingJSOptions
+                |> updateDict "extraSmooth"
+                    settings.extraSmooth
+                    model.tilingSettings.extraSmooth
+                    Encode.bool
+                |> updateDict "tileScale"
+                    settings.tileScale
+                    model.tilingSettings.tileScale
+                    Encode.float
+                |> updateDict "edgeWidth"
+                    settings.edgeWidth
+                    model.tilingSettings.edgeWidth
+                    Encode.float
+    in
     if redraw then
-        let
-            options =
-                [ ( "extraSmooth", Encode.bool settings.extraSmooth )
-                , ( "tileScale", Encode.float settings.tileScale )
-                , ( "edgeWidth", Encode.float settings.edgeWidth )
-                , ( "colorByTranslations"
-                  , Encode.bool settings.colorByTranslationClass
-                  )
-                ]
-        in
-        ( { model | tilingSettings = settings }
-        , toJS <|
-            Encode.object
-                [ ( "mode", Encode.string "options" )
-                , ( "options", Encode.object options )
-                ]
+        ( { model | tilingSettings = settings, pendingJSOptions = Dict.empty }
+        , sendOptions newOptions
         )
 
     else
-        ( { model | tilingSettings = settings }, Cmd.none )
+        ( { model | tilingSettings = settings, pendingJSOptions = newOptions }
+        , Cmd.none
+        )
 
 
 updateTiling2dSettings :
@@ -981,58 +1035,69 @@ updateTiling2dSettings :
     -> Model
     -> ( Model, Cmd Msg )
 updateTiling2dSettings settings redraw model =
+    let
+        newOptions =
+            model.pendingJSOptions
+                |> updateDict "tileScale2d"
+                    settings.tileScale
+                    model.tiling2dSettings.tileScale
+                    Encode.float
+                |> updateDict "edgeWidth2d"
+                    settings.edgeWidth
+                    model.tiling2dSettings.edgeWidth
+                    Encode.float
+    in
     if redraw then
-        let
-            options =
-                [ ( "tileScale2d", Encode.float settings.tileScale )
-                , ( "edgeWidth2d", Encode.float settings.edgeWidth )
-                , ( "colorByTranslations"
-                  , Encode.bool settings.colorByTranslationClass
-                  )
-                ]
-        in
-        ( { model | tiling2dSettings = settings }
-        , toJS <|
-            Encode.object
-                [ ( "mode", Encode.string "options" )
-                , ( "options", Encode.object options )
-                ]
+        ( { model
+            | tiling2dSettings = settings
+            , pendingJSOptions = Dict.empty
+          }
+        , sendOptions newOptions
         )
 
     else
-        ( { model | tiling2dSettings = settings }, Cmd.none )
+        ( { model
+            | tiling2dSettings = settings
+            , pendingJSOptions = newOptions
+          }
+        , Cmd.none
+        )
+
+
+encodeModifier : TilingModifier -> Encode.Value
+encodeModifier mod =
+    let
+        s =
+            case mod of
+                None ->
+                    "none"
+
+                Dual ->
+                    "dual"
+
+                TAnalog ->
+                    "t-analog"
+    in
+    Encode.string s
 
 
 updateAdvancedSettings : AdvancedSettings -> Model -> ( Model, Cmd Msg )
 updateAdvancedSettings settings model =
-    if settings /= model.advancedSettings then
-        let
-            value =
-                case settings.tilingModifier of
-                    None ->
-                        "none"
-
-                    Dual ->
-                        "dual"
-
-                    TAnalog ->
-                        "t-analog"
-
-            options =
-                [ ( "tilingModifier", Encode.string value )
-                , ( "skipRelaxation", Encode.bool settings.skipRelaxation )
-                ]
-        in
-        ( { model | advancedSettings = settings }
-        , toJS <|
-            Encode.object
-                [ ( "mode", Encode.string "options" )
-                , ( "options", Encode.object options )
-                ]
-        )
-
-    else
-        ( { model | advancedSettings = settings }, Cmd.none )
+    let
+        newOptions =
+            model.pendingJSOptions
+                |> updateDict "tilingModifier"
+                    settings.tilingModifier
+                    model.advancedSettings.tilingModifier
+                    encodeModifier
+                |> updateDict "skipRelaxation"
+                    settings.skipRelaxation
+                    model.advancedSettings.skipRelaxation
+                    Encode.bool
+    in
+    ( { model | advancedSettings = settings, pendingJSOptions = Dict.empty }
+    , sendOptions newOptions
+    )
 
 
 handleView3dOutcome : View3d.Outcome -> Model -> Model

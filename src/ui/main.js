@@ -178,19 +178,21 @@ const tweakScene = (config, model, selected, tweakFn) => csp.go(function* () {
 
 const freshDisplayList = (config, model, options) => csp.go(function* () {
   try {
-    const displayList = yield makeScene.makeDisplayList(
-      model.data, options, config.worker, config.log
-    );
+    options = Object.assign({}, model.options, options);
+    model = Object.assign({}, model, { options });
 
+    const displayList = yield makeScene.makeDisplayList(
+      model.data, model.options, config.worker, config.log
+    );
     const data = Object.assign({}, model.data, { displayList });
+
     const scene = yield makeScene.makeScene(
       data, model.options, config.worker, config.log
     );
 
     yield config.sendInstances(scene, model.data.dim, false);
 
-    const newOptions = Object.assign({}, model.options, options);
-    return Object.assign({}, model, { data, scene, options: newOptions });
+    return Object.assign({}, model, { scene, data });
   } catch (ex) {
     console.error(ex);
     yield config.log(`ERROR updating scene!!!`);
