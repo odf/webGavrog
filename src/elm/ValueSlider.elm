@@ -1,4 +1,4 @@
-module ValueSlider exposing (Config, view)
+module ValueSlider exposing (Background(..), Config, view)
 
 import Bitwise
 import DOM
@@ -13,6 +13,12 @@ import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 
 
+type Background a
+    = BackgroundElement (Element.Element a)
+    | BackgroundColor Element.Color
+    | BackgroundDefault
+
+
 type alias Config a =
     { minimum : Float
     , maximum : Float
@@ -21,7 +27,7 @@ type alias Config a =
     , widthPx : Int
     , heightPx : Int
     , thumbColor : Element.Color
-    , background : Maybe (Element.Element a)
+    , background : Background a
     }
 
 
@@ -103,13 +109,13 @@ onTouchEvent eventString toMsg =
         (Decode.map2 toResult decodePosList decodeOffset)
 
 
-defaultBackground : Element.Element msg
-defaultBackground =
+defaultBackground : Element.Color -> Element.Element msg
+defaultBackground color =
     Element.el
         [ Element.centerY
         , Element.width Element.fill
         , Element.height <| Element.px 6
-        , Background.color <| Element.rgb 0.9 0.9 0.9
+        , Background.color <| color
         , Border.innerShadow
             { offset = ( 0.0, 1.0 )
             , size = 1.0
@@ -165,17 +171,17 @@ view toMsg config value =
         { widthPx, heightPx, minimum, maximum, step } =
             config
 
+        position =
+            ((value - minimum) / (maximum - minimum))
+                |> clamp 0.0 1.0
+                |> (*) (toFloat widthPx)
+
         positionToValue pos =
             (toFloat pos / toFloat widthPx)
                 |> clamp 0.0 1.0
                 |> (*) (maximum - minimum)
                 |> (+) minimum
                 |> roundTo step
-
-        valueToPosition val =
-            ((val - minimum) / (maximum - minimum))
-                |> clamp 0.0 1.0
-                |> (*) (toFloat widthPx)
 
         handleMouse done { x } { left } =
             if left then
@@ -191,6 +197,17 @@ view toMsg config value =
 
                 _ ->
                     toMsg value True
+
+        background =
+            case config.background of
+                BackgroundElement bg ->
+                    bg
+
+                BackgroundColor c ->
+                    defaultBackground c
+
+                BackgroundDefault ->
+                    defaultBackground <| Element.rgb 0.9 0.9 0.9
     in
     Element.row []
         [ Element.el
@@ -205,11 +222,7 @@ view toMsg config value =
                 , Element.height <| Element.fill
                 , Element.paddingXY 16 0
                 ]
-                (viewContent
-                    (valueToPosition value)
-                    config.thumbColor
-                    (Maybe.withDefault defaultBackground config.background)
-                )
+                (viewContent position config.thumbColor background)
             )
         , Element.text <| format config.precision value
         ]

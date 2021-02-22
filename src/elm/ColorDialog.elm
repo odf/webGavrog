@@ -92,7 +92,8 @@ view toMsg color includeAlpha =
                 , widthPx = 200
                 , heightPx = 24
                 , thumbColor = toElementColor icolor
-                , background = Just <| colorField colors
+                , background =
+                    ValueSlider.BackgroundElement <| colorField colors
                 }
                 value
 

@@ -1462,7 +1462,15 @@ defaultValueSliderConfig =
     , widthPx = 200
     , heightPx = 18
     , thumbColor = Element.rgb 0.0 0.0 0.0
-    , background = Nothing
+    , background = ValueSlider.BackgroundDefault
+    }
+
+
+alternativeValueSliderConfig : ValueSlider.Config msg
+alternativeValueSliderConfig =
+    { defaultValueSliderConfig
+        | background = ValueSlider.BackgroundColor <| Element.rgb 0.6 0.6 0.6
+        , thumbColor = Element.rgb 0.3 0.3 0.3
     }
 
 
@@ -1855,7 +1863,7 @@ viewDisplaySettings toMsg settings =
                     (Element.text "Outline Width")
                 , ValueSlider.view
                     (\value _ -> toMsg { settings | outlineWidth = value })
-                    defaultValueSliderConfig
+                    alternativeValueSliderConfig
                     settings.outlineWidth
                 ]
 
@@ -1931,13 +1939,13 @@ viewDisplaySettings toMsg settings =
             (Element.text "Fade To Background (Haze)")
         , ValueSlider.view
             (\value _ -> toMsg { settings | fadeToBackground = value })
-            defaultValueSliderConfig
+            alternativeValueSliderConfig
             settings.fadeToBackground
         , Element.el []
             (Element.text "Fade To Blue (Color Perspective)")
         , ValueSlider.view
             (\value _ -> toMsg { settings | fadeToBlue = value })
-            defaultValueSliderConfig
+            alternativeValueSliderConfig
             settings.fadeToBlue
         , viewSeparator
         , Input.checkbox []
