@@ -296,6 +296,8 @@ type alias AdvancedSettings =
 
 type alias Model =
     { viewState : View3d.Model
+    , scene : Instances
+    , dim : Int
     , revision : String
     , timestamp : String
     , dialogStack : List Dialog
@@ -319,6 +321,8 @@ rotationAngle =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { viewState = View3d.init
+      , scene = []
+      , dim = 3
       , revision = flags.revision
       , timestamp = flags.timestamp
       , dialogStack = []
@@ -963,16 +967,15 @@ updateSceneSettings settings redraw model =
                     settings.zExtent3d
                     model.sceneSettings.zExtent3d
                     Encode.int
+
+        m =
+            { model | sceneSettings = settings }
     in
-    if redraw then
-        ( { model | sceneSettings = settings, pendingJSOptions = Dict.empty }
-        , sendOptions newOptions
-        )
+    if redraw && not (Dict.isEmpty newOptions) then
+        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
 
     else
-        ( { model | sceneSettings = settings, pendingJSOptions = newOptions }
-        , Cmd.none
-        )
+        ( { m | pendingJSOptions = newOptions }, Cmd.none )
 
 
 updateNetSettings : NetSettings -> Bool -> Model -> ( Model, Cmd Msg )
@@ -988,16 +991,16 @@ updateNetSettings settings redraw model =
                     settings.edgeRadius
                     model.netSettings.edgeRadius
                     Encode.float
+
+        m =
+            { model | netSettings = settings }
+                |> updateScene Nothing model.scene model.dim False
     in
-    if redraw then
-        ( { model | netSettings = settings, pendingJSOptions = Dict.empty }
-        , sendOptions newOptions
-        )
+    if redraw && not (Dict.isEmpty newOptions) then
+        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
 
     else
-        ( { model | netSettings = settings, pendingJSOptions = newOptions }
-        , Cmd.none
-        )
+        ( { m | pendingJSOptions = newOptions }, Cmd.none )
 
 
 updateTilingSettings : TilingSettings -> Bool -> Model -> ( Model, Cmd Msg )
@@ -1017,16 +1020,16 @@ updateTilingSettings settings redraw model =
                     settings.edgeWidth
                     model.tilingSettings.edgeWidth
                     Encode.float
+
+        m =
+            { model | tilingSettings = settings }
+                |> updateScene Nothing model.scene model.dim False
     in
-    if redraw then
-        ( { model | tilingSettings = settings, pendingJSOptions = Dict.empty }
-        , sendOptions newOptions
-        )
+    if redraw && not (Dict.isEmpty newOptions) then
+        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
 
     else
-        ( { model | tilingSettings = settings, pendingJSOptions = newOptions }
-        , Cmd.none
-        )
+        ( { m | pendingJSOptions = newOptions }, Cmd.none )
 
 
 updateTiling2dSettings :
@@ -1046,22 +1049,16 @@ updateTiling2dSettings settings redraw model =
                     settings.edgeWidth
                     model.tiling2dSettings.edgeWidth
                     Encode.float
+
+        m =
+            { model | tiling2dSettings = settings }
+                |> updateScene Nothing model.scene model.dim False
     in
-    if redraw then
-        ( { model
-            | tiling2dSettings = settings
-            , pendingJSOptions = Dict.empty
-          }
-        , sendOptions newOptions
-        )
+    if redraw && not (Dict.isEmpty newOptions) then
+        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
 
     else
-        ( { model
-            | tiling2dSettings = settings
-            , pendingJSOptions = newOptions
-          }
-        , Cmd.none
-        )
+        ( { m | pendingJSOptions = newOptions }, Cmd.none )
 
 
 encodeModifier : TilingModifier -> Encode.Value
@@ -1389,6 +1386,26 @@ convertInstances instances dim model =
         |> List.concat
 
 
+updateScene : Maybe Meshes -> Instances -> Int -> Bool -> Model -> Model
+updateScene maybeMeshes instances dim reset model =
+    let
+        setScene =
+            View3d.setScene
+                maybeMeshes
+                (convertInstances instances dim model)
+
+        updateFn =
+            if reset then
+                setScene
+                    >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+                    >> View3d.encompass
+
+            else
+                setScene
+    in
+    updateView3d updateFn { model | scene = instances, dim = dim }
+
+
 handleJSData : Decode.Value -> Model -> Model
 handleJSData value model =
     case Decode.decodeValue decodeInData value of
@@ -1404,22 +1421,7 @@ handleJSData value model =
                     { model | status = text }
 
                 Scene maybeMeshes instances dim reset ->
-                    let
-                        setScene =
-                            View3d.setScene
-                                maybeMeshes
-                                (convertInstances instances dim model)
-                    in
-                    if reset then
-                        updateView3d
-                            (setScene
-                                >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
-                                >> View3d.encompass
-                            )
-                            model
-
-                    else
-                        updateView3d setScene model
+                    updateScene maybeMeshes instances dim reset model
 
 
 isHotKey : String -> Bool
