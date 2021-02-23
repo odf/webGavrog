@@ -945,20 +945,28 @@ updateJSOptions :
     -> Bool
     -> Model
     -> ( Model, Cmd Msg )
-updateJSOptions options redraw model =
+updateJSOptions options force model =
     let
         newModel =
             updateScene Nothing model.scene model.dim False model
     in
-    if redraw && not (Dict.isEmpty options) then
-        ( { newModel | pendingJSOptions = Dict.empty }, sendOptions options )
+    if
+        (force || not model.jsOptionsUpdateInProgress)
+            && not (Dict.isEmpty options)
+    then
+        ( { newModel
+            | pendingJSOptions = Dict.empty
+            , jsOptionsUpdateInProgress = True
+          }
+        , sendOptions options
+        )
 
     else
         ( { newModel | pendingJSOptions = options }, Cmd.none )
 
 
 updateSceneSettings : SceneSettings -> Bool -> Model -> ( Model, Cmd Msg )
-updateSceneSettings settings redraw model =
+updateSceneSettings settings force model =
     let
         newOptions =
             model.pendingJSOptions
@@ -987,11 +995,11 @@ updateSceneSettings settings redraw model =
                     model.sceneSettings.zExtent3d
                     Encode.int
     in
-    updateJSOptions newOptions redraw { model | sceneSettings = settings }
+    updateJSOptions newOptions force { model | sceneSettings = settings }
 
 
 updateNetSettings : NetSettings -> Bool -> Model -> ( Model, Cmd Msg )
-updateNetSettings settings redraw model =
+updateNetSettings settings force model =
     let
         newOptions =
             model.pendingJSOptions
@@ -1004,11 +1012,11 @@ updateNetSettings settings redraw model =
                     model.netSettings.edgeRadius
                     Encode.float
     in
-    updateJSOptions newOptions redraw { model | netSettings = settings }
+    updateJSOptions newOptions force { model | netSettings = settings }
 
 
 updateTilingSettings : TilingSettings -> Bool -> Model -> ( Model, Cmd Msg )
-updateTilingSettings settings redraw model =
+updateTilingSettings settings force model =
     let
         newOptions =
             model.pendingJSOptions
@@ -1025,7 +1033,7 @@ updateTilingSettings settings redraw model =
                     model.tilingSettings.edgeWidth
                     Encode.float
     in
-    updateJSOptions newOptions redraw { model | tilingSettings = settings }
+    updateJSOptions newOptions force { model | tilingSettings = settings }
 
 
 updateTiling2dSettings :
@@ -1033,7 +1041,7 @@ updateTiling2dSettings :
     -> Bool
     -> Model
     -> ( Model, Cmd Msg )
-updateTiling2dSettings settings redraw model =
+updateTiling2dSettings settings force model =
     let
         newOptions =
             model.pendingJSOptions
@@ -1046,7 +1054,7 @@ updateTiling2dSettings settings redraw model =
                     model.tiling2dSettings.edgeWidth
                     Encode.float
     in
-    updateJSOptions newOptions redraw { model | tiling2dSettings = settings }
+    updateJSOptions newOptions force { model | tiling2dSettings = settings }
 
 
 encodeModifier : TilingModifier -> Encode.Value
@@ -1394,20 +1402,24 @@ updateScene maybeMeshes instances dim reset model =
 
 handleJSData : Decode.Value -> Model -> Model
 handleJSData value model =
+    let
+        newModel =
+            { model | jsOptionsUpdateInProgress = False }
+    in
     case Decode.decodeValue decodeInData value of
         Err e ->
-            { model | status = Decode.errorToString e }
+            { newModel | status = Decode.errorToString e }
 
         Ok data ->
             case data of
                 Title text ->
-                    { model | title = text }
+                    { newModel | title = text }
 
                 Log text ->
-                    { model | status = text }
+                    { newModel | status = text }
 
                 Scene maybeMeshes instances dim reset ->
-                    updateScene maybeMeshes instances dim reset model
+                    updateScene maybeMeshes instances dim reset newModel
 
 
 isHotKey : String -> Bool
