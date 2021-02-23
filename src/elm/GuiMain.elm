@@ -308,6 +308,7 @@ type alias Model =
     , tiling2dSettings : Tiling2dSettings
     , advancedSettings : AdvancedSettings
     , pendingJSOptions : Dict String Encode.Value
+    , jsOptionsUpdateInProgress : Bool
     , title : String
     , status : String
     }
@@ -406,6 +407,7 @@ init flags =
             , skipRelaxation = False
             }
       , pendingJSOptions = Dict.empty
+      , jsOptionsUpdateInProgress = False
       }
     , Task.perform
         (\v -> Resize (floor v.viewport.width) (floor v.viewport.height))
@@ -938,6 +940,23 @@ sendOptions options =
         Cmd.batch [ optionsCmd, displayListCmd ]
 
 
+updateJSOptions :
+    Dict String Encode.Value
+    -> Bool
+    -> Model
+    -> ( Model, Cmd Msg )
+updateJSOptions options redraw model =
+    let
+        newModel =
+            updateScene Nothing model.scene model.dim False model
+    in
+    if redraw && not (Dict.isEmpty options) then
+        ( { newModel | pendingJSOptions = Dict.empty }, sendOptions options )
+
+    else
+        ( { newModel | pendingJSOptions = options }, Cmd.none )
+
+
 updateSceneSettings : SceneSettings -> Bool -> Model -> ( Model, Cmd Msg )
 updateSceneSettings settings redraw model =
     let
@@ -967,15 +986,8 @@ updateSceneSettings settings redraw model =
                     settings.zExtent3d
                     model.sceneSettings.zExtent3d
                     Encode.int
-
-        m =
-            { model | sceneSettings = settings }
     in
-    if redraw && not (Dict.isEmpty newOptions) then
-        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
-
-    else
-        ( { m | pendingJSOptions = newOptions }, Cmd.none )
+    updateJSOptions newOptions redraw { model | sceneSettings = settings }
 
 
 updateNetSettings : NetSettings -> Bool -> Model -> ( Model, Cmd Msg )
@@ -991,16 +1003,8 @@ updateNetSettings settings redraw model =
                     settings.edgeRadius
                     model.netSettings.edgeRadius
                     Encode.float
-
-        m =
-            { model | netSettings = settings }
-                |> updateScene Nothing model.scene model.dim False
     in
-    if redraw && not (Dict.isEmpty newOptions) then
-        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
-
-    else
-        ( { m | pendingJSOptions = newOptions }, Cmd.none )
+    updateJSOptions newOptions redraw { model | netSettings = settings }
 
 
 updateTilingSettings : TilingSettings -> Bool -> Model -> ( Model, Cmd Msg )
@@ -1020,16 +1024,8 @@ updateTilingSettings settings redraw model =
                     settings.edgeWidth
                     model.tilingSettings.edgeWidth
                     Encode.float
-
-        m =
-            { model | tilingSettings = settings }
-                |> updateScene Nothing model.scene model.dim False
     in
-    if redraw && not (Dict.isEmpty newOptions) then
-        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
-
-    else
-        ( { m | pendingJSOptions = newOptions }, Cmd.none )
+    updateJSOptions newOptions redraw { model | tilingSettings = settings }
 
 
 updateTiling2dSettings :
@@ -1049,16 +1045,8 @@ updateTiling2dSettings settings redraw model =
                     settings.edgeWidth
                     model.tiling2dSettings.edgeWidth
                     Encode.float
-
-        m =
-            { model | tiling2dSettings = settings }
-                |> updateScene Nothing model.scene model.dim False
     in
-    if redraw && not (Dict.isEmpty newOptions) then
-        ( { m | pendingJSOptions = Dict.empty }, sendOptions newOptions )
-
-    else
-        ( { m | pendingJSOptions = newOptions }, Cmd.none )
+    updateJSOptions newOptions redraw { model | tiling2dSettings = settings }
 
 
 encodeModifier : TilingModifier -> Encode.Value
@@ -1092,9 +1080,7 @@ updateAdvancedSettings settings model =
                     model.advancedSettings.skipRelaxation
                     Encode.bool
     in
-    ( { model | advancedSettings = settings, pendingJSOptions = Dict.empty }
-    , sendOptions newOptions
-    )
+    updateJSOptions newOptions True { model | advancedSettings = settings }
 
 
 handleView3dOutcome : View3d.Outcome -> Model -> Model
