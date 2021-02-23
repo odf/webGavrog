@@ -197,6 +197,9 @@ const makeNetDisplayList = (data, options) => {
 };
 
 
+const unitBall = geometries.makeBall(1.0);
+
+
 const makeNetModel = (data, options, runJob, log) => csp.go(function* () {
   const { graph, sgInfo, embeddings, displayList } = data;
 
@@ -207,8 +210,9 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function* () {
 
   const t = timer();
 
-  const meshes = [geometries.makeBall(ballRadius)];
   const stick = geometries.makeStick(stickRadius, 48);
+
+  const meshes = [unitBall];
 
   const protoSticks = {};
   const instances = [];
@@ -222,10 +226,11 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function* () {
 
     let meshType, meshIndex, transform;
     if (itemType == 'node') {
+      const basis = opsF.times(ballRadius, opsF.identityMatrix(3));
       const shift = asVec3(opsF.times(pos[item], basis));
       meshType = 'netVertex';
       meshIndex = 0;
-      transform = { basis: opsF.identityMatrix(3), shift };
+      transform = { basis, shift };
     }
     else {
       const { head, tail, shift } = item;
