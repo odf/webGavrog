@@ -395,14 +395,25 @@ const makeTilingModel = (data, options, runJob, log) => csp.go(function* () {
   const edgeWidth = withDefault(
     options[dim == 2 ? 'edgeWidth2d' : 'edgeWidth'], 0.5
   );
+
+  const shortKey = `subd-${subDLevel}`;
   const key = `subd-${subDLevel} edgeWidth-${edgeWidth}`;
 
   if (embedding[key] == null) {
     const pos = embedding.positions;
     const seeds = orbitReps;
+
+    if (embedding[shortKey] == null) {
+      embedding[shortKey] = yield runJob({
+        cmd: 'makeTileMeshes',
+        val: { cov, skel, pos, seeds, basis, subDLevel }
+      });
+    }
+
+    const { meshes: baseMeshes, scale } = embedding[shortKey];
     const rawMeshes = yield runJob({
-      cmd: 'makeTileMeshes',
-      val: { cov, skel, pos, seeds, basis, subDLevel, edgeWidth }
+      cmd: 'bevelMeshes',
+      val: { meshes: baseMeshes, edgeWidth: edgeWidth * scale }
     });
 
     const meshes = rawMeshes.map(m => geometries.geometry(m.pos, m.faces));

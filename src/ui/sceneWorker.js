@@ -39,10 +39,7 @@ const handlers = {
     return tilings.tilesByTranslations(ds, cov, skel);
   },
 
-  makeTileMeshes(
-    { cov, skel, pos, seeds, basis, subDLevel, edgeWidth },
-    log
-  ) {
+  makeTileMeshes({ cov, skel, pos, seeds, basis, subDLevel }) {
     const templates = [];
     for (const surf of tilings.tileSurfaces(cov, skel, pos, seeds))
       templates.push({
@@ -53,7 +50,7 @@ const handlers = {
 
     const scale = 2.0 * surface.averageRadius(templates);
 
-    const result = [];
+    const meshes = [];
     for (const template of templates) {
       let t = template;
 
@@ -62,16 +59,23 @@ const handlers = {
         t = surface.tightened(t);
       }
 
-      const t1 = t;
-      t = surface.insetAt(t, 0.05 * edgeWidth * scale, t1.isFixed);
-      t = surface.beveledAt(t, 0.02 * edgeWidth * scale, t1.isFixed);
+      meshes.push(t);
+    }
 
+    return { meshes, scale };
+  },
+
+  bevelMeshes({ meshes, edgeWidth }) {
+    const result = [];
+    for (const mesh of meshes) {
+      let t = mesh;
+
+      t = surface.insetAt(t, 0.05 * edgeWidth, mesh.isFixed);
+      t = surface.beveledAt(t, 0.02 * edgeWidth, mesh.isFixed);
       t = surface.tightened(t);
 
       result.push(t);
     }
-
-    log();
 
     return result;
   },
