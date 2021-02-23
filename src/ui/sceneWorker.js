@@ -43,8 +43,6 @@ const handlers = {
     { cov, skel, pos, seeds, basis, subDLevel, edgeWidth },
     log
   ) {
-    log('Making tile surfaces...');
-
     const templates = [];
     for (const surf of tilings.tileSurfaces(cov, skel, pos, seeds))
       templates.push({
@@ -52,8 +50,6 @@ const handlers = {
         faces: surf.faces,
         isFixed: surf.pos.map(_ => true)
       });
-
-    log('Refining tile surfaces...');
 
     const scale = 2.0 * surface.averageRadius(templates);
 
