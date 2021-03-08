@@ -1,0 +1,3 @@
+[submodule "submodules/view3d"]
+	path = submodules/view3d
+	url = https://github.com/odf/view3d.git
