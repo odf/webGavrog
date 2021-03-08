@@ -24,7 +24,7 @@ import Set
 import Styling
 import Task
 import ValueSlider
-import View3d.Main as View3d
+import View3d
 import View3d.Mesh exposing (Mesh)
 import View3d.RendererCommon exposing (Instance, Material, Vertex)
 
@@ -1535,7 +1535,7 @@ view model =
                     , Element.height Element.fill
                     ]
                     (Element.html <|
-                        View3d.view ViewMsg model.viewState options bgColor
+                        View3d.view ViewMsg model.viewState options
                     )
                 , viewFooter model
                 ]
