@@ -226,11 +226,11 @@ const makeNetModel = (data, options, runJob, log) => csp.go(function* () {
 
     let meshType, meshIndex, transform;
     if (itemType == 'node') {
-      const basis = opsF.times(ballRadius, opsF.identityMatrix(3));
+      const scale = opsF.times(ballRadius, opsF.identityMatrix(3));
       const shift = asVec3(opsF.times(pos[item], basis));
       meshType = 'netVertex';
       meshIndex = 0;
-      transform = { basis, shift };
+      transform = { basis: scale, shift };
     }
     else {
       const { head, tail, shift } = item;
