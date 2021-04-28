@@ -11,19 +11,22 @@ export const mapGramMatrix = (transform, gram) => {
 
 
 export const invariantBasis = gram => {
-  const dot = (v, w) => opsF.times(opsF.times(v, gram), w);
+  const dim = gram.length;
+  const basis = opsF.identityMatrix(dim);
 
-  const vs = opsF.identityMatrix(gram.length);
-  const ortho = [];
+  for (let i = 0; i < dim; ++i) {
+    for (let j = 0; j <= i; ++j) {
+      let s = gram[i][j];
 
-  for (let v of vs) {
-    for (const w of ortho)
-      v = opsF.minus(v, opsF.times(w, dot(v, w)));
-    ortho.push(opsF.div(v, opsF.sqrt(dot(v, v))))
+      for (let k = 0; k < j; ++k) {
+        s -= basis[i][k] * basis[j][k];
+      }
+
+      basis[i][j] = i == j ? Math.sqrt(Math.max(0, s)) : s / basis[j][j];
+    }
   }
 
-  // by construction, the following produces the inverse of ortho
-  return opsF.times(gram, opsF.transposed(ortho));
+  return basis;
 };
 
 
@@ -57,7 +60,7 @@ export const unitCellParameters = gram => {
     const b = Math.sqrt(gram[1][1]);
     const c = Math.sqrt(gram[2][2]);
     const alpha = acosdeg(gram[1][2] / b / c);
-    const beta  = acosdeg(gram[0][2] / a / c);
+    const beta = acosdeg(gram[0][2] / a / c);
     const gamma = acosdeg(gram[0][1] / a / b);
     return [a, b, c, alpha, beta, gamma].map(trim);
   }
