@@ -25,8 +25,6 @@ import Styling
 import Task
 import ValueSlider
 import View3d
-import View3d.Mesh exposing (Mesh)
-import View3d.RendererCommon exposing (Instance, Material, Vertex)
 
 
 main : Program Flags Model Msg
@@ -40,7 +38,7 @@ main =
 
 
 type alias Meshes =
-    List (Mesh Vertex)
+    List (View3d.Mesh View3d.Vertex)
 
 
 type alias Instances =
@@ -1299,7 +1297,7 @@ contextMenuOnOff model maybePos =
             }
 
 
-makeMaterial : DecodeScene.Instance -> Int -> Model -> Material
+makeMaterial : DecodeScene.Instance -> Int -> Model -> View3d.Material
 makeMaterial { meshType, classIndex, latticeIndex } dim model =
     let
         tilingSettings =
@@ -1354,7 +1352,7 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             tilingMaterial tilingSettings.tileBaseColor
 
 
-convertInstances : Instances -> Int -> Model -> List Instance
+convertInstances : Instances -> Int -> Model -> List View3d.Instance
 convertInstances instances dim model =
     let
         convertInstance index instance =

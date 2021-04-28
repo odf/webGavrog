@@ -8,8 +8,7 @@ module DecodeScene exposing
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
-import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.RendererCommon exposing (Vertex)
+import View3d
 
 
 type alias Instance =
@@ -38,16 +37,16 @@ decodeVec3 =
         (Decode.index 2 Decode.float)
 
 
-decodeVertex : Decode.Decoder Vertex
+decodeVertex : Decode.Decoder View3d.Vertex
 decodeVertex =
     Decode.map2 (\pos normal -> { position = pos, normal = normal })
         (Decode.field "pos" decodeVec3)
         (Decode.field "normal" decodeVec3)
 
 
-decodeMesh : Decode.Decoder (Mesh Vertex)
+decodeMesh : Decode.Decoder (View3d.Mesh View3d.Vertex)
 decodeMesh =
-    Decode.map2 Mesh.surface
+    Decode.map2 View3d.surface
         (Decode.field "vertices" (Decode.list decodeVertex))
         (Decode.field "faces" (Decode.list (Decode.list Decode.int)))
 

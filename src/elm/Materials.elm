@@ -2,7 +2,7 @@ module Materials exposing (netMaterial, paletteColor, tilingMaterial)
 
 import Color exposing (Color)
 import ColorDialog
-import View3d.RendererCommon exposing (Material)
+import View3d
 
 
 convertColor : ColorDialog.Color -> Color
@@ -10,12 +10,12 @@ convertColor { hue, saturation, lightness, alpha } =
     Color.hsla hue saturation lightness alpha
 
 
-netMaterial : ColorDialog.Color -> Material
+netMaterial : ColorDialog.Color -> View3d.Material
 netMaterial color =
     { color = convertColor color, roughness = 0.5, metallic = 0.3 }
 
 
-tilingMaterial : ColorDialog.Color -> Material
+tilingMaterial : ColorDialog.Color -> View3d.Material
 tilingMaterial color =
     { color = convertColor color, roughness = 0.5, metallic = 0.2 }
 
