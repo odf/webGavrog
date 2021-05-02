@@ -1470,13 +1470,9 @@ alternativeValueSliderConfig =
     }
 
 
-convertColor : ColorDialog.Color -> Vec3
+convertColor : ColorDialog.Color -> Color.Color
 convertColor { hue, saturation, lightness, alpha } =
-    let
-        { red, green, blue } =
-            Color.toRgba <| Color.hsla hue saturation lightness alpha
-    in
-    vec3 red green blue
+    Color.hsla hue saturation lightness alpha
 
 
 view : Model -> Browser.Document Msg
