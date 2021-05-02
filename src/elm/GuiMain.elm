@@ -38,7 +38,7 @@ main =
 
 
 type alias Meshes =
-    List (View3d.Mesh View3d.Vertex)
+    List View3d.Mesh
 
 
 type alias Instances =
@@ -1093,7 +1093,7 @@ handleView3dOutcome : View3d.Outcome -> Model -> Model
 handleView3dOutcome outcome model =
     let
         oldSelection =
-            model.viewState.selected
+            View3d.selection model.viewState
 
         newSelection =
             case outcome of
@@ -1266,7 +1266,7 @@ executeAction action model =
         _ ->
             let
                 selected =
-                    model.viewState.selected
+                    View3d.selection model.viewState
                         |> Set.toList
                         |> List.map
                             (\( m, i ) ->
@@ -1484,12 +1484,6 @@ view model =
     let
         settings =
             model.displaySettings
-
-        { hue, saturation, lightness, alpha } =
-            settings.backgroundColor
-
-        bgColor =
-            Color.hsla hue saturation lightness alpha
 
         outlineColor =
             if settings.useSeparateOutlineColor then

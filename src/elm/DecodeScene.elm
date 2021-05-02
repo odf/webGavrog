@@ -44,7 +44,7 @@ decodeVertex =
         (Decode.field "normal" decodeVec3)
 
 
-decodeMesh : Decode.Decoder (View3d.Mesh View3d.Vertex)
+decodeMesh : Decode.Decoder View3d.Mesh
 decodeMesh =
     Decode.map2 View3d.surface
         (Decode.field "vertices" (Decode.list decodeVertex))
