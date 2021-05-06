@@ -5,9 +5,12 @@ module DecodeScene exposing
     , decodeMesh
     )
 
+import Array
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
+import Mesh
+import TriangularMesh exposing (TriangularMesh)
 import View3d
 
 
@@ -44,11 +47,18 @@ decodeVertex =
         (Decode.field "normal" decodeVec3)
 
 
-decodeMesh : Decode.Decoder View3d.Mesh
+decodeMesh : Decode.Decoder (TriangularMesh View3d.Vertex)
 decodeMesh =
-    Decode.map2 View3d.surface
+    Decode.map2 makeMesh
         (Decode.field "vertices" (Decode.list decodeVertex))
         (Decode.field "faces" (Decode.list (Decode.list Decode.int)))
+
+
+makeMesh : List vertex -> List (List Int) -> TriangularMesh vertex
+makeMesh verts faces =
+    Mesh.fromOrientedFaces (Array.fromList verts) faces
+        |> Result.withDefault Mesh.empty -- TODO propagate errors out
+        |> Mesh.toTriangularMesh
 
 
 decodeBasis : Decode.Decoder ( Vec3, Vec3, Vec3 )

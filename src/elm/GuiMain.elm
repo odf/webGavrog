@@ -23,6 +23,7 @@ import Menu
 import Set
 import Styling
 import Task
+import TriangularMesh exposing (TriangularMesh)
 import ValueSlider
 import View3d
 
@@ -38,7 +39,7 @@ main =
 
 
 type alias Meshes =
-    List View3d.Mesh
+    List (TriangularMesh View3d.Vertex)
 
 
 type alias Instances =
