@@ -49,16 +49,18 @@ decodeVertex =
 
 decodeMesh : Decode.Decoder (TriangularMesh View3d.Vertex)
 decodeMesh =
-    Decode.map2 makeMesh
+    Decode.map2 Tuple.pair
         (Decode.field "vertices" (Decode.list decodeVertex))
         (Decode.field "faces" (Decode.list (Decode.list Decode.int)))
+        |> Decode.andThen
+            (\( verts, faces ) ->
+                case Mesh.fromOrientedFaces (Array.fromList verts) faces of
+                    Ok mesh ->
+                        Mesh.toTriangularMesh mesh |> Decode.succeed
 
-
-makeMesh : List vertex -> List (List Int) -> TriangularMesh vertex
-makeMesh verts faces =
-    Mesh.fromOrientedFaces (Array.fromList verts) faces
-        |> Result.withDefault Mesh.empty -- TODO propagate errors out
-        |> Mesh.toTriangularMesh
+                    Err msg ->
+                        Decode.fail msg
+            )
 
 
 decodeBasis : Decode.Decoder ( Vec3, Vec3, Vec3 )
