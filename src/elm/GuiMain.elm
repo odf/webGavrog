@@ -296,6 +296,7 @@ type alias AdvancedSettings =
 type alias Model =
     { viewState : View3d.Model
     , scene : Instances
+    , instanceIndices : List Int
     , dim : Int
     , revision : String
     , timestamp : String
@@ -322,6 +323,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { viewState = View3d.init
       , scene = []
+      , instanceIndices = []
       , dim = 3
       , revision = flags.revision
       , timestamp = flags.timestamp
@@ -1108,10 +1110,20 @@ handleView3dOutcome outcome model =
                     else
                         Set.empty
 
-                View3d.Pick mods { meshIndex, instanceIndex } ->
+                View3d.Pick mods index ->
                     let
+                        meshIndex =
+                            List.drop index model.scene
+                                |> List.head
+                                |> Maybe.map .meshIndex
+
+                        instanceIndex =
+                            List.drop index model.instanceIndices
+                                |> List.head
+
                         item =
-                            ( meshIndex, instanceIndex )
+                            Maybe.map2 Tuple.pair meshIndex instanceIndex
+                                |> Maybe.withDefault ( -1, -1 )
                     in
                     if Set.member item oldSelection then
                         Set.remove item oldSelection
@@ -1353,15 +1365,21 @@ makeMaterial { meshType, classIndex, latticeIndex } dim model =
             tilingMaterial tilingSettings.tileBaseColor
 
 
-convertInstances : Instances -> Int -> Model -> List View3d.Instance
+convertInstances :
+    Instances
+    -> Int
+    -> Model
+    -> List ( DecodeScene.Instance, View3d.Instance )
 convertInstances instances dim model =
     let
         convertInstance index instance =
-            { material = makeMaterial instance dim model
-            , transform = instance.transform
-            , idxMesh = instance.meshIndex
-            , idxInstance = index
-            }
+            ( instance
+            , { material = makeMaterial instance dim model
+              , transform = instance.transform
+              , idxMesh = instance.meshIndex
+              , idxInstance = index
+              }
+            )
 
         n =
             instances
@@ -1382,10 +1400,14 @@ convertInstances instances dim model =
 updateScene : Maybe Meshes -> Instances -> Int -> Bool -> Model -> Model
 updateScene maybeMeshes instances dim reset model =
     let
+        instancePairs =
+            convertInstances instances dim model
+
         setScene =
-            View3d.setScene
-                maybeMeshes
-                (convertInstances instances dim model)
+            View3d.setScene maybeMeshes (List.map Tuple.second instancePairs)
+
+        instanceIndices =
+            List.map (Tuple.second >> .idxInstance) instancePairs
 
         updateFn =
             if reset then
@@ -1396,7 +1418,12 @@ updateScene maybeMeshes instances dim reset model =
             else
                 setScene
     in
-    updateView3d updateFn { model | scene = instances, dim = dim }
+    updateView3d updateFn
+        { model
+            | scene = List.map Tuple.first instancePairs
+            , dim = dim
+            , instanceIndices = instanceIndices
+        }
 
 
 handleJSData : Decode.Value -> Model -> Model
