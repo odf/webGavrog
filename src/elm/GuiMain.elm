@@ -1111,28 +1111,14 @@ handleView3dOutcome outcome model =
                         Set.empty
 
                 View3d.Pick mods index ->
-                    let
-                        meshIndex =
-                            List.drop index model.scene
-                                |> List.head
-                                |> Maybe.map .meshIndex
-
-                        instanceIndex =
-                            List.drop index model.instanceIndices
-                                |> List.head
-
-                        item =
-                            Maybe.map2 Tuple.pair meshIndex instanceIndex
-                                |> Maybe.withDefault ( -1, -1 )
-                    in
-                    if Set.member item oldSelection then
-                        Set.remove item oldSelection
+                    if Set.member index oldSelection then
+                        Set.remove index oldSelection
 
                     else if mods.alt || mods.ctrl || mods.shift then
-                        Set.insert item oldSelection
+                        Set.insert index oldSelection
 
                     else
-                        Set.singleton item
+                        Set.singleton index
 
         newDialogStack =
             if outcome == View3d.None then
@@ -1282,6 +1268,8 @@ executeAction action model =
                     View3d.selection model.viewState
                         |> Set.toList
                         |> List.map
+                            (\index -> getMeshAndInstanceIndex index model)
+                        |> List.map
                             (\( m, i ) ->
                                 [ ( "meshIndex", Encode.int m )
                                 , ( "instanceIndex", Encode.int i )
@@ -1296,6 +1284,25 @@ executeAction action model =
                     , ( "selected", Encode.list Encode.object selected )
                     ]
             )
+
+
+getMeshAndInstanceIndex : Int -> Model -> ( Int, Int )
+getMeshAndInstanceIndex index model =
+    let
+        meshIndex =
+            model.scene
+                |> List.drop index
+                |> List.head
+                |> Maybe.map .meshIndex
+                |> Maybe.withDefault -1
+
+        instanceIndex =
+            model.instanceIndices
+                |> List.drop index
+                |> List.head
+                |> Maybe.withDefault -1
+    in
+    ( meshIndex, instanceIndex )
 
 
 contextMenuOnOff : Model -> Maybe Position -> Model
