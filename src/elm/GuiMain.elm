@@ -17,14 +17,18 @@ import Element.Input as Input
 import Html.Events
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Length
 import Materials exposing (netMaterial, paletteColor, tilingMaterial)
 import Math.Vector3 exposing (Vec3, vec3)
 import Menu
+import Point3d exposing (Point3d)
+import Quantity
 import Set
 import Styling
 import Task
 import TriangularMesh exposing (TriangularMesh)
 import ValueSlider
+import Vector3d exposing (Vector3d)
 import View3d
 
 
@@ -39,7 +43,7 @@ main =
 
 
 type alias Meshes =
-    List (TriangularMesh View3d.Vertex)
+    List (TriangularMesh DecodeScene.Vertex)
 
 
 type alias Instances =
@@ -293,8 +297,12 @@ type alias AdvancedSettings =
     }
 
 
+type WorldCoordinates
+    = WorldCoordinates
+
+
 type alias Model =
-    { viewState : View3d.Model
+    { viewState : View3d.Model WorldCoordinates
     , scene : Instances
     , instanceIndices : List Int
     , dim : Int
@@ -890,7 +898,10 @@ updateMenu state model =
     ( { model | dialogStack = newDialogStack }, Cmd.none )
 
 
-updateView3d : (View3d.Model -> View3d.Model) -> Model -> Model
+updateView3d :
+    (View3d.Model WorldCoordinates -> View3d.Model WorldCoordinates)
+    -> Model
+    -> Model
 updateView3d fn model =
     { model | viewState = fn model.viewState }
 
@@ -1410,14 +1421,47 @@ convertInstances instances dim model =
         |> List.concat
 
 
+asPointInMeters : Vec3 -> Point3d Length.Meters coords
+asPointInMeters p =
+    Point3d.meters
+        (Math.Vector3.getX p)
+        (Math.Vector3.getY p)
+        (Math.Vector3.getZ p)
+
+
+asUnitlessVector : Vec3 -> Vector3d Quantity.Unitless coords
+asUnitlessVector n =
+    Vector3d.unitless
+        (Math.Vector3.getX n)
+        (Math.Vector3.getY n)
+        (Math.Vector3.getZ n)
+
+
+convertMesh :
+    TriangularMesh DecodeScene.Vertex
+    -> TriangularMesh (View3d.Vertex Length.Meters coords)
+convertMesh =
+    TriangularMesh.mapVertices
+        (\{ position, normal } ->
+            { position = asPointInMeters position
+            , normal = asUnitlessVector normal
+            }
+        )
+
+
 updateScene : Maybe Meshes -> Instances -> Int -> Bool -> Model -> Model
 updateScene maybeMeshes instances dim reset model =
     let
-        converted =
+        convertedInstances =
             convertInstances instances dim model
 
+        convertedMeshes =
+            Maybe.map (List.map convertMesh) maybeMeshes
+
         setScene =
-            View3d.setScene maybeMeshes (List.map .viewInstance converted)
+            View3d.setScene
+                convertedMeshes
+                (List.map .viewInstance convertedInstances)
 
         updateFn =
             if reset then
@@ -1430,8 +1474,8 @@ updateScene maybeMeshes instances dim reset model =
     in
     updateView3d updateFn
         { model
-            | scene = List.map .instance converted
-            , instanceIndices = List.map .index converted
+            | scene = List.map .instance convertedInstances
+            , instanceIndices = List.map .index convertedInstances
             , dim = dim
         }
 

@@ -1,6 +1,7 @@
 module DecodeScene exposing
     ( Instance
     , MeshType(..)
+    , Vertex
     , decodeInstance
     , decodeMesh
     )
@@ -10,7 +11,12 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
 import Mesh
 import TriangularMesh exposing (TriangularMesh)
-import View3d
+
+
+type alias Vertex =
+    { position : Vec3
+    , normal : Vec3
+    }
 
 
 type alias Instance =
@@ -39,14 +45,14 @@ decodeVec3 =
         (Decode.index 2 Decode.float)
 
 
-decodeVertex : Decode.Decoder View3d.Vertex
+decodeVertex : Decode.Decoder Vertex
 decodeVertex =
     Decode.map2 (\pos normal -> { position = pos, normal = normal })
         (Decode.field "pos" decodeVec3)
         (Decode.field "normal" decodeVec3)
 
 
-decodeMesh : Decode.Decoder (TriangularMesh View3d.Vertex)
+decodeMesh : Decode.Decoder (TriangularMesh Vertex)
 decodeMesh =
     Decode.map2 Mesh.fromOrientedFaces
         (Decode.field "vertices" (Decode.array decodeVertex))
