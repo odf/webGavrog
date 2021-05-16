@@ -1398,10 +1398,10 @@ convertInstances instances dim model =
         convertInstance index instance =
             { instance = instance
             , viewInstance =
-                { material = makeMaterial instance dim model
-                , transform = instance.transform
-                , idxMesh = instance.meshIndex
-                }
+                View3d.instance
+                    (makeMaterial instance dim model)
+                    instance.meshIndex
+                    |> View3d.transform instance.transform
             , index = index
             }
 
