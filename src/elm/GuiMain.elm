@@ -1376,17 +1376,23 @@ convertInstances :
     Instances
     -> Int
     -> Model
-    -> List ( DecodeScene.Instance, View3d.Instance )
+    ->
+        List
+            { instance : DecodeScene.Instance
+            , viewInstance : View3d.Instance
+            , index : Int
+            }
 convertInstances instances dim model =
     let
         convertInstance index instance =
-            ( instance
-            , { material = makeMaterial instance dim model
-              , transform = instance.transform
-              , idxMesh = instance.meshIndex
-              , idxInstance = index
-              }
-            )
+            { instance = instance
+            , viewInstance =
+                { material = makeMaterial instance dim model
+                , transform = instance.transform
+                , idxMesh = instance.meshIndex
+                }
+            , index = index
+            }
 
         n =
             instances
@@ -1407,14 +1413,11 @@ convertInstances instances dim model =
 updateScene : Maybe Meshes -> Instances -> Int -> Bool -> Model -> Model
 updateScene maybeMeshes instances dim reset model =
     let
-        instancePairs =
+        converted =
             convertInstances instances dim model
 
         setScene =
-            View3d.setScene maybeMeshes (List.map Tuple.second instancePairs)
-
-        instanceIndices =
-            List.map (Tuple.second >> .idxInstance) instancePairs
+            View3d.setScene maybeMeshes (List.map .viewInstance converted)
 
         updateFn =
             if reset then
@@ -1427,9 +1430,9 @@ updateScene maybeMeshes instances dim reset model =
     in
     updateView3d updateFn
         { model
-            | scene = List.map Tuple.first instancePairs
+            | scene = List.map .instance converted
+            , instanceIndices = List.map .index converted
             , dim = dim
-            , instanceIndices = instanceIndices
         }
 
 
