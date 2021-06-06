@@ -1390,7 +1390,7 @@ convertInstances :
     ->
         List
             { instance : DecodeScene.Instance
-            , viewInstance : View3d.Instance
+            , viewInstance : View3d.Instance coords
             , index : Int
             }
 convertInstances instances dim model =
@@ -1401,7 +1401,7 @@ convertInstances instances dim model =
                 View3d.instance
                     (makeMaterial instance dim model)
                     instance.meshIndex
-                    |> View3d.transform instance.transform
+                    |> View3d.transformInstance instance.transform
             , index = index
             }
 
@@ -1439,7 +1439,7 @@ asUnitlessVector n =
 
 convertMesh :
     TriangularMesh DecodeScene.Vertex
-    -> TriangularMesh (View3d.Vertex Length.Meters coords)
+    -> TriangularMesh (View3d.Vertex coords)
 convertMesh =
     TriangularMesh.mapVertices
         (\{ position, normal } ->
