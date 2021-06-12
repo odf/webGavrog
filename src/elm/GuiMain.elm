@@ -30,6 +30,7 @@ import TriangularMesh exposing (TriangularMesh)
 import ValueSlider
 import Vector3d exposing (Vector3d)
 import View3d
+import View3d.Instance as Instance exposing (Instance)
 
 
 main : Program Flags Model Msg
@@ -1390,7 +1391,7 @@ convertInstances :
     ->
         List
             { instance : DecodeScene.Instance
-            , viewInstance : View3d.Instance coords
+            , viewInstance : Instance coords
             , index : Int
             }
 convertInstances instances dim model =
@@ -1398,10 +1399,10 @@ convertInstances instances dim model =
         convertInstance index instance =
             { instance = instance
             , viewInstance =
-                View3d.instance
+                Instance.make
                     (makeMaterial instance dim model)
                     instance.meshIndex
-                    |> View3d.transformInstance instance.transform
+                    |> Instance.transform instance.transform
             , index = index
             }
 
