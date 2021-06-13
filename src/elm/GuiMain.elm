@@ -1,5 +1,6 @@
 port module GuiMain exposing (main)
 
+import Array exposing (Array)
 import Bitwise
 import Browser
 import Browser.Dom as Dom
@@ -304,6 +305,7 @@ type WorldCoordinates
 
 type alias Model =
     { viewState : View3d.Model WorldCoordinates
+    , meshes : Array (View3d.Mesh WorldCoordinates)
     , scene : Instances
     , instanceIndices : List Int
     , dim : Int
@@ -332,6 +334,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { viewState = View3d.init
       , scene = []
+      , meshes = Array.empty
       , instanceIndices = []
       , dim = 3
       , revision = flags.revision
@@ -1391,34 +1394,29 @@ convertInstances :
     ->
         List
             { instance : DecodeScene.Instance
-            , viewInstance : Instance coords
+            , viewInstance : Instance WorldCoordinates
             , index : Int
             }
 convertInstances instances dim model =
     let
-        convertInstance index instance =
+        material instance =
+            makeMaterial instance dim model
+
+        convertInstance mesh index instance =
             { instance = instance
             , viewInstance =
-                Instance.make
-                    (makeMaterial instance dim model)
-                    instance.meshIndex
+                Instance.make (material instance) mesh
                     |> Instance.transform instance.transform
             , index = index
             }
 
-        n =
+        convertMeshInstances index mesh =
             instances
-                |> List.map .meshIndex
-                |> List.maximum
-                |> Maybe.withDefault 0
+                |> List.filter (\instance -> instance.meshIndex == index)
+                |> List.indexedMap (convertInstance mesh)
     in
-    List.range 0 n
-        |> List.map
-            (\index ->
-                instances
-                    |> List.filter (\instance -> instance.meshIndex == index)
-                    |> List.indexedMap convertInstance
-            )
+    Array.toList model.meshes
+        |> List.indexedMap convertMeshInstances
         |> List.concat
 
 
@@ -1438,9 +1436,7 @@ asUnitlessVector n =
         (Math.Vector3.getZ n)
 
 
-convertMesh :
-    TriangularMesh DecodeScene.Vertex
-    -> TriangularMesh (View3d.Vertex coords)
+convertMesh : TriangularMesh DecodeScene.Vertex -> View3d.Mesh coords
 convertMesh =
     TriangularMesh.mapVertices
         (\{ position, normal } ->
@@ -1448,21 +1444,23 @@ convertMesh =
             , normal = asUnitlessVector normal
             }
         )
+        >> View3d.mesh
 
 
 updateScene : Maybe Meshes -> Instances -> Int -> Bool -> Model -> Model
 updateScene maybeMeshes instances dim reset model =
     let
-        convertedInstances =
-            convertInstances instances dim model
+        modelWithMeshes =
+            maybeMeshes
+                |> Maybe.map (List.map convertMesh >> Array.fromList)
+                |> Maybe.map (\ms -> { model | meshes = ms })
+                |> Maybe.withDefault model
 
-        convertedMeshes =
-            Maybe.map (List.map convertMesh) maybeMeshes
+        convertedInstances =
+            convertInstances instances dim modelWithMeshes
 
         setScene =
-            View3d.setScene
-                convertedMeshes
-                (List.map .viewInstance convertedInstances)
+            View3d.setScene (List.map .viewInstance convertedInstances)
 
         updateFn =
             if reset then
@@ -1474,7 +1472,7 @@ updateScene maybeMeshes instances dim reset model =
                 setScene
     in
     updateView3d updateFn
-        { model
+        { modelWithMeshes
             | scene = List.map .instance convertedInstances
             , instanceIndices = List.map .index convertedInstances
             , dim = dim
