@@ -1,6 +1,5 @@
 port module GuiMain exposing (main)
 
-import Array exposing (Array)
 import Bitwise
 import Browser
 import Browser.Dom as Dom
@@ -305,7 +304,7 @@ type WorldCoordinates
 
 type alias Model =
     { viewState : View3d.Model WorldCoordinates
-    , meshes : Array (View3d.Mesh WorldCoordinates)
+    , meshes : List (View3d.Mesh WorldCoordinates)
     , scene : Instances
     , instanceIndices : List Int
     , dim : Int
@@ -334,7 +333,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { viewState = View3d.init
       , scene = []
-      , meshes = Array.empty
+      , meshes = []
       , instanceIndices = []
       , dim = 3
       , revision = flags.revision
@@ -1415,7 +1414,7 @@ convertInstances instances dim model =
                 |> List.filter (\instance -> instance.meshIndex == index)
                 |> List.indexedMap (convertInstance mesh)
     in
-    Array.toList model.meshes
+    model.meshes
         |> List.indexedMap convertMeshInstances
         |> List.concat
 
@@ -1451,10 +1450,12 @@ updateScene : Maybe Meshes -> Instances -> Int -> Bool -> Model -> Model
 updateScene maybeMeshes instances dim reset model =
     let
         modelWithMeshes =
-            maybeMeshes
-                |> Maybe.map (List.map convertMesh >> Array.fromList)
-                |> Maybe.map (\ms -> { model | meshes = ms })
-                |> Maybe.withDefault model
+            case maybeMeshes of
+                Just meshes ->
+                    { model | meshes = List.map convertMesh meshes }
+
+                Nothing ->
+                    model
 
         convertedInstances =
             convertInstances instances dim modelWithMeshes
