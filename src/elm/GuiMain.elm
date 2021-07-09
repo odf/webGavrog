@@ -1,5 +1,6 @@
 port module GuiMain exposing (main)
 
+import Angle exposing (Angle)
 import Bitwise
 import Browser
 import Browser.Dom as Dom
@@ -8,6 +9,7 @@ import Color
 import ColorDialog
 import DecodeScene exposing (MeshType(..))
 import Dict exposing (Dict)
+import Direction3d exposing (Direction3d)
 import Element
 import Element.Background as Background
 import Element.Border as Border
@@ -104,7 +106,7 @@ type Action
     | RemoveTile
     | RemoveTileClass
     | RemoveElement
-    | RotateView Direction Float
+    | RotateView Direction Angle
 
 
 type Msg
@@ -324,9 +326,9 @@ type alias Model =
     }
 
 
-rotationAngle : Float
+rotationAngle : Angle
 rotationAngle =
-    degrees 5
+    Angle.degrees 5
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -1214,45 +1216,85 @@ executeAction action model =
         RotateView dir angle ->
             case dir of
                 Left ->
-                    ( rotateBy (vec3 0 1 0) -angle model, Cmd.none )
+                    ( rotateBy Direction3d.y
+                        (Quantity.negate angle)
+                        model
+                    , Cmd.none
+                    )
 
                 Right ->
-                    ( rotateBy (vec3 0 1 0) angle model, Cmd.none )
+                    ( rotateBy Direction3d.y angle model, Cmd.none )
 
                 Up ->
-                    ( rotateBy (vec3 1 0 0) -angle model, Cmd.none )
+                    ( rotateBy Direction3d.x
+                        (Quantity.negate angle)
+                        model
+                    , Cmd.none
+                    )
 
                 Down ->
-                    ( rotateBy (vec3 1 0 0) angle model, Cmd.none )
+                    ( rotateBy Direction3d.x angle model, Cmd.none )
 
                 Clockwise ->
-                    ( rotateBy (vec3 0 0 1) -angle model, Cmd.none )
+                    ( rotateBy Direction3d.z
+                        (Quantity.negate angle)
+                        model
+                    , Cmd.none
+                    )
 
                 CounterClockwise ->
-                    ( rotateBy (vec3 0 0 1) angle model, Cmd.none )
+                    ( rotateBy Direction3d.z angle model, Cmd.none )
 
         ViewAlong axis ->
             case axis of
                 AxisX ->
-                    ( lookAlong (vec3 -1 0 0) (vec3 0 1 0) model, Cmd.none )
+                    ( lookAlong Direction3d.negativeX Direction3d.y model
+                    , Cmd.none
+                    )
 
                 AxisY ->
-                    ( lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model, Cmd.none )
+                    ( lookAlong Direction3d.negativeY
+                        Direction3d.negativeZ
+                        model
+                    , Cmd.none
+                    )
 
                 AxisZ ->
-                    ( lookAlong (vec3 0 0 -1) (vec3 0 1 0) model, Cmd.none )
+                    ( lookAlong Direction3d.negativeZ Direction3d.y model
+                    , Cmd.none
+                    )
 
                 DiagYZ ->
-                    ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
+                    ( lookAlong (Direction3d.yz (Angle.degrees 225))
+                        Direction3d.y
+                        model
+                    , Cmd.none
+                    )
 
                 DiagXZ ->
-                    ( lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model, Cmd.none )
+                    ( lookAlong (Direction3d.xz (Angle.degrees 225))
+                        Direction3d.y
+                        model
+                    , Cmd.none
+                    )
 
                 DiagXY ->
-                    ( lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model, Cmd.none )
+                    ( lookAlong (Direction3d.xy (Angle.degrees 225))
+                        Direction3d.negativeZ
+                        model
+                    , Cmd.none
+                    )
 
                 DiagXYZ ->
-                    ( lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model, Cmd.none )
+                    ( lookAlong
+                        (Direction3d.xyZ
+                            (Angle.degrees 225)
+                            (Angle.degrees -45)
+                        )
+                        Direction3d.y
+                        model
+                    , Cmd.none
+                    )
 
         SaveScreenshot ->
             let
@@ -1466,7 +1508,7 @@ updateScene maybeMeshes instances dim reset model =
         updateFn =
             if reset then
                 setScene
-                    >> View3d.lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+                    >> View3d.lookAlong Direction3d.negativeZ Direction3d.y
                     >> View3d.encompass
 
             else
@@ -1517,12 +1559,16 @@ handleKeyPress char model =
             ( model, Cmd.none )
 
 
-lookAlong : Vec3 -> Vec3 -> Model -> Model
+lookAlong :
+    Direction3d WorldCoordinates
+    -> Direction3d WorldCoordinates
+    -> Model
+    -> Model
 lookAlong axis up model =
     updateView3d (View3d.lookAlong axis up) model
 
 
-rotateBy : Vec3 -> Float -> Model -> Model
+rotateBy : Direction3d WorldCoordinates -> Angle -> Model -> Model
 rotateBy axis angle model =
     updateView3d (View3d.rotateBy axis angle) model
 
