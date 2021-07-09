@@ -19,18 +19,14 @@ import Element.Input as Input
 import Html.Events
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Length
 import Materials exposing (netMaterial, paletteColor, tilingMaterial)
-import Math.Vector3 exposing (Vec3, vec3)
 import Menu
-import Point3d exposing (Point3d)
 import Quantity
 import Set
 import Styling
 import Task
 import TriangularMesh exposing (TriangularMesh)
 import ValueSlider
-import Vector3d exposing (Vector3d)
 import View3d
 import View3d.Instance as Instance exposing (Instance)
 
@@ -45,8 +41,12 @@ main =
         }
 
 
+type WorldCoordinates
+    = WorldCoordinates
+
+
 type alias Meshes =
-    List (TriangularMesh DecodeScene.Vertex)
+    List (TriangularMesh (DecodeScene.Vertex WorldCoordinates))
 
 
 type alias Instances =
@@ -298,10 +298,6 @@ type alias AdvancedSettings =
     { tilingModifier : TilingModifier
     , skipRelaxation : Bool
     }
-
-
-type WorldCoordinates
-    = WorldCoordinates
 
 
 type alias Model =
@@ -1461,40 +1457,13 @@ convertInstances instances dim model =
         |> List.concat
 
 
-asPointInMeters : Vec3 -> Point3d Length.Meters coords
-asPointInMeters p =
-    Point3d.meters
-        (Math.Vector3.getX p)
-        (Math.Vector3.getY p)
-        (Math.Vector3.getZ p)
-
-
-asUnitlessVector : Vec3 -> Vector3d Quantity.Unitless coords
-asUnitlessVector n =
-    Vector3d.unitless
-        (Math.Vector3.getX n)
-        (Math.Vector3.getY n)
-        (Math.Vector3.getZ n)
-
-
-convertMesh : TriangularMesh DecodeScene.Vertex -> View3d.Mesh coords
-convertMesh =
-    TriangularMesh.mapVertices
-        (\{ position, normal } ->
-            { position = asPointInMeters position
-            , normal = asUnitlessVector normal
-            }
-        )
-        >> View3d.mesh
-
-
 updateScene : Maybe Meshes -> Instances -> Int -> Bool -> Model -> Model
 updateScene maybeMeshes instances dim reset model =
     let
         modelWithMeshes =
             case maybeMeshes of
                 Just meshes ->
-                    { model | meshes = List.map convertMesh meshes }
+                    { model | meshes = List.map View3d.mesh meshes }
 
                 Nothing ->
                     model

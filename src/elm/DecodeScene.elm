@@ -7,15 +7,19 @@ module DecodeScene exposing
     )
 
 import Json.Decode as Decode
+import Length
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
 import Mesh
+import Point3d exposing (Point3d)
+import Quantity
 import TriangularMesh exposing (TriangularMesh)
+import Vector3d exposing (Vector3d)
 
 
-type alias Vertex =
-    { position : Vec3
-    , normal : Vec3
+type alias Vertex coords =
+    { position : Point3d Length.Meters coords
+    , normal : Vector3d Quantity.Unitless coords
     }
 
 
@@ -45,14 +49,30 @@ decodeVec3 =
         (Decode.index 2 Decode.float)
 
 
-decodeVertex : Decode.Decoder Vertex
+decodePoint : Decode.Decoder (Point3d Length.Meters coord)
+decodePoint =
+    Decode.map3 Point3d.meters
+        (Decode.index 0 Decode.float)
+        (Decode.index 1 Decode.float)
+        (Decode.index 2 Decode.float)
+
+
+decodeNormal : Decode.Decoder (Vector3d Quantity.Unitless coord)
+decodeNormal =
+    Decode.map3 Vector3d.unitless
+        (Decode.index 0 Decode.float)
+        (Decode.index 1 Decode.float)
+        (Decode.index 2 Decode.float)
+
+
+decodeVertex : Decode.Decoder (Vertex coords)
 decodeVertex =
     Decode.map2 (\pos normal -> { position = pos, normal = normal })
-        (Decode.field "pos" decodeVec3)
-        (Decode.field "normal" decodeVec3)
+        (Decode.field "pos" decodePoint)
+        (Decode.field "normal" decodeNormal)
 
 
-decodeMesh : Decode.Decoder (TriangularMesh Vertex)
+decodeMesh : Decode.Decoder (TriangularMesh (Vertex coords))
 decodeMesh =
     Decode.map2 Mesh.fromOrientedFaces
         (Decode.field "vertices" (Decode.array decodeVertex))
