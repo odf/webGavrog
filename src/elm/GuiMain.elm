@@ -1811,13 +1811,13 @@ viewAbout model =
                 { src = "3dt.ico", description = "Gavrog Logo" }
             , Element.column [ Element.spacing 4 ]
                 [ Styling.logoText "Web-Gavrog"
-                , Element.text "by Olaf Delgado-Friedrichs 2021"
+                , Element.text "by Olaf Delgado-Friedrichs 2022"
                 , Element.text "The Australian National University"
                 ]
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Version: ")
-            , Element.text "0.3.0 alpha"
+            , Element.text "0.4.0 alpha"
             ]
         , Element.paragraph []
             [ Element.el [ Font.bold ] (Element.text "Revision: ")
