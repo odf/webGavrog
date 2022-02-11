@@ -10,6 +10,7 @@ import * as makeScene from './makeScene';
 import parseDSymbols from '../io/ds';
 import Worker from './sceneWorker';
 import { Elm } from '../elm/GuiMain';
+import { makeGraph } from '../pgraphs/periodic';
 
 
 const createWorker = log => {
@@ -51,7 +52,9 @@ const title = model => {
     const fname = model.filename;
     const index = model.index + 1;
     const len = model.structures.length;
-    const collection = fname ? `"${fname}"` : 'builtin';
+    const collection = (
+      fname == null ? 'builtin' : fname == "URL" ? '' : `"${fname}"`
+    );
     const groupName = model.data.sgInfo.groupName;
     return `#${index}/${len} - ${name} (${collection}) ${groupName}`;
   }
@@ -227,6 +230,32 @@ const newFile = (config, model, { file, data }) => csp.go(function* () {
 });
 
 
+const createInitialModel = () => {
+  const parsedUrl = new URL(window.location.href);
+  const params = parsedUrl.searchParams;
+  const key = params.get("key");
+
+  if (key == null)
+    return { options: {}, structures: builtin.structures };
+  else {
+    const name = params.get("name");
+    const ns = key.split("_").map(s => parseInt(s))
+    const dim = ns[0];
+
+    const edges = [];
+    for (var i = 1; i < ns.length; i += dim + 2) {
+      edges.push([ns[i], ns[i + 1], ns.slice(i + 2, i + 2 + dim)])
+    }
+    const graph = makeGraph(edges);
+    const structures = [{
+      name, graph, type: 'periodic_graph', warnings: [], errors: []
+    }];
+
+    return { filename: "URL", options: {}, structures }
+  }
+}
+
+
 const dispatch = (config, model, action, selected, options, arg) => {
   const update = m => csp.go(function* () { Object.assign(model, yield m); });
   const setStructure = i => update(gotoStructure(config, model, i));
@@ -289,6 +318,8 @@ const dispatch = (config, model, action, selected, options, arg) => {
 
 
 const render = domNode => {
+  const model = createInitialModel();
+
   const app = Elm.GuiMain.init({
     node: domNode,
     flags: { revision: version.gitRev, timestamp: version.gitDate }
@@ -309,8 +340,6 @@ const render = domNode => {
       app.ports.fromJS.send({ instances, dim, reset })
     }
   };
-
-  const model = { options: {}, structures: builtin.structures };
 
   app.ports.toJS.subscribe(({ mode, text, options, selected }) => {
     switch (mode) {
