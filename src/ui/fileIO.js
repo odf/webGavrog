@@ -1,9 +1,10 @@
 import { floatMatrices as opsF } from '../arithmetic/types';
+import * as derived from '../dsymbols/derived';
 
 
-export const fileLoader = (accept, multiple=false, binary=false) => {
+export const fileLoader = (accept, multiple = false, binary = false) => {
   const input = document.createElement('input');
-  let callback = () => {};
+  let callback = () => { };
 
   input.type = 'file';
   input.accept = accept;
@@ -54,8 +55,8 @@ export const saveStructure = (config, model) => {
     const ds = structure.symbol;
 
     const text =
-          mod == 'dual' ? derived.dual(ds).toString() :
-          mod == 't-analog' ? derived.tAnalog(ds).toString() :
+      mod == 'dual' ? derived.dual(ds).toString() :
+        mod == 't-analog' ? derived.tAnalog(ds).toString() :
           ds.toString();
 
     const blob = new Blob([text], { type: 'text/plain' });
@@ -68,8 +69,8 @@ export const saveStructure = (config, model) => {
 
 export const saveScreenshot = (config, options) => {
   const srcCanvas =
-     document.querySelector('#main-3d-canvas canvas') ||
-     document.querySelector('canvas#main-3d-canvas')
+    document.querySelector('#main-3d-canvas canvas') ||
+    document.querySelector('canvas#main-3d-canvas')
 
   if (srcCanvas) {
     window.requestAnimationFrame(() => {
@@ -89,7 +90,7 @@ export const saveScreenshot = (config, options) => {
 
         const len = binStr.length;
         const arr = new Uint8Array(len);
-        for (let i = 0; i < len; i++ )
+        for (let i = 0; i < len; i++)
           arr[i] = binStr.charCodeAt(i);
 
         const blob = new Blob([arr], { type: 'image/png' });
@@ -117,7 +118,7 @@ export const saveSceneOBJ = (config, model) => {
     const mesh = meshes[inst.meshIndex];
 
     const colorIndex = model.options.colorByTranslations ?
-          inst.latticeIndex : inst.classIndex;
+      inst.latticeIndex : inst.classIndex;
 
     lines.push(`o c${inst.classIndex}-m${inst.meshIndex}-i${i}`);
 
